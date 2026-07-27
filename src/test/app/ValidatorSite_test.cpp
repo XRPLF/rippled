@@ -239,7 +239,7 @@ private:
             json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
             }
             BEAST_EXPECTS(
@@ -248,9 +248,7 @@ private:
 
             if (!u.cfg.msg.empty())
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.cfg.msg) != std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.cfg.msg), sink.messages().str());
             }
 
             if (u.cfg.expectedRefreshMin != 0)
@@ -324,7 +322,7 @@ private:
             json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
             }
             BEAST_EXPECTS(
@@ -332,9 +330,7 @@ private:
                 to_string(myStatus));
             if (u.shouldFail)
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.expectMsg) != std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.expectMsg), sink.messages().str());
             }
         }
     }

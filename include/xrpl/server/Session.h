@@ -2,24 +2,25 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/Writer.h>
 
 #include <boost/beast/http/message.hpp>
 
-#include <functional>
+#include <cstddef>
 #include <memory>
-#include <ostream>
 #include <string_view>
-#include <vector>
 
 namespace xrpl {
 
-/** Persistent state information for a connection session.
-    These values are preserved between calls for efficiency.
-    Some fields are input parameters, some are output parameters,
-    and all only become defined during specific callbacks.
-*/
+/**
+ * Persistent state information for a connection session.
+ * These values are preserved between calls for efficiency.
+ * Some fields are input parameters, some are output parameters,
+ * and all only become defined during specific callbacks.
+ */
 class Session
 {
 public:
@@ -29,29 +30,40 @@ public:
     operator=(Session const&) = delete;
     virtual ~Session() = default;
 
-    /** A user-definable pointer.
-        The initial value is always zero.
-        Changes to the value are persisted between calls.
-    */
+    /**
+     * A user-definable pointer.
+     * The initial value is always zero.
+     * Changes to the value are persisted between calls.
+     */
     void* tag = nullptr;
 
-    /** Returns the Journal to use for logging. */
+    /**
+     * Returns the Journal to use for logging.
+     */
     virtual beast::Journal
     journal() = 0;
 
-    /** Returns the Port settings for this connection. */
+    /**
+     * Returns the Port settings for this connection.
+     */
     virtual Port const&
     port() = 0;
 
-    /** Returns the remote address of the connection. */
+    /**
+     * Returns the remote address of the connection.
+     */
     virtual beast::IP::Endpoint
     remoteAddress() = 0;
 
-    /** Returns the current HTTP request. */
+    /**
+     * Returns the current HTTP request.
+     */
     virtual http_request_type&
     request() = 0;
 
-    /** Send a copy of data asynchronously. */
+    /**
+     * Send a copy of data asynchronously.
+     */
     /** @{ */
     void
     write(std::string_view s)
@@ -80,32 +92,37 @@ public:
 
     /** @} */
 
-    /** Detach the session.
-        This holds the session open so that the response can be sent
-        asynchronously. Calls to io_context::run made by the server
-        will not return until all detached sessions are closed.
-    */
+    /**
+     * Detach the session.
+     * This holds the session open so that the response can be sent
+     * asynchronously. Calls to io_context::run made by the server
+     * will not return until all detached sessions are closed.
+     */
     virtual std::shared_ptr<Session>
     detach() = 0;
 
-    /** Indicate that the response is complete.
-        The handler should call this when it has completed writing
-        the response. If Keep-Alive is indicated on the connection,
-        this will trigger a read for the next request; else, the
-        connection will be closed when all remaining data has been sent.
-    */
+    /**
+     * Indicate that the response is complete.
+     * The handler should call this when it has completed writing
+     * the response. If Keep-Alive is indicated on the connection,
+     * this will trigger a read for the next request; else, the
+     * connection will be closed when all remaining data has been sent.
+     */
     virtual void
     complete() = 0;
 
-    /** Close the session.
-        This will be performed asynchronously. The session will be
-        closed gracefully after all pending writes have completed.
-        @param graceful `true` to wait until all data has finished sending.
-    */
+    /**
+     * Close the session.
+     * This will be performed asynchronously. The session will be
+     * closed gracefully after all pending writes have completed.
+     * @param graceful `true` to wait until all data has finished sending.
+     */
     virtual void
     close(bool graceful) = 0;
 
-    /** Convert the connection to WebSocket. */
+    /**
+     * Convert the connection to WebSocket.
+     */
     virtual std::shared_ptr<WSSession>
     websocketUpgrade() = 0;
 };

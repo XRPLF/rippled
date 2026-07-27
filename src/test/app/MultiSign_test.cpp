@@ -35,6 +35,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1121,8 +1122,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                info[jss::result][jss::error_exception].asString().contains(
+                    "Invalid signature on account r"));
         }
         {
             // Multisign with an empty signers array should fail.
@@ -1511,7 +1512,7 @@ public:
         env.close();
 
         // Verify that the SignerList object was created correctly.
-        auto const& sle = env.le(keylet::signers(alice.id()));
+        auto const& sle = env.le(keylet::signerList(alice.id()));
         BEAST_EXPECT(sle);
         BEAST_EXPECT(sle->getFieldArray(sfSignerEntries).size() == 2);
         if (features[fixIncludeKeyletFields])

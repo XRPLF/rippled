@@ -1,6 +1,18 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <expected>
+#include <utility>
 
 namespace xrpl {
 
@@ -34,7 +46,7 @@ public:
         beast::Journal const& j) override;
 
 private:
-    Expected<std::pair<STAmount, STAmount>, TER>
+    std::expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         SLE::ref vault,
         SLE::const_ref sleShareIssuance,

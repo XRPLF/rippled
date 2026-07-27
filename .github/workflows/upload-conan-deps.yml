@@ -30,10 +30,11 @@ on:
       - ".github/scripts/strategy-matrix/**"
       - conanfile.py
       - conan.lock
+      - conan/profiles/**
 
 env:
   CONAN_REMOTE_NAME: xrplf
-  CONAN_REMOTE_URL: https://conan.ripplex.io
+  CONAN_REMOTE_URL: https://conan.xrplf.org/repository/conan/
   NPROC_SUBTRACT: 2
 
 concurrency:
@@ -64,10 +65,10 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@c47daebb2f9db64ffbac71b47d68a661498d5ce8
+        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: false
 
@@ -107,10 +108,12 @@ jobs:
 
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
-        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
+        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.NEXUS_REMOTE_USERNAME }}" --password "${{ secrets.NEXUS_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+          CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+          CONAN_PASSWORD_XRPLF: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
         run: conan upload "*" --remote="${CONAN_REMOTE_NAME}" --confirm ${FORCE_OPTION}

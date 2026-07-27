@@ -2,9 +2,10 @@
 
 #include <xrpl/nodestore/NodeObject.h>
 
+#include <memory>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 // This is only used to pre-allocate the array for
 // batch objects and does not affect the amount written.
@@ -17,7 +18,9 @@ static constexpr auto kBatchWritePreallocationSize = 256;
 //
 static constexpr auto kBatchWriteLimitSize = 65536;
 
-/** Return codes from Backend operations. */
+/**
+ * Return codes from Backend operations.
+ */
 enum class Status {
     Ok = 0,
     NotFound = 1,
@@ -28,7 +31,9 @@ enum class Status {
     CustomCode = 100
 };
 
-/** A batch of NodeObjects to write at once. */
+/**
+ * A batch of NodeObjects to write at once.
+ */
 using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

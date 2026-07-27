@@ -21,10 +21,15 @@
 #include <nudb/file.hpp>
 #include <nudb/native_file.hpp>
 #include <nudb/xxhasher.hpp>
+
+#if XRPL_ROCKSDB_AVAILABLE
+
 #include <rocksdb/db.h>
 #include <rocksdb/iterator.h>
 #include <rocksdb/options.h>
 #include <rocksdb/status.h>
+
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -190,7 +195,7 @@ fmtdur(std::chrono::duration<Period, Rep> const& d)
 
 }  // namespace detail
 
-namespace NodeStore {
+namespace node_store {
 
 //------------------------------------------------------------------------------
 
@@ -547,5 +552,5 @@ BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, xrpl);
 
 //------------------------------------------------------------------------------
 
-}  // namespace NodeStore
+}  // namespace node_store
 }  // namespace xrpl

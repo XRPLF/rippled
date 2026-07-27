@@ -1,10 +1,28 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
+#include <cstdint>
+#include <expected>
 #include <string_view>
+#include <utility>
 
 namespace xrpl {
 
@@ -45,7 +63,9 @@ static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
-/// Ensure the periodic payment is always rounded consistently
+/**
+ * Ensure the periodic payment is always rounded consistently
+ */
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
@@ -109,7 +129,8 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure captures the parts of a loan state.
+/**
+ * This structure captures the parts of a loan state.
  *
  *  Whether the values are theoretical (unrounded) or rounded will depend on how
  * it was computed.
@@ -242,10 +263,11 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
-// Constructs a valid LoanState object from a Loan object, which always has
-// rounded values
+// Overload of constructLoanState() that reads the three tracked fields
+// directly from a Loan ledger object, which always holds rounded values,
+// rather than taking them as separate Number arguments.
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructLoanState(SLE::const_ref loan);
 
 Number
 computeManagementFee(
@@ -306,12 +328,14 @@ struct PaymentComponents
     // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::None;
 
-    // Calculates the tracked interest portion of this payment.
-    // This is derived from the other components as:
-    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
-    //
-    // @return The amount of tracked interest included in this payment that
-    //         will be paid to the vault.
+    /**
+     * Calculates the tracked interest portion of this payment.
+     * This is derived from the other components as:
+     * trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+     *
+     * @return The amount of tracked interest included in this payment that
+     *         will be paid to the vault.
+     */
     [[nodiscard]] Number
     trackedInterestPart() const;
 };
@@ -383,7 +407,8 @@ struct LoanStateDeltas
     // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
-    /* Calculates the total change across all components.
+    /**
+     * Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
     [[nodiscard]] Number
@@ -397,7 +422,7 @@ struct LoanStateDeltas
     nonNegative();
 };
 
-Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+std::expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
     Rules const& rules,
     Asset const& asset,
@@ -523,7 +548,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 // potential extra work at the end.
 enum class LoanPaymentType { Regular = 0, Late, Full, Overpayment };
 
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,

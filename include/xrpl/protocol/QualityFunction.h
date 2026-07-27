@@ -1,12 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
 
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
+
 namespace xrpl {
 
-/** Average quality of a path as a function of `out`: q(out) = m * out + b,
+/**
+ * Average quality of a path as a function of `out`: q(out) = m * out + b,
  * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
  * `m` is equal to 0 `b` is equal to the offer's quality. The function
  * is derived by substituting `in` in q = out / in with the swap out formula
@@ -39,19 +46,22 @@ public:
     template <typename TIn, typename TOut>
     QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag);
 
-    /** Combines QF with the next step QF
+    /**
+     * Combines QF with the next step QF
      */
     void
     combine(QualityFunction const& qf);
 
-    /** Find output to produce the requested
+    /**
+     * Find output to produce the requested
      * average quality.
      * @param quality requested average quality (quality limit)
      */
     std::optional<Number>
     outFromAvgQ(Quality const& quality);
 
-    /** Return true if the quality function is constant
+    /**
+     * Return true if the quality function is constant
      */
     [[nodiscard]] bool
     isConst() const

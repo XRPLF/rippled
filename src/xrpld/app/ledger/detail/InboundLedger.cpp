@@ -21,11 +21,11 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -109,7 +109,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -127,9 +127,8 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = peerSet_->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
-    });
+    return std::ranges::count_if(
+        peerIds, [this](auto id) { return (app_.getOverlay().findPeerByShortID(id) != nullptr); });
 }
 
 void
@@ -225,7 +224,7 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
-InboundLedger::tryDB(NodeStore::Database& srcDB)
+InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
@@ -331,13 +330,14 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
 }
 
-/** Called with a lock by the PeerSet when the timer expires
+/**
+ * Called with a lock by the PeerSet when the timer expires
  */
 void
 InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
@@ -386,7 +386,9 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
     }
 }
 
-/** Add more peers to the set, if possible */
+/**
+ * Add more peers to the set, if possible
+ */
 void
 InboundLedger::addPeers()
 {
@@ -427,7 +429,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
@@ -455,7 +457,8 @@ InboundLedger::done()
     });
 }
 
-/** Request more nodes, perhaps from a specific peer
+/**
+ * Request more nodes, perhaps from a specific peer
  */
 void
 InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
@@ -770,9 +773,10 @@ InboundLedger::filterNodes(
         recentNodes_.insert(n.second);
 }
 
-/** Take ledger header data
-    Call with a lock
-*/
+/**
+ * Take ledger header data
+ * Call with a lock
+ */
 // data must not have hash prefix
 bool
 InboundLedger::takeHeader(std::string const& data)
@@ -816,9 +820,10 @@ InboundLedger::takeHeader(std::string const& data)
     return true;
 }
 
-/** Process node data received from a peer
-    Call with a lock
-*/
+/**
+ * Process node data received from a peer
+ * Call with a lock
+ */
 void
 InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
@@ -912,9 +917,10 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
     }
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -938,9 +944,10 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     return san.isGood();
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -995,9 +1002,10 @@ InboundLedger::getNeededHashes()
     return ret;
 }
 
-/** Stash a TMLedgerData received from a peer for later processing
-    Returns 'true' if we need to dispatch
-*/
+/**
+ * Stash a TMLedgerData received from a peer for later processing
+ * Returns 'true' if we need to dispatch
+ */
 bool
 InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
@@ -1017,9 +1025,10 @@ InboundLedger::gotData(
     return true;
 }
 
-/** Process one TMLedgerData
-    Returns the number of useful nodes
-*/
+/**
+ * Process one TMLedgerData
+ * Returns the number of useful nodes
+ */
 // VFALCO NOTE, it is not necessary to pass the entire Peer,
 //              we can get away with just a Resource::Consumer endpoint.
 //
@@ -1194,9 +1203,10 @@ struct PeerDataCounts
 };
 }  // namespace detail
 
-/** Process pending TMLedgerData
-    Query the a random sample of the 'best' peers
-*/
+/**
+ * Process pending TMLedgerData
+ * Query the a random sample of the 'best' peers
+ */
 void
 InboundLedger::runData()
 {

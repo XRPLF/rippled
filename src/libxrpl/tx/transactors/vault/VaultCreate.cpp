@@ -146,6 +146,7 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
+    auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqValue();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
@@ -156,9 +157,8 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner, 2, j_);
-    auto const ownerCount = owner->at(sfOwnerCount);
-    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
+    increaseOwnerCount(view(), owner, {}, 2, j_);
+    if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
@@ -168,7 +168,8 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -194,10 +195,10 @@ VaultCreate::doApply()
             return std::nullopt;
         return asset.holds<MPTIssue>()
             ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
-            : keylet::line(pseudoId, asset.get<Issue>()).key;
+            : keylet::trustLine(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
-        view(),
+        applyViewContext,
         j_,
         {
             .priorBalance = std::nullopt,
@@ -243,8 +244,8 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    if (auto const err = authorizeMPToken(
+            applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -252,7 +253,13 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
+                applyViewContext,
+                preFeeBalance_,
+                mptIssuanceID,
+                pseudoId,
+                ctx_.journal,
+                {},
+                accountID_);
             !isTesSuccess(err))
             return err;
     }
