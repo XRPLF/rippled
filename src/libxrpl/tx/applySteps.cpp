@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -102,18 +103,24 @@ makeStageSpan(
     {
         span.setAttribute(telemetry::tx_apply_span::attr::stage, stage);
         if (char const* typeName = txTypeName(tx.getTxnType()))
+        {
             span.setAttribute(telemetry::tx_apply_span::attr::txType, typeName);
+        }
         // The ledger being worked on — set only by the view-bearing stages
         // (preclaim/transactor). Preflight is stateless and passes nullopt, so
         // it carries no ledger attribute (documented exception).
         if (curLedgerSeq)
+        {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::currentLedgerSeq,
                 static_cast<std::int64_t>(*curLedgerSeq));
-        if (curLedgerParentHash)
+        }
+        if (curLedgerParentHash != nullptr)
+        {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::currentLedgerHash,
                 to_string(*curLedgerParentHash).c_str());
+        }
     }
     return span;
 }
