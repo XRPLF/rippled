@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
 
 #include <coroutine>
@@ -154,7 +155,11 @@ struct JobQueueAwaiter
     /**
      * Always returns false so the coroutine suspends.
      */
-    bool
+    // The C++ coroutine protocol mandates these awaiter names and
+    // instance-callable methods, which conflict with the project
+    // naming/static conventions.
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
+    [[nodiscard]] bool
     await_ready() const noexcept
     {
         return false;
@@ -201,6 +206,7 @@ struct JobQueueAwaiter
     await_resume() const noexcept
     {
     }
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 };
 
 }  // namespace xrpl

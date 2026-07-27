@@ -19,6 +19,10 @@
 #include <string>
 #include <vector>
 
+// Tests intentionally capture state in coroutine lambdas; lifetimes are
+// controlled by Gate synchronization and join() before scope exit.
+// NOLINTBEGIN(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+
 namespace xrpl::test {
 
 /**
@@ -96,7 +100,7 @@ public:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::scoped_lock const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -253,8 +257,8 @@ public:
 
         auto& jq = env.app().getJobQueue();
 
-        static int const N = 4;
-        std::array<std::shared_ptr<JobQueue::CoroTaskRunner>, N> a;
+        static constexpr int kN = 4;
+        std::array<std::shared_ptr<JobQueue::CoroTaskRunner>, kN> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -270,7 +274,7 @@ public:
             return;
         BEAST_EXPECT(*lv == -1);
 
-        for (int i = 0; i < N; ++i)
+        for (int i = 0; i < kN; ++i)
         {
             jq.postCoroTask(
                 JtClient,
@@ -514,7 +518,7 @@ public:
             JtClient, "CoroTaskTest", [rp = &result, gp = &g](auto) -> CoroTask<void> {
                 auto add = [](int a, int b) -> CoroTask<int> { co_return a + b; };
                 auto mul = [add](int a, int b) -> CoroTask<int> {
-                    int sum = co_await add(a, b);
+                    int const sum = co_await add(a, b);
                     co_return sum * 2;
                 };
                 *rp = co_await mul(3, 4);
@@ -573,3 +577,5 @@ public:
 BEAST_DEFINE_TESTSUITE(CoroTask, core, xrpl);
 
 }  // namespace xrpl::test
+
+// NOLINTEND(cppcoreguidelines-avoid-capturing-lambda-coroutines)

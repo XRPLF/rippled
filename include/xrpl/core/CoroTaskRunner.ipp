@@ -93,8 +93,8 @@ inline JobQueue::CoroTaskRunner::CoroTaskRunner(
     CreateT,
     JobQueue& jq,
     JobType type,
-    std::string const& name)
-    : jq_(jq), type_(type), name_(name), runCount_(0)
+    std::string name)
+    : jq_(jq), type_(type), name_(std::move(name))
 {
 }
 
@@ -145,7 +145,7 @@ inline JobQueue::CoroTaskRunner::~CoroTaskRunner()
 inline void
 JobQueue::CoroTaskRunner::onSuspend()
 {
-    std::lock_guard lock(jq_.mutex_);
+    std::scoped_lock const lock(jq_.mutex_);
     ++jq_.nSuspend_;
 }
 
@@ -155,7 +155,7 @@ JobQueue::CoroTaskRunner::onSuspend()
 inline void
 JobQueue::CoroTaskRunner::onUndoSuspend()
 {
-    std::lock_guard lock(jq_.mutex_);
+    std::scoped_lock const lock(jq_.mutex_);
     --jq_.nSuspend_;
 }
 
@@ -173,6 +173,10 @@ JobQueue::CoroTaskRunner::suspend()
      * Custom awaiter for suspend(). Always suspends (await_ready
      * returns false) and increments nSuspend_ in await_suspend().
      */
+    // The C++ coroutine protocol mandates these awaiter names and
+    // instance-callable methods, which conflict with the project
+    // naming/static conventions.
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
     struct SuspendAwaiter
     {
         CoroTaskRunner& runner_;  // The runner that owns this coroutine.
@@ -180,7 +184,7 @@ JobQueue::CoroTaskRunner::suspend()
         /**
          * Always returns false so the coroutine suspends.
          */
-        bool
+        [[nodiscard]] bool
         await_ready() const noexcept
         {
             return false;
@@ -201,6 +205,7 @@ JobQueue::CoroTaskRunner::suspend()
         {
         }
     };
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
     return SuspendAwaiter{*this};
 }
 
@@ -218,11 +223,15 @@ JobQueue::CoroTaskRunner::suspend()
 inline auto
 JobQueue::CoroTaskRunner::yieldAndPost()
 {
+    // The C++ coroutine protocol mandates these awaiter names and
+    // instance-callable methods, which conflict with the project
+    // naming/static conventions.
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
     struct YieldPostAwaiter
     {
         CoroTaskRunner& runner_;
 
-        bool
+        [[nodiscard]] bool
         await_ready() const noexcept
         {
             return false;
@@ -264,6 +273,7 @@ JobQueue::CoroTaskRunner::yieldAndPost()
         {
         }
     };
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
     return YieldPostAwaiter{*this};
 }
 
@@ -278,7 +288,7 @@ inline bool
 JobQueue::CoroTaskRunner::post()
 {
     {
-        std::lock_guard lk(mutexRun_);
+        std::scoped_lock const lk(mutexRun_);
         ++runCount_;
     }
 
@@ -289,7 +299,7 @@ JobQueue::CoroTaskRunner::post()
     }
 
     // The coroutine will not run. Undo the runCount_ increment.
-    std::lock_guard lk(mutexRun_);
+    std::scoped_lock const lk(mutexRun_);
     --runCount_;
     cv_.notify_all();
     return false;
@@ -314,12 +324,12 @@ inline void
 JobQueue::CoroTaskRunner::resume()
 {
     {
-        std::lock_guard lock(jq_.mutex_);
+        std::scoped_lock const lock(jq_.mutex_);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     XRPL_ASSERT(
         task_.handle() && !task_.done(),
         "xrpl::JobQueue::CoroTaskRunner::resume : task handle is valid and not done");
@@ -372,7 +382,7 @@ JobQueue::CoroTaskRunner::resume()
         // frame destruction triggers runner cleanup.
         [[maybe_unused]] auto completed = std::move(task_);
     }
-    std::lock_guard lk(mutexRun_);
+    std::scoped_lock const lk(mutexRun_);
     --runCount_;
     cv_.notify_all();
 }
@@ -398,7 +408,7 @@ JobQueue::CoroTaskRunner::expectEarlyExit()
 {
     if (!finished_)
     {
-        std::lock_guard lock(jq_.mutex_);
+        std::scoped_lock const lock(jq_.mutex_);
         --jq_.nSuspend_;
         finished_ = true;
     }
