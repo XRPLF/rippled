@@ -638,10 +638,10 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
 
 /** A ledger object holding a pending multi-signature proposal.
 
-    The proposed transaction is stored unsigned in RawTransaction; collected
-    signatures accumulate inside its Signers field. Once the collected weight
-    meets the target account's quorum, the stored transaction is a fully
-    signed transaction that anyone may copy and submit.
+    The proposed transaction is stored unsigned in ProposedTransaction;
+    collected signatures accumulate inside its Signers field. Once the
+    collected weight meets the target account's quorum, the stored transaction
+    is a fully signed transaction that anyone may copy and submit.
 
     \sa keylet::txProposal
  */
@@ -649,7 +649,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
     {sfOwner,                SoeRequired},
-    {sfRawTransaction,       SoeRequired},
+    {sfProposedTransaction,  SoeRequired},
     {sfExpiration,           SoeRequired},
     {sfOwnerNode,            SoeRequired},
 }))

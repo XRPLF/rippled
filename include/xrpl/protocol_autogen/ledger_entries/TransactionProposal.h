@@ -79,15 +79,15 @@ public:
     }
 
     /**
-     * @brief Get sfRawTransaction (SoeRequired)
+     * @brief Get sfProposedTransaction (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
     [[nodiscard]]
     STObject
-    getRawTransaction() const
+    getProposedTransaction() const
     {
-        return this->sle_->getFieldObject(sfRawTransaction);
+        return this->sle_->getFieldObject(sfProposedTransaction);
     }
 
     /**
@@ -128,17 +128,17 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      * @param owner The sfOwner field value.
-     * @param rawTransaction The sfRawTransaction field value.
+     * @param proposedTransaction The sfProposedTransaction field value.
      * @param expiration The sfExpiration field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    TransactionProposalBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,STObject const& rawTransaction,std::decay_t<typename SF_UINT32::type::value_type> const& expiration,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    TransactionProposalBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,STObject const& proposedTransaction,std::decay_t<typename SF_UINT32::type::value_type> const& expiration,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<TransactionProposalBuilder>(ltTRANSACTION_PROPOSAL)
     {
         setPreviousTxnID(previousTxnID);
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
         setOwner(owner);
-        setRawTransaction(rawTransaction);
+        setProposedTransaction(proposedTransaction);
         setExpiration(expiration);
         setOwnerNode(ownerNode);
     }
@@ -195,13 +195,13 @@ public:
     }
 
     /**
-     * @brief Set sfRawTransaction (SoeRequired)
+     * @brief Set sfProposedTransaction (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     TransactionProposalBuilder&
-    setRawTransaction(STObject const& value)
+    setProposedTransaction(STObject const& value)
     {
-        object_.setFieldObject(sfRawTransaction, value);
+        object_.setFieldObject(sfProposedTransaction, value);
         return *this;
     }
 

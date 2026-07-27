@@ -23,7 +23,7 @@ TEST(TransactionProposalTests, BuilderSettersRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const ownerValue = canonical_ACCOUNT();
-    auto const rawTransactionValue = canonical_OBJECT();
+    auto const proposedTransactionValue = canonical_OBJECT();
     auto const expirationValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
@@ -31,7 +31,7 @@ TEST(TransactionProposalTests, BuilderSettersRoundTrip)
         previousTxnIDValue,
         previousTxnLgrSeqValue,
         ownerValue,
-        rawTransactionValue,
+        proposedTransactionValue,
         expirationValue,
         ownerNodeValue
     };
@@ -65,9 +65,9 @@ TEST(TransactionProposalTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = rawTransactionValue;
-        auto const actual = entry.getRawTransaction();
-        expectEqualField(expected, actual, "sfRawTransaction");
+        auto const& expected = proposedTransactionValue;
+        auto const actual = entry.getProposedTransaction();
+        expectEqualField(expected, actual, "sfProposedTransaction");
     }
 
     {
@@ -98,7 +98,7 @@ TEST(TransactionProposalTests, BuilderFromSleRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const ownerValue = canonical_ACCOUNT();
-    auto const rawTransactionValue = canonical_OBJECT();
+    auto const proposedTransactionValue = canonical_OBJECT();
     auto const expirationValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
@@ -107,7 +107,7 @@ TEST(TransactionProposalTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfOwner) = ownerValue;
-    sle->setFieldObject(sfRawTransaction, rawTransactionValue);
+    sle->setFieldObject(sfProposedTransaction, proposedTransactionValue);
     sle->at(sfExpiration) = expirationValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
 
@@ -151,13 +151,13 @@ TEST(TransactionProposalTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = rawTransactionValue;
+        auto const& expected = proposedTransactionValue;
 
-        auto const fromSle = entryFromSle.getRawTransaction();
-        auto const fromBuilder = entryFromBuilder.getRawTransaction();
+        auto const fromSle = entryFromSle.getProposedTransaction();
+        auto const fromBuilder = entryFromBuilder.getProposedTransaction();
 
-        expectEqualField(expected, fromSle, "sfRawTransaction");
-        expectEqualField(expected, fromBuilder, "sfRawTransaction");
+        expectEqualField(expected, fromSle, "sfProposedTransaction");
+        expectEqualField(expected, fromBuilder, "sfProposedTransaction");
     }
 
     {
