@@ -6152,9 +6152,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // LedgerToJson.cpp fix)
             json::Value const* meta = nullptr;
             if (tx.isMember(jss::meta))
+            {
                 meta = &tx[jss::meta];
+            }
             else if (tx.isMember(jss::metaData))
+            {
                 meta = &tx[jss::metaData];
+            }
 
             if (BEAST_EXPECT(meta != nullptr))
             {
@@ -6185,9 +6189,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Check synthetic fields in account_tx response
                 json::Value const* accountMeta = nullptr;
                 if (accountTx.isMember(jss::meta))
+                {
                     accountMeta = &accountTx[jss::meta];
+                }
                 else if (accountTx.isMember(jss::metaData))
+                {
                     accountMeta = &accountTx[jss::metaData];
+                }
 
                 if (BEAST_EXPECT(accountMeta != nullptr))
                 {
@@ -6262,9 +6270,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // Check synthetic fields in ledger response
             json::Value const* meta = nullptr;
             if (tx.isMember(jss::meta))
+            {
                 meta = &tx[jss::meta];
+            }
             else if (tx.isMember(jss::metaData))
+            {
                 meta = &tx[jss::metaData];
+            }
 
             if (BEAST_EXPECT(meta != nullptr))
             {
@@ -6283,7 +6295,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                             return nftID;
                         });
 
-                    std::sort(ledgerMetaIDs.begin(), ledgerMetaIDs.end());
+                    std::ranges::sort(ledgerMetaIDs);
                     BEAST_EXPECT(ledgerMetaIDs.size() == actualNftIDs.size());
                     for (size_t i = 0; i < ledgerMetaIDs.size(); ++i)
                         BEAST_EXPECT(ledgerMetaIDs[i] == actualNftIDs[i]);
@@ -6308,9 +6320,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Check synthetic fields in account_tx response
                 json::Value const* accountMeta = nullptr;
                 if (accountTx.isMember(jss::meta))
+                {
                     accountMeta = &accountTx[jss::meta];
+                }
                 else if (accountTx.isMember(jss::metaData))
+                {
                     accountMeta = &accountTx[jss::metaData];
+                }
 
                 if (BEAST_EXPECT(accountMeta != nullptr))
                 {
@@ -6329,7 +6345,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                                 return nftID;
                             });
 
-                        std::sort(accountMetaIDs.begin(), accountMetaIDs.end());
+                        std::ranges::sort(accountMetaIDs);
                         BEAST_EXPECT(accountMetaIDs.size() == actualNftIDs.size());
                         for (size_t i = 0; i < accountMetaIDs.size(); ++i)
                             BEAST_EXPECT(accountMetaIDs[i] == actualNftIDs[i]);
