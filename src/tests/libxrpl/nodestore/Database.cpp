@@ -7,6 +7,8 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/WriteStats.h>
 #include <xrpl/protocol/SystemParameters.h>
@@ -16,6 +18,9 @@
 #include <nodestore/TestBase.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -57,6 +62,72 @@ importBackends()
 #endif
     return types;
 }
+
+/**
+ * A scheduler that records what the nodestore reports about each operation.
+ *
+ * The production scheduler forwards these reports to the job queue and to
+ * telemetry, so capturing them here lets a test observe exactly the values a
+ * dashboard would receive.
+ *
+ *   Database::fetchNodeObject()
+ *        |
+ *        +-- FetchReport{elapsed, wasFound} --> onFetch()
+ *
+ *   Database::store() -> backend
+ *        |
+ *        +-- BatchWriteReport{elapsed, writeCount} --> onBatchWrite()
+ *
+ * @note Counters are atomic because Scheduler is called from the nodestore's
+ *       read threads in production. The tests below fetch synchronously on
+ *       one thread, so the totals are still exact.
+ */
+struct CapturingScheduler : Scheduler
+{
+    std::atomic<std::uint64_t> totalReportedUs{0};  ///< Sum of reported fetch durations.
+    std::atomic<std::uint64_t> fetchCount{0};       ///< Fetch reports received.
+    std::atomic<std::uint64_t> foundCount{0};       ///< Fetch reports with wasFound set.
+    std::atomic<std::uint64_t> batchWriteCount{0};  ///< Batch-write reports received.
+
+    /**
+     * Fetch reports whose duration is not a whole number of milliseconds.
+     *
+     * A millisecond-typed duration converts to a whole multiple of 1000
+     * microseconds, so it can never be counted here however fast or slow the
+     * machine is. A non-zero count therefore proves the report carried
+     * sub-millisecond resolution, and it proves it without assuming anything
+     * about how long a read takes.
+     */
+    std::atomic<std::uint64_t> subMillisecondCount{0};
+
+    void
+    scheduleTask(Task& task) override
+    {
+        task.performScheduledTask();
+    }
+
+    void
+    onFetch(FetchReport const& report) override
+    {
+        // duration_cast, not .count(), so this compiles against either unit
+        // and the test can be run before and after the fix.
+        auto const us = static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(report.elapsed).count());
+
+        totalReportedUs += us;
+        ++fetchCount;
+        if (report.wasFound)
+            ++foundCount;
+        if (us % 1000 != 0)
+            ++subMillisecondCount;
+    }
+
+    void
+    onBatchWrite(BatchWriteReport const&) override
+    {
+        ++batchWriteCount;
+    }
+};
 
 }  // namespace
 
@@ -188,6 +259,98 @@ TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
     // A maximum is never below the mean, which fails if the field held the
     // minimum or the first sample instead of a running maximum.
     EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
+}
+
+// Read latency is the discriminator between a warm nodestore and a cold one:
+// a warm store answers in single-digit microseconds and a cold one in low
+// hundreds, while the hit rate reads the same for both. FetchReport::elapsed
+// is what the production scheduler forwards, so if that field cannot hold a
+// sub-millisecond value the difference is gone before anything can record it.
+//
+// nudb rather than memory: a real store's reads take microseconds of
+// measurable work, whereas an in-memory map lookup can finish inside a single
+// microsecond tick and report a legitimate zero.
+TEST(NodeStoreDatabase, sub_millisecond_fetch_latency_is_reported)
+{
+    CapturingScheduler scheduler;
+    beast::TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", "nudb");
+    nodeParams.set("path", nodeDb.path());
+
+    beast::Journal const journal(TestSink::instance());
+
+    // No cache_size/cache_age, so DatabaseNodeImp builds no cache and every
+    // fetch reaches the backend. That keeps the counts exact.
+    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+    ASSERT_NE(db, nullptr);
+
+    // Nothing has been fetched, so nothing has been reported. This also
+    // proves the counters below are moved by this test and not by setup.
+    ASSERT_EQ(scheduler.fetchCount.load(), 0u);
+    ASSERT_EQ(scheduler.totalReportedUs.load(), 0u);
+    ASSERT_EQ(db->getFetchDurationUs(), 0u);
+
+    constexpr std::size_t kNumStored = 256;
+    auto const stored = createPredictableBatch(kNumStored, kSeedValue);
+    ASSERT_EQ(stored.size(), kNumStored);
+    storeBatch(*db, stored);
+
+    // Each store reaches the backend once, and nudb reports every insert as a
+    // one-object batch write. A change to BatchWriteReport that broke its
+    // millisecond contract would show up here rather than silently.
+    EXPECT_EQ(scheduler.batchWriteCount.load(), kNumStored);
+
+    // Positive path: every object is present, so every fetch is a hit.
+    for (auto const& object : stored)
+        EXPECT_NE(db->fetchNodeObject(object->getHash(), 0), nullptr);
+
+    // Every fetch produced exactly one report, and each one saw its object.
+    ASSERT_EQ(scheduler.fetchCount.load(), kNumStored);
+    EXPECT_EQ(scheduler.foundCount.load(), kNumStored);
+
+    // The nodestore's own microsecond accumulator moved, so there is real
+    // measured time for the reports to carry.
+    auto const internalUs = db->getFetchDurationUs();
+    ASSERT_GT(internalUs, 0u);
+
+    // The core assertion. Database::fetchNodeObject() measures each fetch once
+    // and uses that one value for both the internal accumulator and the
+    // report, so the two totals must agree exactly. A millisecond-typed report
+    // truncates every sub-millisecond fetch to zero and this fails.
+    EXPECT_EQ(scheduler.totalReportedUs.load(), internalUs);
+
+    // Independent of the equality above, and independent of how fast this
+    // machine is: a millisecond-typed duration always converts to a whole
+    // multiple of 1000 microseconds, so at least one report carrying a
+    // non-multiple proves the field itself holds sub-millisecond resolution.
+    EXPECT_GT(scheduler.subMillisecondCount.load(), 0u);
+
+    // Negative path: a miss is still a fetch, so it is still reported and
+    // still timed, but it is not a hit. A report that only fired on hits
+    // would hide exactly the cold-read case this measures.
+    constexpr std::size_t kNumMissing = 32;
+    auto const missing = createPredictableBatch(kNumMissing, kSeedValue + 1);
+    ASSERT_EQ(missing.size(), kNumMissing);
+    for (auto const& object : missing)
+        EXPECT_EQ(db->fetchNodeObject(object->getHash(), 0), nullptr);
+
+    EXPECT_EQ(scheduler.fetchCount.load(), kNumStored + kNumMissing);
+    EXPECT_EQ(scheduler.foundCount.load(), kNumStored);
+
+    // The totals still agree once misses are included, so the miss path
+    // reports exactly what it measured rather than substituting a zero.
+    //
+    // GE and not GT: a cumulative total cannot shrink, but an individual miss
+    // served from NuDB's in-memory buckets can genuinely measure under one
+    // microsecond and truncate to zero, so requiring growth here would be a
+    // statement about this machine's speed rather than about the code.
+    auto const internalUsWithMisses = db->getFetchDurationUs();
+    EXPECT_GE(internalUsWithMisses, internalUs);
+    EXPECT_EQ(scheduler.totalReportedUs.load(), internalUsWithMisses);
+
+    // Reads perform no writes, so the write-report count cannot have moved.
+    EXPECT_EQ(scheduler.batchWriteCount.load(), kNumStored);
 }
 
 INSTANTIATE_TEST_SUITE_P(

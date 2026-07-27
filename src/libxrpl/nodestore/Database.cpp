@@ -241,7 +241,12 @@ Database::fetchNodeObject(
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
     auto dur = steady_clock::now() - begin;
-    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
+
+    // Measured once and used for both the cumulative counter and the
+    // scheduler report, so the two can never disagree about how long this
+    // fetch took.
+    auto const elapsedUs = duration_cast<microseconds>(dur);
+    fetchDurationUs_ += elapsedUs.count();
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -249,7 +254,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed = duration_cast<milliseconds>(dur);
+    fetchReport.elapsed = elapsedUs;
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }

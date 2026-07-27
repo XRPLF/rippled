@@ -124,6 +124,36 @@ constexpr std::array kMicrosecondBoundaries{
     60'000'000.0};
 
 /**
+ * Bucket boundaries for latencies that are normally sub-millisecond.
+ *
+ * 1 µs, 2 µs, 5 µs, 10 µs, 25 µs, 50 µs, 100 µs, 250 µs, 500 µs, 1 ms, 5 ms,
+ * 25 ms.
+ *
+ * kMicrosecondBoundaries starts at 100 µs, which is above the entire range a
+ * healthy nodestore read occupies, so every warm read falls in its first
+ * bucket and the distribution reads as flat. These edges resolve the warm
+ * range instead, while still reaching far enough to show a cold tail against
+ * it.
+ *
+ * Currently unused: no sub-millisecond histogram instrument exists yet. The
+ * edges live here so the instrument that records nodestore read latency gets
+ * a ladder that fits it, rather than silently inheriting the wrong one.
+ */
+[[maybe_unused]] constexpr std::array kSubMillisecondBoundaries{
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    25.0,
+    50.0,
+    100.0,
+    250.0,
+    500.0,
+    1'000.0,
+    5'000.0,
+    25'000.0};
+
+/**
  * Register an explicit-bucket histogram view.
  *
  * The SDK's default boundaries top out at 10,000, so any instrument whose
