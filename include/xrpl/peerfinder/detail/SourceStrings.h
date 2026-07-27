@@ -1,0 +1,25 @@
+#pragma once
+
+#include <xrpl/peerfinder/detail/Source.h>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace xrpl::PeerFinder {
+
+/**
+ * Provides addresses from a static set of strings.
+ */
+class SourceStrings : public Source
+{
+public:
+    explicit SourceStrings() = default;
+
+    using Strings = std::vector<std::string>;
+
+    static std::shared_ptr<Source>
+    make(std::string const& name, Strings const& strings);
+};
+
+}  // namespace xrpl::PeerFinder
