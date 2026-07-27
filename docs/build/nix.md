@@ -154,6 +154,14 @@ conan install .. --output-folder . --build '*' --settings build_type=Release
 
 To update `flake.lock` to the latest revision use `nix flake update` command.
 
+## Tooling snapshots
+
+The tool versions in each Nix environment are recorded in
+[`nix/check-tools/`](../../nix/check-tools) and verified by CI. If you change the
+environment (bump the CI image tag, update `flake.lock`, or edit the tool list in
+`bin/check-tools.sh`), CI fails until you regenerate and commit the affected
+snapshot — see [`nix/check-tools/README.md`](../../nix/check-tools/README.md).
+
 ## Troubleshooting
 
 See [Troubleshooting Nix problems](./nix_troubleshooting.md) for common issues,
