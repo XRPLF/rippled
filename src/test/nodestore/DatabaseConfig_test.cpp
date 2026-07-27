@@ -1,44 +1,21 @@
 #include <test/jtx/CheckMessageLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
-#include <test/nodestore/TestBase.h>
-#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
-#include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/config/BasicConfig.h>
-#include <xrpl/config/Constants.h>
-#include <xrpl/nodestore/Database.h>
-#include <xrpl/nodestore/DummyScheduler.h>
-#include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/Types.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <algorithm>
-#include <cstdint>
-#include <cstring>
 #include <memory>
-#include <stdexcept>
-#include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-class Database_test : public TestBase
+class DatabaseConfig_test : public beast::unit_test::Suite
 {
-    test::SuiteJournal journal_;
-
 public:
-    Database_test() : journal_("Database_test", *this)
-    {
-    }
-
     void
     testConfig()
     {
@@ -73,8 +50,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kSafetyLevel, "high");
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "high");
                 }
                 p->ledgerHistory = 100'000'000;
 
@@ -102,8 +79,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kSafetyLevel, "low");
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "low");
                 }
                 p->ledgerHistory = 100'000'000;
 
@@ -131,10 +108,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kJournalMode, "off");
-                    section.set(Keys::kSynchronous, "extra");
-                    section.set(Keys::kTempStore, "default");
+                    auto& section = p->section("sqlite");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
                 }
 
                 return Env(
@@ -145,7 +122,7 @@ public:
             }();
 
             // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
+            // ledgerHistory is small
             BEAST_EXPECT(!found);
             auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
@@ -163,10 +140,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kJournalMode, "off");
-                    section.set(Keys::kSynchronous, "extra");
-                    section.set(Keys::kTempStore, "default");
+                    auto& section = p->section("sqlite");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
                 }
                 p->ledgerHistory = 50'000'000;
 
@@ -178,7 +155,7 @@ public:
             }();
 
             // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
+            // ledgerHistory is small
             BEAST_EXPECT(found);
             auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
@@ -199,11 +176,11 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "low");
-                section.set(Keys::kJournalMode, "off");
-                section.set(Keys::kSynchronous, "extra");
-                section.set(Keys::kTempStore, "default");
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "low");
+                section.set("journal_mode", "off");
+                section.set("synchronous", "extra");
+                section.set("temp_store", "default");
             }
 
             try
@@ -230,9 +207,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "high");
-                section.set(Keys::kJournalMode, "off");
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "high");
+                section.set("journal_mode", "off");
             }
 
             try
@@ -259,9 +236,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "low");
-                section.set(Keys::kSynchronous, "extra");
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "low");
+                section.set("synchronous", "extra");
             }
 
             try
@@ -288,9 +265,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "high");
-                section.set(Keys::kTempStore, "default");
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "high");
+                section.set("temp_store", "default");
             }
 
             try
@@ -317,8 +294,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "slow");
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "slow");
             }
 
             try
@@ -345,8 +322,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kJournalMode, "fast");
+                auto& section = p->section("sqlite");
+                section.set("journal_mode", "fast");
             }
 
             try
@@ -373,8 +350,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSynchronous, "instant");
+                auto& section = p->section("sqlite");
+                section.set("synchronous", "instant");
             }
 
             try
@@ -401,8 +378,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kTempStore, "network");
+                auto& section = p->section("sqlite");
+                section.set("temp_store", "network");
             }
 
             try
@@ -436,9 +413,9 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kPageSize, "512");
-                    section.set(Keys::kJournalSizeLimit, "2582080");
+                    auto& section = p->section("sqlite");
+                    section.set("page_size", "512");
+                    section.set("journal_size_limit", "2582080");
                 }
                 return Env(*this, std::move(p));
             }();
@@ -457,8 +434,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "256");
+                auto& section = p->section("sqlite");
+                section.set("page_size", "256");
             }
             try
             {
@@ -480,8 +457,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "131072");
+                auto& section = p->section("sqlite");
+                section.set("page_size", "131072");
             }
             try
             {
@@ -503,8 +480,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "513");
+                auto& section = p->section("sqlite");
+                section.set("page_size", "513");
             }
             try
             {
@@ -522,208 +499,13 @@ public:
         }
     }
 
-    //--------------------------------------------------------------------------
-
-    void
-    testImport(
-        std::string const& destBackendType,
-        std::string const& srcBackendType,
-        std::int64_t seedValue)
-    {
-        DummyScheduler scheduler;
-
-        beast::TempDir const nodeDb;
-        Section srcParams;
-        srcParams.set(Keys::kType, srcBackendType);
-        srcParams.set(Keys::kPath, nodeDb.path());
-
-        // Create a batch
-        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
-
-        // Write to source db
-        {
-            std::unique_ptr<Database> src =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
-            storeBatch(*src, batch);
-        }
-
-        Batch copy;
-
-        {
-            // Re-open the db
-            std::unique_ptr<Database> src =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
-
-            // Set up the destination database
-            beast::TempDir const destDb;
-            Section destParams;
-            destParams.set(Keys::kType, destBackendType);
-            destParams.set(Keys::kPath, destDb.path());
-
-            std::unique_ptr<Database> dest =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
-
-            testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
-
-            // Do the import
-            dest->importDatabase(*src);
-
-            // Get the results of the import
-            fetchCopyOfBatch(*dest, &copy, batch);
-        }
-
-        // Canonicalize the source and destination batches
-        std::ranges::sort(batch, LessThan{});
-        std::ranges::sort(copy, LessThan{});
-        BEAST_EXPECT(areBatchesEqual(batch, copy));
-    }
-
-    //--------------------------------------------------------------------------
-
-    void
-    testNodeStore(
-        std::string const& type,
-        bool const testPersistence,
-        std::int64_t const seedValue,
-        int numObjsToTest = 2000)
-    {
-        DummyScheduler scheduler;
-
-        std::string const s = "NodeStore backend '" + type + "'";
-
-        testcase(s);
-
-        beast::TempDir const nodeDb;
-        Section nodeParams;
-        nodeParams.set(Keys::kType, type);
-        nodeParams.set(Keys::kPath, nodeDb.path());
-
-        beast::xor_shift_engine rng(seedValue);
-
-        // Create a batch
-        auto batch = createPredictableBatch(numObjsToTest, rng());
-
-        {
-            // Open the database
-            std::unique_ptr<Database> db =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
-
-            // Write the batch
-            storeBatch(*db, batch);
-
-            {
-                // Read it back in
-                Batch copy;
-                fetchCopyOfBatch(*db, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-
-            {
-                // Reorder and read the copy again
-                std::shuffle(batch.begin(), batch.end(), rng);
-                Batch copy;
-                fetchCopyOfBatch(*db, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-        }
-
-        if (testPersistence)
-        {
-            // Re-open the database without the ephemeral DB
-            std::unique_ptr<Database> db =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
-
-            // Read it back in
-            Batch copy;
-            fetchCopyOfBatch(*db, &copy, batch);
-
-            // Canonicalize the source and destination batches
-            std::ranges::sort(batch, LessThan{});
-            std::ranges::sort(copy, LessThan{});
-            BEAST_EXPECT(areBatchesEqual(batch, copy));
-        }
-
-        if (type == "memory")
-        {
-            // Verify default earliest ledger sequence
-            {
-                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == kXrpLedgerEarliestSeq);
-            }
-
-            // Set an invalid earliest ledger sequence
-            try
-            {
-                nodeParams.set(Keys::kEarliestSeq, "0");
-                std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(std::strcmp(e.what(), "Invalid earliest_seq") == 0);
-            }
-
-            {
-                // Set a valid earliest ledger sequence
-                nodeParams.set(Keys::kEarliestSeq, "1");
-                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-
-                // Verify database uses the earliest ledger sequence setting
-                BEAST_EXPECT(db->earliestLedgerSeq() == 1);
-            }
-
-            // Create another database that attempts to set the value again
-            try
-            {
-                // Set to default earliest ledger sequence
-                nodeParams.set(Keys::kEarliestSeq, std::to_string(kXrpLedgerEarliestSeq));
-                std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(std::strcmp(e.what(), "earliest_seq set more than once") == 0);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
     void
     run() override
     {
-        std::int64_t const seedValue = 50;
-
         testConfig();
-
-        testNodeStore("memory", false, seedValue);
-
-        // Persistent backend tests
-        {
-            testNodeStore("nudb", true, seedValue);
-
-#if XRPL_ROCKSDB_AVAILABLE
-            testNodeStore("rocksdb", true, seedValue);
-#endif
-        }
-
-        // Import tests
-        {
-            testImport("nudb", "nudb", seedValue);
-
-#if XRPL_ROCKSDB_AVAILABLE
-            testImport("rocksdb", "rocksdb", seedValue);
-#endif
-
-#if XRPL_ENABLE_SQLITE_BACKEND_TESTS
-            testImport("sqlite", "sqlite", seedValue);
-#endif
-        }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Database, nodestore, xrpl);
+BEAST_DEFINE_TESTSUITE(DatabaseConfig, nodestore, xrpl);
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
