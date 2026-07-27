@@ -4,6 +4,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -263,9 +264,9 @@ throwNegotiationFailure(Application& app, char const* reason, std::string const&
 {
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "handshake_negotiation_fail_total",
+        telemetry::metric::handshakeNegotiationFailTotal,
         "Peer handshake negotiations rejected, by reason",
-        {{"reason", std::string(reason)}});
+        {{telemetry::label::reason, std::string(reason)}});
 
     throw std::runtime_error(message);
 }
@@ -284,7 +285,10 @@ verifyHandshake(
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
         if (!isProperlyFormedTomlDomain(iter->value()))
-            throwNegotiationFailure(app, "invalid_server_domain", "Invalid server domain");
+        {
+            throwNegotiationFailure(
+                app, telemetry::lval::handshake_fail::invalidServerDomain, "Invalid server domain");
+        }
     }
 
     if (auto const iter = headers.find("Network-ID"); iter != headers.end())
@@ -292,10 +296,20 @@ verifyHandshake(
         std::uint32_t nid = 0;
 
         if (!beast::lexicalCastChecked(nid, iter->value()))
-            throwNegotiationFailure(app, "invalid_network_id", "Invalid peer network identifier");
+        {
+            throwNegotiationFailure(
+                app,
+                telemetry::lval::handshake_fail::invalidNetworkId,
+                "Invalid peer network identifier");
+        }
 
         if (networkID && nid != *networkID)
-            throwNegotiationFailure(app, "wrong_network", "Peer is on a different network");
+        {
+            throwNegotiationFailure(
+                app,
+                telemetry::lval::handshake_fail::wrongNetwork,
+                "Peer is on a different network");
+        }
     }
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
@@ -308,7 +322,10 @@ verifyHandshake(
 
             // It's not an error for the header field to not be present but if
             // it is present and it contains junk data, that is an error.
-            throwNegotiationFailure(app, "invalid_clock_timestamp", "Invalid peer clock timestamp");
+            throwNegotiationFailure(
+                app,
+                telemetry::lval::handshake_fail::invalidClockTimestamp,
+                "Invalid peer clock timestamp");
         }();
 
         using namespace std::chrono;
@@ -328,7 +345,10 @@ verifyHandshake(
         auto const offset = calculateOffset(netTime, ourTime);
 
         if (abs(offset) > tolerance)
-            throwNegotiationFailure(app, "clock_skew", "Peer clock is too far off");
+        {
+            throwNegotiationFailure(
+                app, telemetry::lval::handshake_fail::clockSkew, "Peer clock is too far off");
+        }
     }
 
     PublicKey const publicKey = [&headers, &app] {
@@ -339,14 +359,19 @@ verifyHandshake(
             if (pk)
             {
                 if (publicKeyType(*pk) != KeyType::Secp256k1)
+                {
                     throwNegotiationFailure(
-                        app, "unsupported_key_type", "Unsupported public key type");
+                        app,
+                        telemetry::lval::handshake_fail::unsupportedKeyType,
+                        "Unsupported public key type");
+                }
 
                 return *pk;
             }
         }
 
-        throwNegotiationFailure(app, "bad_public_key", "Bad node public key");
+        throwNegotiationFailure(
+            app, telemetry::lval::handshake_fail::badPublicKey, "Bad node public key");
     }();
 
     // This check gets two birds with one stone:
@@ -359,16 +384,29 @@ verifyHandshake(
         auto const iter = headers.find("Session-Signature");
 
         if (iter == headers.end())
-            throwNegotiationFailure(app, "no_session_signature", "No session signature specified");
+        {
+            throwNegotiationFailure(
+                app,
+                telemetry::lval::handshake_fail::noSessionSignature,
+                "No session signature specified");
+        }
 
         auto sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
-            throwNegotiationFailure(app, "session_verify_failed", "Failed to verify session");
+        {
+            throwNegotiationFailure(
+                app,
+                telemetry::lval::handshake_fail::sessionVerifyFailed,
+                "Failed to verify session");
+        }
     }
 
     if (publicKey == app.nodeIdentity().first)
-        throwNegotiationFailure(app, "self_connection", "Self connection");
+    {
+        throwNegotiationFailure(
+            app, telemetry::lval::handshake_fail::selfConnection, "Self connection");
+    }
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
@@ -376,13 +414,16 @@ verifyHandshake(
         auto const localIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
-            throwNegotiationFailure(app, "invalid_local_ip", "Invalid Local-IP");
+        {
+            throwNegotiationFailure(
+                app, telemetry::lval::handshake_fail::invalidLocalIp, "Invalid Local-IP");
+        }
 
         if (beast::IP::isPublic(remote) && remote != localIp)
         {
             throwNegotiationFailure(
                 app,
-                "local_ip_mismatch",
+                telemetry::lval::handshake_fail::localIpMismatch,
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
         }
     }
@@ -393,7 +434,10 @@ verifyHandshake(
         auto const remoteIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
-            throwNegotiationFailure(app, "invalid_remote_ip", "Invalid Remote-IP");
+        {
+            throwNegotiationFailure(
+                app, telemetry::lval::handshake_fail::invalidRemoteIp, "Invalid Remote-IP");
+        }
 
         if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
@@ -403,7 +447,7 @@ verifyHandshake(
             {
                 throwNegotiationFailure(
                     app,
-                    "remote_ip_mismatch",
+                    telemetry::lval::handshake_fail::remoteIpMismatch,
                     "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
                         remoteIp.to_string());
             }

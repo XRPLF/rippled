@@ -414,13 +414,65 @@ python .github/scripts/otel-naming/check_otel_naming.py
 See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
 for the full rule list.
 
+## Telemetry metric naming
+
+The metric-side counterpart of the span rules above. Metric instrument names and
+metric label keys are duplicated across the emit site, the instrument
+registration, the unit test, `expected_metrics.json`, the dashboard PromQL and
+the runbook, so a rename touches six places and a typo in any one of them fails
+silently at runtime — a metric that never appears, or a label that never joins.
+The constants in the `*MetricNames.h` headers are the single source of truth for
+the C++ layers; a CI check validates the layers that cannot reference a constant.
+
+1. Instrument names are bare `lower_snake_case` with **no `xrpld_` prefix**. The
+   Prometheus exporter adds the namespace itself, so a name carrying it emits
+   `xrpld_xrpld_*` on the wire.
+2. A monotonic counter ends in `_total`, so `rate()` over it reads correctly and
+   a reader can tell it from a gauge at a glance.
+3. A duration carries its unit as the suffix — `_us`, `_ms` or `_seconds`. The
+   unit belongs in the name because the OTel `unit` argument is not surfaced on
+   the Prometheus metric name.
+4. A gauge that snapshots current state takes no suffix (`jobq_backlog`,
+   `sync_state`), and never `_total`.
+5. Label keys are `lower_snake_case` and must have **bounded** cardinality. A
+   multi-series gauge discriminates its readings with the `metric` label rather
+   than minting one instrument per reading.
+6. Label **values** are declared as constants only when the code picks them from
+   a fixed set (`namespace lval`). A value derived from runtime data — a peer
+   address, a ledger hash — must never become a label on a metric.
+
+Always reference the `*MetricNames.h` constants for instrument names and label
+keys — never pass a string literal. (Label _values_ may be runtime data.) Note
+that these headers use `constexpr char[]`, not the `makeStr`/`StaticStr` DSL the
+`*SpanNames.h` headers use: the OTel C++ API takes `nostd::string_view`, which
+constructs from `char const*` but has no constructor from `std::string_view`, so
+`StaticStr` does not compile in an instrument-name or label-key position.
+
+Enforcement is by the same script as the span rules, whose metric rules are:
+
+- **I** — no string literal as an instrument name or label key at an emit site
+  (the mirror of Rule F). Scoped by metric _family_ (the first underscore
+  segment) so conversion can proceed subsystem by subsystem: declaring a
+  constant opts that family in. An unconverted family is reported as a
+  non-fatal **L** warning, keeping the remaining work visible.
+- **J** — the suffix conventions above. The instrument _kind_ is read from the
+  emit site, not guessed from the name, so a multi-series gauge whose units live
+  in its label values is not mistaken for a mis-suffixed duration.
+- **K** — every metric named in `docker/telemetry/workload/expected_metrics.json`
+  resolves to a declared constant. This is the check that catches a metric
+  renamed in code while the workload validator still asserts the old name.
+  Groups whose names come from a different emit path (`statsd_gauges`,
+  `statsd_counters` from `beast::insight`, and collector-derived `spanmetrics`)
+  are out of scope by design.
+
 ## Adding a new OTel metric
 
 See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
 OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
-Observable/async counterparts) and the "Adding a New Metric" section in
-[docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the walkthrough and a
-need-to-macro lookup table.
+Observable/async counterparts), `src/xrpld/telemetry/MetricNames.h` for the name
+and label constants to reference (and the rules above), and the "Adding a New
+Metric" section in [docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the
+walkthrough and a need-to-macro lookup table.
 
 ## Contracts and instrumentation
 

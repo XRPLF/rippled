@@ -27,6 +27,7 @@
 
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
@@ -533,7 +534,7 @@ TEST(MetricMacros, counter_inc_labeled_does_not_crash)
         app,
         "test_macro_labeled_counter_total",
         "Test labeled counter for macro unit test",
-        {{"reason", std::string("unit_test")}});
+        {{telemetry::label::reason, std::string("unit_test")}});
 
     // Instrument was created exactly once at this single call site.
     EXPECT_EQ(app.registry().meterCalls(), 1);
@@ -582,7 +583,7 @@ TEST(MetricMacros, updown_add_labeled_does_not_crash)
         "test_macro_updown_labeled_total",
         "Test labeled updown for macro unit test",
         -1,
-        {{"reason", std::string("unit_test")}});
+        {{telemetry::label::reason, std::string("unit_test")}});
 
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }
@@ -688,9 +689,9 @@ TEST(MetricMacros, dns_resolve_records_exact_counts_and_latency)
     {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "dns_resolve_total",
+            telemetry::metric::dnsResolveTotal,
             "Peer hostname resolutions, by outcome",
-            {{"outcome", std::string(resolved ? "resolved" : "empty")}});
+            {{telemetry::label::outcome, std::string(resolved ? "resolved" : "empty")}});
     }
 
     // Two latency samples with known values: 1.5 ms + 2.5 ms = 4.0 ms.
@@ -698,7 +699,7 @@ TEST(MetricMacros, dns_resolve_records_exact_counts_and_latency)
     {
         XRPL_METRIC_HISTOGRAM_RECORD(
             app,
-            "dns_resolve_latency_ms",
+            telemetry::metric::dnsResolveLatencyMs,
             "Time taken to resolve a configured peer hostname, in milliseconds",
             ms);
     }
@@ -740,9 +741,9 @@ TEST(MetricMacros, overlay_connect_records_exact_counts_per_outcome)
     auto const bump = [&app](char const* outcome) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "overlay_connect_total",
+            telemetry::metric::overlayConnectTotal,
             "Outbound peer connection attempts, by terminal outcome",
-            {{"outcome", std::string(outcome)}});
+            {{telemetry::label::outcome, std::string(outcome)}});
     };
     bump("connected");
     bump("tcp_fail");
@@ -756,7 +757,7 @@ TEST(MetricMacros, overlay_connect_records_exact_counts_per_outcome)
     {
         XRPL_METRIC_HISTOGRAM_RECORD(
             app,
-            "overlay_dial_latency_ms",
+            telemetry::metric::overlayDialLatencyMs,
             "Time from starting an outbound peer dial to its terminal outcome, in milliseconds",
             ms);
     }
@@ -792,9 +793,9 @@ TEST(MetricMacros, handshake_negotiation_fail_keeps_reasons_distinct)
     {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "handshake_negotiation_fail_total",
+            telemetry::metric::handshakeNegotiationFailTotal,
             "Peer handshake negotiations rejected, by reason",
-            {{"reason", std::string(reason)}});
+            {{telemetry::label::reason, std::string(reason)}});
     }
 
     auto const data = provider.collect();
@@ -832,9 +833,10 @@ TEST(MetricMacros, unl_fetch_total_keys_series_on_site_and_outcome_pair)
     auto const bump = [&app](char const* site, char const* outcome) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "unl_fetch_total",
+            telemetry::metric::unlFetchTotal,
             "Validator list fetch attempts, by site and outcome",
-            {{"site", std::string(site)}, {"outcome", std::string(outcome)}});
+            {{telemetry::label::site, std::string(site)},
+             {telemetry::label::outcome, std::string(outcome)}});
     };
 
     constexpr char const* kSiteA = "https://a.example.com/vl.json";
@@ -901,7 +903,7 @@ TEST(MetricMacros, unl_quorum_gauge_observes_exact_trusted_keys_and_quorum)
     // deregisters the callback (ObservableInstrument's destructor calls
     // CleanupCallback), which is why the real registry holds it in a member.
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "unl_quorum", "Trusted UNL key count vs required quorum");
+        telemetry::metric::unlQuorum, "Trusted UNL key count vs required quorum");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<Observed const*>(state);
@@ -909,7 +911,7 @@ TEST(MetricMacros, unl_quorum_gauge_observes_exact_trusted_keys_and_quorum)
             auto observe = [&](char const* name, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", name}});
+                    ->Observe(value, {{telemetry::label::metric, name}});
             };
             observe("trusted_keys", self->trustedKeys);
             observe("quorum", self->quorum);
@@ -941,14 +943,15 @@ TEST(MetricMacros, clock_skew_gauge_observes_exact_negative_offset)
     std::int64_t offsetSeconds = -3;
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "clock_close_offset_seconds", "Network close time offset from the local clock, in seconds");
+        telemetry::metric::clockCloseOffsetSeconds,
+        "Network close time offset from the local clock, in seconds");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* value = static_cast<std::int64_t const*>(state);
             auto observe = [&](char const* name, std::int64_t v) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(v, {{"metric", name}});
+                    ->Observe(v, {{telemetry::label::metric, name}});
             };
             observe("offset", *value);
         },
@@ -979,35 +982,35 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "dns_resolve_total",
+        telemetry::metric::dnsResolveTotal,
         "Peer hostname resolutions, by outcome",
-        {{"outcome", std::string("resolved")}});
+        {{telemetry::label::outcome, std::string("resolved")}});
     XRPL_METRIC_HISTOGRAM_RECORD(
         app,
-        "dns_resolve_latency_ms",
+        telemetry::metric::dnsResolveLatencyMs,
         "Time taken to resolve a configured peer hostname, in milliseconds",
         1.5);
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "overlay_connect_total",
+        telemetry::metric::overlayConnectTotal,
         "Outbound peer connection attempts, by terminal outcome",
-        {{"outcome", std::string("connected")}});
+        {{telemetry::label::outcome, std::string("connected")}});
     XRPL_METRIC_HISTOGRAM_RECORD(
         app,
-        "overlay_dial_latency_ms",
+        telemetry::metric::overlayDialLatencyMs,
         "Time from starting an outbound peer dial to its terminal outcome, in milliseconds",
         10.0);
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "handshake_negotiation_fail_total",
+        telemetry::metric::handshakeNegotiationFailTotal,
         "Peer handshake negotiations rejected, by reason",
-        {{"reason", std::string("wrong_network")}});
+        {{telemetry::label::reason, std::string("wrong_network")}});
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "unl_fetch_total",
+        telemetry::metric::unlFetchTotal,
         "Validator list fetch attempts, by site and outcome",
-        {{"site", std::string("https://a.example.com/vl.json")},
-         {"outcome", std::string("accepted")}});
+        {{telemetry::label::site, std::string("https://a.example.com/vl.json")},
+         {telemetry::label::outcome, std::string("accepted")}});
 
     auto const data = provider.collect();
 
@@ -1061,9 +1064,9 @@ TEST(MetricMacros, state_changes_total_keys_series_on_from_to_pair)
     auto const transition = [&app](char const* from, char const* to) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "state_changes_total",
+            telemetry::metric::stateChangesTotal,
             "Total operating mode changes",
-            {{"from", std::string(from)}, {"to", std::string(to)}});
+            {{telemetry::label::from, std::string(from)}, {telemetry::label::to, std::string(to)}});
     };
 
     // A clean climb: disconnected -> connected -> syncing -> full, once each.
@@ -1142,8 +1145,8 @@ TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
 
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
-    auto gauge =
-        provider.meter()->CreateInt64ObservableGauge("sync_state", "Sync-pipeline health signals");
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        telemetry::metric::syncState, "Sync-pipeline health signals");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<Observed const*>(state);
@@ -1151,7 +1154,7 @@ TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
             auto observe = [&](char const* name, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", name}});
+                    ->Observe(value, {{telemetry::label::metric, name}});
             };
             observe("initial_full_duration_us", self->initialFullDurationUs);
             observe("network_ledger_gate", self->networkLedgerGate);
@@ -1211,7 +1214,7 @@ TEST(MetricMacros, stall_events_counter_observes_exact_cumulative_count)
     std::int64_t stallEpisodes = 3;
 
     auto counter = provider.meter()->CreateInt64ObservableCounter(
-        "server_stall_events_total", "Total server main-loop stall episodes");
+        telemetry::metric::serverStallEventsTotal, "Total server main-loop stall episodes");
     counter->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* value = static_cast<std::int64_t const*>(state);
@@ -1250,9 +1253,10 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "state_changes_total",
+        telemetry::metric::stateChangesTotal,
         "Total operating mode changes",
-        {{"from", std::string("connected")}, {"to", std::string("full")}});
+        {{telemetry::label::from, std::string("connected")},
+         {telemetry::label::to, std::string("full")}});
 
     auto const data = provider.collect();
 
@@ -1299,9 +1303,9 @@ TEST(MetricMacros, acquire_source_splits_local_and_network)
     auto const acquire = [&app](bool localComplete) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "sync_acquire_source_total",
+            telemetry::metric::syncAcquireSourceTotal,
             "Ledger acquires by where the data came from",
-            {{"source", std::string(localComplete ? "local" : "network")}});
+            {{telemetry::label::source, std::string(localComplete ? "local" : "network")}});
     };
     // One satisfied locally, two needing the network.
     acquire(true);
@@ -1341,7 +1345,7 @@ TEST(MetricMacros, acquire_no_progress_counts_only_stalled_timeouts)
         {
             XRPL_METRIC_COUNTER_INC(
                 app,
-                "sync_acquire_no_progress_total",
+                telemetry::metric::syncAcquireNoProgressTotal,
                 "Ledger-acquire timeouts where no new node arrived");
         }
     };
@@ -1390,10 +1394,10 @@ TEST(MetricMacros, addnode_outcomes_record_exact_batch_tallies)
                 return;
             XRPL_METRIC_COUNTER_ADD_LABELED(
                 app,
-                "sync_addnode_total",
+                telemetry::metric::syncAddnodeTotal,
                 "SHAMap nodes received during ledger acquire, by outcome",
                 static_cast<std::uint64_t>(count),
-                {{"outcome", std::string(outcome)}});
+                {{telemetry::label::outcome, std::string(outcome)}});
         };
         emit("good", good);
         emit("duplicate", duplicate);
@@ -1460,7 +1464,8 @@ TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "sync_acquire", "Aggregate ledger-acquire progress across in-flight acquires");
+        telemetry::metric::syncAcquire,
+        "Aggregate ledger-acquire progress across in-flight acquires");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<Observed const*>(state);
@@ -1468,7 +1473,7 @@ TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
             auto observe = [&](char const* name, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", name}});
+                    ->Observe(value, {{telemetry::label::metric, name}});
             };
             observe("missing_state_nodes_max", self->maxMissingStateNodes);
             observe("missing_tx_nodes_max", self->maxMissingTxNodes);
@@ -1527,7 +1532,8 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
     float rawHitRatePercent = 90.0F;
 
     auto gauge = provider.meter()->CreateDoubleObservableGauge(
-        "shamap_cache_hit_rate", "SHAMap tree-node cache hit rate (0.0-1.0), by cache");
+        telemetry::metric::shamapCacheHitRate,
+        "SHAMap tree-node cache hit rate (0.0-1.0), by cache");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* raw = static_cast<float const*>(state);
@@ -1535,7 +1541,8 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
             opentelemetry::nostd::get<
                 opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<double>>>(
                 result)
-                ->Observe(static_cast<double>(*raw / 100.0F), {{"metric", "treenode"}});
+                ->Observe(
+                    static_cast<double>(*raw / 100.0F), {{telemetry::label::metric, "treenode"}});
         },
         &rawHitRatePercent);
 
@@ -1580,17 +1587,19 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "sync_acquire_source_total",
+        telemetry::metric::syncAcquireSourceTotal,
         "Ledger acquires by where the data came from",
-        {{"source", std::string("network")}});
+        {{telemetry::label::source, std::string("network")}});
     XRPL_METRIC_COUNTER_INC(
-        app, "sync_acquire_no_progress_total", "Ledger-acquire timeouts where no new node arrived");
+        app,
+        telemetry::metric::syncAcquireNoProgressTotal,
+        "Ledger-acquire timeouts where no new node arrived");
     XRPL_METRIC_COUNTER_ADD_LABELED(
         app,
-        "sync_addnode_total",
+        telemetry::metric::syncAddnodeTotal,
         "SHAMap nodes received during ledger acquire, by outcome",
         static_cast<std::uint64_t>(5),
-        {{"outcome", std::string("good")}});
+        {{telemetry::label::outcome, std::string("good")}});
 
     auto const data = provider.collect();
 
@@ -1643,7 +1652,8 @@ TEST(MetricMacros, jobq_backlog_gauge_separates_waiting_running_and_deferred)
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "jobq_backlog", "JobQueue occupancy per job type (waiting/running/deferred)");
+        telemetry::metric::jobqBacklog,
+        "JobQueue occupancy per job type (waiting/running/deferred)");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* counts = static_cast<std::vector<JobQueue::JobTypeCount> const*>(state);
@@ -1651,7 +1661,9 @@ TEST(MetricMacros, jobq_backlog_gauge_separates_waiting_running_and_deferred)
             auto observe = [&](char const* field, std::string const& jobType, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}, {"job_type", jobType}});
+                    ->Observe(
+                        value,
+                        {{telemetry::label::metric, field}, {telemetry::label::jobType, jobType}});
             };
             for (auto const& count : *counts)
             {
@@ -1746,14 +1758,15 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
     JobQueue::WorkerSaturation observed{.runningTasks = 6, .workerThreads = 6, .totalWaiting = 12};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "jobq_saturation", "Worker-pool saturation: tasks in flight, worker threads, jobs queued");
+        telemetry::metric::jobqSaturation,
+        "Worker-pool saturation: tasks in flight, worker threads, jobs queued");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<JobQueue::WorkerSaturation const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("running_tasks", self->runningTasks);
             observe("worker_threads", self->workerThreads);
@@ -1847,7 +1860,8 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "peer_ledger_supply", "Peer coverage of the ledger sequence this node needs");
+        telemetry::metric::peerLedgerSupply,
+        "Peer coverage of the ledger sequence this node needs");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<PeerLedgerSupply const*>(state);
@@ -1855,7 +1869,7 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("peers_reporting", self->peersReporting);
             observe("peers_serving_validated", self->peersServingValidated);
@@ -1919,14 +1933,15 @@ TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
         .supplyMaxSeq = 5000};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "peer_ledger_supply", "Peer coverage of the ledger sequence this node needs");
+        telemetry::metric::peerLedgerSupply,
+        "Peer coverage of the ledger sequence this node needs");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<PeerLedgerSupply const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("peers_reporting", self->peersReporting);
             observe("peers_serving_validated", self->peersServingValidated);
@@ -1996,7 +2011,8 @@ TEST(MetricMacros, slot_census_gauge_names_each_bootstrap_fault_exactly)
         .livecache = 12};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "peerfinder_slot_census", "PeerFinder slots, connection attempts and address caches");
+        telemetry::metric::peerfinderSlotCensus,
+        "PeerFinder slots, connection attempts and address caches");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
@@ -2004,7 +2020,7 @@ TEST(MetricMacros, slot_census_gauge_names_each_bootstrap_fault_exactly)
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("out_active", self->outActive);
             observe("out_max", self->outMax);
@@ -2079,14 +2095,15 @@ TEST(MetricMacros, slot_census_gauge_reports_every_field_even_when_idle)
         .livecache = 0};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "peerfinder_slot_census", "PeerFinder slots, connection attempts and address caches");
+        telemetry::metric::peerfinderSlotCensus,
+        "PeerFinder slots, connection attempts and address caches");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("out_active", self->outActive);
             observe("out_max", self->outMax);
@@ -2170,14 +2187,15 @@ TEST(MetricMacros, amendment_block_gauge_observes_exact_countdown_and_sentinel)
         .warned = false, .expectedEpochSeconds = {}, .nowEpochSeconds = kNowEpochSeconds};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "amendment_block", "Amendment-block warning and seconds until the node stops validating");
+        telemetry::metric::amendmentBlock,
+        "Amendment-block warning and seconds until the node stops validating");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<Observed const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("warned", self->warned ? 1 : 0);
 
@@ -2246,14 +2264,15 @@ TEST(MetricMacros, amendment_block_gauge_clamps_past_due_and_carries_no_amendmen
         .nowEpochSeconds = kNowEpochSeconds};
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "amendment_block", "Amendment-block warning and seconds until the node stops validating");
+        telemetry::metric::amendmentBlock,
+        "Amendment-block warning and seconds until the node stops validating");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<Observed const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("warned", self->warned ? 1 : 0);
             std::int64_t secondsToBlock = -1;
@@ -2315,9 +2334,10 @@ TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pai
     auto const bump = [&app](char const* reason, char const* direction) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "peer_disconnect_total",
+            telemetry::metric::peerDisconnectTotal,
             "Peer disconnects, by cause and connection direction",
-            {{"reason", std::string(reason)}, {"direction", std::string(direction)}});
+            {{telemetry::label::reason, std::string(reason)},
+             {telemetry::label::direction, std::string(direction)}});
     };
 
     // Two OUR-FAULT reasons: this node could not keep up with what it owed the
@@ -2394,9 +2414,10 @@ TEST(MetricMacros, peer_disconnect_total_does_not_merge_directions_for_one_reaso
     auto const bump = [&app](char const* reason, char const* direction) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "peer_disconnect_total",
+            telemetry::metric::peerDisconnectTotal,
             "Peer disconnects, by cause and connection direction",
-            {{"reason", std::string(reason)}, {"direction", std::string(direction)}});
+            {{telemetry::label::reason, std::string(reason)},
+             {telemetry::label::direction, std::string(direction)}});
     };
 
     // One read_error each way. If direction did not key the series, this would
@@ -2463,9 +2484,9 @@ TEST(MetricMacros, peer_accept_total_keys_series_on_outcome)
     auto const bump = [&app](char const* outcome) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "peer_accept_total",
+            telemetry::metric::peerAcceptTotal,
             "Inbound peer connection attempts, by terminal outcome",
-            {{"outcome", std::string(outcome)}});
+            {{telemetry::label::outcome, std::string(outcome)}});
     };
 
     // accepted x2, no_slot x3, handshake_error x1 -- three distinct
@@ -2520,9 +2541,10 @@ TEST(MetricMacros, serve_refused_total_keys_series_on_request_and_reason_pair)
     auto const bump = [&app](char const* request, char const* reason) {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "serve_refused_total",
+            telemetry::metric::serveRefusedTotal,
             "Peer data requests this node declined to serve, by request kind and cause",
-            {{"request", std::string(request)}, {"reason", std::string(reason)}});
+            {{telemetry::label::request, std::string(request)},
+             {telemetry::label::reason, std::string(reason)}});
     };
 
     // Same request kind, two different reasons -> two series.
@@ -2605,7 +2627,7 @@ TEST(MetricMacros, ledger_jump_total_accumulates_on_one_unlabelled_series)
     {
         XRPL_METRIC_COUNTER_INC(
             app,
-            "ledger_jump_total",
+            telemetry::metric::ledgerJumpTotal,
             "Forced jumps of the last closed ledger to a divergent chain");
     }
 
@@ -2631,7 +2653,9 @@ TEST(MetricMacros, ledger_jump_total_accumulates_on_one_unlabelled_series)
     // A fourth jump advances the SAME series to exactly 4 rather than creating a
     // second one, which is what "no labels" has to mean over time.
     XRPL_METRIC_COUNTER_INC(
-        app, "ledger_jump_total", "Forced jumps of the last closed ledger to a divergent chain");
+        app,
+        telemetry::metric::ledgerJumpTotal,
+        "Forced jumps of the last closed ledger to a divergent chain");
     auto const fourth = provider.collect();
     ASSERT_EQ(fourth.at("ledger_jump_total").size(), 1u);
     EXPECT_EQ(counterValue(fourth, "ledger_jump_total", otel_sdk::PointAttributes{}), 4);
@@ -2650,21 +2674,25 @@ TEST(MetricMacros, sync_supply_counters_emit_nothing_when_registry_disabled)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "peer_disconnect_total",
+        telemetry::metric::peerDisconnectTotal,
         "Peer disconnects, by cause and connection direction",
-        {{"reason", std::string("large_sendq")}, {"direction", std::string("outbound")}});
+        {{telemetry::label::reason, std::string("large_sendq")},
+         {telemetry::label::direction, std::string("outbound")}});
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "peer_accept_total",
+        telemetry::metric::peerAcceptTotal,
         "Inbound peer connection attempts, by terminal outcome",
-        {{"outcome", std::string("accepted")}});
+        {{telemetry::label::outcome, std::string("accepted")}});
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "serve_refused_total",
+        telemetry::metric::serveRefusedTotal,
         "Peer data requests this node declined to serve, by request kind and cause",
-        {{"request", std::string("ledger")}, {"reason", std::string("sendq_full")}});
+        {{telemetry::label::request, std::string("ledger")},
+         {telemetry::label::reason, std::string("sendq_full")}});
     XRPL_METRIC_COUNTER_INC(
-        app, "ledger_jump_total", "Forced jumps of the last closed ledger to a divergent chain");
+        app,
+        telemetry::metric::ledgerJumpTotal,
+        "Forced jumps of the last closed ledger to a divergent chain");
 
     auto const data = provider.collect();
 
@@ -2699,15 +2727,15 @@ TEST(MetricMacros, ledger_replay_fallback_counter_separates_stages_by_exact_coun
     {
         XRPL_METRIC_COUNTER_INC_LABELED(
             app,
-            "ledger_replay_fallback_total",
+            telemetry::metric::ledgerReplayFallbackTotal,
             "Replay sub-acquires that fell back to a full ledger acquire",
-            {{"stage", std::string("skiplist")}});
+            {{telemetry::label::stage, std::string("skiplist")}});
     }
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "ledger_replay_fallback_total",
+        telemetry::metric::ledgerReplayFallbackTotal,
         "Replay sub-acquires that fell back to a full ledger acquire",
-        {{"stage", std::string("delta")}});
+        {{telemetry::label::stage, std::string("delta")}});
 
     auto const data = provider.collect();
 
@@ -2743,9 +2771,9 @@ TEST(MetricMacros, ledger_replay_outcome_counter_records_each_terminal_state_exa
         {
             XRPL_METRIC_COUNTER_INC_LABELED(
                 app,
-                "ledger_replay_outcome_total",
+                telemetry::metric::ledgerReplayOutcomeTotal,
                 "Ledger replay tasks by terminal outcome",
-                {{"outcome", std::string(outcome)}});
+                {{telemetry::label::outcome, std::string(outcome)}});
         }
     };
     record("success", 3);
@@ -2782,14 +2810,14 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "ledger_replay_fallback_total",
+        telemetry::metric::ledgerReplayFallbackTotal,
         "Replay sub-acquires that fell back to a full ledger acquire",
-        {{"stage", std::string("skiplist")}});
+        {{telemetry::label::stage, std::string("skiplist")}});
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
-        "ledger_replay_outcome_total",
+        telemetry::metric::ledgerReplayOutcomeTotal,
         "Ledger replay tasks by terminal outcome",
-        {{"outcome", std::string("timeout")}});
+        {{telemetry::label::outcome, std::string("timeout")}});
 
     auto const data = provider.collect();
 
@@ -2829,14 +2857,15 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
         .fetchDurationUs = 1'000'000};  // 1 s over 1000 fetches -> 1000 us
 
     auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        "nodestore_latency", "NodeStore mean store/fetch latency in microseconds, with counts");
+        telemetry::metric::nodestoreLatency,
+        "NodeStore mean store/fetch latency in microseconds, with counts");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto const* self = static_cast<NodeStoreTotals const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{"metric", field}});
+                    ->Observe(value, {{telemetry::label::metric, field}});
             };
             observe("write_count", static_cast<std::int64_t>(self->storeCount));
             observe("read_count", static_cast<std::int64_t>(self->fetchCount));
@@ -2942,7 +2971,7 @@ TEST(MetricMacros, consensus_round_duration_records_exact_values)
     {
         XRPL_METRIC_HISTOGRAM_RECORD(
             app,
-            "consensus_round_duration_ms",
+            telemetry::metric::consensusRoundDurationMs,
             "Wall-clock duration of a completed consensus round in milliseconds",
             ms);
     }
@@ -2976,7 +3005,7 @@ TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled
 
     XRPL_METRIC_HISTOGRAM_RECORD(
         app,
-        "consensus_round_duration_ms",
+        telemetry::metric::consensusRoundDurationMs,
         "Wall-clock duration of a completed consensus round in milliseconds",
         3100);
 

@@ -9,6 +9,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -111,9 +112,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                         // call below, which re-runs on every later trigger.
                         XRPL_METRIC_COUNTER_INC_LABELED(
                             app_,
-                            "ledger_replay_fallback_total",
+                            telemetry::metric::ledgerReplayFallbackTotal,
                             "Replay sub-acquires that fell back to a full ledger acquire",
-                            {{"stage", std::string("skiplist")}});
+                            {{telemetry::label::stage,
+                              std::string(telemetry::lval::replay_fallback::skiplist)}});
 
                         fallBack_ = true;
                     }

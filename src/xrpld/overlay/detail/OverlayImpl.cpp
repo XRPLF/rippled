@@ -21,6 +21,7 @@
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
@@ -241,7 +242,7 @@ OverlayImpl::onHandoff(
     if (ec)
     {
         JLOG(journal.debug()) << remoteEndpoint << " failed: " << ec.message();
-        reportAcceptOutcome("local_endpoint_fail");
+        reportAcceptOutcome(telemetry::lval::peer_accept::localEndpointFail);
         return handoff;
     }
 
@@ -249,7 +250,7 @@ OverlayImpl::onHandoff(
         resourceManager_.newInboundEndpoint(beast::IPAddressConversion::fromAsio(remoteEndpoint));
     if (consumer.disconnect(journal))
     {
-        reportAcceptOutcome("resource_limit");
+        reportAcceptOutcome(telemetry::lval::peer_accept::resourceLimit);
         return handoff;
     }
 
@@ -262,7 +263,7 @@ OverlayImpl::onHandoff(
         // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
         JLOG(journal.debug()) << "Peer " << remoteEndpoint << " refused, " << to_string(result);
-        reportAcceptOutcome("no_slot");
+        reportAcceptOutcome(telemetry::lval::peer_accept::noSlot);
         return handoff;
     }
 
@@ -277,7 +278,7 @@ OverlayImpl::onHandoff(
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
             handoff.keepAlive = beast::rfc2616::isKeepAlive(request);
-            reportAcceptOutcome("not_peer_request");
+            reportAcceptOutcome(telemetry::lval::peer_accept::notPeerRequest);
             return handoff;
         }
     }
@@ -290,7 +291,7 @@ OverlayImpl::onHandoff(
         handoff.response = makeErrorResponse(
             slot, request, remoteEndpoint.address(), "Unable to agree on a protocol version");
         handoff.keepAlive = false;
-        reportAcceptOutcome("protocol_mismatch");
+        reportAcceptOutcome(telemetry::lval::peer_accept::protocolMismatch);
         return handoff;
     }
 
@@ -302,7 +303,7 @@ OverlayImpl::onHandoff(
         handoff.response =
             makeErrorResponse(slot, request, remoteEndpoint.address(), "Incorrect security cookie");
         handoff.keepAlive = false;
-        reportAcceptOutcome("bad_cookie");
+        reportAcceptOutcome(telemetry::lval::peer_accept::badCookie);
         return handoff;
     }
 
@@ -332,7 +333,7 @@ OverlayImpl::onHandoff(
                 handoff.moved = false;
                 handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
                 handoff.keepAlive = false;
-                reportAcceptOutcome("slot_refused");
+                reportAcceptOutcome(telemetry::lval::peer_accept::slotRefused);
                 return handoff;
             }
         }
@@ -365,7 +366,7 @@ OverlayImpl::onHandoff(
 
         // Only after run() is the peer genuinely accepted. Anything that threw
         // above is reported as a handshake error by the catch below instead.
-        reportAcceptOutcome("accepted");
+        reportAcceptOutcome(telemetry::lval::peer_accept::accepted);
         return handoff;
     }
     catch (std::exception const& e)
@@ -377,7 +378,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remoteEndpoint.address(), e.what());
         handoff.keepAlive = false;
-        reportAcceptOutcome("handshake_error");
+        reportAcceptOutcome(telemetry::lval::peer_accept::handshakeError);
         return handoff;
     }
 }
@@ -636,7 +637,7 @@ OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool 
     // comma in a non-variadic macro argument, which the preprocessor splits.
     XRPL_METRIC_HISTOGRAM_RECORD(
         app_,
-        "dns_resolve_latency_ms",
+        telemetry::metric::dnsResolveLatencyMs,
         "Time taken to resolve a configured peer hostname, in milliseconds",
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - start)
@@ -645,9 +646,12 @@ OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool 
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "dns_resolve_total",
+        telemetry::metric::dnsResolveTotal,
         "Peer hostname resolutions, by outcome",
-        {{"outcome", std::string(resolved ? "resolved" : "empty")}});
+        {{telemetry::label::outcome,
+          std::string(
+              resolved ? telemetry::lval::dns_resolve::resolved
+                       : telemetry::lval::dns_resolve::empty)}});
 }
 
 void
@@ -655,9 +659,9 @@ OverlayImpl::reportAcceptOutcome(char const* outcome)
 {
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "peer_accept_total",
+        telemetry::metric::peerAcceptTotal,
         "Inbound peer connection attempts, by terminal outcome",
-        {{"outcome", std::string(outcome)}});
+        {{telemetry::label::outcome, std::string(outcome)}});
 }
 
 PeerLedgerSupply

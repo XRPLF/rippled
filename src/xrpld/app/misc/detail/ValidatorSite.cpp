@@ -7,6 +7,7 @@
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -394,10 +395,10 @@ ValidatorSite::reportFetchOutcome(
     // the time series stable when a site redirects.
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "unl_fetch_total",
+        telemetry::metric::unlFetchTotal,
         "Validator list fetch attempts, by site and outcome",
-        {{"site", std::string(sites_[siteIdx].loadedResource->uri)},
-         {"outcome", std::string(outcome)}});
+        {{telemetry::label::site, std::string(sites_[siteIdx].loadedResource->uri)},
+         {telemetry::label::outcome, std::string(outcome)}});
 }
 
 void
@@ -593,7 +594,7 @@ ValidatorSite::onSiteFetch(
         {
             JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                             << " " << endpoint << " " << ec.value() << ":" << ec.message();
-            onError("fetch error", true, "fetch_error");
+            onError("fetch error", true, telemetry::lval::unl_fetch::fetchError);
         }
         else
         {
@@ -629,7 +630,7 @@ ValidatorSite::onSiteFetch(
                         JLOG(j_.warn()) << "Request for validator list at "
                                         << sites_[siteIdx].activeResource->uri << " " << endpoint
                                         << " returned bad status: " << res.result_int();
-                        onError("bad result code", true, "bad_status");
+                        onError("bad result code", true, telemetry::lval::unl_fetch::badStatus);
                     }
                 }
             }
@@ -658,14 +659,14 @@ ValidatorSite::onTextFetch(
     std::scoped_lock const lockSites{sitesMutex_};
     {
         // Both failures share one catch, so the label is set where detected.
-        std::string_view outcome = "parse_error";
+        std::string_view outcome = telemetry::lval::unl_fetch::parseError;
         try
         {
             if (ec)
             {
                 JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                                 << " " << ec.value() << ": " << ec.message();
-                outcome = "fetch_error";
+                outcome = telemetry::lval::unl_fetch::fetchError;
                 throw std::runtime_error{"fetch error"};
             }
 

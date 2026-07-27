@@ -19,6 +19,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -1061,9 +1062,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         // OTel callback ever acquires mutex_.
         XRPL_METRIC_COUNTER_INC_LABELED(
             app_,
-            "ledger_quorum_shortfall_total",
+            telemetry::metric::ledgerQuorumShortfallTotal,
             "Pre-accept gate rejections because trusted validations were below quorum",
-            {{"stage", std::string("pre_accept")}});
+            {{telemetry::label::stage, std::string(telemetry::lval::quorum_shortfall::preAccept)}});
         return;
     }
 

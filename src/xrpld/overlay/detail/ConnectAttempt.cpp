@@ -15,6 +15,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -166,7 +167,7 @@ ConnectAttempt::reportOutcome(std::string_view outcome)
     // comma in a non-variadic macro argument, which the preprocessor splits.
     XRPL_METRIC_HISTOGRAM_RECORD(
         app_,
-        "overlay_dial_latency_ms",
+        telemetry::metric::overlayDialLatencyMs,
         "Time from starting an outbound peer dial to its terminal outcome, in milliseconds",
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - dialStart_)
@@ -175,9 +176,9 @@ ConnectAttempt::reportOutcome(std::string_view outcome)
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "overlay_connect_total",
+        telemetry::metric::overlayConnectTotal,
         "Outbound peer connection attempts, by terminal outcome",
-        {{"outcome", std::string(outcome)}});
+        {{telemetry::label::outcome, std::string(outcome)}});
 
     // End the span with the SAME outcome value the counter just recorded, from
     // the same funnel, so the two can never disagree. The first-call-wins guard

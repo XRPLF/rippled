@@ -11,6 +11,7 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -210,7 +211,7 @@ private:
      *       never peer-supplied data -- so the label's cardinality is bounded
      *       by the code.
      */
-    char const* disconnectReason_{"unknown"};
+    char const* disconnectReason_{telemetry::lval::disconnect::unknown};
 
     std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
@@ -510,7 +511,7 @@ private:
     {
         // Only the first cause is kept: fail() sites frequently run before
         // close(), and a later generic reason must not mask the real one.
-        if (disconnectReason_ == std::string_view{"unknown"})
+        if (disconnectReason_ == std::string_view{telemetry::lval::disconnect::unknown})
             disconnectReason_ = reason;
     }
 

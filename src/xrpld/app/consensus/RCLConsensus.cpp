@@ -27,6 +27,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -533,7 +534,7 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     // transaction.
     XRPL_METRIC_HISTOGRAM_RECORD(
         app_,
-        "consensus_round_duration_ms",
+        telemetry::metric::consensusRoundDurationMs,
         "Wall-clock duration of a completed consensus round in milliseconds",
         result.roundTime.read().count());
     span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));

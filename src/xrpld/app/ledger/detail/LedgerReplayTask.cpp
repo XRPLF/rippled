@@ -9,6 +9,7 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -213,7 +214,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
         // Terminal success. Emitted once per task: the loop above is guarded by
         // isDone() at every entry point, so a completed task cannot re-enter
         // and double-count.
-        recordOutcome("success");
+        recordOutcome(telemetry::lval::replay_outcome::success);
     }
     catch (std::runtime_error const&)
     {
@@ -222,7 +223,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
         // A delta failed to build on top of its parent, so the replayed range
         // cannot be reconstructed. Previously not logged at all here, only
         // reflected in failed_.
-        recordOutcome("build_failed");
+        recordOutcome(telemetry::lval::replay_outcome::buildFailed);
     }
 }
 
@@ -235,9 +236,9 @@ LedgerReplayTask::recordOutcome(char const* outcome) const
     // indistinguishable from one that was never attempted.
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "ledger_replay_outcome_total",
+        telemetry::metric::ledgerReplayOutcomeTotal,
         "Ledger replay tasks by terminal outcome",
-        {{"outcome", std::string(outcome)}});
+        {{telemetry::label::outcome, std::string(outcome)}});
 }
 
 void
@@ -259,7 +260,7 @@ LedgerReplayTask::updateSkipList(
             // so the task is abandoned before any delta is fetched. A distinct
             // outcome from a timeout: this one indicates a peer served an
             // inconsistent skip list, not a slow or absent peer.
-            recordOutcome("parameter_failed");
+            recordOutcome(telemetry::lval::replay_outcome::parameterFailed);
             return;
         }
     }
@@ -282,7 +283,7 @@ LedgerReplayTask::onTimer(bool progress, ScopedLockType& sl)
         // The task ran out of retries waiting for its deltas. This is the
         // outcome that pairs with the fallback counters: the sub-acquires gave
         // up, and so did the task above them.
-        recordOutcome("timeout");
+        recordOutcome(telemetry::lval::timeout);
     }
     else
     {

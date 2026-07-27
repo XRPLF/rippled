@@ -1508,23 +1508,48 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 | Last-value snapshot (not a distribution)               | `XRPL_METRIC_GAUGE_RECORD` [+ `_LABELED`] -- requires an ABI v2 opentelemetry-cpp build; this repo currently builds ABI v1, so use the observable-gauge row below instead |
 | Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
 
+First declare the name in `src/xrpld/telemetry/MetricNames.h` -- the emit site
+must reference a constant, never a string literal, and CI Rule I enforces that
+for any metric family that already has constants:
+
+```cpp
+// in src/xrpld/telemetry/MetricNames.h, namespace metric:
+inline constexpr char myNewThingTotal[] = "my_new_thing_total";
+inline constexpr char myInFlightRequests[] = "my_in_flight_requests";
+inline constexpr char myThingSize[] = "my_thing_size";
+```
+
+Then emit against it:
+
 ```cpp
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 // Monotonic counter:
-XRPL_METRIC_COUNTER_INC(app_, "my_new_thing_total", "Description of what this counts");
+XRPL_METRIC_COUNTER_INC(
+    app_, metric::myNewThingTotal, "Description of what this counts");
 
 // Value that can go up and down, e.g. in-flight work (no _total suffix -- that
 // is reserved for monotonic counters; an UpDownCounter is a current value):
-XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", 1);   // on start
-XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", -1);  // on finish
+XRPL_METRIC_UPDOWN_ADD(app_, metric::myInFlightRequests, "Currently executing", 1);
+XRPL_METRIC_UPDOWN_ADD(app_, metric::myInFlightRequests, "Currently executing", -1);
+
+// Labelled: the KEY is a constant too, and so is the VALUE when it comes from a
+// fixed set. Only runtime data stays a plain expression.
+XRPL_METRIC_COUNTER_INC_LABELED(
+    app_,
+    metric::myNewThingTotal,
+    "Description of what this counts",
+    {{label::outcome, std::string(lval::dns_resolve::resolved)}});
 
 // Sampled from your own state, on the OTel export timer (register ONCE, in init code):
-XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, "my_thing_size", "Current size",
+XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, metric::myThingSize, "Current size",
     [this] { return static_cast<int64_t>(myThing_.size()); });
 ```
 
-Counters use a `_total` suffix by convention. A histogram whose values can
+Naming rules (counter `_total`, duration `_us`/`_ms`/`_seconds`, no `xrpld_`
+prefix, bounded label cardinality) are listed in CONTRIBUTING.md ->
+"Telemetry metric naming" and enforced by CI Rules I/J/K. A histogram whose values can
 exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
 line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
 only case that still touches a central file. There is no way to read a metric's

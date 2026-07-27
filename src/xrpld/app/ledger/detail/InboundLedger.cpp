@@ -11,6 +11,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -160,9 +161,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // ("nothing was local, every node must come over the wire").
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
-        "sync_acquire_source_total",
+        telemetry::metric::syncAcquireSourceTotal,
         "Ledger acquires by where the data came from",
-        {{"source", std::string(complete_ ? "local" : "network")}});
+        {{telemetry::label::source,
+          std::string(
+              complete_ ? telemetry::lval::acquire_source::local
+                        : telemetry::lval::acquire_source::network)}});
 
     if (!complete_)
     {
@@ -500,7 +504,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         // signature of a sync that will never complete.
         XRPL_METRIC_COUNTER_INC(
             app_,
-            "sync_acquire_no_progress_total",
+            telemetry::metric::syncAcquireNoProgressTotal,
             "Ledger-acquire timeouts where no new node arrived");
 
         // addPeers triggers if the reason is not HISTORY
@@ -1517,14 +1521,14 @@ InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
             return;
         XRPL_METRIC_COUNTER_ADD_LABELED(
             app_,
-            "sync_addnode_total",
+            telemetry::metric::syncAddnodeTotal,
             "SHAMap nodes received during ledger acquire, by outcome",
             static_cast<std::uint64_t>(count),
-            {{"outcome", std::string(outcome)}});
+            {{telemetry::label::outcome, std::string(outcome)}});
     };
-    emit("good", san.getGood());
-    emit("duplicate", san.getDuplicate());
-    emit("invalid", san.getBad());
+    emit(telemetry::lval::addnode::good, san.getGood());
+    emit(telemetry::lval::addnode::duplicate, san.getDuplicate());
+    emit(telemetry::lval::addnode::invalid, san.getBad());
 
     return san.getGood();
 }

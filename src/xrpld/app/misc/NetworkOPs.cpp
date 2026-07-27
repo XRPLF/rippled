@@ -34,6 +34,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
@@ -2172,7 +2173,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     // unbounded as label values, and the log line above already carries them.
     XRPL_METRIC_COUNTER_INC(
         registry_.get(),
-        "ledger_jump_total",
+        telemetry::metric::ledgerJumpTotal,
         "Forced jumps of the last closed ledger to a divergent chain");
 
     clearNeedNetworkLedger();
@@ -2739,9 +2740,10 @@ NetworkOPsImp::setMode(OperatingMode om)
     // names, which keeps them identical to the ones server_info reports.
     XRPL_METRIC_COUNTER_INC_LABELED(
         registry_.get(),
-        "state_changes_total",
+        telemetry::metric::stateChangesTotal,
         "Total operating mode changes",
-        {{"from", strOperatingMode(prevMode, false)}, {"to", strOperatingMode(om, false)}});
+        {{telemetry::label::from, strOperatingMode(prevMode, false)},
+         {telemetry::label::to, strOperatingMode(om, false)}});
 
     JLOG(journal_.info()) << "STATE->" << strOperatingMode();
     pubServer();

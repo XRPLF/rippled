@@ -11,6 +11,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -115,9 +116,10 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                         // Emitted once, on the transition into fallback.
                         XRPL_METRIC_COUNTER_INC_LABELED(
                             app_,
-                            "ledger_replay_fallback_total",
+                            telemetry::metric::ledgerReplayFallbackTotal,
                             "Replay sub-acquires that fell back to a full ledger acquire",
-                            {{"stage", std::string("delta")}});
+                            {{telemetry::label::stage,
+                              std::string(telemetry::lval::replay_fallback::delta)}});
 
                         fallBack_ = true;
                     }
