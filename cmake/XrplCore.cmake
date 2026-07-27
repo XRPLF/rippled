@@ -217,21 +217,15 @@ target_link_libraries(
         xrpl.libxrpl.conditions
 )
 
-add_module(xrpl consensus)
-target_link_libraries(
-    xrpl.libxrpl.consensus
-    PUBLIC
-        xrpl.libxrpl.basics
-        xrpl.libxrpl.json
-        xrpl.libxrpl.protocol
-        xrpl.libxrpl.ledger
-)
-
 # Telemetry module — OpenTelemetry distributed tracing support.
 # Sources: include/xrpl/telemetry/ (headers), src/libxrpl/telemetry/ (impl).
 # When telemetry=ON, links the Conan-provided umbrella target
 # opentelemetry-cpp::opentelemetry-cpp (individual component targets like
 # ::api, ::sdk are not available in the Conan package).
+#
+# Declared before its consumers (consensus, tx) because add_module isolates
+# each module's headers: a module can only include xrpl/telemetry/ headers if
+# it links this target, and the target must already exist at that point.
 #
 # Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
 add_module(xrpl telemetry)
@@ -251,6 +245,19 @@ if(telemetry)
         PUBLIC opentelemetry-cpp::opentelemetry-cpp
     )
 endif()
+
+# Links xrpl.libxrpl.telemetry for the consensus tracing spans declared in
+# include/xrpl/consensus/ConsensusSpanNames.h.
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+        xrpl.libxrpl.telemetry
+)
 
 add_module(xrpl tx)
 target_link_libraries(
