@@ -83,6 +83,7 @@ ValidVault::Loan::make(SLE const& from)
 
     ValidVault::Loan self;
     self.key = from.key();
+    self.loanBrokerID = from.at(sfLoanBrokerID);
     self.principalOutstanding = from.at(sfPrincipalOutstanding);
     self.totalValueOutstanding = from.at(sfTotalValueOutstanding);
     self.managementFeeOutstanding = from.at(sfManagementFeeOutstanding);
@@ -322,6 +323,318 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 }
 
 bool
+ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal const& j) const
+{
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return true;
+
+    bool result = true;
+
+    XRPL_ASSERT(
+        !beforeVault_.empty(), "xrpl::ValidVault::finalizeLoanSet : loan set updated a vault");
+    auto const& beforeVault = beforeVault_[0];
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    // A loan set must create exactly one loan object; the interest
+    // it books is the only permitted change to assets outstanding.
+    if (afterLoan_.size() != 1 || !beforeLoan_.empty())
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must create exactly one loan";
+        return false;  // That's all we can do
+    }
+    auto const& loan = afterLoan_[0];
+
+    // Funding a loan moves the requested principal out of the vault
+    // pseudo-account to the borrower (and, if any, the origination
+    // fee to the broker owner).
+    auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+    if (!maybeVaultDeltaAssets)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must change vault balance";
+        return false;  // That's all we can do
+    }
+
+    // Get the posterior scale to round calculations to
+    auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+
+    // The vault only releases the requested principal, which must
+    // match the reduction of both the vault (pseudo-account) balance
+    // and the assets available.
+    auto const principalDelta = roundToAsset(vaultAsset, -tx[sfPrincipalRequested], minScale);
+
+    auto const vaultDeltaAssets = roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+    if (vaultDeltaAssets != principalDelta)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must decrease vault balance by the principal requested";
+        result = false;
+    }
+
+    // The created loan must record exactly the principal the vault
+    // released. Otherwise the borrower's claim (and thus the assets
+    // booked back to the vault on repayment) is decoupled from the
+    // assets actually lent, which would skew the vault's share price.
+    if (loan.principalOutstanding != tx[sfPrincipalRequested])
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set principal outstanding must equal principal requested";
+        result = false;
+    }
+
+    // Interest accrues to the vault: assets outstanding must grow by
+    // exactly the interest due booked on the newly created loan.
+    auto const assetsTotalDelta =
+        roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+    auto const interestDue = roundToAsset(vaultAsset, loan.interestDue(), minScale);
+    if (assetsTotalDelta != interestDue)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must increase assets outstanding by the interest due";
+        result = false;
+    }
+
+    if (afterVault.assetsMaximum > kZero && afterVault.assetsTotal > afterVault.assetsMaximum)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set assets outstanding must not exceed assets maximum";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
+ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Journal const& j) const
+{
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return true;
+
+    bool result = true;
+
+    XRPL_ASSERT(
+        !beforeVault_.empty(),
+        "xrpl::ValidVault::finalizeLoanManage : loan manage updated a vault");
+    auto const& beforeVault = beforeVault_[0];
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    // Loan management (impair / unimpair / default) never removes
+    // assets from the vault. Only a default returns first-loss
+    // capital from the broker to the vault pseudo-account; impair
+    // and unimpair merely adjust the paper (unrealized) loss and
+    // touch no balances.
+    auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+    auto const vaultDelta = maybeVaultDeltaAssets.value_or(
+        DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
+
+    // Get the posterior scale to round calculations to
+    auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+
+    auto const assetAvailableDelta = roundToAsset(
+        vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+    auto const assetTotalDelta =
+        roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+
+    // --- Checks specific to each loan manage sub-operation ---
+
+    if (tx.isFlag(tfLoanImpair) || tx.isFlag(tfLoanUnimpair))
+    {
+        // Impair / unimpair only move the paper (unrealized) loss;
+        // they touch neither balances nor assets.
+        if (assetAvailableDelta != kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan impair/unimpair must not "
+                "change assets available";
+            result = false;
+        }
+
+        if (assetTotalDelta != kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan impair/unimpair must not "
+                "change assets outstanding";
+            result = false;
+        }
+    }
+    else if (tx.isFlag(tfLoanDefault))
+    {
+        // A default returns first-loss capital to the vault, so
+        // assets available (and the vault balance) may only grow.
+        if (assetAvailableDelta < kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan default must not decrease "
+                "assets available";
+            result = false;
+        }
+
+        // A default realizes (writes off) the uncovered portion of
+        // the loan, so assets outstanding may only shrink.
+        if (assetTotalDelta > kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan default must not increase "
+                "assets outstanding";
+            result = false;
+        }
+    }
+    else
+    {
+        // A loan manage with none of the sub-operation flags
+        // (impair, unimpair, default) is a no-op and must not
+        // modify the vault.
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan manage without a sub-operation "
+            "must not modify the vault";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
+ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal const& j) const
+{
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return true;
+
+    bool result = true;
+
+    XRPL_ASSERT(
+        !beforeVault_.empty(), "xrpl::ValidVault::finalizeLoanPay : loan pay updated a vault");
+    auto const& beforeVault = beforeVault_[0];
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    // A loan payment moves the paid principal and interest into the
+    // vault pseudo-account (fees go to the broker), so the vault
+    // balance and the assets available both increase by that amount.
+    auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+    if (!maybeVaultDeltaAssets)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay must change vault balance";
+        return false;  // That's all we can do
+    }
+
+    // Get the posterior scale to round calculations to
+    auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+
+    auto const assetAvailableDelta = roundToAsset(
+        vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+
+    // A payment always adds funds to the vault, so assets available
+    // (and the vault balance) must increase.
+    if (assetAvailableDelta <= kZero)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay must increase assets "
+            "available";
+        result = false;
+    }
+
+    // The vault only receives the principal and interest portion of
+    // the borrower's payment (the fee goes to the broker), so it can
+    // never grow by more than the amount paid.
+    auto const amountPaid = roundToAsset(vaultAsset, tx[sfAmount], minScale);
+    if (assetAvailableDelta > amountPaid)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay must not increase assets "
+            "available by more than the amount paid";
+        result = false;
+    }
+
+    // The vault, the broker pseudo-account and the broker owner are
+    // the only three destinations of a loan payment (the fee goes to
+    // either the pseudo-account or the owner, never both).  Their
+    // combined inflow can never exceed the amount actually paid by
+    // the borrower — anything more would mean the transaction
+    // manufactured value.
+    //
+    // If the broker owner is also the borrower, its delta captures a
+    // net movement rather than a pure inflow, and the sum degrades
+    // to a trivially-satisfied comparison.  That is safe (no
+    // false-positives); the split correctness in that corner case
+    // is still policed by the assets-outstanding balance check
+    // below.
+    if (!afterLoan_.empty())
+    {
+        auto const brokerSle = view.read(keylet::loanBroker(afterLoan_[0].loanBrokerID));
+        if (!brokerSle)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan pay loan broker must exist";
+            return false;
+        }
+
+        auto const brokerPseudoDelta = deltaAssets(brokerSle->at(sfAccount));
+        auto const brokerOwnerDelta = deltaAssets(brokerSle->at(sfOwner));
+
+        std::vector<DeltaInfo> deltas{*maybeVaultDeltaAssets};
+        if (brokerPseudoDelta)
+            deltas.push_back(*brokerPseudoDelta);
+        if (brokerOwnerDelta)
+            deltas.push_back(*brokerOwnerDelta);
+        auto const totalScale = std::max(minScale, computeCoarsestScale(deltas));
+
+        Number totalReceivedRaw = maybeVaultDeltaAssets->delta;
+        if (brokerPseudoDelta)
+            totalReceivedRaw += brokerPseudoDelta->delta;
+        if (brokerOwnerDelta)
+            totalReceivedRaw += brokerOwnerDelta->delta;
+
+        auto const totalReceived = roundToAsset(vaultAsset, totalReceivedRaw, totalScale);
+        auto const totalAmount = roundToAsset(vaultAsset, tx[sfAmount], totalScale);
+        if (totalReceived > totalAmount)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan pay vault and broker must not "
+                "receive more than the amount paid";
+            result = false;
+        }
+    }
+
+    // The vault's total assets equal its available cash plus the
+    // claim it holds on outstanding loans (each loan's total value
+    // owed, less the broker's management fee, which belongs to the
+    // broker). A payment only moves value between those two pools,
+    // so the change in assets outstanding must equal the cash
+    // received plus the change in the paid loan's claim on the
+    // vault. This is an independent check that the borrower's
+    // payment was split correctly between principal and interest.
+    if (afterLoan_.size() != 1 || beforeLoan_.size() != 1 ||
+        afterLoan_[0].key != beforeLoan_[0].key)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay must modify exactly one "
+            "loan";
+        result = false;
+    }
+    else
+    {
+        auto const claimDelta =
+            roundToAsset(vaultAsset, afterLoan_[0].claim() - beforeLoan_[0].claim(), minScale);
+        auto const assetsTotalDelta =
+            roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+        if (assetsTotalDelta != assetAvailableDelta + claimDelta)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan pay assets outstanding must "
+                "match the cash received and the change in the loan "
+                "claim";
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+bool
 ValidVault::finalize(
     STTx const& tx,
     TER const ret,
@@ -339,8 +652,7 @@ ValidVault::finalize(
         if (hasPrivilege(tx, MustModifyVault))
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: vault operation succeeded without modifying "
-                "a vault";
+                "Invariant failed: vault operation succeeded without modifying a vault";
             XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault noop invariant");
             return !enforce;
         }
@@ -351,10 +663,7 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
-        XRPL_ASSERT(
-            enforce,
-            "xrpl::ValidVault::finalize : illegal vault transaction "
-            "invariant");
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : illegal vault transaction invariant");
         return !enforce;  // Also not a vault operation
     }
 
@@ -376,10 +685,7 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault deleted by a wrong transaction type";
-            XRPL_ASSERT(
-                enforce,
-                "xrpl::ValidVault::finalize : illegal vault deletion "
-                "invariant");
+            XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : illegal vault deletion invariant");
             return !enforce;  // That's all we can do here
         }
 
@@ -401,8 +707,7 @@ ValidVault::finalize(
 
         if (!deletedShares)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
-                               "delete shares";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must also delete shares";
             XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : shares deletion invariant");
             return !enforce;  // That's all we can do here
         }
@@ -410,20 +715,17 @@ ValidVault::finalize(
         bool result = true;
         if (deletedShares->sharesTotal != 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "shares outstanding";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no shares outstanding";
             result = false;
         }
         if (beforeVault.assetsTotal != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "assets outstanding";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets outstanding";
             result = false;
         }
         if (beforeVault.assetsAvailable != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "assets available";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets available";
             result = false;
         }
 
@@ -431,8 +733,7 @@ ValidVault::finalize(
     }
     if (txnType == ttVAULT_DELETE)
     {
-        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
-                           "deleting a vault";
+        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without deleting a vault";
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
     }
@@ -488,14 +789,14 @@ ValidVault::finalize(
     {
         if (afterVault.assetsTotal != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: updated zero sized "
-                               "vault must have no assets outstanding";
+            JLOG(j.fatal())
+                << "Invariant failed: updated zero sized vault must have no assets outstanding";
             result = false;
         }
         if (afterVault.assetsAvailable != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: updated zero sized "
-                               "vault must have no assets available";
+            JLOG(j.fatal())
+                << "Invariant failed: updated zero sized vault must have no assets available";
             result = false;
         }
     }
@@ -515,15 +816,21 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable > afterVault.assetsTotal)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets available must "
-                           "not be greater than assets outstanding";
+        JLOG(j.fatal())  //
+            << "Invariant failed: assets available must not be greater than assets outstanding";
         result = false;
     }
     else if (afterVault.lossUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
     {
         JLOG(j.fatal())  //
-            << "Invariant failed: loss unrealized must not exceed "
-               "the difference between assets outstanding and available";
+            << "Invariant failed: loss unrealized must not exceed the difference between assets "
+               "outstanding and available";
+        result = false;
+    }
+
+    if (afterVault.lossUnrealized < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loss unrealized must be positive";
         result = false;
     }
 
@@ -553,8 +860,7 @@ ValidVault::finalize(
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: vault transaction must not change loss "
-            "unrealized";
+            "Invariant failed: vault transaction must not change loss unrealized";
         result = false;
     }
 
@@ -582,7 +888,51 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
+    // ttLOAN_* transactions only exist under featureLendingProtocol, and their
+    // vault-side checks are otherwise gated by featureLendingProtocolV1_1;
+    // keep the same gate here so pre-V1_1 behaviour is unchanged.
+    bool const isLoanTxn = txnType == ttLOAN_SET ||  //
+        txnType == ttLOAN_MANAGE ||                  //
+        txnType == ttLOAN_PAY;
+    bool const sharesCheckActive = !isLoanTxn || view.rules().enabled(featureLendingProtocolV1_1);
+
+    if (sharesCheckActive && beforeShares &&
+        beforeShares->sharesTotal != updatedShares->sharesTotal && txnType != ttVAULT_DEPOSIT &&
+        txnType != ttVAULT_WITHDRAW && txnType != ttVAULT_CLAWBACK)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: shares outstanding must only change by "
+            "deposit, withdraw, or clawback";
+        return false;
+    }
+
     auto const& vaultAsset = afterVault.asset;
+
+    // Assets available always tracks the real vault balance: any change
+    // in one is matched by the other.  This applies to every vault
+    // operation that may move funds into or out of the pseudo-account
+    // (deposit, withdraw, clawback, and every loan-* sub-operation);
+    // vault set is excluded because it may never change either, and
+    // vault create has nothing to compare against.  The gate is shared
+    // with the shares-outstanding check above so that pre-V1_1 loan
+    // behaviour is unchanged.
+    if (sharesCheckActive && txnType != ttVAULT_CREATE && txnType != ttVAULT_SET)
+    {
+        auto const& beforeVault = beforeVault_[0];
+        auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+        auto const vaultDelta = maybeVaultDeltaAssets.value_or(
+            DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
+        auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+        auto const vaultDeltaAssets = roundToAsset(vaultAsset, vaultDelta.delta, minScale);
+        auto const assetAvailableDelta = roundToAsset(
+            vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+        if (assetAvailableDelta != vaultDeltaAssets)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: vault balance and assets available must add up";
+            result = false;
+        }
+    }
 
     // Technically this does not need to be a lambda, but it's more
     // convenient thanks to early "return false"; the not-so-nice
@@ -597,8 +947,7 @@ ValidVault::finalize(
                 if (!beforeVault_.empty())
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: create operation must not have "
-                           "updated a vault";
+                        << "Invariant failed: create operation must not have updated a vault";
                     result = false;
                 }
 
@@ -613,8 +962,8 @@ ValidVault::finalize(
                 if (afterVault.pseudoId != updatedShares->share.getIssuer())
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer and vault "
-                           "pseudo-account must be the same";
+                        << "Invariant failed: shares issuer and vault pseudo-account must be the "
+                           "same";
                     result = false;
                 }
 
@@ -630,8 +979,7 @@ ValidVault::finalize(
                 if (!isPseudoAccount(sleSharesIssuer))
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer must be a "
-                           "pseudo-account";
+                        << "Invariant failed: shares issuer must be a pseudo-account";
                     result = false;
                 }
 
@@ -639,8 +987,8 @@ ValidVault::finalize(
                     !vaultId || *vaultId != afterVault.key)
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer pseudo-account "
-                           "must point back to the vault";
+                        << "Invariant failed: shares issuer pseudo-account must point back to the "
+                           "vault";
                     result = false;
                 }
 
@@ -664,8 +1012,7 @@ ValidVault::finalize(
                 if (beforeVault.assetsTotal != afterVault.assetsTotal)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets "
-                        "outstanding";
+                        "Invariant failed: set must not change assets outstanding";
                     result = false;
                 }
 
@@ -673,25 +1020,14 @@ ValidVault::finalize(
                     afterVault.assetsTotal > afterVault.assetsMaximum)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set assets outstanding must not "
-                        "exceed assets maximum";
+                        "Invariant failed: set assets outstanding must not exceed assets maximum";
                     result = false;
                 }
 
                 if (beforeVault.assetsAvailable != afterVault.assetsAvailable)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets "
-                        "available";
-                    result = false;
-                }
-
-                if (beforeShares && updatedShares &&
-                    beforeShares->sharesTotal != updatedShares->sharesTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change shares "
-                        "outstanding";
+                        "Invariant failed: set must not change assets available";
                     result = false;
                 }
 
@@ -722,8 +1058,8 @@ ValidVault::finalize(
                 if (vaultDeltaAssets > txAmount)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must not change vault "
-                        "balance by more than deposited amount";
+                        "Invariant failed: deposit must not change vault balance by more than "
+                        "deposited amount";
                     result = false;
                 }
 
@@ -821,14 +1157,6 @@ ValidVault::finalize(
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: deposit and assets outstanding must add up";
-                    result = false;
-                }
-
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                if (assetAvailableDelta != vaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
                     result = false;
                 }
 
@@ -982,16 +1310,6 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-
-                if (assetAvailableDelta != vaultPseudoDeltaAssets)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: withdrawal and assets available must add up";
-                    result = false;
-                }
-
                 return result;
             }
             case ttVAULT_CLAWBACK: {
@@ -1025,26 +1343,6 @@ ValidVault::finalize(
                     if (vaultDeltaAssets >= kZero)
                     {
                         JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
-                        result = false;
-                    }
-
-                    auto const assetsTotalDelta = roundToAsset(
-                        vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets outstanding must add up";
-                        result = false;
-                    }
-
-                    auto const assetAvailableDelta = roundToAsset(
-                        vaultAsset,
-                        afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                        minScale);
-                    if (assetAvailableDelta != vaultDeltaAssets)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets available must add up";
                         result = false;
                     }
                 }
@@ -1089,337 +1387,14 @@ ValidVault::finalize(
                 return result;
             }
 
-            case ttLOAN_SET: {
-                bool result = true;
+            case ttLOAN_SET:
+                return finalizeLoanSet(tx, view, j);
 
-                XRPL_ASSERT(
-                    !beforeVault_.empty(), "xrpl::ValidVault::finalize : loan set updated a vault");
-                auto const& beforeVault = beforeVault_[0];
+            case ttLOAN_MANAGE:
+                return finalizeLoanManage(tx, view, j);
 
-                // A loan set must create exactly one loan object; the interest
-                // it books is the only permitted change to assets outstanding.
-                if (afterLoan_.size() != 1 || !beforeLoan_.empty())
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must create exactly one loan";
-                    return false;  // That's all we can do
-                }
-                auto const& loan = afterLoan_[0];
-
-                // Funding a loan moves the requested principal out of the vault
-                // pseudo-account to the borrower (and, if any, the origination
-                // fee to the broker owner).
-                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (!maybeVaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must change vault balance";
-                    return false;  // That's all we can do
-                }
-
-                // Get the posterior scale to round calculations to
-                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
-
-                // The vault only releases the requested principal, which must
-                // match the reduction of both the vault (pseudo-account) balance
-                // and the assets available.
-                auto const principalDelta =
-                    roundToAsset(vaultAsset, -tx[sfPrincipalRequested], minScale);
-
-                auto const vaultDeltaAssets =
-                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
-                if (vaultDeltaAssets != principalDelta)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must decrease vault balance "
-                        "by the principal requested";
-                    result = false;
-                }
-
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                if (assetAvailableDelta != principalDelta)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must decrease assets "
-                        "available by the principal requested";
-                    result = false;
-                }
-
-                // The created loan must record exactly the principal the vault
-                // released. Otherwise the borrower's claim (and thus the assets
-                // booked back to the vault on repayment) is decoupled from the
-                // assets actually lent, which would skew the vault's share price.
-                if (loan.principalOutstanding != tx[sfPrincipalRequested])
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set principal outstanding must "
-                        "equal principal requested";
-                    result = false;
-                }
-
-                // Interest accrues to the vault: assets outstanding must grow by
-                // exactly the interest due booked on the newly created loan.
-                auto const assetsTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                auto const interestDue = roundToAsset(vaultAsset, loan.interestDue(), minScale);
-                if (assetsTotalDelta != interestDue)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must increase assets "
-                        "outstanding by the interest due";
-                    result = false;
-                }
-
-                if (afterVault.assetsMaximum > kZero &&
-                    afterVault.assetsTotal > afterVault.assetsMaximum)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set assets outstanding must not "
-                        "exceed assets maximum";
-                    result = false;
-                }
-
-                // A loan set neither mints nor burns vault shares.
-                if (beforeShares && updatedShares &&
-                    beforeShares->sharesTotal != updatedShares->sharesTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan set must not change shares outstanding";
-                    result = false;
-                }
-
-                return result;
-            }
-
-            case ttLOAN_MANAGE: {
-                bool result = true;
-
-                XRPL_ASSERT(
-                    !beforeVault_.empty(),
-                    "xrpl::ValidVault::finalize : loan manage updated a vault");
-                auto const& beforeVault = beforeVault_[0];
-
-                // Loan management (impair / unimpair / default) never removes
-                // assets from the vault. Only a default returns first-loss
-                // capital from the broker to the vault pseudo-account; impair
-                // and unimpair merely adjust the paper (unrealized) loss and
-                // touch no balances.
-                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                auto const vaultDelta = maybeVaultDeltaAssets.value_or(
-                    DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
-
-                // Get the posterior scale to round calculations to
-                auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
-
-                auto const vaultDeltaAssets = roundToAsset(vaultAsset, vaultDelta.delta, minScale);
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                auto const assetTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-
-                // --- Checks common to every loan manage sub-operation ---
-
-                // Assets available always tracks the real vault balance: any
-                // change to one is matched by the other.
-                if (assetAvailableDelta != vaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan manage vault balance and assets "
-                        "available must add up";
-                    result = false;
-                }
-
-                // Loan management adjusts the unrealized (paper) loss but must
-                // never drive it negative.
-                if (afterVault.lossUnrealized < kZero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan manage must not make loss "
-                        "unrealized negative";
-                    result = false;
-                }
-
-                // A loan manage neither mints nor burns vault shares.
-                if (beforeShares && updatedShares &&
-                    beforeShares->sharesTotal != updatedShares->sharesTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan manage must not change shares "
-                        "outstanding";
-                    result = false;
-                }
-
-                // --- Checks specific to each loan manage sub-operation ---
-
-                if (tx.isFlag(tfLoanImpair) || tx.isFlag(tfLoanUnimpair))
-                {
-                    // Impair / unimpair only move the paper (unrealized) loss;
-                    // they touch neither balances nor assets.
-                    if (assetAvailableDelta != kZero)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: loan impair/unimpair must not "
-                            "change assets available";
-                        result = false;
-                    }
-
-                    if (assetTotalDelta != kZero)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: loan impair/unimpair must not "
-                            "change assets outstanding";
-                        result = false;
-                    }
-                }
-                else if (tx.isFlag(tfLoanDefault))
-                {
-                    // A default returns first-loss capital to the vault, so
-                    // assets available (and the vault balance) may only grow.
-                    if (assetAvailableDelta < kZero)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: loan default must not decrease "
-                            "assets available";
-                        result = false;
-                    }
-
-                    // A default realizes (writes off) the uncovered portion of
-                    // the loan, so assets outstanding may only shrink.
-                    if (assetTotalDelta > kZero)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: loan default must not increase "
-                            "assets outstanding";
-                        result = false;
-                    }
-                }
-                else
-                {
-                    // A loan manage with none of the sub-operation flags
-                    // (impair, unimpair, default) is a no-op and must not
-                    // modify the vault.
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan manage without a sub-operation "
-                        "must not modify the vault";
-                    result = false;
-                }
-
-                return result;
-            }
-
-            case ttLOAN_PAY: {
-                bool result = true;
-
-                XRPL_ASSERT(
-                    !beforeVault_.empty(), "xrpl::ValidVault::finalize : loan pay updated a vault");
-                auto const& beforeVault = beforeVault_[0];
-
-                // A loan payment moves the paid principal and interest into the
-                // vault pseudo-account (fees go to the broker), so the vault
-                // balance and the assets available both increase by that amount.
-                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (!maybeVaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must change vault balance";
-                    return false;  // That's all we can do
-                }
-
-                // Get the posterior scale to round calculations to
-                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
-
-                auto const vaultDeltaAssets =
-                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-
-                // Assets available always tracks the real vault balance: any
-                // change to one is matched by the other.
-                if (assetAvailableDelta != vaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay vault balance and assets "
-                        "available must add up";
-                    result = false;
-                }
-
-                // A payment always adds funds to the vault, so assets available
-                // (and the vault balance) must increase.
-                if (assetAvailableDelta <= kZero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must increase assets "
-                        "available";
-                    result = false;
-                }
-
-                // The vault only receives the principal and interest portion of
-                // the borrower's payment (the fee goes to the broker), so it can
-                // never grow by more than the amount paid.
-                auto const amountPaid = roundToAsset(vaultAsset, tx[sfAmount], minScale);
-                if (assetAvailableDelta > amountPaid)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must not increase assets "
-                        "available by more than the amount paid";
-                    result = false;
-                }
-
-                // A payment unimpairs the loan, so it may reduce the unrealized
-                // (paper) loss, but must never drive it negative.
-                if (afterVault.lossUnrealized < kZero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must not make loss "
-                        "unrealized negative";
-                    result = false;
-                }
-
-                // A loan pay neither mints nor burns vault shares.
-                if (beforeShares && updatedShares &&
-                    beforeShares->sharesTotal != updatedShares->sharesTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must not change shares "
-                        "outstanding";
-                    result = false;
-                }
-
-                // The vault's total assets equal its available cash plus the
-                // claim it holds on outstanding loans (each loan's total value
-                // owed, less the broker's management fee, which belongs to the
-                // broker). A payment only moves value between those two pools,
-                // so the change in assets outstanding must equal the cash
-                // received plus the change in the paid loan's claim on the
-                // vault. This is an independent check that the borrower's
-                // payment was split correctly between principal and interest.
-                if (afterLoan_.size() != 1 || beforeLoan_.size() != 1 ||
-                    afterLoan_[0].key != beforeLoan_[0].key)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: loan pay must modify exactly one "
-                        "loan";
-                    result = false;
-                }
-                else
-                {
-                    auto const claimDelta = roundToAsset(
-                        vaultAsset, afterLoan_[0].claim() - beforeLoan_[0].claim(), minScale);
-                    auto const assetsTotalDelta = roundToAsset(
-                        vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != assetAvailableDelta + claimDelta)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: loan pay assets outstanding must "
-                            "match the cash received and the change in the loan "
-                            "claim";
-                        result = false;
-                    }
-                }
-
-                return result;
-            }
+            case ttLOAN_PAY:
+                return finalizeLoanPay(tx, view, j);
 
             default:
                 // LCOV_EXCL_START

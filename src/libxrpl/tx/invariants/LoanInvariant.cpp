@@ -20,9 +20,9 @@ ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after
 {
     if (isDelete)
     {
-        // On deletion `after` holds the loan's final state.
-        if (after && after->getType() == ltLOAN)
-            deletedLoans_.emplace_back(after);
+        // `before` holds the loan's state before deletion.
+        if (before && before->getType() == ltLOAN)
+            deletedLoans_.emplace_back(before);
     }
     else if (after && after->getType() == ltLOAN)
     {
@@ -109,18 +109,18 @@ ValidLoan::finalize(
         }
     }
 
+    if (txType != ttLOAN_DELETE && !deletedLoans_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
+                           "other than LoanDelete";
+        return false;
+    }
+
     // A loan may only be deleted by a LoanDelete transaction, and only once it
     // is fully paid off (no payments remaining). Deleting a loan with
     // outstanding obligations is a violation.
     for (auto const& loan : deletedLoans_)
     {
-        if (txType != ttLOAN_DELETE)
-        {
-            JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
-                               "other than LoanDelete";
-            return false;
-        }
-
         if (loan->at(sfPaymentRemaining) != 0 ||
             loan->at(sfTotalValueOutstanding) != beast::kZero ||
             loan->at(sfPrincipalOutstanding) != beast::kZero ||

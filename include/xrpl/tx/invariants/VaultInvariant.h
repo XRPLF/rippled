@@ -28,8 +28,8 @@ namespace xrpl {
  * - vault created must be linked to pseudo-account for shares and assets
  * - vault must have MPTokenIssuance for shares
  * - vault without shares outstanding must have no shares
- * - loss unrealized does not exceed the difference between assets total and
- *   assets available
+ * - loss unrealized is non-negative and does not exceed the difference between
+ *   assets total and assets available
  * - assets available do not exceed assets total
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
@@ -38,20 +38,22 @@ namespace xrpl {
  * - vault set must not alter the vault assets or shares balance
  * - loan set moves the requested principal out of the vault: it must create
  *   exactly one loan, decreases assets available (and the vault balance) by the
- *   principal, grows assets outstanding by exactly the interest due booked on
- *   the created loan, and does not change shares
+ *   principal, and grows assets outstanding by exactly the interest due booked
+ *   on the created loan
  * - loan manage never removes assets from the vault: assets available may only
  *   grow (and the vault balance grows with it, by the returned first-loss
- *   capital on a default), assets outstanding may only shrink (realized loss),
- *   loss unrealized stays non-negative, and shares do not change; a loan
- *   manage with none of the sub-operation flags (impair, unimpair, default)
- *   is a no-op and must not modify the vault
+ *   capital on a default), and assets outstanding may only shrink (realized
+ *   loss); a loan manage with none of the sub-operation flags (impair,
+ *   unimpair, default) is a no-op and must not modify the vault
  * - loan pay adds the paid principal and interest to the vault: assets
  *   available (and the vault balance) increase by the same amount, which is at
- *   most the amount paid, loss unrealized stays non-negative, and shares do not
- *   change; and assets outstanding move in lock-step: their change equals the
- *   cash received plus the change in the paid loan's claim on the vault, which
- *   verifies the payment was split correctly between principal and interest
+ *   most the amount paid; the combined inflow to the vault pseudo-account, the
+ *   loan-broker pseudo-account and the loan-broker owner never exceeds the
+ *   amount paid (no value is manufactured); and assets outstanding move in
+ *   lock-step: their change equals the cash received plus the change in the
+ *   paid loan's claim on the vault, which verifies the payment was split
+ *   correctly between principal and interest
+ * - shares outstanding may only change through deposit, withdraw, or clawback
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
  *
@@ -89,6 +91,7 @@ class ValidVault
     struct Loan final
     {
         uint256 key = beast::kZero;
+        uint256 loanBrokerID = beast::kZero;
         Number principalOutstanding = 0;
         Number totalValueOutstanding = 0;
         Number managementFeeOutstanding = 0;
@@ -192,6 +195,40 @@ private:
      */
     [[nodiscard]] static bool
     isVaultEmpty(Vault const& vault);
+
+    /**
+     * @brief Enforce the invariants specific to a @c ttLOAN_SET transaction.
+     *
+     * @param tx            The transaction being applied.
+     * @param view          Active ledger view (used for rules).
+     * @param j             Journal for logging invariant failures.
+     * @return @c true when all @c ttLOAN_SET invariants hold.
+     */
+    [[nodiscard]] bool
+    finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Enforce the invariants specific to a @c ttLOAN_MANAGE
+     *        transaction.
+     *
+     * @param tx            The transaction being applied.
+     * @param view          Active ledger view (used for rules).
+     * @param j             Journal for logging invariant failures.
+     * @return @c true when all @c ttLOAN_MANAGE invariants hold.
+     */
+    [[nodiscard]] bool
+    finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Enforce the invariants specific to a @c ttLOAN_PAY transaction.
+     *
+     * @param tx            The transaction being applied.
+     * @param view          Active ledger view (used for rules).
+     * @param j             Journal for logging invariant failures.
+     * @return @c true when all @c ttLOAN_PAY invariants hold.
+     */
+    [[nodiscard]] bool
+    finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal const& j) const;
 
 public:
     // Compute the coarsest scale required to represent all numbers

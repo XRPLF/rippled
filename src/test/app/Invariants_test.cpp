@@ -3288,7 +3288,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"set must not change assets outstanding",
              "set must not change assets available",
-             "set must not change shares outstanding",
+             "shares outstanding must only change by deposit, withdraw, or clawback",
              "set must not change vault balance",
              "assets available must be positive",
              "assets available must not be greater than assets outstanding",
@@ -3433,7 +3433,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"set must not change shares outstanding",
+            {"shares outstanding must only change by deposit, withdraw, or clawback",
              "updated zero sized vault must have no assets outstanding",
              "updated zero sized vault must have no assets available"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -3553,8 +3553,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_SET: the balance decreases, but not by the principal requested
         doInvariantCheck(
-            {"loan set must decrease vault balance by the principal requested",
-             "loan set must decrease assets available by the principal requested"},
+            {"loan set must decrease vault balance by the principal requested"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -3564,6 +3563,36 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -100,
                         .vaultAssets = -100,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 100},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: vault balance decreases by the principal requested, but
+        // assets available decreases by a different amount, so only the shared
+        // "vault balance and assets available" check trips.
+        doInvariantCheck(
+            {"vault balance and assets available must add up"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -150,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
                         .createLoan = LoanParams{
                             .principalOutstanding = 200,
                             .totalValueOutstanding = 200,
@@ -3655,7 +3684,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_SET: principal matches, but shares outstanding changes
         doInvariantCheck(
-            {"loan set must not change shares outstanding"},
+            {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -3746,7 +3775,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_MANAGE: vault balance and assets available do not add up
         doInvariantCheck(
-            {"loan manage vault balance and assets available must add up"},
+            {"vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(ac.view(), keylet, Adjustments{.assetsAvailable = -100});
@@ -3758,7 +3787,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_MANAGE: loss unrealized driven negative
         doInvariantCheck(
-            {"loan manage must not make loss unrealized negative"},
+            {"loss unrealized must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(ac.view(), keylet, Adjustments{.lossUnrealized = -1});
@@ -3770,7 +3799,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_MANAGE: shares outstanding changes
         doInvariantCheck(
-            {"loan manage must not change shares outstanding"},
+            {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -3857,7 +3886,7 @@ class Invariants_test : public beast::unit_test::Suite
         // vault balance (pseudo-account) grows by 50 but assets available is
         // bumped by 60, so the two no longer add up.
         doInvariantCheck(
-            {"loan pay vault balance and assets available must add up"},
+            {"vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -3912,7 +3941,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_PAY: shares outstanding changes
         doInvariantCheck(
-            {"loan pay must not change shares outstanding"},
+            {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -3934,7 +3963,7 @@ class Invariants_test : public beast::unit_test::Suite
         // ttLOAN_PAY: loss unrealized driven negative. The cash inflow is
         // valid, but loss unrealized is set below zero.
         doInvariantCheck(
-            {"loan pay must not make loss unrealized negative"},
+            {"loss unrealized must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(
@@ -4583,7 +4612,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deposit must decrease depositor balance",
              "deposit must change vault and depositor balance by equal amount",
              "deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+             "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
 
@@ -4700,7 +4729,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+             "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -4766,7 +4795,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "withdrawal must decrease vault balance",
                 "withdrawal must increase destination balance",
                 "withdrawal and assets outstanding must add up",
-                "withdrawal and assets available must add up",
+                "vault balance and assets available must add up",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -4857,7 +4886,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"withdrawal and assets outstanding must add up",
-             "withdrawal and assets available must add up"},
+             "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -5036,7 +5065,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"clawback must change holder and vault shares by equal amount",
              "clawback and assets outstanding must add up",
-             "clawback and assets available must add up"},
+             "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
                 return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
