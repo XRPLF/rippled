@@ -30,7 +30,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 Database::Database(
     Scheduler& scheduler,
@@ -43,7 +43,7 @@ Database::Database(
     , requestBundle_(get<int>(config, Keys::kRqBundle, 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
+    XRPL_ASSERT(readThreads, "xrpl::node_store::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -89,7 +89,7 @@ Database::Database(
                     {
                         XRPL_ASSERT(
                             !it->second.empty(),
-                            "xrpl::NodeStore::Database::Database : non-empty "
+                            "xrpl::node_store::Database::Database : non-empty "
                             "data");
 
                         auto const& hash = it->first;
@@ -164,7 +164,7 @@ Database::stop()
     {
         XRPL_ASSERT(
             steady_clock::now() - start < 30s,
-            "xrpl::NodeStore::Database::stop : maximum stop duration");
+            "xrpl::node_store::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
@@ -213,7 +213,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.forEach([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
+        XRPL_ASSERT(nodeObject, "xrpl::node_store::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -241,7 +241,12 @@ Database::fetchNodeObject(
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
     auto dur = steady_clock::now() - begin;
-    fetchDurationUs_ += duration_cast<microseconds>(dur).count();
+
+    // Measured once and used for both the cumulative counter and the
+    // scheduler report, so the two can never disagree about how long this
+    // fetch took.
+    auto const elapsedUs = duration_cast<microseconds>(dur);
+    fetchDurationUs_ += elapsedUs.count();
     if (nodeObject)
     {
         ++fetchHitCount_;
@@ -249,7 +254,7 @@ Database::fetchNodeObject(
     }
     ++fetchTotalCount_;
 
-    fetchReport.elapsed = duration_cast<milliseconds>(dur);
+    fetchReport.elapsed = elapsedUs;
     scheduler_.onFetch(fetchReport);
     return nodeObject;
 }
@@ -257,7 +262,7 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(json::Value& obj)
 {
-    XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
+    XRPL_ASSERT(obj.isObject(), "xrpl::node_store::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> const lock(readLock_);
@@ -274,6 +279,7 @@ Database::getCountsJson(json::Value& obj)
     obj[jss::node_written_bytes] = std::to_string(storeSz_);
     obj[jss::node_read_bytes] = std::to_string(fetchSz_);
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
+    obj[jss::node_writes_duration_us] = std::to_string(storeDurationUs_);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -9,13 +9,14 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
@@ -23,7 +24,16 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
     storeStats(1, data.size());
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
+
+    // Time only the backend call. The cache work below is not disk work and
+    // would blur the write latency signal.
+    auto const begin = std::chrono::steady_clock::now();
     backend_->store(obj);
+    storeDurationStats(
+        static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                       std::chrono::steady_clock::now() - begin)
+                                       .count()));
+
     if (cache_)
     {
         // After the store, replace a negative cache entry if there is one
@@ -125,4 +135,4 @@ DatabaseNodeImp::fetchNodeObject(
     return nodeObject;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

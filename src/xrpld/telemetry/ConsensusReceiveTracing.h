@@ -37,8 +37,7 @@
  *  validationReceive) so they stay in sync with the rest of Phase 4.
  */
 
-#include <xrpld/consensus/ConsensusSpanNames.h>
-
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>

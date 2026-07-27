@@ -81,6 +81,9 @@ DerivedData
 # Python
 __pycache__
 
+# Rust build artifacts.
+target/
+
 # Direnv's directory
 /.direnv
 

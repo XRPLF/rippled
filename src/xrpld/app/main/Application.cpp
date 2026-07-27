@@ -1,6 +1,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
@@ -236,6 +237,11 @@ public:
     NodeStoreScheduler nodeStoreScheduler_;
     std::unique_ptr<SHAMapStore> shaMapStore_;
     PendingSaves pendingSaves_;
+    /**
+     * Process-wide ledger-acquisition counters, shared by every acquisition.
+     * Declared before the ledger services below so it outlives them.
+     */
+    AcquireStats acquireStats_;
     std::optional<OpenLedger> openLedger_;
 
     NodeCache tempNodeCache_;
@@ -246,7 +252,7 @@ public:
 
     std::unique_ptr<Resource::Manager> resourceManager_;
 
-    std::unique_ptr<NodeStore::Database> nodeStore_;
+    std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> orderBookDB_;
     std::unique_ptr<PathRequestManager> pathRequestManager_;
@@ -696,7 +702,7 @@ public:
         return tempNodeCache_;
     }
 
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         return *nodeStore_;
@@ -816,6 +822,12 @@ public:
         return pendingSaves_;
     }
 
+    AcquireStats&
+    getAcquireStats() override
+    {
+        return acquireStats_;
+    }
+
     OpenLedger&
     getOpenLedger() override
     {
@@ -901,9 +913,9 @@ public:
         if (config_->doImport)
         {
             auto j = logs_->journal("NodeObject");
-            NodeStore::DummyScheduler dummyScheduler;
-            std::unique_ptr<NodeStore::Database> source =
-                NodeStore::Manager::instance().makeDatabase(
+            node_store::DummyScheduler dummyScheduler;
+            std::unique_ptr<node_store::Database> source =
+                node_store::Manager::instance().makeDatabase(
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
