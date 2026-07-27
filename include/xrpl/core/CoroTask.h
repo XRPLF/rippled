@@ -152,6 +152,10 @@ template <>
 class CoroTask<void>
 {
 public:
+    // The C++ coroutine protocol mandates these names (promise_type,
+    // initial_suspend, await_ready, ...) and instance-callable awaiter
+    // methods, which conflict with the project naming/static conventions.
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
     struct promise_type;
     using Handle = std::coroutine_handle<promise_type>;
 
@@ -260,6 +264,7 @@ public:
             exception_ = std::current_exception();
         }
     };
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 
     /**
      * Default constructor. Creates an empty (null handle) task.
@@ -313,7 +318,7 @@ public:
     /**
      * @return The underlying coroutine_handle
      */
-    Handle
+    [[nodiscard]] Handle
     handle() const
     {
         return handle_;
@@ -322,7 +327,7 @@ public:
     /**
      * @return true if the coroutine has run to completion (or thrown)
      */
-    bool
+    [[nodiscard]] bool
     done() const
     {
         return handle_ && handle_.done();
@@ -334,7 +339,8 @@ public:
      * Always false. This task is lazy, so co_await always suspends
      * the caller to set up the continuation link.
      */
-    bool
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
+    [[nodiscard]] bool
     await_ready() const noexcept
     {
         return false;
@@ -368,6 +374,7 @@ public:
         if (auto& ep = handle_.promise().exception_)
             std::rethrow_exception(ep);
     }
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 
 private:
     // Exclusively-owned coroutine handle. Null after move or default
@@ -477,6 +484,10 @@ class CoroTask
         "CoroTask<T> requires T to be move-constructible");
 
 public:
+    // The C++ coroutine protocol mandates these names (promise_type,
+    // initial_suspend, await_ready, ...) and instance-callable awaiter
+    // methods, which conflict with the project naming/static conventions.
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
     struct promise_type;
     using Handle = std::coroutine_handle<promise_type>;
 
@@ -578,6 +589,7 @@ public:
             result_.template emplace<2>(std::current_exception());
         }
     };
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 
     /**
      * Default constructor. Creates an empty (null handle) task.
@@ -631,7 +643,7 @@ public:
     /**
      * @return The underlying coroutine_handle
      */
-    Handle
+    [[nodiscard]] Handle
     handle() const
     {
         return handle_;
@@ -640,7 +652,7 @@ public:
     /**
      * @return true if the coroutine has run to completion (or thrown)
      */
-    bool
+    [[nodiscard]] bool
     done() const
     {
         return handle_ && handle_.done();
@@ -651,7 +663,8 @@ public:
     /**
      * Always false. co_await always suspends to set up continuation.
      */
-    bool
+    // NOLINTBEGIN(readability-identifier-naming, readability-convert-member-functions-to-static)
+    [[nodiscard]] bool
     await_ready() const noexcept
     {
         return false;
@@ -689,6 +702,7 @@ public:
             std::rethrow_exception(*ep);
         return std::get<1>(std::move(result));
     }
+    // NOLINTEND(readability-identifier-naming, readability-convert-member-functions-to-static)
 
 private:
     // Exclusively-owned coroutine handle. Null after move or default
