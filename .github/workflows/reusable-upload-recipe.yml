@@ -40,14 +40,14 @@ defaults:
 jobs:
   upload:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-e29b523
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
     env:
       REMOTE_NAME: ${{ inputs.remote_name }}
       CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.remote_username }}
       CONAN_PASSWORD_XRPLF: ${{ secrets.remote_password }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Generate build version number
         id: version
