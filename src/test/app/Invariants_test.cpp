@@ -4058,6 +4058,96 @@ class Invariants_test : public beast::unit_test::Suite
                 "the change in the loan claim"));
         }
 
+        // ttLOAN_PAY: the vault, the loan-broker pseudo-account and the
+        // loan-broker owner are the only three destinations of a payment; their
+        // combined inflow can never exceed tx[sfAmount].  Set up a real loan
+        // broker so we can address its pseudo-account, then dispense 60 to the
+        // vault and 50 to the broker pseudo — a total of 110 for a tx[sfAmount]
+        // of 100, tripping the check.  The setup is bespoke because the shared
+        // harness does not create loan brokers.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            auto const sleBrokerBase = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBrokerBase))
+                return;
+            auto const vaultKeylet = keylet::vault(sleBrokerBase->at(sfVaultID));
+            auto const brokerPseudoId = sleBrokerBase->at(sfAccount);
+
+            Vault const vault{env};
+            env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            // Insert a pre-existing loan pointing at the real broker so
+            // finalizeLoanPay's broker lookup succeeds and the inflow-sum
+            // check is actually reached.
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(100)); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Vault balance and assetsAvailable both +60, borrower -110 (60 to
+            // vault, 50 to broker pseudo).  The loan's claim drops by 60
+            // (total value 150 -> 90) so assets outstanding stays at zero
+            // delta and the assets-outstanding-vs-claim identity holds.
+            if (!BEAST_EXPECT(kAdjust(
+                    ac.view(),
+                    vaultKeylet,
+                    Adjustments{
+                        .assetsAvailable = 60,
+                        .vaultAssets = 60,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -110}})))
+                return;
+
+            auto sleBrokerPseudo = ac.view().peek(keylet::account(brokerPseudoId));
+            if (!BEAST_EXPECT(sleBrokerPseudo))
+                return;
+            (*sleBrokerPseudo)[sfBalance] = *(*sleBrokerPseudo)[sfBalance] + 50;
+            ac.view().update(sleBrokerPseudo);
+
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(40);
+            sleLoan->at(sfTotalValueOutstanding) = Number(90);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan pay vault and broker must not receive more than the amount paid"));
+        }
+
         // A loan may only be deleted by a LoanDelete transaction, and only once
         // it is fully paid off. Both branches are exercised by creating a real
         // loan in the Preclose (so it exists in the base ledger with outstanding
@@ -4618,7 +4708,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must increase vault balance",
              "deposit must decrease depositor balance",
              "deposit must change vault and depositor balance by equal amount",
-             "deposit and assets outstanding must add up",
+             "vault balance and assets outstanding must add up",
              "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -4711,7 +4801,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit and assets outstanding must add up"},
+            {"vault balance and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
@@ -4735,7 +4825,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit and assets outstanding must add up",
+            {"vault balance and assets outstanding must add up",
              "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -4801,7 +4891,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "withdrawal must change vault and destination balance by equal amount",
                 "withdrawal must decrease vault balance",
                 "withdrawal must increase destination balance",
-                "withdrawal and assets outstanding must add up",
+                "vault balance and assets outstanding must add up",
                 "vault balance and assets available must add up",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4892,7 +4982,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal and assets outstanding must add up",
+            {"vault balance and assets outstanding must add up",
              "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -4908,7 +4998,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal and assets outstanding must add up"},
+            {"vault balance and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
@@ -5071,7 +5161,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"clawback must change holder and vault shares by equal amount",
-             "clawback and assets outstanding must add up",
+             "vault balance and assets outstanding must add up",
              "vault balance and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);

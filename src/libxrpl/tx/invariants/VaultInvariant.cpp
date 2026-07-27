@@ -569,33 +569,35 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan pay loan broker must exist";
-            return false;
-        }
-
-        auto const brokerPseudoDelta = deltaAssets(brokerSle->at(sfAccount));
-        auto const brokerOwnerDelta = deltaAssets(brokerSle->at(sfOwner));
-
-        std::vector<DeltaInfo> deltas{*maybeVaultDeltaAssets};
-        if (brokerPseudoDelta)
-            deltas.push_back(*brokerPseudoDelta);
-        if (brokerOwnerDelta)
-            deltas.push_back(*brokerOwnerDelta);
-        auto const totalScale = std::max(minScale, computeCoarsestScale(deltas));
-
-        Number totalReceivedRaw = maybeVaultDeltaAssets->delta;
-        if (brokerPseudoDelta)
-            totalReceivedRaw += brokerPseudoDelta->delta;
-        if (brokerOwnerDelta)
-            totalReceivedRaw += brokerOwnerDelta->delta;
-
-        auto const totalReceived = roundToAsset(vaultAsset, totalReceivedRaw, totalScale);
-        auto const totalAmount = roundToAsset(vaultAsset, tx[sfAmount], totalScale);
-        if (totalReceived > totalAmount)
-        {
-            JLOG(j.fatal()) <<  //
-                "Invariant failed: loan pay vault and broker must not "
-                "receive more than the amount paid";
             result = false;
+        }
+        else
+        {
+            auto const brokerPseudoDelta = deltaAssets(brokerSle->at(sfAccount));
+            auto const brokerOwnerDelta = deltaAssets(brokerSle->at(sfOwner));
+
+            std::vector<DeltaInfo> deltas{*maybeVaultDeltaAssets};
+            if (brokerPseudoDelta)
+                deltas.push_back(*brokerPseudoDelta);
+            if (brokerOwnerDelta)
+                deltas.push_back(*brokerOwnerDelta);
+            auto const totalScale = std::max(minScale, computeCoarsestScale(deltas));
+
+            Number totalReceivedRaw = maybeVaultDeltaAssets->delta;
+            if (brokerPseudoDelta)
+                totalReceivedRaw += brokerPseudoDelta->delta;
+            if (brokerOwnerDelta)
+                totalReceivedRaw += brokerOwnerDelta->delta;
+
+            auto const totalReceived = roundToAsset(vaultAsset, totalReceivedRaw, totalScale);
+            auto const totalAmount = roundToAsset(vaultAsset, tx[sfAmount], totalScale);
+            if (totalReceived > totalAmount)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan pay vault and broker must not "
+                    "receive more than the amount paid";
+                result = false;
+            }
         }
     }
 
@@ -652,7 +654,8 @@ ValidVault::finalize(
         if (hasPrivilege(tx, MustModifyVault))
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: vault operation succeeded without modifying a vault";
+                "Invariant failed: vault operation succeeded without modifying "
+                "a vault";
             XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault noop invariant");
             return !enforce;
         }
@@ -663,7 +666,10 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
-        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : illegal vault transaction invariant");
+        XRPL_ASSERT(
+            enforce,
+            "xrpl::ValidVault::finalize : illegal vault transaction "
+            "invariant");
         return !enforce;  // Also not a vault operation
     }
 
@@ -685,7 +691,10 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault deleted by a wrong transaction type";
-            XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : illegal vault deletion invariant");
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::ValidVault::finalize : illegal vault deletion "
+                "invariant");
             return !enforce;  // That's all we can do here
         }
 
@@ -707,7 +716,8 @@ ValidVault::finalize(
 
         if (!deletedShares)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must also delete shares";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
+                               "delete shares";
             XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : shares deletion invariant");
             return !enforce;  // That's all we can do here
         }
@@ -715,17 +725,20 @@ ValidVault::finalize(
         bool result = true;
         if (deletedShares->sharesTotal != 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no shares outstanding";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "shares outstanding";
             result = false;
         }
         if (beforeVault.assetsTotal != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets outstanding";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets outstanding";
             result = false;
         }
         if (beforeVault.assetsAvailable != kZero)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets available";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets available";
             result = false;
         }
 
@@ -733,7 +746,8 @@ ValidVault::finalize(
     }
     if (txnType == ttVAULT_DELETE)
     {
-        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without deleting a vault";
+        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
+                           "deleting a vault";
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
     }
@@ -789,14 +803,14 @@ ValidVault::finalize(
     {
         if (afterVault.assetsTotal != kZero)
         {
-            JLOG(j.fatal())
-                << "Invariant failed: updated zero sized vault must have no assets outstanding";
+            JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                               "vault must have no assets outstanding";
             result = false;
         }
         if (afterVault.assetsAvailable != kZero)
         {
-            JLOG(j.fatal())
-                << "Invariant failed: updated zero sized vault must have no assets available";
+            JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                               "vault must have no assets available";
             result = false;
         }
     }
@@ -816,15 +830,15 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable > afterVault.assetsTotal)
     {
-        JLOG(j.fatal())  //
-            << "Invariant failed: assets available must not be greater than assets outstanding";
+        JLOG(j.fatal()) << "Invariant failed: assets available must "
+                           "not be greater than assets outstanding";
         result = false;
     }
     else if (afterVault.lossUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
     {
         JLOG(j.fatal())  //
-            << "Invariant failed: loss unrealized must not exceed the difference between assets "
-               "outstanding and available";
+            << "Invariant failed: loss unrealized must not exceed "
+               "the difference between assets outstanding and available";
         result = false;
     }
 
@@ -860,7 +874,8 @@ ValidVault::finalize(
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: vault transaction must not change loss unrealized";
+            "Invariant failed: vault transaction must not change loss "
+            "unrealized";
         result = false;
     }
 
@@ -903,7 +918,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: shares outstanding must only change by "
             "deposit, withdraw, or clawback";
-        return false;
+        result = false;
     }
 
     auto const& vaultAsset = afterVault.asset;
@@ -932,6 +947,24 @@ ValidVault::finalize(
                 "Invariant failed: vault balance and assets available must add up";
             result = false;
         }
+
+        // For deposit / withdraw / clawback the vault's assets outstanding
+        // must also track the vault balance in lock-step: no loan-side
+        // activity is present to legitimately move `assetsTotal`
+        // independently (interest booking, default write-off, or claim
+        // change on repayment all belong to loan-* transactions).
+        if (txnType == ttVAULT_DEPOSIT || txnType == ttVAULT_WITHDRAW ||
+            txnType == ttVAULT_CLAWBACK)
+        {
+            auto const assetsTotalDelta = roundToAsset(
+                vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+            if (assetsTotalDelta != vaultDeltaAssets)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: vault balance and assets outstanding must add up";
+                result = false;
+            }
+        }
     }
 
     // Technically this does not need to be a lambda, but it's more
@@ -947,7 +980,8 @@ ValidVault::finalize(
                 if (!beforeVault_.empty())
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: create operation must not have updated a vault";
+                        << "Invariant failed: create operation must not have "
+                           "updated a vault";
                     result = false;
                 }
 
@@ -962,8 +996,8 @@ ValidVault::finalize(
                 if (afterVault.pseudoId != updatedShares->share.getIssuer())
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer and vault pseudo-account must be the "
-                           "same";
+                        << "Invariant failed: shares issuer and vault "
+                           "pseudo-account must be the same";
                     result = false;
                 }
 
@@ -979,7 +1013,8 @@ ValidVault::finalize(
                 if (!isPseudoAccount(sleSharesIssuer))
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer must be a pseudo-account";
+                        << "Invariant failed: shares issuer must be a "
+                           "pseudo-account";
                     result = false;
                 }
 
@@ -987,8 +1022,8 @@ ValidVault::finalize(
                     !vaultId || *vaultId != afterVault.key)
                 {
                     JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer pseudo-account must point back to the "
-                           "vault";
+                        << "Invariant failed: shares issuer pseudo-account "
+                           "must point back to the vault";
                     result = false;
                 }
 
@@ -1012,7 +1047,8 @@ ValidVault::finalize(
                 if (beforeVault.assetsTotal != afterVault.assetsTotal)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets outstanding";
+                        "Invariant failed: set must not change assets "
+                        "outstanding";
                     result = false;
                 }
 
@@ -1020,14 +1056,16 @@ ValidVault::finalize(
                     afterVault.assetsTotal > afterVault.assetsMaximum)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set assets outstanding must not exceed assets maximum";
+                        "Invariant failed: set assets outstanding must not "
+                        "exceed assets maximum";
                     result = false;
                 }
 
                 if (beforeVault.assetsAvailable != afterVault.assetsAvailable)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets available";
+                        "Invariant failed: set must not change assets "
+                        "available";
                     result = false;
                 }
 
@@ -1038,7 +1076,6 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
-                auto const& beforeVault = beforeVault_[0];
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1058,8 +1095,8 @@ ValidVault::finalize(
                 if (vaultDeltaAssets > txAmount)
                 {
                     JLOG(j.fatal()) <<  //
-                        "Invariant failed: deposit must not change vault balance by more than "
-                        "deposited amount";
+                        "Invariant failed: deposit must not change vault "
+                        "balance by more than deposited amount";
                     result = false;
                 }
 
@@ -1151,15 +1188,6 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const assetTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                if (assetTotalDelta != vaultDeltaAssets)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: deposit and assets outstanding must add up";
-                    result = false;
-                }
-
                 return result;
             }
             case ttVAULT_WITHDRAW: {
@@ -1168,7 +1196,6 @@ ValidVault::finalize(
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
                     "xrpl::ValidVault::finalize : withdrawal updated a vault");
-                auto const& beforeVault = beforeVault_[0];
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1297,16 +1324,6 @@ ValidVault::finalize(
                 {
                     JLOG(j.fatal()) << "Invariant failed: " <<  //
                         "withdrawal must change depositor and vault shares by equal amount";
-                    result = false;
-                }
-
-                auto const assetTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                // Note, vaultBalance is negative (see check above)
-                if (assetTotalDelta != vaultPseudoDeltaAssets)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: withdrawal and assets outstanding must add up";
                     result = false;
                 }
 
