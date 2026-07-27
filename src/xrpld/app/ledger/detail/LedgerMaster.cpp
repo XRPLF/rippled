@@ -660,7 +660,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     std::uint32_t minHas = seq;
     std::uint32_t maxHas = seq;
 
-    NodeStore::Database& nodeStore{app_.getNodeStore()};
+    node_store::Database& nodeStore{app_.getNodeStore()};
     while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
