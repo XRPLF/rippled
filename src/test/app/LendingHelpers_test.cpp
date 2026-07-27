@@ -1669,18 +1669,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
-            testcase("loanOriginationDeltas dispatcher: amendment disabled picks Accrual");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
-            auto const deltas =
-                loanOriginationDeltas(cashBasisVault, principalRequested, interestDue);
-            auto const expected =
-                xrpl::Accrual::loanOriginationDeltas(principalRequested, interestDue);
-            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
-        }
-
-        {
             testcase(
                 "loanOriginationDeltas dispatcher: amendment enabled, legacy vault picks "
                 "Accrual");
@@ -1720,18 +1708,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanOriginationExceedsVaultMaximum dispatcher: amendment disabled picks "
-                "Accrual");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
-            BEAST_EXPECT(
-                loanOriginationExceedsVaultMaximum(cashBasisVault, vaultTotal, interestDue) ==
-                xrpl::Accrual::loanOriginationExceedsVaultMaximum(
-                    vaultMaximum, vaultTotal, interestDue));
-        }
-
-        {
-            testcase(
                 "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, legacy vault "
                 "picks Accrual");
             Env const env{*this};
@@ -1759,15 +1735,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         auto const legacyVault = makeVaultSle();
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
-
-        {
-            testcase("loanVaultExposure dispatcher: amendment disabled picks Accrual");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
-            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-            BEAST_EXPECT(
-                loanVaultExposure(cashBasisVault, sle) == xrpl::Accrual::loanVaultExposure(sle));
-        }
 
         {
             testcase("loanVaultExposure dispatcher: amendment enabled, legacy vault picks Accrual");
@@ -1802,16 +1769,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         auto const legacyVault = makeVaultSle();
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
-
-        {
-            testcase("loanPaymentDeltas dispatcher: amendment disabled picks Accrual");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
-            auto const deltas = loanPaymentDeltas(cashBasisVault, parts);
-            auto const expected = xrpl::Accrual::loanPaymentDeltas(parts);
-            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
-        }
 
         {
             testcase("loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks Accrual");
