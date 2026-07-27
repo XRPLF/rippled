@@ -1,6 +1,7 @@
 #include <test/jtx/CheckMessageLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/core/Config.h>
 
@@ -41,9 +42,11 @@ private:
      *
      * The nodestore suites that used to share these helpers moved to GTest,
      * taking their common base with them. This suite stayed on Beast, so it
-     * keeps its own copy of the few pieces it needs.
+     * keeps its own copy of the few pieces it needs. SuiteJournal rather than
+     * a bare beast::Journal, which has no default constructor; it converts
+     * implicitly where a journal is expected.
      */
-    beast::Journal journal_;
+    test::SuiteJournal journal_{"DatabaseConfig_test", *this};
 
     /**
      * Build a batch of node objects that is the same for a given seed.
@@ -855,8 +858,6 @@ public:
     void
     run() override
     {
-        std::int64_t const seedValue = 50;
-
         testCounterWidths();
 
         testDurationAccessors();
