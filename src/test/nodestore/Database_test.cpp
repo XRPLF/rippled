@@ -604,7 +604,9 @@ public:
 
         // A mean derived the way the telemetry gauge derives it must be a
         // sane, non-zero microsecond figure rather than a division artifact.
-        BEAST_EXPECT(dest->getStoreDurationUs() / dest->getStoreCount() >= 0);
+        // Asserted as strictly positive: both operands are unsigned, so a
+        // >= 0 check would be vacuously true and gcc rejects it outright.
+        BEAST_EXPECT(dest->getStoreDurationUs() / dest->getStoreCount() > 0);
     }
 
     //--------------------------------------------------------------------------
