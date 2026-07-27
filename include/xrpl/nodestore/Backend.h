@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * A backend used for the NodeStore.
@@ -163,4 +163,4 @@ public:
     fdRequired() const = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

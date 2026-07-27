@@ -15,9 +15,9 @@
 namespace xrpl {
 
 // Forward declarations
-namespace NodeStore {
+namespace node_store {
 class Database;
-}  // namespace NodeStore
+}  // namespace node_store
 namespace Resource {
 class Manager;
 }  // namespace Resource
@@ -164,7 +164,7 @@ public:
     getResourceManager() = 0;
 
     // Storage services
-    virtual NodeStore::Database&
+    virtual node_store::Database&
     getNodeStore() = 0;
 
     virtual SHAMapStore&
