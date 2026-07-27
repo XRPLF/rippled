@@ -49,6 +49,20 @@ doRipplePathFind(RPC::JsonContext& context)
         PathRequest::pointer request;
         lpLedger = context.ledgerMaster.getClosedLedger();
 
+        // The wait below parks this JobQueue worker thread until the
+        // path-finding continuation fires. The continuation is fired by a
+        // JtUpdatePf job, which itself needs a free worker to run. Bound
+        // the number of concurrently parked workers (LegacyPathFind admits
+        // at most kMaxPathfindsInProgress non-admin requests) so that
+        // concurrent ripple_path_find calls cannot occupy every worker and
+        // stall the whole JobQueue. The guard must stay in scope until the
+        // wait completes. (The old Boost.Coroutine implementation did not
+        // need this: it suspended and released the worker instead of
+        // blocking it.)
+        RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
+        if (!lpf.isOk())
+            return rpcError(RpcTooBusy);
+
         // makeLegacyPathRequest enqueues a path-finding job that runs
         // asynchronously.  We block this thread with a condition_variable
         // until the path-finding continuation signals completion.
@@ -81,9 +95,9 @@ doRipplePathFind(RPC::JsonContext& context)
             context.params);
         if (request)
         {
-            using namespace std::chrono_literals;
             std::unique_lock lk(state->mtx);
-            if (!state->cv.wait_for(lk, 30s, [&state] { return state->done; }))
+            if (!state->cv.wait_for(
+                    lk, RPC::Tuning::kPathfindCompletionTimeout, [&state] { return state->done; }))
             {
                 // Path-finding continuation never fired (e.g. shutdown
                 // race or unexpected failure). Return an internal error
