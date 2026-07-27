@@ -8,7 +8,6 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
-#include <memory>
 #include <string_view>
 
 namespace xrpl {
@@ -31,7 +30,7 @@ struct Context
     LedgerMaster& ledgerMaster;
     Resource::Consumer& consumer;
     Role role;
-    InfoSub::pointer infoSub{};
+    InfoSub::pointer infoSub;
     unsigned int apiVersion;
 };
 

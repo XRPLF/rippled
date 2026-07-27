@@ -13,7 +13,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -85,7 +84,7 @@ doRipplePathFind(RPC::JsonContext& context)
             request,
             [state]() {
                 {
-                    std::lock_guard const lk(state->mtx);
+                    std::scoped_lock const lk(state->mtx);
                     state->done = true;
                 }
                 state->cv.notify_one();

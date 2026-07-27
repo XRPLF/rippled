@@ -148,7 +148,12 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
     auto runner = app_.getJobQueue().postCoroTask(
-        JobType::JtRpc, "gRPC-Client", [thisShared](auto) -> CoroTask<void> {
+        JobType::JtRpc,
+        "gRPC-Client",
+        // Safe capture: postCoroTask heap-allocates the lambda (FuncStore)
+        // and thisShared keeps the CallData alive until the coroutine ends.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        [thisShared](auto) -> CoroTask<void> {
             thisShared->processRequest();
             co_return;
         });
