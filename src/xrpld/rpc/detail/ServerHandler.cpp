@@ -319,7 +319,13 @@ ServerHandler::onRequest(Session& session)
 
     std::shared_ptr<Session> const detachedSession = session.detach();
     auto const postResult = jobQueue_.postCoroTask(
-        JtClientRpc, "RPC-Client", [this, detachedSession](auto) -> CoroTask<void> {
+        JtClientRpc,
+        "RPC-Client",
+        // Safe capture: postCoroTask heap-allocates the lambda (FuncStore),
+        // detachedSession is captured by value, and this (the ServerHandler)
+        // outlives the JobQueue jobs.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        [this, detachedSession](auto) -> CoroTask<void> {
             try
             {
                 processSession(detachedSession);
@@ -367,6 +373,10 @@ ServerHandler::onWSMessage(
     auto const postResult = jobQueue_.postCoroTask(
         JtClientWebsocket,
         "WS-Client",
+        // Safe capture: postCoroTask heap-allocates the lambda (FuncStore),
+        // session and jv are captured by value, and this (the ServerHandler)
+        // outlives the JobQueue jobs.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         [this, session, jv = std::move(jv)](auto) -> CoroTask<void> {
             try
             {
@@ -612,7 +622,7 @@ ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
     beast::IP::Endpoint const& remoteIPAddress,
-    Output&& output,
+    Output const& output,
     std::string_view forwardedFor,
     std::string_view user)
 {
