@@ -498,7 +498,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
-            env.setParseFailureExpected(true);
+            auto const g = env.getParseFailureGuard(true);
             try
             {
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -510,7 +510,6 @@ class Batch_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(true);
             }
-            env.setParseFailureExpected(false);
         }
 
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
