@@ -15,7 +15,7 @@
 #include <vector>
 
 using namespace xrpl;
-using namespace xrpl::NodeStore;
+using namespace xrpl::node_store;
 
 namespace {
 

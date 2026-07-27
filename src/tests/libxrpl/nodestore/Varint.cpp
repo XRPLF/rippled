@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <limits>
 
-using namespace xrpl::NodeStore;
+using namespace xrpl::node_store;
 
 TEST(Varint, encode_decode)
 {

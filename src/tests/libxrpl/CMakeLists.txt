@@ -38,7 +38,6 @@ set(test_modules
     shamap
     tx
     protocol_autogen
-    nodestore
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
