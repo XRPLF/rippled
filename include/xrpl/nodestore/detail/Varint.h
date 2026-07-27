@@ -15,7 +15,7 @@ namespace xrpl::NodeStore {
 // field tag
 struct Varint;
 
-// Metafuncton to return largest
+// Metafunction to return largest
 // possible size of T represented as varint.
 // T must be unsigned
 template <class T, bool = std::is_unsigned_v<T>>
