@@ -14,6 +14,7 @@
 namespace xrpl {
 
 namespace detail {
+
 template <typename T>
 constexpr bool kIsIntegralConstant = false;
 template <typename I, auto A>

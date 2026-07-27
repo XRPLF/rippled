@@ -123,7 +123,7 @@ public:
 
     struct AccountTxResult
     {
-        std::variant<AccountTxs, MetaTxsList> transactions;
+        std::variant<AccountTxs, MetaTxsList> transactions{};
         LedgerRange ledgerRange{};
         uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;

@@ -49,7 +49,7 @@ public:
     {
         explicit Setup() = default;
 
-        std::vector<Port> ports;
+        std::vector<Port> ports{};
 
         // Memberspace
         struct ClientT

@@ -126,7 +126,7 @@ private:
         {
         }
 
-        value_type value;
+        value_type value{};
         time_point when;
     };
 
@@ -415,31 +415,31 @@ private:
             bucket_type,
             typename std::allocator_traits<Allocator>::template rebind_alloc<bucket_type>>;
 
-        Buckets() : maxLoadFactor_(1.f), vec_()
+        Buckets() : maxLoadFactor_(1.f), vec()
         {
-            vec_.resize(cont_type::suggested_upper_bucket_count(0));
+            vec.resize(cont_type::suggested_upper_bucket_count(0));
         }
 
-        Buckets(Allocator const& alloc) : maxLoadFactor_(1.f), vec_(alloc)
+        Buckets(Allocator const& alloc) : maxLoadFactor_(1.f), vec(alloc)
         {
-            vec_.resize(cont_type::suggested_upper_bucket_count(0));
+            vec.resize(cont_type::suggested_upper_bucket_count(0));
         }
 
         operator bucket_traits()
         {
-            return bucket_traits(&vec_[0], vec_.size());
+            return bucket_traits(&vec[0], vec.size());
         }
 
         void
         clear()
         {
-            vec_.clear();
+            vec.clear();
         }
 
         [[nodiscard]] size_type
         maxBucketCount() const
         {
-            return vec_.max_size();
+            return vec.max_size();
         }
 
         float&
@@ -459,17 +459,17 @@ private:
         void
         rehash(size_type count, Container& c)
         {
-            size_type const size(vec_.size());
+            size_type const size(vec.size());
             if (count == size)
                 return;
-            if (count > vec_.capacity())
+            if (count > vec.capacity())
             {
                 // Need two vectors otherwise we
                 // will destroy non-empty buckets.
-                vec_type vec(vec_.get_allocator());
-                std::swap(vec_, vec);
-                vec_.resize(count);
-                c.rehash(bucket_traits(&vec_[0], vec_.size()));
+                vec_type tmp(vec.get_allocator());
+                std::swap(tmp, vec);
+                vec.resize(count);
+                c.rehash(bucket_traits(&vec[0], vec.size()));
                 return;
             }
             // Rehash in place.
@@ -477,14 +477,14 @@ private:
             {
                 // This should not reallocate since
                 // we checked capacity earlier.
-                vec_.resize(count);
-                c.rehash(bucket_traits(&vec_[0], count));
+                vec.resize(count);
+                c.rehash(bucket_traits(&vec[0], count));
                 return;
             }
             // Resize must happen after rehash otherwise
             // we might destroy non-empty buckets.
-            c.rehash(bucket_traits(&vec_[0], count));
-            vec_.resize(count);
+            c.rehash(bucket_traits(&vec[0], count));
+            vec.resize(count);
         }
 
         // Resize the buckets to accommodate at least n items.
@@ -498,7 +498,7 @@ private:
 
     private:
         float maxLoadFactor_;
-        vec_type vec_;
+        vec_type vec{};
     };
 
     template <class... Args>
@@ -1455,7 +1455,7 @@ private:
 private:
     ConfigT config_;
     Buckets buck_;
-    cont_type mutable cont_;
+    cont_type mutable cont_{};
 };
 
 //------------------------------------------------------------------------------

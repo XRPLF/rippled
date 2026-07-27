@@ -75,25 +75,25 @@ public:
         return transaction_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getID() const
     {
         return transactionID_;
     }
 
-    LedgerIndex
+    [[nodiscard]] LedgerIndex
     getLedger() const
     {
         return ledgerIndex_;
     }
 
-    bool
+    [[nodiscard]] bool
     isValidated() const
     {
         return ledgerIndex_ != 0;
     }
 
-    TransStatus
+    [[nodiscard]] TransStatus
     getStatus() const
     {
         return status_;
@@ -146,7 +146,7 @@ public:
      *
      * @return Whether transaction is being applied within a batch.
      */
-    bool
+    [[nodiscard]] bool
     getApplying() const
     {
         // Note that all access to applying_ are made by NetworkOPsImp, and must
@@ -199,7 +199,7 @@ public:
      * @brief getSubmitResult Return submit result
      * @return SubmitResult struct
      */
-    SubmitResult
+    [[nodiscard]] SubmitResult
     getSubmitResult() const
     {
         return submitResult_;
@@ -276,7 +276,7 @@ public:
      * @brief getCurrentLedgerState Get current ledger state of transaction
      * @return Current ledger state
      */
-    std::optional<CurrentLedgerState>
+    [[nodiscard]] std::optional<CurrentLedgerState>
     getCurrentLedgerState() const
     {
         return currentLedgerState_;
@@ -299,7 +299,7 @@ public:
         currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
@@ -308,7 +308,7 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator{};
 
         /**
          * @return true if transaction was found, false otherwise
@@ -329,7 +329,7 @@ public:
          * @throws if isFound() returns false
          */
         uint256 const&
-        getNodestoreHash()
+        getNodestoreHash() const
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
         }
@@ -340,7 +340,7 @@ public:
          * @throws if isFound() returns false
          */
         uint32_t
-        getLedgerSequence()
+        getLedgerSequence() const
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).second;
         }

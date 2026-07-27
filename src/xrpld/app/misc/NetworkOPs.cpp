@@ -816,7 +816,7 @@ private:
     std::reference_wrapper<ServiceRegistry> registry_;
     beast::Journal journal_;
 
-    std::unique_ptr<LocalTxs> localTX_;
+    std::unique_ptr<LocalTxs> localTX_{};
 
     std::recursive_mutex subLock_;
 
@@ -852,13 +852,13 @@ private:
      */
     using SubBookMapType = hash_map<Book, SubMapType>;
 
-    SubInfoMapType subAccount_;
-    SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;  ///< Guarded by subLock_.
+    SubInfoMapType subAccount_{};
+    SubInfoMapType subRTAccount_{};
+    SubBookMapType subBook_{};  ///< Guarded by subLock_.
 
-    subRpcMapType rpcSubMap_;
+    subRpcMapType rpcSubMap_{};
 
-    SubAccountHistoryMapType subAccountHistory_;
+    SubAccountHistoryMapType subAccountHistory_{};
 
     // Used as array indices; converting to enum class would require casts at ~40 call sites.
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
@@ -875,7 +875,7 @@ private:
         SLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
-    std::array<SubMapType, SubTypes::SLastEntry> streamMaps_;
+    std::array<SubMapType, SubTypes::SLastEntry> streamMaps_{};
 
     ServerFeeSummary lastFeeSummary_;
 
@@ -891,11 +891,11 @@ private:
     std::condition_variable cond_;
     std::mutex mutex_;
     DispatchState dispatchState_ = DispatchState::None;
-    std::vector<TransactionStatus> transactions_;
+    std::vector<TransactionStatus> transactions_{};
 
     StateAccounting accounting_;
 
-    std::set<uint256> pendingValidations_;
+    std::set<uint256> pendingValidations_{};
     std::mutex validationsMutex_;
 
 private:

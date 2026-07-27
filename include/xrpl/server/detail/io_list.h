@@ -59,7 +59,7 @@ private:
     std::size_t n_ = 0;
     bool closed_ = false;
     std::condition_variable cv_;
-    boost::container::flat_map<Work*, std::weak_ptr<Work>> map_;
+    boost::container::flat_map<Work*, std::weak_ptr<Work>> map_{};
     std::function<void(void)> f_;
 
 public:

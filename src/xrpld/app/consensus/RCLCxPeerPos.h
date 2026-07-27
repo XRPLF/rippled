@@ -49,13 +49,13 @@ public:
     /**
      * Verify the signing hash of the proposal
      */
-    bool
+    [[nodiscard]] bool
     checkSign() const;
 
     /**
      * Signature of the proposal (not necessarily verified)
      */
-    Slice
+    [[nodiscard]] Slice
     signature() const
     {
         return {signature_.data(), signature_.size()};
@@ -64,7 +64,7 @@ public:
     /**
      * Public key of peer that sent the proposal
      */
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     publicKey() const
     {
         return publicKey_;
@@ -73,13 +73,13 @@ public:
     /**
      * Unique id used by hash router to suppress duplicates
      */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     suppressionID() const
     {
         return suppression_;
     }
 
-    Proposal const&
+    [[nodiscard]] Proposal const&
     proposal() const
     {
         return proposal_;
@@ -88,10 +88,10 @@ public:
     /**
      * JSON representation of proposal
      */
-    json::Value
+    [[nodiscard]] json::Value
     getJson() const;
 
-    std::string
+    [[nodiscard]] std::string
     render() const
     {
         return proposal_.render();

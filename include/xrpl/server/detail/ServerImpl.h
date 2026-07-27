@@ -81,11 +81,11 @@ private:
     beast::Journal const j_;
     boost::asio::io_context& ioContext_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_{};
 
     std::mutex m_;
-    std::vector<Port> ports_;
-    std::vector<std::weak_ptr<Door<Handler>>> list_;
+    std::vector<Port> ports_{};
+    std::vector<std::weak_ptr<Door<Handler>>> list_{};
     int high_ = 0;
     std::array<std::size_t, 64> hist_{};
 

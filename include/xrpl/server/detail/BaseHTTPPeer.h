@@ -58,7 +58,7 @@ protected:
             memcpy(data.get(), ptr, len);
         }
 
-        std::unique_ptr<char[]> data;
+        std::unique_ptr<char[]> data{};
         std::size_t bytes;
         std::size_t used{0};
     };
@@ -75,8 +75,8 @@ protected:
 
     boost::asio::streambuf readBuf_;
     http_request_type message_;
-    std::vector<Buffer> wq_;
-    std::vector<Buffer> wq2_;
+    std::vector<Buffer> wq_{};
+    std::vector<Buffer> wq2_{};
     std::mutex mutex_;
     bool graceful_ = false;
     bool complete_ = false;
