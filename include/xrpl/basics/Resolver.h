@@ -3,6 +3,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -14,22 +15,29 @@ public:
 
     virtual ~Resolver() = 0;
 
-    /** Issue an asynchronous stop request. */
+    /**
+     * Issue an asynchronous stop request.
+     */
     virtual void
     stopAsync() = 0;
 
-    /** Issue a synchronous stop request. */
+    /**
+     * Issue a synchronous stop request.
+     */
     virtual void
     stop() = 0;
 
-    /** Issue a synchronous start request. */
+    /**
+     * Issue a synchronous start request.
+     */
     virtual void
     start() = 0;
 
-    /** resolve all hostnames on the list
-        @param names the names to be resolved
-        @param handler the handler to call
-    */
+    /**
+     * resolve all hostnames on the list
+     * @param names the names to be resolved
+     * @param handler the handler to call
+     */
     /** @{ */
     template <class Handler>
     void

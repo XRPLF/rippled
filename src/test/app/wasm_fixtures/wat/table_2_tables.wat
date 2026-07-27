@@ -16,9 +16,9 @@
   ;; Initialize Table 1 at index 0
   (elem (table $t1) (i32.const 0) $dummy)
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; If we successfully loaded a module with 2 tables, return 1.
     i32.const 1
   )
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

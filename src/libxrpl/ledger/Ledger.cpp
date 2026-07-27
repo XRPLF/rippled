@@ -180,7 +180,7 @@ Ledger::Ledger(
     }
 
     {
-        auto sle = std::make_shared<SLE>(keylet::fees());
+        auto sle = std::make_shared<SLE>(keylet::feeSettings());
         // Whether featureXRPFees is supported will depend on startup options.
         if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
@@ -200,8 +200,8 @@ Ledger::Ledger(
         }
         if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
         {
-            sle->at(sfExtensionComputeLimit) = fees.extensionComputeLimit;
-            sle->at(sfExtensionSizeLimit) = fees.extensionSizeLimit;
+            sle->at(sfGasLimit) = fees.gasLimit;
+            sle->at(sfBytecodeSizeLimit) = fees.bytecodeSizeLimit;
             sle->at(sfGasPrice) = fees.gasPrice;
         }
         rawInsert(sle);
@@ -407,7 +407,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Ledger::read(Keylet const& k) const
 {
     if (k.key == beast::kZero)
@@ -492,7 +492,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 //------------------------------------------------------------------------------
 
 void
-Ledger::rawErase(std::shared_ptr<SLE> const& sle)
+Ledger::rawErase(SLE::ref sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
@@ -506,7 +506,7 @@ Ledger::rawErase(uint256 const& key)
 }
 
 void
-Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
+Ledger::rawInsert(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -518,7 +518,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 }
 
 void
-Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
+Ledger::rawReplace(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -566,7 +566,7 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = read(keylet::fees()))
+        if (auto const sle = read(keylet::feeSettings()))
         {
             bool oldFees = false;
             bool newFees = false;
@@ -607,8 +607,8 @@ Ledger::setup()
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
             {
-                auto const extensionComputeLimit = sle->at(~sfExtensionComputeLimit);
-                auto const extensionSizeLimit = sle->at(~sfExtensionSizeLimit);
+                auto const gasLimit = sle->at(~sfGasLimit);
+                auto const bytecodeSizeLimit = sle->at(~sfBytecodeSizeLimit);
                 auto const gasPrice = sle->at(~sfGasPrice);
 
                 auto assign = [](std::uint32_t& dest, std::optional<std::uint32_t> const& src) {
@@ -617,10 +617,10 @@ Ledger::setup()
                         dest = src.value();
                     }
                 };
-                assign(fees_.extensionComputeLimit, extensionComputeLimit);
-                assign(fees_.extensionSizeLimit, extensionSizeLimit);
+                assign(fees_.gasLimit, gasLimit);
+                assign(fees_.bytecodeSizeLimit, bytecodeSizeLimit);
                 assign(fees_.gasPrice, gasPrice);
-                extensionFees = extensionComputeLimit || extensionSizeLimit || gasPrice;
+                extensionFees = gasLimit || bytecodeSizeLimit || gasPrice;
             }
             if (oldFees && newFees)
             {
@@ -653,7 +653,7 @@ Ledger::setup()
     return ret;
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 Ledger::peek(Keylet const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);

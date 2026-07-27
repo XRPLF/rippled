@@ -3,7 +3,7 @@
   ;; We initialize it to 1,000,000.
   (global $counter (mut i32) (i32.const 1000000))
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; 1. Check if counter == 0 (Base Case)
     global.get $counter
     i32.eqz
@@ -21,9 +21,9 @@
 
     ;; 3. Recursive Step: Call SELF
     ;; This puts an i32 (1) on the stack when it returns.
-    call $finish
+    call $escrow_finish
   )
 
   ;; Export the only function we have
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

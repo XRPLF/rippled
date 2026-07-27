@@ -1,4 +1,3 @@
-
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -383,6 +382,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
+        // NOLINTNEXTLINE(bugprone-float-loop-counter)
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
@@ -452,7 +452,7 @@ public:
 
                 // We'll insert a replacement for the account root
                 // with the higher (currently invalid) transfer rate.
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                auto replacement = std::make_shared<SLE>(*sle);
                 (*replacement)[sfTransferRate] =
                     static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                 view.rawReplace(replacement);

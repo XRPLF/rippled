@@ -106,6 +106,9 @@ transResults()
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
+        MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
+        MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
+        MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
@@ -130,6 +133,8 @@ transResults()
         MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
         MAKE_ERROR(tefNFTOKEN_IS_NOT_TRANSFERABLE, "The specified NFToken is not transferable."),
         MAKE_ERROR(tefINVALID_LEDGER_FIX_TYPE,     "The LedgerFixType field has an invalid value."),
+        MAKE_ERROR(tefNO_DST_PARTIAL,              "Partial payment to create account not allowed."),
+        MAKE_ERROR(tefBAD_PATH_COUNT,              "Malformed: Too many paths."),
         MAKE_ERROR(tefNO_BYTECODE,                 "There is no WASM code to run, but a WASM-specific field was included."),
         MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field to be included that was not included."),
 
@@ -202,6 +207,8 @@ transResults()
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
+        MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
+        MAKE_ERROR(temBAD_WASM,                  "Malformed: Provided WASM code is invalid."),
         MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided WASM code is invalid."),
         MAKE_ERROR(temTEMP_DISABLED,             "The transaction requires logic that is currently temporarily disabled."),
 
@@ -221,6 +228,7 @@ transResults()
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(terLOCKED,                 "Fund is locked."),
+        MAKE_ERROR(terNO_PERMISSION,          "No permission to perform requested operation."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

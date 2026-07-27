@@ -195,8 +195,7 @@ doAccountLines(RPC::JsonContext& context)
                 startAfter,
                 startHint,
                 limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](
-                    std::shared_ptr<SLE const> const& sleCur) {
+                [&visitData, &count, &marker, &limit, &nextHint](SLE::const_ref sleCur) {
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START

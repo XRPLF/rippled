@@ -13,7 +13,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -43,11 +42,9 @@ ApplyViewImpl::size()
 void
 ApplyViewImpl::visit(
     OpenView& to,
-    std::function<void(
-        uint256 const& key,
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after)> const& func)
+    std::function<
+        void(uint256 const& key, bool isDelete, SLE::const_ref before, SLE::const_ref after)> const&
+        func)
 {
     items_.visit(to, func);
 }

@@ -27,8 +27,27 @@ uint8_t const kTypeEmptyFunc[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
 // Function section: one function using type 0
 uint8_t const kFuncTypE0[] = {0x03, 0x02, 0x01, 0x00};
 
-// Export section: export func 0 as "finish"
-uint8_t const kExportFinish[] = {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
+// Export section: export func 0 as "escrow_finish"
+uint8_t const kExportFinish[] = {
+    0x07,
+    0x11,
+    0x01,
+    0x0d,
+    'e',
+    's',
+    'c',
+    'r',
+    'o',
+    'w',
+    '_',
+    'f',
+    'i',
+    'n',
+    'i',
+    's',
+    'h',
+    0x00,
+    0x00};
 
 // Empty function body: 0 locals, end
 uint8_t const kEmptyBody[] = {0x00, 0x0b};

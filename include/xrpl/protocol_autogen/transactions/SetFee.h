@@ -256,55 +256,55 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionComputeLimit (SoeOptional)
+     * @brief Get sfGasLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getExtensionComputeLimit() const
+    getGasLimit() const
     {
-        if (hasExtensionComputeLimit())
+        if (hasGasLimit())
         {
-            return this->tx_->at(sfExtensionComputeLimit);
+            return this->tx_->at(sfGasLimit);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfExtensionComputeLimit is present.
+     * @brief Check if sfGasLimit is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasExtensionComputeLimit() const
+    hasGasLimit() const
     {
-        return this->tx_->isFieldPresent(sfExtensionComputeLimit);
+        return this->tx_->isFieldPresent(sfGasLimit);
     }
 
     /**
-     * @brief Get sfExtensionSizeLimit (SoeOptional)
+     * @brief Get sfBytecodeSizeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getExtensionSizeLimit() const
+    getBytecodeSizeLimit() const
     {
-        if (hasExtensionSizeLimit())
+        if (hasBytecodeSizeLimit())
         {
-            return this->tx_->at(sfExtensionSizeLimit);
+            return this->tx_->at(sfBytecodeSizeLimit);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfExtensionSizeLimit is present.
+     * @brief Check if sfBytecodeSizeLimit is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasExtensionSizeLimit() const
+    hasBytecodeSizeLimit() const
     {
-        return this->tx_->isFieldPresent(sfExtensionSizeLimit);
+        return this->tx_->isFieldPresent(sfBytecodeSizeLimit);
     }
 
     /**
@@ -372,7 +372,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfLedgerSequence (SoeOptional)
@@ -463,24 +465,24 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionComputeLimit (SoeOptional)
+     * @brief Set sfGasLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setExtensionComputeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfExtensionComputeLimit] = value;
+        object_[sfGasLimit] = value;
         return *this;
     }
 
     /**
-     * @brief Set sfExtensionSizeLimit (SoeOptional)
+     * @brief Set sfBytecodeSizeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setExtensionSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfExtensionSizeLimit] = value;
+        object_[sfBytecodeSizeLimit] = value;
         return *this;
     }
 

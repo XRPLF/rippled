@@ -21,7 +21,7 @@
   (global (;9;) i32 (i32.const 1))
   (export "memory" (memory 0))
   (export "__wasm_call_ctors" (func 0))
-  (export "finish" (func 1))
+  (export "escrow_finish" (func 1))
   (export "buf" (global 0))
   (export "__dso_handle" (global 1))
   (export "__data_end" (global 2))

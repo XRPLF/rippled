@@ -70,9 +70,9 @@ into helper functions (see Tx.cpp or AccountTx.cpp for an example).
 #### Testing
 
 When modifying an existing gRPC method, be sure to test that modification in the
-corresponding, existing unit test. When creating a new gRPC method, implement a class that
-derives from GRPCTestClientBase, and use the newly created class to call the new
-method. See the class `GrpcTxClient` in the file Tx_test.cpp for an example.
+corresponding, existing unit test. When creating a new gRPC method, create a
+client stub with `XRPLedgerAPIService::NewStub` and `grpc::CreateChannel`, and
+use it to call the new method. See `GRPCServerTLS_test.cpp` for an example.
 The gRPC tests are paired with their JSON counterpart, and the tests should
 mirror the JSON test as much as possible.
 

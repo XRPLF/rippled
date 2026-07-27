@@ -3,20 +3,30 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/TxMetrics.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -25,14 +35,22 @@
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
 
+#include <xrpl.pb.h>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -80,7 +98,7 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
@@ -96,8 +114,8 @@ private:
     hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
-    std::atomic<Peer::id_t> next_id_;
-    int timer_count_{0};
+    std::atomic<Peer::id_t> nextId_;
+    int timerCount_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
@@ -176,14 +194,15 @@ public:
     PeerSequence
     getActivePeers() const override;
 
-    /** Get active peers excluding peers in toSkip.
-       @param toSkip peers to skip
-       @param active a number of active peers
-       @param disabled a number of peers with tx reduce-relay
-           feature disabled
-       @param enabledInSkip a number of peers with tx reduce-relay
-           feature enabled and in toSkip
-       @return active peers less peers in toSkip
+    /**
+     * Get active peers excluding peers in toSkip.
+     * @param toSkip peers to skip
+     * @param active a number of active peers
+     * @param disabled a number of peers with tx reduce-relay
+     *     feature disabled
+     * @param enabledInSkip a number of peers with tx reduce-relay
+     *     feature enabled and in toSkip
+     * @return active peers less peers in toSkip
      */
     PeerSequence
     getActivePeers(
@@ -202,16 +221,16 @@ public:
     findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
-    broadcast(protocol::TMProposeSet& m) override;
+    broadcast(protocol::TMProposeSet const& m) override;
 
     void
-    broadcast(protocol::TMValidation& m) override;
+    broadcast(protocol::TMValidation const& m) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
@@ -233,11 +252,12 @@ public:
     void
     remove(std::shared_ptr<PeerFinder::Slot> const& slot);
 
-    /** Called when a peer has connected successfully
-        This is called after the peer handshake has been completed and during
-        peer activation. At this point, the peer address and the public key
-        are known.
-    */
+    /**
+     * Called when a peer has connected successfully
+     * This is called after the peer handshake has been completed and during
+     * peer activation. At this point, the peer address and the public key
+     * are known.
+     */
     void
     activate(std::shared_ptr<PeerImp> const& peer);
 
@@ -364,7 +384,8 @@ public:
         return setup_.networkID;
     }
 
-    /** Updates message count for validator/peer. Sends TMSquelch if the number
+    /**
+     * Updates message count for validator/peer. Sends TMSquelch if the number
      * of messages for N peers reaches threshold T. A message is counted
      * if a peer receives the message for the first time and if
      * the message has been  relayed.
@@ -380,7 +401,8 @@ public:
         std::set<Peer::id_t>&& peers,
         protocol::MessageType type);
 
-    /** Overload to reduce allocation in case of single peer
+    /**
+     * Overload to reduce allocation in case of single peer
      */
     void
     updateSlotAndSquelch(
@@ -389,7 +411,8 @@ public:
         Peer::id_t peer,
         protocol::MessageType type);
 
-    /** Called when the peer is deleted. If the peer was selected to be the
+    /**
+     * Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
      * unsquelched.
      * @param id Peer's id
@@ -403,13 +426,15 @@ public:
         return txMetrics_.json();
     }
 
-    /** Add tx reduce-relay metrics. */
+    /**
+     * Add tx reduce-relay metrics.
+     */
     template <typename... Args>
     void
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+            return post(strand_, [this, args...] { addTxMetrics(args...); });
 
         txMetrics_.addMetrics(args...);
     }
@@ -433,66 +458,74 @@ private:
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
-        std::string msg);
+        std::string const& msg);
 
-    /** Handles crawl requests. Crawl returns information about the
-        node and its peers so crawlers can map the network.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles crawl requests. Crawl returns information about the
+     * node and its peers so crawlers can map the network.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processCrawl(http_request_type const& req, Handoff& handoff);
 
-    /** Handles validator list requests.
-        Using a /vl/<hex-encoded public key> URL, will retrieve the
-        latest validator list (or UNL) that this node has for that
-        public key, if the node trusts that public key.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles validator list requests.
+     * Using a /vl/<hex-encoded public key> URL, will retrieve the
+     * latest validator list (or UNL) that this node has for that
+     * public key, if the node trusts that public key.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processValidatorList(http_request_type const& req, Handoff& handoff);
 
-    /** Handles health requests. Health returns information about the
-        health of the node.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles health requests. Health returns information about the
+     * health of the node.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processHealth(http_request_type const& req, Handoff& handoff);
 
-    /** Handles non-peer protocol requests.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles non-peer protocol requests.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processRequest(http_request_type const& req, Handoff& handoff);
 
-    /** Returns information about peers on the overlay network.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] overlay=[0|1]
-    */
+    /**
+     * Returns information about peers on the overlay network.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] overlay=[0|1]
+     */
     json::Value
     getOverlayInfo() const;
 
-    /** Returns information about the local server.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] server=[0|1]
-    */
+    /**
+     * Returns information about the local server.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] server=[0|1]
+     */
     json::Value
     getServerInfo();
 
-    /** Returns information about the local server's performance counters.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] counts=[0|1]
-    */
+    /**
+     * Returns information about the local server's performance counters.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] counts=[0|1]
+     */
     json::Value
     getServerCounts();
 
-    /** Returns information about the local server's UNL.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] unl=[0|1]
-    */
+    /**
+     * Returns information about the local server's UNL.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] unl=[0|1]
+     */
     json::Value
     getUnlInfo();
 
@@ -519,12 +552,16 @@ private:
     void
     sendEndpoints();
 
-    /** Send once a second transactions' hashes aggregated by peers. */
+    /**
+     * Send once a second transactions' hashes aggregated by peers.
+     */
     void
     sendTxQueue() const;
 
-    /** Check if peers stopped relaying messages
-     * and if slots stopped receiving messages from the validator */
+    /**
+     * Check if peers stopped relaying messages
+     * and if slots stopped receiving messages from the validator
+     */
     void
     deleteIdlePeers();
 
