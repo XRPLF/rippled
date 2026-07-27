@@ -23,6 +23,8 @@ identifierFor(std::string_view version)
     std::string name{version};
     std::ranges::replace_if(
         name, [](char c) { return !std::isalnum(c, std::locale::classic()); }, '_');
+    if (!name.empty() && std::isdigit(name.front(), std::locale::classic()))
+        name.insert(0, "v_");
     return name;
 }
 
