@@ -197,7 +197,7 @@ fillJsonTx(
     }
 
     // compute outgoing CTID
-    if ((fill.context != nullptr) && stMeta && stMeta->isFieldPresent(sfTransactionIndex))
+    if (stMeta && stMeta->isFieldPresent(sfTransactionIndex))
     {
         uint32_t const lgrSeq = fill.ledger.seq();
         uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
