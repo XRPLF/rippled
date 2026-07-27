@@ -70,11 +70,13 @@ public:
 
         Gate g1, g2;
         std::shared_ptr<JobQueue::CoroTaskRunner> c;
-        // Safe capture: the test blocks on the Gates until the coroutine
-        // completes, so the captured pointers outlive the coroutine.
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         env.app().getJobQueue().postCoroTask(
-            JtClient, "CoroTest", [cp = &c, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
+            JtClient,
+            "CoroTest",
+            // Safe capture: the test blocks on the Gates until the coroutine
+            // completes, so the captured pointers outlive the coroutine.
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [cp = &c, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
                 *cp = runner;
                 g1p->signal();
                 co_await runner->suspend();
@@ -102,11 +104,13 @@ public:
         }));
 
         Gate g;
-        // Safe capture: the test blocks on the Gate until the coroutine
-        // completes, so the captured pointer outlives the coroutine.
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         env.app().getJobQueue().postCoroTask(
-            JtClient, "CoroTest", [gp = &g](auto runner) -> CoroTask<void> {
+            JtClient,
+            "CoroTest",
+            // Safe capture: the test blocks on the Gate until the coroutine
+            // completes, so the captured pointer outlives the coroutine.
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [gp = &g](auto runner) -> CoroTask<void> {
                 // Schedule a resume before suspending.  The posted job
                 // cannot actually call resume() until the current resume()
                 // releases CoroTaskRunner::mutex_, which only happens after
