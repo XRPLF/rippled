@@ -49,7 +49,8 @@
  * +-- TxQ metrics
  * +-- CountedObject counts
  * +-- Load factor breakdown
- * +-- NodeStore I/O gauges
+ * +-- NodeStore I/O gauges (totals, derived means, NuDB write queue,
+ * ledger-acquisition stall counters)
  * +-- Server info (state, uptime, peers, consensus)
  * +-- Build info (version label)
  * +-- Complete ledger ranges (start/end pairs)
@@ -138,7 +139,10 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <functional>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -154,6 +158,16 @@
 namespace xrpl {
 
 class ServiceRegistry;
+
+// Defined in src/xrpld/app/ledger/AcquireStats.h. Forward-declared because
+// only the gauge helpers in the .cpp touch it, and pulling an xrpld/app
+// header in here would widen the dependencies of every file that includes
+// this one.
+class AcquireStats;
+
+namespace node_store {
+class Database;
+}  // namespace node_store
 
 namespace telemetry {
 
@@ -398,6 +412,79 @@ public:
     }
 
     /**
+     * Divide a cumulative total by its count, optionally scaled, reporting
+     * absence rather than zero when the count is zero.
+     *
+     * Every cumulative counter this registry publishes has a companion mean
+     * that is only defined once the counter has moved. Reporting such a mean
+     * as `0` is worse than not reporting it: `0` is a plausible reading, so a
+     * dashboard draws a flat line at the bottom of the axis and an operator
+     * concludes "reads are instant" when the truth is "nothing has been
+     * read". Returning std::nullopt makes the caller skip the observation, so
+     * the series has a genuine gap instead.
+     *
+     * @p scale exists because the gauge these feed is integral. A mean writer
+     * depth of 1.4 truncates to 1, which is indistinguishable from a healthy
+     * 1.0, so the caller scales by 100 and says so in the metric name.
+     *
+     * The arithmetic divides before scaling and scales the remainder
+     * separately, so a long-lived node cannot overflow the product. Should
+     * the result still exceed the gauge's range it saturates at
+     * INT64_MAX rather than wrapping, because a wrapped gauge reads as a
+     * sudden healthy-looking dip.
+     *
+     * Defined inline for the same reason as sanitiseHandler(): in a
+     * telemetry-enabled build MetricsRegistry.cpp is not compiled into the
+     * unit-test binary, so an out-of-line definition would be untestable.
+     * constexpr so the cases below are checked at compile time.
+     *
+     * @param total  Cumulative numerator (e.g. summed microseconds).
+     * @param count  Number of samples in @p total.
+     * @param scale  Fixed-point multiplier applied to the quotient. Must be
+     *               at least 1; 0 is meaningless and yields std::nullopt.
+     * @return The scaled mean, or std::nullopt when @p count is 0 (mean
+     *         undefined) or @p scale is 0.
+     *
+     * @note Pure and reentrant: holds no state and performs no I/O.
+     * @note Truncates toward zero, like integer division. A mean of 9.9 us
+     *       reads as 9 at @p scale 1 and as 990 at @p scale 100.
+     *
+     * Example:
+     * @code
+     * scaledMean(500, 4);        // 125   -- mean microseconds
+     * scaledMean(7, 5, 100);     // 140   -- mean 1.4, scaled by 100
+     * scaledMean(500, 0);        // nullopt -- no samples, so no mean
+     * @endcode
+     */
+    [[nodiscard]] static constexpr std::optional<std::int64_t>
+    scaledMean(std::uint64_t total, std::uint64_t count, std::uint64_t scale = 1) noexcept
+    {
+        if (count == 0 || scale == 0)
+            return std::nullopt;
+
+        constexpr auto kInt64Max =
+            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+
+        auto const whole = total / count;
+        if (whole > kInt64Max / scale)
+            return static_cast<std::int64_t>(kInt64Max);
+
+        // Scale the remainder too, so `scale` recovers the fractional digits
+        // it exists for. Skipped when the product itself would overflow, at
+        // which point it is worth less than one part in 2^63 of the result.
+        auto const remainder = total % count;
+        std::uint64_t fraction = 0;
+        if (remainder <= std::numeric_limits<std::uint64_t>::max() / scale)
+            fraction = remainder * scale / count;
+
+        auto const scaled = whole * scale;
+        if (scaled > kInt64Max - fraction)
+            return static_cast<std::int64_t>(kInt64Max);
+
+        return static_cast<std::int64_t>(scaled + fraction);
+    }
+
+    /**
      * Record a job enqueued event.
      * @param jobType  The job type name (e.g. "ledgerData").
      * @param jobName  The addJob name, reduced to a bounded `handler`
@@ -639,7 +726,10 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> loadFactorGauge_;
     /**
-     * Observable gauges for NodeStore write_load and read_queue.
+     * Observable gauge multiplexing every NodeStore value onto one
+     * instrument via its `metric` label: I/O totals, the read and write
+     * means derived from them, the NuDB write-queue detail, and the
+     * ledger-acquisition stall counters.
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> nodeStoreGauge_;
     /**
@@ -803,6 +893,61 @@ private:
     registerLoadFactorGauge();  // Task 9.7
     void
     registerNodeStoreGauge();  // Task 9.1
+
+    /**
+     * Sink handed to the registerNodeStoreGauge() helpers below.
+     *
+     * Every value they publish multiplexes onto the single `nodestore_state`
+     * gauge through its `metric` label, so the helpers need no access to the
+     * OTel observer result -- just somewhere to put a name and a number.
+     * That also makes each helper directly unit-testable by passing a
+     * recording sink, which the real observer result is not.
+     */
+    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
+
+    /**
+     * Observe the NodeStore I/O totals and the means derived from them.
+     *
+     * @param db       NodeStore to read the counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
+
+    /**
+     * Observe the backend write-path detail, when the backend measures it.
+     *
+     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
+     * which is every backend except NuDB. Absent labels let a reader tell
+     * "not measured" from "measured, and idle"; zeros would read as a
+     * perfectly idle write path.
+     *
+     * @param db       NodeStore whose writable backend is sampled.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
+
+    /**
+     * Observe the ledger-acquisition progress and stall counters.
+     *
+     * @param stats    Process-wide acquisition counters.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
+
+    /**
+     * Observe the read queue depth and the read thread-pool counts.
+     *
+     * These four have no accessor on Database, so its JSON counters object
+     * is still the only way to reach them.
+     *
+     * @param db       NodeStore to read the JSON counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
     void
     registerServerInfoGauge();  // Task 9.7a
     void

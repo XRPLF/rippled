@@ -8,6 +8,7 @@
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <gtest/gtest.h>
@@ -140,6 +141,53 @@ TEST_P(NodeStoreDatabaseTest, fetch_missing)
 
     // never store: every key must be absent
     fetchMissing(*db, batch_);
+}
+
+// Database::getWriteStats() forwards to the backend, and the telemetry
+// exporter branches on the optional to decide whether to publish the NuDB
+// write-queue labels at all. Backend.cpp covers the backend's own answer;
+// this covers the forwarding, which is what the exporter actually calls.
+TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
+{
+    auto db = makeDatabase();
+
+    // Before any write, only a measuring backend answers at all.
+    auto const initial = db->getWriteStats();
+    ASSERT_EQ(initial.has_value(), GetParam() == "nudb")
+        << "only nudb measures its write path; backend=" << GetParam();
+
+    if (!initial)
+    {
+        // Negative path: a non-measuring backend must keep reporting absence
+        // after real writes too, so the exporter omits the labels rather
+        // than publishing zeros that would read as an idle write path.
+        storeBatch(*db, batch_);
+        EXPECT_FALSE(db->getWriteStats().has_value());
+        return;
+    }
+
+    // A freshly opened store has written nothing.
+    EXPECT_EQ(initial->insertCount, 0u);
+    EXPECT_EQ(initial->insertTotalUs, 0u);
+    EXPECT_EQ(initial->depthSum, 0u);
+    EXPECT_EQ(initial->concurrentWriters, 0u);
+
+    storeBatch(*db, batch_);
+
+    // Every object stored through the Database reaches the backend exactly
+    // once, so the forwarded count is the batch size and not, say, the
+    // number of store() batches.
+    auto const after = db->getWriteStats();
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->insertCount, batch_.size());
+    // One writer thread, so the depth recorded at each insert is exactly 1.
+    EXPECT_EQ(after->depthSum, batch_.size());
+    // No writer is left in flight once the calls have returned.
+    EXPECT_EQ(after->concurrentWriters, 0u);
+    EXPECT_GT(after->insertTotalUs, 0u);
+    // A maximum is never below the mean, which fails if the field held the
+    // minimum or the first sample instead of a running maximum.
+    EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
 }
 
 INSTANTIATE_TEST_SUITE_P(
