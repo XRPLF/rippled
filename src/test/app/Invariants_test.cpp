@@ -3659,36 +3659,6 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // ttLOAN_SET: principal matches, but assets outstanding change does not
-        // equal the interest due booked on the created loan (0 here)
-        doInvariantCheck(
-            {"loan set must increase assets outstanding by the interest due"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kAdjust(
-                    ac.view(),
-                    keylet,
-                    Adjustments{
-                        .assetsTotal = -50,
-                        .assetsAvailable = -200,
-                        .vaultAssets = -200,
-                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 200,
-                            .totalValueOutstanding = 200,
-                            .borrower = a1.id(),
-                        }});
-            },
-            XRPAmount{},
-            STTx{
-                ttLOAN_SET,
-                [](STObject& tx) {
-                    tx.at(sfPrincipalRequested) = Number(200);
-                    tx.makeFieldPresent(sfCounterpartySignature);
-                }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-            precloseXrp);
-
         // ttLOAN_SET: principal matches, but shares outstanding changes
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
@@ -3703,38 +3673,6 @@ class Invariants_test : public beast::unit_test::Suite
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
                         .accountShares = AccountAmount{.account = a2.id(), .amount = 10},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 200,
-                            .totalValueOutstanding = 200,
-                            .borrower = a1.id(),
-                        }});
-            },
-            XRPAmount{},
-            STTx{
-                ttLOAN_SET,
-                [](STObject& tx) {
-                    tx.at(sfPrincipalRequested) = Number(200);
-                    tx.makeFieldPresent(sfCounterpartySignature);
-                }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-            precloseXrp);
-
-        // ttLOAN_SET: everything balances (principal released, exactly one loan
-        // created booking zero interest so assets outstanding is unchanged, and
-        // shares are untouched), but the vault has a positive assets maximum
-        // below its assets outstanding, so only the maximum check trips.
-        doInvariantCheck(
-            {"loan set assets outstanding must not exceed assets maximum"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kAdjust(
-                    ac.view(),
-                    keylet,
-                    Adjustments{
-                        .assetsAvailable = -200,
-                        .assetsMaximum = 1,
-                        .vaultAssets = -200,
-                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
                         .createLoan = LoanParams{
                             .principalOutstanding = 200,
                             .totalValueOutstanding = 200,

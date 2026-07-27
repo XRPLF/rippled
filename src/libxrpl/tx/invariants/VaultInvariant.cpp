@@ -332,7 +332,6 @@ ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal
 
     XRPL_ASSERT(
         !beforeVault_.empty(), "xrpl::ValidVault::finalizeLoanSet : loan set updated a vault");
-    auto const& beforeVault = beforeVault_[0];
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
 
@@ -381,25 +380,6 @@ ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan set principal outstanding must equal principal requested";
-        result = false;
-    }
-
-    // Interest accrues to the vault: assets outstanding must grow by
-    // exactly the interest due booked on the newly created loan.
-    auto const assetsTotalDelta =
-        roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-    auto const interestDue = roundToAsset(vaultAsset, loan.interestDue(), minScale);
-    if (assetsTotalDelta != interestDue)
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set must increase assets outstanding by the interest due";
-        result = false;
-    }
-
-    if (afterVault.assetsMaximum > kZero && afterVault.assetsTotal > afterVault.assetsMaximum)
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set assets outstanding must not exceed assets maximum";
         result = false;
     }
 

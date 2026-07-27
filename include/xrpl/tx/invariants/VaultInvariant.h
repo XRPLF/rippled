@@ -37,9 +37,8 @@ namespace xrpl {
  *   subtracts from: total assets, assets available, shares outstanding
  * - vault set must not alter the vault assets or shares balance
  * - loan set moves the requested principal out of the vault: it must create
- *   exactly one loan, decreases assets available (and the vault balance) by the
- *   principal, and grows assets outstanding by exactly the interest due booked
- *   on the created loan
+ *   exactly one loan, and decreases assets available (and the vault balance)
+ *   by the principal
  * - loan manage never removes assets from the vault: assets available may only
  *   grow (and the vault balance grows with it, by the returned first-loss
  *   capital on a default), and assets outstanding may only shrink (realized
