@@ -10,8 +10,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/make_Manager.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
@@ -39,6 +37,9 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -133,7 +134,7 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -179,18 +180,19 @@ OverlayImpl::OverlayImpl(
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , resourceManager_(resourceManager)
+    , store_(app_.getJournal("PeerFinder"))
     , peerFinder_(
           PeerFinder::makeManager(
               ioContext,
               stopwatch(),
               app_.getJournal("PeerFinder"),
-              config,
+              store_,
               collector))
     , resolver_(resolver)
     , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
-          std::bind(&OverlayImpl::collectMetrics, this),
+          [this] { collectMetrics(); },
           collector,
           [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
@@ -201,6 +203,7 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
+    store_.open(config);
     beast::PropertyStream::Source::add(peerFinder_.get());
 }
 
@@ -505,7 +508,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
+    PeerFinder::Config const config = PeerFinder::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
@@ -593,7 +596,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
+    boost::asio::dispatch(strand_, [this] { stopChildren(); });
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -624,11 +627,12 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 }
 
 //------------------------------------------------------------------------------
-/** A peer has connected successfully
-    This is called after the peer handshake has been completed and during
-    peer activation. At this point, the peer address and the public key
-    are known.
-*/
+/**
+ * A peer has connected successfully
+ * This is called after the peer handshake has been completed and during
+ * peer activation. At this point, the peer address and the public key
+ * are known.
+ */
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
@@ -725,10 +729,11 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
     traffic_.addCount(cat, false, size);
 }
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the XRPL protocol.
-*/
+/**
+ * The number of active peers on the network
+ * Active peers are only those peers that have completed the handshake
+ * and are running the XRPL protocol.
+ */
 std::size_t
 OverlayImpl::size() const
 {
@@ -1490,7 +1495,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+        post(strand_, [this, id] { deletePeer(id); });
         return;
     }
 
@@ -1502,7 +1507,7 @@ OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+        post(strand_, [this] { deleteIdlePeers(); });
         return;
     }
 

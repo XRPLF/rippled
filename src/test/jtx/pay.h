@@ -4,10 +4,13 @@
 #include <test/jtx/amount.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 
 namespace xrpl::test::jtx {
 
-/** Create a payment. */
+/**
+ * Create a payment.
+ */
 json::Value
 pay(AccountID const& account, AccountID const& to, AnyAmount amount);
 json::Value

@@ -12,6 +12,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -22,16 +23,17 @@
 
 namespace xrpl {
 
-/** General RPC command that can retrieve objects in the account root.
-    {
-      account: <account>
-      ledger_hash: <string> // optional
-      ledger_index: <string | unsigned integer> // optional
-      type: <string> // optional, defaults to all account objects types
-      limit: <integer> // optional
-      marker: <opaque> // optional, resume previous query
-    }
-*/
+/**
+ * General RPC command that can retrieve objects in the account root.
+ * {
+ *   account: <account>
+ *   ledger_hash: <string> // optional
+ *   ledger_index: <string | unsigned integer> // optional
+ *   type: <string> // optional, defaults to all account objects types
+ *   limit: <integer> // optional
+ *   marker: <opaque> // optional, resume previous query
+ * }
+ */
 json::Value
 doAccountNFTs(RPC::JsonContext& context)
 {

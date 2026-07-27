@@ -25,6 +25,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {
@@ -223,6 +224,7 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
@@ -259,7 +261,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
+                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -269,7 +271,11 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
+                    applyViewContext,
+                    preFeeBalance_,
+                    mptIssuanceID->value(),
+                    accountID_,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -281,7 +287,7 @@ VaultDeposit::doApply()
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
-                    view(),
+                    applyViewContext,
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
@@ -358,7 +364,7 @@ VaultDeposit::doApply()
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, assetsDeposited, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -393,7 +399,7 @@ VaultDeposit::doApply()
     {
         // Transfer shares from vault to depositor.
         if (auto const ter = accountSend(
-                view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
     }

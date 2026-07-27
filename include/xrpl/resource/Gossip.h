@@ -6,12 +6,16 @@
 
 namespace xrpl::Resource {
 
-/** Data format for exchanging consumption information across peers. */
+/**
+ * Data format for exchanging consumption information across peers.
+ */
 struct Gossip
 {
     explicit Gossip() = default;
 
-    /** Describes a single consumer. */
+    /**
+     * Describes a single consumer.
+     */
     struct Item
     {
         explicit Item() = default;

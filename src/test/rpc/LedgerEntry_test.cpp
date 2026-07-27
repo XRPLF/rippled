@@ -15,6 +15,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>
@@ -93,6 +94,8 @@ std::vector<std::pair<json::StaticString, FieldType>> gMappings{
     {jss::oracle_document_id, FieldType::UInt32Field},
     {jss::owner, FieldType::AccountField},
     {jss::seq, FieldType::UInt32Field},
+    {jss::sponsor, FieldType::AccountField},
+    {jss::sponsee, FieldType::AccountField},
     {jss::subject, FieldType::AccountField},
     {jss::ticket_seq, FieldType::UInt32Field},
 };
@@ -107,7 +110,7 @@ getFieldType(json::StaticString fieldName)
         return it->second;
     }
 
-    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.cStr()));
+    Throw<std::runtime_error>("`gMappings` is missing field " + std::string(fieldName.cStr()));
 }
 
 std::string
@@ -1885,6 +1888,59 @@ class LedgerEntry_test : public beast::unit_test::Suite
     }
 
     void
+    testSponsorship()
+    {
+        testcase("Sponsorship");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+        env(sponsor::set(alice, 0, 100), sponsor::SponseeAcc(bob));
+        env.close();
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const sponsorshipIndex = to_string(keylet::sponsorship(alice.id(), bob.id()).key);
+
+        {
+            // Request by sponsor and sponsee.
+            json::Value jvParams;
+            jvParams[jss::sponsorship][jss::sponsor] = alice.human();
+            jvParams[jss::sponsorship][jss::sponsee] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Request by index.
+            json::Value jvParams;
+            jvParams[jss::sponsorship] = sponsorshipIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Check all malformed cases.
+            runLedgerEntryTest(
+                env,
+                jss::sponsorship,
+                {
+                    {.fieldName = jss::sponsor, .malformedErrorMsg = "malformedSponsor"},
+                    {.fieldName = jss::sponsee, .malformedErrorMsg = "malformedSponsee"},
+                });
+        }
+    }
+
+    void
     testTicket()
     {
         testcase("Ticket");
@@ -2232,7 +2288,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
     }
 
-    /// Test the ledger entry types that don't take parameters
+    /**
+     * Test the ledger entry types that don't take parameters
+     */
     void
     testFixed()
     {
@@ -2248,7 +2306,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2283,7 +2342,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given fixed-position ledger
+        /**
+         * Runs a series of tests for a given fixed-position ledger
          * entry.
          *
          * @param field: The Json request field to use.
@@ -2441,7 +2501,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2481,7 +2542,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given ledger index.
+        /**
+         * Runs a series of tests for a given ledger index.
          *
          * @param ledger: The ledger index value of the "hashes" request
          *   parameter. May not necessarily be a number.
@@ -2676,6 +2738,7 @@ public:
         testPayChan();
         testRippleState();
         testSignerList();
+        testSponsorship();
         testTicket();
         testDID();
         testInvalidOracleLedgerEntry();
@@ -2917,29 +2980,32 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
             BEAST_EXPECT(
                 attest[json::Value::UInt(0)].isMember(sfXChainCreateAccountProofSig.jsonName));
             json::Value a[kNumAttest];
-            for (size_t i = 0; i < kNumAttest; ++i)
+            for (auto& attestation : a)
             {
-                a[i] = attest[json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
+                attestation = attest[json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
-                    a[i].isMember(jss::Amount) && a[i][jss::Amount].asInt() == 1000 * kDropPerXrp);
+                    attestation.isMember(jss::Amount) &&
+                    attestation[jss::Amount].asInt() == 1000 * kDropPerXrp);
                 BEAST_EXPECT(
-                    a[i].isMember(jss::Destination) && a[i][jss::Destination] == scCarol.human());
+                    attestation.isMember(jss::Destination) &&
+                    attestation[jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
-                    a[i].isMember(sfAttestationSignerAccount.jsonName) &&
+                    attestation.isMember(sfAttestationSignerAccount.jsonName) &&
                     std::ranges::any_of(signers, [&](Signer const& s) {
-                        return a[i][sfAttestationSignerAccount.jsonName] == s.account.human();
+                        return attestation[sfAttestationSignerAccount.jsonName] ==
+                            s.account.human();
                     }));
                 BEAST_EXPECT(
-                    a[i].isMember(sfAttestationRewardAccount.jsonName) &&
+                    attestation.isMember(sfAttestationRewardAccount.jsonName) &&
                     std::ranges::any_of(payee, [&](Account const& account) {
-                        return a[i][sfAttestationRewardAccount.jsonName] == account.human();
+                        return attestation[sfAttestationRewardAccount.jsonName] == account.human();
                     }));
                 BEAST_EXPECT(
-                    a[i].isMember(sfWasLockingChainSend.jsonName) &&
-                    a[i][sfWasLockingChainSend.jsonName] == 1);
+                    attestation.isMember(sfWasLockingChainSend.jsonName) &&
+                    attestation[sfWasLockingChainSend.jsonName] == 1);
                 BEAST_EXPECT(
-                    a[i].isMember(sfSignatureReward.jsonName) &&
-                    a[i][sfSignatureReward.jsonName].asInt() == 1 * kDropPerXrp);
+                    attestation.isMember(sfSignatureReward.jsonName) &&
+                    attestation[sfSignatureReward.jsonName].asInt() == 1 * kDropPerXrp);
             }
         }
 

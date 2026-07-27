@@ -1,19 +1,8 @@
 #pragma once
 
-#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/batch.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/delegate.h>
-#include <test/jtx/deposit.h>
-#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -22,21 +11,10 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
 
 #include <utility/mpt_utility.h>
 

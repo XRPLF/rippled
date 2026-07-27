@@ -272,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -602,7 +629,7 @@ Env::autofill(JTx& jt)
     catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
         rethrow();
     }
 }

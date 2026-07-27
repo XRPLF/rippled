@@ -4,7 +4,17 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/InfoSub.h>
+
 #include <atomic>
+#include <chrono>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -13,7 +23,9 @@ namespace xrpl {
 class PathRequestManager
 {
 public:
-    /** A collection of all PathRequest instances. */
+    /**
+     * A collection of all PathRequest instances.
+     */
     PathRequestManager(
         Application& app,
         beast::Journal journal,
@@ -24,9 +36,10 @@ public:
         full_ = collector->makeEvent("pathfind_full");
     }
 
-    /** Update all of the contained PathRequest instances.
-
-        @param ledger Ledger we are pathfinding in.
+    /**
+     * Update all of the contained PathRequest instances.
+     *
+     * @param ledger Ledger we are pathfinding in.
      */
     void
     updateAll(std::shared_ptr<ReadView const> const& ledger);

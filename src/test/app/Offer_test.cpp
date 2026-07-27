@@ -60,7 +60,7 @@ class OfferBaseUtil_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     static std::uint32_t
@@ -1962,7 +1962,7 @@ public:
         //  1 for each trust limit == 3 (alice < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + env.current()->fees().accountReserve(3, 1) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, alice, bob);
         env.close();
@@ -1985,7 +1985,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(env.current()->fees().accountReserve(3)).getText());
+            STAmount(env.current()->fees().accountReserve(3, 1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2045,7 +2045,7 @@ public:
         auto const usd = gw["USD"];
 
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(1) + env.current()->fees().base * 2;
+            XRP(100) + env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();
@@ -2066,7 +2066,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(env.current()->fees().accountReserve(1)).getText());
+            STAmount(env.current()->fees().accountReserve(1, 1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2087,7 +2087,7 @@ public:
         auto const usd = gw["USD"];
 
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(1) + env.current()->fees().base * 2;
+            XRP(100) + env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();
@@ -2110,7 +2110,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(env.current()->fees().accountReserve(1)).getText());
+            STAmount(env.current()->fees().accountReserve(1, 1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");
@@ -2131,8 +2131,8 @@ public:
         auto const xts = gw["XTS"];
         auto const xxx = gw["XXX"];
 
-        auto const startingXrp =
-            XRP(100.1) + env.current()->fees().accountReserve(1) + env.current()->fees().base * 2;
+        auto const startingXrp = XRP(100.1) + env.current()->fees().accountReserve(1, 1) +
+            env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();
@@ -2195,7 +2195,7 @@ public:
         jtx::Account const& account,
         jtx::PrettyAmount const& expectBalance)
     {
-        Issue const& issue = expectBalance.value().get<Issue>();
+        auto const& issue = expectBalance.value().get<Issue>();
         auto const sleTrust = env.le(keylet::trustLine(account.id(), issue));
         BEAST_EXPECT(sleTrust);
         if (sleTrust)

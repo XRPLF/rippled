@@ -470,7 +470,7 @@ class Check_test : public beast::unit_test::Suite
 
         // Insufficient reserve.
         Account const cheri{"cheri"};
-        env.fund(env.current()->fees().accountReserve(1) - drops(1), cheri);
+        env.fund(env.current()->fees().accountReserve(1, 1) - drops(1), cheri);
         env.close();
 
         env(check::create(cheri, bob, usd(50)),
@@ -1257,6 +1257,13 @@ class Check_test : public beast::unit_test::Suite
             env.close();
         }
 
+        // Can't run pre-amendment behavior due to assertion failure.
+        if (features[fixCleanup3_3_0])
+        {
+            env(check::cash(bob, uint256{}, usd(20)), Ter(temMALFORMED));
+            env.close();
+        }
+
         // alice creates her checks ahead of time.
         uint256 const chkIdU{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(20)));
@@ -1704,6 +1711,13 @@ class Check_test : public beast::unit_test::Suite
         // Non-existent check.
         env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))), Ter(tecNO_ENTRY));
         env.close();
+
+        // Can't run pre-amendment behavior due to assertion failure.
+        if (features[fixCleanup3_3_0])
+        {
+            env(check::cancel(bob, uint256{}), Ter(temMALFORMED));
+            env.close();
+        }
     }
 
     void

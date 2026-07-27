@@ -326,13 +326,10 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
 {
     return expectAuctionSlot(
         [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
-            for (auto const& account : accounts)
-            {
-                if (std::ranges::find(authAccounts, account.getAccountID(sfAccount)) ==
-                    authAccounts.end())
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& account) {
+                return std::ranges::find(authAccounts, account.getAccountID(sfAccount)) !=
+                    authAccounts.end();
+            });
         });
 }
 
@@ -738,8 +735,7 @@ AMM::bid(BidArg const& arg)
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
     {
-        if (env_.current()->rules().enabled(fixInnerObjTemplate) &&
-            !amm->isFieldPresent(sfAuctionSlot))
+        if (!amm->isFieldPresent(sfAuctionSlot))
             Throw<std::runtime_error>("AMM::Bid");
         if (amm->isFieldPresent(sfAuctionSlot))
         {
@@ -867,8 +863,7 @@ AMM::expectAuctionSlot(auto&& cb) const
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
     {
-        if (env_.current()->rules().enabled(fixInnerObjTemplate) &&
-            !amm->isFieldPresent(sfAuctionSlot))
+        if (!amm->isFieldPresent(sfAuctionSlot))
             Throw<std::runtime_error>("AMM::expectAuctionSlot");
         if (amm->isFieldPresent(sfAuctionSlot))
         {
@@ -876,10 +871,6 @@ AMM::expectAuctionSlot(auto&& cb) const
                 safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));
             if (auctionSlot.isFieldPresent(sfAccount))
             {
-                // This could fail in pre-fixInnerObjTemplate tests
-                // if the submitted transactions recreate one of
-                // the failure scenarios. Access as optional
-                // to avoid the failure.
                 auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
                 auto const slotInterval = ammAuctionTimeSlot(
                     env_.app().getTimeKeeper().now().time_since_epoch().count(), auctionSlot);

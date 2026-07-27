@@ -1,11 +1,14 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -27,8 +30,8 @@ namespace xrpl {
  * the caller that they should drop the closure and cancel their operation.
  * `join` blocks until all existing closure substitutes are destroyed.
  *
- * \tparam Ret The return type of the closure.
- * \tparam Args The argument types of the closure.
+ * @tparam Ret The return type of the closure.
+ * @tparam Args The argument types of the closure.
  */
 template <typename Ret, typename... Args>
 class ClosureCounter
@@ -128,18 +131,21 @@ public:
     ClosureCounter&
     operator=(ClosureCounter const&) = delete;
 
-    /** Destructor verifies all in-flight closures are complete. */
+    /**
+     * Destructor verifies all in-flight closures are complete.
+     */
     ~ClosureCounter()
     {
         using namespace std::chrono_literals;
         join("ClosureCounter", 1s, debugLog());
     }
 
-    /** Returns once all counted in-flight closures are destroyed.
-
-        @param name Name reported if join time exceeds wait.
-        @param wait If join() exceeds this duration report to Journal.
-        @param j Journal written to if wait is exceeded.
+    /**
+     * Returns once all counted in-flight closures are destroyed.
+     *
+     * @param name Name reported if join time exceeds wait.
+     * @param wait If join() exceeds this duration report to Journal.
+     * @param j Journal written to if wait is exceeded.
      */
     void
     join(char const* name, std::chrono::milliseconds wait, beast::Journal j)
@@ -157,13 +163,14 @@ public:
         }
     }
 
-    /** Wrap the passed closure with a reference counter.
-
-        @param closure Closure that accepts Args parameters and returns Ret.
-        @return If join() has been called returns std::nullopt.  Otherwise
-                returns a std::optional that wraps closure with a
-                reference counter.
-    */
+    /**
+     * Wrap the passed closure with a reference counter.
+     *
+     * @param closure Closure that accepts Args parameters and returns Ret.
+     * @return If join() has been called returns std::nullopt.  Otherwise
+     *         returns a std::optional that wraps closure with a
+     *         reference counter.
+     */
     template <class Closure>
     std::optional<Substitute<Closure>>
     wrap(Closure&& closure)
@@ -177,19 +184,22 @@ public:
         return ret;
     }
 
-    /** Current number of Closures outstanding.  Only useful for testing. */
+    /**
+     * Current number of Closures outstanding.  Only useful for testing.
+     */
     int
     count() const
     {
         return closureCount_;
     }
 
-    /** Returns true if this has been joined.
-
-        Even if true is returned, counted closures may still be in flight.
-        However if (joined() && (count() == 0)) there should be no more
-        counted closures in flight.
-    */
+    /**
+     * Returns true if this has been joined.
+     *
+     * Even if true is returned, counted closures may still be in flight.
+     * However if (joined() && (count() == 0)) there should be no more
+     * counted closures in flight.
+     */
     bool
     joined() const
     {

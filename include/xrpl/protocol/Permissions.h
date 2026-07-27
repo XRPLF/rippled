@@ -1,9 +1,12 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>

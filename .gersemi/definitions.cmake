@@ -11,6 +11,9 @@ endfunction()
 function(create_symbolic_link target link)
 endfunction()
 
+function(xrpl_add_benchmark name)
+endfunction()
+
 macro(exclude_from_default target_)
 endmacro()
 
@@ -46,6 +49,12 @@ function(target_protobuf_sources target prefix)
 endfunction()
 
 function(add_module parent name)
+endfunction()
+
+function(verify_target_headers target headers_dir)
+endfunction()
+
+function(_verify_add_headers target dir)
 endfunction()
 
 function(setup_protocol_autogen)
