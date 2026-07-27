@@ -32,7 +32,7 @@
 
 // Shared helpers for the NodeStore benchmarks.
 //
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 // Fill `bytes` of memory at `buffer` with random bits drawn from `g`.
 template <class Generator>
@@ -315,4 +315,4 @@ backendConfigs()
     return kConfigs;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
