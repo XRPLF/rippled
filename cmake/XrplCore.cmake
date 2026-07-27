@@ -204,9 +204,6 @@ target_link_libraries(
         xrpl.libxrpl.conditions
 )
 
-add_module(xrpl tx)
-target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
-
 add_module(xrpl consensus)
 target_link_libraries(
     xrpl.libxrpl.consensus
