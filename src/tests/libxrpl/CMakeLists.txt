@@ -21,6 +21,11 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Some headers under test live in src/xrpld/ rather than in libxrpl (for
+# example app/ledger/AcquireStats.h and telemetry/ValidationTracker.h), so put
+# src/ on the include path to reach them as <xrpld/...>. This is unconditional
+# because header-only ones are testable in every build, telemetry or not.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not
@@ -30,6 +35,7 @@ set(test_modules
     consensus
     crypto
     json
+    ledger
     peerfinder
     resource
     shamap
@@ -99,9 +105,8 @@ if(telemetry)
             opentelemetry-cpp::opentelemetry-cpp
     )
     # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
-    # implementation directly into the test binary and put src/ on the include
-    # path so its tests can reach <xrpld/telemetry/...> headers.
-    target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    # implementation directly into the test binary. The src/ include path its
+    # tests need is added unconditionally above.
     target_sources(
         xrpl_tests
         PRIVATE

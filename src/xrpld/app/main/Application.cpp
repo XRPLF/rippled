@@ -1,6 +1,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
@@ -236,6 +237,11 @@ public:
     NodeStoreScheduler nodeStoreScheduler_;
     std::unique_ptr<SHAMapStore> shaMapStore_;
     PendingSaves pendingSaves_;
+    /**
+     * Process-wide ledger-acquisition counters, shared by every acquisition.
+     * Declared before the ledger services below so it outlives them.
+     */
+    AcquireStats acquireStats_;
     std::optional<OpenLedger> openLedger_;
 
     NodeCache tempNodeCache_;
@@ -814,6 +820,12 @@ public:
     getPendingSaves() override
     {
         return pendingSaves_;
+    }
+
+    AcquireStats&
+    getAcquireStats() override
+    {
+        return acquireStats_;
     }
 
     OpenLedger&

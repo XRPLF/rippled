@@ -190,6 +190,7 @@ tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.config
 tests.libxrpl > xrpl.consensus
 tests.libxrpl > xrpl.core
+tests.libxrpl > xrpld.app
 tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger

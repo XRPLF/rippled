@@ -282,6 +282,15 @@ public:
         return pendingSaves_;
     }
 
+    // AcquireStats is declared in src/xrpld/, which this helper deliberately
+    // does not include; returning a reference to an incomplete type is legal
+    // as long as nothing here forms the value.
+    AcquireStats&
+    getAcquireStats() override
+    {
+        throw std::logic_error("TestServiceRegistry::getAcquireStats() not implemented");
+    }
+
     OpenLedger&
     getOpenLedger() override
     {

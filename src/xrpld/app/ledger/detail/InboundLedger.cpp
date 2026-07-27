@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpld/app/ledger/AccountStateSF.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
@@ -212,6 +213,10 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+        // Partial work means a map was partly built and is now discarded, so
+        // the whole acquisition has to start over. That is the expensive case,
+        // so it is counted apart from a cheap abort that had nothing yet.
+        app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
                                                     : (std::string("timeouts:") +
@@ -386,6 +391,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
+        app_.getAcquireStats().recordGiveUp();
         if (seq_ != 0)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << seq_;
@@ -451,6 +457,13 @@ InboundLedger::done()
 
     signaled_ = true;
     touch();
+
+    // Counted here rather than at any single caller because done() is the one
+    // funnel every peer-driven outcome passes through, and the signaled_ guard
+    // above makes it run at most once per acquisition. failed_ outcomes are
+    // excluded; the give-up path counts those itself.
+    if (complete_ && !failed_)
+        app_.getAcquireStats().recordCompletion();
 
     // Finalize the acquire span with the outcome, timeout count, and peer
     // count. Keep it active as the ambient context across the finalize and

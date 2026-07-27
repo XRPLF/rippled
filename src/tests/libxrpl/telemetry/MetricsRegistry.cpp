@@ -475,6 +475,13 @@ public:
     {
         throwUnimplemented();
     }
+    // AcquireStats lives in src/xrpld/ and is only forward-declared here; a
+    // reference return to an incomplete type is fine because this throws.
+    AcquireStats&
+    getAcquireStats() override
+    {
+        throwUnimplemented();
+    }
     [[nodiscard]] OpenLedger&
     getOpenLedger() override
     {
