@@ -1078,8 +1078,11 @@ TEST(MetricMacros, state_changes_total_keys_series_on_from_to_pair)
 
     auto const data = provider.collect();
 
-    // Six distinct (from, to) pairs -> exactly six series.
-    ASSERT_EQ(data.at("state_changes_total").size(), 6u);
+    // Five distinct (from, to) pairs -> exactly five series. Seven transitions
+    // were made, but full->connected and connected->full each happened twice,
+    // which is the point: a repeated edge adds to its own series rather than
+    // minting a new one, so flapping shows up as a rising count on one edge.
+    ASSERT_EQ(data.at("state_changes_total").size(), 5u);
 
     // The climb edges, each traversed exactly once.
     EXPECT_EQ(
@@ -1554,7 +1557,12 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
     // 90 percent arrives as exactly 0.9, not 90 and not 9000.
     auto const& warmPoint = warm.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
     auto const& warmLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(warmPoint);
-    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(warmLast.value_), 0.9);
+    // NEAR, not DOUBLE_EQ: TaggedCache::getHitRate() returns float, so the
+    // percent-to-fraction division carries float precision (0.9 arrives as
+    // 0.89999997...). The tolerance is far tighter than any threshold a
+    // dashboard reads, and asserting exact equality would only be asserting
+    // the float representation.
+    EXPECT_NEAR(opentelemetry::nostd::get<double>(warmLast.value_), 0.9, 1e-6);
 
     // A cold cache reads exactly 0.0 -- the fresh-sync case, where every lookup
     // goes to the node store.
@@ -1562,7 +1570,7 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
     auto const cold = provider.collect();
     auto const& coldPoint = cold.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
     auto const& coldLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(coldPoint);
-    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(coldLast.value_), 0.0);
+    EXPECT_NEAR(opentelemetry::nostd::get<double>(coldLast.value_), 0.0, 1e-6);
 
     // A fully warm cache reads exactly 1.0, pinning the upper bound of the
     // normalized range.
@@ -1570,7 +1578,7 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
     auto const full = provider.collect();
     auto const& fullPoint = full.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
     auto const& fullLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(fullPoint);
-    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(fullLast.value_), 1.0);
+    EXPECT_NEAR(opentelemetry::nostd::get<double>(fullLast.value_), 1.0, 1e-6);
 }
 
 // RUNTIME-DISABLED no-op proof for the counter half of WP-A3: with the registry
@@ -2721,7 +2729,11 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
 // four inputs.
 TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
 {
-    CollectingProvider const provider;
+    // Each scenario gets a FRESH provider. The reader reports cumulative
+    // temporality (see CollectOnDemandReader), so a series observed by one
+    // scenario would still be present in the next collect() -- which would
+    // defeat the two assertions below that a mean is ABSENT when its
+    // denominator is zero.
 
     // The four totals the production callback reads, chosen so each mean
     // divides exactly and the two means differ: writes are 4x slower per
@@ -2740,35 +2752,41 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
         .fetchCount = 1000,
         .fetchDurationUs = 1'000'000};  // 1 s over 1000 fetches -> 1000 us
 
-    auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        telemetry::metric::nodestoreLatency,
-        "NodeStore mean store/fetch latency in microseconds, with counts");
-    gauge->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto const* self = static_cast<NodeStoreTotals const*>(state);
-            auto observe = [&](char const* field, std::int64_t value) {
-                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
-                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(value, {{telemetry::label::metric, field}});
-            };
-            observe("write_count", static_cast<std::int64_t>(self->storeCount));
-            observe("read_count", static_cast<std::int64_t>(self->fetchCount));
-            if (self->storeCount > 0 && self->storeDurationUs > 0)
-            {
-                observe(
-                    "write_mean_us",
-                    static_cast<std::int64_t>(self->storeDurationUs / self->storeCount));
-            }
-            if (self->fetchCount > 0 && self->fetchDurationUs > 0)
-            {
-                observe(
-                    "read_mean_us",
-                    static_cast<std::int64_t>(self->fetchDurationUs / self->fetchCount));
-            }
-        },
-        &totals);
+    // Registers the production callback against one fresh provider and returns
+    // its single collection, so every scenario is measured in isolation.
+    auto collectWith = [](NodeStoreTotals& state) {
+        CollectingProvider const provider;
+        auto gauge = provider.meter()->CreateInt64ObservableGauge(
+            telemetry::metric::nodestoreLatency,
+            "NodeStore mean store/fetch latency in microseconds, with counts");
+        gauge->AddCallback(
+            [](opentelemetry::metrics::ObserverResult result, void* state) {
+                auto const* self = static_cast<NodeStoreTotals const*>(state);
+                auto observe = [&](char const* field, std::int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                        ->Observe(value, {{telemetry::label::metric, field}});
+                };
+                observe("write_count", static_cast<std::int64_t>(self->storeCount));
+                observe("read_count", static_cast<std::int64_t>(self->fetchCount));
+                if (self->storeCount > 0 && self->storeDurationUs > 0)
+                {
+                    observe(
+                        "write_mean_us",
+                        static_cast<std::int64_t>(self->storeDurationUs / self->storeCount));
+                }
+                if (self->fetchCount > 0 && self->fetchDurationUs > 0)
+                {
+                    observe(
+                        "read_mean_us",
+                        static_cast<std::int64_t>(self->fetchDurationUs / self->fetchCount));
+                }
+            },
+            &state);
+        return provider.collect();
+    };
 
-    auto const busy = provider.collect();
+    auto const busy = collectWith(totals);
 
     // Exactly four series: two means and the two denominators that let a
     // dashboard recover interval latency from these cumulative totals.
@@ -2795,7 +2813,7 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
     // instant". The read side is unaffected and still reports both.
     totals = NodeStoreTotals{
         .storeCount = 0, .storeDurationUs = 0, .fetchCount = 4, .fetchDurationUs = 800};
-    auto const idle = provider.collect();
+    auto const idle = collectWith(totals);
 
     EXPECT_EQ(idle.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
     EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "write_count")), 0);
@@ -2807,7 +2825,7 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
     // to floating point is a deliberate, visible decision.
     totals = NodeStoreTotals{
         .storeCount = 7, .storeDurationUs = 100, .fetchCount = 0, .fetchDurationUs = 0};
-    auto const truncating = provider.collect();
+    auto const truncating = collectWith(totals);
 
     EXPECT_EQ(gaugeValue(truncating, "nodestore_latency", attrs("metric", "write_mean_us")), 14);
     // The read side now has the zero denominator, so its mean drops out too.
@@ -2823,7 +2841,7 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
     // visible gap. This assertion is the guard on that choice.
     totals = NodeStoreTotals{
         .storeCount = 9000, .storeDurationUs = 0, .fetchCount = 10, .fetchDurationUs = 50};
-    auto const untimed = provider.collect();
+    auto const untimed = collectWith(totals);
 
     EXPECT_EQ(untimed.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
     // The count is still published, so the gap is visible rather than silent:
