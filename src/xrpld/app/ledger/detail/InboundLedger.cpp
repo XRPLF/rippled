@@ -224,6 +224,20 @@ InboundLedger::refreshMissingNodeCounts() noexcept
         missingTxNodes_.store(0, std::memory_order_relaxed);
 }
 
+void
+InboundLedger::clearMissingNodeCounts() noexcept
+{
+    // Unconditional, unlike refreshMissingNodeCounts(): this runs when the
+    // acquire is over, however it ended. A timed-out or failed acquire never
+    // sets the have-tree flags, so the flag-guarded refresh above would leave
+    // its last sweep count latched. The gauge maxes over every acquire still in
+    // the collection, and eviction waits on a one-minute grace plus the sweep
+    // interval, so a latched count would report a finished node as stuck for
+    // minutes -- inverting the one signal that separates stuck from slow.
+    missingStateNodes_.store(0, std::memory_order_relaxed);
+    missingTxNodes_.store(0, std::memory_order_relaxed);
+}
+
 std::size_t
 InboundLedger::getPeerCount() const
 {
@@ -740,6 +754,10 @@ InboundLedger::done()
 
     signaled_ = true;
     touch();
+
+    // The acquire is over on every path through here, so the missing-node
+    // counts must stop being reported. See clearMissingNodeCounts().
+    clearMissingNodeCounts();
 
     // Keep the span active as the ambient context across the outcome log so
     // that line carries the span's trace_id. The activation is non-owning;

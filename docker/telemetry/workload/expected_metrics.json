@@ -179,7 +179,10 @@
       "ledger_quorum_publish{metric=\"publish_lag\"}",
       "ledger_quorum_shortfall_total{stage=\"pre_accept\"}",
       "consensus_round_duration_ms_bucket",
-      "consensus_round_duration_ms_count"
+      "consensus_round_duration_ms_count",
+      "nodestore_latency{metric=\"write_duration_us\"}",
+      "nodestore_latency{metric=\"read_duration_us\"}",
+      "unl_quorum{metric=\"quorum_disabled\"}"
     ],
     "_acquire_note": "The four sync_acquire sub-series and shamap_cache_hit_rate are unconditional: both are observable gauges whose callbacks observe every series on each collection tick, so each is present even when the value is 0 (an idle node reports in_flight=0 and missing_state_nodes_max=0, and a cold cache reports a 0.0 hit rate). Absence, not a zero, is the regression. The three WP-A3 counters (sync_acquire_source_total, sync_addnode_total, sync_acquire_no_progress_total) are deliberately NOT asserted here: all three are emitted only from InboundLedger, which runs only when a node must fetch a ledger it lacks. expected_spans.json already marks the ledger.acquire span optional for exactly this reason (\"A healthy local cluster rarely back-fills history\"), and the metric validator has no per-metric optional flag, so listing them would fail the harness red on a healthy run. They are covered by exact-value unit tests in src/tests/libxrpl/telemetry/MetricMacros.cpp and by the ledger-sync-health panels; add them here only alongside a harness step that forces a real acquire (e.g. starting a node against an existing ledger history).",
     "_jobq_note": "The three jobq_saturation series are unconditional: it is an observable gauge whose callback observes all three fields on every collection tick, so each series exists even when the value is 0, and absence rather than a zero is the regression. worker_threads is asserted because it is the denominator of the dashboard saturation ratio, and it is always at least 1 (the JobQueue ctor gives standalone mode exactly one worker), so a zero or missing reading there means the accessor regressed rather than the node being idle. The per-job-type waiting/running/deferred counts are published separately by JobQueue::collect() as the beast::insight gauges jobq_<type>_waiting / _running / _deferred, which the collector translates; they are covered by the StatsD-derived groups, not here.",

@@ -226,6 +226,16 @@ private:
     refreshMissingNodeCounts() noexcept;
 
     /**
+     * Zero the missing-node counts because this acquire has finished.
+     *
+     * Unconditional, so it also clears after a timeout or failure, where the
+     * have-tree flags are never set and the flag-guarded refresh would leave a
+     * stale non-zero count visible to the gauge.
+     */
+    void
+    clearMissingNodeCounts() noexcept;
+
+    /**
      * Fold one processed batch into the acquire totals and emit its telemetry.
      *
      * Both processData() branches (header batch and node batch) finished with

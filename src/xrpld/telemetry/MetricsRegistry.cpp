@@ -328,6 +328,22 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // comes from the shared constant both sites use.
     addMicrosecondHistogramView(*views, kGetObjectLookupUs);
 
+    // Millisecond dial/resolve latencies. Both exceed the SDK default ceiling
+    // of 10,000: the dial timer is 15 s, so without an explicit ladder every
+    // timed-out dial lands in the overflow bucket and p95 reads exactly 10 s
+    // however bad it gets. The 15 s boundary sits on its own so a timeout is
+    // distinguishable from merely slow.
+    addHistogramView(
+        *views,
+        metric::dnsResolveLatencyMs,
+        {1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1'000.0, 2'500.0, 5'000.0, 10'000.0,
+         15'000.0, 20'000.0, 30'000.0});
+    addHistogramView(
+        *views,
+        metric::overlayDialLatencyMs,
+        {1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1'000.0, 2'500.0, 5'000.0, 10'000.0,
+         15'000.0, 20'000.0, 30'000.0});
+
     // The remaining two GetObject histograms are not durations, so the
     // microsecond ladder above does not fit them. Both still need explicit
     // boundaries: the SDK default stops at 10,000 and both ranges exceed it.
@@ -1662,11 +1678,16 @@ MetricsRegistry::registerUnlQuorumGauge()
                 // instead: headroom then goes strongly negative, which is the
                 // truthful signal.
                 auto const quorum = validators.quorum();
-                observe(
-                    lval::unl_quorum::quorum,
-                    quorum == std::numeric_limits<std::size_t>::max()
-                        ? std::numeric_limits<int64_t>::max()
-                        : static_cast<int64_t>(quorum));
+                // A disabled quorum omits the series rather than publishing a
+                // sentinel. Both consumers of this gauge are timeseries panels
+                // sharing one axis with trusted_keys, so a huge value would
+                // flatten the key line to the baseline and hide the outage it
+                // was meant to signal. The boolean below carries the state, and
+                // a missing quorum line is itself the visible anomaly.
+                bool const quorumDisabled = quorum == std::numeric_limits<std::size_t>::max();
+                if (!quorumDisabled)
+                    observe(lval::unl_quorum::quorum, static_cast<int64_t>(quorum));
+                observe(lval::unl_quorum::quorumDisabled, quorumDisabled ? 1 : 0);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -2149,15 +2170,22 @@ MetricsRegistry::registerNodeStoreLatencyGauge()
                 // is missing: a reported 0 us would claim writes are
                 // instantaneous, which is worse than no reading at all.
                 //
-                // The numerator guard is load-bearing, not defensive.
-                // Database::store() is pure virtual, so only the store paths
-                // that call recordStoreDuration() contribute. Today that is
-                // Database::importInternal (the [import_db] path). The two
-                // concrete runtime databases -- DatabaseNodeImp::store and
-                // DatabaseRotatingImp::store -- do not call it yet, so on an
-                // ordinary node write_count climbs while the duration total
-                // stays 0. Omitting the mean makes that a visible data gap
-                // instead of a false "writes take 0 us" line on the panel.
+                // The numerator guard covers the pre-first-write window only.
+                // Both concrete databases time their backend write, so the
+                // total advances on any ordinary node; before the first write
+                // it is still 0, and omitting the mean then is better than
+                // publishing a false "writes take 0 us".
+                // The cumulative totals are observed unconditionally, so a
+                // panel can divide rate(duration) by rate(count) and read the
+                // latency over its own window rather than a since-boot average
+                // that flattens as uptime grows.
+                observe(
+                    lval::nodestore_latency::writeDurationUs,
+                    static_cast<int64_t>(storeDurationUs));
+                observe(
+                    lval::nodestore_latency::readDurationUs,
+                    static_cast<int64_t>(fetchDurationUs));
+
                 if (storeCount > 0 && storeDurationUs > 0)
                 {
                     observe(
