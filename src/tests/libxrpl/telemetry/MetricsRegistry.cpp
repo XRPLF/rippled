@@ -557,7 +557,7 @@ public:
     {
         throwUnimplemented();
     }
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throwUnimplemented();
