@@ -566,15 +566,18 @@ public:
         fetchCopyOfBatch(*db, &copy, batch);
         BEAST_EXPECT(db->getFetchTotalCount() == kNumObjectsToTest);
 
-        // store() is pure virtual, so the write path is timed per concrete
-        // database rather than in one shared wrapper. storeStats keeps the
-        // count, and the object count must match exactly.
+        // store() is pure virtual, so the write path is timed inside each
+        // concrete database rather than in one shared wrapper. Both overrides
+        // time their backend write, so an ordinary store run -- not just the
+        // import path -- accumulates a duration. That is the whole point of the
+        // write-latency signal: on a real node the only writes are these.
         storeBatch(*db, batch);
         BEAST_EXPECT(db->getStoreCount() == kNumObjectsToTest);
+        BEAST_EXPECT(db->getStoreDurationUs() > 0);
 
-        // importDatabase routes through Database::importInternal, the store
-        // path this work package instruments, so the write duration must be
-        // non-zero afterwards. Asserted as a strict advance from the zero
+        // importDatabase routes through Database::importInternal, one of the
+        // three timed store paths, so the write duration must be non-zero
+        // afterwards. Asserted as a strict advance from the zero
         // above: the exact microsecond value is wall-clock dependent, but
         // "still exactly zero after real writes" is precisely the dead-member
         // bug being guarded against.
@@ -592,10 +595,12 @@ public:
         BEAST_EXPECT(dest->getStoreCount() == kNumObjectsToTest);
         BEAST_EXPECT(dest->getStoreDurationUs() > 0);
 
-        // The import wrote into `dest`, not `db`, so the source's write
-        // duration must be unchanged. This is the negative half: it proves the
-        // accumulation is per-database state and not a shared global.
-        BEAST_EXPECT(db->getStoreDurationUs() == 0);
+        // The import wrote into `dest`, not `db`, so the source's store COUNT
+        // must be unchanged by the import. This is the negative half: it proves
+        // the accumulation is per-database state and not a shared global. The
+        // source's duration is non-zero from its own storeBatch above, so the
+        // count is what isolates the import's effect.
+        BEAST_EXPECT(db->getStoreCount() == kNumObjectsToTest);
 
         // A mean derived the way the telemetry gauge derives it must be a
         // sane, non-zero microsecond figure rather than a division artifact.
