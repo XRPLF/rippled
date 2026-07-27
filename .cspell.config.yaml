@@ -72,6 +72,7 @@ words:
   - checkme
   - choco
   - chrono
+  - cindex
   - citardauq
   - clawback
   - clawbacks
@@ -94,12 +95,15 @@ words:
   - csprng
   - ctest
   - ctid
+  - ctypes
   - currenttxhash
   - daria
   - dcmake
   - dearmor
   - decryptor
   - dedented
+  - dedup
+  - delegability
   - deleteme
   - demultiplexer
   - deserializaton
@@ -116,6 +120,7 @@ words:
   - endmacro
   - envrc
   - exceptioned
+  - exfiltration
   - EXPECT_STREQ
   - Falco
   - fcontext
@@ -143,6 +148,7 @@ words:
   - invasively
   - iou
   - ious
+  - irreproducible
   - isrdc
   - isystem
   - itype
@@ -218,6 +224,7 @@ words:
   - nullptr
   - nunl
   - Nyffenegger
+  - obsoletion
   - onlatest
   - ostr
   - oxalica
@@ -241,13 +248,17 @@ words:
   - protos
   - ptrs
   - pushd
+  - pycache
   - pyenv
   - pyparsing
+  - pytest
+  - pyyaml
   - qalloc
   - qbsprofile
   - queuable
   - Raphson
   - rcflags
+  - regen
   - replayer
   - rerandomize
   - rerandomization
@@ -316,6 +327,7 @@ words:
   - tparam
   - trixie
   - tx
+  - txformats
   - txid
   - txids
   - txjson
@@ -335,6 +347,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unimpair
   - unroutable
   - unscalable
@@ -368,6 +381,7 @@ words:
   - xored
   - xrpkuwait
   - xrpl
+  - xrplcluster
   - xrpld
   - xrplf
   - xxhash
