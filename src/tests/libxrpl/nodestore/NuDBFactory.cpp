@@ -12,9 +12,11 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -257,6 +259,183 @@ TEST(NuDBFactory, configuration_parsing)
         DummyScheduler scheduler;
         EXPECT_ANY_THROW(Manager::instance().makeBackend(params, megabytes(4), scheduler, journal));
     }
+}
+
+// Write-path measurement. NuDB holds one global mutex for the whole insert,
+// so these counters plus Little's Law are the only way to separate queuing
+// from service time from outside the library.
+
+TEST(NuDBFactory, write_stats_accumulate_per_insert)
+{
+    beast::TempDir const tempDir;
+    auto const params = makeSection(tempDir.path());
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    ASSERT_TRUE(backend);
+    backend->open();
+
+    // Before any write the stats exist but are all zero, and no writer is
+    // in flight.
+    auto const initial = backend->getWriteStats();
+    ASSERT_TRUE(initial.has_value());
+    EXPECT_EQ(initial->insertCount, 0u);
+    EXPECT_EQ(initial->insertTotalUs, 0u);
+    EXPECT_EQ(initial->insertMaxUs, 0u);
+    EXPECT_EQ(initial->depthSum, 0u);
+    EXPECT_EQ(initial->concurrentWriters, 0u);
+
+    // Exactly 10 inserts must be counted as 10, and depthSum must be 10
+    // because a single-threaded caller is always the only writer, so the
+    // depth recorded at each insert is exactly 1.
+    constexpr std::uint64_t kFirstBatch = 10;
+    auto const batch = createPredictableBatch(kFirstBatch, 12345);
+    storeBatch(*backend, batch);
+
+    auto const after = backend->getWriteStats();
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->insertCount, kFirstBatch);
+    EXPECT_EQ(after->depthSum, kFirstBatch);
+    EXPECT_GT(after->insertTotalUs, 0u);
+    EXPECT_GT(after->insertMaxUs, 0u);
+    // The largest single insert cannot exceed the sum of all of them.
+    EXPECT_LE(after->insertMaxUs, after->insertTotalUs);
+    // A maximum is never below the mean. This fails if the field were
+    // holding the minimum, or the first or last sample, instead of the
+    // running maximum.
+    EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
+    // No writer remains in flight once the calls have returned.
+    EXPECT_EQ(after->concurrentWriters, 0u);
+
+    // The counters are cumulative across calls, not per call: a second,
+    // differently sized batch must add exactly its own size to both
+    // totals. This is what the mean-depth denominator relies on.
+    constexpr std::uint64_t kSecondBatch = 7;
+    auto const more = createPredictableBatch(kSecondBatch, 999);
+    storeBatch(*backend, more);
+
+    auto const cumulative = backend->getWriteStats();
+    ASSERT_TRUE(cumulative.has_value());
+    EXPECT_EQ(cumulative->insertCount, kFirstBatch + kSecondBatch);
+    EXPECT_EQ(cumulative->depthSum, kFirstBatch + kSecondBatch);
+    EXPECT_EQ(cumulative->concurrentWriters, 0u);
+    // A running maximum never decreases.
+    EXPECT_GE(cumulative->insertMaxUs, after->insertMaxUs);
+    // Nor does a running total.
+    EXPECT_GE(cumulative->insertTotalUs, after->insertTotalUs);
+
+    backend->close();
+}
+
+// Negative path: NuDB reports key_exists for a duplicate key and doInsert
+// deliberately does not treat that as an error. The accounting must still
+// run, and in particular the depth must come back down.
+TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
+{
+    beast::TempDir const tempDir;
+    auto const params = makeSection(tempDir.path());
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    ASSERT_TRUE(backend);
+    backend->open();
+
+    constexpr std::uint64_t kBatchSize = 8;
+    auto const batch = createPredictableBatch(kBatchSize, 4242);
+    storeBatch(*backend, batch);
+
+    auto const first = backend->getWriteStats();
+    ASSERT_TRUE(first.has_value());
+    ASSERT_EQ(first->insertCount, kBatchSize);
+
+    // Re-storing the identical batch writes nothing new, but each call is
+    // still an insert attempt that entered and left the backend.
+    storeBatch(*backend, batch);
+
+    auto const second = backend->getWriteStats();
+    ASSERT_TRUE(second.has_value());
+    EXPECT_EQ(second->insertCount, kBatchSize * 2);
+    EXPECT_EQ(second->depthSum, kBatchSize * 2);
+    // The depth returned to zero, so the early-return error path did not
+    // leak a writer.
+    EXPECT_EQ(second->concurrentWriters, 0u);
+
+    backend->close();
+}
+
+TEST(NuDBFactory, write_stats_observe_concurrent_writers)
+{
+    beast::TempDir const tempDir;
+    auto const params = makeSection(tempDir.path());
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    ASSERT_TRUE(backend);
+    backend->open();
+
+    // Four threads insert distinct objects concurrently. The exact peak
+    // depth is racy, but two invariants are not: every insert is counted,
+    // and depthSum is at least insertCount because depth is >= 1 per
+    // insert.
+    constexpr std::uint64_t kThreads = 4;
+    constexpr std::uint64_t kPerThread = 50;
+
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (auto t = 0uz; t < kThreads; ++t)
+    {
+        threads.emplace_back([&backend, t] {
+            auto const batch = createPredictableBatch(kPerThread, 1000 + t);
+            for (auto const& obj : batch)
+                backend->store(obj);
+        });
+    }
+    for (auto& th : threads)
+        th.join();
+
+    auto const stats = backend->getWriteStats();
+    ASSERT_TRUE(stats.has_value());
+    EXPECT_EQ(stats->insertCount, kThreads * kPerThread);
+    EXPECT_GE(stats->depthSum, stats->insertCount);
+    EXPECT_EQ(stats->concurrentWriters, 0u);
+    EXPECT_GT(stats->insertMaxUs, 0u);
+    // Depth cannot exceed the number of threads that could be inside the
+    // insert at once, so the mean depth is bounded by kThreads.
+    EXPECT_LE(stats->depthSum, stats->insertCount * kThreads);
+
+    backend->close();
+}
+
+TEST(NuDBFactory, write_load_reports_writer_depth)
+{
+    beast::TempDir const tempDir;
+    auto const params = makeSection(tempDir.path());
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    ASSERT_TRUE(backend);
+    backend->open();
+
+    // Idle: no writer in flight, so the load is exactly 0.
+    EXPECT_EQ(backend->getWriteLoad(), 0);
+
+    // After writes complete the depth returns to 0 rather than staying
+    // elevated, because this is an instantaneous gauge and not a counter.
+    auto const batch = createPredictableBatch(5, 777);
+    storeBatch(*backend, batch);
+    EXPECT_EQ(backend->getWriteLoad(), 0);
+
+    // The value must stay far below the history-acquisition cutoff that
+    // LedgerMaster applies (kMaxWriteLoadAcquire), or history acquisition
+    // would silently stop. Depth is bounded by the writing threads.
+    constexpr int kMaxWriteLoadAcquire = 8192;
+    EXPECT_LT(backend->getWriteLoad(), kMaxWriteLoadAcquire);
+
+    backend->close();
 }
 
 TEST(NuDBFactory, data_persistence)

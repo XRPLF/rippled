@@ -9,6 +9,7 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -17,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -83,6 +85,15 @@ public:
      */
     virtual std::int32_t
     getWriteLoad() const = 0;
+
+    /**
+     * Get backend write-path statistics, if the backend measures them.
+     *
+     * @return The statistics, or std::nullopt when the backend does not
+     *         measure its writes.
+     */
+    [[nodiscard]] virtual std::optional<WriteStats>
+    getWriteStats() const = 0;
 
     /**
      * Store the object.

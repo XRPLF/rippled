@@ -12,6 +12,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
 #include <chrono>
@@ -20,6 +21,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -99,6 +101,13 @@ DatabaseRotatingImp::getWriteLoad() const
 {
     std::scoped_lock const lock(mutex_);
     return writableBackend_->getWriteLoad();
+}
+
+std::optional<WriteStats>
+DatabaseRotatingImp::getWriteStats() const
+{
+    std::scoped_lock const lock(mutex_);
+    return writableBackend_->getWriteStats();
 }
 
 void

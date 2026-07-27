@@ -173,6 +173,30 @@ TEST_P(BackendTypeTest, concurrent_store_and_fetch)
     }
 }
 
+// Write-path statistics are optional per backend. Only NuDB measures them;
+// every other backend inherits the base-class default. Reporting absence
+// rather than zeros is what lets a reader tell "not measured" apart from
+// "measured, and idle".
+TEST_P(BackendTypeTest, write_stats_reported_only_when_measured)
+{
+    auto backend = makeOpenBackend();
+    auto const stats = backend->getWriteStats();
+
+    if (GetParam() == "nudb")
+    {
+        ASSERT_TRUE(stats.has_value());
+        // Freshly opened and not yet written to.
+        EXPECT_EQ(stats->insertCount, 0u);
+        EXPECT_EQ(stats->concurrentWriters, 0u);
+    }
+    else
+    {
+        EXPECT_FALSE(stats.has_value());
+    }
+
+    backend->close();
+}
+
 INSTANTIATE_TEST_SUITE_P(
     BackendTypes,
     BackendTypeTest,

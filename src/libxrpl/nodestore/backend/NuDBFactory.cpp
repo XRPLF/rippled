@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -12,6 +13,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
@@ -63,6 +65,31 @@ public:
     nudb::store db;
     std::atomic<bool> deletePath;
     Scheduler& scheduler;
+
+    /**
+     * Writers currently inside doInsert. Instantaneous depth.
+     */
+    std::atomic<std::uint64_t> concurrentWriters{0};
+
+    /**
+     * Completed inserts.
+     */
+    std::atomic<std::uint64_t> insertCount{0};
+
+    /**
+     * Summed insert wall time, microseconds.
+     */
+    std::atomic<std::uint64_t> insertTotalUs{0};
+
+    /**
+     * Longest single insert, microseconds. Maintained as a true maximum.
+     */
+    std::atomic<std::uint64_t> insertMaxUs{0};
+
+    /**
+     * Summed depth observed at each insert.
+     */
+    std::atomic<std::uint64_t> depthSum{0};
 
     NuDBBackend(
         size_t keyBytes,
@@ -239,7 +266,20 @@ public:
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobjectCompress(e.getData(), e.getSize(), bf);
+
+        // NuDB takes one global mutex for the whole insert, so the wait is
+        // invisible from here. Record the depth we joined at and the wall
+        // time we spent; the split follows from Little's Law.
+        auto const depth = concurrentWriters.fetch_add(1, std::memory_order_relaxed) + 1;
+        auto const begin = std::chrono::steady_clock::now();
+
+        // A scope guard rather than straight-line code, because the insert
+        // can allocate and so can throw. Leaking the depth would strand the
+        // gauge above zero for the life of the process.
+        ScopeExit const account([this, depth, begin] { recordInsert(depth, begin); });
+
         db.insert(e.getKey(), result.first, result.second, ec);
+
         if (ec && ec != nudb::error::key_exists)
             Throw<nudb::system_error>(ec);
     }
@@ -314,7 +354,22 @@ public:
     int
     getWriteLoad() override
     {
-        return 0;
+        // Writers in flight. Bounded by the number of writing threads, so
+        // it stays far below LedgerMaster's kMaxWriteLoadAcquire of 8192
+        // and cannot suppress history acquisition.
+        return static_cast<int>(concurrentWriters.load(std::memory_order_relaxed));
+    }
+
+    [[nodiscard]] std::optional<WriteStats>
+    getWriteStats() const override
+    {
+        WriteStats stats;
+        stats.concurrentWriters = concurrentWriters.load(std::memory_order_relaxed);
+        stats.insertCount = insertCount.load(std::memory_order_relaxed);
+        stats.insertTotalUs = insertTotalUs.load(std::memory_order_relaxed);
+        stats.insertMaxUs = insertMaxUs.load(std::memory_order_relaxed);
+        stats.depthSum = depthSum.load(std::memory_order_relaxed);
+        return stats;
     }
 
     void
@@ -349,6 +404,37 @@ public:
     }
 
 private:
+    /**
+     * Fold one finished insert into the write-path counters.
+     *
+     * Always runs, including on the throwing path, so the depth gauge
+     * returns to its true value even when the insert fails.
+     *
+     * @param depth Writer depth this insert joined at, at least 1.
+     * @param begin When the insert started.
+     */
+    void
+    recordInsert(std::uint64_t depth, std::chrono::steady_clock::time_point begin) noexcept
+    {
+        auto const elapsedUs =
+            static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                           std::chrono::steady_clock::now() - begin)
+                                           .count());
+
+        concurrentWriters.fetch_sub(1, std::memory_order_relaxed);
+        insertCount.fetch_add(1, std::memory_order_relaxed);
+        insertTotalUs.fetch_add(elapsedUs, std::memory_order_relaxed);
+        depthSum.fetch_add(depth, std::memory_order_relaxed);
+
+        // std::atomic has no fetch_max, so raise the maximum with a CAS
+        // loop. Mirrors the clamp loop in OTelCollector.cpp.
+        auto current = insertMaxUs.load(std::memory_order_relaxed);
+        while (elapsedUs > current &&
+               !insertMaxUs.compare_exchange_weak(current, elapsedUs, std::memory_order_relaxed))
+        {
+        }
+    }
+
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
