@@ -21,7 +21,7 @@
 #include <cstring>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
@@ -269,7 +269,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
         case 1:  // lz4
         {
             std::uint8_t* p = nullptr;
-            auto const lzr = NodeStore::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
+            auto const lzr = node_store::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
                 p = reinterpret_cast<std::uint8_t*>(bf(vn + n));
                 return p + vn;
             });
@@ -316,4 +316,4 @@ filterInner(void* in, std::size_t inSize)
     }
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

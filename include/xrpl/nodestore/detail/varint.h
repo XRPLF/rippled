@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 // This is a variant of the base128 varint format from
 // google protocol buffers:
@@ -123,4 +123,4 @@ write(nudb::detail::ostream& os, std::size_t t)
     writeVarint(os.data(sizeVarint(t)), t);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
