@@ -79,9 +79,11 @@ TYPED_TEST_SUITE(LexicalCastIntegers, IntegerTypes, IntegerTypeNames);
 
 TYPED_TEST(LexicalCastIntegers, round_trips_random_values)
 {
+    static constexpr auto kSampleCount = 1000uz;
+
     xor_shift_engine r{50};  // seeded per test so a failure reproduces on its own
 
-    for (int i = 0; i < 1000; ++i)
+    for (auto i = 0uz; i < kSampleCount; ++i)
         expectRoundTrip(static_cast<TypeParam>(r()));
 }
 
