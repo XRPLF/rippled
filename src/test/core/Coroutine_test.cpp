@@ -78,7 +78,8 @@ public:
                 g2p->signal();
                 co_return;
             });
-        BEAST_EXPECT(g1.waitFor(5s));
+        if (!BEAST_EXPECT(g1.waitFor(5s)))
+            return;
         c->join();
         c->post();
         BEAST_EXPECT(g2.waitFor(5s));
@@ -158,13 +159,15 @@ public:
                     this->BEAST_EXPECT(**lvp == id);
                     co_return;
                 });
-            BEAST_EXPECT(g.waitFor(5s));
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             a[i]->join();
         }
         for (auto const& c : a)
         {
             c->post();
-            BEAST_EXPECT(g.waitFor(5s));
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             c->join();
         }
         for (auto const& c : a)
