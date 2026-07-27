@@ -4,8 +4,12 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
@@ -14,11 +18,14 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <type_traits>
@@ -28,6 +35,79 @@ namespace xrpl::node_store {
 
 class DatabaseConfig_test : public beast::unit_test::Suite
 {
+private:
+    /**
+     * Journal for backends and databases created by this suite.
+     *
+     * The nodestore suites that used to share these helpers moved to GTest,
+     * taking their common base with them. This suite stayed on Beast, so it
+     * keeps its own copy of the few pieces it needs.
+     */
+    beast::Journal journal_;
+
+    /**
+     * Build a batch of node objects that is the same for a given seed.
+     *
+     * Payload sizes and contents come from a seeded generator, so two runs
+     * with one seed produce identical objects and a test can store one batch
+     * and look for exactly those hashes later.
+     *
+     * @param numObjects How many objects to create.
+     * @param seed Seed for the generator.
+     * @return The batch, in creation order.
+     */
+    static Batch
+    createPredictableBatch(int numObjects, std::uint64_t seed)
+    {
+        Batch batch;
+        batch.reserve(numObjects);
+
+        beast::xor_shift_engine rng(seed);
+
+        for (int i = 0; i < numObjects; ++i)
+        {
+            uint256 hash;
+            beast::rngfill(hash.begin(), hash.size(), rng);
+
+            Blob blob(randInt(rng, std::size_t{1}, std::size_t{2000}));
+            beast::rngfill(blob.data(), blob.size(), rng);
+
+            batch.emplace_back(
+                NodeObject::createObject(NodeObjectType::Ledger, std::move(blob), hash));
+        }
+
+        return batch;
+    }
+
+    /**
+     * Store every object of a batch in a database.
+     *
+     * @param db Destination database.
+     * @param batch Objects to store.
+     */
+    static void
+    storeBatch(Database& db, Batch const& batch)
+    {
+        for (auto const& object : batch)
+        {
+            Blob data(object->getData());
+            db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
+        }
+    }
+
+    /**
+     * Store every object of a batch directly in a backend.
+     *
+     * @param backend Destination backend.
+     * @param batch Objects to store.
+     */
+    static void
+    storeBatch(Backend& backend, Batch const& batch)
+    {
+        for (auto const& object : batch)
+            backend.store(object);
+    }
+
 public:
     void
     testConfig()
