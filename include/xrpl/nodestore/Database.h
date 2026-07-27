@@ -204,6 +204,36 @@ public:
     }
 
     /**
+     * Cumulative time spent in backend fetches, in microseconds.
+     *
+     * Divide by getFetchTotalCount() to get the mean read latency. That mean
+     * is what separates a cold store from a warm one: a warm store reads in
+     * single-digit microseconds, a cold one in low hundreds.
+     *
+     * @return The running microsecond total for the lifetime of this process.
+     */
+    std::uint64_t
+    getFetchDurationUs() const
+    {
+        return fetchDurationUs_;
+    }
+
+    /**
+     * Cumulative time spent in backend stores, in microseconds.
+     *
+     * Divide by getStoreCount() to get the mean write latency. This includes
+     * any time the backend spent waiting for its own internal locks, so it is
+     * wall time per store, not service time.
+     *
+     * @return The running microsecond total for the lifetime of this process.
+     */
+    std::uint64_t
+    getStoreDurationUs() const
+    {
+        return storeDurationUs_;
+    }
+
+    /**
      * Total payload bytes returned by successful fetches.
      *
      * @return The running byte total for the lifetime of this process.
@@ -267,6 +297,21 @@ protected:
         storeSz_ += sz;
     }
 
+    /**
+     * Add the wall time of one backend store to the cumulative total.
+     *
+     * Each concrete store path times only its backend call, so the total
+     * reflects disk work and excludes cache bookkeeping. Callers must pass
+     * microseconds.
+     *
+     * @param us Wall time of the completed backend store, in microseconds.
+     */
+    void
+    storeDurationStats(std::uint64_t us)
+    {
+        storeDurationUs_ += us;
+    }
+
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
@@ -300,7 +345,20 @@ private:
      */
     std::atomic<std::uint64_t> fetchSz_{0};
 
+    /**
+     * Wall time spent in backend fetches, in microseconds.
+     *
+     * Written by fetchNodeObject(), which times the whole fetch including a
+     * cache lookup that misses.
+     */
     std::atomic<std::uint64_t> fetchDurationUs_{0};
+
+    /**
+     * Wall time spent in backend stores, in microseconds.
+     *
+     * Written by each concrete store path via storeDurationStats(), which
+     * times only the backend call.
+     */
     std::atomic<std::uint64_t> storeDurationUs_{0};
 
     mutable std::mutex readLock_;

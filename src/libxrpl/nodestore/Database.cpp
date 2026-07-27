@@ -274,6 +274,7 @@ Database::getCountsJson(json::Value& obj)
     obj[jss::node_written_bytes] = std::to_string(storeSz_);
     obj[jss::node_read_bytes] = std::to_string(fetchSz_);
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
+    obj[jss::node_writes_duration_us] = std::to_string(storeDurationUs_);
 }
 
 }  // namespace xrpl::NodeStore

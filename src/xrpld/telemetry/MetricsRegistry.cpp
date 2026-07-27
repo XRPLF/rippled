@@ -805,25 +805,21 @@ MetricsRegistry::registerNodeStoreGauge()
                 observe("node_written_bytes", static_cast<int64_t>(db.getStoreSize()));
                 observe("node_read_bytes", static_cast<int64_t>(db.getFetchSize()));
 
+                // Cumulative I/O durations, read straight off the atomics.
+                observe("node_reads_duration_us", static_cast<int64_t>(db.getFetchDurationUs()));
+                observe("node_writes_duration_us", static_cast<int64_t>(db.getStoreDurationUs()));
+
                 // Write load score (instantaneous).
                 observe("write_load", static_cast<int64_t>(db.getWriteLoad()));
 
-                // Read queue depth (instantaneous).
+                // Read queue depth (instantaneous). The JSON object is still
+                // needed for the queue and thread-pool values, which have no
+                // accessors.
                 json::Value obj(json::ValueType::Object);
                 db.getCountsJson(obj);
                 if (obj.isMember("read_queue"))
                 {
                     observe("read_queue", static_cast<int64_t>(obj["read_queue"].asUInt()));
-                }
-
-                // Cumulative read duration (stored as JSON string, not int).
-                if (obj.isMember(jss::node_reads_duration_us))
-                {
-                    auto durStr = obj[jss::node_reads_duration_us].asString();
-                    if (!durStr.empty())
-                    {
-                        observe("node_reads_duration_us", static_cast<int64_t>(std::stoll(durStr)));
-                    }
                 }
 
                 // Read thread pool stats (native JSON ints, no jss:: constants).

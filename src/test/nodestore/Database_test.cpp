@@ -13,10 +13,12 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
@@ -614,6 +616,178 @@ public:
 
     //--------------------------------------------------------------------------
 
+    /**
+     * Verify the fetch and store duration accumulators are readable directly.
+     *
+     * Telemetry needs the mean backend latency, which is the cumulative
+     * duration divided by the matching operation count. Both accumulators
+     * must therefore be readable without a JSON round trip, must be zero on
+     * a fresh database, and must be independent of each other: writes may
+     * not move the read total and reads may not move the write total.
+     */
+    void
+    testDurationAccessors()
+    {
+        testcase("Fetch and store duration accessors");
+
+        DummyScheduler scheduler;
+
+        beast::TempDir const nodeDb;
+        Section nodeParams;
+        nodeParams.set(Keys::kType, "nudb");
+        nodeParams.set(Keys::kPath, nodeDb.path());
+
+        // No cache_size/cache_age is set, so DatabaseNodeImp builds no cache
+        // and every fetch reaches the backend. That makes the counts exact.
+        std::unique_ptr<Database> db =
+            Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
+        if (!BEAST_EXPECT(db))
+            return;
+
+        // A fresh database has done no work, so every accumulator reads zero.
+        BEAST_EXPECT(db->getStoreCount() == 0);
+        BEAST_EXPECT(db->getStoreDurationUs() == 0);
+        BEAST_EXPECT(db->getFetchTotalCount() == 0);
+        BEAST_EXPECT(db->getFetchHitCount() == 0);
+        BEAST_EXPECT(db->getFetchDurationUs() == 0);
+
+        // Writes must advance the write count exactly and the write duration
+        // past zero: the backend inserts take microseconds of real work.
+        constexpr std::uint64_t kNumStored = 32;
+        auto const stored = createPredictableBatch(static_cast<int>(kNumStored), 4321);
+        BEAST_EXPECT(stored.size() == kNumStored);
+        storeBatch(*db, stored);
+
+        BEAST_EXPECT(db->getStoreCount() == kNumStored);
+        BEAST_EXPECT(db->getStoreDurationUs() > 0);
+
+        // Writes must leave the read accumulator alone. This also proves the
+        // read accessor does not report the write member.
+        BEAST_EXPECT(db->getFetchDurationUs() == 0);
+
+        auto const storeDurationAfterWrites = db->getStoreDurationUs();
+
+        // Positive path: every fetch finds its object, so the read counters
+        // and the read duration all advance.
+        for (auto const& object : stored)
+            BEAST_EXPECT(db->fetchNodeObject(object->getHash(), 0) != nullptr);
+
+        BEAST_EXPECT(db->getFetchTotalCount() == kNumStored);
+        BEAST_EXPECT(db->getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db->getFetchDurationUs() > 0);
+
+        // Reads must leave the write accumulator alone. This also proves the
+        // write accessor does not report the read member.
+        BEAST_EXPECT(db->getStoreDurationUs() == storeDurationAfterWrites);
+
+        // Negative path: a miss counts as a fetch but not as a hit, and it
+        // performs no write, so the write accumulator still cannot move.
+        constexpr std::uint64_t kNumMissing = 8;
+        auto const missing = createPredictableBatch(static_cast<int>(kNumMissing), 999);
+        BEAST_EXPECT(missing.size() == kNumMissing);
+        for (auto const& object : missing)
+            BEAST_EXPECT(db->fetchNodeObject(object->getHash(), 0) == nullptr);
+
+        BEAST_EXPECT(db->getFetchTotalCount() == kNumStored + kNumMissing);
+        BEAST_EXPECT(db->getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db->getStoreCount() == kNumStored);
+        BEAST_EXPECT(db->getStoreDurationUs() == storeDurationAfterWrites);
+    }
+
+    //--------------------------------------------------------------------------
+
+    /**
+     * Verify the rotating database records its write duration too.
+     *
+     * DatabaseRotatingImp has its own store path, separate from
+     * DatabaseNodeImp, and it is the path a node with online delete runs.
+     * A getter that only the non-rotating path feeds would read zero for
+     * the whole lifetime of such a node.
+     */
+    void
+    testRotatingDurationAccessors()
+    {
+        testcase("Rotating store duration accessors");
+
+        DummyScheduler scheduler;
+
+        beast::TempDir const writableDir;
+        beast::TempDir const archiveDir;
+
+        Section writableParams;
+        writableParams.set(Keys::kType, "nudb");
+        writableParams.set(Keys::kPath, writableDir.path());
+
+        Section archiveParams;
+        archiveParams.set(Keys::kType, "nudb");
+        archiveParams.set(Keys::kPath, archiveDir.path());
+
+        std::shared_ptr<Backend> writableBackend =
+            Manager::instance().makeBackend(writableParams, megabytes(4), scheduler, journal_);
+        std::shared_ptr<Backend> archiveBackend =
+            Manager::instance().makeBackend(archiveParams, megabytes(4), scheduler, journal_);
+        if (!BEAST_EXPECT(writableBackend) || !BEAST_EXPECT(archiveBackend))
+            return;
+        writableBackend->open();
+        archiveBackend->open();
+
+        DatabaseRotatingImp rotating(
+            scheduler,
+            2,
+            std::move(writableBackend),
+            std::move(archiveBackend),
+            writableParams,
+            journal_);
+
+        // The private fetchNodeObject override hides the public base overload,
+        // so exercise the rotating store through the Database interface, which
+        // is also how production callers reach it.
+        Database& db = rotating;
+
+        // A fresh rotating database has done no work either.
+        BEAST_EXPECT(db.getStoreCount() == 0);
+        BEAST_EXPECT(db.getStoreDurationUs() == 0);
+        BEAST_EXPECT(db.getFetchTotalCount() == 0);
+        BEAST_EXPECT(db.getFetchDurationUs() == 0);
+
+        constexpr std::uint64_t kNumStored = 32;
+        auto const stored = createPredictableBatch(static_cast<int>(kNumStored), 8642);
+        BEAST_EXPECT(stored.size() == kNumStored);
+        storeBatch(db, stored);
+
+        BEAST_EXPECT(db.getStoreCount() == kNumStored);
+        BEAST_EXPECT(db.getStoreDurationUs() > 0);
+        BEAST_EXPECT(db.getFetchDurationUs() == 0);
+
+        auto const storeDurationAfterWrites = db.getStoreDurationUs();
+
+        // Every object is in the writable backend, so the archive is never
+        // consulted and no copy-forward write happens on these reads.
+        for (auto const& object : stored)
+            BEAST_EXPECT(db.fetchNodeObject(object->getHash(), 0) != nullptr);
+
+        BEAST_EXPECT(db.getFetchTotalCount() == kNumStored);
+        BEAST_EXPECT(db.getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db.getFetchDurationUs() > 0);
+        BEAST_EXPECT(db.getStoreCount() == kNumStored);
+        BEAST_EXPECT(db.getStoreDurationUs() == storeDurationAfterWrites);
+
+        // Negative path: a hash in neither backend misses both, so it counts
+        // as a fetch, not as a hit, and triggers no copy-forward write.
+        constexpr std::uint64_t kNumMissing = 8;
+        auto const missing = createPredictableBatch(static_cast<int>(kNumMissing), 1357);
+        BEAST_EXPECT(missing.size() == kNumMissing);
+        for (auto const& object : missing)
+            BEAST_EXPECT(db.fetchNodeObject(object->getHash(), 0) == nullptr);
+
+        BEAST_EXPECT(db.getFetchTotalCount() == kNumStored + kNumMissing);
+        BEAST_EXPECT(db.getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db.getStoreCount() == kNumStored);
+        BEAST_EXPECT(db.getStoreDurationUs() == storeDurationAfterWrites);
+    }
+
+    //--------------------------------------------------------------------------
+
     void
     testImport(
         std::string const& destBackendType,
@@ -787,6 +961,10 @@ public:
         std::int64_t const seedValue = 50;
 
         testCounterWidths();
+
+        testDurationAccessors();
+
+        testRotatingDurationAccessors();
 
         testConfig();
 

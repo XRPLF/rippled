@@ -14,6 +14,7 @@
 #include <xrpl/nodestore/Types.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -128,7 +129,15 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
         return writableBackend_;
     }();
 
+    // Time only the backend call, matching DatabaseNodeImp, so the two store
+    // paths feed the same accumulator with comparable numbers.
+    auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
+    storeDurationStats(
+        static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                       std::chrono::steady_clock::now() - begin)
+                                       .count()));
+
     storeStats(1, nObj->getData().size());
 }
 
