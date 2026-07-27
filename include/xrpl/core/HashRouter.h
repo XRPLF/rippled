@@ -128,7 +128,7 @@ private:
         addPeer(PeerShortID peer)
         {
             if (peer != 0)
-                peers.insert(peer);
+                peers_.insert(peer);
         }
 
         [[nodiscard]] HashRouterFlags
@@ -149,7 +149,7 @@ private:
         std::set<PeerShortID>
         releasePeerSet()
         {
-            return std::move(peers);
+            return std::move(peers_);
         }
 
         /**
@@ -182,7 +182,7 @@ private:
 
     private:
         HashRouterFlags flags_ = HashRouterFlags::UNDEFINED;
-        std::set<PeerShortID> peers{};
+        std::set<PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
         std::optional<Stopwatch::time_point> relayed_;

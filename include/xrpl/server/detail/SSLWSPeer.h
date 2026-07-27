@@ -33,8 +33,8 @@ class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
     using stream_type = boost::beast::ssl_stream<socket_type>;
     using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
 
-    std::unique_ptr<stream_type> streamPtr_{};
-    boost::beast::websocket::stream<stream_type&> ws_{};
+    std::unique_ptr<stream_type> streamPtr_;
+    boost::beast::websocket::stream<stream_type&> ws_;
 
 public:
     template <class Body, class Headers>

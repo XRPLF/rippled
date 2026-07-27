@@ -31,7 +31,7 @@ private:
     using yield_context = boost::asio::yield_context;
     using error_code = boost::system::error_code;
 
-    std::unique_ptr<stream_type> streamPtr_{};
+    std::unique_ptr<stream_type> streamPtr_;
     stream_type& stream_;
     socket_type& socket_;
 

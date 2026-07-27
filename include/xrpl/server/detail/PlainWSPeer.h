@@ -25,7 +25,7 @@ class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
     using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
     using socket_type = boost::beast::tcp_stream;
 
-    boost::beast::websocket::stream<socket_type> ws_{};
+    boost::beast::websocket::stream<socket_type> ws_;
 
 public:
     template <class Body, class Headers>

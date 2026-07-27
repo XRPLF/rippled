@@ -308,7 +308,7 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator{};
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
         /**
          * @return true if transaction was found, false otherwise
@@ -328,7 +328,7 @@ public:
          *
          * @throws if isFound() returns false
          */
-        uint256 const&
+        [[nodiscard]] uint256 const&
         getNodestoreHash() const
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
@@ -339,7 +339,7 @@ public:
          *
          * @throws if isFound() returns false
          */
-        uint32_t
+        [[nodiscard]] uint32_t
         getLedgerSequence() const
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).second;

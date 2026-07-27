@@ -58,7 +58,7 @@ protected:
             memcpy(data.get(), ptr, len);
         }
 
-        std::unique_ptr<char[]> data{};
+        std::unique_ptr<char[]> data;
         std::size_t bytes;
         std::size_t used{0};
     };

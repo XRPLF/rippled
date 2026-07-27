@@ -120,8 +120,8 @@ struct TrustChanges
 {
     explicit TrustChanges() = default;
 
-    hash_set<NodeID> added{};
-    hash_set<NodeID> removed{};
+    hash_set<NodeID> added;
+    hash_set<NodeID> removed;
 };
 
 /**
@@ -189,8 +189,8 @@ class ValidatorList
     {
         explicit PublisherList() = default;
 
-        std::vector<PublicKey> list{};
-        std::vector<std::string> manifests{};
+        std::vector<PublicKey> list;
+        std::vector<std::string> manifests;
         std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
@@ -318,7 +318,7 @@ public:
 
         // Tracks the dispositions of each processed list and how many times it
         // occurred
-        std::map<ListDisposition, std::size_t> dispositions{};
+        std::map<ListDisposition, std::size_t> dispositions;
         std::optional<PublicKey> publisherKey;
         PublisherStatus status = PublisherStatus::Unavailable;
         std::size_t sequence = 0;
