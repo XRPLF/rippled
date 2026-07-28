@@ -204,4 +204,54 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(backendTypes()),
     [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
+// The std::nullopt default on the base class, exercised directly on the two
+// backends that always exist in every build -- unlike rocksdb, which the
+// parameterized suite above only reaches when XRPL_ROCKSDB_AVAILABLE.
+//
+// Why absence and not zeros: the exporter skips the whole nudb_* label group
+// when getWriteStats() is empty (MetricsRegistry.cpp observeWritePathDetail
+// returns early). If the base class returned a default-constructed WriteStats
+// instead, every non-NuDB node would publish nudb_writers_in_flight=0 and
+// nudb_insert_max_us=0 -- a perfectly idle write path, on a node whose write
+// path is simply not instrumented. Each assertion below fails against that
+// change.
+TEST(BackendWriteStats, non_measuring_backends_report_absence_not_zeros)
+{
+    for (auto const& type : {std::string{"memory"}, std::string{"none"}})
+    {
+        SCOPED_TRACE("type=" + type);
+
+        DummyScheduler scheduler;
+        beast::Journal const journal{TestSink::instance()};
+        beast::TempDir const tempDir;
+
+        Section params;
+        params.set("type", type);
+        params.set("path", tempDir.path());
+
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+        ASSERT_TRUE(backend);
+        backend->open();
+
+        // Absent before any write.
+        EXPECT_FALSE(backend->getWriteStats().has_value());
+
+        // Still absent after real writes. Cause, not just state: the
+        // backend has genuinely been used, so the absence is the base-class
+        // default and not an unopened backend.
+        beast::xor_shift_engine rng(kSeedValue);
+        auto const batch = createPredictableBatch(16, rng());
+        storeBatch(*backend, batch);
+        EXPECT_FALSE(backend->getWriteStats().has_value());
+
+        // These backends queue nothing, so their own write load stays 0. The
+        // pairing matters: absent stats plus a 0 load is what tells the
+        // exporter "not measured", whereas present stats reading 0 would mean
+        // "measured, and idle".
+        EXPECT_EQ(backend->getWriteLoad(), 0);
+
+        backend->close();
+    }
+}
+
 }  // namespace xrpl::node_store

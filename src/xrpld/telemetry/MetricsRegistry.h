@@ -49,7 +49,7 @@
  * +-- CountedObject counts
  * +-- Load factor breakdown
  * +-- NodeStore I/O gauges (totals, derived means, NuDB write queue,
- * ledger-acquisition stall counters)
+ *                          ledger-acquisition stall counters)
  * +-- Server info (state, uptime, peers, consensus)
  * +-- Build info (version label)
  * +-- Complete ledger ranges (start/end pairs)
@@ -614,6 +614,84 @@ public:
     {
         return meter_;
     }
+
+    /**
+     * Sink handed to the nodestore_state gauge helpers below.
+     *
+     * Every value they publish multiplexes onto the single `nodestore_state`
+     * gauge through its `metric` label, so the helpers need no access to the
+     * OTel observer result -- just somewhere to put a name and a number.
+     */
+    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
+
+    /**
+     * Observe the NodeStore I/O totals and the means derived from them.
+     *
+     * Publishes the four cumulative totals (`node_reads_total`,
+     * `node_writes`, `node_reads_duration_us`, `node_writes_duration_us`)
+     * unconditionally, plus `read_mean_us` and `write_mean_us` derived from
+     * them via scaledMean(). `write_mean_us` is the signal for the "a node
+     * with a large existing database syncs slower than a fresh one" symptom:
+     * back-fill is write-bound, so no read-side reading can show it. All
+     * three concrete store paths time themselves through
+     * Database::recordStoreDuration(), so the write mean is live on an
+     * ordinary node.
+     *
+     * Gauge rather than histogram, deliberately. A histogram would give true
+     * percentiles, but it costs one Record() per node object on the
+     * store/fetch path, and one ledger write walks thousands of SHAMap
+     * nodes. This reads the existing atomics once per ~10 s tick and adds
+     * nothing to the hot path. Consequence, stated plainly: p99 is NOT
+     * obtainable from this signal. A histogram added later would also need an
+     * explicit-bucket View registered via addMicrosecondHistogramView(),
+     * because the SDK's default buckets top out at 10,000.
+     *
+     * @param db       NodeStore to read the counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     *
+     * @note The totals are monotonic and never reset, so a panel wanting
+     * current rather than since-boot latency divides the two rates. That is
+     * why the counts and duration totals are exported beside the means.
+     * @note A mean is omitted when its count is 0, so a dashboard shows a gap
+     * rather than a plausible-looking 0 us.
+     */
+    static void
+    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
+
+    /**
+     * Observe the backend write-path detail, when the backend measures it.
+     *
+     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
+     * which is every backend except NuDB. Absent labels let a reader tell
+     * "not measured" from "measured, and idle"; zeros would read as a
+     * perfectly idle write path.
+     *
+     * @param db       NodeStore whose writable backend is sampled.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
+
+    /**
+     * Observe the ledger-acquisition progress and stall counters.
+     *
+     * @param stats    Process-wide acquisition counters.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
+
+    /**
+     * Observe the read queue depth and the read thread-pool counts.
+     *
+     * These four have no accessor on Database, so its JSON counters object
+     * is still the only way to reach them.
+     *
+     * @param db       NodeStore to read the JSON counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
 #endif
 
 private:
@@ -961,85 +1039,11 @@ private:
     void
     registerNodeStoreGauge();  // Task 9.1
 
-    /**
-     * Sink handed to the registerNodeStoreGauge() helpers below.
-     *
-     * Every value they publish multiplexes onto the single `nodestore_state`
-     * gauge through its `metric` label, so the helpers need no access to the
-     * OTel observer result -- just somewhere to put a name and a number.
-     * That also makes each helper directly unit-testable by passing a
-     * recording sink, which the real observer result is not.
-     */
-    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
+    // The four nodestore_state helpers and their ObserveFn sink are public
+    // (above), so a test can drive each one with a recording sink and assert
+    // the exact `metric` label values it publishes. They read only their
+    // arguments, so exposing them widens no state.
 
-    /**
-     * Observe the NodeStore I/O totals and the means derived from them.
-     *
-     * Publishes the four cumulative totals (`node_reads_total`,
-     * `node_writes`, `node_reads_duration_us`, `node_writes_duration_us`)
-     * unconditionally, plus `read_mean_us` and `write_mean_us` derived from
-     * them via scaledMean(). `write_mean_us` is the signal for the "a node
-     * with a large existing database syncs slower than a fresh one" symptom:
-     * back-fill is write-bound, so no read-side reading can show it. All
-     * three concrete store paths time themselves through
-     * Database::recordStoreDuration(), so the write mean is live on an
-     * ordinary node.
-     *
-     * Gauge rather than histogram, deliberately. A histogram would give true
-     * percentiles, but it costs one Record() per node object on the
-     * store/fetch path, and one ledger write walks thousands of SHAMap
-     * nodes. This reads the existing atomics once per ~10 s tick and adds
-     * nothing to the hot path. Consequence, stated plainly: p99 is NOT
-     * obtainable from this signal. A histogram added later would also need an
-     * explicit-bucket View registered via addMicrosecondHistogramView(),
-     * because the SDK's default buckets top out at 10,000.
-     *
-     * @param db       NodeStore to read the counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     *
-     * @note The totals are monotonic and never reset, so a panel wanting
-     * current rather than since-boot latency divides the two rates. That is
-     * why the counts and duration totals are exported beside the means.
-     * @note A mean is omitted when its count is 0, so a dashboard shows a gap
-     * rather than a plausible-looking 0 us.
-     */
-    static void
-    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
-
-    /**
-     * Observe the backend write-path detail, when the backend measures it.
-     *
-     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
-     * which is every backend except NuDB. Absent labels let a reader tell
-     * "not measured" from "measured, and idle"; zeros would read as a
-     * perfectly idle write path.
-     *
-     * @param db       NodeStore whose writable backend is sampled.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
-
-    /**
-     * Observe the ledger-acquisition progress and stall counters.
-     *
-     * @param stats    Process-wide acquisition counters.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
-
-    /**
-     * Observe the read queue depth and the read thread-pool counts.
-     *
-     * These four have no accessor on Database, so its JSON counters object
-     * is still the only way to reach them.
-     *
-     * @param db       NodeStore to read the JSON counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
     void
     registerRotationStateGauge();  // Sync diagnostics: online_delete rotation
     void

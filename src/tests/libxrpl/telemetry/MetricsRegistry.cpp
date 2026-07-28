@@ -446,7 +446,8 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
 {
     // The two-argument form is the latency case and must not scale silently;
     // if the default were 100 every published latency would be 100x wrong.
-    EXPECT_EQ(Registry::scaledMean(360, 8), Registry::scaledMean(360, 8, 1));
+    // 360/8 is 45 by hand -- an independent literal, not a restatement of the
+    // implementation. A default of 100 would read 4500 here.
     EXPECT_EQ(Registry::scaledMean(360, 8), 45);
 }
 

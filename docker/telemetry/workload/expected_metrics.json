@@ -125,7 +125,7 @@
   },
   "parity_storage": {
     "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
-    "metrics": ["storage_detail{metric=\"nudb_bytes\"}"]
+    "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
   },
   "sync_diagnostics": {
     "description": "Fresh-node sync diagnostics (native metrics). Bootstrap (Domain 0) and acquire-pipeline signals rendered by the ledger-sync-health dashboard. Names are appended one per signal. Histograms are listed by their Prometheus _bucket series (the bare instrument name is not a series). The two observable gauges carry an inline metric= selector so the specific sub-series is asserted, matching the parity_* groups.",
