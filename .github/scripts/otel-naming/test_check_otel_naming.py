@@ -1184,14 +1184,14 @@ class RuleJMetricSuffixes(unittest.TestCase):
             [],
         )
 
-    def test_gauge_named_latency_is_not_flagged(self):
+    def test_gauge_with_unit_bearing_label_values_is_not_flagged(self):
         # The regression this rule's kind-awareness exists for: a multi-series
-        # GAUGE whose units live in its label VALUES (nodestore_latency
+        # GAUGE whose units live in its label VALUES (nodestore_state
         # observing write_mean_us) must not be read as a mis-suffixed duration.
         self.assertEqual(
             self._run(
-                _mc("nodestoreLatency", "nodestore_latency"),
-                'meter_->CreateInt64ObservableGauge(metric::nodestoreLatency, "d");\n',
+                _mc("nodestoreState", "nodestore_state"),
+                'meter_->CreateInt64ObservableGauge(metric::nodestoreState, "d");\n',
             ),
             [],
         )

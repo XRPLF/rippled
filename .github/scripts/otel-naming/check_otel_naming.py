@@ -1263,9 +1263,9 @@ def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, st
 
     The kind is what decides which suffix is correct, so it must be read from
     the emit site rather than guessed from the name -- guessing from words like
-    "latency" mislabels a multi-series gauge whose units live in its label
-    VALUES (e.g. `nodestore_latency` observing `write_mean_us`), which is a
-    legitimate shape, not a violation.
+    "latency" or "us" mislabels a multi-series gauge whose units live in its
+    label VALUES (e.g. `nodestore_state` observing `write_mean_us`), which is
+    a legitimate shape, not a violation.
 
     Returns one of `counter`, `histogram`, `gauge`, `updown` per wire name.
     A name whose emit site is not found is absent from the result, so Rule J

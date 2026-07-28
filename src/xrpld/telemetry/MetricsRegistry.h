@@ -69,7 +69,6 @@
  * +-- Peer ledger supply (how many peers can serve the needed sequence)
  * +-- PeerFinder slot census (slots, attempts, fixed peers, address caches)
  * +-- Amendment block (warned flag + seconds until the node stops validating)
- * +-- NodeStore latency (mean us per store and per fetch, with counts)
  * +-- Ledger quorum + publish (validation tally vs quorum target,
  * |                            time to first validated, publish lag)
  * +-- jq_trans_overflow_total (observed from Overlay)
@@ -802,13 +801,6 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         amendmentBlockGauge_;
     /**
-     * Observable gauge for node-store read and write latency, as mean
-     * microseconds per operation derived from the cumulative duration and
-     * operation-count totals the node store already keeps.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        nodeStoreLatencyGauge_;
-    /**
      * Observable gauge for the pre-accept quorum gate and the publish lag:
      * the trusted-validation tally against the quorum it must reach, the
      * time to the first fully-validated ledger, and how far publishing
@@ -983,8 +975,33 @@ private:
     /**
      * Observe the NodeStore I/O totals and the means derived from them.
      *
+     * Publishes the four cumulative totals (`node_reads_total`,
+     * `node_writes`, `node_reads_duration_us`, `node_writes_duration_us`)
+     * unconditionally, plus `read_mean_us` and `write_mean_us` derived from
+     * them via scaledMean(). `write_mean_us` is the signal for the "a node
+     * with a large existing database syncs slower than a fresh one" symptom:
+     * back-fill is write-bound, so no read-side reading can show it. All
+     * three concrete store paths time themselves through
+     * Database::recordStoreDuration(), so the write mean is live on an
+     * ordinary node.
+     *
+     * Gauge rather than histogram, deliberately. A histogram would give true
+     * percentiles, but it costs one Record() per node object on the
+     * store/fetch path, and one ledger write walks thousands of SHAMap
+     * nodes. This reads the existing atomics once per ~10 s tick and adds
+     * nothing to the hot path. Consequence, stated plainly: p99 is NOT
+     * obtainable from this signal. A histogram added later would also need an
+     * explicit-bucket View registered via addMicrosecondHistogramView(),
+     * because the SDK's default buckets top out at 10,000.
+     *
      * @param db       NodeStore to read the counters from.
      * @param observe  Sink for one `metric`-labelled value.
+     *
+     * @note The totals are monotonic and never reset, so a panel wanting
+     * current rather than since-boot latency divides the two rates. That is
+     * why the counts and duration totals are exported beside the means.
+     * @note A mean is omitted when its count is 0, so a dashboard shows a gap
+     * rather than a plausible-looking 0 us.
      */
     static void
     observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
@@ -1342,78 +1359,6 @@ private:
      */
     void
     registerAmendmentBlockGauge();  // sync diagnostics: amendment countdown
-
-    /**
-     * Register the `nodestore_latency` gauge.
-     *
-     * Four series under the `metric` attribute, from the node store's own
-     * cumulative totals:
-     *
-     *   `write_mean_us` — **the signal this gauge exists for.** Mean
-     *     microseconds per store, `getStoreDurationUs() / getStoreCount()`.
-     *     No write-side latency existed anywhere before this:
-     *     `storeDurationUs_` was declared in Database.h and never written, and
-     *     there was no accessor for it. This is the fingerprint of the
-     *     "a node with a large existing DB syncs slower than a fresh one"
-     *     symptom, which is write-bound and therefore invisible in every
-     *     read-side metric.
-     *   `read_mean_us` — mean microseconds per fetch,
-     *     `getFetchDurationUs() / getFetchTotalCount()`, so the write mean has
-     *     a same-instant, same-derivation counterpart to be compared against.
-     *   `write_count` / `read_count` — the denominators, exported so a
-     *     dashboard can recover *interval* latency as
-     *     `rate(duration) / rate(count)`. Without them the means above are
-     *     since-boot averages, which on a long-running node move so slowly
-     *     that a current stall is invisible.
-     *
-     * Gauge, not a histogram — deliberate. A histogram would give true
-     * percentiles, which a mean cannot, but it costs one `Record()` per
-     * operation on a path that runs per node object: a single ledger write
-     * walks thousands of SHAMap nodes, and fetches are more frequent still.
-     * That is a per-object synchronous instrument call plus bucket search on
-     * the hot store/fetch path. This gauge instead reads four already-existing
-     * atomics once per ~10 s collection tick, adding nothing whatsoever to the
-     * hot path — the store side pays only the one clock-sample pair per store
-     * that the read side has always paid per fetch. For the question this work
-     * package answers ("is the write path slow, and slower than the read
-     * path?") a rate-derived mean is sufficient, and a tail latency that
-     * matters will move the mean. Consequence, stated plainly: p99 is NOT
-     * obtainable from this signal. Adding a histogram later would also require
-     * an explicit-bucket View registered in initExporterAndProvider() via
-     * addMicrosecondHistogramView(), because the SDK's default buckets top out
-     * at 10,000 and every microsecond duration above 10 ms would saturate.
-     *
-     * Distinct from `nodestore_state`, which already carries the raw
-     * cumulative `node_reads_duration_us`, `node_reads_total` and
-     * `node_writes` fields, and from the Ledger Data Sync dashboard's "NuDB
-     * Read Latency" panel that divides the first two in PromQL. Neither has
-     * any write-duration input to divide — that quantity did not exist. This
-     * gauge adds the missing write numerator and publishes both means from one
-     * reading so the two sides are directly comparable.
-     *
-     * @note Pulled on the OTel reader thread (~10 s tick). Four relaxed atomic
-     * loads and two integer divisions; no lock, no allocation, no hot-path
-     * cost.
-     * @note A mean is observed only when both its count and its duration total
-     * are non-zero; otherwise the series is omitted rather than reported as 0,
-     * because a 0 would claim the operation is instantaneous. The counts are
-     * always observed, so `write_count` still distinguishes "nothing written
-     * yet" from "writes are instant".
-     * @warning `write_mean_us` is currently produced only by store paths that
-     * call `Database::recordStoreDuration()`, which today is
-     * `Database::importInternal` (the `[import_db]` admin path). `store()` is
-     * pure virtual, and neither `DatabaseNodeImp::store` nor
-     * `DatabaseRotatingImp::store` calls it yet, so on an ordinary node
-     * `write_count` climbs while `write_mean_us` is absent. That is a
-     * deliberate, visible gap: closing it means adding one clock-sample pair to
-     * those two concrete store overrides, which live outside this work
-     * package's file scope.
-     * @note Both totals are monotonic and never reset. A panel wanting current
-     * rather than since-boot latency must divide the two rates, which is why
-     * the counts are exported alongside the means.
-     */
-    void
-    registerNodeStoreLatencyGauge();  // sync diagnostics: store/fetch latency
 
     /**
      * Register the `ledger_quorum_publish` gauge.

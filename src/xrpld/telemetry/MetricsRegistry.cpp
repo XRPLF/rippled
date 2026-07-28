@@ -726,7 +726,6 @@ MetricsRegistry::registerAsyncGauges()
     registerPeerLedgerSupplyGauge();
     registerSlotCensusGauge();
     registerAmendmentBlockGauge();
-    registerNodeStoreLatencyGauge();
     registerLedgerQuorumPublishGauge();
 }
 
@@ -2304,95 +2303,6 @@ MetricsRegistry::registerAmendmentBlockGauge()
                     secondsToBlock = std::max<std::int64_t>(expectedSecs - nowSecs, 0);
                 }
                 observe(lval::amendment_block::secondsToBlock, secondsToBlock);
-            }
-            catch (...)  // NOLINT(bugprone-empty-catch)
-            {
-                // Silently skip if services are not yet ready.
-            }
-        },
-        this);
-}
-
-void
-MetricsRegistry::registerNodeStoreLatencyGauge()
-{
-    // --- Sync diagnostics: is the node store slow, and on which side? ---
-    // The write mean is the new signal. storeDurationUs_ was declared and
-    // never written, so no write latency existed anywhere; only the read side
-    // had a duration total. A node with a large existing DB back-fills slower
-    // than a fresh one, and back-fill is write-bound, so the read-side
-    // metrics cannot show it. Exporting both means from one reading also makes
-    // the two sides directly comparable.
-    //
-    // Gauge rather than histogram: a histogram would cost one Record() per
-    // node object on the store/fetch path, which runs thousands of times per
-    // ledger write. This reads four atomics per ~10 s tick instead. The
-    // trade-off is that percentiles are unavailable -- see the header comment.
-    nodeStoreLatencyGauge_ = meter_->CreateInt64ObservableGauge(
-        metric::nodestoreLatency,
-        "NodeStore mean store/fetch latency in microseconds, with counts");
-    nodeStoreLatencyGauge_->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
-            if (self->callbacksDetached_.load(std::memory_order_acquire))
-                return;
-            auto& app = self->app_;
-
-            try
-            {
-                auto observe = [&](char const* field, int64_t value) {
-                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
-                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
-                };
-
-                auto& db = app.getNodeStore();
-
-                // One reading of each pair, so a mean and its own denominator
-                // describe the same instant.
-                auto const storeCount = db.getStoreCount();
-                auto const storeDurationUs = db.getStoreDurationUs();
-                auto const fetchCount = db.getFetchTotalCount();
-                auto const fetchDurationUs = db.getFetchDurationUs();
-
-                // Counts are always observed, including zero: that is what
-                // separates "nothing written yet" from "writes are instant".
-                observe(lval::nodestore_latency::writeCount, static_cast<int64_t>(storeCount));
-                observe(lval::nodestore_latency::readCount, static_cast<int64_t>(fetchCount));
-
-                // A mean needs a non-zero denominator, and it needs a
-                // numerator that was actually measured. Both are required, and
-                // the series is omitted rather than observed as 0 when either
-                // is missing: a reported 0 us would claim writes are
-                // instantaneous, which is worse than no reading at all.
-                //
-                // The numerator guard covers the pre-first-write window only.
-                // Both concrete databases time their backend write, so the
-                // total advances on any ordinary node; before the first write
-                // it is still 0, and omitting the mean then is better than
-                // publishing a false "writes take 0 us".
-                // The cumulative totals are observed unconditionally, so a
-                // panel can divide rate(duration) by rate(count) and read the
-                // latency over its own window rather than a since-boot average
-                // that flattens as uptime grows.
-                observe(
-                    lval::nodestore_latency::writeDurationUs,
-                    static_cast<int64_t>(storeDurationUs));
-                observe(
-                    lval::nodestore_latency::readDurationUs, static_cast<int64_t>(fetchDurationUs));
-
-                if (storeCount > 0 && storeDurationUs > 0)
-                {
-                    observe(
-                        lval::nodestore_latency::writeMeanUs,
-                        static_cast<int64_t>(storeDurationUs / storeCount));
-                }
-                if (fetchCount > 0 && fetchDurationUs > 0)
-                {
-                    observe(
-                        lval::nodestore_latency::readMeanUs,
-                        static_cast<int64_t>(fetchDurationUs / fetchCount));
-                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

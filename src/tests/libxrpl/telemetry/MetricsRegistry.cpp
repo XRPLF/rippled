@@ -40,7 +40,7 @@
  *  `clock_close_offset_seconds`, `sync_state`,
  *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`,
  *  `jobq_saturation`, `peer_ledger_supply`,
- *  `peerfinder_slot_census`, `amendment_block`, `nodestore_latency`):
+ *  `peerfinder_slot_census`, `amendment_block`, `nodestore_state`):
  *  this file CANNOT assert an observed gauge
  *  value, because on this build the gauges do not exist -- their registration
  *  methods and the OTel instrument members are inside
@@ -854,7 +854,7 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() /
     // registerJobQueueBacklogGauge() / registerJobQueueSaturationGauge() /
     // registerPeerLedgerSupplyGauge() / registerSlotCensusGauge() /
-    // registerAmendmentBlockGauge() / registerNodeStoreLatencyGauge() --
+    // registerAmendmentBlockGauge() / registerNodeStoreGauge() --
     // would run.
     EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
 
@@ -900,12 +900,11 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // table's mutex. Not consulted above, so the countdown never ran. (Its
     // `warned` half reads NetworkOPs, already covered by the getOPs() check.)
     EXPECT_THROW(mockApp_.getAmendmentTable(), std::logic_error);
-    // The service the WP-A6 nodestore latency gauge reads: nodestore_latency
-    // polls getStoreDurationUs()/getStoreCount() and
-    // getFetchDurationUs()/getFetchTotalCount() on the node-store Database.
-    // Not consulted above, so the latency gauge never read those atomics on a
-    // telemetry-off build. (The existing nodestore_state gauge reads the same
-    // service, so this single throw covers both.)
+    // The service the nodestore gauge reads: nodestore_state polls
+    // getStoreDurationUs()/getStoreCount() and
+    // getFetchDurationUs()/getFetchTotalCount() on the node-store Database,
+    // alongside its I/O totals and write-queue detail. Not consulted above,
+    // so the gauge never read those atomics on a telemetry-off build.
     EXPECT_THROW(mockApp_.getNodeStore(), std::logic_error);
 }
 
@@ -929,7 +928,7 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge()/
     // registerJobQueueBacklogGauge()/registerJobQueueSaturationGauge()/
     // registerPeerLedgerSupplyGauge()/registerSlotCensusGauge()/
-    // registerAmendmentBlockGauge()/registerNodeStoreLatencyGauge(), a
+    // registerAmendmentBlockGauge()/registerNodeStoreGauge(), a
     // callback would reach getValidators()/getTimeKeeper()/getOPs()/
     // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue()/
     // getOverlay()/getAmendmentTable()/getNodeStore() and

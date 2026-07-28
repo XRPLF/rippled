@@ -2534,11 +2534,9 @@ whose extra writes need an archive to read from. Both are absent by construction
 on a fresh node, which is what makes them candidate explanations for this branch's
 symptom rather than general slowness.
 
-Three limits to respect here. The node-store numbers are **means, not
-percentiles**, and `write_mean_us` is currently emitted only for the
-`[import_db]` admin import path — on an ordinary node `write_count` climbs with
-no `write_mean_us` line, which is a known instrumentation gap, not a healthy
-zero. And the trim's fault counter is scoped to the **trim call only**: it shows
+Two limits to respect here. The node-store numbers are **means, not
+percentiles**, so a tail that matters will move them but there is no p99. And
+the trim's fault counter is scoped to the **trim call only**: it shows
 that the trim itself faults, and it cannot show the faults paid later as the
 caches refill and touch the pages the trim returned. That later re-fault cost is
 the actual mechanism by which a trim would slow a sync, and no metric here
@@ -2974,9 +2972,10 @@ panel it reads.
     write-bound, so no read-side panel can show it; check this step whenever a
     node with existing history is the slow one. Both panels live in the
     collapsed **Back-fill & persistence** row — expand it.
-    Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_latency`,
-    `metric=write_mean_us` and `read_mean_us`) with _NodeStore Operation Rate
-    (writes vs reads)_ (`metric=write_count` / `read_count`) beside it:
+    Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_state`,
+    `metric=node_writes_duration_us` / `node_reads_duration_us` rated against
+    their counts) with _NodeStore Operation Rate (writes vs reads)_
+    (`metric=node_writes` / `node_reads_total`) beside it:
     - **Write line rising during history back-fill** — the backend cannot
       absorb writes fast enough. Sync will stay slow however many peers are
       available, so adding peers will not help. Check storage IOPS, the
@@ -2999,12 +2998,10 @@ panel it reads.
       a tail that matters will move it, but there is no p99 here. That is a
       deliberate cost trade — a histogram would need one `Record()` per node
       object, and a single ledger write walks thousands of SHAMap nodes.
-      Second, `write_mean_us` is currently emitted only for store paths that
-      record their duration, which today is the `[import_db]` admin import.
-      On an ordinary node you will see `write_count` climbing with **no**
-      `write_mean_us` line: that is a known instrumentation gap, not a healthy
-      zero, and the mean is deliberately omitted rather than drawn as 0 so it
-      cannot be misread as "writes are instantaneous".
+      Second, a mean is **omitted rather than drawn as 0** when nothing has
+      been stored or fetched yet, so an absent line means "no samples", not
+      "instantaneous". All three concrete store paths time themselves, so
+      `write_mean_us` is present on any node that has written at all.
 
 15. **Is replay-based back-fill silently falling back to the slow path?**
     Only relevant when `[ledger_replay]` is enabled. Panels _Replay Fallback to

@@ -256,10 +256,6 @@ inline constexpr char peerfinderSlotCensus[] = "peerfinder_slot_census";
  * Amendment-block warning and the countdown to this node ceasing to validate.
  */
 inline constexpr char amendmentBlock[] = "amendment_block";
-/**
- * NodeStore mean store/fetch latency, with the operation counts.
- */
-inline constexpr char nodestoreLatency[] = "nodestore_latency";
 
 // ===== Consensus =============================================================
 
@@ -657,23 +653,6 @@ namespace rotation_state {
 inline constexpr char inFlight[] = "in_flight";
 inline constexpr char copyForward[] = "copy_forward";
 }  // namespace rotation_state
-
-/**
- * `nodestore_latency` sub-metrics: mean latency per direction, with counts.
- */
-namespace nodestore_latency {
-inline constexpr char writeCount[] = "write_count";
-inline constexpr char readCount[] = "read_count";
-inline constexpr char writeMeanUs[] = "write_mean_us";
-inline constexpr char readMeanUs[] = "read_mean_us";
-// Cumulative microsecond totals. The means above are convenient to read at a
-// glance but cannot be rated: they are already a ratio, and a gauge of a ratio
-// has no meaningful derivative. Dividing the rate of these totals by the rate of
-// the matching count yields the latency over the panel's own window, which is
-// what a dashboard actually wants.
-inline constexpr char writeDurationUs[] = "write_duration_us";
-inline constexpr char readDurationUs[] = "read_duration_us";
-}  // namespace nodestore_latency
 
 /**
  * `ledger_quorum_publish` sub-metrics: the gate, and how late publish is.

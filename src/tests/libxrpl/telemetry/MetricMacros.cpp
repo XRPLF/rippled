@@ -23,6 +23,7 @@
 
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/telemetry/MetricNames.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/MallocTrim.h>
 #include <xrpl/core/JobQueue.h>
@@ -2719,17 +2720,20 @@ TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 
-// The nodestore_latency gauge derives a mean from two cumulative totals the
-// node store already keeps. This mirrors the production callback in
-// MetricsRegistry::registerNodeStoreLatencyGauge, whose enabled path cannot be
-// linked into this binary, so the derivation is asserted here against the same
-// four inputs.
-TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
+// The nodestore_state gauge derives its two mean latencies from cumulative
+// totals the node store already keeps. This mirrors the production callback in
+// MetricsRegistry::observeNodeStoreTotals, whose enabled path cannot be linked
+// into this binary (MetricsRegistry.cpp is excluded from xrpl_tests when
+// telemetry is ON -- see src/tests/libxrpl/CMakeLists.txt), so the derivation
+// is asserted here against the same inputs. The division itself is the real
+// MetricsRegistry::scaledMean, a public constexpr inline that IS linkable, so
+// this test exercises production arithmetic rather than a copy of it.
+TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
 {
     // Each scenario gets a FRESH provider. The reader reports cumulative
     // temporality (see CollectOnDemandReader), so a series observed by one
     // scenario would still be present in the next collect() -- which would
-    // defeat the two assertions below that a mean is ABSENT when its
+    // defeat the assertions below that a mean is ABSENT when its
     // denominator is zero.
 
     // The four totals the production callback reads, chosen so each mean
@@ -2754,8 +2758,8 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
     auto collectWith = [](NodeStoreTotals& state) {
         CollectingProvider const provider;
         auto gauge = provider.meter()->CreateInt64ObservableGauge(
-            telemetry::metric::nodestoreLatency,
-            "NodeStore mean store/fetch latency in microseconds, with counts");
+            telemetry::metric::nodestoreState,
+            "NodeStore I/O counters, latencies, write-queue depth and acquisition stalls");
         gauge->AddCallback(
             [](opentelemetry::metrics::ObserverResult result, void* state) {
                 auto const* self = static_cast<NodeStoreTotals const*>(state);
@@ -2764,19 +2768,27 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
                         opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
                         ->Observe(value, {{telemetry::label::metric, field}});
                 };
-                observe("write_count", static_cast<std::int64_t>(self->storeCount));
-                observe("read_count", static_cast<std::int64_t>(self->fetchCount));
-                if (self->storeCount > 0 && self->storeDurationUs > 0)
+                // The four cumulative totals, observed unconditionally: for a
+                // total, zero is the meaningful "nothing yet" reading.
+                observe("node_writes", static_cast<std::int64_t>(self->storeCount));
+                observe("node_reads_total", static_cast<std::int64_t>(self->fetchCount));
+                observe(
+                    "node_writes_duration_us", static_cast<std::int64_t>(self->storeDurationUs));
+                observe("node_reads_duration_us", static_cast<std::int64_t>(self->fetchDurationUs));
+
+                // The two derived means, through the production helper. It
+                // returns nullopt when the denominator is 0, and the series is
+                // then omitted rather than observed as 0: a reported 0 us would
+                // claim the operation is instantaneous, which is worse than a
+                // visible gap.
+                using Registry = telemetry::MetricsRegistry;
+                if (auto const mean = Registry::scaledMean(self->fetchDurationUs, self->fetchCount))
                 {
-                    observe(
-                        "write_mean_us",
-                        static_cast<std::int64_t>(self->storeDurationUs / self->storeCount));
+                    observe("read_mean_us", *mean);
                 }
-                if (self->fetchCount > 0 && self->fetchDurationUs > 0)
+                if (auto const mean = Registry::scaledMean(self->storeDurationUs, self->storeCount))
                 {
-                    observe(
-                        "read_mean_us",
-                        static_cast<std::int64_t>(self->fetchDurationUs / self->fetchCount));
+                    observe("write_mean_us", *mean);
                 }
             },
             &state);
@@ -2785,37 +2797,43 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
 
     auto const busy = collectWith(totals);
 
-    // Exactly four series: two means and the two denominators that let a
-    // dashboard recover interval latency from these cumulative totals.
-    ASSERT_EQ(busy.at("nodestore_latency").size(), 4u);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "write_mean_us")), 4000);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "read_mean_us")), 1000);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "write_count")), 500);
-    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "read_count")), 1000);
+    // Exactly six series: the two means and the four cumulative totals that let
+    // a dashboard recover interval latency from them.
+    ASSERT_EQ(busy.at("nodestore_state").size(), 6u);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "write_mean_us")), 4000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "read_mean_us")), 1000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "node_writes")), 500);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_state", attrs("metric", "node_reads_total")), 1000);
+    EXPECT_EQ(
+        gaugeValue(busy, "nodestore_state", attrs("metric", "node_writes_duration_us")), 2'000'000);
+    EXPECT_EQ(
+        gaugeValue(busy, "nodestore_state", attrs("metric", "node_reads_duration_us")), 1'000'000);
 
-    // The write mean is the new signal, and it must be legible next to the
-    // read mean rather than merely present.
+    // The write mean is the signal this pair exists for, and it must be legible
+    // next to the read mean rather than merely present.
     EXPECT_GT(
-        gaugeValue(busy, "nodestore_latency", attrs("metric", "write_mean_us")),
-        gaugeValue(busy, "nodestore_latency", attrs("metric", "read_mean_us")));
+        gaugeValue(busy, "nodestore_state", attrs("metric", "write_mean_us")),
+        gaugeValue(busy, "nodestore_state", attrs("metric", "read_mean_us")));
 
     // Single fixed-cardinality label group, keyed exactly `metric`.
-    auto const& firstKey = busy.at("nodestore_latency").begin()->first;
+    auto const& firstKey = busy.at("nodestore_state").begin()->first;
     ASSERT_EQ(firstKey.size(), 1u);
     EXPECT_EQ(firstKey.begin()->first, "metric");
 
     // EDGE CASE: a node that has never written. The zero denominator must skip
-    // the mean rather than divide by zero, while the count is still reported --
+    // the mean rather than divide by zero, while the total is still reported --
     // that is what distinguishes "nothing written yet" from "writes are
     // instant". The read side is unaffected and still reports both.
     totals = NodeStoreTotals{
         .storeCount = 0, .storeDurationUs = 0, .fetchCount = 4, .fetchDurationUs = 800};
     auto const idle = collectWith(totals);
 
-    EXPECT_EQ(idle.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "write_count")), 0);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "read_mean_us")), 200);
-    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "read_count")), 4);
+    EXPECT_EQ(idle.at("nodestore_state").count(attrs("metric", "write_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "node_writes")), 0);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "read_mean_us")), 200);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_state", attrs("metric", "node_reads_total")), 4);
+    // Five series, not six: every total plus the one mean that is derivable.
+    EXPECT_EQ(idle.at("nodestore_state").size(), 5u);
 
     // EDGE CASE: integer division truncates rather than rounding. 7 stores
     // over 100 us is 14.28 us, reported as 14 -- asserted so a future change
@@ -2824,30 +2842,35 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
         .storeCount = 7, .storeDurationUs = 100, .fetchCount = 0, .fetchDurationUs = 0};
     auto const truncating = collectWith(totals);
 
-    EXPECT_EQ(gaugeValue(truncating, "nodestore_latency", attrs("metric", "write_mean_us")), 14);
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", attrs("metric", "write_mean_us")), 14);
     // The read side now has the zero denominator, so its mean drops out too.
-    EXPECT_EQ(truncating.at("nodestore_latency").count(attrs("metric", "read_mean_us")), 0u);
-    EXPECT_EQ(gaugeValue(truncating, "nodestore_latency", attrs("metric", "read_count")), 0);
+    EXPECT_EQ(truncating.at("nodestore_state").count(attrs("metric", "read_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_state", attrs("metric", "node_reads_total")), 0);
 
-    // EDGE CASE, and the one that matters most on a real node: stores were
-    // counted but never TIMED. Database::store() is pure virtual and only the
-    // paths calling recordStoreDuration() contribute a numerator, so a node
-    // whose concrete store override does not time itself has a non-zero count
-    // with a zero duration. The mean must be OMITTED, not reported as 0 --
-    // a 0 would read as "writes are instantaneous", which is worse than a
-    // visible gap. This assertion is the guard on that choice.
+    // EDGE CASE: stores counted, but every one measured below a microsecond.
+    // recordStoreDuration() only adds when the cast to microseconds is > 0, so
+    // sub-microsecond stores leave the duration total at 0 while the count
+    // climbs. scaledMean divides on the COUNT alone, so it reports a genuine
+    // mean of 0 here rather than omitting the series. That is the correct
+    // reading: the stores really did complete
+    // in under a microsecond each, and the total beside it proves they
+    // happened. Absence is reserved for "no samples at all".
     totals = NodeStoreTotals{
         .storeCount = 9000, .storeDurationUs = 0, .fetchCount = 10, .fetchDurationUs = 50};
-    auto const untimed = collectWith(totals);
+    auto const subMicrosecond = collectWith(totals);
 
-    EXPECT_EQ(untimed.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
-    // The count is still published, so the gap is visible rather than silent:
-    // a panel shows real write throughput with no latency line beside it.
-    EXPECT_EQ(gaugeValue(untimed, "nodestore_latency", attrs("metric", "write_count")), 9000);
-    // The read side is independent and unaffected by the write-side gap.
-    EXPECT_EQ(gaugeValue(untimed, "nodestore_latency", attrs("metric", "read_mean_us")), 5);
-    // Exactly three series: both counts plus the one mean that is derivable.
-    EXPECT_EQ(untimed.at("nodestore_latency").size(), 3u);
+    EXPECT_EQ(subMicrosecond.at("nodestore_state").count(attrs("metric", "write_mean_us")), 1u);
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "write_mean_us")), 0);
+    // The count is published beside it, so the reading is interpretable: real
+    // write throughput with a sub-microsecond per-operation cost.
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "node_writes")), 9000);
+    EXPECT_EQ(
+        gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "node_writes_duration_us")),
+        0);
+    // The read side is independent and unaffected by the write-side reading.
+    EXPECT_EQ(gaugeValue(subMicrosecond, "nodestore_state", attrs("metric", "read_mean_us")), 5);
+    // All six series present: both means are derivable here.
+    EXPECT_EQ(subMicrosecond.at("nodestore_state").size(), 6u);
 }
 
 // consensus_round_duration_ms: exact recorded values, not "greater than zero".
@@ -3123,7 +3146,7 @@ TEST(MetricMacros, sweep_malloc_trim_skips_reclaim_when_rss_grew)
 // rotation_state is polled from the node store, so the production callback in
 // MetricsRegistry::registerRotationStateGauge cannot be linked into this
 // binary. The derivation it performs is asserted here against the same two
-// inputs, mirroring how nodestore_latency is tested above.
+// inputs, mirroring how nodestore_state is tested above.
 TEST(MetricMacros, rotation_state_gauge_observes_in_flight_window_and_copy_forward_total)
 {
     // Each scenario gets a FRESH provider: the reader is cumulative, so a
