@@ -541,7 +541,7 @@ public:
                     env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
         }
 
-        NodeStoreScheduler scheduler(env.app(), env.app().getJobQueue());
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
 
         std::string const writableDb = "write";
         std::string const archiveDb = "archive";

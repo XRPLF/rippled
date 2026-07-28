@@ -138,7 +138,9 @@ test.nodestore > test.jtx
 test.nodestore > test.unit_test
 test.nodestore > xrpl.basics
 test.nodestore > xrpl.config
+test.nodestore > xrpld.app
 test.nodestore > xrpld.core
+test.nodestore > xrpld.telemetry
 test.nodestore > xrpl.nodestore
 test.nodestore > xrpl.rdb
 test.overlay > test.jtx

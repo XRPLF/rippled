@@ -253,12 +253,23 @@ TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
     ASSERT_TRUE(after.has_value());
     EXPECT_EQ(after->insertCount, batch_.size());
     // One writer thread, so the depth recorded at each insert is exactly 1.
+    // This catches a depth accumulator fed the wrong quantity (insertCount's
+    // running value, or the elapsed microseconds), but it CANNOT catch one fed
+    // a constant 1, because here the real depth is 1. That case needs genuine
+    // overlap and is covered by NuDBFactory.cpp's
+    // write_stats_measure_depth_under_real_overlap.
     EXPECT_EQ(after->depthSum, batch_.size());
     // No writer is left in flight once the calls have returned.
     EXPECT_EQ(after->concurrentWriters, 0u);
+    // Same live depth through the other accessor on the same object, so the
+    // two cannot drift onto different fields.
+    EXPECT_EQ(db->getWriteLoad(), 0);
     EXPECT_GT(after->insertTotalUs, 0u);
-    // A maximum is never below the mean, which fails if the field held the
-    // minimum or the first sample instead of a running maximum.
+    // max * n >= sum. Catches a field holding the running MINIMUM, since
+    // min * n <= sum with equality only when every sample is identical.
+    // Degenerates when the samples do not vary; the unconditional guarantee
+    // that the field is a maximum is the non-decreasing check in
+    // NuDBFactory.cpp's write_stats_accumulate_per_insert.
     EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
 }
 

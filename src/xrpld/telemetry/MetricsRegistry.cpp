@@ -46,7 +46,6 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
-#include <xrpl/telemetry/NodeStoreMetricNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -136,10 +135,11 @@ constexpr std::array kMicrosecondBoundaries{
  * range instead, while still reaching far enough to show a cold tail against
  * it.
  *
- * Used by the kNodeStoreReadUs view registered in
- * initExporterAndProvider().
+ * Currently unused: no sub-millisecond histogram instrument exists yet. The
+ * edges live here so the instrument that records nodestore read latency gets
+ * a ladder that fits it, rather than silently inheriting the wrong one.
  */
-constexpr std::array kSubMillisecondBoundaries{
+[[maybe_unused]] constexpr std::array kSubMillisecondBoundaries{
     1.0,
     2.0,
     5.0,
@@ -194,23 +194,6 @@ void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
     addHistogramView(views, name, {kMicrosecondBoundaries.begin(), kMicrosecondBoundaries.end()});
-}
-
-/**
- * Register the sub-millisecond-ladder view for a duration instrument.
- *
- * For latencies that normally sit below one millisecond, where the
- * microsecond ladder's 100 µs first edge would swallow the whole healthy
- * range. See kSubMillisecondBoundaries.
- *
- * @param views   The registry to add the view to.
- * @param name    Instrument name to match.
- */
-void
-addSubMillisecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
-{
-    addHistogramView(
-        views, name, {kSubMillisecondBoundaries.begin(), kSubMillisecondBoundaries.end()});
 }
 
 }  // namespace
@@ -296,13 +279,6 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // Recorded at its PeerImp.cpp call site, not created here, so the name
     // comes from the shared constant both sites use.
     addMicrosecondHistogramView(*views, kGetObjectLookupUs);
-
-    // Per-fetch nodestore read latency. Recorded at its NodeStoreScheduler.cpp
-    // call site, so again the name comes from the shared constant. This one
-    // gets the sub-millisecond ladder, not the microsecond one: a warm read
-    // answers in single-digit microseconds, which is below the microsecond
-    // ladder's first edge.
-    addSubMillisecondHistogramView(*views, kNodeStoreReadUs);
 
     // The remaining two GetObject histograms are not durations, so the
     // microsecond ladder above does not fit them. Both still need explicit
@@ -1491,7 +1467,8 @@ MetricsRegistry::registerStorageDetailGauge()
     // --- Task 7.13: Storage detail gauges ---
     // Reports the cumulative payload bytes handed to the NodeStore. See the
     // note at the observe() call below: this is logical bytes stored, not
-    // on-disk file size, because no accessor for the latter exists.
+    // on-disk file size, because no accessor for the latter exists. The label
+    // value names it that way so it is not read as a filesystem measurement.
     storageDetailGauge_ =
         meter_->CreateInt64ObservableGauge("storage_detail", "Storage detail metrics");
     storageDetailGauge_->AddCallback(
@@ -1509,11 +1486,13 @@ MetricsRegistry::registerStorageDetailGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Cumulative payload bytes handed to the NodeStore -- NOT
-                // on-disk file size, despite the name. getStoreSize() sums
-                // the object payloads this process has written, so it
-                // excludes NuDB's keys, bucket padding and log, and it
-                // resets with the process while the files do not.
+                // Cumulative payload bytes handed to the NodeStore. This is
+                // not an on-disk file size: getStoreSize() sums the object
+                // payloads this process has written, so it excludes NuDB's
+                // keys, bucket padding and log, and it resets with the
+                // process while the files do not. The value comes from
+                // Database, not from any backend, so it carries no nudb_
+                // prefix -- it reads the same on RocksDB.
                 //
                 // This is the same call node_written_bytes makes on the
                 // nodestore_state gauge, so the two series are equal by
@@ -1523,7 +1502,8 @@ MetricsRegistry::registerStorageDetailGauge()
                 // computing one would mean stat()ing the backend's files
                 // from the reader thread, which needs a new Backend method
                 // rather than a change at this call site.
-                observe("nudb_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
+                observe(
+                    "stored_object_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

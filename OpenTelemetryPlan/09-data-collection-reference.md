@@ -1014,12 +1014,9 @@ repeated here:
   `_running` / `_deferred`). These travel the `beast::insight` pipeline, not the
   OTel SDK one, so they are documented in
   [§2.5](#25-per-job-type-queue-gauges).
-- The sync-diagnosis signals — 13 further `nodestore_state` label values plus the
-  `nodestore_read_us` histogram — which separate a write-serialized stall from a
-  cold-read stall. See
-  [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state)
-  and
-  [NodeStore Read Latency](#nodestore-read-latency-histogram--nodestore_read_us).
+- The sync-diagnosis signals — 13 further `nodestore_state` label values — which
+  separate a write-serialized stall from a cold-read stall. See
+  [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state).
 
 ### New Grafana Dashboards (Phase 9)
 
@@ -1075,11 +1072,10 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 
 The two added rows are the families that do not originate as `MetricsRegistry`
 members. **Call-site** instruments are declared by the `XRPL_METRIC_*` macros
-(8 distinct names: `rpc_in_flight_requests`, `ledgers_closed_total`,
-`nodestore_read_us`, and the five `getobject_*`). Two of those eight are
-workload-gated in a way that makes a zero reading uninformative:
-`getobject_rejected_total` needs a non-conforming request, and the `getobject_*`
-family as a whole needs an inbound
+(7 distinct names: `rpc_in_flight_requests`, `ledgers_closed_total`, and the
+five `getobject_*`). Two of those seven are workload-gated in a way that makes a
+zero reading uninformative: `getobject_rejected_total` needs a non-conforming
+request, and the `getobject_*` family as a whole needs an inbound
 `TMGetObjectByHash`. **Per-job-type gauges** are the `beast::insight` families
 from [§2.5](#25-per-job-type-queue-gauges); all 105 should be present on any
 running node, but `_deferred` reads zero unless a capped type is actually
@@ -1251,43 +1247,6 @@ timer without running its body, so the retry counter never advances and the
 zero means partial work is discarded and redone. Neither pattern is visible from
 one counter. Documented on the class at `src/xrpld/app/ledger/AcquireStats.h`.
 
-#### NodeStore Read Latency (Histogram — `nodestore_read_us`)
-
-<!-- cspell:ignore ISTOGRAM -->
-<!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
-     compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
-
-Recorded per fetch at `src/xrpld/app/main/NodeStoreScheduler.cpp` via
-`XRPL_METRIC_HISTOGRAM_RECORD_LABELED`, not as a `MetricsRegistry` member. The
-name, label keys, and all four label values are the `constexpr` constants in
-`include/xrpl/telemetry/NodeStoreMetricNames.h`, shared with the bucket-view
-registration for the same reason `GetObjectMetricNames.h` exists.
-
-| Prometheus Metric   | Type      | Labels                                                        | Description                                   |
-| ------------------- | --------- | ------------------------------------------------------------- | --------------------------------------------- |
-| `nodestore_read_us` | Histogram | `fetch_type="async"` \| `"sync"`, `found="true"` \| `"false"` | Per-fetch backend read latency (microseconds) |
-
-**It gets its own bucket ladder, not the shared µs one.** Boundaries are
-`1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 25000` microseconds
-(`kSubMillisecondBoundaries`, registered by `addSubMillisecondHistogramView()`).
-The shared `kMicrosecondBoundaries` ladder starts at 100 µs, above the entire
-range a warm read occupies, so every warm read would fall in bucket 0 and the
-distribution would read as flat — while still needing to reach far enough to show
-a cold tail against it. It is the seventh registered view; the other six are
-listed under
-[GetObject Request Path](#getobject-request-path-synchronous-countershistograms).
-
-**Why two labels rather than one series.** A slow `async` read delays prefetch; a
-slow `sync` read blocks a caller outright. A `found=false` fetch can have to
-consult every backend, so mixing it with hits blurs the distribution that matters.
-Cardinality is fixed at four combinations. Per project convention, a panel using
-these needs matching `fetch_type` and `found` template variables.
-
-Zero is a recordable value — a fetch served from a warm page cache genuinely
-rounds to 0 µs, and suppressing it would make the fastest reads invisible.
-Negative elapsed values (clock anomalies) are dropped rather than passed to the
-SDK, which would otherwise log a warning on every such call.
-
 #### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
 
 | Prometheus Metric                             | Type  | Labels   | Description                   |
@@ -1404,9 +1363,9 @@ information the batch totals do not already carry.
 
 **All three histograms need an explicit bucket view.** The SDK's default
 histogram boundaries top out at 10000. Every one of these three exceeds that, so
-without a view their top quantiles would all read as a flat 10000. Seven views are
-registered in `src/xrpld/telemetry/MetricsRegistry.cpp:293-327`, and three of the
-seven are for this family:
+without a view their top quantiles would all read as a flat 10000. Six views are
+registered in `src/xrpld/telemetry/MetricsRegistry.cpp`, and three of the six are
+for this family:
 
 | Instrument                  | View helper                     | Boundaries                                             |
 | --------------------------- | ------------------------------- | ------------------------------------------------------ |
@@ -1414,10 +1373,9 @@ seven are for this family:
 | `getobject_request_objects` | `addHistogramView()`, own set   | `1, 2, 4, 8, 16, 64, 256, 1024, 4096, 12288`           |
 | `getobject_charge`          | `addHistogramView()`, own set   | `0, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000` |
 
-The other four views are `addMicrosecondHistogramView()` on `job_queued_us`,
-`job_running_us` and `rpc_method_us`, plus `addSubMillisecondHistogramView()` on
-`nodestore_read_us` — four µs-ladder views and one sub-millisecond ladder, on top
-of these two custom sets.
+The other three views are `addMicrosecondHistogramView()` on `job_queued_us`,
+`job_running_us`, and `rpc_method_us` — four µs-ladder views plus these two
+custom sets.
 
 **Why the latter two do not use the µs ladder.** They are not durations. The µs
 ladder's buckets are chosen for time (sub-millisecond jobs through multi-second
@@ -1526,9 +1484,6 @@ increase(nodestore_state{metric="acquire_deferrals", service_instance_id=~"$node
 
 # Livelock fingerprint, second half: timeouts staying flat while the above climbs
 increase(nodestore_state{metric="acquire_timeouts", service_instance_id=~"$node"}[5m])
-
-# Per-fetch read latency p99, split by the two dimensions that matter
-histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id=~"$node"}[5m])))
 ```
 
 > **Diagnostic procedure.** These signals exist to answer one question — why a
@@ -1598,18 +1553,23 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
-| Prometheus Metric                     | Type  | Labels   | Description                                                |
-| ------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
-| `storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
+| Prometheus Metric                              | Type  | Labels   | Description                                                |
+| ---------------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
+| `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
-> **`nudb_bytes` is not a file size, despite the name.** It observes
-> `getStoreSize()` (`src/xrpld/telemetry/MetricsRegistry.cpp:1507`), which sums the
-> object payloads this process has written. It therefore excludes NuDB's keys,
-> bucket padding and log, and it resets when the process restarts while the files
-> on disk do not. `node_written_bytes` on the `nodestore_state` gauge calls the same
-> accessor (`MetricsRegistry.cpp:836`), so the two series are equal by construction
-> and any write-amplification ratio built from the pair is a constant 1.0. To size
-> the store on disk, stat the backend's files; no metric reports it today.
+> **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:1511`), which sums the object payloads
+> this process has written. It therefore excludes NuDB's keys, bucket padding and
+> log, and it resets when the process restarts while the files on disk do not.
+> `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
+> (`MetricsRegistry.cpp:836`), so the two series are equal by construction and any
+> write-amplification ratio built from the pair is a constant 1.0. To size the store
+> on disk, stat the backend's files; no metric reports it today.
+>
+> This label value was called `nudb_bytes` before Phase 9. The value comes from
+> `node_store::Database`, not from the NuDB backend, so it reads the same on
+> RocksDB and carries no backend prefix. Queries and dashboards pinned to the old
+> name return no data.
 
 #### Synchronous Counters (Phase 7+)
 

@@ -4,6 +4,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
@@ -14,7 +15,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <latch>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -54,6 +57,48 @@ runRoundTrip(Section const& params, std::size_t expectedBlocksize)
 
     backend->close();
     EXPECT_EQ(batch, copy);
+}
+
+/**
+ * Threads used by the overlapping-insert round below.
+ */
+constexpr std::uint64_t kOverlapThreads = 8;
+
+/**
+ * Inserts each of those threads performs per round.
+ */
+constexpr std::uint64_t kOverlapPerThread = 50;
+
+/**
+ * Run one round of deliberately overlapping inserts against @p backend.
+ *
+ * All kOverlapThreads threads are released from a single latch, so they reach
+ * doInsert() together rather than one after another; staggered starts are what
+ * would let every insert run end to end and never overlap.
+ *
+ * @param backend Backend to insert into. Must be open.
+ * @param round   Round index, mixed into the seeds so every round writes
+ *                fresh keys and no insert takes the duplicate short-circuit.
+ */
+void
+runOverlappingInsertRound(Backend& backend, int round)
+{
+    std::latch start(static_cast<std::ptrdiff_t>(kOverlapThreads));
+
+    std::vector<std::thread> threads;
+    threads.reserve(kOverlapThreads);
+    for (auto t = 0uz; t < kOverlapThreads; ++t)
+    {
+        threads.emplace_back([&backend, &start, t, round] {
+            auto const batch = createPredictableBatch(
+                kOverlapPerThread, 1000 + t + (static_cast<std::uint64_t>(round) * 100'000));
+            start.arrive_and_wait();
+            for (auto const& obj : batch)
+                backend.store(obj);
+        });
+    }
+    for (auto& th : threads)
+        th.join();
 }
 
 }  // namespace
@@ -290,6 +335,14 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     // Exactly 10 inserts must be counted as 10, and depthSum must be 10
     // because a single-threaded caller is always the only writer, so the
     // depth recorded at each insert is exactly 1.
+    //
+    // What this pins and what it cannot: on one thread depthSum == insertCount
+    // catches an accumulator fed the wrong quantity -- fed insertCount it
+    // would read 1+2+...+n, and fed the elapsed time it would read the
+    // microseconds. It does NOT catch depthSum being fed a constant 1, which
+    // is indistinguishable here because the real depth IS 1. That bug is the
+    // one that would silently zero every derived wait time, and it is caught
+    // by write_stats_measure_depth_under_real_overlap below.
     constexpr std::uint64_t kFirstBatch = 10;
     auto const batch = createPredictableBatch(kFirstBatch, 12345);
     storeBatch(*backend, batch);
@@ -301,11 +354,12 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     EXPECT_EQ(after->depthSum, kFirstBatch);
     EXPECT_GT(after->insertTotalUs, 0u);
     EXPECT_GT(after->insertMaxUs, 0u);
-    // The largest single insert cannot exceed the sum of all of them.
-    EXPECT_LE(after->insertMaxUs, after->insertTotalUs);
-    // A maximum is never below the mean. This fails if the field were
-    // holding the minimum, or the first or last sample, instead of the
-    // running maximum.
+    // A maximum is never below the mean, so max * n >= sum. Catches a field
+    // fed the running MINIMUM: min * n <= sum, with equality only when every
+    // sample is identical, so any variation at all makes the two orderings
+    // exclusive. It does not discriminate when the samples happen not to
+    // vary; the running-maximum property is pinned unconditionally by the
+    // non-decreasing check after the second batch below.
     EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
     // No writer remains in flight once the calls have returned.
     EXPECT_EQ(after->concurrentWriters, 0u);
@@ -334,6 +388,22 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
 // Negative path: NuDB reports key_exists for a duplicate key and doInsert
 // deliberately does not treat that as an error. The accounting must still
 // run, and in particular the depth must come back down.
+//
+// What this does NOT cover, stated plainly because a comment claiming absent
+// coverage is worse than none: this is not the throwing path. nudb::insert()
+// sets error::key_exists and RETURNS (nudb/impl/basic_store.ipp:294, :307,
+// :329), and doInsert() filters exactly that code out before it would throw
+// (NuDBFactory.cpp:283), so a duplicate key takes the identical non-throwing
+// control flow as a fresh key. It reaches the ScopeExit guard by the same
+// route the happy path does.
+//
+// The throwing path -- where the guard is the only reason the depth comes
+// back down -- is not reachable from a unit test: it needs nudb::insert() to
+// fail with something other than key_exists (an I/O or allocation failure
+// inside the library), which cannot be induced through the Backend interface
+// without a fault-injection seam that does not exist. Its RAII contract is
+// covered generically instead: src/tests/libxrpl/basics/scope.cpp:34-45 proves
+// ScopeExit runs its function during unwinding.
 TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
 {
     beast::TempDir const tempDir;
@@ -353,6 +423,7 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
     if (!first.has_value())
         FAIL() << "nudb must report write stats";
     ASSERT_EQ(first->insertCount, kBatchSize);
+    ASSERT_EQ(first->depthSum, kBatchSize);
 
     // Re-storing the identical batch writes nothing new, but each call is
     // still an insert attempt that entered and left the backend.
@@ -361,16 +432,40 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
     auto const second = backend->getWriteStats();
     if (!second.has_value())
         FAIL() << "nudb must report write stats after re-storing";
-    EXPECT_EQ(second->insertCount, kBatchSize * 2);
-    EXPECT_EQ(second->depthSum, kBatchSize * 2);
-    // The depth returned to zero, so the early-return error path did not
+    // The duplicate round is counted, so a key_exists early return is not
+    // skipping the accounting. Written as the first snapshot plus the batch
+    // size rather than as one product, because the two sides must differ by
+    // exactly the second round: an implementation that counted only the
+    // rounds that stored new data would leave these equal.
+    EXPECT_EQ(second->insertCount, first->insertCount + kBatchSize);
+    EXPECT_EQ(second->depthSum, first->depthSum + kBatchSize);
+    // The depth returned to zero, so the key_exists early return did not
     // leak a writer.
     EXPECT_EQ(second->concurrentWriters, 0u);
+    EXPECT_EQ(backend->getWriteLoad(), 0);
 
     backend->close();
 }
 
-TEST(NuDBFactory, write_stats_observe_concurrent_writers)
+// depthSum is the L in Little's Law: mean depth L and mean insert time W give
+// service time S = W / L, and the queuing time the whole diagnosis rests on is
+// W - S. If depthSum were fed a constant 1 instead of the observed depth then
+// L would read exactly 1.0, S would equal W, and every derived wait would read
+// 0 -- a stalled write path indistinguishable from a healthy one, with nothing
+// on any dashboard looking wrong.
+//
+// A single-threaded test cannot see that bug, because there the real depth IS
+// 1. This test forces genuine overlap so the correct implementation records a
+// depth above 1 and the constant-1 implementation cannot.
+//
+// Why the overlap is reachable and not merely hoped for: NuDB takes one global
+// mutex for the entire insert, and doInsert() reads the depth BEFORE entering
+// it. So while one thread is inside an insert, every other thread that reaches
+// doInsert() records a depth of at least 2 and then blocks. All threads are
+// released from one latch, and the round is retried until the overlap is
+// observed -- so a constant-1 implementation exhausts every round and fails,
+// while the real one satisfies it as soon as any two inserts overlap.
+TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
 {
     beast::TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
@@ -381,36 +476,57 @@ TEST(NuDBFactory, write_stats_observe_concurrent_writers)
     ASSERT_TRUE(backend);
     backend->open();
 
-    // Four threads insert distinct objects concurrently. The exact peak
-    // depth is racy, but two invariants are not: every insert is counted,
-    // and depthSum is at least insertCount because depth is >= 1 per
-    // insert.
-    constexpr std::uint64_t kThreads = 4;
-    constexpr std::uint64_t kPerThread = 50;
+    // Bounded so a genuine regression fails instead of hanging. Each round
+    // runs kOverlapThreads * kOverlapPerThread inserts through one global
+    // mutex, so one round already gives the correct implementation many
+    // chances to overlap.
+    constexpr int kMaxRounds = 20;
 
-    std::vector<std::thread> threads;
-    threads.reserve(kThreads);
-    for (auto t = 0uz; t < kThreads; ++t)
+    std::uint64_t completedRounds = 0;
+    std::optional<WriteStats> stats;
+
+    for (auto round = 0; round < kMaxRounds; ++round)
     {
-        threads.emplace_back([&backend, t] {
-            auto const batch = createPredictableBatch(kPerThread, 1000 + t);
-            for (auto const& obj : batch)
-                backend->store(obj);
-        });
-    }
-    for (auto& th : threads)
-        th.join();
+        runOverlappingInsertRound(*backend, round);
+        ++completedRounds;
 
-    auto const stats = backend->getWriteStats();
+        stats = backend->getWriteStats();
+        if (!stats.has_value())
+            FAIL() << "nudb must report write stats after concurrent inserts";
+
+        if (stats->depthSum > stats->insertCount)
+            break;
+    }
+
     if (!stats.has_value())
-        FAIL() << "nudb must report write stats after concurrent inserts";
-    EXPECT_EQ(stats->insertCount, kThreads * kPerThread);
-    EXPECT_GE(stats->depthSum, stats->insertCount);
+        FAIL() << "no round produced write stats";
+
+    // Every insert of every round is counted exactly once. A lost increment
+    // under contention fails this.
+    EXPECT_EQ(stats->insertCount, completedRounds * kOverlapThreads * kOverlapPerThread);
+
+    // THE assertion this test exists for: strictly greater, so a depthSum fed
+    // a constant 1 (or fed nothing, or fed insertCount's own delta) cannot
+    // satisfy it however many rounds run.
+    EXPECT_GT(stats->depthSum, stats->insertCount)
+        << "depthSum must record the observed depth, not a constant 1; rounds run="
+        << completedRounds;
+
+    // Upper bound with teeth: at most kThreads writers can be inside an
+    // insert at once, so no single insert can observe a depth above kThreads.
+    // A missing fetch_sub in recordInsert() would let the gauge climb once
+    // per insert, giving a depthSum near insertCount squared over two --
+    // vastly over this bound at these counts.
+    EXPECT_LE(stats->depthSum, stats->insertCount * kOverlapThreads);
+
+    // State plus cause: the gauge is back to exactly zero, so every one of
+    // the increments taken above was matched by its decrement. Exactly 0 and
+    // not "small": a single leaked writer strands getWriteLoad() nonzero for
+    // the life of the process, which gates history acquisition.
     EXPECT_EQ(stats->concurrentWriters, 0u);
+    EXPECT_EQ(backend->getWriteLoad(), 0);
+
     EXPECT_GT(stats->insertMaxUs, 0u);
-    // Depth cannot exceed the number of threads that could be inside the
-    // insert at once, so the mean depth is bounded by kThreads.
-    EXPECT_LE(stats->depthSum, stats->insertCount * kThreads);
 
     backend->close();
 }
@@ -431,15 +547,29 @@ TEST(NuDBFactory, write_load_reports_writer_depth)
 
     // After writes complete the depth returns to 0 rather than staying
     // elevated, because this is an instantaneous gauge and not a counter.
+    // Exactly 0 and not merely small: were getWriteLoad() to return one of
+    // the cumulative fields instead of the live depth -- insertCount would
+    // read 5 here, insertTotalUs some microsecond total -- this fails.
     auto const batch = createPredictableBatch(5, 777);
     storeBatch(*backend, batch);
     EXPECT_EQ(backend->getWriteLoad(), 0);
 
-    // The value must stay far below the history-acquisition cutoff that
-    // LedgerMaster applies (kMaxWriteLoadAcquire), or history acquisition
-    // would silently stop. Depth is bounded by the writing threads.
-    constexpr int kMaxWriteLoadAcquire = 8192;
-    EXPECT_LT(backend->getWriteLoad(), kMaxWriteLoadAcquire);
+    // Same value as the write-stats snapshot reports, since both read the one
+    // depth atomic. Catches the two accessors drifting onto different fields.
+    auto const stats = backend->getWriteStats();
+    if (!stats.has_value())
+        FAIL() << "nudb must report write stats";
+    EXPECT_EQ(static_cast<std::uint64_t>(backend->getWriteLoad()), stats->concurrentWriters);
+    // The cumulative fields did move, so the 0 above is the gauge being
+    // instantaneous and not the backend having done nothing.
+    EXPECT_EQ(stats->insertCount, 5u);
+
+    // NOTE. LedgerMaster gates history acquisition on getWriteLoad() staying
+    // below kMaxWriteLoadAcquire (8192), declared static constexpr inside
+    // src/xrpld/app/ledger/detail/LedgerMaster.cpp and so unreachable from
+    // this binary. Depth is bounded by the number of writing threads, which
+    // cannot approach that figure, so the coupling is recorded here rather
+    // than asserted against a literal copy of the constant that could drift.
 
     backend->close();
 }

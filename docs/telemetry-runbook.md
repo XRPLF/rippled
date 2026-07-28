@@ -1562,23 +1562,6 @@ label values rather than reporting them as zero.
 just above 1.0 even under load, so an integer gauge would truncate the whole
 signal away.
 
-#### NodeStore Read Latency Histogram
-
-| Prometheus Metric   | Kind      | Labels                                                        | Description                         |
-| ------------------- | --------- | ------------------------------------------------------------- | ----------------------------------- |
-| `nodestore_read_us` | Histogram | `fetch_type` = `async` \| `sync`, `found` = `true` \| `false` | Per-fetch backend read latency (µs) |
-
-Bucket edges are 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 25000
-microseconds — a dedicated sub-millisecond ladder, not the shared µs ladder the
-job histograms use. The shared ladder starts at 100 µs, which is above the entire
-range a warm read occupies, so every warm read would land in one bucket and the
-distribution would read flat.
-
-The two labels separate cases with different consequences. An `async` read that is
-slow only delays prefetch; a `sync` read that is slow blocks a caller outright.
-A `found=false` fetch can have to consult every backend, so mixing it with hits
-blurs the distribution that matters.
-
 #### Counters
 
 | Prometheus Metric         | Source                | Description                    |
@@ -2450,9 +2433,8 @@ Answer two questions, in this order. Neither one alone is a diagnosis.
 - Under ~10 µs: reads are **cheap**. Both a clean store and a healthy populated
   store land here.
 - Over ~20 µs: reads are **expensive**.
-- Between the two: break the tie on the tail. Take either
-  `max_over_time` of `read_mean_us` across the window, or the `nodestore_read_us`
-  p99 where that histogram is available. Over ~100 µs counts as expensive;
+- Between the two: break the tie on the tail. Take `max_over_time` of
+  `read_mean_us` across the window. Over ~100 µs counts as expensive;
   otherwise treat it as cheap. There is no read-max gauge —
   `nudb_insert_max_us` is a **write** signal and does not answer this.
 
@@ -2518,9 +2500,6 @@ nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
 # its own: a high found rate is normal and healthy on a populated store.
   rate(nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}[5m])
 / rate(nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}[5m])
-
-# Read latency distribution, split by the two dimensions that matter
-histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id=~"$node"}[5m])))
 ```
 
 #### Measured reference points
@@ -2528,10 +2507,9 @@ histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_
 **Provenance.** The two columns below are our own measurements: node2 on the AWS
 dev box, build `e3c2f8279a`, 2026-07-27/28, same host and same binary for both
 runs, differing only in the state of the store. Use them as the shape to compare
-against, not as thresholds. `nodestore_read_us` was not on the measurement binary,
-so the read figures below come from the `read_mean_us` gauge; the "highest sample"
-row is the largest value that gauge reached over the run, not a read-latency
-percentile. The third dataset in this section — the 25-minute devnet stall and its
+against, not as thresholds. The read figures below come from the `read_mean_us`
+gauge, the only read-latency signal exported; the "highest sample" row is the
+largest value that gauge reached over the run, not a read-latency percentile. The third dataset in this section — the 25-minute devnet stall and its
 healthy peer — is **not** ours; it comes from an incident report supplied to this
 project and is kept separate for that reason.
 
@@ -2641,11 +2619,13 @@ Two more pairs from the same family:
   quantity, the larger of the recorded load and the pending batch size
   (`src/libxrpl/nodestore/BatchWriter.cpp:47-53`), so it is a batch-queue length
   rather than a thread count.
-- **`nudb_bytes` is not the size of the store on disk**, despite the name. It reports
-  the cumulative object-payload bytes this process has written — the same value as
+- **`stored_object_bytes` is not the size of the store on disk.** It reports the
+  cumulative object-payload bytes this process has written — the same value as
   `node_written_bytes`, from the same accessor — so it excludes keys, padding and
   the log, and it resets with the process. A ratio of the two is a constant 1.0 and
-  measures nothing.
+  measures nothing. This label value was called `nudb_bytes` before Phase 9; it
+  comes from `node_store::Database` rather than the NuDB backend, so it is not part
+  of the `nudb_*` family above and reads the same on RocksDB.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
   the `jobq_*` lane gauges are sampled at 1 s by a different provider. Widen the
   window when correlating them rather than reading a single scrape; see the caveat

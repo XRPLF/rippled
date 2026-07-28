@@ -50,7 +50,7 @@
  * +-- CountedObject counts
  * +-- Load factor breakdown
  * +-- NodeStore I/O gauges (totals, derived means, NuDB write queue,
- * ledger-acquisition stall counters)
+ *                          ledger-acquisition stall counters)
  * +-- Server info (state, uptime, peers, consensus)
  * +-- Build info (version label)
  * +-- Complete ledger ranges (start/end pairs)
@@ -612,6 +612,59 @@ public:
     {
         return meter_;
     }
+
+    /**
+     * Sink handed to the nodestore_state gauge helpers below.
+     *
+     * Every value they publish multiplexes onto the single `nodestore_state`
+     * gauge through its `metric` label, so the helpers need no access to the
+     * OTel observer result -- just somewhere to put a name and a number.
+     */
+    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
+
+    /**
+     * Observe the NodeStore I/O totals and the means derived from them.
+     *
+     * @param db       NodeStore to read the counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
+
+    /**
+     * Observe the backend write-path detail, when the backend measures it.
+     *
+     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
+     * which is every backend except NuDB. Absent labels let a reader tell
+     * "not measured" from "measured, and idle"; zeros would read as a
+     * perfectly idle write path.
+     *
+     * @param db       NodeStore whose writable backend is sampled.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
+
+    /**
+     * Observe the ledger-acquisition progress and stall counters.
+     *
+     * @param stats    Process-wide acquisition counters.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
+
+    /**
+     * Observe the read queue depth and the read thread-pool counts.
+     *
+     * These four have no accessor on Database, so its JSON counters object
+     * is still the only way to reach them.
+     *
+     * @param db       NodeStore to read the JSON counters from.
+     * @param observe  Sink for one `metric`-labelled value.
+     */
+    static void
+    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
 #endif
 
 private:
@@ -894,60 +947,11 @@ private:
     void
     registerNodeStoreGauge();  // Task 9.1
 
-    /**
-     * Sink handed to the registerNodeStoreGauge() helpers below.
-     *
-     * Every value they publish multiplexes onto the single `nodestore_state`
-     * gauge through its `metric` label, so the helpers need no access to the
-     * OTel observer result -- just somewhere to put a name and a number.
-     * That also makes each helper directly unit-testable by passing a
-     * recording sink, which the real observer result is not.
-     */
-    using ObserveFn = std::function<void(char const* name, std::int64_t value)>;
+    // The four nodestore_state helpers and their ObserveFn sink are public
+    // (above), so a test can drive each one with a recording sink and assert
+    // the exact `metric` label values it publishes. They read only their
+    // arguments, so exposing them widens no state.
 
-    /**
-     * Observe the NodeStore I/O totals and the means derived from them.
-     *
-     * @param db       NodeStore to read the counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe);
-
-    /**
-     * Observe the backend write-path detail, when the backend measures it.
-     *
-     * Publishes nothing for a backend whose getWriteStats() is std::nullopt,
-     * which is every backend except NuDB. Absent labels let a reader tell
-     * "not measured" from "measured, and idle"; zeros would read as a
-     * perfectly idle write path.
-     *
-     * @param db       NodeStore whose writable backend is sampled.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe);
-
-    /**
-     * Observe the ledger-acquisition progress and stall counters.
-     *
-     * @param stats    Process-wide acquisition counters.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe);
-
-    /**
-     * Observe the read queue depth and the read thread-pool counts.
-     *
-     * These four have no accessor on Database, so its JSON counters object
-     * is still the only way to reach them.
-     *
-     * @param db       NodeStore to read the JSON counters from.
-     * @param observe  Sink for one `metric`-labelled value.
-     */
-    static void
-    observeReadQueue(node_store::Database& db, ObserveFn const& observe);
     void
     registerServerInfoGauge();  // Task 9.7a
     void
