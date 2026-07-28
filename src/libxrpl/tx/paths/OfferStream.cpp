@@ -250,12 +250,12 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Pre-fixCleanup3_4_0: validate domain membership for any book.
-        // Post-fixCleanup3_4_0: only validate when walking a domain book.
+        // Pre-fixCleanup3_3_0: validate domain membership for any book.
+        // Post-fixCleanup3_3_0: only validate when walking a domain book.
         // Hybrid offers carry sfDomainID but also participate in the open
         // book; expiry of the owner's domain credential should not evict
         // the offer from the open book.
-        if ((!view_.rules().enabled(fixCleanup3_4_0) || book_.domain.has_value()) &&
+        if ((!view_.rules().enabled(fixCleanup3_3_0) || book_.domain.has_value()) &&
             entry->isFieldPresent(sfDomainID) &&
             !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
