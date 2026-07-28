@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STXChainBridge.h>
 
 #include <cstdint>

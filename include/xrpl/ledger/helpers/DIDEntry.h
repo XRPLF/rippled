@@ -3,7 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace xrpl {
 
