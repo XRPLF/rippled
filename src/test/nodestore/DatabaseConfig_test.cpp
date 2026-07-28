@@ -34,6 +34,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -121,6 +122,72 @@ private:
     {
         for (auto const& object : batch)
             backend.store(object);
+    }
+
+    /**
+     * A DummyScheduler that also totals what the fetch reports carried.
+     *
+     * Database::fetchNodeObject() measures each fetch once and uses that one
+     * value for both its internal accumulator and the report it hands the
+     * scheduler, so the report total is an independent reading of the same
+     * measurement. Comparing the two pins the accumulator without asserting
+     * that a fetch took any particular amount of time -- which is a statement
+     * about the machine, not the code, and fails on a host fast enough to
+     * serve every read in under a microsecond.
+     *
+     * @note Counters are atomic because Scheduler is called from the
+     *       nodestore's read threads in production. These tests fetch
+     *       synchronously on one thread, so the totals are still exact.
+     */
+    struct CountingScheduler : DummyScheduler
+    {
+        /**
+         * Sum of the durations carried by every fetch report received.
+         */
+        std::atomic<std::uint64_t> reportedFetchUs{0};
+
+        /**
+         * Fetch reports received, however long each one measured.
+         */
+        std::atomic<std::uint64_t> fetchReports{0};
+
+        void
+        onFetch(FetchReport const& report) override
+        {
+            reportedFetchUs += static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::microseconds>(report.elapsed).count());
+            ++fetchReports;
+        }
+    };
+
+    /**
+     * Assert the read accumulator holds exactly what the fetch reports carried.
+     *
+     * Deliberately not `getFetchDurationUs() > 0`: an individual read served
+     * from NuDB's in-memory buckets can genuinely measure under one
+     * microsecond and truncate to zero, so on a fast enough host every read
+     * truncates and the total stays at zero with nothing wrong. That makes
+     * `> 0` an assertion about the machine rather than about the code, and it
+     * is what failed on the macOS runner.
+     *
+     * The equality below is machine-independent and strictly stronger: each
+     * fetch is measured once and that one value feeds both the accumulator
+     * and the report, so an accumulator that dropped a fetch, double-counted
+     * one, or reported the write member instead would break the equality
+     * however fast the host is.
+     *
+     * @param db Database whose read accumulator is checked.
+     * @param scheduler Scheduler that received the reports for @p db.
+     * @param expectedReports Fetches that must have been reported.
+     */
+    void
+    expectFetchDurationMatchesReports(
+        Database const& db,
+        CountingScheduler const& scheduler,
+        std::uint64_t expectedReports)
+    {
+        BEAST_EXPECT(scheduler.fetchReports.load() == expectedReports);
+        BEAST_EXPECT(db.getFetchDurationUs() == scheduler.reportedFetchUs.load());
     }
 
 public:
@@ -705,7 +772,7 @@ public:
     {
         testcase("Fetch and store duration accessors");
 
-        DummyScheduler scheduler;
+        CountingScheduler scheduler;
 
         beast::TempDir const nodeDb;
         Section nodeParams;
@@ -762,7 +829,7 @@ public:
 
         BEAST_EXPECT(db->getFetchTotalCount() == kNumStored);
         BEAST_EXPECT(db->getFetchHitCount() == kNumStored);
-        BEAST_EXPECT(db->getFetchDurationUs() > 0);
+        expectFetchDurationMatchesReports(*db, scheduler, kNumStored);
 
         // Reads must leave the write accumulator alone. This also proves the
         // write accessor does not report the read member.
@@ -838,7 +905,7 @@ public:
     {
         testcase("Rotating store duration accessors");
 
-        DummyScheduler scheduler;
+        CountingScheduler scheduler;
 
         beast::TempDir const writableDir;
         beast::TempDir const archiveDir;
@@ -876,7 +943,7 @@ public:
 
         BEAST_EXPECT(db.getFetchTotalCount() == kNumStored);
         BEAST_EXPECT(db.getFetchHitCount() == kNumStored);
-        BEAST_EXPECT(db.getFetchDurationUs() > 0);
+        expectFetchDurationMatchesReports(db, scheduler, kNumStored);
         BEAST_EXPECT(db.getStoreCount() == kNumStored);
         BEAST_EXPECT(db.getStoreDurationUs() == storeDurationAfterWrites);
 
