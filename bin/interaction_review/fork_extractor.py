@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import clang.cindex as ci
+from graph import LOC_DEFINITION, LOC_STATE_ENUM, Location
+from sourceutil import repo_relative
 
 # Fork function -> qualified enum whose values are that fork's boundary states.
 # Keys must be discovered forks and the enum must resolve, else extract_forks
@@ -64,6 +66,9 @@ class ForkResult:
     lever_flags: set[str] = field(default_factory=set)
     gate_globals: set[str] = field(default_factory=set)
     state_space: list[str] = field(default_factory=list)
+    # One definition span per overload merged into this fork, so a diff to
+    # either `checkSign` maps to the single checkSign resource.
+    spans: set[Location] = field(default_factory=set)
 
 
 def _resource_dir(dylib: Path) -> str | None:
@@ -120,6 +125,28 @@ def _parse_args(entry: dict, resource_dir: str | None) -> list[str]:
     return args
 
 
+def _is_local(node: ci.Cursor) -> bool:
+    """True if the reference resolves to a function-scope declaration.
+
+    rippled routinely names locals after the amendment they cache, e.g.
+    `bool const fixEnabled = view.rules().enabled(fixCleanup3_2_0);` and
+    `featureSAVEnabled`. Treating those as amendment gates would invent edges,
+    and — because an unrecognized gate is a hard error — could fail the build
+    outright the first time such a local appears in scan scope.
+    """
+    referenced = node.referenced
+    if referenced is None:
+        return False
+    parent = referenced.semantic_parent
+    return parent is not None and parent.kind in (
+        ci.CursorKind.FUNCTION_DECL,
+        ci.CursorKind.CXX_METHOD,
+        ci.CursorKind.FUNCTION_TEMPLATE,
+        ci.CursorKind.CONSTRUCTOR,
+        ci.CursorKind.DESTRUCTOR,
+    )
+
+
 def _collect_refs(fn: ci.Cursor) -> tuple[set[str], set[str], set[str]]:
     sfields: set[str] = set()
     flags: set[str] = set()
@@ -128,6 +155,8 @@ def _collect_refs(fn: ci.Cursor) -> tuple[set[str], set[str], set[str]]:
         if node.kind != ci.CursorKind.DECL_REF_EXPR:
             continue
         name = node.spelling
+        if _is_local(node):
+            continue
         if name.startswith("sf"):
             sfields.add(name)
         elif name.startswith("tf"):
@@ -146,6 +175,26 @@ def _validate_required(discovered: set[str]) -> None:
         )
 
 
+def _owner_name(fn: ci.Cursor, file_name: str) -> str:
+    """An identity for the thing a definition belongs to, for collision checks.
+
+    A class parent is identity enough — overloads and out-of-line definitions of
+    one class legitimately merge, wherever they live. A namespace parent is not:
+    two unrelated free functions of the same name in `namespace xrpl` are the
+    likeliest collision in this scan scope, which spans Transactor.cpp plus ~19
+    helper headers, so the file is folded in for those.
+    """
+    parent = fn.semantic_parent
+    if parent is not None and parent.kind in (
+        ci.CursorKind.CLASS_DECL,
+        ci.CursorKind.STRUCT_DECL,
+        ci.CursorKind.CLASS_TEMPLATE,
+    ):
+        return f"class {parent.spelling}"
+    scope = parent.spelling if parent is not None and parent.spelling else "<file>"
+    return f"namespace {scope} in {file_name}"
+
+
 def _qualified_enum_name(enum: ci.Cursor) -> str:
     parent = enum.semantic_parent
     if parent is not None and parent.kind in (
@@ -154,6 +203,31 @@ def _qualified_enum_name(enum: ci.Cursor) -> str:
     ):
         return f"{parent.spelling}::{enum.spelling}"
     return enum.spelling
+
+
+def _definition_span(
+    fn: ci.Cursor, file_name: str, repo_root: str, role: str = LOC_DEFINITION
+) -> Location:
+    """The definition's line span, signature through closing brace.
+
+    The extent's end is trusted only when it lands in the same file as the
+    start; a definition assembled across files by macro expansion would
+    otherwise yield a span whose end line indexes the wrong file.
+    """
+    extent = fn.extent
+    start_line = extent.start.line
+    end_file = extent.end.file
+    end_line = (
+        extent.end.line
+        if end_file is not None and end_file.name == file_name
+        else start_line
+    )
+    return Location(
+        file=repo_relative(file_name, repo_root),
+        start_line=start_line,
+        end_line=max(start_line, end_line),
+        role=role,
+    )
 
 
 def _in_scope(loc_name: str, tu_file: str, repo_root: str) -> bool:
@@ -180,6 +254,10 @@ def scan_translation_unit(
     """
     results: dict[str, ForkResult] = {}
     enums: dict[str, list[str]] = {}
+    enum_spans: dict[str, Location] = {}
+    # fork name -> the semantic parent its definitions belong to, so two
+    # unrelated same-named functions cannot silently merge into one resource.
+    owners: dict[str, str] = {}
 
     for node in tu.cursor.walk_preorder():
         if node.kind == ci.CursorKind.ENUM_DECL and node.spelling:
@@ -191,6 +269,20 @@ def scan_translation_unit(
             ]
             if values:
                 enums.setdefault(qname, values)
+                loc = node.location.file
+                # Bounded by repo_root, NOT by _in_scope. A fork's state enum is
+                # declared in a header (`FeePayerType` in include/xrpl/tx/
+                # Transactor.h, `SeqProxy::Type` in SeqProxy.h) that the scan
+                # scope deliberately excludes, so requiring _in_scope here meant
+                # no enum span was ever recorded and adding a boundary state
+                # mapped to nothing.
+                if loc is not None and loc.name.startswith(repo_root):
+                    enum_spans.setdefault(
+                        qname,
+                        _definition_span(
+                            node, loc.name, repo_root, role=LOC_STATE_ENUM
+                        ),
+                    )
         elif node.kind in (ci.CursorKind.CXX_METHOD, ci.CursorKind.FUNCTION_DECL):
             loc = node.location.file
             if not node.is_definition() or loc is None:
@@ -201,15 +293,30 @@ def scan_translation_unit(
             levers = sfields & common_fields
             if not (levers or flags or gates):
                 continue
+            owner = _owner_name(node, loc.name)
+            previous_owner = owners.setdefault(node.spelling, owner)
+            if previous_owner != owner:
+                raise ValueError(
+                    f"two unrelated definitions named {node.spelling!r} are in "
+                    f"scan scope ({previous_owner} and {owner}); merging them "
+                    f"would fabricate levers and edges between unrelated code. "
+                    f"Key forks by qualified name, or narrow the scan scope."
+                )
             res = results.setdefault(node.spelling, ForkResult(node.spelling))
             res.lever_fields |= levers
             res.lever_flags |= flags
             res.gate_globals |= gates
+            res.spans.add(_definition_span(node, loc.name, repo_root))
 
     for name, res in results.items():
         enum_name = FORK_STATE_ENUM.get(name)
         if enum_name and enum_name in enums:
             res.state_space = enums[enum_name]
+            # The enum declaring a fork's boundary states is part of that fork:
+            # adding a FeePayerType value changes getFeePayer's state space, and
+            # that edit must map to the fork even though it lives in a header.
+            if enum_name in enum_spans:
+                res.spans.add(enum_spans[enum_name])
 
     return sorted(results.values(), key=lambda r: r.name)
 
@@ -218,6 +325,7 @@ def extract_forks(
     build_dir: Path,
     common_fields: set[str],
     libclang_path: str | None = None,
+    repo_root: Path | None = None,
 ) -> list[ForkResult]:
     dylib = Path(libclang_path or _DEFAULT_DYLIB)
     if libclang_path and not dylib.exists():
@@ -246,9 +354,23 @@ def extract_forks(
     path = entry["file"]
     if not path.endswith(_TU_SUFFIX):
         raise ValueError(f"unexpected TU path {path!r}, cannot derive repo root")
-    repo_root = path[: -len(_TU_SUFFIX)]
+    tu_root = path[: -len(_TU_SUFFIX)]
 
-    forks = scan_translation_unit(tu, common_fields, path, repo_root)
+    # The compile database points at whichever checkout was configured. If the
+    # caller is building the graph for a different tree — exactly what the
+    # base-vs-head workflow does — fork spans would come from one checkout and
+    # macro/impl spans from another, and nothing downstream could tell.
+    if repo_root is not None:
+        expected = Path(repo_root).resolve()
+        if Path(tu_root).resolve() != expected:
+            raise ValueError(
+                f"compile database describes {tu_root!r} but --repo-root is "
+                f"{expected}{__import__('os').sep}. Fork spans and macro spans "
+                f"would come from different checkouts. Rebuild the compile "
+                f"database for this tree, or point --repo-root at it."
+            )
+
+    forks = scan_translation_unit(tu, common_fields, path, tu_root)
 
     # A broken parse or wrong scope silently yields almost nothing; fail loudly.
     if len(forks) < _MIN_FORKS:

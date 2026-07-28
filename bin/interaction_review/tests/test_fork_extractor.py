@@ -44,6 +44,38 @@ int getFeePayer(Tx const& tx, Rules const& r) {
 int noFork(Tx const& tx) { return tx.isFieldPresent(sfIgnored); }
 """
 
+# A function-local named after the amendment it caches. rippled writes these
+# constantly (`bool const fixEnabled = ...`, `featureSAVEnabled`). Treated as a
+# gate it would invent an edge and, since an unknown gate is a hard error, could
+# fail the build outright.
+LOCAL_SHADOW_FIXTURE = """
+struct Rules { bool enabled(int) const; };
+int sfDelegate;
+int featureBatchV1_1;
+
+int checkThing(Rules const& r, int sfDelegate_unused) {
+    bool const fixEnabled = r.enabled(featureBatchV1_1);
+    bool const featureSAVEnabled = r.enabled(featureBatchV1_1);
+    return (fixEnabled || featureSAVEnabled) ? sfDelegate : 0;
+}
+"""
+
+# Two unrelated free functions of the same name, in one namespace, in two files
+# that are both in scan scope. Merging them would fabricate levers and edges
+# between unrelated code.
+COLLIDING_A = """
+namespace xrpl {
+int sfDelegate;
+int doIt() { return sfDelegate; }
+}
+"""
+COLLIDING_B = """
+namespace xrpl {
+int sfSponsor;
+int doIt(int) { return sfSponsor; }
+}
+"""
+
 # sfTicketSequence is common but unreferenced here; sfIgnored is referenced but
 # not common -> lets us assert both the intersection filter and non-discovery.
 COMMON = {"sfDelegate", "sfSponsor", "sfSigners", "sfTicketSequence"}
@@ -76,6 +108,37 @@ def test_state_space_attached(fixture_forks):
         "SponsorCoSigned",
         "SponsorPreFunded",
     ]
+
+
+def test_function_local_shadow_is_not_a_gate(libclang_dylib, tmp_path):
+    src = tmp_path / "shadow.cpp"
+    src.write_text(LOCAL_SHADOW_FIXTURE)
+    tu = ci.Index.create().parse(
+        str(src), args=["-std=c++20"], unsaved_files=[(str(src), LOCAL_SHADOW_FIXTURE)]
+    )
+    forks = scan_translation_unit(tu, {"sfDelegate"}, str(src), str(tmp_path))
+    assert [f.name for f in forks] == ["checkThing"]
+    # The globals survive; the locals named like levers do not.
+    assert forks[0].gate_globals == {"featureBatchV1_1"}
+    assert "fixEnabled" not in forks[0].gate_globals
+    assert "featureSAVEnabled" not in forks[0].gate_globals
+
+
+def test_same_name_functions_in_one_namespace_are_fatal(libclang_dylib, tmp_path):
+    """The likeliest collision shape here: the scan spans Transactor.cpp plus
+    ~19 helper headers, and several forks are namespace-scoped free functions."""
+    helpers = tmp_path / "helpers"
+    helpers.mkdir()
+    header = helpers / "Other.h"
+    header.write_text(COLLIDING_B)
+    main = tmp_path / "main.cpp"
+    source = COLLIDING_A + '#include "helpers/Other.h"\n'
+    main.write_text(source)
+    tu = ci.Index.create().parse(str(main), args=["-std=c++20", f"-I{tmp_path}"])
+    with pytest.raises(ValueError, match="two unrelated definitions"):
+        scan_translation_unit(
+            tu, {"sfDelegate", "sfSponsor"}, str(main), str(tmp_path) + "/"
+        )
 
 
 # --- real build ------------------------------------------------------------

@@ -153,7 +153,7 @@ it stays small and does not reintroduce the manual-scan burden.
 
 ## Architecture
 
-New Python CLI tool at `bin/interaction_review/` (dev-utility convention, like
+New Python CLI tools at `bin/interaction_review/` (dev-utility convention, like
 `bin/pre-commit/`), with hash-locked requirements following the codegen convention
 (`requirements.in` → `uv pip compile`).
 
@@ -162,19 +162,25 @@ bin/interaction_review/
   README.md
   DESIGN.md                     # this document
   requirements.in / .txt        # pcpp, pyparsing, libclang (hash-locked)
-  build_graph.py                # CLI entrypoint
+  build_graph.py                # CLI entrypoint (Component A: build the graph)
+  pr_map.py                     # CLI entrypoint (Component B: diff -> touched nodes)
   macro_extractor.py            # .macro files -> feature nodes, macro edges, shared-SField resources
   common_fields.py              # TxFormats::getCommonFields() -> cross-cutting field set
   fork_extractor.py             # libclang AST over Transactor.cpp -> fork resources
-  privilege_extractor.py        # Privilege enum + per-tx bits -> invariant resources + edges
-  graph.py                      # dataclasses (FeatureNode/ResourceNode/Edge), GraphBuilder
-  graph.schema.json             # JSON Schema for output validation
+  privilege_extractor.py        # Privilege enum + hasPrivilege sites -> invariant resources + edges
+  impl_locator.py               # transactor name -> its implementation files
+  sourceutil.py                 # comment stripping, path/line helpers (line-number safe)
+  diffparse.py                  # git plumbing + unified-diff hunks -> changed line ranges
+  graph.py                      # dataclasses (Location/FeatureNode/ResourceNode/Edge), GraphBuilder
+  graph.schema.json             # JSON Schema for graph.json
+  touched.schema.json           # JSON Schema for touched.json
   interactions.py               # common-neighbor enumeration -> interaction set
   config/
     field_to_amendment.yml      # common field -> governing feature | core
     flag_to_amendment.yml       # lever flag   -> governing feature
     gate_allowlist.yml          # tolerated unresolved amendment-gate globals
-  tests/                        # unit tests + acceptance assertions
+    transactor_impl_overrides.yml  # transactor -> impl files, when not derivable (empty)
+  tests/                        # unit tests + acceptance assertions + contracts
 ```
 
 ### Reused code
@@ -247,6 +253,10 @@ TRANSACTION_INCLUDE` blocks, commented-out calls); an unrecognized delegability
 7. Write `graph.json` + `interactions.json` to `--out` (ephemeral; never committed).
 
 ## Manual configuration (the only human-maintained inputs)
+
+Four files; `config/transactor_impl_overrides.yml` (empty by default) is the
+escape hatch for a transactor whose implementation `impl_locator.py` cannot
+derive. See README.md for the full list.
 
 `config/field_to_amendment.yml` — cross-cutting field → governing feature. It covers the
 **entire** common-field set (20 fields), because the fork scan discovers every
@@ -325,9 +335,29 @@ SponsorPreFunded}`.
 bin/interaction_review/build_graph.py --build-dir .build --out /tmp/out` completes
    and produces non-empty `graph.json` + `interactions.json`.
 
+## Node locations and PR mapping (Component B, first half)
+
+Every node records the source spans it was derived from — `macro` rows,
+`definition` spans from libclang extents, and whole-file `impl` attributions —
+and `pr_map.py` intersects a git diff with them to produce `touched.json`. See
+[README.md](README.md) for the roles, match strengths, and the resolution rules
+for transactor implementations. New modules: `sourceutil.py` (text helpers),
+`impl_locator.py` (transactor -> files), `diffparse.py` (git plumbing),
+`pr_map.py` (the mapper), plus `touched.schema.json` and
+`config/transactor_impl_overrides.yml`.
+
+`build_graph.validate_locations` enforces that every node is locatable, that no
+span runs past its file, and that a `macro`/`definition` span contains its own
+node's name — the cheap check that catches a line number drifting off its
+declaration.
+
 ## Out of scope (later phases)
 
-- Base-vs-head graph diffing and touched-node resolution (Component B).
+- Interaction selection and ranking from the touched set (Component B, second
+  half).
+- Resource families for `src/libxrpl/tx/paths/` and `ledger/helpers/`, and
+  following one hop of callees out of fork bodies. Both would raise recall
+  materially; both change the resource taxonomy rather than the mapping.
 - Test location and test-sufficiency grading (Components B/C).
 - The GitHub Actions `issue_comment` slash-command workflow.
 - Owner-directory resource family.

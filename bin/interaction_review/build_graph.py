@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import yaml
@@ -25,6 +26,8 @@ from graph import (
     EDGE_WRAPPER,
     FEATURE_AMENDMENT,
     FEATURE_TRANSACTOR,
+    LOC_IMPL,
+    LOC_STATE_ENUM,
     RESOURCE_FORK,
     RESOURCE_INVARIANT,
     RESOURCE_SFIELD,
@@ -36,7 +39,11 @@ from graph import (
     resource_id,
 )
 from interactions import enumerate_interactions, write_interactions
-from macro_extractor import extract_macros
+from macro_extractor import (
+    attach_impl_locations,
+    extract_macros,
+    parse_sfield_rows,
+)
 from privilege_extractor import extract_privileges
 
 HERE = Path(__file__).resolve().parent
@@ -45,8 +52,15 @@ REPO_ROOT = HERE.parents[1]
 # Input paths (relative to repo root).
 TRANSACTIONS_MACRO = "include/xrpl/protocol/detail/transactions.macro"
 FEATURES_MACRO = "include/xrpl/protocol/detail/features.macro"
+SFIELDS_MACRO = "include/xrpl/protocol/detail/sfields.macro"
 TXFORMATS_CPP = "src/libxrpl/protocol/TxFormats.cpp"
 PRIVILEGE_HEADER = "include/xrpl/tx/invariants/InvariantCheckPrivilege.h"
+TX_FLAGS_HEADER = "include/xrpl/protocol/TxFlags.h"
+
+# Transaction-flag constants, for the lever vocabulary. Derived from the header
+# rather than from the config table: the table holds only the flags that are
+# fork levers today, so using its keys made pr_map blind to every other tf*.
+_TF_FLAG_RE = re.compile(r"\btf[A-Z]\w*")
 
 
 def find_build_dir(repo_root: Path) -> Path | None:
@@ -58,11 +72,31 @@ def find_build_dir(repo_root: Path) -> Path | None:
 
 
 def load_table(path: Path) -> dict[str, str]:
-    return yaml.safe_load(path.read_text()) or {}
+    data = yaml.safe_load(path.read_text()) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a mapping, got {type(data).__name__}")
+    return data
 
 
 def load_list(path: Path) -> list[str]:
-    return yaml.safe_load(path.read_text()) or []
+    data = yaml.safe_load(path.read_text()) or []
+    if not isinstance(data, list):
+        raise ValueError(f"{path}: expected a list, got {type(data).__name__}")
+    return data
+
+
+def load_impl_overrides(path: Path) -> dict[str, list[str]]:
+    """The overrides file maps a transactor to a *list* of paths.
+
+    A scalar value would otherwise be iterated character by character, failing
+    with "lists 's', which does not exist" — a confusing error for the obvious
+    YAML mistake of writing one path without a list.
+    """
+    data = load_table(path)
+    for key, value in data.items():
+        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+            raise ValueError(f"{path}: {key!r} must be a list of paths, got {value!r}")
+    return data
 
 
 def _mediator_edge(builder: GraphBuilder, amendment: str, dst: str, via: str) -> None:
@@ -147,6 +181,7 @@ def merge_forks(
                 lever_flags=sorted(fork.lever_flags),
                 amendment_gates=gate_names,
                 state_space=fork.state_space,
+                locations=sorted(fork.spans),
             )
         )
 
@@ -192,6 +227,54 @@ def validate_graph(builder: GraphBuilder, schema_path: Path) -> None:
             raise ValueError(f"Edge to unknown resource {edge.dst!r}")
 
 
+def validate_locations(builder: GraphBuilder, repo_root: Path) -> None:
+    """Every node must be locatable, and every span must exist in the checkout.
+
+    A node with no location is invisible to the PR mapper — the diff can never
+    reach it — so an unlocatable node is a silent recall hole, not a cosmetic
+    gap. A span past the end of its file means a parser is off by more than a
+    rounding error and every span it produced is suspect.
+    """
+    missing = sorted(n.id for n in builder.all_nodes() if not n.locations)
+    if missing:
+        raise ValueError(
+            f"node(s) with no source location, unreachable from any diff: {missing}"
+        )
+
+    file_lines: dict[str, list[str]] = {}
+    for node in builder.all_nodes():
+        for loc in node.locations:
+            if loc.file not in file_lines:
+                path = Path(repo_root) / loc.file
+                if not path.is_file():
+                    raise ValueError(f"{node.id}: location file {loc.file!r} not found")
+                file_lines[loc.file] = path.read_text().splitlines()
+            lines = file_lines[loc.file]
+            if loc.end_line > max(1, len(lines)):
+                raise ValueError(
+                    f"{node.id}: span {loc.file}:{loc.start_line}-{loc.end_line} "
+                    f"runs past end of file ({len(lines)} lines)"
+                )
+            # A span that declares or defines the node must contain its name.
+            # This is the cheap check that catches an off-by-N span: a line
+            # number can drift silently, but drifting off the name cannot.
+            # `impl` spans are exempt — they cover a whole file, and a
+            # transactor reached through a `using` alias (EnableAmendment ->
+            # Change) never spells its own name there.
+            # `impl` spans cover a whole file, and a `state_enum` span is a
+            # different declaration entirely (the enum naming a fork's boundary
+            # states), so neither is expected to spell the node's own name.
+            if loc.role in (LOC_IMPL, LOC_STATE_ENUM):
+                continue
+            span_text = "\n".join(lines[loc.start_line - 1 : loc.end_line])
+            if node.name not in span_text:
+                raise ValueError(
+                    f"{node.id}: {loc.role} span "
+                    f"{loc.file}:{loc.start_line}-{loc.end_line} does not "
+                    f"contain {node.name!r}; the span is misaligned"
+                )
+
+
 def resolve_out_paths(out: str) -> tuple[Path, Path]:
     out_path = Path(out)
     if out_path.suffix == ".json":
@@ -232,13 +315,20 @@ def main(argv: list[str] | None = None) -> int:
     builder = GraphBuilder()
     amendment_globals = extract_macros(
         builder,
+        repo_root,
         repo_root / TRANSACTIONS_MACRO,
         repo_root / FEATURES_MACRO,
+        repo_root / SFIELDS_MACRO,
         common_fields,
     )
-    extract_privileges(builder, repo_root / PRIVILEGE_HEADER)
+    attach_impl_locations(
+        builder,
+        repo_root,
+        load_table(HERE / "config" / "transactor_impl_overrides.yml"),
+    )
+    extract_privileges(builder, repo_root, repo_root / PRIVILEGE_HEADER)
 
-    forks = extract_forks(build_dir, common_fields, args.libclang)
+    forks = extract_forks(build_dir, common_fields, args.libclang, repo_root)
 
     field_table = load_table(HERE / "config" / "field_to_amendment.yml")
     flag_table = load_table(HERE / "config" / "flag_to_amendment.yml")
@@ -247,7 +337,19 @@ def main(argv: list[str] | None = None) -> int:
         builder, forks, amendment_globals, field_table, flag_table, gate_allowlist
     )
 
+    # Record the lever vocabulary the graph was derived from, so pr_map can tell
+    # a real lever from a local variable that merely looks like one.
+    builder.vocabulary = {
+        "common_fields": sorted(common_fields),
+        "sfields": sorted(parse_sfield_rows(repo_root / SFIELDS_MACRO)),
+        "flags": sorted(
+            set(_TF_FLAG_RE.findall((repo_root / TX_FLAGS_HEADER).read_text()))
+        ),
+        "amendment_globals": sorted(amendment_globals),
+    }
+
     validate_graph(builder, HERE / "graph.schema.json")
+    validate_locations(builder, repo_root)
 
     graph_path, interactions_path = resolve_out_paths(args.out)
     builder.write(graph_path)

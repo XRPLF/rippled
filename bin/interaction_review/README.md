@@ -1,12 +1,18 @@
-# interaction_review — feature-interaction dependency graph (Phase 1)
+# interaction_review — feature-interaction dependency graph
 
 Builds a machine-readable graph of which rippled features interact through which
-shared code paths, and enumerates the pairwise interaction set. This is the
-substrate for a PR-review assistant that flags untested feature-interaction
-boundaries. See [DESIGN.md](DESIGN.md) for the model and rationale.
+shared code paths, enumerates the pairwise interaction set, and maps a PR diff
+onto it. This is the substrate for a PR-review assistant that flags untested
+feature-interaction boundaries. See [DESIGN.md](DESIGN.md) for the model and
+rationale.
 
-This phase produces two JSON artifacts and does no PR diffing, test location, or
-LLM grading.
+Two tools:
+
+- `build_graph.py` (Component A) — extract the graph and the interaction set.
+- `pr_map.py` (Component B, first half) — resolve a git diff to the graph nodes
+  it touches.
+
+Test location and LLM test-sufficiency grading are not built yet.
 
 ## Install
 
@@ -40,9 +46,88 @@ Writes `out/graph.json` and `out/interactions.json`. `--out` may also be a
   the resource, interaction kind (`mediator×mediator`, `mediator×consumer`,
   `consumer×consumer`), roles, causing levers, and boundary states.
 
+## Node locations
+
+Every node records the source spans it was derived from, which is what lets a
+diff be mapped back onto the graph:
+
+| role         | meaning                                             | example                                               |
+| ------------ | --------------------------------------------------- | ----------------------------------------------------- |
+| `macro`      | the declaring row in a `.macro` file or enum header | a transactor's `TRANSACTION(...)` row                 |
+| `definition` | a C++ definition span, one per merged overload      | each `Transactor::checkSign` body                     |
+| `impl`       | a whole file attributed to a node                   | `transactors/payment/Payment.cpp`, an invariant check |
+
+Transactor implementation files are derived, not declared
+(`impl_locator.py`): by file stem, then by a column-0 `Name::method` definition
+or `class Name`, then by following a `using Name = Other` alias. That resolves
+all 82 transactors, including the eight XChain ones sharing `XChainBridge.cpp`
+and the three pseudo-transactions aliased to `Change`. The column-0 anchor
+matters: an unanchored match also hits qualified _calls_, which attributed
+`AMMClawback.cpp` to the `AMMWithdraw` transactor.
+
+Invariant nodes also carry the files whose `hasPrivilege(tx, Bit)` checks
+enforce them, and a fork carries the enum declaring its boundary states. Without
+those, an amendment x invariant PR or a new `FeePayerType` value would map to no
+node at all.
+
+The build fails if a node has no location, if a span runs past the end of its
+file, or if a `macro`/`definition` span does not contain the node's own name —
+the cheap check that catches a line number drifting off its declaration.
+
+## Mapping a PR
+
+```
+python pr_map.py --base develop            # diff the working tree
+python pr_map.py --base develop --head HEAD
+```
+
+Reads `out/graph.json` and writes `out/touched.json`
+(validated against `touched.schema.json`), containing:
+
+- `touched` — nodes with a changed line inside one of their spans. `match` is
+  `span` for a precise `macro`/`definition` hit and `file` for a whole-file
+  `impl` hit. For fork resources, lever tokens on the changed lines are split
+  into `known_levers` and `new_levers`; a new lever means the diff is changing
+  the graph's own edge set, which is the strongest signal available.
+- `off_span_changes` — changes in a file that hosts nodes but landing outside
+  every span in it. Reported as context and deliberately not attributed: an edit
+  to a free helper in `Transactor.cpp` is not evidence about any one of the two
+  dozen forks that file contains.
+- `structural_changes` — files hosting nodes that changed with no line content:
+  deleted, renamed at 100% similarity, or mode-only. Nothing can match a span,
+  so the nodes are surfaced here rather than vanishing. Every changed file lands
+  in exactly one of `unmapped_files`, `structural_changes`, or
+  `touched`/`off_span_changes`.
+- `unmapped_files` — changed files no node lives in.
+
+Lever tokens are validated against the `vocabulary` block `build_graph` records
+in `graph.json` (common SFields, transaction flags, amendment globals), so
+locals like `fixEnabled` and non-cross-cutting fields like `sfBalance` are not
+mistaken for levers.
+
+### Known limits
+
+- **`src/libxrpl/tx/paths/`, `ledger/helpers/`, and the apply plumbing are not
+  modelled.** 79 of 102 `src/libxrpl/tx/**/*.cpp` files (77%) are covered by some
+  node. The 23 that are not: `paths/` 11 (the whole payment engine),
+  `invariants/` 7, tx-root plumbing 4, `transactors/` 1. Covering them means
+  adding resource families, which is a graph-model decision, not a mapping fix.
+- **Invariant coverage is per-privilege-bit, not per-file.** All 14 bits carry
+  the files whose `hasPrivilege` checks consult them, but only checks that call
+  `hasPrivilege` are located at all — 5 of 12 invariant `.cpp` files. A PR
+  editing an invariant that owns no privilege bit (`AccountRootsDeletedClean`)
+  or one that never calls `hasPrivilege` (`AMMInvariant`) still maps to no node.
+- **Only definitions reachable from the `Transactor.cpp` TU are scanned**, so a
+  helper a fork calls is not itself a node. Following one hop of callees is
+  deferred with the same rationale.
+- **`src/test` is not located**, so `touched.json` cannot yet tell a PR that adds
+  the boundary test from one that does not. That is the test locator's job.
+- Off-span changes are reported but never attributed, so an edit to a free
+  function in `Transactor.cpp` (~30% of that file's lines) names no node.
+
 ## Human-maintained inputs
 
-Three small config files:
+Four small config files:
 
 - `config/field_to_amendment.yml` — every cross-cutting SField → its governing
   amendment or the `core` sentinel.
@@ -50,10 +135,13 @@ Three small config files:
   amendment.
 - `config/gate_allowlist.yml` — amendment-gate globals to tolerate when they
   resolve to no active amendment (empty by default).
+- `config/transactor_impl_overrides.yml` — transactors whose implementation
+  files cannot be derived (empty by default).
 
 The build fails loudly if the AST discovers a lever with no table entry, if a
-table names a non-existent amendment, or if a fork references an unresolved,
-non-allowlisted amendment gate. Amendment names must match `features.macro`.
+table names a non-existent amendment, if a fork references an unresolved,
+non-allowlisted amendment gate, or if a transactor's implementation cannot be
+found. Amendment names must match `features.macro`.
 
 ## Test
 
