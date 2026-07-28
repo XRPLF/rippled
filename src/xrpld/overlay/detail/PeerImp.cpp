@@ -1538,14 +1538,20 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
             }
         }
 
-        // Charge once per request. Requesting too many node IDs is charged even for a relay
-        // response, since it's a distinct infraction from the "get ledger request" charge below,
-        // which is skipped for relay responses.
+        // These are two distinct infractions and are charged independently: requesting too many
+        // node IDs is charged even for a relay response, while the base "get ledger request" charge
+        // below is skipped for relay responses.
         if (tooManyNodeIds)
         {
             peer->charge(Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
+
+            // Truncate the request to what was actually parsed and charged for, so that if this
+            // request ends up being relayed to another peer, we don't forward the oversized list.
+            m->mutable_nodeids()->DeleteSubrange(
+                static_cast<int>(nodeIDs.size()),
+                m->nodeids_size() - static_cast<int>(nodeIDs.size()));
         }
-        else if (!m->has_requestcookie())
+        if (!m->has_requestcookie())
         {
             peer->charge(Resource::kFeeModerateBurdenPeer, "TMGetLedger: get ledger request");
         }

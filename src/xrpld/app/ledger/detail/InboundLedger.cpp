@@ -894,16 +894,12 @@ InboundLedger::receiveNode(
                 return;
             }
 
-            if (nodeID->isRoot())
-            {
-                san += map.addRootNode(rootHash, std::move(treeNode), f);
-            }
-            else
-            {
-                san += map.addKnownNode(*nodeID, std::move(treeNode), f);
-            }
+            auto const result = nodeID->isRoot()
+                ? map.addRootNode(rootHash, std::move(treeNode), f)
+                : map.addKnownNode(*nodeID, std::move(treeNode), f);
+            san += result;
 
-            if (!san.isGood())
+            if (result.isInvalid())
             {
                 JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
                                       << " from peer " << peer->id();
@@ -970,9 +966,10 @@ InboundLedger::takeAsRootNode(std::string_view data, SHAMapAddNode& san)
     }
 
     AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
-    san += ledger_->stateMap().addRootNode(
+    auto const result = ledger_->stateMap().addRootNode(
         SHAMapHash{ledger_->header().accountHash}, std::move(treeNode), &filter);
-    return san.isGood();
+    san += result;
+    return !result.isInvalid();
 }
 
 /**
@@ -1005,9 +1002,10 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
     }
 
     TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
-    san += ledger_->txMap().addRootNode(
+    auto const result = ledger_->txMap().addRootNode(
         SHAMapHash{ledger_->header().txHash}, std::move(treeNode), &filter);
-    return san.isGood();
+    san += result;
+    return !result.isInvalid();
 }
 
 std::vector<InboundLedger::neededHash_t>
@@ -1162,11 +1160,11 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                                << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
                                << " node stats: " << san.get();
 
+        // `san` accumulates across the whole packet, so `isInvalid()` (bad_ > 0) does not mean the
+        // packet had no useful nodes: credit whatever good/useful nodes were sent rather than
+        // discarding everything because one node in an otherwise-good packet was bad.
         // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
         // exact failure site, so the peer is only charged for problems they are responsible for.
-        if (san.isInvalid())
-            return -1;
-
         if (san.isUseful())
             progress_ = true;
 

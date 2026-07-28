@@ -96,14 +96,17 @@ enum class SHAMapState {
  */
 
 /**
- * Holds a SHAMap node's identity, serialized data, and leaf status. Used by
+ * Holds a SHAMap node's identity, leaf status, and serialized data. Used by
  * getNodeFat to return node data for peer synchronization.
  */
 struct SHAMapNodeData
 {
     SHAMapNodeID nodeID;
+    // The `data` field (a Blob, 8-byte aligned) needs 4 bytes of padding after the `nodeID` field
+    // (36 bytes, 4-byte aligned) regardless of what comes between them, so `isLeaf` costs nothing
+    // extra here. Moving it after `data` would add 8 bytes to the size of this struct instead.
     bool isLeaf;
-    Blob data;  // Placed last, so `isLeaf` can fit into the alignment padding of `nodeID`.
+    Blob data;
 };
 
 class SHAMap
