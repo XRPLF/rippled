@@ -42,7 +42,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 - In `src/libxrpl/nodestore/Database.cpp`, extend existing `beast::insight` registrations to add:
   - Gauge: `node_reads_total` (cumulative read operations)
-  - Gauge: `node_reads_hit` (cache-served reads)
+  - Gauge: `node_reads_hit` (fetches that found an object — not a cache hit; `fetchHitCount_` increments whatever served the fetch)
   - Gauge: `node_writes` (cumulative write operations)
   - Gauge: `node_written_bytes` (cumulative bytes written)
   - Gauge: `node_read_bytes` (cumulative bytes read)
