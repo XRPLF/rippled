@@ -35,6 +35,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/consensus/CensorshipDetector.h>
 #include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
