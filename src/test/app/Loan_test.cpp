@@ -52,6 +52,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -112,7 +113,7 @@ protected:
             Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
 
-            auto const keylet = keylet::loanBroker(alice, env.seq(alice));
+            auto const keylet = keylet::loanBroker(alice, SeqProxy::sequence(env.seq(alice)));
 
             using namespace std::chrono_literals;
             using namespace loan;
@@ -128,7 +129,7 @@ protected:
             env(setTx);
             // Actual sequence will be based off the loan broker, but we
             // obviously don't have one of those if the amendment is disabled
-            auto const loanKeylet = keylet::loan(keylet.key, env.seq(alice));
+            auto const loanKeylet = keylet::loan(keylet.key, SeqProxy::sequence(env.seq(alice)));
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
             env(del(alice, loanKeylet.key), Ter(temDISABLED));
@@ -529,7 +530,7 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::sequence(env.seq(lender)));
 
         using namespace loanBroker;
         env(set(lender, vaultKeylet.key, params.flags),
@@ -818,7 +819,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return std::nullopt;
@@ -1295,7 +1296,8 @@ protected:
             // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
             // object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence)), loanSequence);
         }();
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
@@ -1638,7 +1640,7 @@ protected:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
+        auto badKeylet = keylet::vault(lender.id(), SeqProxy::sequence(env.seq(lender)));
         // Try some failure cases
         // flags are checked first
         env(set(evan, broker.brokerID, principalRequest, tfLoanSetMask),
@@ -3863,7 +3865,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         // Fails in preclaim because principal requested can't be
@@ -4231,7 +4233,7 @@ protected:
 
             BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'000));
 
-            auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+            auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(1));
 
             env(set(borrower, brokerInfo.brokerID, 10'000),
                 Sig(sfCounterpartySignature, broker),
@@ -4304,7 +4306,7 @@ protected:
         // Issuer "borrowed" 200, OutstandingAmount decreased by 200
         BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
         // Pay Loan
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(1));
         env(pay(borrower, loanKeylet.key, asset(200)));
         env.close();
         // Issuer "re-payed" 200, OutstandingAmount increased by 200
@@ -4373,7 +4375,7 @@ protected:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(loanSequence));
 
         env(fset(issuer, asfGlobalFreeze));
         env.close();
@@ -4689,7 +4691,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(tesSUCCESS));
@@ -4779,7 +4781,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson);
@@ -4848,7 +4850,7 @@ protected:
         // gazillion test cases.
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         env(createJson, Sig(sfCounterpartySignature, lender));
         env.close();
@@ -4987,7 +4989,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(tesSUCCESS));
@@ -5093,7 +5095,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(tesSUCCESS));
@@ -5258,7 +5260,7 @@ protected:
             // Start date when the ledger is closed will be larger
             auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-            auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
             auto const grace = 100;
             auto const interval = maxLoanTime() - grace;
@@ -5285,7 +5287,7 @@ protected:
             // Start date when the ledger is closed will be larger
             auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-            auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
             auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
@@ -5334,7 +5336,7 @@ protected:
             auto const brokerState = env.le(keylet::loanBroker(broker.brokerID));
             // Intentionally shadow the outer values
             auto const loanSequence = brokerState->at(sfLoanSequence);
-            auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
             auto const interval = maxLoanTime / total;
             auto createJson = env.json(
@@ -5418,7 +5420,8 @@ protected:
         });
 
         static constexpr std::uint32_t kLoanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(kLoanSequence));
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {
@@ -5472,7 +5475,7 @@ protected:
             Sig(sfCounterpartySignature, lender),
             loanSetFee);
         env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(1));
         BEAST_EXPECT(env.le(loanKeylet));
 
         // Repayment still works.
@@ -5525,7 +5528,7 @@ protected:
             return;
 
         auto const loanSequence = brokerPreLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         Number const principal = asset(1'000).value();
         Number const serviceFee = asset(2).value();
@@ -5802,7 +5805,7 @@ protected:
         auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
         BEAST_EXPECT(brokerSle);
         auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         env(createJtx);
         env.close();
@@ -6003,7 +6006,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return;
@@ -6264,7 +6267,8 @@ protected:
             txFee);
         env.close();
 
-        auto const brokerKeyLet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const brokerKeyLet =
+            keylet::loanBroker(lender.id(), SeqProxy::sequence(env.seq(lender)));
 
         env(loanBroker::set(lender, vaultKeyLet.key), txFee);
         env.close();
@@ -6283,7 +6287,7 @@ protected:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerKeyLet.key, loanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeyLet.key, SeqProxy::sequence(loanSequence));
 
         if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
         {
@@ -6469,7 +6473,8 @@ protected:
                 txFee);
             env.close();
 
-            auto const brokerKeylet = keylet::loanBroker(broker.id(), env.seq(broker));
+            auto const brokerKeylet =
+                keylet::loanBroker(broker.id(), SeqProxy::sequence(env.seq(broker)));
 
             env(loanBroker::set(broker, vaultKeylet.key), txFee);
             env.close();
@@ -6485,7 +6490,8 @@ protected:
             env.close();
 
             std::uint32_t const loanSequence = 1;
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(brokerKeylet.key, SeqProxy::sequence(loanSequence));
 
             auto const brokerBalanceBefore = env.balance(broker, asset);
 
@@ -6690,7 +6696,8 @@ protected:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
 
         auto const loanKeylet = keylet::loan(
-            result.brokerKeylet().key, (env.le(result.brokerKeylet()))->at(sfLoanSequence));
+            result.brokerKeylet().key,
+            SeqProxy::sequence((env.le(result.brokerKeylet()))->at(sfLoanSequence)));
         env(loan::set(
                 borrower, result.brokerKeylet().key, asset(10'000).value(), tfLoanOverpayment),
             Sig(sfCounterpartySignature, lender),
@@ -6736,7 +6743,7 @@ protected:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, iou, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(iou(100).value()),
@@ -6816,7 +6823,7 @@ protected:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
@@ -6916,7 +6923,7 @@ protected:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
@@ -7096,7 +7103,7 @@ protected:
         env(loanATx);
         env.close();
 
-        auto const loanAKeylet = keylet::loan(brokerKeylet.key, 1);
+        auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(1));
 
         // Create Loan B
         auto loanBTx = env.jt(
@@ -7110,7 +7117,7 @@ protected:
         env(loanBTx);
         env.close();
 
-        auto const loanBKeylet = keylet::loan(brokerKeylet.key, 2);
+        auto const loanBKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(2));
 
         auto loanASle = env.le(loanAKeylet);
         if (!BEAST_EXPECT(loanASle))
@@ -7220,7 +7227,7 @@ protected:
         auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::sequence(currentSeq));
         auto const maybePeriodicPayment = [&]() -> std::optional<STAmount> {
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
@@ -7368,7 +7375,8 @@ protected:
         if (!BEAST_EXPECT(sleBroker))
             return;
 
-        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::sequence(sleBroker->at(sfLoanSequence)));
 
         env(set(borrower, broker.brokerID, kPrincipalAmount),
             Sig(sfCounterpartySignature, lender),
@@ -7518,7 +7526,7 @@ protected:
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
             env(set(borrower, broker.brokerID, Number{p.principal}, tfLoanOverpayment),
                 Sig(sfCounterpartySignature, lender),
@@ -7733,7 +7741,7 @@ protected:
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
             env(set(borrower, broker.brokerID, principalRequested),
                 Sig(sfCounterpartySignature, lender),
@@ -7830,7 +7838,7 @@ protected:
         if (!BEAST_EXPECT(sleBroker))
             return;
         auto const loanSequence = sleBroker->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         using namespace loan;
         env(set(borrower, broker.brokerID, Number{1000}, tfLoanOverpayment),
@@ -7905,7 +7913,8 @@ protected:
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5'000)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::sequence(env.seq(lender)));
         env(loanBroker::set(lender, vaultKeylet.key),
             loanBroker::kDebtMaximum(Number{100}),
             Fee(env.current()->fees().base * 2));
@@ -7915,7 +7924,7 @@ protected:
         if (!BEAST_EXPECT(brokerStateBefore))
             return;
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(loanSequence));
 
         env(loan::set(borrower, brokerKeylet.key, Number{1}),
             Sig(sfCounterpartySignature, lender),
@@ -8014,7 +8023,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
 
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(tesSUCCESS));
@@ -8097,7 +8106,7 @@ protected:
 
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::sequence(loanSequence));
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(tesSUCCESS));
         env.close();
@@ -8241,7 +8250,8 @@ protected:
                 if (!BEAST_EXPECT(brokerSle1))
                     return std::nullopt;
                 auto const tinyLoanSeq = brokerSle1->at(sfLoanSequence);
-                auto const tinyLoanKeylet = keylet::loan(c.broker.brokerID, tinyLoanSeq);
+                auto const tinyLoanKeylet =
+                    keylet::loan(c.broker.brokerID, SeqProxy::sequence(tinyLoanSeq));
 
                 env(set(c.borrower, c.broker.brokerID, Number{1, -2}),
                     Sig(sfCounterpartySignature, c.lender),
@@ -8258,7 +8268,8 @@ protected:
                 if (!BEAST_EXPECT(brokerSle2))
                     return std::nullopt;
                 auto const bigLoanSeq = brokerSle2->at(sfLoanSequence);
-                auto const bigLoanKeylet = keylet::loan(c.broker.brokerID, bigLoanSeq);
+                auto const bigLoanKeylet =
+                    keylet::loan(c.broker.brokerID, SeqProxy::sequence(bigLoanSeq));
 
                 env(set(c.borrower, c.broker.brokerID, Number{500}),
                     Sig(sfCounterpartySignature, c.lender),

@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TER.h>
@@ -166,7 +167,7 @@ class Batch_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::sequence(uSequence)).key;
     }
 
     static std::unique_ptr<Config>
@@ -3176,7 +3177,8 @@ class Batch_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::sequence(env.seq(lender)));
 
         {
             using namespace loanBroker;
@@ -3198,7 +3200,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const lenderSeq = env.seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(1));
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,

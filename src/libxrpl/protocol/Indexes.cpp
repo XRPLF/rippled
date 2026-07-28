@@ -286,9 +286,9 @@ trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) 
 }
 
 Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept
+offer(AccountID const& id, SeqProxy seq) noexcept
 {
-    return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq)};
+    return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq.value())};
 }
 
 Keylet
@@ -320,12 +320,6 @@ next(Keylet const& k)
 }
 
 Keylet
-ticket(AccountID const& id, std::uint32_t ticketSeq)
-{
-    return {ltTICKET, getTicketIndex(id, ticketSeq)};
-}
-
-Keylet
 ticket(AccountID const& id, SeqProxy ticketSeq)
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
@@ -353,9 +347,9 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
 }
 
 Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept
+check(AccountID const& id, SeqProxy seq) noexcept
 {
-    return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq)};
+    return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq.value())};
 }
 
 Keylet
@@ -403,15 +397,15 @@ page(uint256 const& key, std::uint64_t index) noexcept
 }
 
 Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept
+escrow(AccountID const& src, SeqProxy seq) noexcept
 {
-    return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq)};
+    return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq.value())};
 }
 
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
+payChannel(AccountID const& src, AccountID const& dst, SeqProxy seq) noexcept
 {
-    return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq)};
+    return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq.value())};
 }
 
 Keylet
@@ -438,9 +432,9 @@ nftokenPage(Keylet const& k, uint256 const& token)
 }
 
 Keylet
-nftokenOffer(AccountID const& owner, std::uint32_t seq)
+nftokenOffer(AccountID const& owner, SeqProxy seq)
 {
-    return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq)};
+    return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq.value())};
 }
 
 Keylet
@@ -552,9 +546,9 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
+mptokenIssuance(SeqProxy seq, AccountID const& issuer) noexcept
 {
-    return mptokenIssuance(makeMptID(seq, issuer));
+    return mptokenIssuance(makeMptID(seq.value(), issuer));
 }
 
 Keylet
@@ -582,27 +576,29 @@ credential(AccountID const& subject, AccountID const& issuer, Slice const& credT
 }
 
 Keylet
-vault(AccountID const& owner, std::uint32_t seq) noexcept
+vault(AccountID const& owner, SeqProxy seq) noexcept
 {
-    return vault(indexHash(LedgerNameSpace::Vault, owner, seq));
+    return vault(indexHash(LedgerNameSpace::Vault, owner, seq.value()));
 }
 
 Keylet
-loanBroker(AccountID const& owner, std::uint32_t seq) noexcept
+loanBroker(AccountID const& owner, SeqProxy seq) noexcept
 {
-    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
+    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq.value()));
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept
+loan(uint256 const& loanBrokerID, SeqProxy loanSeq) noexcept
 {
-    return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq));
+    return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
 }
 
 Keylet
-permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
+permissionedDomain(AccountID const& account, SeqProxy seq) noexcept
 {
-    return {ltPERMISSIONED_DOMAIN, indexHash(LedgerNameSpace::PermissionedDomain, account, seq)};
+    return {
+        ltPERMISSIONED_DOMAIN,
+        indexHash(LedgerNameSpace::PermissionedDomain, account, seq.value())};
 }
 
 Keylet

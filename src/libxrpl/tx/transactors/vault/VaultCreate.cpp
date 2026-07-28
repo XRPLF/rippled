@@ -130,7 +130,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto const sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqProxy();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
@@ -147,7 +147,7 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto applyViewContext = ctx_.getApplyViewContext();
-    auto const sequence = tx.getSeqValue();
+    auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -218,7 +218,7 @@ VaultCreate::doApply()
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
-    vault->at(sfSequence) = sequence;
+    vault->at(sfSequence) = sequence.value();
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);

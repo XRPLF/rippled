@@ -18,6 +18,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -431,7 +432,7 @@ parseEscrow(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::escrow(*id, *seq).key;
+    return keylet::escrow(*id, SeqProxy::sequence(*seq)).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
@@ -493,7 +494,7 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanBroker(*id, *seq).key;
+    return keylet::loanBroker(*id, SeqProxy::sequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -515,7 +516,7 @@ parseLoan(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loan(*id, *seq).key;
+    return keylet::loan(*id, SeqProxy::sequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -597,7 +598,7 @@ parseOffer(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::offer(*id, *seq).key;
+    return keylet::offer(*id, SeqProxy::sequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -658,7 +659,7 @@ parsePermissionedDomain(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
+    return keylet::permissionedDomain(*account, SeqProxy::sequence(pd[jss::seq].asUInt())).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -783,7 +784,7 @@ parseVault(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    return keylet::vault(*id, SeqProxy::sequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>

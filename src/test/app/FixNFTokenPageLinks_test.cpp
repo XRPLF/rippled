@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -367,7 +368,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         dariaNFTs.reserve(32);
         for (int i = 0; i < 32; ++i)
         {
-            uint256 const offerIndex = keylet::nftokenOffer(carol, env.seq(carol)).key;
+            uint256 const offerIndex =
+                keylet::nftokenOffer(carol, SeqProxy::sequence(env.seq(carol))).key;
             env(token::createOffer(carol, carolNFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
@@ -401,7 +403,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // back from daria.
         for (uint256 const& nft : dariaNFTs)
         {
-            uint256 const offerIndex = keylet::nftokenOffer(carol, env.seq(carol)).key;
+            uint256 const offerIndex =
+                keylet::nftokenOffer(carol, SeqProxy::sequence(env.seq(carol))).key;
             env(token::createOffer(carol, nft, drops(1)), token::Owner(daria));
             env.close();
 

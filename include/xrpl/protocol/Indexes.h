@@ -12,6 +12,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <array>
@@ -21,8 +22,6 @@
 #include <utility>
 
 namespace xrpl {
-
-class SeqProxy;
 /**
  * Keylet computation functions.
  *
@@ -123,7 +122,7 @@ trustLine(AccountID const& id, Issue const& issue) noexcept
  */
 /** @{ */
 Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept;
+offer(AccountID const& id, SeqProxy seq) noexcept;
 
 inline Keylet
 offer(uint256 const& key) noexcept
@@ -148,9 +147,6 @@ next(Keylet const& k);
  * A ticket belonging to an account
  */
 /** @{ */
-Keylet
-ticket(AccountID const& id, std::uint32_t ticketSeq);
-
 Keylet
 ticket(AccountID const& id, SeqProxy ticketSeq);
 
@@ -178,7 +174,7 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
  */
 /** @{ */
 Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept;
+check(AccountID const& id, SeqProxy seq) noexcept;
 
 inline Keylet
 check(uint256 const& key) noexcept
@@ -239,13 +235,13 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
  * An escrow entry
  */
 Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept;
+escrow(AccountID const& src, SeqProxy seq) noexcept;
 
 /**
  * A PaymentChannel
  */
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
+payChannel(AccountID const& src, AccountID const& dst, SeqProxy seq) noexcept;
 
 /**
  * NFT page keylets
@@ -276,7 +272,7 @@ nftokenPage(Keylet const& k, uint256 const& token);
  * An offer from an account to buy or sell an NFT
  */
 Keylet
-nftokenOffer(AccountID const& owner, std::uint32_t seq);
+nftokenOffer(AccountID const& owner, SeqProxy seq);
 
 inline Keylet
 nftokenOffer(uint256 const& offer)
@@ -338,7 +334,7 @@ credential(uint256 const& key) noexcept
 }
 
 Keylet
-mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
+mptokenIssuance(SeqProxy seq, AccountID const& issuer) noexcept;
 
 Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept;
@@ -362,7 +358,7 @@ Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
-vault(AccountID const& owner, std::uint32_t seq) noexcept;
+vault(AccountID const& owner, SeqProxy seq) noexcept;
 
 inline Keylet
 vault(uint256 const& vaultKey)
@@ -371,7 +367,7 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
-loanBroker(AccountID const& owner, std::uint32_t seq) noexcept;
+loanBroker(AccountID const& owner, SeqProxy seq) noexcept;
 
 inline Keylet
 loanBroker(uint256 const& key)
@@ -380,7 +376,7 @@ loanBroker(uint256 const& key)
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept;
+loan(uint256 const& loanBrokerID, SeqProxy loanSeq) noexcept;
 
 inline Keylet
 loan(uint256 const& key)
@@ -389,7 +385,7 @@ loan(uint256 const& key)
 }
 
 Keylet
-permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
+permissionedDomain(AccountID const& account, SeqProxy seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;

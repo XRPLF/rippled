@@ -31,6 +31,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -408,7 +409,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 env(pay(gw, alice, usd(1'000)));
                 env(pay(gw, bob, eur(1'000)));
 
-                Keylet const bobUsdOffer = keylet::offer(bob, env.seq(bob));
+                Keylet const bobUsdOffer = keylet::offer(bob, SeqProxy::sequence(env.seq(bob)));
                 env(offer(bob, usd(10), drops(2)), Txflags(tfPassive));
                 env(offer(bob, drops(1), eur(1'000)), Txflags(tfPassive));
 

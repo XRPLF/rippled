@@ -35,6 +35,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -214,8 +215,10 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(
+                env.closed()->exists(keylet::offer(carol.id(), SeqProxy::sequence(carolOfferSeq))));
+            BEAST_EXPECT(
+                env.closed()->exists(keylet::ticket(carol.id(), SeqProxy::ticket(carolTicketSeq))));
             BEAST_EXPECT(env.closed()->exists(keylet::signerList(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
@@ -228,8 +231,10 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(!env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(!env.closed()->exists(
+                keylet::offer(carol.id(), SeqProxy::sequence(carolOfferSeq))));
+            BEAST_EXPECT(!env.closed()->exists(
+                keylet::ticket(carol.id(), SeqProxy::ticket(carolTicketSeq))));
             BEAST_EXPECT(!env.closed()->exists(keylet::signerList(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
@@ -323,7 +328,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId = keylet::check(alice, env.seq(alice)).key;
+        uint256 const checkId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 
@@ -386,7 +391,8 @@ public:
         env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
-        Keylet const alicePayChanKey{keylet::payChannel(alice, becky, env.seq(alice))};
+        Keylet const alicePayChanKey{
+            keylet::payChannel(alice, becky, SeqProxy::sequence(env.seq(alice)))};
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -417,7 +423,7 @@ public:
 
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
-        Keylet const gwPayChanKey{keylet::payChannel(gw, alice, env.seq(gw))};
+        Keylet const gwPayChanKey{keylet::payChannel(gw, alice, SeqProxy::sequence(env.seq(gw)))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -503,7 +509,8 @@ public:
 
             // alice's offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
-                BEAST_EXPECT(closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
+                BEAST_EXPECT(
+                    closed->exists(keylet::offer(alice.id(), SeqProxy::sequence(offerSeq0 + i))));
         }
 
         // Delete alice's account.  Should fail because she has too many
@@ -537,7 +544,8 @@ public:
 
             // alice's former offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
-                BEAST_EXPECT(!closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
+                BEAST_EXPECT(
+                    !closed->exists(keylet::offer(alice.id(), SeqProxy::sequence(offerSeq0 + i))));
         }
     }
 
@@ -662,7 +670,8 @@ public:
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(
+                    closed->exists(keylet::ticket(bob.id(), SeqProxy::ticket(ticketSeq + i))));
             }
         }
 
@@ -681,7 +690,8 @@ public:
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(!closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(
+                    !closed->exists(keylet::ticket(bob.id(), SeqProxy::ticket(ticketSeq + i))));
             }
         }
     }

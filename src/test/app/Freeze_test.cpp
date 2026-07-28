@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -1788,7 +1789,7 @@ class Freeze_test : public beast::unit_test::Suite
             env(token::mint(a2, 0), Txflags(tfTransferable));
             env.close();
 
-            auto const buyIdx = keylet::nftokenOffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
             env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
             env.close();
 
@@ -1874,10 +1875,10 @@ class Freeze_test : public beast::unit_test::Suite
             env(token::mint(a2, 0), Txflags(tfTransferable));
             env.close();
 
-            uint256 const sellIdx = keylet::nftokenOffer(a2, env.seq(a2)).key;
+            uint256 const sellIdx = keylet::nftokenOffer(a2, SeqProxy::sequence(env.seq(a2))).key;
             env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
-            auto const buyIdx = keylet::nftokenOffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
             env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
             env.close();
 
@@ -1900,13 +1901,14 @@ class Freeze_test : public beast::unit_test::Suite
             env(token::mint(minter, 0), token::XferFee(1u), Txflags(tfTransferable));
             env.close();
 
-            uint256 const minterSellIdx = keylet::nftokenOffer(minter, env.seq(minter)).key;
+            uint256 const minterSellIdx =
+                keylet::nftokenOffer(minter, SeqProxy::sequence(env.seq(minter))).key;
             env(token::createOffer(minter, nftID, drops(1)), Txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(a2, minterSellIdx));
             env.close();
 
-            uint256 const sellIdx = keylet::nftokenOffer(a2, env.seq(a2)).key;
+            uint256 const sellIdx = keylet::nftokenOffer(a2, SeqProxy::sequence(env.seq(a2))).key;
             env(token::createOffer(a2, nftID, usd(100)), Txflags(tfSellNFToken));
             env.close();
             env(trust(g1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1946,7 +1948,7 @@ class Freeze_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::sequence(uSequence)).key;
     }
 
     static uint256
@@ -1960,7 +1962,8 @@ class Freeze_test : public beast::unit_test::Suite
         env(token::mint(account, 0), Txflags(tfTransferable));
         env.close();
 
-        uint256 const sellOfferIndex = keylet::nftokenOffer(account, env.seq(account)).key;
+        uint256 const sellOfferIndex =
+            keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key;
         env(token::createOffer(account, nftID, currency), Txflags(tfSellNFToken));
         env.close();
 

@@ -46,6 +46,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -807,7 +808,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const checkId = keylet::check(env.master, env.seq(env.master));
+        auto const checkId = keylet::check(env.master, SeqProxy::sequence(env.seq(env.master)));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();
@@ -1527,7 +1528,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
         uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID = keylet::nftokenOffer(issuer, env.seq(issuer)).key;
+        uint256 const offerID =
+            keylet::nftokenOffer(issuer, SeqProxy::sequence(env.seq(issuer))).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
@@ -1711,7 +1713,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{keylet::payChannel(alice, env.master, env.seq(alice) - 1).key};
+        uint256 const payChanIndex{
+            keylet::payChannel(alice, env.master, SeqProxy::sequence(env.seq(alice) - 1)).key};
         {
             // Request the payment channel using its index.
             json::Value jvParams;
@@ -2253,7 +2256,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jv[jss::result][jss::node][sfLedgerEntryType.jsonName] == jss::PermissionedDomain);
 
             std::string const pdIdx = jv[jss::result][jss::index].asString();
-            BEAST_EXPECT(strHex(keylet::permissionedDomain(alice, seq).key) == pdIdx);
+            BEAST_EXPECT(
+                strHex(keylet::permissionedDomain(alice, SeqProxy::sequence(seq)).key) == pdIdx);
 
             params.clear();
             params[jss::ledger_index] = jss::validated;
@@ -2703,7 +2707,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const checkId = keylet::check(env.master, env.seq(env.master));
+        auto const checkId = keylet::check(env.master, SeqProxy::sequence(env.seq(env.master)));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();

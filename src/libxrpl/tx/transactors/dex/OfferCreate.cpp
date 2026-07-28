@@ -623,7 +623,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqValue();
+    auto const offerSequence = ctx_.tx.getSeqProxy();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -637,7 +637,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = sb.peek(keylet::offer(accountID_, *cancelSequence));
+        auto const sleCancel =
+            sb.peek(keylet::offer(accountID_, SeqProxy::sequence(*cancelSequence)));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -922,7 +923,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
-    sleOffer->setFieldU32(sfSequence, offerSequence);
+    sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
     sleOffer->setFieldAmount(sfTakerGets, saTakerGets);

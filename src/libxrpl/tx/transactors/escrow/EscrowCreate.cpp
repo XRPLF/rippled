@@ -476,7 +476,7 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
+    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqProxy());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = accountID_;

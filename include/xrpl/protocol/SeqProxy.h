@@ -61,6 +61,15 @@ public:
         return SeqProxy{Type::Seq, v};
     }
 
+    /**
+     * Factory function to return a ticket-based SeqProxy
+     */
+    static constexpr SeqProxy
+    ticket(std::uint32_t v)
+    {
+        return SeqProxy{Type::Ticket, v};
+    }
+
     [[nodiscard]] constexpr std::uint32_t
     value() const
     {
@@ -146,6 +155,25 @@ public:
         os << (seqProx.isSeq() ? "sequence " : "ticket ");
         os << seqProx.value();
         return os;
+    }
+
+    constexpr SeqProxy
+    operator+(std::uint32_t const& rhs) const
+    {
+        return SeqProxy{type_, value_ + rhs};
+    }
+
+    friend constexpr SeqProxy
+    operator+(std::uint32_t const& lhs, SeqProxy const& rhs)
+    {
+        return rhs + lhs;
+    }
+
+    constexpr SeqProxy&
+    operator+=(std::uint32_t const& rhs)
+    {
+        value_ += rhs;
+        return *this;
     }
 };
 }  // namespace xrpl

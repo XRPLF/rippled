@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
@@ -19,7 +20,7 @@ namespace xrpl::test::jtx {
 std::tuple<json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
 {
-    auto keylet = keylet::vault(args.owner.id(), env.seq(args.owner));
+    auto keylet = keylet::vault(args.owner.id(), SeqProxy::sequence(env.seq(args.owner)));
     json::Value jv;
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();

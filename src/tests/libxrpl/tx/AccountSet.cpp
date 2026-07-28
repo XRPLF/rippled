@@ -610,7 +610,7 @@ TEST(AccountSet, Ticket)
 
     // Get alice's current sequence - the ticket will be created at seq + 1
     std::uint32_t const aliceSeqBefore = env.getAccountRoot(alice.id()).getSequence();
-    std::uint32_t const ticketSeq = aliceSeqBefore + 1;
+    auto const ticketSeq = SeqProxy::ticket(aliceSeqBefore + 1);
 
     // Create a ticket
     EXPECT_EQ(env.submit(transactions::TicketCreateBuilder{alice, 1}, alice).ter, tesSUCCESS);
@@ -623,7 +623,9 @@ TEST(AccountSet, Ticket)
 
     // Try using a ticket that alice doesn't have
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq + 1), alice)
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value() + 1),
+               alice)
             .ter,
         terPRE_TICKET);
     env.close();
@@ -636,7 +638,9 @@ TEST(AccountSet, Ticket)
 
     // Actually use alice's ticket (noop AccountSet)
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value()), alice)
+            .ter,
         tesSUCCESS);
     env.close();
 
@@ -649,7 +653,9 @@ TEST(AccountSet, Ticket)
 
     // Try re-using a ticket that alice already used
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setTicketSequence(ticketSeq.value()), alice)
+            .ter,
         tefNO_TICKET);
 }
 

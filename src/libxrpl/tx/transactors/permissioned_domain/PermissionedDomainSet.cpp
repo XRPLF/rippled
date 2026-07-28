@@ -115,7 +115,7 @@ PermissionedDomainSet::doApply()
 
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
         auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
-        Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
+        Keylet const pdKeylet = keylet::permissionedDomain(accountID_, SeqProxy::sequence(seq));
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, accountID_);
