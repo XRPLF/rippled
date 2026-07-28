@@ -800,7 +800,7 @@
     },
     {
       "title": "Sync State",
-      "description": "###### What this is:\n*Current server operating state as a numeric code: 0 disconnected, 1 connected, 2 syncing, 3 tracking, 4 full. A healthy synced node sits at 4.*\n\n###### How it's computed:\n*state_tracking{metric=\"state_value\"} (gauge). Companion time_in_current_state_seconds shows how long it has been stuck there.*\n\n###### Reading it:\n*Flat at 4 = full/healthy. Dropping to 1-2 and staying = the node fell out of sync and is re-acquiring (the primary red flag this row explains).*\n\n###### Healthy range:\n*4 (full), briefly 2-3 right after restart.*\n\n###### Watch for:\n*A node stuck below 4 for more than a few minutes, or oscillating - read the lower panels for the cause.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
+      "description": "###### What this is:\n*Current server operating state as a numeric code: 0 disconnected, 1 connected, 2 syncing, 3 tracking, 4 full, 5 validating, 6 proposing. A healthy validator sits at 6, a healthy non-validating node at 4.*\n\n###### How it's computed:\n*state_tracking{metric=\"state_value\"} (gauge). Companion time_in_current_state_seconds shows how long it has been stuck there.*\n\n###### Reading it:\n*Flat at 4-6 = full/healthy. Dropping to 1-2 and staying = the node fell out of sync and is re-acquiring (the primary red flag this row explains).*\n\n###### Healthy range:\n*4-6 steady, briefly 2-3 right after restart.*\n\n###### Watch for:\n*A node stuck below 4 for more than a few minutes, or oscillating - read the lower panels for the cause.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -834,6 +834,185 @@
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Disconnected",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Connected",
+                  "color": "orange",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Syncing",
+                  "color": "yellow",
+                  "index": 2
+                },
+                "3": {
+                  "text": "Tracking",
+                  "color": "blue",
+                  "index": 3
+                },
+                "4": {
+                  "text": "Full",
+                  "color": "green",
+                  "index": 4
+                },
+                "5": {
+                  "text": "Validating",
+                  "color": "super-light-green",
+                  "index": 5
+                },
+                "6": {
+                  "text": "Proposing",
+                  "color": "dark-green",
+                  "index": 6
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "blue",
+                "value": 3
+              },
+              {
+                "color": "green",
+                "value": 4
+              },
+              {
+                "color": "super-light-green",
+                "value": 5
+              },
+              {
+                "color": "dark-green",
+                "value": 6
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "max": 6
+        },
+        "overrides": []
+      },
+      "id": 17
+    },
+    {
+      "title": "Validated Ledger Age",
+      "description": "###### What this is:\n*Seconds since this node last had a freshly validated ledger. The single clearest 'am I keeping up with the network' signal.*\n\n###### How it's computed:\n*ledgermaster_validated_ledger_age gauge (seconds), per node.*\n\n###### Reading it:\n*Should hover at the network close interval (~3-5s). A rising sawtooth or a high plateau means the node is falling behind or not validating.*\n\n###### Healthy range:\n*<= ~6s on a synced node.*\n\n###### Watch for:\n*Sustained climb above ~15s, or a monotonic ramp = the node is not keeping up; correlate with job-queue wait and NuDB read latency below.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::getValidatedLedgerAge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 75
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Validated Age\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Published Age\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Age (seconds)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 18
+    },
+    {
+      "title": "Time Spent Per State",
+      "description": "###### What this is:\n*Operating mode as a colour-coded timeline. Each band's width is the time spent in that state, so short-lived states show as thin slivers instead of vanishing.*\n\n###### How it's computed:\n*server_info{metric=\"server_state\"} (gauge), the raw OperatingMode 0-4. Uses server_state rather than state_value because state_value folds 5 and 6 onto FULL, which would split one Full band into three colours.*\n\n###### Reading it:\n*One green band across the window = healthy. Red/orange/yellow bands show when and for how long the node was degraded.*\n\n###### Healthy range:\n*Continuously green (Full), brief orange/yellow/blue only after a restart.*\n\n###### Watch for:\n*Repeated thin bands = the node is oscillating. This is sampled every 10s, so a state shorter than one sample can still be missed.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
+      "type": "state-timeline",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "options": {
+        "mergeValues": true,
+        "showValue": "auto",
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"server_state\"}, \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "State ${__field.labels.xrpl_ident}",
+          "unit": "none",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "insertNulls": false,
+            "spanNulls": false
           },
           "mappings": [
             {
@@ -900,56 +1079,7 @@
         },
         "overrides": []
       },
-      "id": 17
-    },
-    {
-      "title": "Validated Ledger Age",
-      "description": "###### What this is:\n*Seconds since this node last had a freshly validated ledger. The single clearest 'am I keeping up with the network' signal.*\n\n###### How it's computed:\n*ledgermaster_validated_ledger_age gauge (seconds), per node.*\n\n###### Reading it:\n*Should hover at the network close interval (~3-5s). A rising sawtooth or a high plateau means the node is falling behind or not validating.*\n\n###### Healthy range:\n*<= ~6s on a synced node.*\n\n###### Watch for:\n*Sustained climb above ~15s, or a monotonic ramp = the node is not keeping up; correlate with job-queue wait and NuDB read latency below.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::getValidatedLedgerAge`",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 75
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Validated Age\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Published Age\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "s",
-          "custom": {
-            "axisLabel": "Age (seconds)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "id": 18
+      "id": 27
     },
     {
       "title": "Ledger Close Rate",
@@ -959,7 +1089,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 89
       },
       "options": {
         "tooltip": {
@@ -1008,7 +1138,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 89
       },
       "options": {
         "tooltip": {
@@ -1085,7 +1215,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -1127,7 +1257,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 91
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -1169,7 +1299,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 99
+        "y": 105
       },
       "options": {
         "tooltip": {
@@ -1211,7 +1341,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 99
+        "y": 105
       },
       "options": {
         "tooltip": {
@@ -1267,7 +1397,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 107
+        "y": 113
       },
       "options": {
         "tooltip": {
@@ -1309,7 +1439,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 107
+        "y": 113
       },
       "options": {
         "tooltip": {
