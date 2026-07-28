@@ -156,24 +156,5 @@ public:
         os << seqProx.value();
         return os;
     }
-
-    constexpr SeqProxy
-    operator+(std::uint32_t const& rhs) const
-    {
-        return SeqProxy{type_, value_ + rhs};
-    }
-
-    friend constexpr SeqProxy
-    operator+(std::uint32_t const& lhs, SeqProxy const& rhs)
-    {
-        return rhs + lhs;
-    }
-
-    constexpr SeqProxy&
-    operator+=(std::uint32_t const& rhs)
-    {
-        value_ += rhs;
-        return *this;
-    }
 };
 }  // namespace xrpl
