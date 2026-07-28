@@ -8,7 +8,6 @@
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/insight/EventImpl.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -28,6 +27,7 @@
 #include <expected>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -133,7 +133,7 @@ public:
     }
 
     [[nodiscard]] std::shared_ptr<RecordingEventImpl>&
-    getExecutionTimeEventImpl() 
+    getExecutionTimeEventImpl()
     {
         return execTimeEvent_;
     }

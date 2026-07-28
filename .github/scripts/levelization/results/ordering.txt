@@ -207,6 +207,7 @@ xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics
 xrpl.core > xrpl.basics
+xrpl.core > xrpl.config
 xrpl.core > xrpl.json
 xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
