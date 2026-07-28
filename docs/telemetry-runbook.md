@@ -1456,7 +1456,7 @@ flowchart LR
 answer.
 
 > **Scope every query to one node.** All snippets below carry
-> `service_instance_id="$node"`. On a shared Grafana stack an unscoped selector
+> `service_instance_id=~"$node"`. On a shared Grafana stack an unscoped selector
 > aggregates across every node and branch reporting to it, so another node's
 > saturation would be attributed to this one. Substitute the node's public key
 > for `$node` when querying Prometheus directly rather than from a dashboard.
@@ -1464,27 +1464,27 @@ answer.
 1. Split queue wait from run time. Compare the two p99s for the handler:
 
    ```promql
-   histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
-   histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
    ```
 
 2. If run time is the larger term, split it against the fetch loop:
 
    ```promql
-   histogram_quantile(0.99, sum by (le) (rate(getobject_lookup_us_bucket{service_instance_id="$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(getobject_lookup_us_bucket{service_instance_id=~"$node"}[5m])))
    ```
 
 3. Match the outcome below.
 
-| Observation                                                                | Root cause and next step                                                                                                                                                                                                                                                           |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `job_queued_us{handler="RcvGetObjByHash"}` high, `job_running_us` normal   | **Queue contention** — the work is cheap, the wait is not. Confirm with `jobq_ledgerrequest_deferred{service_instance_id="$node"} > 0`, then compare `job_queued_us{handler="RcvGetLedger"}`: if it is also high, both producers are starved by the limit of 3, not by each other. |
-| `job_running_us` high and within ~10% of `getobject_lookup_us`             | **NodeStore is the bottleneck** — nearly all run time is in the fetch loop. Check `rate(getobject_lookups_total{result="miss"}[5m])` and the existing NuDB / `nodestore_state` panels. A miss-heavy mix means real disk seeks.                                                     |
-| `job_running_us` high but `getobject_lookup_us` low                        | **Cost is outside the fetch loop** — protobuf, serialization, or reply construction. Storage is fine. Look at reply size: a large `getobject_request_objects` with a high hit rate means big replies to build and send.                                                            |
-| `getobject_request_objects` p99 large                                      | **Peers are sending big batches** — the work is real, not a regression. Nothing is broken; the node is being asked to do more. Decide whether to accept the load or price it higher.                                                                                               |
-| `rate(getobject_rejected_total{reason="oversize"}[5m])` rising             | **Non-conforming traffic** — requests above `kHardMaxReplyNodes` are being refused before any NodeStore access. Check `getobject_charge` to confirm the pricing escalates for the requests that _are_ accepted.                                                                    |
-| `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                              |
-| All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id="$node"} > 0)` and investigate that producer instead.                                                                            |
+| Observation                                                                | Root cause and next step                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `job_queued_us{handler="RcvGetObjByHash"}` high, `job_running_us` normal   | **Queue contention** — the work is cheap, the wait is not. Confirm with `jobq_ledgerrequest_deferred{service_instance_id=~"$node"} > 0`, then compare `job_queued_us{handler="RcvGetLedger"}`: if it is also high, both producers are starved by the limit of 3, not by each other. |
+| `job_running_us` high and within ~10% of `getobject_lookup_us`             | **NodeStore is the bottleneck** — nearly all run time is in the fetch loop. Check `rate(getobject_lookups_total{result="miss"}[5m])` and the existing NuDB / `nodestore_state` panels. A miss-heavy mix means real disk seeks.                                                      |
+| `job_running_us` high but `getobject_lookup_us` low                        | **Cost is outside the fetch loop** — protobuf, serialization, or reply construction. Storage is fine. Look at reply size: a large `getobject_request_objects` with a high hit rate means big replies to build and send.                                                             |
+| `getobject_request_objects` p99 large                                      | **Peers are sending big batches** — the work is real, not a regression. Nothing is broken; the node is being asked to do more. Decide whether to accept the load or price it higher.                                                                                                |
+| `rate(getobject_rejected_total{reason="oversize"}[5m])` rising             | **Non-conforming traffic** — requests above `kHardMaxReplyNodes` are being refused before any NodeStore access. Check `getobject_charge` to confirm the pricing escalates for the requests that _are_ accepted.                                                                     |
+| `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                               |
+| All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id=~"$node"} > 0)` and investigate that producer instead.                                                                            |
 
 Row 2 says "within ~10%", not "equal", deliberately: `job_running_us` also
 covers the charge computation (PeerImp.cpp:2757) and the reply `send()` that
@@ -1611,19 +1611,19 @@ Queries, scoped to one node as everywhere else in this runbook:
 
 ```promql
 # Are acquisitions finishing? (per minute)
-increase(nodestore_state{metric="acquire_completions", service_instance_id="$node"}[1m])
+increase(nodestore_state{metric="acquire_completions", service_instance_id=~"$node"}[1m])
 
 # Read cost and the found rate that qualifies it
-nodestore_state{metric="read_mean_us", service_instance_id="$node"}
-  rate(nodestore_state{metric="node_reads_hit", service_instance_id="$node"}[5m])
-/ rate(nodestore_state{metric="node_reads_total", service_instance_id="$node"}[5m])
+nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}
+  rate(nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}[5m])
+/ rate(nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}[5m])
 
 # Write-side queueing: depth is fixed-point, divide by 100
-nodestore_state{metric="nudb_writer_depth_x100", service_instance_id="$node"} / 100
-nodestore_state{metric="nudb_insert_mean_us", service_instance_id="$node"}
+nodestore_state{metric="nudb_writer_depth_x100", service_instance_id=~"$node"} / 100
+nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
 
 # Read latency distribution, split by the two dimensions that matter
-histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id="$node"}[5m])))
+histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id=~"$node"}[5m])))
 ```
 
 #### Measured reference points
