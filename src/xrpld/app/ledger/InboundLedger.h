@@ -143,6 +143,21 @@ private:
     void
     done();
 
+    /**
+     * Count this acquisition as completed, at most once.
+     *
+     * done() is not the only place an acquisition finishes: init() can satisfy
+     * one entirely from the local store and return without ever reaching
+     * done(). Both call this, and the completionCounted_ latch makes the
+     * second call a no-op, so a completion is counted exactly once however it
+     * was reached.
+     *
+     * Does nothing unless the acquisition actually succeeded, so a failed or
+     * still-running acquisition is never counted.
+     */
+    void
+    recordCompletionOnce();
+
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
@@ -181,6 +196,16 @@ private:
     bool haveState_{false};
     bool haveTransactions_{false};
     bool signaled_{false};
+    /**
+     * Whether this acquisition has already been counted as completed.
+     *
+     * Separate from signaled_ because the two guard different things:
+     * signaled_ makes the done() state machine idempotent, while this makes
+     * the counter idempotent across the two independent exits that finish an
+     * acquisition (done() and init()'s local-hit path). Always accessed under
+     * mtx_.
+     */
+    bool completionCounted_{false};
     bool byHash_{true};
     std::uint32_t seq_;
     Reason const reason_;
