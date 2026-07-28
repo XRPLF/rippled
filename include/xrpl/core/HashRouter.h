@@ -40,8 +40,9 @@ enum class HashRouterFlags : std::uint16_t {
 constexpr HashRouterFlags
 operator|(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    using U = std::underlying_type_t<HashRouterFlags>;
-    return static_cast<HashRouterFlags>(static_cast<U>(lhs) | static_cast<U>(rhs));
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) |
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
 constexpr HashRouterFlags&
@@ -54,8 +55,9 @@ operator|=(HashRouterFlags& lhs, HashRouterFlags rhs)
 constexpr HashRouterFlags
 operator&(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    using U = std::underlying_type_t<HashRouterFlags>;
-    return static_cast<HashRouterFlags>(static_cast<U>(lhs) & static_cast<U>(rhs));
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) &
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
 constexpr HashRouterFlags&
@@ -171,13 +173,19 @@ private:
         bool
         shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
         {
-            return !relayed_ && *relayed_ + relayTime > now;
+            if (relayed_ && *relayed_ + relayTime > now)
+                return false;
+            relayed_.emplace(now);
+            return true;
         }
 
         bool
         shouldProcess(Stopwatch::time_point now, std::chrono::seconds interval)
         {
-            return !processed_ && ((*processed_ + interval) > now);
+            if (processed_ && ((*processed_ + interval) > now))
+                return false;
+            processed_.emplace(now);
+            return true;
         }
 
     private:
