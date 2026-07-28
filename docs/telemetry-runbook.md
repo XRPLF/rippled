@@ -1542,25 +1542,35 @@ two different reasons a node is slow to reach `full` — see
 when the writable backend is NuDB; a memory or RocksDB backend omits those four
 label values rather than reporting them as zero.
 
-| Prometheus Metric                                   | Source              | Description                                              |
-| --------------------------------------------------- | ------------------- | -------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend read (microseconds)                |
-| `nodestore_state{metric="write_mean_us"}`           | MetricsRegistry.cpp | Mean time per backend write (microseconds)               |
-| `nodestore_state{metric="nudb_writers_in_flight"}`  | MetricsRegistry.cpp | Threads inside a NuDB insert right now                   |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`  | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100          |
-| `nodestore_state{metric="nudb_insert_mean_us"}`     | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)  |
-| `nodestore_state{metric="nudb_insert_max_us"}`      | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)           |
-| `nodestore_state{metric="acquire_deferrals"}`       | MetricsRegistry.cpp | Acquisition timer jobs skipped because the lane was full |
-| `nodestore_state{metric="acquire_timeouts"}`        | MetricsRegistry.cpp | Acquisition timer bodies that ran and advanced retry     |
-| `nodestore_state{metric="acquire_give_ups"}`        | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget           |
-| `nodestore_state{metric="acquire_aborts"}`          | MetricsRegistry.cpp | Acquisitions destroyed before finishing                  |
-| `nodestore_state{metric="acquire_aborts_partial"}`  | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps        |
-| `nodestore_state{metric="acquire_completions"}`     | MetricsRegistry.cpp | Acquisitions that finished successfully                  |
-| `nodestore_state{metric="acquire_sweep_evictions"}` | MetricsRegistry.cpp | Acquisitions evicted by the 1-minute sweep               |
+| Prometheus Metric                                    | Source              | Description                                                 |
+| ---------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`             | MetricsRegistry.cpp | Mean time per backend read (microseconds)                   |
+| `nodestore_state{metric="write_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend write (microseconds)                  |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | MetricsRegistry.cpp | Threads inside a NuDB insert right now                      |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100             |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)              |
+| `nodestore_state{metric="acquire_deferrals"}`        | MetricsRegistry.cpp | Timer jobs skipped because the lane was full, **all lanes** |
+| `nodestore_state{metric="acquire_timeouts"}`         | MetricsRegistry.cpp | Timer bodies that ran and advanced retry, **all lanes**     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | MetricsRegistry.cpp | Deferrals from ledger acquisition alone                     |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | MetricsRegistry.cpp | Timeouts from ledger acquisition alone                      |
+| `nodestore_state{metric="acquire_give_ups"}`         | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget              |
+| `nodestore_state{metric="acquire_aborts"}`           | MetricsRegistry.cpp | Acquisitions destroyed before finishing                     |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps           |
+| `nodestore_state{metric="acquire_completions"}`      | MetricsRegistry.cpp | Acquisitions that finished successfully                     |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | MetricsRegistry.cpp | Acquisitions evicted by the 1-minute sweep                  |
 
 `nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
 just above 1.0 even under load, so an integer gauge would truncate the whole
-signal away.
+signal away. It is `depthSum / depthSamples`, both accumulated when an insert
+**enters** the critical section, so an insert still in flight is part of the mean.
+
+`acquire_deferrals` and `acquire_timeouts` sum every `TimeoutCounter` subclass —
+inbound ledgers, transaction sets and the three ledger-replay tasks — because both
+are recorded in that shared base. They answer "is any lane deferring", not "is
+ledger acquisition deferring". Use `acquire_ledger_deferrals` and
+`acquire_ledger_timeouts` for the ledger-acquisition diagnosis; see
+[The deferral/timeout pair](#the-deferraltimeout-pair).
 
 #### Counters
 
@@ -2445,12 +2455,12 @@ question has no answer and only question 1 applies.
 
 Then read the answer off the pair:
 
-| Reads     | Write path      | Root cause and next step                                                                                                                                                                                                                           |
-| --------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cheap     | Depth ~1.00     | **Not a storage bottleneck.** Nothing is queueing at either side. Look outside storage: work is either not arriving from peers or being discarded before it lands. Check the deferral and sweep counters.                                          |
-| Cheap     | Depth over ~1.2 | **Serialized write path.** The queue is at the backend's insert mutex, not at the device. Tuning the disk will not help; see the note below. This is the clean-store mode.                                                                         |
-| Expensive | Depth ~1.00     | Split on the **found rate**. At 50% or above, **cold reads on data the node already has** — the walk pays disk latency on objects it holds. Below 50%, **genuinely disk-bound on real misses**, and storage hardware is the right thing to change. |
-| Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                          |
+| Reads     | Write path      | Root cause and next step                                                                                                                                                                                                                                      |
+| --------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cheap     | Depth ~1.00     | **Not a storage bottleneck.** Nothing is queueing at either side. Look outside storage: work is either not arriving from peers or being discarded before it lands. Check `acquire_ledger_deferrals` against `acquire_ledger_timeouts`, and the sweep counter. |
+| Cheap     | Depth over ~1.2 | **Serialized write path.** The queue is at the backend's insert mutex, not at the device. Tuning the disk will not help; see the note below. This is the clean-store mode.                                                                                    |
+| Expensive | Depth ~1.00     | Split on the **found rate**. At 50% or above, **cold reads on data the node already has** — the walk pays disk latency on objects it holds. Below 50%, **genuinely disk-bound on real misses**, and storage hardware is the right thing to change.            |
+| Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                                     |
 
 **Why the rule is shaped this way.** Three points about the thresholds, each
 learned from a dataset that an earlier version of this table got wrong:
@@ -2500,6 +2510,11 @@ nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
 # its own: a high found rate is normal and healthy on a populated store.
   rate(nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}[5m])
 / rate(nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}[5m])
+
+# The deferral/timeout pair, scoped to ledger acquisition. Use these two, not
+# the all-lane acquire_deferrals / acquire_timeouts -- see the pair section below.
+increase(nodestore_state{metric="acquire_ledger_deferrals", service_instance_id=~"$node"}[5m])
+increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~"$node"}[5m])
 ```
 
 #### Measured reference points
@@ -2513,25 +2528,50 @@ largest value that gauge reached over the run, not a read-latency percentile. Th
 healthy peer — is **not** ours; it comes from an incident report supplied to this
 project and is kept separate for that reason.
 
-| Signal                         | Mode W: clean store | Mode R: populated store, cold pages |
-| ------------------------------ | ------------------- | ----------------------------------- |
-| Time to `full`                 | 510 s               | 260 s                               |
-| `read_mean_us`                 | 8.8 µs              | 31.8 µs                             |
-| `read_mean_us`, highest sample | 9 µs                | 223 µs                              |
-| Found rate                     | 0.00 %              | 88.3 %                              |
-| Insert time, mean              | 20.0 µs             | 15.9 µs                             |
-| Writer depth, mean             | 1.60                | 1.00                                |
-| Queueing per insert            | 37 %                | 0 %                                 |
-| Deferrals over run             | +5441               | +1845                               |
-| Timeouts over run              | +687                | +399                                |
-| Completions over run           | 0                   | 8                                   |
-| Sweep evictions                | +127                | +38                                 |
+**Three rows below were measured on a build that got them wrong.** Both runs
+predate the measurement fixes, so read those rows as bounds rather than values:
+
+- **Completions** were only counted in `InboundLedger::done()`, so an acquisition
+  satisfied entirely from the local store — `init()` sets `complete_` and returns
+  without ever calling `done()` — was never counted. Mode W's `0` is therefore not
+  evidence that the node completed nothing; it reached `full`, which it could not
+  have done without completing acquisitions. The count is now taken at both exits
+  behind an idempotent latch, so on a current build a zero means zero.
+- **Writer depth** was summed at insert entry but divided by a sample count that
+  only advanced at insert exit, so in-flight inserts — the deep, slow ones —
+  contributed depth to the numerator and nothing to the denominator. The mean was
+  biased **down**, worst exactly when queueing was worst. Mode W's 1.60 is a lower
+  bound on the true depth.
+- **Queueing per insert** is derived from that depth, so its 37 % is a lower bound
+  too. See the derivation below.
+
+| Signal                         | Mode W: clean store      | Mode R: populated store, cold pages |
+| ------------------------------ | ------------------------ | ----------------------------------- |
+| Time to `full`                 | 510 s                    | 260 s                               |
+| `read_mean_us`                 | 8.8 µs                   | 31.8 µs                             |
+| `read_mean_us`, highest sample | 9 µs                     | 223 µs                              |
+| Found rate                     | 0.00 %                   | 88.3 %                              |
+| Insert time, mean              | 20.0 µs                  | 15.9 µs                             |
+| Writer depth, mean             | ≥ 1.60 (biased low)      | 1.00                                |
+| Queueing per insert            | ≥ 37 % (derived from ↑)  | 0 %                                 |
+| Deferrals over run, all lanes  | +5441                    | +1845                               |
+| Timeouts over run, all lanes   | +687                     | +399                                |
+| Completions over run           | 0 (under-counted, see ↑) | 8 (under-counted, see ↑)            |
+| Sweep evictions                | +127                     | +38                                 |
 
 Applying the decision rule: Mode W reads cheap (8.8 µs) with depth 1.60, so it is
 the serialized write path. Mode R reads expensive (31.8 µs mean, 223 µs peak) with
 depth 1.00 and a found rate well above 50%, so it is cold reads on data the node
 holds. The rule reaches both answers without the found rate deciding either mode on
-its own.
+its own — and both answers survive the corrected measurements, because a
+depth-1.60 lower bound is still above the 1.2 threshold and Mode R's 1.00 is a
+floor that cannot be biased below itself.
+
+The deferral and timeout rows are the **all-lane** counters, the only ones that
+existed when these runs were taken. They cannot be attributed to ledger
+acquisition; the eight-to-one ratio in Mode W is a whole-node figure. Re-measure
+with `acquire_ledger_deferrals` / `acquire_ledger_timeouts` before quoting a ratio
+as a ledger-acquisition fingerprint.
 
 **The reported incident, for contrast — not our measurement.** Figures from an
 incident report supplied to this project. No writer-depth data was captured, so the
@@ -2553,12 +2593,23 @@ at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of a rea
 mean several times a warm read, a writer depth above ~1.2, or completions flat at
 zero is worth chasing.
 
-**How the 37% is derived.** It is not measured directly — it comes from the two
-gauges by Little's Law. With mean queue depth L and mean insert time W, the
-service time is `S = W / L` and the queueing component is `W − S`. Mode W's
-20.0 µs at depth 1.60 gives S = 12.5 µs, so 7.5 µs of every insert — 37% — is
-spent waiting for the mutex rather than writing. Mode R's depth of exactly 1.00
-gives S = W and no queueing, which is why it shows 0%.
+**Completions flat at zero only means something on a current build.** Until the
+counter was moved to cover both exits, an acquisition served from the local store
+was never counted, so a build predating that fix could read zero while completing
+steadily. Check the build before treating a zero on archived data as a symptom.
+
+**How the 37% is derived, and why it is a lower bound.** It is not measured
+directly — it comes from the two gauges by Little's Law. With mean queue depth L
+and mean insert time W, the service time is `S = W / L` and the queueing component
+is `W − S`. Mode W's 20.0 µs at depth 1.60 gives S = 12.5 µs, so 7.5 µs of every
+insert — 37% — was spent waiting for the mutex rather than writing.
+
+That 37% is **not exact**: the L it was computed from came from the biased
+estimator described above, which understated depth. A larger L gives a smaller S
+and a larger `W − S`, so the true queueing share of Mode W was **at least** 37%.
+Quote it as a floor. Mode R's depth of exactly 1.00 is unaffected — 1.00 is the
+minimum a depth can be, so no bias can have pushed it there — which is why its 0%
+stands as measured.
 
 **Why the write path serializes.** NuDB takes one global mutex per insert
 (`nudb/impl/basic_store.ipp:288`). It is a Conan dependency and is not patched
@@ -2569,6 +2620,18 @@ locally. `nudb_writer_depth_x100` is the queue length at that mutex.
 
 Read these two together or not at all. The livelock fingerprint is **deferrals
 rising while timeouts stay flat**.
+
+**Read the ledger-scoped pair, not the all-lane pair.** Both events are recorded in
+`TimeoutCounter`, a base class shared by five subclasses — `InboundLedger`,
+`TransactionAcquire`, `LedgerReplayTask`, `LedgerDeltaAcquire` and
+`SkipListAcquire` — each with its own job limit. `acquire_deferrals` and
+`acquire_timeouts` therefore pool every lane, so a replay lane sitting at its own
+limit produces the fingerprint shape while ledger acquisition is perfectly healthy.
+That is a false positive on a headline diagnosis. `acquire_ledger_deferrals` and
+`acquire_ledger_timeouts` count the same two events for the `InboundLedger` lane
+only (`src/xrpld/app/ledger/detail/TimeoutCounter.h`, `isLedgerAcquisition()`), and
+they are the pair this procedure means. The all-lane totals remain useful for one
+question only: whether _any_ lane is deferring.
 
 A deferral happens when the acquisition timer job finds its lane's job count at or
 above the acquisition's own limit — 5 for `InboundLedger`
@@ -2607,7 +2670,16 @@ Two more pairs from the same family:
   candidate is a much larger store, where the walk takes long enough that the
   1-minute sweep destroys partial work faster than it can complete — which is why
   the sweep and completion counters are in the table. **This is an unconfirmed
-  hypothesis.** Treat it as the next thing to test, not as the answer.
+  hypothesis.** Treat it as the next thing to test, not as the answer. It was also
+  partly suggested by Mode W's zero completions, which we now know was a counting
+  defect rather than a stalled node, so the hypothesis has lost one of its
+  supports and needs re-testing on a current build before it is pursued.
+- **Three of the numbers above were measured with instruments that were since
+  corrected**: completions (missed local-store hits), writer depth (mean biased
+  low), and the deferral/timeout pair (pooled across five job lanes). The modes
+  and the decision rule are unaffected — each survives the correction, as noted
+  where it appears — but no figure in the reference table should be quoted as an
+  exact measurement without re-running on a build that has all three fixes.
 - The `nudb_*` label values are absent entirely on a non-NuDB writable backend.
   Absent is not zero — a missing series means "not applicable", so a panel showing
   a gap there is correct behaviour.
@@ -2638,6 +2710,11 @@ Existing panels that already carry part of this picture, on the _Ledger Data &
 Sync_ dashboard: **NuDB Read Latency**, **NuDB Read Found Ratio**, **NuDB Read
 Pressure**, and **Job Queue Backlog and Deferred by Type** for the lane occupancy
 that this procedure tells you to distrust on its own.
+
+The pair this procedure asks for is on **Ledger Acquire Deferrals vs Timeouts
+(Ledger Lane Only)**, in the _Sync Bottleneck Discrimination_ row. The adjacent
+**Acquire Deferrals vs Timeouts (All Lanes)** plots the pooled totals; read it only
+to see whether some other acquisition lane is also under pressure.
 
 **NuDB Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
 found rate, not a cache hit ratio: the underlying counter increments whenever a

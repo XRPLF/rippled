@@ -73,7 +73,7 @@ struct WriteStats
 
     /**
      * Summed writer depth observed at each insert. Divided by
-     * @ref insertCount this gives mean depth.
+     * @ref depthSamples this gives mean depth.
      */
     std::uint64_t depthSum = 0;
 

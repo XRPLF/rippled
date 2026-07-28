@@ -55,6 +55,17 @@ class TimeoutCounter
 {
 public:
     /**
+     * Job name of the ledger-acquisition lane.
+     *
+     * Shared with InboundLedger, which passes it as its job name, so the
+     * counters that attribute deferrals and timeouts to this lane compare
+     * against the same string the lane is registered under. Two independent
+     * literals would drift apart silently: the metrics would read zero with
+     * no build error and no failing test.
+     */
+    static constexpr char kLedgerAcquireJobName[] = "InboundLedger";
+
+    /**
      * Cancel the task by marking it as failed if the task is not done.
      * @note this function does not attempt to cancel the scheduled timer or
      *       to remove the queued job if any. When the timer expires or
@@ -153,7 +164,7 @@ protected:
     [[nodiscard]] bool
     isLedgerAcquisition() const
     {
-        return queueJobParameter_.jobName == "InboundLedger";
+        return queueJobParameter_.jobName == kLedgerAcquireJobName;
     }
 
 private:

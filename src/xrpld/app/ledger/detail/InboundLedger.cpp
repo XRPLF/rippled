@@ -83,7 +83,9 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLedgerAcquireTimeout,
-          {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
+          {.jobType = JtLedgerData,
+           .jobName = TimeoutCounter::kLedgerAcquireJobName,
+           .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
     , seq_(seq)
