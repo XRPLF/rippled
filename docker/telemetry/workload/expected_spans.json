@@ -395,7 +395,7 @@
       "parent": null,
       "required_attributes": ["remote_endpoint", "outcome", "duration_ms"],
       "config_flag": "trace_peer",
-      "note": "One outbound connect attempt (ConnectAttempt), a fresh trace root because a dial is the first thing a starting node does and there is nothing to parent it to. Required: run-full-validation.sh lists the other four nodes in each node's [ips], so every node dials and the span always fires. Telemetry is live in time to catch it -- ApplicationImp::setup() calls startTelemetry() before start() calls overlay_->start(). outcome carries the same six values as the overlay_connect_total counter (connected|tcp_fail|tls_fail|duplicate|upgrade_fail|timeout) and is set from the same reportOutcome() funnel, so span and counter cannot disagree. remote_endpoint is the span-only dimension the counter cannot carry, since one series per peer address would be unbounded cardinality."
+      "note": "One outbound connect attempt (ConnectAttempt), a fresh trace root because a dial is the first thing a starting node does and there is nothing to parent it to. Required: run-full-validation.sh lists the other four nodes in each node's [ips], so every node dials and the span always fires. Telemetry is live in time to catch it -- ApplicationImp::setup() calls startTelemetry() before start() calls overlay_->start(). outcome carries the same six values as the overlay_connect_total counter (connected|tcp_fail|tls_fail|self_connection|upgrade_fail|timeout) and is set from the same reportOutcome() funnel, so span and counter cannot disagree. remote_endpoint is the span-only dimension the counter cannot carry, since one series per peer address would be unbounded cardinality."
     },
     {
       "name": "peer.proposal.receive",

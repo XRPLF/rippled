@@ -85,26 +85,29 @@ namespace val {
  * cannot drift apart: the dial state machine names its outcome once and both
  * signals receive that same value.
  *
- * - connected:    the peer was activated and added to the overlay.
- * - tcp_fail:     the TCP connect or local-endpoint read failed.
- * - tls_fail:     the TLS handshake or the shared-value exchange failed.
- * - duplicate:    TLS succeeded but PeerFinder already holds a slot for this
- *                 address, so the attempt was redundant rather than faulty.
- * - upgrade_fail: TLS succeeded but the HTTP upgrade, protocol negotiation
- *                 or activation was rejected.
- * - timeout:      the attempt never reached any terminal state in time.
+ * - connected:       the peer was activated and added to the overlay.
+ * - tcp_fail:        the TCP connect or local-endpoint read failed.
+ * - tls_fail:        the TLS handshake, or the shared-value read taken before
+ *                    the HTTP upgrade, failed.
+ * - self_connection: TLS succeeded and then PeerFinder recognised the remote
+ *                    address as one of our own, so we had dialled ourselves.
+ * - upgrade_fail:    TLS succeeded but the HTTP upgrade, protocol negotiation
+ *                    or activation was rejected.
+ * - timeout:         the attempt never reached any terminal state in time.
  *
- * `duplicate` is separate from `tls_fail` on purpose. Dialling an address we
- * are already connected to is normal churn on a healthy node, while a TLS
- * failure means the peer could not be spoken to at all. Reporting both as
- * `tls_fail` made a rising TLS-failure count unreadable: it could equally mean
- * broken peers or merely a busy PeerFinder, and the two need opposite
- * responses.
+ * `self_connection` is separate from `tls_fail` because it is a local
+ * misconfiguration, not an unreachable peer: the node has its own address in
+ * `[ips_fixed]` or behind its advertised endpoint, and every dial to it is
+ * wasted. Counting it as a TLS failure made a rising `tls_fail` unreadable --
+ * broken peers and a self-dial loop need completely different responses. The
+ * slug matches `handshake_fail::selfConnection` on
+ * `handshake_negotiation_fail_total`, so the same fault reads the same way
+ * whichever signal surfaces it.
  */
 inline constexpr auto connected = makeStr("connected");
 inline constexpr auto tcpFail = makeStr("tcp_fail");
 inline constexpr auto tlsFail = makeStr("tls_fail");
-inline constexpr auto duplicate = makeStr("duplicate");
+inline constexpr auto selfConnection = makeStr("self_connection");
 inline constexpr auto upgradeFail = makeStr("upgrade_fail");
 inline constexpr auto timeout = makeStr("timeout");
 }  // namespace val

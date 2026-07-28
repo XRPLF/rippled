@@ -2752,14 +2752,14 @@ outranks every other symptom regardless of what the mode machine says.
 Peer count flat at zero; _Mode Transitions by Edge_ shows the node never leaving
 `disconnected`, or churning straight back to it.
 
-| Look at                                    | Healthy                                | Unhealthy                                                                          | Conclude                                                                                                                                                                                  |
-| ------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _DNS Resolve Outcome Rate_                 | all rate on `outcome=resolved`         | any rate on `empty`, or both flat at zero                                          | a name in `[ips]`/`[ips_fixed]` returns no address, or the list is empty — fix the hostname or use an IP                                                                                  |
-| _DNS Resolve Latency (p95)_                | milliseconds                           | seconds-scale                                                                      | the resolver is timing out and delaying every dial behind it                                                                                                                              |
-| _Outbound Dial Outcome Rate_               | `connected` non-zero                   | all attempts on one failure outcome                                                | `tcp_fail` = route/firewall/closed port · `tls_fail` = TLS · `duplicate` = already connected, not a fault · `upgrade_fail` = negotiation, go to the next row · `timeout` = never terminal |
-| _Outbound Dial Latency (p95)_              | well under the dial timeout            | pinned near it                                                                     | peers accept TCP but never finish the handshake                                                                                                                                           |
-| _Handshake Negotiation Failures by Reason_ | flat, or a low background rate         | any sustained `reason`                                                             | `wrong_network`/`invalid_network_id` is the most common fresh-node fault — the node is on a different network and can never reach quorum; `clock_skew` sends you to branch B              |
-| _PeerFinder Slot Census_                   | `out_active` climbing toward `out_max` | `connecting` non-zero with `out_active` low; or `bootcache` and `livecache` both 0 | dials never complete; or there is nothing to dial at all                                                                                                                                  |
+| Look at                                    | Healthy                                | Unhealthy                                                                          | Conclude                                                                                                                                                                                    |
+| ------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _DNS Resolve Outcome Rate_                 | all rate on `outcome=resolved`         | any rate on `empty`, or both flat at zero                                          | a name in `[ips]`/`[ips_fixed]` returns no address, or the list is empty — fix the hostname or use an IP                                                                                    |
+| _DNS Resolve Latency (p95)_                | milliseconds                           | seconds-scale                                                                      | the resolver is timing out and delaying every dial behind it                                                                                                                                |
+| _Outbound Dial Outcome Rate_               | `connected` non-zero                   | all attempts on one failure outcome                                                | `tcp_fail` = route/firewall/closed port · `tls_fail` = TLS · `self_connection` = we dialled our own address · `upgrade_fail` = negotiation, go to the next row · `timeout` = never terminal |
+| _Outbound Dial Latency (p95)_              | well under the dial timeout            | pinned near it                                                                     | peers accept TCP but never finish the handshake                                                                                                                                             |
+| _Handshake Negotiation Failures by Reason_ | flat, or a low background rate         | any sustained `reason`                                                             | `wrong_network`/`invalid_network_id` is the most common fresh-node fault — the node is on a different network and can never reach quorum; `clock_skew` sends you to branch B                |
+| _PeerFinder Slot Census_                   | `out_active` climbing toward `out_max` | `connecting` non-zero with `out_active` low; or `bootcache` and `livecache` both 0 | dials never complete; or there is nothing to dial at all                                                                                                                                    |
 
 **Conclusion:** the node has no usable overlay. Nothing downstream can be
 diagnosed until `connected` on _Outbound Dial Outcome Rate_ is non-zero. Detail:
@@ -2943,9 +2943,11 @@ first one that is wrong and fix it before reading further panels.
    - `connected` — success; this is the line that must be non-zero.
    - `tcp_fail` — no route, refused, or the peer port is closed or firewalled.
    - `tls_fail` — the TLS handshake failed.
-   - `duplicate` — TLS succeeded but PeerFinder already holds a slot for
-     that address. Ordinary churn on a healthy node, not a failure; it is
-     reported separately so a rising `tls_fail` cannot be confused with it.
+   - `self_connection` — TLS succeeded and PeerFinder then recognised the
+     remote address as one of this node's own, so it had dialled itself. A
+     local misconfiguration (own address in `[ips_fixed]`, or behind the
+     advertised endpoint), not an unreachable peer; reported separately so a
+     rising `tls_fail` is not confused with it.
    - `upgrade_fail` — TLS succeeded but the HTTP upgrade or protocol
      negotiation was rejected. This is the outcome that pairs with step 3.
    - `timeout` — the attempt never reached a terminal state.
@@ -3527,7 +3529,7 @@ panel it reads.
       - **All series flat at zero** — normal. It means this node already held
         every proposed set locally and never had to fetch one.
     - **Which peer is the dial failing against?** Panel _Outbound Dial
-      Outcomes (span-derived, per attempt)_ (`peer.dial`). The same five
+      Outcomes (span-derived, per attempt)_ (`peer.dial`). The same six
       outcomes as `overlay_connect_total` in Bootstrap step 2, set from the
       same code path so the two cannot disagree — read the counter first for
       the rate, then come here for the **identity**. The span carries

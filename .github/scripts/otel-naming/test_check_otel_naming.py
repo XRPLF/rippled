@@ -1281,6 +1281,21 @@ class RuleJMetricSuffixes(unittest.TestCase):
         self.assertIn("counter", violations[0][-1])
         self.assertIn("gauge", violations[0][-1])
 
+    def test_two_kinds_where_the_last_one_alone_looks_clean(self):
+        # The sharper case for the same bug. Here the LAST emit site visited is a
+        # histogram and the name carries a duration suffix, so under last-wins
+        # semantics Rule J saw a well-formed histogram and reported nothing at
+        # all -- the conflict was not merely mislabelled, it was invisible. With
+        # a set per name the mismatch surfaces regardless of walk order.
+        violations = self._run(
+            _mc("dualShape", "dual_shape_us"),
+            'meter_->CreateInt64ObservableGauge(metric::dualShape, "d");\n'
+            'meter_->CreateUInt64Histogram(metric::dualShape, "d");\n',
+        )
+        self.assertEqual(len(violations), 1, violations)
+        self.assertIn("gauge", violations[0][-1])
+        self.assertIn("histogram", violations[0][-1])
+
     def test_skip_when_no_header(self):
         d = Path(tempfile.mkdtemp())
         try:

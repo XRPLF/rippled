@@ -88,12 +88,16 @@
  *
  * Example usage -- edge case: a value that must NOT be a constant. The site
  * URI is runtime data, so only the KEY is named here; declaring the value
- * would imply a bounded set that does not exist:
+ * would imply a bounded set that does not exist. Note the value is built from
+ * the PARSED url, not the configured string: the config accepts userinfo and a
+ * query, and either would otherwise ride the label into Prometheus.
  * @code
+ * auto const& url = sites_[siteIdx].loadedResource->pUrl;
+ * std::string site = url.scheme + "://" + url.domain;
+ * site += url.path.substr(0, url.path.find_first_of("?#"));
  * XRPL_METRIC_COUNTER_INC_LABELED(
  *     app_, metric::unlFetchTotal, "...",
- *     {{label::site, std::string(sites_[siteIdx].loadedResource->uri)},
- *      {label::outcome, std::string(outcome)}});
+ *     {{label::site, site}, {label::outcome, std::string(outcome)}});
  * @endcode
  *
  * @note Header-only and dependency-free: nothing here includes an OTel or an

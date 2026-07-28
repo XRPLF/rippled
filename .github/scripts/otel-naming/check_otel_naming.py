@@ -1335,7 +1335,15 @@ def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, Se
                 )
             if wire is None:
                 continue
-            kinds.setdefault(wire, set()).add(classify_instrument_kind(kind))
+            classified = classify_instrument_kind(kind)
+            # `other` is the sentinel for a macro that is not an instrument
+            # factory. Adding it would let a future non-instrument
+            # `XRPL_METRIC_*` macro turn a correctly named metric into
+            # "created as counter and other", a conflict message that reads as
+            # nonsense. Dropping it keeps the sentinel doing exactly what it did
+            # before: matching no shape rule.
+            if classified != "other":
+                kinds.setdefault(wire, set()).add(classified)
     return kinds
 
 

@@ -354,11 +354,13 @@ ConnectAttempt::onHandshake(error_code ec)
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
-        // Not a TLS failure: the handshake succeeded and PeerFinder simply
-        // already holds a slot for this address. Reporting it as tls_fail
-        // conflated ordinary dial churn with peers we cannot speak to.
-        reportOutcome(telemetry::peer_span::val::duplicate);
-        fail("Duplicate connection");
+        // Not a TLS failure: the handshake succeeded and PeerFinder then
+        // recognised the remote address as our own. Logic::onConnected has
+        // exactly one false-returning path and it is the self-connect check
+        // ("Logic dropping as self connect"), so this branch means we dialled
+        // ourselves -- a local misconfiguration, not an unreachable peer.
+        reportOutcome(telemetry::peer_span::val::selfConnection);
+        fail("Self connection");
         return;
     }
 

@@ -158,18 +158,25 @@ private:
      *     |
      *     +-- onTimer  ................................. "timeout"
      *     +-- onConnect      (connect / local_endpoint) . "tcp_fail"
-     *     +-- onHandshake    (TLS / slot / shared value)  "tls_fail"
+     *     +-- onHandshake
+     *     |     +-- TLS handshake / shared value ....... "tls_fail"
+     *     |     +-- PeerFinder rejects our own address . "self_connection"
      *     +-- onWrite / onRead / onShutdown ............. "upgrade_fail"
      *     +-- processResponse
      *           +-- bad status / protocol / activate ... "upgrade_fail"
      *           +-- PeerImp created + addActive ........ "connected"
      *
+     * The slot branch is drawn separately from the TLS one because
+     * `Logic::onConnected` fails for exactly one reason -- the remote address is
+     * ours -- and that is a local misconfiguration rather than an unreachable
+     * peer.
+     *
      * @param outcome One of the `peer_span::val` dial-outcome constants:
-     *        `connected`, `tcpFail`, `tlsFail`, `upgradeFail`, `timeout`. Taken
-     *        as a string_view over a compile-time constant, so no allocation
-     *        happens on the caller side. The constants are the single source
-     *        for both the counter label and the span attribute, so the two
-     *        cannot drift apart.
+     *        `connected`, `tcpFail`, `tlsFail`, `selfConnection`, `upgradeFail`,
+     *        `timeout`. Taken as a string_view over a compile-time constant, so
+     *        no allocation happens on the caller side. The constants are the
+     *        single source for both the counter label and the span attribute, so
+     *        the two cannot drift apart.
      *
      * @note Per-connection path: one dial per outbound peer, so this is not
      *       a hot loop.

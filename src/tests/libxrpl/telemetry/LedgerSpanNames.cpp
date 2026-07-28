@@ -584,7 +584,7 @@ TEST(LedgerSpanNames, peer_dial_attribute_keys_are_bare_underscore)
 
 TEST(LedgerSpanNames, peer_dial_outcome_values_match_the_counter_label_set)
 {
-    // These five ARE the values ConnectAttempt::reportOutcome passes to the
+    // These six ARE the values ConnectAttempt::reportOutcome passes to the
     // overlay_connect_total counter -- the span and the counter read the same
     // constants from the same funnel, which is what stops them drifting apart.
     // Pinned literally because the Bootstrap-row dial panel and the runbook
@@ -594,6 +594,10 @@ TEST(LedgerSpanNames, peer_dial_outcome_values_match_the_counter_label_set)
     EXPECT_EQ(std::string_view(peer_span::val::tlsFail), "tls_fail");
     EXPECT_EQ(std::string_view(peer_span::val::upgradeFail), "upgrade_fail");
     EXPECT_EQ(std::string_view(peer_span::val::timeout), "timeout");
+
+    // Reuses the slug handshake_negotiation_fail_total already publishes for the
+    // same fault, so one misconfiguration reads identically on both signals.
+    EXPECT_EQ(std::string_view(peer_span::val::selfConnection), "self_connection");
 }
 
 TEST(LedgerSpanNames, peer_dial_outcome_values_are_mutually_distinct)
@@ -601,10 +605,11 @@ TEST(LedgerSpanNames, peer_dial_outcome_values_are_mutually_distinct)
     // The dial panel splits by this attribute, so two outcomes sharing a value
     // would merge two different failure stages into one line -- and the stage
     // is the whole diagnostic content of the dial signal.
-    std::array<std::string_view, 5> const values{
+    std::array<std::string_view, 6> const values{
         peer_span::val::connected,
         peer_span::val::tcpFail,
         peer_span::val::tlsFail,
+        peer_span::val::selfConnection,
         peer_span::val::upgradeFail,
         peer_span::val::timeout};
     for (std::size_t i = 0; i < values.size(); ++i)

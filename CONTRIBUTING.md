@@ -457,7 +457,9 @@ Enforcement is by the same script as the span rules, whose metric rules are:
   non-fatal **L** warning, keeping the remaining work visible.
 - **J** — the suffix conventions above. The instrument _kind_ is read from the
   emit site, not guessed from the name, so a multi-series gauge whose units live
-  in its label values is not mistaken for a mis-suffixed duration.
+  in its label values is not mistaken for a mis-suffixed duration. A name created
+  through two different factories is reported as a kind conflict rather than a
+  suffix complaint, because no suffix can be correct for both.
 - **K** — every metric named in `docker/telemetry/workload/expected_metrics.json`
   resolves to a declared constant. This is the check that catches a metric
   renamed in code while the workload validator still asserts the old name.

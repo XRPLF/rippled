@@ -395,16 +395,26 @@ ValidatorSite::reportFetchOutcome(
     // the time series stable when a site redirects.
     //
     // The label is rebuilt from the parsed parts rather than using the raw
-    // configured URI: [validator_list_sites] accepts credentials in the URI,
-    // and ParsedUrl keeps them in username/password. Emitting the raw string
-    // would copy them into a metric label, from which they would reach the
-    // collector, Prometheus and every dashboard. Scheme, host, port and path
-    // are all a reader needs to tell one site from another.
+    // configured URI. [validator_list_sites] accepts userinfo in the URI and
+    // ParsedUrl retains it in username/password even though the fetch itself
+    // never sends it, so the label was the one place a configured
+    // `https://user:pass@host` could surface -- and from there it would reach
+    // the collector, Prometheus and every dashboard.
+    //
+    // Scheme, host and path only, and the path truncated at the first '?' or
+    // '#'. Two reasons:
+    //   - The port is omitted because the Resource constructor defaults it to
+    //     443/https and 80/http when the config omits one. Including it would
+    //     rewrite the existing `https://vl.ripple.com` series as
+    //     `https://vl.ripple.com:443/` and break continuity for every deployment
+    //     already scraping this metric.
+    //   - parseUrl's path group is `(/.*)?`, which is greedy to end of string, so
+    //     a query or fragment lands inside `path`. A list URL authenticated by
+    //     `?token=...` would otherwise leak through the label the same way
+    //     userinfo would.
     auto const& url = sites_[siteIdx].loadedResource->pUrl;
     std::string siteLabel = url.scheme + "://" + url.domain;
-    if (url.port)
-        siteLabel += ":" + std::to_string(*url.port);
-    siteLabel += url.path;
+    siteLabel += url.path.substr(0, url.path.find_first_of("?#"));
 
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
