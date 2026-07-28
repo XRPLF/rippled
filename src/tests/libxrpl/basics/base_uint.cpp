@@ -71,9 +71,9 @@ struct BaseUintTest : public ::testing::Test
                 {"fffffffffffffffe", "ffffffffffffffff"},
             });
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<64> const u{smallerText}, v{largerText};
                 // For code readability, we want to use general boolean
                 // expectations instead of specific EXPECT_LT etc.
                 EXPECT_TRUE(u < v);
@@ -103,9 +103,9 @@ struct BaseUintTest : public ::testing::Test
                 {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
             });
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<96> const u{smallerText}, v{largerText};
                 EXPECT_TRUE(u < v);
                 EXPECT_TRUE(u <= v);
                 EXPECT_TRUE(u != v);

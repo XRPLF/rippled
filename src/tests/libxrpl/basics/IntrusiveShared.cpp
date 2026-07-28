@@ -280,17 +280,17 @@ TEST(IntrusiveSharedTest, basics)
         TIBase::ResetStatesGuard const rsg{true};
 
         using enum TrackedState;
-        using swu = SharedWeakUnion<TIBase>;
-        swu b = makeSharedIntrusive<TIBase>();
+        using SharedWeak = SharedWeakUnion<TIBase>;
+        SharedWeak b = makeSharedIntrusive<TIBase>();
         EXPECT_TRUE(b.isStrong() && b.useCount() == 1);
         auto id = b.get()->id;
         EXPECT_EQ(TIBase::getState(id), Alive);
-        swu w = b;
+        SharedWeak w = b;
         EXPECT_TRUE(TIBase::getState(id) == Alive);
         EXPECT_TRUE(w.isStrong() && b.useCount() == 2);
         w.convertToWeak();
         EXPECT_TRUE(w.isWeak() && b.useCount() == 1);
-        swu s = w;
+        SharedWeak s = w;
         EXPECT_TRUE(s.isWeak() && b.useCount() == 1);
         s.convertToStrong();
         EXPECT_TRUE(s.isStrong() && b.useCount() == 2);
@@ -391,7 +391,7 @@ TEST(IntrusiveSharedTest, partial_delete)
             // given an opportunity to run during partial delete.
             EXPECT_EQ(cur, PartiallyDeleted);
         }
-        if (next == PartiallyDeletedStarted)
+        else if (next == PartiallyDeletedStarted)
         {
             partialDeleteStartedSyncPoint.arrive_and_wait();
             using namespace std::chrono_literals;
@@ -400,11 +400,11 @@ TEST(IntrusiveSharedTest, partial_delete)
             // is running. The test is to make sure that doesn't happen.
             std::this_thread::sleep_for(800ms);
         }
-        if (next == PartiallyDeleted)
+        else if (next == PartiallyDeleted)
         {
             EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
         }
-        if (next == Deleted)
+        else if (next == Deleted)
         {
             EXPECT_FALSE(destructorRan.exchange(true));
         }
@@ -448,7 +448,7 @@ TEST(IntrusiveSharedTest, destructor)
         {
             EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
         }
-        if (next == Deleted)
+        else if (next == Deleted)
         {
             EXPECT_FALSE(destructorRan.exchange(true));
         }
@@ -497,7 +497,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
             EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
-        if (next == Deleted)
+        else if (next == Deleted)
         {
             EXPECT_FALSE(destructorRan);
             setDestructorRan();
@@ -628,7 +628,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
             EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
-        if (next == Deleted)
+        else if (next == Deleted)
         {
             EXPECT_FALSE(destructorRan);
             setDestructorRan();
@@ -766,7 +766,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
             EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
-        if (next == Deleted)
+        else if (next == Deleted)
         {
             EXPECT_FALSE(destructorRan);
             setDestructorRan();

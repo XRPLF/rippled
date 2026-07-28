@@ -41,18 +41,13 @@ inline void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
-    while (bytes >= sizeof(result_type))
+    while (bytes > 0)
     {
         auto const v = g();
-        std::memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
-        bytes -= sizeof(v);
-    }
-
-    if (bytes > 0)
-    {
-        auto const v = g();
-        std::memcpy(buffer, &v, bytes);
+        auto const chunk = std::min(bytes, sizeof(result_type));
+        std::memcpy(buffer, &v, chunk);
+        buffer = reinterpret_cast<std::uint8_t*>(buffer) + chunk;
+        bytes -= chunk;
     }
 }
 
@@ -216,7 +211,7 @@ makeShuffle(std::size_t size, std::uint64_t seed)
 // Partition a pool into fixed-size batches. Any trailing remainder shorter than
 // `batchSize` is dropped, so every returned batch has exactly `batchSize`.
 inline std::vector<Batch>
-sliceBatches(Batch const& pool, std::size_t batchSize)
+slicePreciseBatches(Batch const& pool, std::size_t batchSize)
 {
     std::vector<Batch> batches;
     if (batchSize == 0)
@@ -229,13 +224,10 @@ sliceBatches(Batch const& pool, std::size_t batchSize)
 
 /**
  * @brief RAII owner of a NodeStore Backend opened on a private temporary directory.
- *
- * Member declaration order matters: `tempDir` is declared first so it is
- * destroyed last, after the backend has closed and released its files.
  */
 struct BackendHarness
 {
-    beast::TempDir tempDir;
+    beast::TempDir tempDir;  ///< Declared first so it is destroyed last
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Backend> backend;

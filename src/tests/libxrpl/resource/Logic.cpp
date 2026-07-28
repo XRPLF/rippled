@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 namespace xrpl::Resource {
 
@@ -72,7 +73,7 @@ protected:
                 static_cast<std::uint8_t>(v + i),
             }};
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
-            gossip.items.push_back(item);
+            gossip.items.push_back(std::move(item));
         }
     }
 };
@@ -88,8 +89,8 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
         Consumer c{logic.newInboundEndpoint(addr)};
 
         // Create load until we get a warning
-        int n = 10000;
-        bool warned = false;
+        auto n = 10000;
+        auto warned = false;
 
         while (--n >= 0)
         {
@@ -98,7 +99,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
                 warned = true;
                 break;
             }
-            ++logic.clock();
+            logic.advance();
         }
 
         ASSERT_TRUE(warned) << "Loop count exceeded without warning";
@@ -114,7 +115,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
                 EXPECT_TRUE(c.disconnect(j_));
                 break;
             }
-            ++logic.clock();
+            logic.advance();
         }
 
         ASSERT_TRUE(dropped) << "Loop count exceeded without dropping";
@@ -136,7 +137,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
         auto n = kSecondsUntilExpiration + 1s;
         while (--n > 0s)
         {
-            ++logic.clock();
+            logic.advance();
             logic.periodicActivity();
             Consumer const c{logic.newInboundEndpoint(addr)};
             if (c.disposition() != Disposition::Drop)
@@ -168,7 +169,7 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
             warned = true;
             break;
         }
-        ++logic.clock();
+        logic.advance();
     }
 
     EXPECT_FALSE(warned) << "Should loop forever with no warning";
@@ -238,7 +239,7 @@ TEST_F(ResourceManagerTest, import)
         1,
     }};
     item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
-    g.items.push_back(item);
+    g.items.push_back(std::move(item));
 
     logic.importConsumers("g", g);
 }

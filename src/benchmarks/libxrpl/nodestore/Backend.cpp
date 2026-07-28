@@ -30,12 +30,12 @@ constexpr std::string_view kNameSeparator = "/";
 
 struct RunState
 {
-    std::unique_ptr<BackendHarness> harness;
-    Batch present;                     // prefix-1 objects, eligible to be stored
-    Batch recent;                      // prefix-1 objects in the "future" key space
-    std::vector<uint256> missing;      // prefix-2 keys that are never stored
-    std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
-    std::size_t avgPayload = 0;        // mean getData().size() over `present`
+    std::unique_ptr<BackendHarness> harness;  ///< backend under test, rebuilt per run
+    Batch present;                            ///< prefix-1 objects, eligible to be stored
+    Batch recent;                             ///< prefix-1 objects in the "future" key space
+    std::vector<uint256> missing;             ///< prefix-2 keys that are never stored
+    std::vector<std::size_t> shuffle;         ///< [0, poolSize) permutation for random-like access
+    std::size_t avgPayload = 0;               ///< mean getData().size() over `present`
 
     void
     release()
@@ -86,7 +86,7 @@ Workload const kInsert{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             backend.store(rs.present[index % poolSize]);
         },
     .reportBytes = true,
@@ -105,7 +105,7 @@ Workload const kFetch{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             backend.fetch(rs.present[index % poolSize]->getHash(), &result);
             benchmark::DoNotOptimize(result);
@@ -119,7 +119,7 @@ Workload const kMissing{
     .setup = [](SetupContext const& ctx) { ctx.rs.missing = makeMissingKeys(ctx.poolSize); },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             backend.fetch(rs.missing[index % poolSize], &result);
             benchmark::DoNotOptimize(result);
@@ -140,7 +140,7 @@ Workload const kMixed{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             auto const pick = rs.shuffle[index % poolSize];
             if (index % kMissRatio == 0)
@@ -171,7 +171,7 @@ Workload const kWork{
         },
     .iterate =
         [](IterateContext const& ctx) {
-            auto& [rs, backend, index, poolSize] = ctx;
+            auto const& [rs, backend, index, poolSize] = ctx;
             auto const slot = index % poolSize;
             auto const pick = rs.shuffle[slot];
 
@@ -290,7 +290,7 @@ registerStoreBatch(BackendConfig const& bc)
                 rs->harness = std::make_unique<BackendHarness>(cfg);
                 rs->present = makePool(1, poolSize);
                 rs->avgPayload = averagePayload(rs->present);
-                std::vector<Batch> const batches = sliceBatches(rs->present, kBatchSize);
+                std::vector<Batch> const batches = slicePreciseBatches(rs->present, kBatchSize);
                 if (batches.empty())
                 {
                     state.SkipWithError("pool smaller than one batch");
