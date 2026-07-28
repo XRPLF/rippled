@@ -1004,6 +1004,12 @@ repeated here:
   `_running` / `_deferred`). These travel the `beast::insight` pipeline, not the
   OTel SDK one, so they are documented in
   [§2.5](#25-per-job-type-queue-gauges).
+- The sync-diagnosis signals — 13 further `nodestore_state` label values plus the
+  `nodestore_read_us` histogram — which separate a write-serialized stall from a
+  cold-read stall. See
+  [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state)
+  and
+  [NodeStore Read Latency](#nodestore-read-latency-histogram--nodestore_read_us).
 
 ### New Grafana Dashboards (Phase 9)
 
@@ -1142,6 +1148,96 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 | `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                |
 | `nodestore_state{metric="write_load"}`         | Gauge | `metric` | Current write load score             |
 | `nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue         |
+
+> **`node_reads_hit` is a found count, not a cache-hit rate.** `fetchHitCount_`
+> is incremented whenever the fetch returned an object
+> (`src/libxrpl/nodestore/Database.cpp:246-255`), regardless of where it came
+> from. The ratio against `node_reads_total` is therefore the fraction of fetches
+> that **found** something, and can read ~100% while every fetch went to disk.
+> Pair it with `read_mean_us` before drawing any conclusion — see
+> [Slow to reach `full`](../docs/telemetry-runbook.md#slow-to-reach-full).
+
+#### Sync Diagnosis Signals (Observable Gauge — `nodestore_state`)
+
+Further label values on the same instrument, added to separate the two
+bottlenecks that both present as the `ledgerData` job lane pinned at its
+concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
+`observeWritePathDetail()`, and `observeAcquireStats()`
+(`src/xrpld/telemetry/MetricsRegistry.cpp:830-894`).
+
+| Prometheus Metric                                   | Type  | Labels   | Description                                              |
+| --------------------------------------------------- | ----- | -------- | -------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`            | Gauge | `metric` | Mean time per backend read (microseconds)                |
+| `nodestore_state{metric="write_mean_us"}`           | Gauge | `metric` | Mean time per backend write (microseconds)               |
+| `nodestore_state{metric="nudb_writers_in_flight"}`  | Gauge | `metric` | Threads inside a NuDB insert at sample time              |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`  | Gauge | `metric` | Mean queue depth at the NuDB insert mutex, scaled ×100   |
+| `nodestore_state{metric="nudb_insert_mean_us"}`     | Gauge | `metric` | Mean NuDB insert time incl. queueing (microseconds)      |
+| `nodestore_state{metric="nudb_insert_max_us"}`      | Gauge | `metric` | Slowest single NuDB insert observed (microseconds)       |
+| `nodestore_state{metric="acquire_deferrals"}`       | Gauge | `metric` | Acquisition timer jobs skipped because the lane was full |
+| `nodestore_state{metric="acquire_timeouts"}`        | Gauge | `metric` | Acquisition timer bodies that ran and advanced retry     |
+| `nodestore_state{metric="acquire_give_ups"}`        | Gauge | `metric` | Acquisitions that exhausted their retry budget           |
+| `nodestore_state{metric="acquire_aborts"}`          | Gauge | `metric` | Acquisitions destroyed before finishing                  |
+| `nodestore_state{metric="acquire_aborts_partial"}`  | Gauge | `metric` | Subset of aborts that discarded partly built maps        |
+| `nodestore_state{metric="acquire_completions"}`     | Gauge | `metric` | Acquisitions that finished successfully                  |
+| `nodestore_state{metric="acquire_sweep_evictions"}` | Gauge | `metric` | Acquisitions evicted by the 1-minute sweep               |
+
+**Three properties to know before querying these.**
+
+- `nudb_writer_depth_x100` is fixed-point — divide by 100. The depth sits just
+  above 1.0 even under load, because NuDB takes one global mutex per insert
+  (`nudb/impl/basic_store.ipp:288`, a Conan dependency this repo does not patch).
+  An integral gauge would truncate 1.60 to 1 and lose the signal entirely.
+- The four `nudb_*` values are published **only when the writable backend is
+  NuDB**. `observeWritePathDetail()` returns early when `getWriteStats()` is
+  empty, so a memory or RocksDB backend omits them rather than reporting four
+  zeros. Absent is not zero.
+- `read_mean_us` and `write_mean_us` are omitted when nothing has been read or
+  written, so a dashboard shows a gap instead of a plausible wrong number. The
+  seven `acquire_*` counters are published unconditionally, because for a counter
+  zero is a meaningful reading.
+
+**The pairs, not the individual counts, are diagnostic.** Deferrals rising while
+timeouts stay flat means the give-up path is disarmed: a deferral re-arms the
+timer without running its body, so the retry counter never advances and the
+6-timeout give-up is unreachable. Sweep evictions rising while completions stay at
+zero means partial work is discarded and redone. Neither pattern is visible from
+one counter. Documented on the class at `src/xrpld/app/ledger/AcquireStats.h`.
+
+#### NodeStore Read Latency (Histogram — `nodestore_read_us`)
+
+<!-- cspell:ignore ISTOGRAM -->
+<!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+     compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
+
+Recorded per fetch at `src/xrpld/app/main/NodeStoreScheduler.cpp` via
+`XRPL_METRIC_HISTOGRAM_RECORD_LABELED`, not as a `MetricsRegistry` member. The
+name, label keys, and all four label values are the `constexpr` constants in
+`include/xrpl/telemetry/NodeStoreMetricNames.h`, shared with the bucket-view
+registration for the same reason `GetObjectMetricNames.h` exists.
+
+| Prometheus Metric   | Type      | Labels                                                        | Description                                   |
+| ------------------- | --------- | ------------------------------------------------------------- | --------------------------------------------- |
+| `nodestore_read_us` | Histogram | `fetch_type="async"` \| `"sync"`, `found="true"` \| `"false"` | Per-fetch backend read latency (microseconds) |
+
+**It gets its own bucket ladder, not the shared µs one.** Boundaries are
+`1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 25000` microseconds
+(`kSubMillisecondBoundaries`, registered by `addSubMillisecondHistogramView()`).
+The shared `kMicrosecondBoundaries` ladder starts at 100 µs, above the entire
+range a warm read occupies, so every warm read would fall in bucket 0 and the
+distribution would read as flat — while still needing to reach far enough to show
+a cold tail against it. That is a fifth view, alongside the four listed under
+[GetObject Request Path](#getobject-request-path-synchronous-countershistograms).
+
+**Why two labels rather than one series.** A slow `async` read delays prefetch; a
+slow `sync` read blocks a caller outright. A `found=false` fetch can have to
+consult every backend, so mixing it with hits blurs the distribution that matters.
+Cardinality is fixed at four combinations. Per project convention, a panel using
+these needs matching `fetch_type` and `found` template variables.
+
+Zero is a recordable value — a fetch served from a warm page cache genuinely
+rounds to 0 µs, and suppressing it would make the fastest reads invisible.
+Negative elapsed values (clock anomalies) are dropped rather than passed to the
+SDK, which would otherwise log a warning on every such call.
 
 #### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
 
@@ -1363,7 +1459,30 @@ histogram_quantile(0.95, sum by (le) (rate(getobject_lookup_us_bucket[5m])))
 
 # GetObject requests refused, by reason
 sum by (reason) (rate(getobject_rejected_total[5m]))
+
+# Write-path queueing: depth is fixed-point, divide by 100
+nodestore_state{metric="nudb_writer_depth_x100"} / 100
+
+# Read cost, and the found rate that qualifies it (NOT a cache-hit rate)
+nodestore_state{metric="read_mean_us"}
+
+# Are ledger acquisitions finishing at all? (per minute)
+increase(nodestore_state{metric="acquire_completions"}[1m])
+
+# Livelock fingerprint: deferrals climbing while timeouts stay flat
+increase(nodestore_state{metric="acquire_deferrals"}[5m])
+increase(nodestore_state{metric="acquire_timeouts"}[5m])
+
+# Per-fetch read latency p99, split by the two dimensions that matter
+histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket[5m])))
 ```
+
+> **Diagnostic procedure.** These signals exist to answer one question — why a
+> node is slow to reach `full` — and the decision rule that uses them lives in
+> [docs/telemetry-runbook.md § Slow to reach `full`](../docs/telemetry-runbook.md#slow-to-reach-full),
+> with the measured reference values from both bottleneck modes. The short form:
+> the `ledgerData` lane sitting at its concurrency cap is true in **both** modes,
+> so it is never a diagnosis on its own.
 
 ### Phase 7+: External Dashboard Parity Metrics
 
