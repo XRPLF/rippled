@@ -1813,90 +1813,6 @@
         "overrides": []
       },
       "id": 36
-    },
-    {
-      "title": "NodeStore Read Latency Distribution By Fetch Type & Found",
-      "description": "###### What this is:\n*Per-fetch nodestore read latency as a distribution rather than a mean, split by whether the fetch was a read-ahead or a blocking one and by whether the object was found. A mean cannot tell \"every read took 9 microseconds\" apart from \"most took 2 and a few took 900\", and the second is the cold-store shape. The split matters because a slow async fetch only delays prefetch while a slow sync fetch blocks a caller outright, and because a miss can cost a read of every backend.*\n\n###### How it's computed:\n*p50, p95 and p99 from histogram_quantile over rate(nodestore_read_us_bucket[$__rate_interval]), grouped by fetch_type and found. The instrument carries explicit sub-millisecond bucket boundaries starting at 1 microsecond, because the default ladder's lowest edge sits above the entire warm-read range and would make every warm read land in bucket zero.*\n\n###### Reading it:\n*Use the Fetch Type and Found template filters at the top of the dashboard to isolate a dimension. sync + found is the series that maps most directly to caller-visible stall time. A p99 that pulls away from p50 while p50 stays low is the cold-read signature the mean-based panels can only hint at: most reads are cached and a minority are paying full disk latency. found=false rising in absolute terms points at working-set misses rather than at cold cache.*\n\n###### Healthy range:\n*p99 within a small multiple of p50, both in the single-digit-to-low-tens of microseconds warm.*\n\n###### Watch for:\n*p99 above roughly 100 microseconds on the sync + found series while the hit ratio stays high -- objects are present but every access reaches disk. Note this instrument is separate from the read_mean_us gauge on the first panel of this row; if the histogram is empty but the gauge is populated, the exporter on that build predates the histogram and only the mean-based panels apply.*\n\n###### Source:\n[app/main/NodeStoreScheduler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/NodeStoreScheduler.cpp)\n\n###### Function:\n`NodeStoreScheduler::onFetch`",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 149
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(label_join(histogram_quantile(0.5, sum by (le, fetch_type, found, service_instance_id, xrpl_branch, xrpl_node_role) (rate(nodestore_read_us_bucket{fetch_type=~\"$fetch_type\", found=~\"$found\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"read_dims\", \"-\", \"fetch_type\", \"found\"), \"series\", \"Read p50 [$1]\", \"read_dims\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(label_join(histogram_quantile(0.95, sum by (le, fetch_type, found, service_instance_id, xrpl_branch, xrpl_node_role) (rate(nodestore_read_us_bucket{fetch_type=~\"$fetch_type\", found=~\"$found\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"read_dims\", \"-\", \"fetch_type\", \"found\"), \"series\", \"Read p95 [$1]\", \"read_dims\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(label_join(histogram_quantile(0.99, sum by (le, fetch_type, found, service_instance_id, xrpl_branch, xrpl_node_role) (rate(nodestore_read_us_bucket{fetch_type=~\"$fetch_type\", found=~\"$found\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"read_dims\", \"-\", \"fetch_type\", \"found\"), \"series\", \"Read p99 [$1]\", \"read_dims\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "\u00b5s",
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "custom": {
-            "axisLabel": "Read Latency (\u00b5s)",
-            "scaleDistribution": {
-              "type": "log",
-              "log": 10
-            },
-            "thresholdsStyle": {
-              "mode": "line"
-            },
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "id": 37
     }
   ],
   "schemaVersion": 39,
@@ -2049,46 +1965,6 @@
         "description": "Filter by enqueueing handler (sanitised addJob name, e.g. RcvGetLedger)",
         "type": "query",
         "query": "label_values(job_queued_total, handler)",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "includeAll": true,
-        "allValue": ".*",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "multi": true,
-        "refresh": 2,
-        "sort": 1
-      },
-      {
-        "name": "fetch_type",
-        "label": "Fetch Type",
-        "description": "Filter nodestore read latency by fetch kind (async read-ahead / sync blocking)",
-        "type": "query",
-        "query": "label_values(nodestore_read_us_bucket, fetch_type)",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "includeAll": true,
-        "allValue": ".*",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "multi": true,
-        "refresh": 2,
-        "sort": 1
-      },
-      {
-        "name": "found",
-        "label": "Found",
-        "description": "Filter nodestore read latency by whether the fetch found the object",
-        "type": "query",
-        "query": "label_values(nodestore_read_us_bucket, found)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
