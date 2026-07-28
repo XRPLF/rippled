@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -175,6 +176,8 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
 
 TEST_F(ResourceManagerTest, charges)
 {
+    static constexpr auto kDecayTicks = 128uz;
+
     TestLogic logic{j_};
 
     {
@@ -183,7 +186,7 @@ TEST_F(ResourceManagerTest, charges)
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
         c.charge(fee);
-        for (int i = 0; i < 128; ++i)
+        for (auto tick = 0uz; tick < kDecayTicks; ++tick)
         {
             JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
                             << ", Balance = " << c.balance();
@@ -196,7 +199,7 @@ TEST_F(ResourceManagerTest, charges)
         Consumer c{logic.newInboundEndpoint(address)};
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
-        for (int i = 0; i < 128; ++i)
+        for (auto tick = 0uz; tick < kDecayTicks; ++tick)
         {
             c.charge(fee);
             JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
@@ -210,13 +213,15 @@ TEST_F(ResourceManagerTest, imports)
 {
     TestLogic logic{j_};
 
-    Gossip g[5];
+    static constexpr auto kGossipSources = 5uz;
 
-    for (auto& i : g)
-        populateGossip(i);
+    std::array<Gossip, kGossipSources> gossip;
 
-    for (int i = 0; i < 5; ++i)
-        logic.importConsumers(std::to_string(i), g[i]);
+    for (auto& g : gossip)
+        populateGossip(g);
+
+    for (auto i = 0uz; i < gossip.size(); ++i)
+        logic.importConsumers(std::to_string(i), gossip[i]);
 }
 
 TEST_F(ResourceManagerTest, import)

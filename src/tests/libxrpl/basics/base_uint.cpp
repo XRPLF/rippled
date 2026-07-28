@@ -59,14 +59,17 @@ struct BaseUintTest : public ::testing::Test
     static void
     testComparisons()
     {
+        using HexPair = std::pair<std::string_view, std::string_view>;
+
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {{"0000000000000000", "0000000000000001"},
-                 {"0000000000000000", "ffffffffffffffff"},
-                 {"1234567812345678", "2345678923456789"},
-                 {"8000000000000000", "8000000000000001"},
-                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                 {"fffffffffffffffe", "ffffffffffffffff"}}};
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"0000000000000000", "0000000000000001"},
+                {"0000000000000000", "ffffffffffffffff"},
+                {"1234567812345678", "2345678923456789"},
+                {"8000000000000000", "8000000000000001"},
+                {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffe", "ffffffffffffffff"},
+            });
 
             for (auto const& arg : kTestArgs)
             {
@@ -91,15 +94,14 @@ struct BaseUintTest : public ::testing::Test
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {
-                    {"000000000000000000000000", "000000000000000000000001"},
-                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                    {"555555555555555555555555", "55555555555a555555555555"},
-                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-                }};
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"000000000000000000000000", "000000000000000000000001"},
+                {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                {"555555555555555555555555", "55555555555a555555555555"},
+                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+            });
 
             for (auto const& arg : kTestArgs)
             {
@@ -401,14 +403,14 @@ TEST_F(BaseUintTest, base_uint)
             {
             }
         };
-        constexpr StrBaseUInt kTestCases[] = {
+        constexpr auto kTestCases = std::to_array<StrBaseUInt>({
             "000000000000000000000000",
             "000000000000000000000001",
             "fedcba9876543210ABCDEF91",
             "19FEDCBA0123456789abcdef",
             "800000000000000000000000",
             "fFfFfFfFfFfFfFfFfFfFfFfF",
-        };
+        });
 
         for (StrBaseUInt const& t : kTestCases)
         {

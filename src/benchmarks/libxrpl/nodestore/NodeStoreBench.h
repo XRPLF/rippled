@@ -26,6 +26,7 @@
 #include <memory>
 #include <numeric>
 #include <random>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -145,7 +146,7 @@ makePool(std::uint8_t prefix, std::size_t count, std::size_t start = 0)
     Sequence seq(prefix);
     Batch pool;
     pool.reserve(count);
-    for (std::size_t i = 0; i < count; ++i)
+    for (auto const i : std::views::iota(0uz, count))
         pool.push_back(seq.obj(start + i));
     return pool;
 }
@@ -158,7 +159,7 @@ makeMissingKeys(std::size_t count)
     Sequence seq(2);
     std::vector<uint256> keys;
     keys.reserve(count);
-    for (std::size_t i = 0; i < count; ++i)
+    for (auto const i : std::views::iota(0uz, count))
         keys.push_back(seq.key(i));
     return keys;
 }
@@ -206,9 +207,9 @@ inline std::vector<std::size_t>
 makeShuffle(std::size_t size, std::uint64_t seed)
 {
     std::vector<std::size_t> v(size);
-    std::iota(v.begin(), v.end(), std::size_t{0});
+    std::ranges::iota(v, 0uz);
     beast::xor_shift_engine gen(seed);
-    std::shuffle(v.begin(), v.end(), gen);
+    std::ranges::shuffle(v, gen);
     return v;
 }
 

@@ -20,9 +20,10 @@
 namespace xrpl::node_store {
 namespace {
 
-constexpr std::size_t kPoolSizes[] = {1000, 10000, 100000};
-constexpr int kThreadCounts[] = {1, 4, 8};
+constexpr auto kPoolSizes = std::to_array<std::size_t>({1000, 10000, 100000});
+constexpr auto kThreadCounts = std::to_array<std::size_t>({1, 4, 8});
 constexpr std::size_t kBatchSize = 256;
+constexpr std::size_t kMissRatio = 5;
 
 constexpr std::string_view kNamePrefix = "BM_Backend_";
 constexpr std::string_view kNameSeparator = "/";
@@ -142,7 +143,7 @@ Workload const kMixed{
             auto& [rs, backend, index, poolSize] = ctx;
             std::shared_ptr<NodeObject> result;
             auto const pick = rs.shuffle[index % poolSize];
-            if (index % 5 == 0)
+            if (index % kMissRatio == 0)
             {
                 backend.fetch(rs.missing[pick], &result);
             }
@@ -239,7 +240,7 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     {
         auto rs = std::make_shared<RunState>();
         auto* b = benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs));
-        b->RangeMultiplier(10)->Range(kPoolSizes[0], kPoolSizes[std::size(kPoolSizes) - 1]);
+        b->RangeMultiplier(10)->Range(kPoolSizes.front(), kPoolSizes.back());
         b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
 
         return;
@@ -249,14 +250,14 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     {
         for (auto const threads : kThreadCounts)
         {
-            if (poolSize % static_cast<std::size_t>(threads) != 0)
+            if (poolSize % threads != 0)
                 continue;
 
             auto rs = std::make_shared<RunState>();
             benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
                 ->Arg(poolSize)
-                ->Iterations(poolSize / static_cast<std::size_t>(threads))
-                ->Threads(threads)
+                ->Iterations(poolSize / threads)
+                ->Threads(static_cast<int>(threads))
                 ->UseRealTime();
         }
     }
