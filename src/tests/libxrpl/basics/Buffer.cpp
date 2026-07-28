@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -12,8 +13,18 @@
 
 namespace xrpl::test {
 
+static_assert(std::is_nothrow_move_constructible_v<Buffer>);
+static_assert(std::is_nothrow_move_assignable_v<Buffer>);
+
 struct BufferTest : public ::testing::Test
 {
+    static constexpr auto kData = std::to_array<std::uint8_t>(
+        {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
+         0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
+         0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3});
+
+    static constexpr std::size_t kHalf = kData.size() / 2;
+
     static bool
     sane(Buffer const& b)
     {
@@ -22,239 +33,308 @@ struct BufferTest : public ::testing::Test
 
         return b.data() != nullptr;
     }
+
+    Buffer const emptyBuffer;
+    Buffer const firstHalf{kData.data(), kHalf};
+    Buffer const secondHalf{kData.data() + kHalf, kHalf};
+    Buffer const whole{kData.data(), kData.size()};
 };
 
-TEST_F(BufferTest, buffer)
+TEST_F(BufferTest, default_constructed_is_empty)
 {
-    std::uint8_t const data[] = {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
-                                 0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
-                                 0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
+    Buffer const b;
 
-    Buffer const b0;
-    EXPECT_TRUE(sane(b0));
-    EXPECT_TRUE(b0.empty());
+    EXPECT_TRUE(sane(b));
+    EXPECT_TRUE(b.empty());
+    EXPECT_EQ(b.data(), nullptr);
+}
 
-    Buffer b1{0};
-    EXPECT_TRUE(sane(b1));
-    EXPECT_TRUE(b1.empty());
-    std::memcpy(b1.alloc(16), data, 16);
-    EXPECT_TRUE(sane(b1));
-    EXPECT_FALSE(b1.empty());
-    EXPECT_EQ(b1.size(), 16);
+TEST_F(BufferTest, zero_sized_construction_is_empty)
+{
+    Buffer const b{0};
 
-    Buffer b2{b1.size()};
-    EXPECT_TRUE(sane(b2));
-    EXPECT_FALSE(b2.empty());
-    EXPECT_EQ(b2.size(), b1.size());
-    std::memcpy(b2.data(), data + 16, 16);
+    EXPECT_TRUE(sane(b));
+    EXPECT_TRUE(b.empty());
+}
 
-    Buffer b3{data, sizeof(data)};
-    EXPECT_TRUE(sane(b3));
-    EXPECT_FALSE(b3.empty());
-    EXPECT_EQ(b3.size(), sizeof(data));
-    EXPECT_EQ(std::memcmp(b3.data(), data, b3.size()), 0);
+TEST_F(BufferTest, alloc_grows_an_empty_buffer)
+{
+    Buffer b{0};
+    std::memcpy(b.alloc(kHalf), kData.data(), kHalf);
 
-    // Check equality and inequality comparisons.
-    // For code readability, we want to use general
-    // EXPECT_TRUE instead of specific EXPECT_EQ etc.
-    EXPECT_TRUE(b0 == b0);
-    EXPECT_TRUE(b0 != b1);
-    EXPECT_TRUE(b1 == b1);
-    EXPECT_TRUE(b1 != b2);
-    EXPECT_TRUE(b2 != b3);
+    EXPECT_TRUE(sane(b));
+    EXPECT_FALSE(b.empty());
+    EXPECT_EQ(b.size(), kHalf);
+    EXPECT_EQ(b, firstHalf);
+}
 
-    // Check copy constructors and copy assignments:
-    {
-        Buffer x{b0};
-        EXPECT_EQ(x, b0);
-        EXPECT_TRUE(sane(x));
-        Buffer y{b1};
-        EXPECT_EQ(y, b1);
-        EXPECT_TRUE(sane(y));
-        x = b2;
-        EXPECT_EQ(x, b2);
-        EXPECT_TRUE(sane(x));
-        x = y;
-        EXPECT_EQ(x, y);
-        EXPECT_TRUE(sane(x));
-        y = b3;
-        EXPECT_EQ(y, b3);
-        EXPECT_TRUE(sane(y));
-        x = b0;
-        EXPECT_EQ(x, b0);
-        EXPECT_TRUE(sane(x));
+TEST_F(BufferTest, sized_construction_reserves_without_filling)
+{
+    Buffer b{kHalf};
+
+    EXPECT_TRUE(sane(b));
+    EXPECT_FALSE(b.empty());
+    EXPECT_EQ(b.size(), kHalf);
+
+    std::memcpy(b.data(), kData.data() + kHalf, kHalf);
+    EXPECT_EQ(b, secondHalf);
+}
+
+TEST_F(BufferTest, construction_copies_raw_memory)
+{
+    Buffer const b{kData.data(), kData.size()};
+
+    EXPECT_TRUE(sane(b));
+    EXPECT_FALSE(b.empty());
+    EXPECT_EQ(b.size(), kData.size());
+    EXPECT_EQ(std::memcmp(b.data(), kData.data(), b.size()), 0);
+}
+TEST_F(BufferTest, equality_compares_contents)
+{
+    // Uses EXPECT_TRUE rather than EXPECT_EQ/EXPECT_NE because the operators are what is under test
+    // here.
+    EXPECT_TRUE(emptyBuffer == emptyBuffer);
+    EXPECT_TRUE(firstHalf == firstHalf);
+
+    EXPECT_TRUE(emptyBuffer != firstHalf);
+    EXPECT_TRUE(firstHalf != secondHalf);
+    EXPECT_TRUE(secondHalf != whole);
+}
+
+TEST_F(BufferTest, copy_construction)
+{
+    Buffer const fromEmpty{emptyBuffer};
+    EXPECT_TRUE(sane(fromEmpty));
+    EXPECT_EQ(fromEmpty, emptyBuffer);
+
+    Buffer const fromNonEmpty{firstHalf};
+    EXPECT_TRUE(sane(fromNonEmpty));
+    EXPECT_EQ(fromNonEmpty, firstHalf);
+}
+
+TEST_F(BufferTest, copy_assignment)
+{
+    Buffer b{emptyBuffer};
+
+    // empty <- non-empty
+    b = secondHalf;
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, secondHalf);
+
+    // non-empty <- non-empty of a different size
+    b = whole;
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, whole);
+
+    // non-empty <- empty
+    b = emptyBuffer;
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, emptyBuffer);
+}
+
+TEST_F(BufferTest, self_assignment_preserves_contents)
+{
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
-        x = x;
-        EXPECT_EQ(x, b0);
-        EXPECT_TRUE(sane(x));
-        y = y;
-        EXPECT_EQ(y, b3);
-        EXPECT_TRUE(sane(y));
+    Buffer emptyCopy{emptyBuffer};
+    emptyCopy = emptyCopy;
+    EXPECT_TRUE(sane(emptyCopy));
+    EXPECT_EQ(emptyCopy, emptyBuffer);
+
+    Buffer wholeCopy{whole};
+    wholeCopy = wholeCopy;
+    EXPECT_TRUE(sane(wholeCopy));
+    EXPECT_EQ(wholeCopy, whole);
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-    }
+}
 
-    // Check move constructor & move assignments:
+TEST_F(BufferTest, move_construct_from_empty)
+{
+    Buffer source;
+    Buffer const moved{std::move(source)};
+
+    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(sane(moved));
+    EXPECT_TRUE(moved.empty());
+}
+
+TEST_F(BufferTest, move_construct_from_non_empty)
+{
+    Buffer source{firstHalf};
+    Buffer const moved{std::move(source)};
+
+    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(sane(moved));
+    EXPECT_EQ(moved, firstHalf);
+}
+
+TEST_F(BufferTest, move_assign_empty_to_empty)
+{
+    Buffer target;
+    Buffer source;
+
+    target = std::move(source);
+
+    EXPECT_TRUE(sane(target));
+    EXPECT_TRUE(target.empty());
+    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+}
+
+TEST_F(BufferTest, move_assign_non_empty_to_empty)
+{
+    Buffer target;
+    Buffer source{firstHalf};
+
+    target = std::move(source);
+
+    EXPECT_TRUE(sane(target));
+    EXPECT_EQ(target, firstHalf);
+    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+}
+
+TEST_F(BufferTest, move_assign_empty_to_non_empty)
+{
+    Buffer target{firstHalf};
+    Buffer source;
+
+    target = std::move(source);
+
+    EXPECT_TRUE(sane(target));
+    EXPECT_TRUE(target.empty());
+    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+}
+
+TEST_F(BufferTest, move_assign_non_empty_to_non_empty)
+{
+    Buffer target{firstHalf};
+    Buffer sameSize{secondHalf};
+    Buffer largerSize{whole};
+
+    target = std::move(sameSize);
+    EXPECT_TRUE(sane(target));
+    EXPECT_EQ(target, secondHalf);
+    EXPECT_TRUE(sane(sameSize));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(sameSize.empty());  // NOLINT(bugprone-use-after-move)
+
+    target = std::move(largerSize);
+    EXPECT_TRUE(sane(target));
+    EXPECT_EQ(target, whole);
+    EXPECT_TRUE(sane(largerSize));    // NOLINT(bugprone-use-after-move)
+    EXPECT_TRUE(largerSize.empty());  // NOLINT(bugprone-use-after-move)
+}
+
+TEST_F(BufferTest, construction_from_slice)
+{
+    Buffer const fromEmpty{static_cast<Slice>(emptyBuffer)};
+    EXPECT_TRUE(sane(fromEmpty));
+    EXPECT_EQ(fromEmpty, emptyBuffer);
+
+    Buffer const fromNonEmpty{static_cast<Slice>(whole)};
+    EXPECT_TRUE(sane(fromNonEmpty));
+    EXPECT_EQ(fromNonEmpty, whole);
+}
+
+TEST_F(BufferTest, assignment_from_slice)
+{
+    Buffer b;
+
+    // empty <- empty slice
+    b = static_cast<Slice>(emptyBuffer);
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, emptyBuffer);
+
+    // empty <- non-empty slice
+    b = static_cast<Slice>(firstHalf);
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, firstHalf);
+
+    // non-empty <- non-empty slice
+    b = static_cast<Slice>(secondHalf);
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, secondHalf);
+
+    // non-empty <- empty slice
+    b = static_cast<Slice>(emptyBuffer);
+    EXPECT_TRUE(sane(b));
+    EXPECT_EQ(b, emptyBuffer);
+}
+
+TEST_F(BufferTest, resize_allocates_and_clear_releases)
+{
+    auto check = [](Buffer const& original, std::size_t size) {
+        SCOPED_TRACE(::testing::Message() << "size: " << size);
+
+        Buffer b{original};
+
+        // Resizing to zero is equivalent to clearing.
+        b(size);
+        EXPECT_TRUE(sane(b));
+        EXPECT_EQ(b.size(), size);
+        EXPECT_EQ(b.data() == nullptr, size == 0);
+
+        b(size + 1);
+        EXPECT_TRUE(sane(b));
+        EXPECT_EQ(b.size(), size + 1);
+        EXPECT_NE(b.data(), nullptr);
+
+        b.clear();
+        EXPECT_TRUE(sane(b));
+        EXPECT_TRUE(b.empty());
+        EXPECT_EQ(b.data(), nullptr);
+
+        // clear() is idempotent.
+        b.clear();
+        EXPECT_TRUE(sane(b));
+        EXPECT_TRUE(b.empty());
+        EXPECT_EQ(b.data(), nullptr);
+    };
+
+    for (auto size = 0uz; size < kHalf; ++size)
     {
-        static_assert(std::is_nothrow_move_constructible_v<Buffer>);
-        static_assert(std::is_nothrow_move_assignable_v<Buffer>);
-
-        {  // Move-construct from empty buf
-            Buffer x;
-            Buffer const y{std::move(x)};
-            EXPECT_TRUE(sane(x));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(sane(y));
-            EXPECT_TRUE(y.empty());
-            EXPECT_EQ(x, y);  // NOLINT(bugprone-use-after-move)
-        }
-
-        {  // Move-construct from non-empty buf
-            Buffer x{b1};
-            Buffer const y{std::move(x)};
-            EXPECT_TRUE(sane(x));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(sane(y));
-            EXPECT_EQ(y, b1);
-        }
-
-        {  // Move assign empty buf to empty buf
-            Buffer x;
-            Buffer y;
-
-            x = std::move(y);
-            EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x.empty());
-            EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
-        }
-
-        {  // Move assign non-empty buf to empty buf
-            Buffer x;
-            Buffer y{b1};
-
-            x = std::move(y);
-            EXPECT_TRUE(sane(x));
-            EXPECT_EQ(x, b1);
-            EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
-        }
-
-        {  // Move assign empty buf to non-empty buf
-            Buffer x{b1};
-            Buffer y;
-
-            x = std::move(y);
-            EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x.empty());
-            EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
-        }
-
-        {  // Move assign non-empty buf to non-empty buf
-            Buffer x{b1};
-            Buffer y{b2};
-            Buffer z{b3};
-
-            x = std::move(y);
-            EXPECT_TRUE(sane(x));
-            EXPECT_FALSE(x.empty());
-            EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
-
-            x = std::move(z);
-            EXPECT_TRUE(sane(x));
-            EXPECT_FALSE(x.empty());
-            EXPECT_TRUE(sane(z));    // NOLINT(bugprone-use-after-move)
-            EXPECT_TRUE(z.empty());  // NOLINT(bugprone-use-after-move)
-        }
+        check(emptyBuffer, size);
+        check(firstHalf, size);
     }
+}
 
-    {
-        Buffer w{static_cast<Slice>(b0)};
-        EXPECT_TRUE(sane(w));
-        EXPECT_EQ(w, b0);
+TEST_F(BufferTest, fill_sets_every_byte)
+{
+    Buffer b{4};
+    b.fill(0xab);
 
-        Buffer x{static_cast<Slice>(b1)};
-        EXPECT_TRUE(sane(x));
-        EXPECT_EQ(x, b1);
+    EXPECT_EQ(b.size(), 4);
+    for (auto const byte : Slice{b})
+        EXPECT_EQ(byte, 0xab);
+}
 
-        Buffer y{static_cast<Slice>(b2)};
-        EXPECT_TRUE(sane(y));
-        EXPECT_EQ(y, b2);
+TEST_F(BufferTest, fill_overwrites_and_keeps_size)
+{
+    Buffer b{4};
+    b.fill(0xab);
+    b.fill(0x00);
 
-        Buffer z{static_cast<Slice>(b3)};
-        EXPECT_TRUE(sane(z));
-        EXPECT_EQ(z, b3);
+    EXPECT_EQ(b.size(), 4);
+    for (auto const byte : Slice{b})
+        EXPECT_EQ(byte, 0x00);
+}
 
-        // Assign empty slice to empty buffer
-        w = static_cast<Slice>(b0);
-        EXPECT_TRUE(sane(w));
-        EXPECT_EQ(w, b0);
+TEST_F(BufferTest, fill_on_empty_buffer_is_a_noop)
+{
+    Buffer empty;
+    empty.fill(0xff);
 
-        // Assign non-empty slice to empty buffer
-        w = static_cast<Slice>(b1);
-        EXPECT_TRUE(sane(w));
-        EXPECT_EQ(w, b1);
-
-        // Assign non-empty slice to non-empty buffer
-        x = static_cast<Slice>(b2);
-        EXPECT_TRUE(sane(x));
-        EXPECT_EQ(x, b2);
-
-        // Assign non-empty slice to non-empty buffer
-        y = static_cast<Slice>(z);
-        EXPECT_TRUE(sane(y));
-        EXPECT_EQ(y, z);
-
-        // Assign empty slice to non-empty buffer:
-        z = static_cast<Slice>(b0);
-        EXPECT_TRUE(sane(z));
-        EXPECT_EQ(z, b0);
-    }
-
-    {
-        auto test = [](Buffer const& b, std::size_t i) {
-            Buffer x{b};
-
-            // Try to allocate some number of bytes, possibly
-            // zero (which means clear) and sanity check
-            x(i);
-            EXPECT_TRUE(sane(x));
-            EXPECT_EQ(x.size(), i);
-            EXPECT_EQ((x.data() == nullptr), (i == 0));
-
-            // Try to allocate some more data (always non-zero)
-            x(i + 1);
-            EXPECT_TRUE(sane(x));
-            EXPECT_EQ(x.size(), i + 1);
-            EXPECT_NE(x.data(), nullptr);
-
-            // Try to clear:
-            x.clear();
-            EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x.empty());
-            EXPECT_EQ(x.data(), nullptr);
-
-            // Try to clear again:
-            x.clear();
-            EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x.empty());
-            EXPECT_EQ(x.data(), nullptr);
-        };
-
-        for (std::size_t i = 0; i < 16; ++i)
-        {
-            test(b0, i);
-            test(b1, i);
-        }
-    }
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), nullptr);
 }
 
 }  // namespace xrpl::test

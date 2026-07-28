@@ -41,10 +41,13 @@ struct RunState
     release()
     {
         harness.reset();
+        // swap-with-empty rather than assignment: only swapping is guaranteed to
+        // hand the capacity back, and these pools are large.
         Batch{}.swap(present);
         Batch{}.swap(recent);
         std::vector<uint256>{}.swap(missing);
         std::vector<std::size_t>{}.swap(shuffle);
+        avgPayload = 0;
     }
 };
 
@@ -239,9 +242,13 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
     if (!w.pinToPool)
     {
         auto rs = std::make_shared<RunState>();
-        auto* b = benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs));
-        b->RangeMultiplier(10)->Range(kPoolSizes.front(), kPoolSizes.back());
-        b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
+        benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
+            ->RangeMultiplier(10)
+            ->Range(kPoolSizes.front(), kPoolSizes.back())
+            ->Threads(1)
+            ->Threads(4)
+            ->Threads(8)
+            ->UseRealTime();
 
         return;
     }
