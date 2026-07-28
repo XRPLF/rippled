@@ -472,7 +472,9 @@ ValidMPTBalanceChanges::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (isTesSuccess(result))
+    auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+
+    if (isTesSuccess(result) || fix340Enabled)
     {
         // Confidential transactions are validated by ValidConfidentialMPToken.
         // They modify encrypted fields and sfConfidentialOutstandingAmount
@@ -484,7 +486,7 @@ ValidMPTBalanceChanges::finalize(
             return true;
         }
 
-        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
+        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
@@ -506,6 +508,25 @@ ValidMPTBalanceChanges::finalize(
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
                                 << data.outstanding[kIBefore] << " " << data.outstanding[kIAfter]
                                 << " " << data.mptAmount;
+                return invariantPasses;
+            }
+
+            // Enforce the invariant even for a failed transaction: a
+            // transaction that did not succeed must not have moved MPT value,
+            // so OutstandingAmount must be unchanged. This catches a bug or
+            // exploit that mutates issuance state on a code path that then
+            // reports failure. tecINCOMPLETE and tecKILLED are excluded because
+            // some transactors legitimately commit MPT changes while returning
+            // them (e.g. AMMWithdraw commits the pool on tecINCOMPLETE; lending
+            // and fill-or-kill OfferCreate can return tecKILLED after applying
+            // MPT changes). Any new transactor that persists MPT state on a
+            // non-tesSUCCESS result must be reviewed against this check.
+            bool const failed =
+                !isTesSuccess(result) && result != tecINCOMPLETE && result != tecKILLED;
+            if (failed && data.outstanding[kIAfter] != data.outstanding[kIBefore])
+            {
+                JLOG(j.fatal()) << "Invariant failed: OutstandingAmount balance changed on failure "
+                                << tx.getTxnType() << " " << result;
                 return invariantPasses;
             }
         }
@@ -831,7 +852,7 @@ ValidMPTTransfer::isAuthorized(
 bool
 ValidMPTTransfer::finalize(
     STTx const& tx,
-    TER const,
+    TER const result,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
@@ -854,9 +875,11 @@ ValidMPTTransfer::finalize(
         return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttOFFER_CREATE;
     }();
 
-    // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
-    // Log invariant failure error even if MPTokensV2 is disabled.
-    auto const invariantPasses = !view.rules().enabled(featureMPTokensV2);
+    // Only enforce once MPTokensV2 or Cleanup3_4_0 are enabled to preserve consensus
+    // with nodes running an older version.
+    // Log invariant failure error even if the amendments are disabled.
+    auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    auto const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
 
     for (auto const& [mptID, values] : amount_)
     {
@@ -913,6 +936,28 @@ ValidMPTTransfer::finalize(
             receivers > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
+            return invariantPasses;
+        }
+
+        // Enforce the invariant even for a failed transaction: a transaction
+        // that did not succeed must not have changed any holder's MPT balance.
+        // A single holder whose spendable balance moved (a sender OR a
+        // receiver) is enough — not just a two-sided transfer — so this also
+        // catches a one-sided change such as a lock/unlock that shifts value
+        // between a holder's spendable (sfMPTAmount) and locked (sfLockedAmount)
+        // buckets. (A change touching only sfLockedAmount is caught instead by
+        // ValidMPTBalanceChanges, which tracks the holder total.) This catches a
+        // bug or exploit that moves balances on a code path that then reports
+        // failure. tecINCOMPLETE and tecKILLED are excluded because some
+        // transactors legitimately commit MPT changes while returning them (e.g.
+        // AMMWithdraw on tecINCOMPLETE; lending and fill-or-kill OfferCreate on
+        // tecKILLED). Any new transactor that persists an MPT balance change on
+        // a non-tesSUCCESS result must be reviewed against this check.
+        bool const failed = !isTesSuccess(result) && result != tecINCOMPLETE && result != tecKILLED;
+        if (fix340Enabled && failed && (senders > 0 || receivers > 0))
+        {
+            JLOG(j.fatal()) << "Invariant failed: MPToken balance changed on failure " << txnType
+                            << " " << result;
             return invariantPasses;
         }
     }

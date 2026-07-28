@@ -134,7 +134,11 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        // Result fed to the invariant checker on the first pass. Defaults to
+        // tesSUCCESS; set to a specific tec to test result-dependent invariant
+        // behavior (e.g. the on-failure checks and their exempt codes).
+        TER initialResult = tesSUCCESS)
     {
         doInvariantCheck(
             makeEnv(defaultAmendments()),
@@ -144,7 +148,8 @@ class Invariants_test : public beast::unit_test::Suite
             tx,
             ters,
             preclose,
-            setTxAccount);
+            setTxAccount,
+            initialResult);
     }
 
     void
@@ -156,7 +161,8 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        TER initialResult = tesSUCCESS)
     {
         using namespace test::jtx;
 
@@ -170,7 +176,8 @@ class Invariants_test : public beast::unit_test::Suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
-        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
+        doInvariantCheck(
+            std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, initialResult);
     }
 
     void
@@ -183,7 +190,8 @@ class Invariants_test : public beast::unit_test::Suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED})
+        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        TER initialResult = tesSUCCESS)
     {
         using namespace test::jtx;
 
@@ -206,16 +214,22 @@ class Invariants_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(ters.size() == 2))
             return;
 
-        TER terActual = tesSUCCESS;
+        TER terActual = initialResult;
         for (TER const& terExpect : ters)
         {
+            TER const terInput = terActual;
             terActual = transactor->checkInvariants(terActual, fee);
             BEAST_EXPECTS(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
             auto const messages = sink.messages().str();
 
-            if (!isTesSuccess(terActual))
+            // checkInvariants returns its input unchanged when nothing fires and
+            // an escalated failure code when an invariant fires. So a changed
+            // result means an invariant fired, and a firing invariant must log.
+            // A result that passes through unchanged (a success, or an exempt
+            // tec seed) fired nothing and needs no message.
+            if (terActual != terInput)
             {
                 BEAST_EXPECTS(
                     messages.starts_with("Invariant failed:") ||
@@ -3289,7 +3303,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3370,7 +3384,7 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{
                 ttVAULT_DEPOSIT, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3421,7 +3435,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3442,7 +3456,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3567,7 +3581,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3811,7 +3825,7 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{
                 ttVAULT_DEPOSIT, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3842,7 +3856,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfFee] = XRPAmount(100);
                     tx[sfAccount] = a3.id();
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3868,7 +3882,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3890,7 +3904,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3904,7 +3918,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3919,7 +3933,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3937,7 +3951,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(5); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3961,7 +3975,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfDelegate] = a3.id();
                     tx[sfFee] = XRPAmount(2000);
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3977,7 +3991,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4024,7 +4038,7 @@ class Invariants_test : public beast::unit_test::Suite
                     // This commented out line causes the invariant violation.
                     // tx[sfDestination] = A4.id();
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -4052,7 +4066,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4073,7 +4087,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [&](STObject& tx) { tx.setAccountID(sfDestination, a3.id()); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4087,7 +4101,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4101,7 +4115,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4118,7 +4132,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4134,7 +4148,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4158,7 +4172,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfDelegate] = a3.id();
                     tx[sfFee] = XRPAmount(2000);
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4220,7 +4234,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [&](STObject& tx) { tx[sfAccount] = a3.id(); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt,
             TxAccount::A2);
 
@@ -4235,7 +4249,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [&](STObject& tx) { tx[sfAccount] = a3.id(); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
 
         // Not the same as below check: attempt to clawback XRP
@@ -4279,7 +4293,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfAccount] = a3.id();
                     tx[sfHolder] = a4.id();
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
 
         doInvariantCheck(
@@ -4297,7 +4311,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfAccount] = a3.id();
                     tx[sfHolder] = a4.id();
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
 
         doInvariantCheck(
@@ -4319,7 +4333,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx[sfAccount] = a3.id();
                     tx[sfHolder] = a4.id();
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
     }
 
@@ -4435,7 +4449,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPAYMENT, [](STObject& tx) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&](Account const& a1, Account const& a2, Env& env) {
                     Account const gw("gw");
                     env.fund(XRP(1'000), gw);
@@ -4464,6 +4478,160 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sle);
                 return true;
             });
+
+        // The on-failure MPT checks (OutstandingAmount balance / transfer) must
+        // be skipped for tecINCOMPLETE and tecKILLED, because some transactors
+        // legitimately commit MPT changes while returning those codes
+        // (AMMWithdraw on tecINCOMPLETE; lending and fill-or-kill OfferCreate on
+        // tecKILLED). A conservation-consistent change paired with an exempt
+        // result must NOT trip the invariant; the same change with a non-exempt
+        // failure result must. The result is supplied via doInvariantCheck's
+        // initialResult seed — a tec cannot arise naturally here, since the
+        // harness runs only the invariant check, not doApply.
+        {
+            MPTID id;
+            // preclose: gw issues an MPT held by A1 and A2.
+            auto const setup = [&](Account const& a1, Account const& a2, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt(
+                    {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 50, .maxAmt = 1'000});
+                id = mpt.issuanceID();
+                return true;
+            };
+
+            // Consistent mint: OutstandingAmount and A1's balance both grow by
+            // 10, so conservation holds but OutstandingAmount changed — only the
+            // balance-change on-failure check is sensitive to it.
+            Precheck const mint = [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
+                auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
+                if (!sleIss || !sleTok)
+                    return false;
+                (*sleIss)[sfOutstandingAmount] = (*sleIss)[sfOutstandingAmount] + 10;
+                (*sleTok)[sfMPTAmount] = (*sleTok)[sfMPTAmount] + 10;
+                ac.view().update(sleIss);
+                ac.view().update(sleTok);
+                return true;
+            };
+
+            // Holder-to-holder transfer (A1 -> A2 by 10): OutstandingAmount
+            // unchanged, so only the transfer on-failure check is sensitive. Set
+            // CanTransfer so the ordinary transfer check stays quiet.
+            Precheck const transfer = [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
+                auto sleA = ac.view().peek(keylet::mptoken(id, a1.id()));
+                auto sleB = ac.view().peek(keylet::mptoken(id, a2.id()));
+                if (!sleIss || !sleA || !sleB)
+                    return false;
+                (*sleIss)[sfFlags] = (*sleIss)[sfFlags] | lsfMPTCanTransfer;
+                (*sleA)[sfMPTAmount] = (*sleA)[sfMPTAmount] - 10;
+                (*sleB)[sfMPTAmount] = (*sleB)[sfMPTAmount] + 10;
+                ac.view().update(sleIss);
+                ac.view().update(sleA);
+                ac.view().update(sleB);
+                return true;
+            };
+
+            STTx const payment{ttPAYMENT, [](STObject&) {}};
+
+            // Exempt results: invariant must not fire; the seeded result passes
+            // through unchanged on both passes.
+            doInvariantCheck(
+                {},
+                mint,
+                XRPAmount{},
+                payment,
+                {tecKILLED, tecKILLED},
+                setup,
+                TxAccount::None,
+                tecKILLED);
+            doInvariantCheck(
+                {},
+                mint,
+                XRPAmount{},
+                payment,
+                {tecINCOMPLETE, tecINCOMPLETE},
+                setup,
+                TxAccount::None,
+                tecINCOMPLETE);
+            doInvariantCheck(
+                {},
+                transfer,
+                XRPAmount{},
+                payment,
+                {tecKILLED, tecKILLED},
+                setup,
+                TxAccount::None,
+                tecKILLED);
+            doInvariantCheck(
+                {},
+                transfer,
+                XRPAmount{},
+                payment,
+                {tecINCOMPLETE, tecINCOMPLETE},
+                setup,
+                TxAccount::None,
+                tecINCOMPLETE);
+            // A non-exempt failure with the same change fires the check and
+            // escalates tec -> tef on the second pass.
+            doInvariantCheck(
+                {{"OutstandingAmount balance changed on failure"}},
+                mint,
+                XRPAmount{},
+                payment,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setup,
+                TxAccount::None,
+                tecEXPIRED);
+            doInvariantCheck(
+                {{"MPToken balance changed on failure"}},
+                transfer,
+                XRPAmount{},
+                payment,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setup,
+                TxAccount::None,
+                tecEXPIRED);
+
+            // A one-sided lock (spendable -> locked within one holder) is not a
+            // two-sided transfer, yet must still be caught on a non-exempt
+            // failure — this is the gap the `senders || receivers` condition
+            // closes. OutstandingAmount and the holder total are unchanged, so
+            // only the transfer-side on-failure check sees it.
+            Precheck const lock = [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
+                if (!sleTok || (*sleTok)[sfMPTAmount] < 10)
+                    return false;
+                // Move 10 from spendable to locked (a fresh MPToken has no
+                // locked amount, so set it directly). Holder total and
+                // OutstandingAmount are unchanged.
+                (*sleTok)[sfMPTAmount] = (*sleTok)[sfMPTAmount] - 10;
+                sleTok->setFieldU64(sfLockedAmount, 10);
+                ac.view().update(sleTok);
+                return true;
+            };
+            // Exempt result: the lock passes through unchanged.
+            doInvariantCheck(
+                {},
+                lock,
+                XRPAmount{},
+                payment,
+                {tecKILLED, tecKILLED},
+                setup,
+                TxAccount::None,
+                tecKILLED);
+            // Non-exempt failure: the one-sided lock is caught.
+            doInvariantCheck(
+                {{"MPToken balance changed on failure"}},
+                lock,
+                XRPAmount{},
+                payment,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setup,
+                TxAccount::None,
+                tecEXPIRED);
+        }
 
         // Invalid IOU clawback delta must fail once MPTokensV2 enforces before/after validation.
         {
@@ -5224,7 +5392,11 @@ class Invariants_test : public beast::unit_test::Suite
                             id = usd.issuanceID();
                             if (!enabled)
                             {
+                                // Enforcement is gated on featureMPTokensV2 OR
+                                // fixCleanup3_4_0, so the advisory path must
+                                // disable both to stay non-enforcing.
                                 env.disableFeature(featureMPTokensV2);
+                                env.disableFeature(fixCleanup3_4_0);
                             }
                             return true;
                         });
@@ -5406,7 +5578,10 @@ class Invariants_test : public beast::unit_test::Suite
 
         for (bool const isMPT : {false, true})
         {
-            auto const error = isMPT ? TER(tecINVARIANT_FAILED) : TER(tefINVARIANT_FAILED);
+            // Both IOU and MPT pools now escalate to tefINVARIANT_FAILED on the
+            // second invariant pass (MPT balance invariants enforce under
+            // fixCleanup3_4_0), so the AMM pool-change check fails on both.
+            auto const error = TER(tefINVARIANT_FAILED);
             for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
                 test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
