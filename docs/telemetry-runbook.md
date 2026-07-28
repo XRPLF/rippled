@@ -2655,13 +2655,15 @@ Two more pairs from the same family:
   series.
 
 Existing panels that already carry part of this picture, on the _Ledger Data &
-Sync_ dashboard: **NuDB Read Latency**, **NuDB Cache Hit Ratio**, **NuDB Read
+Sync_ dashboard: **NuDB Read Latency**, **NuDB Read Found Ratio**, **NuDB Read
 Pressure**, and **Job Queue Backlog and Deferred by Type** for the lane occupancy
 that this procedure tells you to distrust on its own.
 
-The **NuDB Cache Hit Ratio** title is wrong and has not been changed yet: the panel
-plots `node_reads_hit / node_reads_total`, which is the found rate described above,
-not a cache hit ratio. Read it as the found rate regardless of what the title says.
+**NuDB Read Found Ratio** plots `node_reads_hit / node_reads_total`. That is the
+found rate, not a cache hit ratio: the underlying counter increments whenever a
+fetch returned an object, and a node with `online_delete` has no object cache at
+all. A rate near 1.0 alongside an expensive read time is the cold-read signature,
+not a sign the cache is working.
 
 ### High memory usage
 
