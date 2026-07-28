@@ -25,10 +25,12 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <set>
 #include <string_view>
 
@@ -180,12 +182,9 @@ constexpr std::array kFoldToOtherHandlers = {
 consteval bool
 allPassThroughUnchanged()
 {
-    for (auto const name : kPassThroughHandlers)
-    {
-        if (MetricsRegistry::sanitiseHandler(name) != name)
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(kPassThroughHandlers, [](auto const name) {
+        return MetricsRegistry::sanitiseHandler(name) == name;
+    });
 }
 
 /**
@@ -194,12 +193,9 @@ allPassThroughUnchanged()
 consteval bool
 allFoldToOther()
 {
-    for (auto const name : kFoldToOtherHandlers)
-    {
-        if (MetricsRegistry::sanitiseHandler(name) != MetricsRegistry::kHandlerOther)
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(kFoldToOtherHandlers, [](auto const name) {
+        return MetricsRegistry::sanitiseHandler(name) == MetricsRegistry::kHandlerOther;
+    });
 }
 
 // Compile-time guarantees. Duplicated at runtime below so a failure names
@@ -337,7 +333,7 @@ TEST(MetricsRegistryScaledMean, zero_count_reports_absence_not_zero)
     // same numerator with one sample does produce a value, so the guard is
     // keyed on the count and is not rejecting everything.
     ASSERT_TRUE(Registry::scaledMean(500, 1).has_value());
-    EXPECT_EQ(*Registry::scaledMean(500, 1), 500);
+    EXPECT_EQ(Registry::scaledMean(500, 1), std::optional<std::int64_t>{500});
 }
 
 TEST(MetricsRegistryScaledMean, zero_total_over_real_samples_is_a_genuine_zero)
@@ -348,7 +344,7 @@ TEST(MetricsRegistryScaledMean, zero_total_over_real_samples_is_a_genuine_zero)
     // not suppressed, or a working fast path looks like a dead one.
     auto const mean = Registry::scaledMean(0, 32);
     ASSERT_TRUE(mean.has_value());
-    EXPECT_EQ(*mean, 0);
+    EXPECT_EQ(mean, std::optional<std::int64_t>{0});
 }
 
 TEST(MetricsRegistryScaledMean, exact_means_are_computed_exactly)
@@ -387,13 +383,15 @@ TEST(MetricsRegistryScaledMean, large_inputs_saturate_instead_of_wrapping)
     // would surface as a sudden dip to a healthy-looking small number, which
     // is the failure mode worth preventing.
     auto const saturated = Registry::scaledMean(kU64Max, 1);
-    ASSERT_TRUE(saturated.has_value());
+    if (!saturated.has_value())
+        FAIL() << "a saturated mean must still be reported";
     EXPECT_EQ(*saturated, kI64Max);
 
     // Scaling must not overflow either: this quotient times 100 exceeds
     // int64 range, so it clamps rather than wraps negative.
     auto const scaled = Registry::scaledMean(kU64Max, 2, 100);
-    ASSERT_TRUE(scaled.has_value());
+    if (!scaled.has_value())
+        FAIL() << "a saturated scaled mean must still be reported";
     EXPECT_EQ(*scaled, kI64Max);
 
     // Every result is non-negative; a negative latency or depth is
@@ -404,11 +402,9 @@ TEST(MetricsRegistryScaledMean, large_inputs_saturate_instead_of_wrapping)
     // Just below the boundary the value is exact, not clamped, so the clamp
     // above is a real bound and not a blanket ceiling on everything.
     auto const exact = Registry::scaledMean(static_cast<std::uint64_t>(kI64Max), 1);
-    ASSERT_TRUE(exact.has_value());
-    EXPECT_EQ(*exact, kI64Max);
+    EXPECT_EQ(exact, std::optional<std::int64_t>{kI64Max});
     auto const belowBoundary = Registry::scaledMean(1'000'000, 4, 100);
-    ASSERT_TRUE(belowBoundary.has_value());
-    EXPECT_EQ(*belowBoundary, 25'000'000);
+    EXPECT_EQ(belowBoundary, std::optional<std::int64_t>{25'000'000});
 }
 
 TEST(MetricsRegistryScaledMean, default_scale_is_one)

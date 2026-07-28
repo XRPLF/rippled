@@ -184,7 +184,8 @@ TEST_P(BackendTypeTest, write_stats_reported_only_when_measured)
 
     if (GetParam() == "nudb")
     {
-        ASSERT_TRUE(stats.has_value());
+        if (!stats.has_value())
+            FAIL() << "nudb must report write stats";
         // Freshly opened and not yet written to.
         EXPECT_EQ(stats->insertCount, 0u);
         EXPECT_EQ(stats->concurrentWriters, 0u);
