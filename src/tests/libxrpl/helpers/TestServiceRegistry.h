@@ -221,7 +221,7 @@ public:
     }
 
     // Storage services
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");
@@ -280,6 +280,15 @@ public:
     getPendingSaves() override
     {
         return pendingSaves_;
+    }
+
+    // AcquireStats is declared in src/xrpld/, which this helper deliberately
+    // does not include; returning a reference to an incomplete type is legal
+    // as long as nothing here forms the value.
+    AcquireStats&
+    getAcquireStats() override
+    {
+        throw std::logic_error("TestServiceRegistry::getAcquireStats() not implemented");
     }
 
     OpenLedger&

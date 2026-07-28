@@ -17,6 +17,7 @@ documentation.
 - [Consensus](#cat-consensus)
 - [Transaction Pipeline](#cat-transaction-pipeline)
 - [Fees & Queue](#cat-fees-queue)
+- [Job Queue](#cat-job-queue)
 - [Node State & Sync](#cat-node-state-sync)
 - [Peer & Overlay Networking](#cat-peer-overlay-networking)
 - [Storage Internals](#cat-storage-internals)
@@ -479,6 +480,42 @@ The transaction queue (TxQ) holds transactions that pay enough for local relay b
 
 **See also:** [Transaction queue (TxQ) on xrpl.org](https://xrpl.org/docs/concepts/transactions/transaction-queue)
 
+<a id="cat-job-queue"></a>
+
+## Job Queue
+
+<a id="concurrency-limit"></a>
+
+### Concurrency limit
+
+Each job type declares how many of its jobs may run at the same time. Sync-critical types are deliberately tight so one kind of work cannot monopolize the worker pool. A type sitting at its limit cannot start more work even when worker threads are idle, which makes the limit a distinct kind of bottleneck from CPU or disk.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+<a id="deferred-job"></a>
+
+### Deferred job
+
+When a job arrives for a type that is already at its concurrency limit, the queue holds it back rather than refusing it. Adding a job never fails for queue pressure, so a deferred count is the earliest signal that a type is oversubscribed — latency only shows the problem afterwards. Each completing job releases one deferred job, so a count that stays high means arrivals are outpacing completions.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+<a id="handler-label"></a>
+
+### Handler label
+
+Several call sites can enqueue work under the same job type, so job type alone cannot say which one caused a latency spike. The handler label carries the name of the call site that enqueued the job. Names are kept only when they are letters-only; anything else — including names that embed a ledger sequence number — folds into a shared `other` bucket, which keeps the number of series bounded. A reading under `other` therefore mixes several callers and never identifies one.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+<a id="job-queue-job-type"></a>
+
+### Job queue / job type
+
+The job queue is the worker-thread pool that runs xrpld's background work. Every unit of work is enqueued under a named job type — serving a peer's ledger request, absorbing inbound ledger data, updating payment paths, and so on — and each type is accounted separately: waiting, running, and deferred. Types that carry sync-critical traffic are the ones worth watching, because a backlog there translates directly into the node falling behind.
+
+**Scope:** per node — measured on and specific to this individual server.
+
 <a id="cat-node-state-sync"></a>
 
 ## Node State & Sync
@@ -621,6 +658,14 @@ Replay-delta request/response messages transfer only the state changes between l
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="resource-charge"></a>
+
+### Resource charge
+
+The resource manager bills each peer a load cost per request, so expensive requests cost the sender more than cheap ones. For object fetches the charge scales with how many objects were asked for and how many of those were misses, with a surcharge once the request crosses a size band. A running balance above the warning threshold marks the peer as overactive; above the drop threshold the node sheds it. Requests inside the free allowance carry no charge beyond the flat per-message cost.
+
+**Scope:** per node — measured on and specific to this individual server.
+
 <a id="resource-disconnect"></a>
 
 ### Resource disconnect
@@ -682,6 +727,14 @@ xrpld keeps several caches: SLE (ledger entries), Ledger, AcceptedLedger, TreeNo
 ### NodeStore
 
 The NodeStore is xrpld's content-addressed object database holding all ledger tree nodes, keyed by hash. It is the main on-disk store read during queries and sync and written as new ledgers are stored; NuDB is the default backend.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+<a id="nodestore-lookup-hit-miss"></a>
+
+### NodeStore lookup (hit / miss)
+
+A lookup is one attempt to fetch an object from the NodeStore by its hash. A hit is usually served from an in-memory cache and is cheap; a miss goes to the back-end store and costs a disk seek, so it is far more expensive. The hit/miss mix is therefore the main reason lookup time moves: a rising miss share explains slower lookups without any regression in the storage layer, while slower lookups on a hit-heavy mix point at the storage layer itself.
 
 **Scope:** per node — measured on and specific to this individual server.
 

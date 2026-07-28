@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpld/app/ledger/AccountStateSF.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
@@ -82,7 +83,9 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLedgerAcquireTimeout,
-          {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
+          {.jobType = JtLedgerData,
+           .jobName = TimeoutCounter::kLedgerAcquireJobName,
+           .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
     , seq_(seq)
@@ -146,6 +149,14 @@ InboundLedger::init(ScopedLockType& collectionLock)
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
+
+    // The local store satisfied the whole acquisition, so this is a genuine
+    // completion. It is counted here rather than by calling done(), because
+    // done() drives the state machine (it stores the ledger, dispatches
+    // AcqDone, and would double-store on the paths below) and a counter must
+    // not change behaviour. recordCompletionOnce() is idempotent, so if
+    // done() is later reached for this same object the count stays at one.
+    recordCompletionOnce();
 
     if (reason_ == Reason::HISTORY)
         return;
@@ -212,6 +223,10 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+        // Partial work means a map was partly built and is now discarded, so
+        // the whole acquisition has to start over. That is the expensive case,
+        // so it is counted apart from a cheap abort that had nothing yet.
+        app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
                                                     : (std::string("timeouts:") +
@@ -258,7 +273,7 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
-InboundLedger::tryDB(NodeStore::Database& srcDB)
+InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
@@ -386,6 +401,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
+        app_.getAcquireStats().recordGiveUp();
         if (seq_ != 0)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << seq_;
@@ -444,6 +460,25 @@ InboundLedger::pmDowncast()
 }
 
 void
+InboundLedger::recordCompletionOnce()
+{
+    // A failed or still-running acquisition is not a completion. Checked here
+    // rather than at each caller so both exits share one definition of
+    // success.
+    if (!complete_ || failed_)
+        return;
+
+    // The latch, not the counter, is what makes this idempotent: the two
+    // exits that finish an acquisition are independent, and either can run
+    // first.
+    if (completionCounted_)
+        return;
+
+    completionCounted_ = true;
+    app_.getAcquireStats().recordCompletion();
+}
+
+void
 InboundLedger::done()
 {
     if (signaled_)
@@ -451,6 +486,13 @@ InboundLedger::done()
 
     signaled_ = true;
     touch();
+
+    // done() is the funnel every peer-driven outcome passes through, but not
+    // every outcome: init() can satisfy an acquisition from the local store
+    // and return without reaching here. Both call the same idempotent helper
+    // so each completion is counted exactly once. failed_ outcomes are
+    // excluded; the give-up path counts those itself.
+    recordCompletionOnce();
 
     // Finalize the acquire span with the outcome, timeout count, and peer
     // count. Keep it active as the ambient context across the finalize and

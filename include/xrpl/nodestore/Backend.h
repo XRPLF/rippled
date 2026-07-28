@@ -4,6 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -13,7 +14,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * A backend used for the NodeStore.
@@ -49,6 +50,18 @@ public:
      */
     [[nodiscard]] virtual std::optional<std::size_t>
     getBlockSize() const
+    {
+        return std::nullopt;
+    }
+
+    /**
+     * Get write-path statistics for backends that support it.
+     *
+     * Returns std::nullopt for backends that do not measure their writes.
+     * @see WriteStats for how to derive queuing time from the result.
+     */
+    [[nodiscard]] virtual std::optional<WriteStats>
+    getWriteStats() const
     {
         return std::nullopt;
     }
@@ -163,4 +176,4 @@ public:
     fdRequired() const = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

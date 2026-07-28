@@ -1014,6 +1014,10 @@ repeated here:
   `_running` / `_deferred`). These travel the `beast::insight` pipeline, not the
   OTel SDK one, so they are documented in
   [§2.5](#25-per-job-type-queue-gauges).
+- The sync-diagnosis signals — 15 further `nodestore_state` label values (two
+  latency means, four `nudb_*`, nine `acquire_*`) — which separate a
+  write-serialized stall from a cold-read stall. See
+  [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state).
 
 ### New Grafana Dashboards (Phase 9)
 
@@ -1166,15 +1170,108 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 #### NodeStore I/O (Observable Gauge — `nodestore_state`)
 
-| Prometheus Metric                              | Type  | Labels   | Description                          |
-| ---------------------------------------------- | ----- | -------- | ------------------------------------ |
-| `nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations |
-| `nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Reads served from cache              |
-| `nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations          |
-| `nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written             |
-| `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                |
-| `nodestore_state{metric="write_load"}`         | Gauge | `metric` | Current write load score             |
-| `nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue         |
+| Prometheus Metric                              | Type  | Labels   | Description                                                   |
+| ---------------------------------------------- | ----- | -------- | ------------------------------------------------------------- |
+| `nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations                          |
+| `nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Fetches that found an object (not a cache hit)                |
+| `nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations                                   |
+| `nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written                                      |
+| `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                                         |
+| `nodestore_state{metric="write_load"}`         | Gauge | `metric` | Backend write-queue reading; on NuDB this is the writer depth |
+| `nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue                                  |
+
+> **`node_reads_hit` is a found count, not a cache-hit rate.** `fetchHitCount_`
+> is incremented whenever the fetch returned an object
+> (`src/libxrpl/nodestore/Database.cpp:246-255`), regardless of where it came
+> from. The ratio against `node_reads_total` is therefore the fraction of fetches
+> that **found** something, and can read ~100% while every fetch went to disk.
+> Pair it with `read_mean_us` before drawing any conclusion — see
+> [Slow to reach `full`](../docs/telemetry-runbook.md#slow-to-reach-full).
+
+> **On NuDB, `write_load` and `nudb_writers_in_flight` are the same number.**
+> Both read the same atomic. `NuDBBackend::getWriteLoad()` returns
+> `concurrentWriters.load()`
+> (`src/libxrpl/nodestore/backend/NuDBFactory.cpp:355-361`), and
+> `WriteStats::concurrentWriters` is that same counter. So the two series track
+> each other exactly, sampled microseconds apart in one callback. Do not read
+> their agreement as two signals confirming each other — it is one signal twice.
+> On the RocksDB backend `write_load` is a different and independent quantity:
+> `BatchWriter::getWriteLoad()` returns the larger of the recorded write load and
+> the pending batch size (`src/libxrpl/nodestore/BatchWriter.cpp:47-53`), so it is
+> a batch-queue length, not a thread count. The memory and null backends return a
+> constant. Read `write_load` as "whatever queue reading this backend offers" and
+> use `nudb_writers_in_flight` when the backend is NuDB.
+
+#### Sync Diagnosis Signals (Observable Gauge — `nodestore_state`)
+
+Further label values on the same instrument, added to separate the two
+bottlenecks that both present as the `ledgerData` job lane pinned at its
+concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
+`observeWritePathDetail()`, and `observeAcquireStats()`
+(`src/xrpld/telemetry/MetricsRegistry.cpp:805-877`).
+
+| Prometheus Metric                                    | Type  | Labels   | Description                                             |
+| ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`             | Gauge | `metric` | Mean time per backend read (microseconds)               |
+| `nodestore_state{metric="write_mean_us"}`            | Gauge | `metric` | Mean time per backend write (microseconds)              |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | Gauge | `metric` | Threads inside a NuDB insert at sample time             |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | Gauge | `metric` | Mean queue depth at the NuDB insert mutex, scaled ×100  |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | Gauge | `metric` | Mean NuDB insert time incl. queueing (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | Gauge | `metric` | Slowest single NuDB insert observed (microseconds)      |
+| `nodestore_state{metric="acquire_deferrals"}`        | Gauge | `metric` | Timer jobs skipped because the lane was full, all lanes |
+| `nodestore_state{metric="acquire_timeouts"}`         | Gauge | `metric` | Timer bodies that ran and advanced retry, all lanes     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | Gauge | `metric` | Deferrals from the `InboundLedger` lane alone           |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | Gauge | `metric` | Timeouts from the `InboundLedger` lane alone            |
+| `nodestore_state{metric="acquire_give_ups"}`         | Gauge | `metric` | Acquisitions that exhausted their retry budget          |
+| `nodestore_state{metric="acquire_aborts"}`           | Gauge | `metric` | Acquisitions destroyed before finishing                 |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | Gauge | `metric` | Subset of aborts that discarded partly built maps       |
+| `nodestore_state{metric="acquire_completions"}`      | Gauge | `metric` | Acquisitions that finished successfully                 |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric` | Acquisitions evicted by the 1-minute sweep              |
+
+**Three properties to know before querying these.**
+
+- `nudb_writer_depth_x100` is fixed-point — divide by 100. The depth sits just
+  above 1.0 even under load, because NuDB takes one global mutex per insert
+  (`nudb/impl/basic_store.ipp:288`, a Conan dependency this repo does not patch).
+  An integral gauge would truncate 1.60 to 1 and lose the signal entirely. The
+  value is `WriteStats::depthSum / WriteStats::depthSamples`, both folded in when
+  an insert **enters** the critical section, so inserts still in flight count
+  toward the mean. It is not `depthSum / insertCount`: `insertCount` only rises at
+  insert exit, and dividing by it excluded exactly the deep, slow inserts and
+  biased the mean downward when queueing was worst.
+- The four `nudb_*` values are published **only when the writable backend is
+  NuDB**. `observeWritePathDetail()` returns early when `getWriteStats()` is
+  empty, so a memory or RocksDB backend omits them rather than reporting four
+  zeros. Absent is not zero.
+- `read_mean_us` and `write_mean_us` are omitted when nothing has been read or
+  written, so a dashboard shows a gap instead of a plausible wrong number. The
+  nine `acquire_*` counters are published unconditionally, because for a counter
+  zero is a meaningful reading.
+
+**The pairs, not the individual counts, are diagnostic.** Deferrals rising while
+timeouts stay flat means the give-up path is disarmed: a deferral re-arms the
+timer without running its body, so the retry counter never advances and the
+6-timeout give-up is unreachable. Sweep evictions rising while completions stay at
+zero means partial work is discarded and redone. Neither pattern is visible from
+one counter. Documented on the class at `src/xrpld/app/ledger/AcquireStats.h`.
+
+**Compare the ledger-scoped pair, not the all-lane pair.** Deferrals and timeouts
+are both recorded in `TimeoutCounter`, a base shared by five subclasses
+(`InboundLedger`, `TransactionAcquire`, `LedgerReplayTask`, `LedgerDeltaAcquire`,
+`SkipListAcquire`) with different job limits, so `acquire_deferrals` and
+`acquire_timeouts` pool every lane — a saturated replay lane reproduces the
+fingerprint while ledger acquisition is healthy. `acquire_ledger_deferrals` and
+`acquire_ledger_timeouts` narrow both events to the `InboundLedger` lane via
+`TimeoutCounter::isLedgerAcquisition()` and are the pair to compare. Both pairs
+multiplex on the existing `metric` label, so no new instrument and no new
+dashboard template variable is involved.
+
+`acquire_completions` counts an acquisition at **both** of its exits — `done()`
+and the `init()` path that is satisfied entirely from the local store — behind an
+idempotent latch, so it is exactly one per completion however the completion was
+reached. Before that latch existed, local-store hits were uncounted and the gauge
+could read zero on a node that was completing steadily; treat a zero on archived
+data as uninformative unless the build is known to include the fix.
 
 #### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
 
@@ -1365,8 +1462,10 @@ spelling would silently drop the override.
 #### Prometheus Query Examples (Phase 9)
 
 ```promql
-# NodeStore cache hit ratio
-nodestore_state{metric="node_reads_hit"} / nodestore_state{metric="node_reads_total"}
+# NodeStore found rate: the fraction of fetches that returned an object.
+# This is NOT a cache-hit rate -- it can read ~100% while every fetch hits disk.
+  nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}
+/ nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}
 
 # RPC error rate for server_info
 rate(rpc_method_errored_total{method="server_info"}[5m])
@@ -1385,7 +1484,7 @@ load_factor_metrics{metric="load_factor"} > 5
 
 # Job types currently hitting their concurrency limit (backpressure).
 # Scoped to one node: unscoped, this aggregates every node on the stack.
-max by (__name__) ({__name__=~"jobq_.*_deferred", service_instance_id="$node"}) > 0
+max by (__name__) ({__name__=~"jobq_.*_deferred", service_instance_id=~"$node"}) > 0
 
 # GetObject NodeStore hit ratio
 sum(rate(getobject_lookups_total{result="hit"}[5m]))
@@ -1396,7 +1495,34 @@ histogram_quantile(0.95, sum by (le) (rate(getobject_lookup_us_bucket[5m])))
 
 # GetObject requests refused, by reason
 sum by (reason) (rate(getobject_rejected_total[5m]))
+
+# Write-path queueing: depth is fixed-point, divide by 100
+nodestore_state{metric="nudb_writer_depth_x100", service_instance_id=~"$node"} / 100
+
+# Read cost in microseconds per read. Read it with the found rate above.
+nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}
+
+# Are ledger acquisitions finishing at all? (per minute)
+increase(nodestore_state{metric="acquire_completions", service_instance_id=~"$node"}[1m])
+
+# Livelock fingerprint, first half: ledger-acquisition deferrals climbing
+increase(nodestore_state{metric="acquire_ledger_deferrals", service_instance_id=~"$node"}[5m])
+
+# Livelock fingerprint, second half: ledger-acquisition timeouts staying flat
+increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~"$node"}[5m])
+
+# All-lane totals. Answers "is any TimeoutCounter lane deferring", not "is ledger
+# acquisition deferring" -- do not read the fingerprint off this pair.
+increase(nodestore_state{metric="acquire_deferrals", service_instance_id=~"$node"}[5m])
+increase(nodestore_state{metric="acquire_timeouts", service_instance_id=~"$node"}[5m])
 ```
+
+> **Diagnostic procedure.** These signals exist to answer one question — why a
+> node is slow to reach `full` — and the decision rule that uses them lives in
+> [docs/telemetry-runbook.md § Slow to reach `full`](../docs/telemetry-runbook.md#slow-to-reach-full),
+> with the measured reference values from both bottleneck modes. The short form:
+> the `ledgerData` lane sitting at its concurrency cap is true in **both** modes,
+> so it is never a diagnosis on its own.
 
 ### Phase 7+: External Dashboard Parity Metrics
 
@@ -1458,9 +1584,23 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
-| Prometheus Metric                     | Type  | Labels   | Description            |
-| ------------------------------------- | ----- | -------- | ---------------------- |
-| `storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | NuDB backend file size |
+| Prometheus Metric                              | Type  | Labels   | Description                                                |
+| ---------------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
+| `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
+
+> **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:1511`), which sums the object payloads
+> this process has written. It therefore excludes NuDB's keys, bucket padding and
+> log, and it resets when the process restarts while the files on disk do not.
+> `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
+> (`MetricsRegistry.cpp:836`), so the two series are equal by construction and any
+> write-amplification ratio built from the pair is a constant 1.0. To size the store
+> on disk, stat the backend's files; no metric reports it today.
+>
+> This label value was called `nudb_bytes` before Phase 9. The value comes from
+> `node_store::Database`, not from the NuDB backend, so it reads the same on
+> RocksDB and carries no backend prefix. Queries and dashboards pinned to the old
+> name return no data.
 
 #### Synchronous Counters (Phase 7+)
 

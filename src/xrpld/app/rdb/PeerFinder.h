@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <functional>

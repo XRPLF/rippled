@@ -24,6 +24,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -121,6 +122,36 @@ constexpr std::array kMicrosecondBoundaries{
     10'000'000.0,
     30'000'000.0,
     60'000'000.0};
+
+/**
+ * Bucket boundaries for latencies that are normally sub-millisecond.
+ *
+ * 1 µs, 2 µs, 5 µs, 10 µs, 25 µs, 50 µs, 100 µs, 250 µs, 500 µs, 1 ms, 5 ms,
+ * 25 ms.
+ *
+ * kMicrosecondBoundaries starts at 100 µs, which is above the entire range a
+ * healthy nodestore read occupies, so every warm read falls in its first
+ * bucket and the distribution reads as flat. These edges resolve the warm
+ * range instead, while still reaching far enough to show a cold tail against
+ * it.
+ *
+ * Currently unused: no sub-millisecond histogram instrument exists yet. The
+ * edges live here so the instrument that records nodestore read latency gets
+ * a ladder that fits it, rather than silently inheriting the wrong one.
+ */
+[[maybe_unused]] constexpr std::array kSubMillisecondBoundaries{
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    25.0,
+    50.0,
+    100.0,
+    250.0,
+    500.0,
+    1'000.0,
+    5'000.0,
+    25'000.0};
 
 /**
  * Register an explicit-bucket histogram view.
@@ -775,6 +806,97 @@ MetricsRegistry::registerLoadFactorGauge()
 }
 
 void
+MetricsRegistry::observeNodeStoreTotals(node_store::Database& db, ObserveFn const& observe)
+{
+    // Cumulative counters (monotonically increasing).
+    observe("node_reads_total", static_cast<std::int64_t>(db.getFetchTotalCount()));
+    observe("node_reads_hit", static_cast<std::int64_t>(db.getFetchHitCount()));
+    observe("node_writes", static_cast<std::int64_t>(db.getStoreCount()));
+    observe("node_written_bytes", static_cast<std::int64_t>(db.getStoreSize()));
+    observe("node_read_bytes", static_cast<std::int64_t>(db.getFetchSize()));
+
+    // Cumulative I/O durations, read straight off the atomics.
+    observe("node_reads_duration_us", static_cast<std::int64_t>(db.getFetchDurationUs()));
+    observe("node_writes_duration_us", static_cast<std::int64_t>(db.getStoreDurationUs()));
+
+    // Mean latencies. A cumulative total cannot separate "every read took
+    // 9 us" from "most took 2 and a few took 900", and the second is the
+    // cold-store signature: the hit rate reads the same either way, only the
+    // latency differs. Each mean is omitted rather than reported as zero
+    // when nothing has been read or written, so a dashboard shows a gap
+    // instead of a plausible wrong number.
+    if (auto const mean = scaledMean(db.getFetchDurationUs(), db.getFetchTotalCount()))
+        observe("read_mean_us", *mean);
+    if (auto const mean = scaledMean(db.getStoreDurationUs(), db.getStoreCount()))
+        observe("write_mean_us", *mean);
+
+    // Write load score (instantaneous).
+    observe("write_load", static_cast<std::int64_t>(db.getWriteLoad()));
+}
+
+void
+MetricsRegistry::observeWritePathDetail(node_store::Database const& db, ObserveFn const& observe)
+{
+    auto const ws = db.getWriteStats();
+    if (!ws)
+        return;
+
+    observe("nudb_writers_in_flight", static_cast<std::int64_t>(ws->concurrentWriters));
+    observe("nudb_insert_max_us", static_cast<std::int64_t>(ws->insertMaxUs));
+
+    if (auto const mean = scaledMean(ws->insertTotalUs, ws->insertCount))
+        observe("nudb_insert_mean_us", *mean);
+
+    // Mean writer depth times 100. NuDB serializes inserts behind one
+    // mutex, so this depth is the queue length at that mutex and sits just
+    // above 1.0 even under load. An integral gauge would truncate that to 1
+    // and lose the whole signal, hence the fixed-point scale -- which the
+    // name states, so nobody reads 140 as 140 writers.
+    if (auto const mean = scaledMean(ws->depthSum, ws->depthSamples, 100))
+        observe("nudb_writer_depth_x100", *mean);
+}
+
+void
+MetricsRegistry::observeAcquireStats(AcquireStats const& stats, ObserveFn const& observe)
+{
+    // Published unconditionally: for a counter, zero is the meaningful
+    // "no such event yet" reading, unlike for a mean. The diagnostic value
+    // is in the pairs -- deferrals rising while timeouts stay flat means the
+    // give-up path cannot fire, so an acquisition never ends.
+    observe("acquire_deferrals", static_cast<std::int64_t>(stats.getDeferrals()));
+    observe("acquire_timeouts", static_cast<std::int64_t>(stats.getTimeouts()));
+
+    // The same two events, narrowed to ledger acquisition. The pair above
+    // sums every TimeoutCounter subclass, so a busy replay lane can imitate
+    // a stalled ledger acquisition; compare these two instead when asking
+    // whether ledger acquisition's give-up path is advancing.
+    observe("acquire_ledger_deferrals", static_cast<std::int64_t>(stats.getLedgerDeferrals()));
+    observe("acquire_ledger_timeouts", static_cast<std::int64_t>(stats.getLedgerTimeouts()));
+    observe("acquire_give_ups", static_cast<std::int64_t>(stats.getGiveUps()));
+    observe("acquire_aborts", static_cast<std::int64_t>(stats.getAborts()));
+    observe("acquire_aborts_partial", static_cast<std::int64_t>(stats.getAbortsWithPartialWork()));
+    observe("acquire_completions", static_cast<std::int64_t>(stats.getCompletions()));
+    observe("acquire_sweep_evictions", static_cast<std::int64_t>(stats.getSweepEvictions()));
+}
+
+void
+MetricsRegistry::observeReadQueue(node_store::Database& db, ObserveFn const& observe)
+{
+    json::Value obj(json::ValueType::Object);
+    db.getCountsJson(obj);
+
+    if (obj.isMember("read_queue"))
+        observe("read_queue", static_cast<std::int64_t>(obj["read_queue"].asUInt()));
+
+    // Read thread pool stats (native JSON ints, no jss:: constants).
+    for (auto const* key : {"read_request_bundle", "read_threads_running", "read_threads_total"})
+    {
+        if (obj.isMember(key))
+            observe(key, static_cast<std::int64_t>(obj[key].asInt()));
+    }
+}
+
+void
 MetricsRegistry::registerNodeStoreGauge()
 {
     // --- Task 9.1: NodeStore I/O gauges ---
@@ -782,8 +904,14 @@ MetricsRegistry::registerNodeStoreGauge()
     // as observable gauges.  This avoids adding an xrpld dependency into the
     // libxrpl nodestore code — the MetricsRegistry reads the existing atomic
     // counters from Database via its public accessors.
+    //
+    // Every value multiplexes onto this one gauge through its `metric`
+    // label, so a new value needs no new instrument. The body is split
+    // across four helpers, one per domain, to stay inside the per-function
+    // line budget and to keep each domain testable on its own.
     nodeStoreGauge_ = meter_->CreateInt64ObservableGauge(
-        "nodestore_state", "NodeStore I/O counters, queue depth, and write load");
+        "nodestore_state",
+        "NodeStore I/O counters, latencies, write-queue depth and acquisition stalls");
     nodeStoreGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -795,59 +923,18 @@ MetricsRegistry::registerNodeStoreGauge()
             {
                 auto& db = app.getNodeStore();
 
-                auto observe = [&](char const* name, int64_t value) {
+                ObserveFn const observe = [&](char const* name, std::int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Cumulative counters (monotonically increasing).
-                observe("node_reads_total", static_cast<int64_t>(db.getFetchTotalCount()));
-                observe("node_reads_hit", static_cast<int64_t>(db.getFetchHitCount()));
-                observe("node_writes", static_cast<int64_t>(db.getStoreCount()));
-                observe("node_written_bytes", static_cast<int64_t>(db.getStoreSize()));
-                observe("node_read_bytes", static_cast<int64_t>(db.getFetchSize()));
-
-                // Write load score (instantaneous).
-                observe("write_load", static_cast<int64_t>(db.getWriteLoad()));
-
-                // Read queue depth (instantaneous).
-                json::Value obj(json::ValueType::Object);
-                db.getCountsJson(obj);
-                if (obj.isMember("read_queue"))
-                {
-                    observe("read_queue", static_cast<int64_t>(obj["read_queue"].asUInt()));
-                }
-
-                // Cumulative read duration (stored as JSON string, not int).
-                if (obj.isMember(jss::node_reads_duration_us))
-                {
-                    auto durStr = obj[jss::node_reads_duration_us].asString();
-                    if (!durStr.empty())
-                    {
-                        observe("node_reads_duration_us", static_cast<int64_t>(std::stoll(durStr)));
-                    }
-                }
-
-                // Read thread pool stats (native JSON ints, no jss:: constants).
-                if (obj.isMember("read_request_bundle"))
-                {
-                    observe(
-                        "read_request_bundle",
-                        static_cast<int64_t>(obj["read_request_bundle"].asInt()));
-                }
-                if (obj.isMember("read_threads_running"))
-                {
-                    observe(
-                        "read_threads_running",
-                        static_cast<int64_t>(obj["read_threads_running"].asInt()));
-                }
-                if (obj.isMember("read_threads_total"))
-                {
-                    observe(
-                        "read_threads_total",
-                        static_cast<int64_t>(obj["read_threads_total"].asInt()));
-                }
+                // Qualified because the enclosing lambda captures nothing:
+                // these are static members, and the explicit scope says so.
+                MetricsRegistry::observeNodeStoreTotals(db, observe);
+                MetricsRegistry::observeWritePathDetail(db, observe);
+                MetricsRegistry::observeAcquireStats(app.getAcquireStats(), observe);
+                MetricsRegistry::observeReadQueue(db, observe);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1385,7 +1472,10 @@ void
 MetricsRegistry::registerStorageDetailGauge()
 {
     // --- Task 7.13: Storage detail gauges ---
-    // Reports NuDB on-disk size via the NodeStore JSON counters interface.
+    // Reports the cumulative payload bytes handed to the NodeStore. See the
+    // note at the observe() call below: this is logical bytes stored, not
+    // on-disk file size, because no accessor for the latter exists. The label
+    // value names it that way so it is not read as a filesystem measurement.
     storageDetailGauge_ =
         meter_->CreateInt64ObservableGauge("storage_detail", "Storage detail metrics");
     storageDetailGauge_->AddCallback(
@@ -1403,9 +1493,24 @@ MetricsRegistry::registerStorageDetailGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // NuDB on-disk size reported by the NodeStore backend.
-                // getStoreSize() returns the total bytes stored.
-                observe("nudb_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
+                // Cumulative payload bytes handed to the NodeStore. This is
+                // not an on-disk file size: getStoreSize() sums the object
+                // payloads this process has written, so it excludes NuDB's
+                // keys, bucket padding and log, and it resets with the
+                // process while the files do not. The value comes from
+                // Database, not from any backend, so it carries no nudb_
+                // prefix -- it reads the same on RocksDB.
+                //
+                // This is the same call node_written_bytes makes on the
+                // nodestore_state gauge, so the two series are equal by
+                // construction and their ratio is a constant 1.0. It is not
+                // a write-amplification measure. Backend exposes no file
+                // size accessor, so there is nothing better to read here;
+                // computing one would mean stat()ing the backend's files
+                // from the reader thread, which needs a new Backend method
+                // rather than a change at this call site.
+                observe(
+                    "stored_object_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

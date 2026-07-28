@@ -1199,7 +1199,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative object-store read, cache-hit, and write operation counts.*\n\n###### How it's computed:\n*Current values of the read, cache-hit, and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with cache-hits tracking a good fraction of reads.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1298,7 +1298,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_hit\"}[$__rate_interval]), \"series\", \"Reads Hit (cache)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_hit\"}[$__rate_interval]), \"series\", \"Reads Found\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "B"
         },
         {
@@ -1318,7 +1318,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative object-store read, cache-hit, and write operation counts.*\n\n###### How it's computed:\n*Current values of the read, cache-hit, and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with cache-hits tracking a good fraction of reads.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1328,7 +1328,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Found Ratio",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1409,11 +1409,11 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_hit\"}[$__rate_interval]) / ignoring(metric) rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_total\"}[$__rate_interval]), \"series\", \"Cache Hit Ratio\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_hit\"}[$__rate_interval]) / ignoring(metric) rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_total\"}[$__rate_interval]), \"series\", \"Found Ratio\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
-      "title": "NodeStore Cache Hit Ratio",
+      "title": "NodeStore Read Found Ratio",
       "type": "timeseries"
     },
     {
@@ -3908,7 +3908,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*On-disk size of the NuDB object-store back end, in bytes.*\n\n###### How it's computed:\n*Current value of the NuDB storage-size gauge, plotted over time.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the data growth rate.*\n\n###### Healthy range:\n*Gradual growth consistent with retained ledger history.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill.*\n\n###### Keywords:\n- **NuDB** *(per node)* — the append-only key-value database used as the default NodeStore backend.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nudb)",
+      "description": "###### What this is:\n*Cumulative object-payload bytes this process has written to the NodeStore back end. This is not the size of the store on disk.*\n\n###### How it's computed:\n*Current value of the stored_object_bytes gauge, plotted over time. It observes getStoreSize(), the same accessor node_written_bytes uses, so the two series are equal and their ratio is a constant 1.0 rather than a write-amplification measure.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the write rate. It excludes NuDB's keys, bucket padding and log, and it restarts from zero with the process while the files on disk do not.*\n\n###### Healthy range:\n*Gradual growth consistent with ledger data being stored.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill. Do not use this panel to size the store on disk or to plan disk capacity; no metric reports on-disk size today, so check the filesystem directly.*\n\n###### Keywords:\n- **NuDB** *(per node)* — the append-only key-value database used as the default NodeStore backend.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nudb)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3918,7 +3918,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Size",
+            "axisLabel": "Stored Bytes",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -3995,11 +3995,11 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_bytes\"}, \"series\", \"NuDB Size\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"stored_object_bytes\"}, \"series\", \"NuDB Stored Bytes\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         }
       ],
-      "title": "NuDB Storage Size",
+      "title": "Stored Object Bytes",
       "type": "timeseries"
     },
     {
@@ -5107,7 +5107,7 @@
     },
     {
       "title": "Job Queue Saturation (Running vs Limit)",
-      "description": "###### What this is:\n*How close each concurrency-capped job type is to its ceiling. JobQueue enforces a per-type limit on how many jobs of that type may run at once, and the tight ones carry ledger-sync traffic: makeFetchPack 1, ledgerRequest 3, ledgerData 3, updatePaths 1, fetchTxnData 5. A type at its ceiling cannot start more work no matter how many workers are idle, so this is a different kind of limit from CPU or disk.*\n\n###### How it's computed:\n*Each jobq_<jobtype>_running gauge divided by that type's own limit from JobTypes.h, so every line shares one 0-to-1 axis. 1.0 means running equals the limit. Multiply a reading by the limit shown in its legend to recover the raw job count. The gauges are published by JobQueue::collect() under the mutex that guards the counters.*\n\n###### Reading it:\n*Read the distance to 1.0, not the absolute height. Below 1.0 the type has spare slots and its queue wait is not the limit's fault. Touching 1.0 briefly is normal work. Sitting at 1.0 means the type is pinned at its ceiling and every further job of that type is being deferred rather than started, which is what turns into queue wait downstream. Because the limits differ, a raw count of 3 is saturation for ledgerRequest but only 60 percent for fetchTxnData; normalising is what makes the lines comparable.*\n\n###### Healthy range:\n*Below 1.0, with brief touches under load.*\n\n###### Watch for:\n*A line flat at 1.0: that type is the binding constraint. ledgerRequest pinned means the 3 slots shared by RcvGetLedger and RcvGetObjByHash are full, so peer ledger and object requests are queueing behind each other; the Ledger Data and Sync dashboard splits that wait by handler and shows the matching deferred depth. ledgerData or fetchTxnData pinned means inbound ledger data cannot be absorbed and validated ledger age will grow. makeFetchPack or updatePaths pinned at their limit of 1 means a single long job is blocking the whole type. Note the collector samples once per interval, so a line that never reaches 1.0 is not proof the type was never momentarily saturated.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getNextJob (limit enforcement) / JobQueue::collect (publication)`",
+      "description": "###### What this is:\n*How close each concurrency-capped job type is to its ceiling. JobQueue enforces a per-type limit on how many jobs of that type may run at once, and the tight ones carry ledger-sync traffic: makeFetchPack 1, ledgerRequest 3, ledgerData 3, updatePaths 1, fetchTxnData 5. A type at its ceiling cannot start more work no matter how many workers are idle, so this is a different kind of limit from CPU or disk.*\n\n###### How it's computed:\n*Each jobq_<jobtype>_running gauge divided by that type's own limit from JobTypes.h, so every line shares one 0-to-1 axis. 1.0 means running equals the limit. Multiply a reading by the limit shown in its legend to recover the raw job count. JobQueue::collect snapshots all three per-type counters under the queue's own lock and publishes them after releasing it, on the 1-second export cycle.*\n\n###### Reading it:\n*Read the distance to 1.0, not the absolute height. Below 1.0 the type has spare slots and its queue wait is not the limit's fault. Touching 1.0 briefly is normal work. Sitting at 1.0 means the type is pinned at its ceiling and every further job of that type is being deferred rather than started, which is what turns into queue wait downstream. Because the limits differ, a raw count of 3 is saturation for ledgerRequest but only 60 percent for fetchTxnData; normalizing is what makes the lines comparable.*\n\n###### Healthy range:\n*Below 1.0, with brief touches under load.*\n\n###### Watch for:\n*A line flat at 1.0: that type is the binding constraint. ledgerRequest pinned means the 3 slots shared by RcvGetLedger and RcvGetObjByHash are full, so peer ledger and object requests are queueing behind each other; the Ledger Data and Sync dashboard splits that wait by handler and shows the matching deferred depth. ledgerData or fetchTxnData pinned means inbound ledger data cannot be absorbed and validated ledger age will grow. makeFetchPack or updatePaths pinned at their limit of 1 means a single long job is blocking the whole type. These are sampled gauges, so a line that never reaches 1.0 is not proof the type was never momentarily saturated.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* — xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Concurrency limit** *(per node)* — the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Deferred job** *(per node)* — a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getNextJob (limit enforcement) / JobQueue::collect (publication)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#concurrency-limit)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -5122,9 +5122,12 @@
           "sort": "desc"
         },
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
         }
       },
       "targets": [
@@ -5132,36 +5135,36 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(jobq_makefetchpack_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 1, \"series\", \"makeFetchPack (Limit 1)\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(jobq_makefetchpack_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 1, \"series\", \"makeFetchPack (Limit 1)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(jobq_ledgerrequest_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 3, \"series\", \"ledgerRequest (Limit 3)\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(jobq_ledgerrequest_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 3, \"series\", \"ledgerRequest (Limit 3)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(jobq_ledgerdata_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 3, \"series\", \"ledgerData (Limit 3)\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(jobq_ledgerdata_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 3, \"series\", \"ledgerData (Limit 3)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(jobq_updatepaths_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 1, \"series\", \"updatePaths (Limit 1)\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(jobq_updatepaths_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 1, \"series\", \"updatePaths (Limit 1)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(jobq_fetchtxndata_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 5, \"series\", \"fetchTxnData (Limit 5)\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(jobq_fetchtxndata_running{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} / 5, \"series\", \"fetchTxnData (Limit 5)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "percentunit",
           "max": 1,
           "min": 0,

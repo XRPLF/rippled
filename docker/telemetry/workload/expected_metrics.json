@@ -125,7 +125,7 @@
   },
   "parity_storage": {
     "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
-    "metrics": ["storage_detail{metric=\"nudb_bytes\"}"]
+    "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
   },
   "grafana_dashboards": {
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",

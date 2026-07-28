@@ -15,9 +15,9 @@
 namespace xrpl {
 
 // Forward declarations
-namespace NodeStore {
+namespace node_store {
 class Database;
-}  // namespace NodeStore
+}  // namespace node_store
 namespace Resource {
 class Manager;
 }  // namespace Resource
@@ -48,6 +48,10 @@ using CachedSLEs = TaggedCache<uint256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
+// Defined in src/xrpld/app/ledger/AcquireStats.h. Forward-declared here
+// because libxrpl must not include an xrpld header; a reference to an
+// incomplete type is all this interface needs.
+class AcquireStats;
 class AmendmentTable;
 class Cluster;
 class CollectorManager;
@@ -168,7 +172,7 @@ public:
     getResourceManager() = 0;
 
     // Storage services
-    virtual NodeStore::Database&
+    virtual node_store::Database&
     getNodeStore() = 0;
 
     virtual SHAMapStore&
@@ -198,6 +202,15 @@ public:
 
     virtual PendingSaves&
     getPendingSaves() = 0;
+
+    /**
+     * Return the process-wide ledger-acquisition counters.
+     *
+     * Shared by every acquisition, so the counts are process-wide rather than
+     * per-ledger.
+     */
+    virtual AcquireStats&
+    getAcquireStats() = 0;
 
     virtual OpenLedger&
     getOpenLedger() = 0;

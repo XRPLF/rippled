@@ -13,6 +13,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <chrono>
 #include <cstdint>
@@ -22,7 +23,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class DatabaseNodeImp : public Database
 {
@@ -68,7 +69,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -87,6 +88,12 @@ public:
     getWriteLoad() const override
     {
         return backend_->getWriteLoad();
+    }
+
+    [[nodiscard]] std::optional<WriteStats>
+    getWriteStats() const override
+    {
+        return backend_->getWriteStats();
     }
 
     void
@@ -138,4 +145,4 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
