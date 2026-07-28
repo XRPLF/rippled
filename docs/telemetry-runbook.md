@@ -1528,10 +1528,56 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 | `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
 | `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
 | `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="node_writes_duration_us"}` | MetricsRegistry.cpp | Cumulative write time (microseconds)                                                                                                                                                |
 | `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
 | `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
 | `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
 | `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
+
+#### Sync Diagnosis Signals
+
+More label values on the same `nodestore_state` gauge. They exist to separate the
+two different reasons a node is slow to reach `full` — see
+[Slow to reach `full`](#slow-to-reach-full). The `nudb_*` group is published only
+when the writable backend is NuDB; a memory or RocksDB backend omits those four
+label values rather than reporting them as zero.
+
+| Prometheus Metric                                   | Source              | Description                                              |
+| --------------------------------------------------- | ------------------- | -------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`            | MetricsRegistry.cpp | Mean time per backend read (microseconds)                |
+| `nodestore_state{metric="write_mean_us"}`           | MetricsRegistry.cpp | Mean time per backend write (microseconds)               |
+| `nodestore_state{metric="nudb_writers_in_flight"}`  | MetricsRegistry.cpp | Threads inside a NuDB insert right now                   |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`  | MetricsRegistry.cpp | Mean queue depth at the NuDB insert mutex, ×100          |
+| `nodestore_state{metric="nudb_insert_mean_us"}`     | MetricsRegistry.cpp | Mean NuDB insert time, queueing included (microseconds)  |
+| `nodestore_state{metric="nudb_insert_max_us"}`      | MetricsRegistry.cpp | Slowest single NuDB insert seen (microseconds)           |
+| `nodestore_state{metric="acquire_deferrals"}`       | MetricsRegistry.cpp | Acquisition timer jobs skipped because the lane was full |
+| `nodestore_state{metric="acquire_timeouts"}`        | MetricsRegistry.cpp | Acquisition timer bodies that ran and advanced retry     |
+| `nodestore_state{metric="acquire_give_ups"}`        | MetricsRegistry.cpp | Acquisitions that exhausted their retry budget           |
+| `nodestore_state{metric="acquire_aborts"}`          | MetricsRegistry.cpp | Acquisitions destroyed before finishing                  |
+| `nodestore_state{metric="acquire_aborts_partial"}`  | MetricsRegistry.cpp | Subset of aborts that discarded partly built maps        |
+| `nodestore_state{metric="acquire_completions"}`     | MetricsRegistry.cpp | Acquisitions that finished successfully                  |
+| `nodestore_state{metric="acquire_sweep_evictions"}` | MetricsRegistry.cpp | Acquisitions evicted by the 1-minute sweep               |
+
+`nudb_writer_depth_x100` is fixed-point: divide by 100 to read it. The depth sits
+just above 1.0 even under load, so an integer gauge would truncate the whole
+signal away.
+
+#### NodeStore Read Latency Histogram
+
+| Prometheus Metric   | Kind      | Labels                                                        | Description                         |
+| ------------------- | --------- | ------------------------------------------------------------- | ----------------------------------- |
+| `nodestore_read_us` | Histogram | `fetch_type` = `async` \| `sync`, `found` = `true` \| `false` | Per-fetch backend read latency (µs) |
+
+Bucket edges are 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 25000
+microseconds — a dedicated sub-millisecond ladder, not the shared µs ladder the
+job histograms use. The shared ladder starts at 100 µs, which is above the entire
+range a warm read occupies, so every warm read would land in one bucket and the
+distribution would read flat.
+
+The two labels separate cases with different consequences. An `async` read that is
+slow only delays prefetch; a `sync` read that is slow blocks a caller outright.
+A `found=false` fetch can have to consult every backend, so mixing it with hits
+blurs the distribution that matters.
 
 #### Counters
 
@@ -2248,7 +2294,7 @@ flowchart LR
 answer.
 
 > **Scope every query to one node.** All snippets below carry
-> `service_instance_id="$node"`. On a shared Grafana stack an unscoped selector
+> `service_instance_id=~"$node"`. On a shared Grafana stack an unscoped selector
 > aggregates across every node and branch reporting to it, so another node's
 > saturation would be attributed to this one. Substitute the node's public key
 > for `$node` when querying Prometheus directly rather than from a dashboard.
@@ -2256,27 +2302,27 @@ answer.
 1. Split queue wait from run time. Compare the two p99s for the handler:
 
    ```promql
-   histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
-   histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
    ```
 
 2. If run time is the larger term, split it against the fetch loop:
 
    ```promql
-   histogram_quantile(0.99, sum by (le) (rate(getobject_lookup_us_bucket{service_instance_id="$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(getobject_lookup_us_bucket{service_instance_id=~"$node"}[5m])))
    ```
 
 3. Match the outcome below.
 
-| Observation                                                                | Root cause and next step                                                                                                                                                                                                                                                           |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `job_queued_us{handler="RcvGetObjByHash"}` high, `job_running_us` normal   | **Queue contention** — the work is cheap, the wait is not. Confirm with `jobq_ledgerrequest_deferred{service_instance_id="$node"} > 0`, then compare `job_queued_us{handler="RcvGetLedger"}`: if it is also high, both producers are starved by the limit of 3, not by each other. |
-| `job_running_us` high and within ~10% of `getobject_lookup_us`             | **NodeStore is the bottleneck** — nearly all run time is in the fetch loop. Check `rate(getobject_lookups_total{result="miss"}[5m])` and the existing NuDB / `nodestore_state` panels. A miss-heavy mix means real disk seeks.                                                     |
-| `job_running_us` high but `getobject_lookup_us` low                        | **Cost is outside the fetch loop** — protobuf, serialization, or reply construction. Storage is fine. Look at reply size: a large `getobject_request_objects` with a high hit rate means big replies to build and send.                                                            |
-| `getobject_request_objects` p99 large                                      | **Peers are sending big batches** — the work is real, not a regression. Nothing is broken; the node is being asked to do more. Decide whether to accept the load or price it higher.                                                                                               |
-| `rate(getobject_rejected_total{reason="oversize"}[5m])` rising             | **Non-conforming traffic** — requests above `kHardMaxReplyNodes` are being refused before any NodeStore access. Check `getobject_charge` to confirm the pricing escalates for the requests that _are_ accepted.                                                                    |
-| `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                              |
-| All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id="$node"} > 0)` and investigate that producer instead.                                                                            |
+| Observation                                                                | Root cause and next step                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `job_queued_us{handler="RcvGetObjByHash"}` high, `job_running_us` normal   | **Queue contention** — the work is cheap, the wait is not. Confirm with `jobq_ledgerrequest_deferred{service_instance_id=~"$node"} > 0`, then compare `job_queued_us{handler="RcvGetLedger"}`: if it is also high, both producers are starved by the limit of 3, not by each other. |
+| `job_running_us` high and within ~10% of `getobject_lookup_us`             | **NodeStore is the bottleneck** — nearly all run time is in the fetch loop. Check `rate(getobject_lookups_total{result="miss"}[5m])` and the existing NuDB / `nodestore_state` panels. A miss-heavy mix means real disk seeks.                                                      |
+| `job_running_us` high but `getobject_lookup_us` low                        | **Cost is outside the fetch loop** — protobuf, serialization, or reply construction. Storage is fine. Look at reply size: a large `getobject_request_objects` with a high hit rate means big replies to build and send.                                                             |
+| `getobject_request_objects` p99 large                                      | **Peers are sending big batches** — the work is real, not a regression. Nothing is broken; the node is being asked to do more. Decide whether to accept the load or price it higher.                                                                                                |
+| `rate(getobject_rejected_total{reason="oversize"}[5m])` rising             | **Non-conforming traffic** — requests above `kHardMaxReplyNodes` are being refused before any NodeStore access. Check `getobject_charge` to confirm the pricing escalates for the requests that _are_ accepted.                                                                     |
+| `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                               |
+| All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id=~"$node"} > 0)` and investigate that producer instead.                                                                            |
 
 Row 2 says "within ~10%", not "equal", deliberately: `job_running_us` also
 covers the charge computation (PeerImp.cpp:2757) and the reply `send()` that
@@ -2305,6 +2351,206 @@ which a slowness-only metric cannot.
 - A request rejected at either gate contributes to no other GetObject metric, so
   a rejection spike will _not_ show up as latency. Check the rejection counters
   before concluding that traffic is normal.
+
+### Slow to reach `full`
+
+Use this when a node takes far longer than expected to sync. Two completely
+different bottlenecks look identical from outside: in both, the `ledgerData` job
+lane sits pinned at its concurrency cap of 3 with jobs waiting behind it.
+
+**Lane occupancy on its own distinguishes nothing.** It is true in both cases, so
+it is never a diagnosis. Two tuning experiments were spent before that was known —
+do not repeat them. Read the storage-side signals below instead.
+
+The two modes and the signal that separates them:
+
+```mermaid
+flowchart TB
+    L["`**ledgerData lane at cap 3**
+    jobs waiting behind it
+    TRUE IN BOTH MODES
+    diagnoses nothing`"]
+
+    L --> W["`**Mode W — write-bound**
+    fresh or empty store`"]
+    L --> R["`**Mode R — cold-read-bound**
+    populated store, cold pages`"]
+
+    W --> W1["`reads cheap and always miss
+    data comes from peers`"]
+    W1 --> W2["`cost is on the WRITE side
+    one global mutex per insert
+    so inserts queue`"]
+    W2 --> W3["`**Look at:** writer depth
+    above 1, insert mean well
+    above service time`"]
+
+    R --> R1["`no write contention
+    writer depth 1.00`"]
+    R1 --> R2["`reads pay disk latency
+    on every fetch —
+    found but cold`"]
+    R2 --> R3["`**Look at:** read mean and
+    peak high while the
+    found rate is near 100%`"]
+
+    style L fill:#7b3f00,color:#ffffff
+    style W fill:#1f4e79,color:#ffffff
+    style R fill:#4a148c,color:#ffffff
+    style W1 fill:#37474f,color:#ffffff
+    style W2 fill:#37474f,color:#ffffff
+    style W3 fill:#2d5016,color:#ffffff
+    style R1 fill:#37474f,color:#ffffff
+    style R2 fill:#37474f,color:#ffffff
+    style R3 fill:#2d5016,color:#ffffff
+```
+
+#### `node_reads_hit` is a found count, not a cache-hit rate
+
+This is the most misleading signal on the board, so read it first.
+`fetchHitCount_` is incremented whenever the fetch **returned an object**
+(`src/libxrpl/nodestore/Database.cpp:246-255`) — not when a cache served it. So
+`node_reads_hit / node_reads_total` is the fraction of fetches that **found**
+something, and it can read ~100% while every one of those fetches went to disk.
+
+A ~100% "hit rate" at 113 µs per read is therefore not a contradiction. It is the
+cold-read signature: the data is on disk, found every time, and paid for every
+time. A real devnet incident hung a client-handler node for 25 minutes in exactly
+this state — 112.7 µs per read against 4.95 µs on a healthy peer, both reporting
+~99.98%.
+
+A node configured with `online_delete` runs `DatabaseRotatingImp`, which has **no
+NodeObject cache** at all (0 `cache_` references in
+`src/libxrpl/nodestore/DatabaseRotatingImp.cpp` versus 11 in
+`DatabaseNodeImp.cpp`), so every fetch reaches the backend. That is why the
+cold-read mode shows up on exactly those nodes.
+
+#### The decision rule
+
+**Procedure** — all of it assumes the `ledgerData` lane is already at its cap; if
+it is not, this procedure does not apply.
+
+1. Ask whether acquisitions are completing at all: read `acquire_completions` as a
+   rate over the window. That single answer picks which half of the table below
+   you are in.
+2. Within that half, read the storage signal named in the row. The first row that
+   matches is the answer.
+3. Confirm it against the measured reference points in the next section before
+   acting.
+
+| Completions per minute | Storage signal                              | Root cause and next step                                                                                                                     |
+| ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zero                   | Read time high **and** found rate near 100% | **Cold-read stall on a populated store.** The walk pays disk latency on data the node already has. Check store size and the sweep counters.  |
+| Zero                   | Anything else                               | **Look upstream of the write path.** Storage is not the constraint — the work is either not arriving or being discarded before it lands.     |
+| Continuing             | Read time low **and** writer depth above 1  | **Serialized write path.** The queue is at the backend's insert mutex, not at the device. Tuning the disk will not help; see the note below. |
+| Continuing             | Anything else                               | **Genuinely disk-bound.** The device is the limit. This is the only branch where storage hardware is the right thing to change.              |
+
+Queries, scoped to one node as everywhere else in this runbook:
+
+```promql
+# Are acquisitions finishing? (per minute)
+increase(nodestore_state{metric="acquire_completions", service_instance_id=~"$node"}[1m])
+
+# Read cost and the found rate that qualifies it
+nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}
+  rate(nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}[5m])
+/ rate(nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}[5m])
+
+# Write-side queueing: depth is fixed-point, divide by 100
+nodestore_state{metric="nudb_writer_depth_x100", service_instance_id=~"$node"} / 100
+nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
+
+# Read latency distribution, split by the two dimensions that matter
+histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id=~"$node"}[5m])))
+```
+
+#### Measured reference points
+
+Two runs on the same host, same build, differing only in the state of the store.
+Use these as the shape to compare against, not as thresholds.
+
+| Signal               | Mode W: clean store | Mode R: populated store, cold pages |
+| -------------------- | ------------------- | ----------------------------------- |
+| Time to `full`       | 510 s               | 260 s                               |
+| Read time, mean      | 8.8 µs              | 31.8 µs                             |
+| Read time, peak      | 9 µs                | 223 µs                              |
+| Found rate           | 0.00 %              | 88.3 %                              |
+| Insert time, mean    | 20.0 µs             | 15.9 µs                             |
+| Writer depth, mean   | 1.60                | 1.00                                |
+| Queueing per insert  | 37 %                | 0 %                                 |
+| Deferrals over run   | +5441               | +1845                               |
+| Timeouts over run    | +687                | +399                                |
+| Completions over run | 0                   | 8                                   |
+| Sweep evictions      | +127                | +38                                 |
+
+What healthy looks like: read mean in the single-digit microseconds, writer depth
+at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of a read
+mean in the tens or hundreds of microseconds, a writer depth above ~1.2, or
+completions flat at zero is worth chasing.
+
+**How the 37% is derived.** It is not measured directly — it comes from the two
+gauges by Little's Law. With mean queue depth L and mean insert time W, the
+service time is `S = W / L` and the queueing component is `W − S`. Mode W's
+20.0 µs at depth 1.60 gives S = 12.5 µs, so 7.5 µs of every insert — 37% — is
+spent waiting for the mutex rather than writing. Mode R's depth of exactly 1.00
+gives S = W and no queueing, which is why it shows 0%.
+
+**Why the write path serializes.** NuDB takes one global mutex per insert
+(`nudb/impl/basic_store.ipp:288`). It is a Conan dependency and is not patched
+here, so this is a property to observe and design around, not a bug to fix
+locally. `nudb_writer_depth_x100` is the queue length at that mutex.
+
+#### The deferral/timeout pair
+
+Read these two together or not at all. The livelock fingerprint is **deferrals
+rising while timeouts stay flat**.
+
+A deferral happens when the acquisition timer job finds its lane already full. The
+timer is re-armed but its **body does not run**, so the retry counter never
+advances and the 6-timeout give-up becomes unreachable — the give-up path is
+disarmed and the acquisition can never end on its own. Neither counter alone shows
+this: deferrals rising looks like ordinary backpressure, and timeouts flat looks
+like health. Only the divergence is diagnostic. See the counter documentation in
+`src/xrpld/app/ledger/AcquireStats.h`.
+
+Two more pairs from the same family:
+
+- `acquire_sweep_evictions` rising while `acquire_completions` stays at zero →
+  partial work is being discarded and redone. The sweep drops any acquisition
+  idle for more than one minute
+  (`src/xrpld/app/ledger/detail/InboundLedgers.cpp:400`), taking whatever it had
+  built with it.
+- `acquire_aborts_partial` rising → the expensive form of an abort, where partly
+  built maps were thrown away. `acquire_aborts` alone does not separate the cheap
+  case from this one.
+
+#### Honest limits of this diagnosis
+
+- **The populated-store run was twice as fast, not slower** — 260 s against 510 s,
+  despite reads being roughly 4× more expensive. Reusing local data beats fetching
+  from peers even when every read is cold. Slow cold reads therefore do **not**
+  on their own explain the 25-minute devnet incident.
+- Something compounds it there. The most likely candidate is a much larger store,
+  where the walk takes long enough that the 1-minute sweep destroys partial work
+  faster than it can complete — which is why the sweep and completion counters are
+  in the table. This is not confirmed; treat it as the next thing to test, not as
+  the answer.
+- The `nudb_*` label values are absent entirely on a non-NuDB writable backend.
+  Absent is not zero — a missing series means "not applicable", so a panel showing
+  a gap there is correct behaviour.
+- These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
+  the `jobq_*` lane gauges are sampled at 1 s by a different provider. Widen the
+  window when correlating them rather than reading a single scrape; see the caveat
+  under [Slow TMGetObjectByHash service](#slow-tmgetobjectbyhash-service).
+- `read_mean_us` and `write_mean_us` are omitted rather than reported as zero when
+  nothing has been read or written yet, so an idle node legitimately shows no
+  series.
+
+Existing panels that already carry part of this picture, on the _Ledger Data &
+Sync_ dashboard: **NuDB Read Latency**, **NuDB Cache Hit Ratio** (the found rate
+described above, under its historical name), **NuDB Read Pressure**, and **Job
+Queue Backlog and Deferred by Type** for the lane occupancy that this procedure
+tells you to distrust on its own.
 
 ### High memory usage
 

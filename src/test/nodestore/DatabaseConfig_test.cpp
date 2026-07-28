@@ -6,6 +6,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -22,7 +23,6 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <cstddef>
