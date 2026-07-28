@@ -1430,6 +1430,15 @@ InboundLedger::gotData(
     // Mirror the depth for the telemetry gauge, which must not take this lock.
     receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
 
+    // A peer just answered, so this acquire is making progress even if its turn
+    // to apply the data has not come up yet. Without this the sweeper's one
+    // minute idle test measures the wait for a JtLedgerData slot rather than
+    // real inactivity, and deletes fetches that are still being served: on a
+    // fresh mainnet sync that produced 490 abandoned acquires against zero
+    // expired retry budgets, because only the constructor, update() and done()
+    // ever refreshed the timestamp.
+    touch();
+
     if (receiveDispatched_)
         return false;
 

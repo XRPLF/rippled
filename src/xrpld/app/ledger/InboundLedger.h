@@ -113,16 +113,37 @@ public:
     void
     runData();
 
+    /**
+     * Mark this acquire as still alive, so the sweeper does not reclaim it.
+     *
+     * InboundLedgers::sweep() destroys any acquire whose last action is more
+     * than a minute old, and that destruction is what the telemetry reports as
+     * `outcome=abandoned`. Anything that represents real progress must therefore
+     * call this, or a fetch that is working normally can be deleted for looking
+     * idle.
+     *
+     * @note Thread-safe and lock-free: a relaxed store of the clock's tick
+     *       count. Called from peer threads on the receive path, from the
+     *       acquiring thread, and read by the sweeper on the timer thread, so it
+     *       cannot be a plain member.
+     */
     void
     touch()
     {
-        lastAction_ = clock_.now();
+        lastAction_.store(clock_.now().time_since_epoch().count(), std::memory_order_relaxed);
     }
 
+    /**
+     * When this acquire last made progress, for the sweeper's age check.
+     *
+     * @note Thread-safe and lock-free: a relaxed load. A value one tick stale is
+     *       acceptable against a 60-second sweep interval.
+     */
     clock_type::time_point
     getLastAction() const
     {
-        return lastAction_;
+        return clock_type::time_point{
+            clock_type::duration{lastAction_.load(std::memory_order_relaxed)}};
     }
 
     /**
@@ -354,7 +375,17 @@ private:
         std::optional<int> missingNodes) noexcept;
 
     clock_type& clock_;
-    clock_type::time_point lastAction_;
+
+    /**
+     * Tick count of the last action, as the clock's duration rep.
+     *
+     * Stored as the raw rep rather than a `time_point` so it can be atomic: the
+     * receive path writes it from peer threads while InboundLedgers::sweep()
+     * reads it from the timer thread. Relaxed on both sides -- the sweeper
+     * compares against a 60-second threshold, so a value one tick out of date
+     * cannot change its decision.
+     */
+    std::atomic<clock_type::duration::rep> lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
     bool haveHeader_{false};

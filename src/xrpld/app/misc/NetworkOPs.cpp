@@ -1055,6 +1055,16 @@ NetworkOPsImp::getLedgersBehindNetwork() const
 
     auto const validated = registry_.get().getLedgerMaster().getValidLedgerIndex();
 
+    // A node that has validated nothing is not "behind" by the whole sequence
+    // space; the distance is undefined until there is a validated ledger to
+    // measure from. Returning the raw difference here reported ~105.9 million on
+    // a fresh mainnet start, which is a real reading of a meaningless quantity:
+    // it auto-scaled every consumer's axis and would trip any threshold. Report
+    // zero until the first ledger is validated, and let the sync-state signals
+    // say how far along the initial acquire is.
+    if (validated == 0)
+        return 0;
+
     // Floor at zero: we can legitimately be ahead of every peer's reported
     // range, and a peer that has reported nothing yet leaves the target at 0.
     return networkTarget > validated ? networkTarget - validated : 0;
