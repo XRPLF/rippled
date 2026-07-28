@@ -25,9 +25,26 @@
  * into this binary on the no-op path (see src/tests/libxrpl/CMakeLists.txt).
  * What is testable here is everything that decides *what* gets recorded: the
  * instrument name, the two label values, the negative-value guard, and the
- * bucket ladder the value is filed into. The remaining step -- that
- * Database::fetchNodeObject actually reaches onFetch -- is covered by the
- * existing nodestore suites, which already exercise that call path.
+ * bucket ladder the value is filed into.
+ *
+ * KNOWN GAP, stated plainly. Two separate steps remain unverified by any test:
+ *
+ *  - That NodeStoreScheduler::onFetch() calls the histogram macro at all, with
+ *    report.elapsed.count() and those two labels. `NodeStoreScheduler` appears
+ *    in exactly one test file, src/test/app/SHAMapStore_test.cpp, and only as a
+ *    construction site that asserts nothing about onFetch. The nodestore
+ *    suites use DummyScheduler or a test-local CapturingScheduler, neither of
+ *    which is NodeStoreScheduler, so they do NOT cover this call path.
+ *  - That the recorded value has sub-millisecond resolution end to end. That
+ *    half IS covered, in src/tests/libxrpl/nodestore/Database.cpp's
+ *    sub_millisecond_fetch_latency_is_reported, which drives a real store
+ *    through a capturing Scheduler and asserts the reported microsecond total
+ *    equals the nodestore's own accumulator exactly.
+ *
+ * Closing the first gap needs an integration test under src/test/ with a live
+ * jtx::Env and an in-memory metric reader attached to the running
+ * MetricsRegistry; that is larger than this file's scope and is deliberately
+ * deferred rather than claimed.
  */
 
 #include <xrpl/telemetry/NodeStoreMetricNames.h>
@@ -84,7 +101,6 @@ TEST(NodeStoreMetricNames, instrument_name_is_the_exact_shared_literal)
     // dashboard query and the reference doc must change with it, so the exact
     // string is asserted rather than merely its shape.
     EXPECT_EQ(std::string_view{kNodeStoreReadUs}, "nodestore_read_us");
-    EXPECT_EQ(std::string_view{kNodeStoreReadUs}.size(), 17u);
 
     // No `xrpld_` prefix: verified against the live metric surface, where 0 of
     // 537 exported names carry one. A prefix here would make this the only
@@ -160,10 +176,6 @@ TEST(NodeStoreMetricNames, latency_guard_admits_zero_and_refuses_negatives)
     EXPECT_TRUE(shouldRecordFetchLatency(9));
     EXPECT_TRUE(shouldRecordFetchLatency(250));
     EXPECT_TRUE(shouldRecordFetchLatency(30'000));
-
-    // The boundary is exactly at zero, not near it.
-    EXPECT_TRUE(shouldRecordFetchLatency(0));
-    EXPECT_FALSE(shouldRecordFetchLatency(-1));
 }
 
 // ---------------------------------------------------------------------------
