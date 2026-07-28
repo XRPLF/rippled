@@ -2328,6 +2328,9 @@ answer.
 
    ```promql
    histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
+   ```
+
+   ```promql
    histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id=~"$node"}[5m])))
    ```
 
@@ -2407,17 +2410,18 @@ flowchart TB
     one global mutex per insert
     so inserts queue`"]
     W2 --> W3["`**Look at:** writer depth
-    above 1, insert mean well
-    above service time`"]
+    above ~1.2, insert mean
+    well above service time`"]
 
     R --> R1["`no write contention
     writer depth 1.00`"]
     R1 --> R2["`reads pay disk latency
     on every fetch —
     found but cold`"]
-    R2 --> R3["`**Look at:** read mean and
-    peak high while the
-    found rate is near 100%`"]
+    R2 --> R3["`**Look at:** read mean
+    several times a warm read,
+    then the found rate to split
+    cold-but-held from real misses`"]
 
     style L fill:#7b3f00,color:#ffffff
     style W fill:#1f4e79,color:#ffffff
@@ -2438,11 +2442,20 @@ This is the most misleading signal on the board, so read it first.
 `node_reads_hit / node_reads_total` is the fraction of fetches that **found**
 something, and it can read ~100% while every one of those fetches went to disk.
 
-A ~100% "hit rate" at 113 µs per read is therefore not a contradiction. It is the
-cold-read signature: the data is on disk, found every time, and paid for every
-time. A real devnet incident hung a client-handler node for 25 minutes in exactly
-this state — 112.7 µs per read against 4.95 µs on a healthy peer, both reporting
-~99.98%.
+A ~100% "hit rate" at over 100 µs per read is therefore not a contradiction. It is
+the cold-read signature: the data is on disk, found every time, and paid for every
+time.
+
+An incident report supplied to this project describes a devnet client-handler node
+that had not reached `full` after roughly 25 minutes while reading at 112.7 µs per
+fetch, against an otherwise-identical peer that reached `full` in 4.4 minutes at
+4.95 µs per fetch. Both reported a found rate of ~99.98%. Those figures come from
+that report, not from a run on our own hosts. Note that the found rate is identical
+on the healthy peer and the stalled one, which is exactly why the found rate is
+never a trigger on its own — see the decision rule below. Read this incident
+alongside [Honest limits of this diagnosis](#honest-limits-of-this-diagnosis)
+before concluding that cold reads caused the 25 minutes; on our own hardware they
+did not produce anything like it.
 
 A node configured with `online_delete` runs `DatabaseRotatingImp`, which has **no
 NodeObject cache** at all (0 `cache_` references in
@@ -2455,20 +2468,57 @@ cold-read mode shows up on exactly those nodes.
 **Procedure** — all of it assumes the `ledgerData` lane is already at its cap; if
 it is not, this procedure does not apply.
 
-1. Ask whether acquisitions are completing at all: read `acquire_completions` as a
-   rate over the window. That single answer picks which half of the table below
-   you are in.
-2. Within that half, read the storage signal named in the row. The first row that
-   matches is the answer.
-3. Confirm it against the measured reference points in the next section before
-   acting.
+Answer two questions, in this order. Neither one alone is a diagnosis.
 
-| Completions per minute | Storage signal                              | Root cause and next step                                                                                                                     |
-| ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zero                   | Read time high **and** found rate near 100% | **Cold-read stall on a populated store.** The walk pays disk latency on data the node already has. Check store size and the sweep counters.  |
-| Zero                   | Anything else                               | **Look upstream of the write path.** Storage is not the constraint — the work is either not arriving or being discarded before it lands.     |
-| Continuing             | Read time low **and** writer depth above 1  | **Serialized write path.** The queue is at the backend's insert mutex, not at the device. Tuning the disk will not help; see the note below. |
-| Continuing             | Anything else                               | **Genuinely disk-bound.** The device is the limit. This is the only branch where storage hardware is the right thing to change.              |
+**Question 1 — are reads expensive?** Read `read_mean_us`.
+
+- Under ~10 µs: reads are **cheap**. Both a clean store and a healthy populated
+  store land here.
+- Over ~20 µs: reads are **expensive**.
+- Between the two: break the tie on the tail. Take either
+  `max_over_time` of `read_mean_us` across the window, or the `nodestore_read_us`
+  p99 where that histogram is available. Over ~100 µs counts as expensive;
+  otherwise treat it as cheap. There is no read-max gauge —
+  `nudb_insert_max_us` is a **write** signal and does not answer this.
+
+**Question 2 — is the write path queueing?** Read
+`nudb_writer_depth_x100 / 100`. Above ~1.2 is queueing at the insert mutex.
+Depth of 1.00 is not. On a non-NuDB backend the series is absent, so this
+question has no answer and only question 1 applies.
+
+Then read the answer off the pair:
+
+| Reads     | Write path      | Root cause and next step                                                                                                                                                                                                                           |
+| --------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cheap     | Depth ~1.00     | **Not a storage bottleneck.** Nothing is queueing at either side. Look outside storage: work is either not arriving from peers or being discarded before it lands. Check the deferral and sweep counters.                                          |
+| Cheap     | Depth over ~1.2 | **Serialized write path.** The queue is at the backend's insert mutex, not at the device. Tuning the disk will not help; see the note below. This is the clean-store mode.                                                                         |
+| Expensive | Depth ~1.00     | Split on the **found rate**. At 50% or above, **cold reads on data the node already has** — the walk pays disk latency on objects it holds. Below 50%, **genuinely disk-bound on real misses**, and storage hardware is the right thing to change. |
+| Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                          |
+
+**Why the rule is shaped this way.** Three points about the thresholds, each
+learned from a dataset that an earlier version of this table got wrong:
+
+- **Read cost is a relative judgement, so the band has a floor and a ceiling, not
+  one cut.** A cold read on our box measured 31.8 µs mean; a cold read on the
+  devnet node in the reported incident measured 112.7 µs. A single "over 100 µs"
+  cut would call our own cold-read run healthy. Cheap and expensive are set at
+  ~10 µs and ~20 µs with the peak breaking ties in between, because what matters
+  is whether reads cost several times a warm read, not whether they cross one
+  absolute number.
+- **The found rate is a splitter, never a trigger.** A high found rate on its own
+  is the normal, healthy state of a populated store — the healthy peer in the
+  reported incident read 99.98% found at 4.95 µs per read and was fine. Only ask
+  the found rate once reads are already known to be expensive; then it separates
+  "slow on data we have" from "slow because we are missing".
+- **Writer depth answers before the found rate.** Depth above 1 means the queue is
+  at the insert mutex, which no amount of read-side tuning addresses. It is also
+  the only signal that is unambiguous on a clean store, where the found rate is
+  near zero and read cost is uninformative.
+
+Completions and sweeps do not pick the row. They say how **severe** the read case
+is once the row is picked: a populated store with cold pages can still finish (our
+reference run reached `full` in 260 s with 8 completions) or can fail to finish at
+all, which is what the reported incident describes. Same cause, different severity.
 
 Queries, scoped to one node as everywhere else in this runbook:
 
@@ -2476,14 +2526,23 @@ Queries, scoped to one node as everywhere else in this runbook:
 # Are acquisitions finishing? (per minute)
 increase(nodestore_state{metric="acquire_completions", service_instance_id=~"$node"}[1m])
 
-# Read cost and the found rate that qualifies it
+# Question 1 -- read cost, in microseconds per read
 nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}
+
+# The tail, for the 10-20 us tie-break. No read-max gauge exists, so take the
+# highest value the mean reached over the window.
+max_over_time(nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}[15m])
+
+# Question 2 -- write-side queueing. Depth is fixed-point, divide by 100.
+nodestore_state{metric="nudb_writer_depth_x100", service_instance_id=~"$node"} / 100
+
+# The insert time that goes with that depth
+nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
+
+# The found rate, which splits the expensive-read row only. Do not read it on
+# its own: a high found rate is normal and healthy on a populated store.
   rate(nodestore_state{metric="node_reads_hit", service_instance_id=~"$node"}[5m])
 / rate(nodestore_state{metric="node_reads_total", service_instance_id=~"$node"}[5m])
-
-# Write-side queueing: depth is fixed-point, divide by 100
-nodestore_state{metric="nudb_writer_depth_x100", service_instance_id=~"$node"} / 100
-nodestore_state{metric="nudb_insert_mean_us", service_instance_id=~"$node"}
 
 # Read latency distribution, split by the two dimensions that matter
 histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_bucket{service_instance_id=~"$node"}[5m])))
@@ -2491,27 +2550,55 @@ histogram_quantile(0.99, sum by (le, fetch_type, found) (rate(nodestore_read_us_
 
 #### Measured reference points
 
-Two runs on the same host, same build, differing only in the state of the store.
-Use these as the shape to compare against, not as thresholds.
+**Provenance.** The two columns below are our own measurements: node2 on the AWS
+dev box, build `e3c2f8279a`, 2026-07-27/28, same host and same binary for both
+runs, differing only in the state of the store. Use them as the shape to compare
+against, not as thresholds. `nodestore_read_us` was not on the measurement binary,
+so the read figures below come from the `read_mean_us` gauge; the "highest sample"
+row is the largest value that gauge reached over the run, not a read-latency
+percentile. The third dataset in this section — the 25-minute devnet stall and its
+healthy peer — is **not** ours; it comes from an incident report supplied to this
+project and is kept separate for that reason.
 
-| Signal               | Mode W: clean store | Mode R: populated store, cold pages |
-| -------------------- | ------------------- | ----------------------------------- |
-| Time to `full`       | 510 s               | 260 s                               |
-| Read time, mean      | 8.8 µs              | 31.8 µs                             |
-| Read time, peak      | 9 µs                | 223 µs                              |
-| Found rate           | 0.00 %              | 88.3 %                              |
-| Insert time, mean    | 20.0 µs             | 15.9 µs                             |
-| Writer depth, mean   | 1.60                | 1.00                                |
-| Queueing per insert  | 37 %                | 0 %                                 |
-| Deferrals over run   | +5441               | +1845                               |
-| Timeouts over run    | +687                | +399                                |
-| Completions over run | 0                   | 8                                   |
-| Sweep evictions      | +127                | +38                                 |
+| Signal                         | Mode W: clean store | Mode R: populated store, cold pages |
+| ------------------------------ | ------------------- | ----------------------------------- |
+| Time to `full`                 | 510 s               | 260 s                               |
+| `read_mean_us`                 | 8.8 µs              | 31.8 µs                             |
+| `read_mean_us`, highest sample | 9 µs                | 223 µs                              |
+| Found rate                     | 0.00 %              | 88.3 %                              |
+| Insert time, mean              | 20.0 µs             | 15.9 µs                             |
+| Writer depth, mean             | 1.60                | 1.00                                |
+| Queueing per insert            | 37 %                | 0 %                                 |
+| Deferrals over run             | +5441               | +1845                               |
+| Timeouts over run              | +687                | +399                                |
+| Completions over run           | 0                   | 8                                   |
+| Sweep evictions                | +127                | +38                                 |
+
+Applying the decision rule: Mode W reads cheap (8.8 µs) with depth 1.60, so it is
+the serialized write path. Mode R reads expensive (31.8 µs mean, 223 µs peak) with
+depth 1.00 and a found rate well above 50%, so it is cold reads on data the node
+holds. The rule reaches both answers without the found rate deciding either mode on
+its own.
+
+**The reported incident, for contrast — not our measurement.** Figures from an
+incident report supplied to this project. No writer-depth data was captured, so the
+rule reaches its answer from question 1 alone.
+
+| Signal         | Stalled client handler | Healthy peer |
+| -------------- | ---------------------- | ------------ |
+| Time to `full` | not reached in ~25 min | 4.4 min      |
+| `read_mean_us` | 112.7 µs               | 4.95 µs      |
+| Found rate     | ~99.98 %               | ~99.98 %     |
+| Writer depth   | not captured           | not captured |
+
+The healthy peer is the reason the found rate is a splitter and not a trigger: it
+reported the same ~99.98% as the stalled node and was fine. What separates them is
+read cost — 4.95 µs is a warm read, 112.7 µs is not.
 
 What healthy looks like: read mean in the single-digit microseconds, writer depth
 at 1.00, queueing near 0%, and `acquire_completions` advancing. Any one of a read
-mean in the tens or hundreds of microseconds, a writer depth above ~1.2, or
-completions flat at zero is worth chasing.
+mean several times a warm read, a writer depth above ~1.2, or completions flat at
+zero is worth chasing.
 
 **How the 37% is derived.** It is not measured directly — it comes from the two
 gauges by Little's Law. With mean queue depth L and mean insert time W, the
@@ -2530,7 +2617,13 @@ locally. `nudb_writer_depth_x100` is the queue length at that mutex.
 Read these two together or not at all. The livelock fingerprint is **deferrals
 rising while timeouts stay flat**.
 
-A deferral happens when the acquisition timer job finds its lane already full. The
+A deferral happens when the acquisition timer job finds its lane's job count at or
+above the acquisition's own limit — 5 for `InboundLedger`
+(`src/xrpld/app/ledger/detail/InboundLedger.cpp:86`), compared against
+`getJobCountTotal()` in `TimeoutCounter::queueJob()`
+(`src/xrpld/app/ledger/detail/TimeoutCounter.cpp:62-64`). That is not the same as
+the `ledgerData` lane's concurrency cap of 3 (`include/xrpl/core/JobTypes.h:63`):
+the gate counts running plus queued, so it fires at 3 running plus 2 queued. The
 timer is re-armed but its **body does not run**, so the retry counter never
 advances and the 6-timeout give-up becomes unreachable — the give-up path is
 disarmed and the acquisition can never end on its own. Neither counter alone shows
@@ -2551,18 +2644,33 @@ Two more pairs from the same family:
 
 #### Honest limits of this diagnosis
 
-- **The populated-store run was twice as fast, not slower** — 260 s against 510 s,
+- **Our populated-store run was twice as fast, not slower** — 260 s against 510 s,
   despite reads being roughly 4× more expensive. Reusing local data beats fetching
-  from peers even when every read is cold. Slow cold reads therefore do **not**
-  on their own explain the 25-minute devnet incident.
-- Something compounds it there. The most likely candidate is a much larger store,
-  where the walk takes long enough that the 1-minute sweep destroys partial work
-  faster than it can complete — which is why the sweep and completion counters are
-  in the table. This is not confirmed; treat it as the next thing to test, not as
-  the answer.
+  from peers even when every read is cold. Slow cold reads therefore do **not** on
+  their own explain the ~25-minute stall in the reported devnet incident. The
+  decision rule identifies the _mode_ correctly in both cases; it does not claim
+  that the mode alone accounts for that duration.
+- Something compounds it there, and we have not confirmed what. The most likely
+  candidate is a much larger store, where the walk takes long enough that the
+  1-minute sweep destroys partial work faster than it can complete — which is why
+  the sweep and completion counters are in the table. **This is an unconfirmed
+  hypothesis.** Treat it as the next thing to test, not as the answer.
 - The `nudb_*` label values are absent entirely on a non-NuDB writable backend.
   Absent is not zero — a missing series means "not applicable", so a panel showing
   a gap there is correct behaviour.
+- **`write_load` and `nudb_writers_in_flight` are the same number on NuDB.** Both
+  read the same atomic: `NuDBBackend::getWriteLoad()` returns `concurrentWriters`
+  (`src/libxrpl/nodestore/backend/NuDBFactory.cpp:355-361`), which is also what
+  `WriteStats::concurrentWriters` reports. Their agreement confirms nothing — it is
+  one signal plotted twice. On RocksDB `write_load` is a genuinely different
+  quantity, the larger of the recorded load and the pending batch size
+  (`src/libxrpl/nodestore/BatchWriter.cpp:47-53`), so it is a batch-queue length
+  rather than a thread count.
+- **`nudb_bytes` is not the size of the store on disk**, despite the name. It reports
+  the cumulative object-payload bytes this process has written — the same value as
+  `node_written_bytes`, from the same accessor — so it excludes keys, padding and
+  the log, and it resets with the process. A ratio of the two is a constant 1.0 and
+  measures nothing.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
   the `jobq_*` lane gauges are sampled at 1 s by a different provider. Widen the
   window when correlating them rather than reading a single scrape; see the caveat
@@ -2572,10 +2680,13 @@ Two more pairs from the same family:
   series.
 
 Existing panels that already carry part of this picture, on the _Ledger Data &
-Sync_ dashboard: **NuDB Read Latency**, **NuDB Cache Hit Ratio** (the found rate
-described above, under its historical name), **NuDB Read Pressure**, and **Job
-Queue Backlog and Deferred by Type** for the lane occupancy that this procedure
-tells you to distrust on its own.
+Sync_ dashboard: **NuDB Read Latency**, **NuDB Cache Hit Ratio**, **NuDB Read
+Pressure**, and **Job Queue Backlog and Deferred by Type** for the lane occupancy
+that this procedure tells you to distrust on its own.
+
+The **NuDB Cache Hit Ratio** title is wrong and has not been changed yet: the panel
+plots `node_reads_hit / node_reads_total`, which is the found rate described above,
+not a cache hit ratio. Read it as the found rate regardless of what the title says.
 
 ### High memory usage
 
