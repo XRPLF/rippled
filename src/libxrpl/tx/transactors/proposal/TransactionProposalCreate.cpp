@@ -78,18 +78,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction is stored in its unsigned canonical form; the
     // ledger populates its signature fields as contributions arrive.
-    if (proposedTx.isFieldPresent(sfTxnSignature) || proposedTx.isFieldPresent(sfSigners) ||
-        proposedTx.isFieldPresent(sfBatchSigners) ||
-        proposedTx.isFieldPresent(sfCounterpartySignature) ||
-        proposedTx.isFieldPresent(sfSponsorSignature))
+    if (hasSignatureField(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries signature fields.";
         return temBAD_SIGNER;
     }
 
-    if (!proposedTx.isFieldPresent(sfSigningPubKey) ||
-        !proposedTx.getFieldVL(sfSigningPubKey).empty())
+    if (!hasEmptySigningPubKey(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "SigningPubKey must be present and empty.";
@@ -291,9 +287,7 @@ TransactionProposalCreate::finalizeInvariants(
     // The stored transaction must be in unsigned canonical form; signatures
     // may only ever arrive through TransactionProposalSign.
     auto const proposedTx = sle.getFieldObject(sfProposedTransaction);
-    if (proposedTx.isFieldPresent(sfTxnSignature) || proposedTx.isFieldPresent(sfSigners) ||
-        !proposedTx.isFieldPresent(sfSigningPubKey) ||
-        !proposedTx.getFieldVL(sfSigningPubKey).empty())
+    if (hasSignatureField(proposedTx) || !hasEmptySigningPubKey(proposedTx))
     {
         JLOG(j.fatal()) << "Invariant failed: created proposal is not in "
                            "unsigned canonical form.";  // LCOV_EXCL_LINE

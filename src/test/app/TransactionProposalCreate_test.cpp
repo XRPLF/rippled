@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <chrono>
 #include <cstdint>
@@ -88,9 +89,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(stored.getFieldU32(sfTicketSequence) == targetTicketSeq);
         BEAST_EXPECT(stored.getFieldVL(sfSigningPubKey).empty());
 
-        // The proposal reserves five owner increments against the proposer.
+        // The proposal reserves several owner increments against the proposer.
         // The target only owns the Ticket used by the proposed transaction.
-        BEAST_EXPECT(ownerCount(env, alice) == 5);
+        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
         BEAST_EXPECT(ownerCount(env, target) == 1);
     }
 

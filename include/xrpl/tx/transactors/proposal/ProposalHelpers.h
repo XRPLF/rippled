@@ -9,17 +9,53 @@
 namespace xrpl {
 
 /**
- * Owner-reserve increments held by a proposal, as defined by the
- * On-Chain Cosigner XLS section 4.4.
+ * Whether the proposed transaction carries any signature field.
+ *
+ * A proposal is stored in unsigned canonical form; signatures may only ever
+ * arrive through TransactionProposalSign. Shared by the create-time check and
+ * the invariant that guards the stored entry, so the two cannot drift apart.
  */
-inline constexpr std::uint32_t ordinaryProposalOwnerCount = 5;
-inline constexpr std::uint32_t batchProposalOwnerCount = 10;
+inline bool
+hasSignatureField(STObject const& proposedTx)
+{
+    return proposedTx.isFieldPresent(sfTxnSignature) || proposedTx.isFieldPresent(sfSigners) ||
+        proposedTx.isFieldPresent(sfBatchSigners) ||
+        proposedTx.isFieldPresent(sfCounterpartySignature) ||
+        proposedTx.isFieldPresent(sfSponsorSignature);
+}
 
+/**
+ * Whether the proposed transaction's SigningPubKey is present and empty, as
+ * unsigned canonical form requires. An absent field is not the same as an
+ * empty one, and a populated one means the payload was already signed.
+ */
+inline bool
+hasEmptySigningPubKey(STObject const& proposedTx)
+{
+    return proposedTx.isFieldPresent(sfSigningPubKey) &&
+        proposedTx.getFieldVL(sfSigningPubKey).empty();
+}
+
+/**
+ * Owner-reserve increments held by a proposal of an ordinary transaction.
+ */
+constexpr std::uint32_t kProposalOwnerCount = 5;
+
+/**
+ * Owner-reserve increments held by a proposal of a Batch transaction. A
+ * proposed Batch stores up to eight inner transactions plus multi-account
+ * signatures, so it reserves more than an ordinary proposed transaction.
+ */
+constexpr std::uint32_t kBatchProposalOwnerCount = 10;
+
+/**
+ * Owner-reserve increments held by a proposal of the given transaction.
+ */
 inline std::uint32_t
 proposalOwnerCount(STObject const& proposedTx)
 {
-    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? batchProposalOwnerCount
-                                                                : ordinaryProposalOwnerCount;
+    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
+                                                                : kProposalOwnerCount;
 }
 
 }  // namespace xrpl
