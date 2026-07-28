@@ -193,6 +193,14 @@ InboundLedger::init(ScopedLockType& collectionLock)
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
+    // The local store satisfied the whole acquisition, so this is a genuine
+    // completion. It is counted here rather than by calling done(), because
+    // done() drives the state machine (it stores the ledger, dispatches
+    // AcqDone, and would double-store on the paths below) and a counter must
+    // not change behaviour. recordCompletionOnce() is idempotent, so if
+    // done() is later reached for this same object the count stays at one.
+    recordCompletionOnce();
+
     if (reason_ == Reason::HISTORY)
         return;
 
@@ -754,6 +762,25 @@ InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcep
 }
 
 void
+InboundLedger::recordCompletionOnce()
+{
+    // A failed or still-running acquisition is not a completion. Checked here
+    // rather than at each caller so both exits share one definition of
+    // success.
+    if (!complete_ || failed_)
+        return;
+
+    // The latch, not the counter, is what makes this idempotent: the two
+    // exits that finish an acquisition are independent, and either can run
+    // first.
+    if (completionCounted_)
+        return;
+
+    completionCounted_ = true;
+    app_.getAcquireStats().recordCompletion();
+}
+
+void
 InboundLedger::done()
 {
     if (signaled_)
@@ -766,12 +793,12 @@ InboundLedger::done()
     // counts must stop being reported. See clearMissingNodeCounts().
     clearMissingNodeCounts();
 
-    // Counted here rather than at any single caller because done() is the one
-    // funnel every peer-driven outcome passes through, and the signaled_ guard
-    // above makes it run at most once per acquisition. failed_ outcomes are
+    // done() is the funnel every peer-driven outcome passes through, but not
+    // every outcome: init() can satisfy an acquisition from the local store
+    // and return without reaching here. Both call the same idempotent helper
+    // so each completion is counted exactly once. failed_ outcomes are
     // excluded; the give-up path counts those itself.
-    if (complete_ && !failed_)
-        app_.getAcquireStats().recordCompletion();
+    recordCompletionOnce();
 
     // Keep the span active as the ambient context across the outcome log so
     // that line carries the span's trace_id. The activation is non-owning;
