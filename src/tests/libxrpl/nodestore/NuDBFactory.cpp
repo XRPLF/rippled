@@ -1,9 +1,11 @@
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/WriteStats.h>
 
 #include <gtest/gtest.h>
@@ -76,6 +78,24 @@ constexpr std::uint64_t kOverlapPerThread = 50;
  * doInsert() together rather than one after another; staggered starts are what
  * would let every insert run end to end and never overlap.
  *
+ * The latch is the whole point of the round, and it is also the one thing here
+ * that can hang the test binary rather than fail it. Two rules keep it safe:
+ *
+ *   1. Every batch is built before the first thread exists, so the only thing
+ *      a thread does before arriving is arrive. Building a batch inside the
+ *      thread allocates, so it can throw, and a thread that throws never
+ *      arrives -- leaving the other seven blocked on the latch for good.
+ *   2. Spawning is guarded, so a thread that never starts still has its
+ *      arrival accounted for.
+ *
+ *     batches built here (may throw; no thread waiting yet)
+ *          |
+ *          v
+ *     spawn 8 --> [ latch: 8 arrivals ] --> stores overlap --> join
+ *          |                  ^
+ *          +-- spawn threw ---+  guard counts down the missing arrivals,
+ *                                then joins the threads already running
+ *
  * @param backend Backend to insert into. Must be open.
  * @param round   Round index, mixed into the seeds so every round writes
  *                fresh keys and no insert takes the duplicate short-circuit.
@@ -83,20 +103,44 @@ constexpr std::uint64_t kOverlapPerThread = 50;
 void
 runOverlappingInsertRound(Backend& backend, int round)
 {
+    std::vector<Batch> batches;
+    batches.reserve(kOverlapThreads);
+    for (auto t = 0uz; t < kOverlapThreads; ++t)
+    {
+        batches.push_back(createPredictableBatch(
+            kOverlapPerThread, 1000 + t + (static_cast<std::uint64_t>(round) * 100'000)));
+    }
+
     std::latch start(static_cast<std::ptrdiff_t>(kOverlapThreads));
 
     std::vector<std::thread> threads;
     threads.reserve(kOverlapThreads);
+
+    // Covers a spawn loop that ends early. The latch is built for the full set
+    // because a thread that has already arrived cannot be un-counted, so the
+    // shortfall is counted down instead of the latch being resized. Counting
+    // down comes before joining: a thread left waiting on the latch would never
+    // become joinable.
+    //
+    // Released once every thread exists, so the success path joins below rather
+    // than from a destructor -- join() can throw, and a destructor would turn
+    // that into a terminate.
+    ScopeExit releaseAndJoin([&] {
+        start.count_down(static_cast<std::ptrdiff_t>(kOverlapThreads - threads.size()));
+        for (auto& th : threads)
+            th.join();
+    });
+
     for (auto t = 0uz; t < kOverlapThreads; ++t)
     {
-        threads.emplace_back([&backend, &start, t, round] {
-            auto const batch = createPredictableBatch(
-                kOverlapPerThread, 1000 + t + (static_cast<std::uint64_t>(round) * 100'000));
+        threads.emplace_back([&backend, &start, &batches, t] {
             start.arrive_and_wait();
-            for (auto const& obj : batch)
+            for (auto const& obj : batches[t])
                 backend.store(obj);
         });
     }
+    releaseAndJoin.release();
+
     for (auto& th : threads)
         th.join();
 }
@@ -330,6 +374,7 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     EXPECT_EQ(initial->insertTotalUs, 0u);
     EXPECT_EQ(initial->insertMaxUs, 0u);
     EXPECT_EQ(initial->depthSum, 0u);
+    EXPECT_EQ(initial->depthSamples, 0u);
     EXPECT_EQ(initial->concurrentWriters, 0u);
 
     // Exactly 10 inserts must be counted as 10, and depthSum must be 10
@@ -352,6 +397,11 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
         FAIL() << "nudb must report write stats after inserts";
     EXPECT_EQ(after->insertCount, kFirstBatch);
     EXPECT_EQ(after->depthSum, kFirstBatch);
+    // The denominator of the published mean depth. One sample per insert, so
+    // with the depth being 1 throughout, depthSum and depthSamples coincide
+    // here -- which is why this pair alone cannot tell a correct depthSum from
+    // a constant 1, and why the overlap test below exists.
+    EXPECT_EQ(after->depthSamples, kFirstBatch);
     EXPECT_GT(after->insertTotalUs, 0u);
     EXPECT_GT(after->insertMaxUs, 0u);
     // A maximum is never below the mean, so max * n >= sum. Catches a field
@@ -376,6 +426,7 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
         FAIL() << "nudb must report write stats after a second batch";
     EXPECT_EQ(cumulative->insertCount, kFirstBatch + kSecondBatch);
     EXPECT_EQ(cumulative->depthSum, kFirstBatch + kSecondBatch);
+    EXPECT_EQ(cumulative->depthSamples, kFirstBatch + kSecondBatch);
     EXPECT_EQ(cumulative->concurrentWriters, 0u);
     // A running maximum never decreases.
     EXPECT_GE(cumulative->insertMaxUs, after->insertMaxUs);
@@ -439,6 +490,10 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
     // rounds that stored new data would leave these equal.
     EXPECT_EQ(second->insertCount, first->insertCount + kBatchSize);
     EXPECT_EQ(second->depthSum, first->depthSum + kBatchSize);
+    // Sampled at entry, so the duplicate round is sampled whether or not it
+    // stores anything. An implementation that sampled only new data would
+    // leave this at the first round's figure and skew the mean.
+    EXPECT_EQ(second->depthSamples, first->depthSamples + kBatchSize);
     // The depth returned to zero, so the key_exists early return did not
     // leak a writer.
     EXPECT_EQ(second->concurrentWriters, 0u);
@@ -504,6 +559,15 @@ TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
     // Every insert of every round is counted exactly once. A lost increment
     // under contention fails this.
     EXPECT_EQ(stats->insertCount, completedRounds * kOverlapThreads * kOverlapPerThread);
+
+    // A depth sample is taken when an insert starts and insertCount rises when
+    // one finishes, so the two populations differ only while an insert is in
+    // flight. Every thread has been joined here, so nothing is in flight and
+    // they must agree exactly. That is what licenses comparing depthSum against
+    // insertCount below, and it is an assertion in its own right: a depthSamples
+    // stuck at zero makes the published mean depth vanish rather than read
+    // wrong, because the metric is omitted when its denominator is zero.
+    EXPECT_EQ(stats->depthSamples, stats->insertCount);
 
     // THE assertion this test exists for: strictly greater, so a depthSum fed
     // a constant 1 (or fed nothing, or fed insertCount's own delta) cannot
