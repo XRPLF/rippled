@@ -17,7 +17,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
@@ -50,15 +49,10 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
     // no batch inner transactions.
-    switch (proposedTx.getFieldU16(sfTransactionType))
+    if (isProposalTx(proposedTx))
     {
-        // The Sign/Cancel cases are added with their transaction PRs; those
-        // tt values do not exist yet.
-        case ttTRANSACTION_PROPOSAL_CREATE:
-            JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
-            return temINVALID;
-        default:
-            break;
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
+        return temINVALID;
     }
 
     if (isPseudoTx(proposedTx))

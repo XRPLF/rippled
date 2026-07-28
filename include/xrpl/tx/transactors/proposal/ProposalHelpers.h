@@ -9,6 +9,19 @@
 namespace xrpl {
 
 /**
+ * Whether the proposed transaction is itself a proposal transaction, which
+ * would nest one proposal inside another.
+ *
+ * TODO: cover ttTRANSACTION_PROPOSAL_SIGN and ttTRANSACTION_PROPOSAL_CANCEL
+ * once those transactions exist.
+ */
+inline bool
+isProposalTx(STObject const& proposedTx)
+{
+    return proposedTx.getFieldU16(sfTransactionType) == ttTRANSACTION_PROPOSAL_CREATE;
+}
+
+/**
  * Whether the proposed transaction carries any signature field.
  *
  * A proposal is stored in unsigned canonical form; signatures may only ever
