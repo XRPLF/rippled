@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /* This class has two key-value store Backend objects for persisting SHAMap
  * records. This facilitates online deletion of data. New backends are
@@ -39,7 +39,7 @@ public:
      */
     virtual void
     rotate(
-        std::unique_ptr<NodeStore::Backend>&& newBackend,
+        std::unique_ptr<node_store::Backend>&& newBackend,
         std::function<void(std::string const& writableName, std::string const& archiveName)> const&
             f) = 0;
 
@@ -89,4 +89,4 @@ public:
     copyForwardTotal() const = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -22,11 +22,11 @@
 #include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpld/overlay/Overlay.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/MallocTrim.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>

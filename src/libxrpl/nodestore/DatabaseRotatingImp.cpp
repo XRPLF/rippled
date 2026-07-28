@@ -12,6 +12,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
 #include <chrono>
@@ -20,10 +21,11 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
@@ -44,7 +46,7 @@ DatabaseRotatingImp::DatabaseRotatingImp(
 
 void
 DatabaseRotatingImp::rotate(
-    std::unique_ptr<NodeStore::Backend>&& newBackend,
+    std::unique_ptr<node_store::Backend>&& newBackend,
     std::function<void(std::string const& writableName, std::string const& archiveName)> const& f)
 {
     // Pass these two names to the callback function
@@ -53,7 +55,7 @@ DatabaseRotatingImp::rotate(
     // Hold on to current archive backend pointer until after the
     // callback finishes. Only then will the archive directory be
     // deleted.
-    std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
+    std::shared_ptr<node_store::Backend> oldArchiveBackend;
     std::uint64_t copyForwards = 0;
     {
         std::scoped_lock const lock(mutex_);
@@ -101,6 +103,13 @@ DatabaseRotatingImp::getWriteLoad() const
     return writableBackend_->getWriteLoad();
 }
 
+std::optional<WriteStats>
+DatabaseRotatingImp::getWriteStats() const
+{
+    std::scoped_lock const lock(mutex_);
+    return writableBackend_->getWriteStats();
+}
+
 void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
@@ -129,12 +138,15 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
         return writableBackend_;
     }();
 
-    // Time only the backend write, which is the disk work. One clock pair per
-    // stored object, accumulated into an atomic that the metrics gauge reads on
-    // its own schedule, so nothing is added to the read path or per tree node.
+    // Time only the backend write, which is the disk work, matching
+    // DatabaseNodeImp so the two store paths feed the same accumulator with
+    // comparable numbers. One clock pair per stored object, accumulated into an
+    // atomic that the metrics gauge reads on its own schedule, so nothing is
+    // added to the read path or per tree node.
     auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
     recordStoreDuration(std::chrono::steady_clock::now() - begin);
+
     storeStats(1, nObj->getData().size());
 }
 
@@ -244,4 +256,4 @@ DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
     archive->forEach(f);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

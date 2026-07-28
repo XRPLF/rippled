@@ -16,7 +16,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
@@ -24,12 +24,16 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
     storeStats(1, data.size());
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
-    // Time only the backend write, which is the disk work. One clock pair per
-    // stored object, accumulated into an atomic that the metrics gauge reads on
-    // its own schedule, so nothing is added to the read path or per tree node.
+
+    // Time only the backend write, which is the disk work. The cache work below
+    // is not disk work and would blur the write latency signal. One clock pair
+    // per stored object, accumulated into an atomic that the metrics gauge reads
+    // on its own schedule, so nothing is added to the read path or per tree
+    // node.
     auto const begin = std::chrono::steady_clock::now();
     backend_->store(obj);
     recordStoreDuration(std::chrono::steady_clock::now() - begin);
+
     if (cache_)
     {
         // After the store, replace a negative cache entry if there is one
@@ -131,4 +135,4 @@ DatabaseNodeImp::fetchNodeObject(
     return nodeObject;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

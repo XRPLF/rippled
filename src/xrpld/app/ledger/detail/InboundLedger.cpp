@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpld/app/ledger/AccountStateSF.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
@@ -293,6 +294,11 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+        // Partial work means a map was partly built and is now discarded, so
+        // the whole acquisition has to start over. That is the expensive case,
+        // so it is counted apart from a cheap abort that had nothing yet.
+        app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
+
         // Activate the still-open span so this abort line carries its trace_id,
         // which is what links the abandoned span to the reason it was dropped.
         // Non-owning and popped at the end of this block, before the span ends.
@@ -353,7 +359,7 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
-InboundLedger::tryDB(NodeStore::Database& srcDB)
+InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
@@ -485,6 +491,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
+        app_.getAcquireStats().recordGiveUp();
         if (seq_ != 0)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << seq_;
@@ -758,6 +765,13 @@ InboundLedger::done()
     // The acquire is over on every path through here, so the missing-node
     // counts must stop being reported. See clearMissingNodeCounts().
     clearMissingNodeCounts();
+
+    // Counted here rather than at any single caller because done() is the one
+    // funnel every peer-driven outcome passes through, and the signaled_ guard
+    // above makes it run at most once per acquisition. failed_ outcomes are
+    // excluded; the give-up path counts those itself.
+    if (complete_ && !failed_)
+        app_.getAcquireStats().recordCompletion();
 
     // Keep the span active as the ambient context across the outcome log so
     // that line carries the span's trace_id. The activation is non-owning;

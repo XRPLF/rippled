@@ -8,15 +8,17 @@
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class DatabaseRotatingImp : public DatabaseRotating
 {
@@ -41,7 +43,7 @@ public:
 
     void
     rotate(
-        std::unique_ptr<NodeStore::Backend>&& newBackend,
+        std::unique_ptr<node_store::Backend>&& newBackend,
         std::function<void(std::string const& writableName, std::string const& archiveName)> const&
             f) override;
 
@@ -50,6 +52,9 @@ public:
 
     std::int32_t
     getWriteLoad() const override;
+
+    [[nodiscard]] std::optional<WriteStats>
+    getWriteStats() const override;
 
     void
     importDatabase(Database& source) override;
@@ -113,4 +118,4 @@ private:
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

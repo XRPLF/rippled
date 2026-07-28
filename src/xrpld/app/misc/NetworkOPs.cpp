@@ -21,8 +21,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
@@ -60,6 +58,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>

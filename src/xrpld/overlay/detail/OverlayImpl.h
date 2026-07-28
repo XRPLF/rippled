@@ -8,8 +8,7 @@
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/TxMetrics.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Resolver.h>
@@ -24,6 +23,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Writer.h>
@@ -109,6 +110,7 @@ private:
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
     Resource::Manager& resourceManager_;
+    PeerFinder::StoreSqdb store_;
     std::unique_ptr<PeerFinder::Manager> peerFinder_;
     TrafficCount traffic_;
     hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;

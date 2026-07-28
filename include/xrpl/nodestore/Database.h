@@ -9,6 +9,7 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/WriteStats.h>
 
 #include <atomic>
 #include <chrono>
@@ -18,6 +19,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,7 +28,7 @@ namespace xrpl {
 class Section;
 }  // namespace xrpl
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * Persistency layer for NodeObject
@@ -84,6 +86,15 @@ public:
      */
     virtual std::int32_t
     getWriteLoad() const = 0;
+
+    /**
+     * Get backend write-path statistics, if the backend measures them.
+     *
+     * @return The statistics, or std::nullopt when the backend does not
+     *         measure its writes.
+     */
+    [[nodiscard]] virtual std::optional<WriteStats>
+    getWriteStats() const = 0;
 
     /**
      * Store the object.
@@ -174,13 +185,25 @@ public:
         return storeCount_;
     }
 
-    std::uint32_t
+    /**
+     * Total number of fetches attempted, whether or not they found anything.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchTotalCount() const
     {
         return fetchTotalCount_;
     }
 
-    std::uint32_t
+    /**
+     * Number of fetches that found the object.
+     *
+     * Divide by getFetchTotalCount() to get the read hit rate.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchHitCount() const
     {
         return fetchHitCount_;
@@ -192,7 +215,12 @@ public:
         return storeSz_;
     }
 
-    std::uint32_t
+    /**
+     * Total payload bytes returned by successful fetches.
+     *
+     * @return The running byte total for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchSize() const
     {
         return fetchSz_;
@@ -203,12 +231,14 @@ public:
      *
      * Pairs with getStoreCount() to derive mean write latency
      * (`duration / count`), mirroring how the read side pairs
-     * getFetchDurationUs() with getFetchTotalCount().
+     * getFetchDurationUs() with getFetchTotalCount(). The mean includes any
+     * time the backend spent waiting for its own internal locks, so it is wall
+     * time per store, not service time.
      *
      * This is the "an existing DB syncs slower than a fresh one" signal: the
-     * read counters cannot show it, because back-fill is write-bound. Until
-     * now `storeDurationUs_` was declared but never written, so no write-side
-     * latency existed anywhere.
+     * read counters cannot show it, because back-fill is write-bound. Also
+     * published as the `node_writes_duration_us` field of getCountsJson(), so
+     * the RPC and the metric report the same number.
      *
      * @return Total microseconds accumulated across every completed store.
      *
@@ -230,7 +260,9 @@ public:
     /**
      * Cumulative microseconds spent inside fetchNodeObject() calls.
      *
-     * Pairs with getFetchTotalCount() to derive mean read latency. The same
+     * Pairs with getFetchTotalCount() to derive mean read latency. That mean
+     * is what separates a cold store from a warm one: a warm store reads in
+     * single-digit microseconds, a cold one in low hundreds. The same
      * total is already published as the `node_reads_duration_us` field of
      * getCountsJson(); this accessor exposes it directly so a caller need not
      * build a json::Value and parse a decimal string back to an integer.
@@ -278,9 +310,6 @@ protected:
     Scheduler& scheduler_;
     int fdRequired_{0};
 
-    std::atomic<std::uint32_t> fetchHitCount_{0};
-    std::atomic<std::uint32_t> fetchSz_{0};
-
     // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
     // network's earliest allowed ledger sequence. Can be set through the
     // configuration file using the 'earliest_seq' field under the 'node_db'
@@ -297,7 +326,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");
+        XRPL_ASSERT(count <= sz, "xrpl::node_store::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -309,7 +338,9 @@ protected:
      * reads. `store()` is pure virtual, so unlike the read path there is no
      * non-virtual wrapper in this class to time — each concrete database calls
      * this once per store it completes, and the single conversion to
-     * microseconds lives here rather than being repeated per subclass.
+     * microseconds lives here rather than being repeated per subclass. Each
+     * concrete store path times only its backend call, so the total reflects
+     * disk work and excludes cache bookkeeping.
      *
      * @param elapsed Wall time the store took, as measured by the caller.
      *
@@ -348,7 +379,37 @@ private:
     std::atomic<std::uint64_t> storeCount_{0};
     std::atomic<std::uint64_t> storeSz_{0};
     std::atomic<std::uint64_t> fetchTotalCount_{0};
+
+    /**
+     * Fetches that found the object.
+     *
+     * 64-bit because a 32-bit counter wraps on a long-lived node, which
+     * silently corrupts the read hit rate.
+     */
+    std::atomic<std::uint64_t> fetchHitCount_{0};
+
+    /**
+     * Payload bytes returned by successful fetches.
+     *
+     * 64-bit for the same reason: at production read rates 32 bits wraps
+     * in under an hour.
+     */
+    std::atomic<std::uint64_t> fetchSz_{0};
+
+    /**
+     * Wall time spent in backend fetches, in microseconds.
+     *
+     * Written by fetchNodeObject(), which times the whole fetch including a
+     * cache lookup that misses.
+     */
     std::atomic<std::uint64_t> fetchDurationUs_{0};
+
+    /**
+     * Wall time spent in backend stores, in microseconds.
+     *
+     * Written by each concrete store path via recordStoreDuration(), which
+     * times only the backend call.
+     */
     std::atomic<std::uint64_t> storeDurationUs_{0};
 
     mutable std::mutex readLock_;
@@ -387,4 +448,4 @@ private:
     threadEntry();
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

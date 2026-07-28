@@ -1,7 +1,7 @@
 /**
  * GTest unit tests for MetricsRegistry.
  *
- *  Two independent groups, split by what they can link:
+ *  Three independent groups, split by what they can link:
  *
  *  1. sanitiseHandler() — the `handler` label sanitiser. Runs in **both**
  *     builds. sanitiseHandler() is a public static constexpr defined inline
@@ -10,7 +10,11 @@
  *     inside it would silently compile them out of the telemetry-enabled
  *     build, which is the build that actually exports the label.
  *
- *  2. The no-op / telemetry-disabled path — construction, start()/stop()
+ *  2. scaledMean() — the guarded-division helper behind every derived mean
+ *     on the nodestore_state gauge. Also a public static constexpr inline,
+ *     so it runs in both builds for the same reason.
+ *
+ *  3. The no-op / telemetry-disabled path — construction, start()/stop()
  *     lifecycle, and the synchronous record*() methods. Guarded, because
  *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
  *     compiled into this binary (see src/tests/libxrpl/CMakeLists.txt) and
@@ -59,6 +63,8 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <set>
 #include <string_view>
 
@@ -317,6 +323,132 @@ TEST(MetricsRegistrySanitiseHandler, output_domain_is_exactly_44_values)
         EXPECT_TRUE(domain.contains(name)) << "missing from domain: " << name;
 }
 
+// ---------------------------------------------------------------------------
+// scaledMean() — the guarded division behind every derived mean published on
+// the nodestore_state gauge.
+//
+// The property under test is not "it divides". It is that a zero denominator
+// yields absence rather than a plausible zero, because a dashboard must show
+// a gap instead of a number an operator would believe. Every expected value
+// below is an independently computed constant, never a restatement of the
+// implementation's own expression: `EXPECT_EQ(mean, total / count)` would
+// pass even if both sides were wrong the same way.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+using Registry = MetricsRegistry;
+
+// Compile-time checks first, so a regression is a build failure. Each
+// expected value is written as a literal worked out by hand.
+static_assert(Registry::scaledMean(500, 4) == 125);           // 500/4 exactly
+static_assert(Registry::scaledMean(9, 1) == 9);               // single sample
+static_assert(Registry::scaledMean(0, 4) == 0);               // real zero mean
+static_assert(Registry::scaledMean(7, 2) == 3);               // 3.5 truncates
+static_assert(Registry::scaledMean(7, 5, 100) == 140);        // 1.4 scaled
+static_assert(Registry::scaledMean(4, 4, 100) == 100);        // depth exactly 1
+static_assert(Registry::scaledMean(1, 3, 100) == 33);         // 0.333 scaled
+static_assert(!Registry::scaledMean(500, 0).has_value());     // no samples
+static_assert(!Registry::scaledMean(0, 0).has_value());       // idle, not zero
+static_assert(!Registry::scaledMean(500, 4, 0).has_value());  // scale 0
+
+}  // namespace
+
+TEST(MetricsRegistryScaledMean, zero_count_reports_absence_not_zero)
+{
+    // The whole point of the helper. A mean over no samples is undefined, and
+    // reporting it as 0 would draw a believable flat line at the bottom of a
+    // latency axis. Absence is the only honest answer.
+    EXPECT_FALSE(Registry::scaledMean(500, 0).has_value());
+    EXPECT_FALSE(Registry::scaledMean(0, 0).has_value());
+    EXPECT_FALSE(Registry::scaledMean(std::numeric_limits<std::uint64_t>::max(), 0).has_value());
+
+    // Cause, not just state: absence is specific to a zero denominator. The
+    // same numerator with one sample does produce a value, so the guard is
+    // keyed on the count and is not rejecting everything.
+    ASSERT_TRUE(Registry::scaledMean(500, 1).has_value());
+    EXPECT_EQ(*Registry::scaledMean(500, 1), 500);
+}
+
+TEST(MetricsRegistryScaledMean, zero_total_over_real_samples_is_a_genuine_zero)
+{
+    // The negative counterpart of the test above, and the reason absence and
+    // zero must stay distinguishable: a store fast enough that every sample
+    // truncated to 0 us really does have a mean of 0. That must be reported,
+    // not suppressed, or a working fast path looks like a dead one.
+    auto const mean = Registry::scaledMean(0, 32);
+    ASSERT_TRUE(mean.has_value());
+    EXPECT_EQ(*mean, 0);
+}
+
+TEST(MetricsRegistryScaledMean, exact_means_are_computed_exactly)
+{
+    // Independently computed expectations: 4800/32 is 150 by hand.
+    EXPECT_EQ(Registry::scaledMean(4800, 32), 150);
+    // A mean equal to its own total when there is one sample.
+    EXPECT_EQ(Registry::scaledMean(917, 1), 917);
+    // Truncation toward zero is the documented behaviour: 99/10 is 9.9.
+    EXPECT_EQ(Registry::scaledMean(99, 10), 9);
+}
+
+TEST(MetricsRegistryScaledMean, scale_recovers_the_fractional_digits)
+{
+    // Mean writer depth is the reason `scale` exists. Unscaled, a depth of
+    // 1.4 truncates to 1 and is indistinguishable from an idle 1.0; the x100
+    // form must keep the fraction.
+    EXPECT_EQ(Registry::scaledMean(7, 5), 1);         // the lost signal
+    EXPECT_EQ(Registry::scaledMean(7, 5, 100), 140);  // the kept signal
+
+    // A pure fraction with no whole part must survive too. Without scaling
+    // the remainder this would read 0 and the metric would be useless.
+    EXPECT_EQ(Registry::scaledMean(1, 4, 100), 25);
+    EXPECT_EQ(Registry::scaledMean(3, 8, 100), 37);  // 0.375 truncated
+
+    // Scaling must not invent precision where the value is already whole.
+    EXPECT_EQ(Registry::scaledMean(8, 4, 100), 200);
+}
+
+TEST(MetricsRegistryScaledMean, large_inputs_saturate_instead_of_wrapping)
+{
+    constexpr auto kU64Max = std::numeric_limits<std::uint64_t>::max();
+    constexpr auto kI64Max = std::numeric_limits<std::int64_t>::max();
+
+    // A uint64 total that does not fit the signed gauge must clamp. Wrapping
+    // would surface as a sudden dip to a healthy-looking small number, which
+    // is the failure mode worth preventing.
+    auto const saturated = Registry::scaledMean(kU64Max, 1);
+    ASSERT_TRUE(saturated.has_value());
+    EXPECT_EQ(*saturated, kI64Max);
+
+    // Scaling must not overflow either: this quotient times 100 exceeds
+    // int64 range, so it clamps rather than wraps negative.
+    auto const scaled = Registry::scaledMean(kU64Max, 2, 100);
+    ASSERT_TRUE(scaled.has_value());
+    EXPECT_EQ(*scaled, kI64Max);
+
+    // Every result is non-negative; a negative latency or depth is
+    // meaningless and is the visible symptom of a wrap.
+    EXPECT_GE(*saturated, 0);
+    EXPECT_GE(*scaled, 0);
+
+    // Just below the boundary the value is exact, not clamped, so the clamp
+    // above is a real bound and not a blanket ceiling on everything.
+    auto const exact = Registry::scaledMean(static_cast<std::uint64_t>(kI64Max), 1);
+    ASSERT_TRUE(exact.has_value());
+    EXPECT_EQ(*exact, kI64Max);
+    auto const belowBoundary = Registry::scaledMean(1'000'000, 4, 100);
+    ASSERT_TRUE(belowBoundary.has_value());
+    EXPECT_EQ(*belowBoundary, 25'000'000);
+}
+
+TEST(MetricsRegistryScaledMean, default_scale_is_one)
+{
+    // The two-argument form is the latency case and must not scale silently;
+    // if the default were 100 every published latency would be 100x wrong.
+    EXPECT_EQ(Registry::scaledMean(360, 8), Registry::scaledMean(360, 8, 1));
+    EXPECT_EQ(Registry::scaledMean(360, 8), 45);
+}
+
 // When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
 // link dependencies we cannot satisfy in a standalone GTest binary.
 #ifndef XRPL_ENABLE_TELEMETRY
@@ -457,7 +589,7 @@ public:
     {
         throwUnimplemented();
     }
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throwUnimplemented();
@@ -504,6 +636,13 @@ public:
     }
     PendingSaves&
     getPendingSaves() override
+    {
+        throwUnimplemented();
+    }
+    // AcquireStats lives in src/xrpld/ and is only forward-declared here; a
+    // reference return to an incomplete type is fine because this throws.
+    AcquireStats&
+    getAcquireStats() override
     {
         throwUnimplemented();
     }

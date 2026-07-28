@@ -9,8 +9,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricNames.h>
 
@@ -21,6 +19,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>

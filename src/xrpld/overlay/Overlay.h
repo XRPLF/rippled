@@ -1,13 +1,13 @@
 #pragma once
 
 #include <xrpld/overlay/Peer.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Handoff.h>
 
