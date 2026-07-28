@@ -22,16 +22,16 @@
  *     is asserted directly -- no Application, no validations container, and no
  *     test-only hook added to production code to reach it.
  *
- * Compiled only when XRPL_ENABLE_TELEMETRY is defined, because that is the
- * configuration in which this test target has `src/` on its include path and can
- * therefore reach <xrpld/consensus/...>. The header itself is not
- * telemetry-conditional (constants and one constexpr function, no OTel types);
- * only this file's ability to include it is.
+ * Compiled only when XRPL_ENABLE_TELEMETRY is defined, which is the configuration
+ * that builds the telemetry test target. The header itself is not
+ * telemetry-conditional (constants and one constexpr function, no OTel types),
+ * and since it now lives at <xrpl/consensus/...> a libxrpl test can include it
+ * directly without reaching into `src/`.
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpld/consensus/ConsensusSpanNames.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 
 #include <xrpl/telemetry/SpanNames.h>
 
