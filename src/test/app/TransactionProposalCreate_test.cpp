@@ -404,6 +404,72 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
     }
 
+    // A multi-account Batch is the primary motivating case (spec §10): its inner
+    // transactions touch accounts other than the outer one, so submitting it
+    // directly would require a BatchSigners entry per participant. A proposal is
+    // stored unsigned, so those signatures are collected on-ledger afterward and
+    // the signer-presence match is skipped at creation time (spec §5.3.1.2).
+    void
+    testMultiAccountBatch(FeatureBitset features)
+    {
+        testcase("proposed multi-account batch");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};  // outer account of the batch
+        Account const bob{"bob"};        // a distinct inner participant
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const targetTicketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        auto inner = [&](Account const& from, Account const& to, std::uint32_t seq) {
+            json::Value tx = pay(from, to, XRP(1));
+            tx[jss::Sequence] = seq;
+            tx[jss::Fee] = "0";
+            tx[jss::Flags] = tfInnerBatchTxn;
+            tx[jss::SigningPubKey] = "";
+            return tx;
+        };
+
+        // One inner from the outer account, one from bob: bob is a required
+        // signer, so a direct submission would need his BatchSigners entry.
+        json::Value proposedTx;
+        proposedTx[jss::TransactionType] = jss::Batch;
+        proposedTx[jss::Account] = target.human();
+        proposedTx[jss::Flags] = tfAllOrNothing;
+        proposedTx[jss::Sequence] = 0;
+        proposedTx[sfTicketSequence.getJsonName()] = targetTicketSeq;
+        proposedTx[jss::Fee] = std::to_string(batch::calcBatchFee(env, 1, 2).drops());
+        proposedTx[jss::SigningPubKey] = "";
+        proposedTx[jss::RawTransactions][0u][jss::RawTransaction] =
+            inner(target, bob, env.seq(target));
+        proposedTx[jss::RawTransactions][1u][jss::RawTransaction] =
+            inner(bob, target, env.seq(bob));
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        env(proposalCreate(alice, proposedTx, expiration));
+        env.close();
+
+        auto const sle = env.le(keylet::txProposal(target.id(), targetTicketSeq));
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+
+        // The proposal is stored without any BatchSigners: the participants'
+        // signatures are collected later through TransactionProposalSign.
+        auto const stored = sle->getFieldObject(sfProposedTransaction);
+        BEAST_EXPECT(!stored.isFieldPresent(sfBatchSigners));
+        BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
+    }
+
     void
     run() override
     {
@@ -414,6 +480,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testPreclaim(testableAmendments());
         testReserve(testableAmendments());
         testBatchReserve(testableAmendments());
+        testMultiAccountBatch(testableAmendments());
     }
 };
 

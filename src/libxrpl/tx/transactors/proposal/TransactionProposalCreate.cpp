@@ -106,11 +106,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction must pass its own static checks under the
     // current rules, so no statically-dead proposal can be stored. TapDryRun
-    // accepts the unsigned canonical form without a signature check.
+    // accepts the unsigned canonical form without a signature check;
+    // TapProposal additionally skips signature-presence checks (e.g. Batch
+    // signer matching), which are deferred to submission time (spec §5.3.1.2).
     try
     {
         STTx const stx{STObject{proposedTx}};
-        auto const inner = xrpl::preflight(ctx.registry, ctx.rules, stx, TapDryRun, ctx.j);
+        auto const inner =
+            xrpl::preflight(ctx.registry, ctx.rules, stx, TapDryRun | TapProposal, ctx.j);
         if (!isTesSuccess(inner.ter))
         {
             JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "

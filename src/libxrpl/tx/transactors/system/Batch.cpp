@@ -406,6 +406,13 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 {
     XRPL_ASSERT(
         ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
+
+    // A proposed Batch is stored unsigned; its BatchSigners are collected
+    // on-ledger afterward, so the signer-presence match belongs to submission
+    // time, not proposal creation (spec §5.3.1.2).
+    if ((ctx.flags & TapProposal) != 0)
+        return tesSUCCESS;
+
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     // Accounts that must sign the batch: each inner authorizer and counterparty
