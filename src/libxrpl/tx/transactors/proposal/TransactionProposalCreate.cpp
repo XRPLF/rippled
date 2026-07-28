@@ -96,10 +96,11 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     }
 
     // The proposed transaction must be ticket-based: it must carry a
-    // TicketSequence and must not use a live Sequence (Sequence must be 0). A
-    // ticket decouples the proposal from the target account's live sequence,
-    // so unrelated target-account activity cannot invalidate it while
-    // signatures are collected (spec §4.2.1).
+    // TicketSequence and must not use a live Sequence. Sequence is a required
+    // common field, so "no Sequence" is expressed as a Sequence of 0 rather
+    // than an absent field. A ticket decouples the proposal from the target
+    // account's live sequence, so unrelated target-account activity cannot
+    // invalidate it while signatures are collected (spec §4.2.1).
     if (!proposedTx.isFieldPresent(sfTicketSequence) || proposedTx.getFieldU32(sfSequence) != 0)
         return temSEQ_AND_TICKET;
 
@@ -142,8 +143,12 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
 
     auto const proposedTx = ctx.tx.getFieldObject(sfProposedTransaction);
 
+    // Once the proposed transaction's own ledger bound has passed it can never
+    // be applied, so the proposal is dead on arrival. The bound is the one the
+    // ordinary path uses for tefMAX_LEDGER: the last ledger in which the
+    // proposed transaction may still be submitted (spec §4.5).
     if (proposedTx.isFieldPresent(sfLastLedgerSequence) &&
-        proposedTx.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
+        proposedTx.getFieldU32(sfLastLedgerSequence) < ctx.view.seq())
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "LastLedgerSequence has passed.";

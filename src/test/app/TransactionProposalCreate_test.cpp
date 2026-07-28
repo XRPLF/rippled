@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -41,6 +42,23 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         return jv;
     }
 
+    // A proposed transaction in the form the ledger stores it: unsigned,
+    // ticket-based, with the fee the target account will pay fixed now.
+    static json::Value
+    unsignedPayload(
+        jtx::Env const& env,
+        jtx::Account const& target,
+        jtx::Account const& dest,
+        std::uint32_t ticketSeq)
+    {
+        json::Value tx = jtx::pay(target, dest, jtx::XRP(1));
+        tx[jss::Sequence] = 0;
+        tx[sfTicketSequence.getJsonName()] = ticketSeq;
+        tx[jss::Fee] = std::to_string(env.current()->fees().base.drops());
+        tx[jss::SigningPubKey] = "";
+        return tx;
+    }
+
     void
     testCreate(FeatureBitset features)
     {
@@ -64,11 +82,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // The proposed transaction is stored unsigned: no signature fields and
         // an empty SigningPubKey. It is ticket-based so unrelated target account
         // activity cannot invalidate it while signatures are collected.
-        json::Value proposedTx = pay(target, bob, XRP(1));
-        proposedTx[jss::Sequence] = 0;
-        proposedTx[sfTicketSequence.getJsonName()] = targetTicketSeq;
-        proposedTx[jss::Fee] = std::to_string(env.current()->fees().base.drops());
-        proposedTx[jss::SigningPubKey] = "";
+        json::Value const proposedTx = unsignedPayload(env, target, bob, targetTicketSeq);
 
         std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
 
@@ -118,18 +132,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(ticket::create(target, 1));
         env.close();
 
-        std::string const feeDrops = std::to_string(env.current()->fees().base.drops());
         std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
 
         // A payload that is accepted as-is; every case starts from this.
-        auto payload = [&]() {
-            json::Value tx = pay(target, bob, XRP(1));
-            tx[jss::Sequence] = 0;
-            tx[sfTicketSequence.getJsonName()] = targetTicketSeq;
-            tx[jss::Fee] = feeDrops;
-            tx[jss::SigningPubKey] = "";
-            return tx;
-        };
+        auto payload = [&]() { return unsignedPayload(env, target, bob, targetTicketSeq); };
 
         auto reject = [&](json::Value const& proposedTx, TER expected) {
             env(proposalCreate(alice, proposedTx, expiration), Ter(expected));
@@ -156,10 +162,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // SigningPubKey must be present and empty: absent is not the same as
         // empty, and a set key means the payload was signed for single-signing.
         {
-            json::Value tx = pay(target, bob, XRP(1));
-            tx[jss::Sequence] = 0;
-            tx[sfTicketSequence.getJsonName()] = targetTicketSeq;
-            tx[jss::Fee] = feeDrops;
+            json::Value tx = payload();
+            tx.removeMember(jss::SigningPubKey);
             reject(tx, temBAD_SIGNER);
         }
         {
@@ -190,12 +194,226 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // Nothing about the transaction is available before the amendment is
+    // active, not even to an otherwise valid proposal.
+    void
+    testDisabled(FeatureBitset features)
+    {
+        testcase("amendment disabled");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features - featureCosign};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const targetTicketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, targetTicketSeq), expiration),
+            Ter(temDISABLED));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), targetTicketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // A proposal that could never be completed must not be stored, and a
+    // target-and-ticket pair may hold at most one proposal.
+    void
+    testPreclaim(FeatureBitset features)
+    {
+        testcase("reject proposal that cannot be completed");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};  // never funded
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const firstTicketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 3));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        // The proposal's own expiration has already passed.
+        {
+            std::uint32_t const past = env.now().time_since_epoch().count();
+            env(proposalCreate(alice, unsignedPayload(env, target, bob, firstTicketSeq), past),
+                Ter(tecEXPIRED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), firstTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+
+        // The proposed transaction's own ledger bound has passed: the ordinary
+        // path would reject it with tefMAX_LEDGER, so it can never complete.
+        {
+            json::Value tx = unsignedPayload(env, target, bob, firstTicketSeq);
+            tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq() - 1;
+            env(proposalCreate(alice, tx, expiration), Ter(tecEXPIRED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), firstTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+
+        // The last ledger in which the proposed transaction may still be
+        // submitted is the current one, so the proposal is still alive.
+        {
+            json::Value tx = unsignedPayload(env, target, bob, firstTicketSeq);
+            tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq();
+            env(proposalCreate(alice, tx, expiration));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::txProposal(target.id(), firstTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        }
+
+        // The target and ticket already carry a proposal.
+        {
+            env(proposalCreate(
+                    alice, unsignedPayload(env, target, bob, firstTicketSeq), expiration),
+                Ter(tecDUPLICATE));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        }
+
+        // A different ticket of the same target is a different proposal.
+        {
+            env(proposalCreate(
+                alice, unsignedPayload(env, target, bob, firstTicketSeq + 1), expiration));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::txProposal(target.id(), firstTicketSeq + 1)));
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+        }
+
+        // The target account does not exist, so it can never sign.
+        {
+            env(proposalCreate(alice, unsignedPayload(env, carol, bob, 1), expiration),
+                Ter(tecNO_TARGET));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(carol.id(), 1)));
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+        }
+    }
+
+    // The proposer holds the proposal's reserve until it is resolved.
+    void
+    testReserve(FeatureBitset features)
+    {
+        testcase("proposer reserve");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        std::uint32_t const targetTicketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        // Fund alice just short of the reserve the proposal requires.
+        env.fund(env.current()->fees().accountReserve(kProposalOwnerCount, 1) - drops(1), alice);
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+        json::Value const proposedTx = unsignedPayload(env, target, bob, targetTicketSeq);
+
+        env(proposalCreate(alice, proposedTx, expiration), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), targetTicketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+        env(pay(bob, alice, XRP(10)));
+        env.close();
+
+        env(proposalCreate(alice, proposedTx, expiration));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::txProposal(target.id(), targetTicketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+    }
+
+    // A proposed Batch holds several inner transactions and the signatures of
+    // every account they touch, so it reserves more than an ordinary proposal.
+    void
+    testBatchReserve(FeatureBitset features)
+    {
+        testcase("proposed batch reserve");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const targetTicketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        auto inner = [&](std::uint32_t seq) {
+            json::Value tx = pay(target, bob, XRP(1));
+            tx[jss::Sequence] = seq;
+            tx[jss::Fee] = "0";
+            tx[jss::Flags] = tfInnerBatchTxn;
+            tx[jss::SigningPubKey] = "";
+            return tx;
+        };
+
+        json::Value proposedTx;
+        proposedTx[jss::TransactionType] = jss::Batch;
+        proposedTx[jss::Account] = target.human();
+        proposedTx[jss::Flags] = tfAllOrNothing;
+        proposedTx[jss::Sequence] = 0;
+        proposedTx[sfTicketSequence.getJsonName()] = targetTicketSeq;
+        proposedTx[jss::Fee] = std::to_string(batch::calcBatchFee(env, 0, 2).drops());
+        proposedTx[jss::SigningPubKey] = "";
+        proposedTx[jss::RawTransactions][0u][jss::RawTransaction] = inner(env.seq(target));
+        proposedTx[jss::RawTransactions][1u][jss::RawTransaction] = inner(env.seq(target) + 1);
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        env(proposalCreate(alice, proposedTx, expiration));
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet::txProposal(target.id(), targetTicketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
+    }
+
     void
     run() override
     {
         using namespace jtx;
+        testDisabled(testableAmendments());
         testCreate(testableAmendments());
         testRejectedPayload(testableAmendments());
+        testPreclaim(testableAmendments());
+        testReserve(testableAmendments());
+        testBatchReserve(testableAmendments());
     }
 };
 
