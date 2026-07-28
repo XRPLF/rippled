@@ -277,6 +277,7 @@ TYPED_SFIELD(sfMinAccountCreateAmount,   AMOUNT,    30)
 TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
 TYPED_SFIELD(sfFeeAmount,                AMOUNT,    32)
 TYPED_SFIELD(sfMaxFee,                   AMOUNT,    33)
+TYPED_SFIELD(sfFeeAmountDelta,        AMOUNT,    34)
 
 // variable length (common)
 TYPED_SFIELD(sfPublicKey,                VL,         1)

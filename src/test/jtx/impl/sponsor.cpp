@@ -22,7 +22,7 @@ json::Value
 set(jtx::Account const& account,
     uint32_t flags,
     std::optional<uint32_t> const reserveCount,
-    std::optional<STAmount> const feeAmount,
+    std::optional<STAmount> const feeAmountDelta,
     std::optional<STAmount> const maxFee)
 {
     json::Value jv;
@@ -31,8 +31,8 @@ set(jtx::Account const& account,
     jv[sfFlags.jsonName] = flags;
     if (reserveCount)
         jv[sfRemainingOwnerCount.jsonName] = *reserveCount;
-    if (feeAmount)
-        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
+    if (feeAmountDelta)
+        jv[sfFeeAmountDelta.jsonName] = feeAmountDelta->getJson(JsonOptions::Values::None);
     if (maxFee)
         jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
     return jv;

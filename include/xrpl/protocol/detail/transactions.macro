@@ -1189,7 +1189,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     ({
     {sfCounterpartySponsor, SoeOptional},
     {sfSponsee, SoeOptional},
-    {sfFeeAmount, SoeOptional},
+    {sfFeeAmountDelta, SoeOptional},
     {sfMaxFee, SoeOptional},
     {sfRemainingOwnerCount, SoeOptional},
 }))

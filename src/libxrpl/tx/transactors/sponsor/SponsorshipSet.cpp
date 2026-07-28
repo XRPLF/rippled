@@ -26,14 +26,15 @@ namespace xrpl {
 static bool
 hasSponsorshipBudget(
     SLE::const_ref sponsorshipSle,
-    std::optional<STAmount> const& feeAmount,
+    std::optional<STAmount> const& feeAmountDelta,
     std::optional<std::uint32_t> const& remainingOwnerCount)
 {
     // A field the transaction omits keeps whatever the existing object holds,
     // so fall back to the current SLE value when the tx does not set it.
-    bool const hasFeeAmount = feeAmount
-        ? *feeAmount > beast::kZero
-        : sponsorshipSle && (*sponsorshipSle)[~sfFeeAmount].value_or(STAmount{0}) > beast::kZero;
+    STAmount const currentFee =
+        sponsorshipSle ? (*sponsorshipSle)[~sfFeeAmount].value_or(STAmount{0}) : STAmount{0};
+    STAmount const newFee = currentFee + feeAmountDelta.value_or(STAmount{0});
+    bool const hasFeeAmount = newFee > beast::kZero;
 
     bool const hasRemainingOwnerCount = remainingOwnerCount
         ? *remainingOwnerCount > 0
@@ -45,7 +46,7 @@ hasSponsorshipBudget(
 TxConsequences
 SponsorshipSet::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto const feeAmount = ctx.tx[~sfFeeAmount];
+    auto const feeAmount = ctx.tx[~sfFeeAmountDelta];
     return TxConsequences{ctx.tx, feeAmount.has_value() ? feeAmount->xrp() : beast::kZero};
 }
 
@@ -90,8 +91,8 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
 
         // Transactions deleting `Sponsorship` cannot include modification fields.
-        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfRemainingOwnerCount) ||
-            ctx.tx.isFieldPresent(sfMaxFee))
+        if (ctx.tx.isFieldPresent(sfFeeAmountDelta) ||
+            ctx.tx.isFieldPresent(sfRemainingOwnerCount) || ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
     else
@@ -101,27 +102,19 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (account != sponsorID)
             return temMALFORMED;
 
-        // FeeAmount and MaxFee must be non-negative XRP amounts when present.
-        auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
-            if (!ctx.tx.isFieldPresent(field))
-                return tesSUCCESS;
+        // FeeAmountDelta must be an XRP amount when present.
+        if (auto const feeAmt = ctx.tx[~sfFeeAmountDelta]; feeAmt && !isXRP(*feeAmt))
+            return temBAD_AMOUNT;
 
-            auto const amount = ctx.tx.getFieldAmount(field);
+        // MaxFee must be a non-negative XRP amount when present.
+        if (auto const maxFee = ctx.tx[~sfMaxFee];
+            maxFee && (!isXRP(*maxFee) || *maxFee < beast::kZero))
+            return temBAD_AMOUNT;
 
-            if (!isXRP(amount))
-                return temBAD_AMOUNT;
-
-            if (amount.xrp() < beast::kZero)
-                return temBAD_AMOUNT;
-
-            return tesSUCCESS;
-        };
-
-        if (auto const ret = checkOptionalAmountField(sfFeeAmount); !isTesSuccess(ret))
-            return ret;
-
-        if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
-            return ret;
+        if (!ctx.tx.isFieldPresent(sfRemainingOwnerCount) &&
+            ctx.tx[~sfFeeAmountDelta].value_or(XRPAmount{0}) == beast::kZero &&
+            !ctx.tx.isFieldPresent(sfMaxFee) && ((ctx.tx[sfFlags] & tfUniversalMask) == 0))
+            return temREDUNDANT;
     }
 
     return tesSUCCESS;
@@ -154,12 +147,27 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
         return tecNO_ENTRY;
 
-    // Reject creating or updating a Sponsorship that would be left with no
-    // budget (neither a positive FeeAmount nor a positive RemainingOwnerCount).
-    // Such an object is unusable yet still consumes the sponsor's reserve.
-    if (!ctx.tx.isFlag(tfDeleteObject) &&
-        !hasSponsorshipBudget(sponsorshipSle, ctx.tx[~sfFeeAmount], ctx.tx[~sfRemainingOwnerCount]))
-        return tecNO_PERMISSION;
+    if (!ctx.tx.isFlag(tfDeleteObject))
+    {
+        if (sponsorshipSle)
+        {
+            // Check for redundancy on updates
+            if (!ctx.tx.isFieldPresent(sfRemainingOwnerCount) &&
+                ctx.tx[~sfFeeAmountDelta].value_or(XRPAmount{0}) == beast::kZero &&
+                !ctx.tx.isFieldPresent(sfMaxFee) && ((ctx.tx[sfFlags] & tfUniversalMask) == 0))
+                return temREDUNDANT;
+        }
+
+        // Reject creating or updating a Sponsorship that would be left with no
+        // budget (neither a positive FeeAmount nor a positive RemainingOwnerCount).
+        // Such an object is unusable yet still consumes the sponsor's reserve.
+        if (!hasSponsorshipBudget(
+                sponsorshipSle, ctx.tx[~sfFeeAmountDelta], ctx.tx[~sfRemainingOwnerCount]))
+            return tecNO_PERMISSION;
+
+        if (!sponsorshipSle && ctx.tx[~sfFeeAmountDelta].value_or(XRPAmount{0}) < beast::kZero)
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
@@ -235,11 +243,12 @@ SponsorshipSet::doApply()
         return deleteSponsorship(ctx_.view(), sponsorshipSle, ctx_.journal);
     }
 
-    auto const feeAmount = ctx_.tx[~sfFeeAmount];
+    auto const feeAmountDeltaOpt = ctx_.tx[~sfFeeAmountDelta];
     auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
-    bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
+    bool const hasPositiveFeeAmount =
+        feeAmountDeltaOpt.has_value() && *feeAmountDeltaOpt > beast::kZero;
 
     auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
@@ -252,12 +261,12 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfOwner] = sponsorID;
         (*newSle)[sfSponsee] = sponseeID;
-        if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
+        if (feeAmountDeltaOpt && (*feeAmountDeltaOpt).xrp() > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
         STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
         if (hasPositiveFeeAmount)
-            sponsorBalanceAfterFee -= *feeAmount;
+            sponsorBalanceAfterFee -= *feeAmountDeltaOpt;
 
         if (auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
@@ -275,8 +284,8 @@ SponsorshipSet::doApply()
         if (hasPositiveFeeAmount)
         {
             // New object: FeeAmount starts absent, so deduct and record the full amount
-            (*newSle)[sfFeeAmount] = *feeAmount;
-            (*sponsorAccSle)[sfBalance] -= *feeAmount;
+            (*newSle)[sfFeeAmount] = *feeAmountDeltaOpt;
+            (*sponsorAccSle)[sfBalance] -= *feeAmountDeltaOpt;
         }
 
         if (maxFee && *maxFee > beast::kZero)
@@ -314,45 +323,41 @@ SponsorshipSet::doApply()
     }
 
     // Update the existing Sponsorship object.
-    if (feeAmount)
+    if (feeAmountDeltaOpt)
     {
-        auto const currentFeeAmount = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount{0});
-        auto const feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
-
+        auto feeAmountDelta = *feeAmountDeltaOpt;
+        if (feeAmountDelta < beast::kZero &&
+            -feeAmountDelta > (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount{0}))
+            feeAmountDelta = -(*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount{0});
         if (feeAmountDelta > beast::kZero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
         // Move the FeeAmount delta between the sponsor balance and Sponsorship
         // object.
-        if (feeAmountDelta != beast::kZero)
+        STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
+        sponsorBalanceAfterFee -= feeAmountDelta;
+
+        if (auto const ret = checkReserve(
+                ctx_.getApplyViewContext(),
+                sponsorAccSle,
+                sponsorBalanceAfterFee.xrp(),
+                *reserveSponsorAccSle,
+                {},
+                ctx_.journal,
+                tecUNFUNDED);
+            !isTesSuccess(ret))
         {
-            STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
-            sponsorBalanceAfterFee -= feeAmountDelta;
-
-            if (auto const ret = checkReserve(
-                    ctx_.getApplyViewContext(),
-                    sponsorAccSle,
-                    sponsorBalanceAfterFee.xrp(),
-                    *reserveSponsorAccSle,
-                    {},
-                    ctx_.journal,
-                    tecUNFUNDED);
-                !isTesSuccess(ret))
-            {
-                return ret;
-            }
-
-            (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
-            if (*feeAmount == beast::kZero)
-            {
-                (*sponsorshipSle).makeFieldAbsent(sfFeeAmount);
-            }
-            else
-            {
-                (*sponsorshipSle).setFieldAmount(sfFeeAmount, *feeAmount);
-            }
-            ctx_.view().update(sponsorAccSle);
+            return ret;
         }
+
+        (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
+        STAmount const currentFee = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount{0});
+        STAmount const newFee = currentFee + feeAmountDelta;
+        if (newFee == beast::kZero)
+            sponsorshipSle->makeFieldAbsent(sfFeeAmount);
+        else
+            (*sponsorshipSle)[sfFeeAmount] = newFee;
+        ctx_.view().update(sponsorAccSle);
     }
 
     if (maxFee)

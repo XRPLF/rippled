@@ -100,29 +100,29 @@ public:
     }
 
     /**
-     * @brief Get sfFeeAmount (SoeOptional)
+     * @brief Get sfFeeAmountDelta (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
-    getFeeAmount() const
+    getFeeAmountDelta() const
     {
-        if (hasFeeAmount())
+        if (hasFeeAmountDelta())
         {
-            return this->tx_->at(sfFeeAmount);
+            return this->tx_->at(sfFeeAmountDelta);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfFeeAmount is present.
+     * @brief Check if sfFeeAmountDelta is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasFeeAmount() const
+    hasFeeAmountDelta() const
     {
-        return this->tx_->isFieldPresent(sfFeeAmount);
+        return this->tx_->isFieldPresent(sfFeeAmountDelta);
     }
 
     /**
@@ -243,13 +243,13 @@ public:
     }
 
     /**
-     * @brief Set sfFeeAmount (SoeOptional)
+     * @brief Set sfFeeAmountDelta (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setFeeAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setFeeAmountDelta(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
-        object_[sfFeeAmount] = value;
+        object_[sfFeeAmountDelta] = value;
         return *this;
     }
 

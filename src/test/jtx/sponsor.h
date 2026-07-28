@@ -19,17 +19,17 @@ json::Value
 set(jtx::Account const& account,
     std::uint32_t flags,
     std::optional<std::uint32_t> const reserveCount = std::nullopt,
-    std::optional<STAmount> const feeAmount = std::nullopt,
+    std::optional<STAmount> const feeAmountDelta = std::nullopt,
     std::optional<STAmount> const maxFee = std::nullopt);
 
 inline json::Value
 set_fee(
     jtx::Account const& account,
     std::uint32_t flags,
-    STAmount feeAmount,
+    STAmount feeAmountDelta,
     std::optional<STAmount> maxFee = std::nullopt)
 {
-    return set(account, flags, std::nullopt, std::move(feeAmount), std::move(maxFee));
+    return set(account, flags, std::nullopt, std::move(feeAmountDelta), std::move(maxFee));
 }
 
 inline json::Value
