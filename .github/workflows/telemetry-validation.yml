@@ -11,11 +11,13 @@
 # services, runs a multi-node cluster) — it validates the full telemetry
 # stack end-to-end rather than individual unit tests.
 #
-# Architecture: two jobs to leverage cached dependencies:
+# Architecture: three jobs to leverage cached dependencies:
+#   0. linux-image-tag — reads the CI image tag from the build matrix so this
+#      workflow cannot drift onto a different compiler than the main CI.
 #   1. build-xrpld — runs on a self-hosted runner inside the same container
-#      image the main CI uses (debian-bookworm-gcc-13). This ensures Conan
-#      packages are fetched from the XRPLF remote instead of built from
-#      source, and ccache hits the remote cache.
+#      image the main CI uses. This ensures Conan packages are fetched from
+#      the XRPLF remote instead of built from source, and ccache hits the
+#      remote cache.
 #   2. validate-telemetry — runs on ubuntu-latest (which has Docker) to
 #      launch the telemetry stack (OTel collector, Prometheus, Tempo, etc.)
 #      and validate the full pipeline end-to-end.
@@ -70,13 +72,33 @@ env:
   BUILD_DIR: build
 
 jobs:
+  # ── Job 0: Resolve the CI image tag ────────────────────────────────
+  # The tag is pinned once, alongside the build matrix, in linux.json. Reading
+  # it here rather than hardcoding a second copy means this workflow always
+  # builds in the same image (and therefore the same compiler) as the main CI.
+  # A hardcoded copy silently went stale and left this job on gcc 13 after the
+  # rest of CI moved to gcc 15, which broke the build on code the main CI
+  # compiled fine.
+  linux-image-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read nix image tag
+        id: tag
+        run: echo "tag=$(jq -r .image_tag .github/scripts/strategy-matrix/linux.json)" >>"${GITHUB_OUTPUT}"
+
   # ── Job 1: Build xrpld in the same container the main CI uses ──────
   # This ensures Conan binary packages are fetched from the XRPLF remote
   # (matching package IDs) and ccache hits the remote compilation cache.
   build-xrpld:
     name: Build xrpld
+    needs: linux-image-tag
     runs-on: [self-hosted, Linux, X64, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:gcc-13-sha-ab4d1f0
+    container: ghcr.io/xrplf/xrpld/nix-debian:${{ needs.linux-image-tag.outputs.tag }}
     timeout-minutes: 60
     env:
       CCACHE_NAMESPACE: telemetry-validation
@@ -88,7 +110,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: ${{ github.repository_owner == 'XRPLF' }}
 
@@ -100,6 +122,14 @@ jobs:
         id: nproc
         with:
           subtract: 2
+
+      # The nix image ships several toolchains, so CC/CXX must be set
+      # explicitly for Conan to detect the intended one. gcc matches the
+      # debian gcc-release config the main CI builds.
+      - name: Set compiler environment
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: gcc
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
