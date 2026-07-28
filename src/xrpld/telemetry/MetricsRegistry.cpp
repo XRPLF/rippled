@@ -849,7 +849,7 @@ MetricsRegistry::observeWritePathDetail(node_store::Database const& db, ObserveF
     // above 1.0 even under load. An integral gauge would truncate that to 1
     // and lose the whole signal, hence the fixed-point scale -- which the
     // name states, so nobody reads 140 as 140 writers.
-    if (auto const mean = scaledMean(ws->depthSum, ws->insertCount, 100))
+    if (auto const mean = scaledMean(ws->depthSum, ws->depthSamples, 100))
         observe("nudb_writer_depth_x100", *mean);
 }
 
@@ -862,6 +862,13 @@ MetricsRegistry::observeAcquireStats(AcquireStats const& stats, ObserveFn const&
     // give-up path cannot fire, so an acquisition never ends.
     observe("acquire_deferrals", static_cast<std::int64_t>(stats.getDeferrals()));
     observe("acquire_timeouts", static_cast<std::int64_t>(stats.getTimeouts()));
+
+    // The same two events, narrowed to ledger acquisition. The pair above
+    // sums every TimeoutCounter subclass, so a busy replay lane can imitate
+    // a stalled ledger acquisition; compare these two instead when asking
+    // whether ledger acquisition's give-up path is advancing.
+    observe("acquire_ledger_deferrals", static_cast<std::int64_t>(stats.getLedgerDeferrals()));
+    observe("acquire_ledger_timeouts", static_cast<std::int64_t>(stats.getLedgerTimeouts()));
     observe("acquire_give_ups", static_cast<std::int64_t>(stats.getGiveUps()));
     observe("acquire_aborts", static_cast<std::int64_t>(stats.getAborts()));
     observe("acquire_aborts_partial", static_cast<std::int64_t>(stats.getAbortsWithPartialWork()));
