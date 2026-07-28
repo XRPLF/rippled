@@ -3976,40 +3976,6 @@
           "color": {
             "mode": "palette-classic"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Faults & KB / Sec",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 3,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": 1800000,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "thresholds": {
             "mode": "absolute",
@@ -4020,8 +3986,10 @@
               }
             ]
           },
-          "unit": "cps"
-        }
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 12,
@@ -4031,24 +3999,26 @@
       },
       "id": 65,
       "options": {
-        "annotations": {
-          "clustering": -1,
-          "multiLane": false
-        },
+        "displayMode": "gradient",
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "enableFacetedFilter": false,
-          "overflow": "ellipsis",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "manual",
+        "valueMode": "color"
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -4057,20 +4027,22 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(sweep_malloc_trim_minor_faults_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Minor Faults / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
-          "refId": "A"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (round(increase(sweep_malloc_trim_minor_faults_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__range]))), \"series\", \"Minor Faults\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A",
+          "instant": true
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(sweep_malloc_trim_reclaimed_kb_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Reclaimed KB / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
-          "refId": "B"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (round(increase(sweep_malloc_trim_reclaimed_kb_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__range]))), \"series\", \"Reclaimed KB\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "B",
+          "instant": true
         }
       ],
-      "title": "Sweep Heap-Trim Faults & Reclaim Rate",
-      "type": "timeseries"
+      "title": "Sweep Heap-Trim Faults & Reclaim (Count)",
+      "type": "bargauge"
     },
     {
       "datasource": {
@@ -4127,8 +4099,54 @@
               }
             ]
           },
-          "unit": "cps"
-        }
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Rotation In Flight.*"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "In Flight (0/1)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Copy-Forward.*"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "cps"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Writes / Sec"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 12,
