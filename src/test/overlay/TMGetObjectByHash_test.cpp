@@ -796,49 +796,73 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         return {
             // Wholly free: at or below the free allowance nothing is
             // billable, so only the small size band applies -- which is 0.
-            {k.free, k.free, k.bandSmall, 0, "at the free allowance"},
-            {0, 0, k.bandSmall, 0, "empty request"},
-            {1, 1, k.bandSmall, 0, "one object, one hit"},
+            {.requested = k.free,
+             .found = k.free,
+             .derived = k.bandSmall,
+             .literal = 0,
+             .why = "at the free allowance"},
+            {.requested = 0,
+             .found = 0,
+             .derived = k.bandSmall,
+             .literal = 0,
+             .why = "empty request"},
+            {.requested = 1,
+             .found = 1,
+             .derived = k.bandSmall,
+             .literal = 0,
+             .why = "one object, one hit"},
 
             // All hits, one object past the allowance: one billable hit.
-            {k.free + 1, k.free + 1, k.hit + k.bandSmall, 1, "one billable hit"},
+            {.requested = k.free + 1,
+             .found = k.free + 1,
+             .derived = k.hit + k.bandSmall,
+             .literal = 1,
+             .why = "one billable hit"},
 
             // All misses, one past the allowance: misses are billed first,
             // so the single billable object is priced as a miss, not a hit.
-            {k.free + 1, 0, k.miss + k.bandSmall, 8, "one billable miss"},
+            {.requested = k.free + 1,
+             .found = 0,
+             .derived = k.miss + k.bandSmall,
+             .literal = 8,
+             .why = "one billable miss"},
 
             // Mixed at the small-band edge: 64 requested, 32 found.
             // Billable is 64-16 = 48; misses are 32 and all billable,
             // leaving 16 billable hits.
-            {k.smallMax,
-             32,
-             (16 * k.hit) + (32 * k.miss) + k.bandSmall,
-             272,
-             "small-band edge, mixed"},
+            {.requested = k.smallMax,
+             .found = 32,
+             .derived = (16 * k.hit) + (32 * k.miss) + k.bandSmall,
+             .literal = 272,
+             .why = "small-band edge, mixed"},
 
             // One past the small band moves to the medium surcharge.
-            {k.smallMax + 1,
-             k.smallMax + 1,
-             ((k.smallMax + 1 - k.free) * k.hit) + k.bandMedium,
-             149,
-             "first medium-band size"},
+            {.requested = k.smallMax + 1,
+             .found = k.smallMax + 1,
+             .derived = ((k.smallMax + 1 - k.free) * k.hit) + k.bandMedium,
+             .literal = 149,
+             .why = "first medium-band size"},
 
             // The medium band's last size, then one past it, which moves to
             // the large surcharge.
-            {k.mediumMax,
-             k.mediumMax,
-             ((k.mediumMax - k.free) * k.hit) + k.bandMedium,
-             1108,
-             "last medium-band size"},
-            {k.mediumMax + 1,
-             k.mediumMax + 1,
-             ((k.mediumMax + 1 - k.free) * k.hit) + k.bandLarge,
-             2009,
-             "first large-band size"},
+            {.requested = k.mediumMax,
+             .found = k.mediumMax,
+             .derived = ((k.mediumMax - k.free) * k.hit) + k.bandMedium,
+             .literal = 1108,
+             .why = "last medium-band size"},
+            {.requested = k.mediumMax + 1,
+             .found = k.mediumMax + 1,
+             .derived = ((k.mediumMax + 1 - k.free) * k.hit) + k.bandLarge,
+             .literal = 2009,
+             .why = "first large-band size"},
 
             // Clamp: found > requested cannot make the miss count negative,
             // so the fee is the same as the all-hit case (1).
-            {k.free + 1, k.free + 10, k.hit + k.bandSmall, 1, "found exceeds requested"},
+            {.requested = k.free + 1,
+             .found = k.free + 10,
+             .derived = k.hit + k.bandSmall,
+             .literal = 1,
+             .why = "found exceeds requested"},
         };
     }
 
