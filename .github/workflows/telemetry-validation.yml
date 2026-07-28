@@ -229,13 +229,21 @@ jobs:
           path: /tmp/xrpld-validation/reports/
           retention-days: 30
 
+      # Keyed on the validation step's own outcome, not job status. The step
+      # above sets continue-on-error, so the job is not failing at this point
+      # and `if: failure()` never fires -- which silently skipped these logs on
+      # every failed run, and they are the only record of why a node did not
+      # reach consensus.
       - name: Upload node logs
-        if: failure()
+        if: always() && steps.validation.outcome != 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: xrpld-node-logs
-          path: /tmp/xrpld-validation/node*/debug.log
+          path: |
+            /tmp/xrpld-validation/node*/debug.log
+            /tmp/xrpld-validation/*.log
           retention-days: 7
+          if-no-files-found: warn
 
       - name: Print validation summary
         if: always()
