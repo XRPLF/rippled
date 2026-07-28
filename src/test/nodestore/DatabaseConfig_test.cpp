@@ -1076,7 +1076,8 @@ public:
 
         // Exact counts, so the denominators below are pinned independently.
         BEAST_EXPECT(busy.value("node_writes") == std::int64_t{kNumStored});
-        BEAST_EXPECT(busy.value("node_reads_total") == std::int64_t{2 * kNumStored + kNumMissing});
+        BEAST_EXPECT(
+            busy.value("node_reads_total") == std::int64_t{(2 * kNumStored) + kNumMissing});
         BEAST_EXPECT(busy.value("node_reads_hit") == std::int64_t{2 * kNumStored});
         // The two denominators differ, which is what makes the cross-checks
         // below able to catch a swapped accessor pair.
@@ -1208,7 +1209,7 @@ public:
         // A quiet node publishes all seven at zero. Unlike a mean, zero is the
         // meaningful "no such event yet" reading for a counter, so omitting
         // these would lose the ability to see that nothing happened.
-        AcquireStats quiet;
+        AcquireStats const quiet;
         MetricSink fresh;
         telemetry::MetricsRegistry::observeAcquireStats(quiet, fresh.fn());
         BEAST_EXPECT(fresh.names() == kLabels);
@@ -1284,7 +1285,11 @@ public:
         // above the total. Compared as unwrapped values, since comparing two
         // optionals would also pass with both absent.
         auto const running = sink.value("read_threads_running");
-        if (BEAST_EXPECT(running.has_value()))
+        BEAST_EXPECT(running.has_value());
+        // Plain `if` rather than branching on BEAST_EXPECT's result: the
+        // macro's return value hides the check from static analysis, which
+        // then reads the dereferences below as unguarded.
+        if (running.has_value())
         {
             BEAST_EXPECT(*running >= 0);
             BEAST_EXPECT(*running <= 3);
