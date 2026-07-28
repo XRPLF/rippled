@@ -1264,6 +1264,23 @@ class RuleJMetricSuffixes(unittest.TestCase):
         # shape-independent rules apply -- a bare gauge-ish name is fine.
         self.assertEqual(self._run(_mc("syncState", "sync_state")), [])
 
+    def test_one_name_created_as_two_kinds_is_flagged(self):
+        # One wire name built through two different factories exports two
+        # instruments under a single name, and no suffix can satisfy both. The
+        # kind map therefore records a SET per name: keeping only the last kind
+        # visited silently hid this, because whichever emit site the walk
+        # reached last decided the verdict.
+        violations = self._run(
+            _mc("dualKind", "dual_kind_total"),
+            'meter_->CreateUInt64Counter(metric::dualKind, "d");\n'
+            'meter_->CreateInt64ObservableGauge(metric::dualKind, "d");\n',
+        )
+        self.assertEqual(len(violations), 1, violations)
+        # The message names both kinds, so the reader sees the conflict rather
+        # than a suffix complaint that would contradict one of the two sites.
+        self.assertIn("counter", violations[0][-1])
+        self.assertIn("gauge", violations[0][-1])
+
     def test_skip_when_no_header(self):
         d = Path(tempfile.mkdtemp())
         try:

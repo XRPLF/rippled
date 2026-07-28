@@ -393,12 +393,24 @@ ValidatorSite::reportFetchOutcome(
     // it is always non-null. Unlike activeResource (reset once a fetch
     // completes) it also keeps the URI exactly as configured, which keeps
     // the time series stable when a site redirects.
+    //
+    // The label is rebuilt from the parsed parts rather than using the raw
+    // configured URI: [validator_list_sites] accepts credentials in the URI,
+    // and ParsedUrl keeps them in username/password. Emitting the raw string
+    // would copy them into a metric label, from which they would reach the
+    // collector, Prometheus and every dashboard. Scheme, host, port and path
+    // are all a reader needs to tell one site from another.
+    auto const& url = sites_[siteIdx].loadedResource->pUrl;
+    std::string siteLabel = url.scheme + "://" + url.domain;
+    if (url.port)
+        siteLabel += ":" + std::to_string(*url.port);
+    siteLabel += url.path;
+
     XRPL_METRIC_COUNTER_INC_LABELED(
         app_,
         telemetry::metric::unlFetchTotal,
         "Validator list fetch attempts, by site and outcome",
-        {{telemetry::label::site, std::string(sites_[siteIdx].loadedResource->uri)},
-         {telemetry::label::outcome, std::string(outcome)}});
+        {{telemetry::label::site, siteLabel}, {telemetry::label::outcome, std::string(outcome)}});
 }
 
 void

@@ -80,21 +80,31 @@ namespace val {
 /**
  * peer.dial outcome values.
  *
- * The identical five slugs `ConnectAttempt::reportOutcome` already passes to
- * the `overlay_connect_total` counter, defined here so the span and the
- * counter cannot drift apart: the dial state machine names its outcome once
- * and both signals receive that same value.
+ * The identical slugs `ConnectAttempt::reportOutcome` passes to the
+ * `overlay_connect_total` counter, defined here so the span and the counter
+ * cannot drift apart: the dial state machine names its outcome once and both
+ * signals receive that same value.
  *
  * - connected:    the peer was activated and added to the overlay.
  * - tcp_fail:     the TCP connect or local-endpoint read failed.
- * - tls_fail:     the TLS handshake, slot check or shared value failed.
+ * - tls_fail:     the TLS handshake or the shared-value exchange failed.
+ * - duplicate:    TLS succeeded but PeerFinder already holds a slot for this
+ *                 address, so the attempt was redundant rather than faulty.
  * - upgrade_fail: TLS succeeded but the HTTP upgrade, protocol negotiation
  *                 or activation was rejected.
  * - timeout:      the attempt never reached any terminal state in time.
+ *
+ * `duplicate` is separate from `tls_fail` on purpose. Dialling an address we
+ * are already connected to is normal churn on a healthy node, while a TLS
+ * failure means the peer could not be spoken to at all. Reporting both as
+ * `tls_fail` made a rising TLS-failure count unreadable: it could equally mean
+ * broken peers or merely a busy PeerFinder, and the two need opposite
+ * responses.
  */
 inline constexpr auto connected = makeStr("connected");
 inline constexpr auto tcpFail = makeStr("tcp_fail");
 inline constexpr auto tlsFail = makeStr("tls_fail");
+inline constexpr auto duplicate = makeStr("duplicate");
 inline constexpr auto upgradeFail = makeStr("upgrade_fail");
 inline constexpr auto timeout = makeStr("timeout");
 }  // namespace val

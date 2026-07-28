@@ -1293,9 +1293,9 @@ def iter_sources(root: Path) -> List[Path]:
     ]
 
 
-def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, str]:
-    """Map each declared instrument's WIRE name to its OTel instrument kind, by
-    looking at how the emit sites actually create it.
+def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, Set[str]]:
+    """Map each declared instrument's WIRE name to the set of OTel instrument
+    kinds its emit sites actually create it with.
 
     The kind is what decides which suffix is correct, so it must be read from
     the emit site rather than guessed from the name -- guessing from words like
@@ -1303,10 +1303,15 @@ def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, st
     label VALUES (e.g. `nodestore_state` observing `write_mean_us`), which is
     a legitimate shape, not a violation.
 
-    Returns one of `counter`, `histogram`, `gauge`, `updown` per wire name.
-    A name whose emit site is not found is absent from the result, so Rule J
-    checks only the shape-independent rules for it."""
-    kinds: Dict[str, str] = {}
+    A SET rather than one kind per name, because one wire name created through
+    two different factories is itself the defect worth reporting: the SDK would
+    export two instruments under one name and the collector would see whichever
+    arrived last. Recording only the last kind visited hid exactly that case.
+
+    Values are drawn from `counter`, `histogram`, `gauge`, `updown`. A name whose
+    emit site is not found is absent from the result, so Rule J checks only the
+    shape-independent rules for it."""
+    kinds: Dict[str, Set[str]] = {}
     for path in iter_sources(root):
         if path.name == "MetricMacros.h" or path.name.endswith("MetricNames.h"):
             continue
@@ -1330,7 +1335,7 @@ def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, st
                 )
             if wire is None:
                 continue
-            kinds[wire] = classify_instrument_kind(kind)
+            kinds.setdefault(wire, set()).add(classify_instrument_kind(kind))
     return kinds
 
 
@@ -1404,7 +1409,14 @@ def run_rule_j_metric_suffixes(root: Path, report: Report) -> None:
         if name.startswith(("xrpld_", "xrpl_")):
             flag(name, "drop the prefix; the exporter adds it")
             continue
-        kind = kinds.get(name)
+        found_kinds = kinds.get(name) or set()
+        if len(found_kinds) > 1:
+            # One wire name created through two factories exports two
+            # instruments under one name; no suffix can be right for both, so
+            # report the conflict itself rather than picking one arbitrarily.
+            flag(name, f"created as {' and '.join(sorted(found_kinds))}; pick one kind")
+            continue
+        kind = next(iter(found_kinds), None)
         if kind == "counter" and not name.endswith(METRIC_COUNTER_SUFFIX):
             flag(name, "counter must end in _total")
         elif kind == "histogram" and not name.endswith(METRIC_DURATION_SUFFIXES):

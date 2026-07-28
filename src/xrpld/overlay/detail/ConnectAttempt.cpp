@@ -354,7 +354,10 @@ ConnectAttempt::onHandshake(error_code ec)
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
-        reportOutcome(telemetry::peer_span::val::tlsFail);
+        // Not a TLS failure: the handshake succeeded and PeerFinder simply
+        // already holds a slot for this address. Reporting it as tls_fail
+        // conflated ordinary dial churn with peers we cannot speak to.
+        reportOutcome(telemetry::peer_span::val::duplicate);
         fail("Duplicate connection");
         return;
     }
@@ -455,6 +458,16 @@ ConnectAttempt::onShutdown(error_code ec)
 {
     cancelTimer();
     if (!ec)
+    {
+        close();
+        return;
+    }
+
+    // A cancelled shutdown is us tearing the attempt down, not the peer failing
+    // it. Every other handler here guards this; without the same guard an
+    // ordinary overlay stop was counted as upgrade_fail, inflating that outcome
+    // on any node that shuts down while dials are in flight.
+    if (ec == boost::asio::error::operation_aborted)
     {
         close();
         return;

@@ -230,7 +230,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Count of outbound peer connection attempts, split by terminal outcome.*\n\n###### How it's computed:\n*Count over the selected range of finished dials grouped by outcome, per node. Filter the outcome set with the Dial Outcome variable.*\n\n###### Reading it:\n*Connected should dominate. The failure lines name the stage that broke: tcp_fail (no route or refused), tls_fail (TLS handshake), upgrade_fail (HTTP upgrade or protocol negotiation), timeout (no terminal state in time).*\n\n###### Healthy range:\n*Connected rising to the configured peer count, then flat with failures near zero.*\n\n###### Watch for:\n*All attempts landing on one failure outcome and no connected line — the node has no outbound peers and can never sync.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — an outbound peer connection attempt from TCP connect through TLS to protocol upgrade; each attempt ends in exactly one outcome.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
+      "description": "###### What this is:\n*Count of outbound peer connection attempts, split by terminal outcome.*\n\n###### How it's computed:\n*Count over the selected range of finished dials grouped by outcome, per node. Filter the outcome set with the Dial Outcome variable.*\n\n###### Reading it:\n*Connected should dominate. The failure lines name the stage that broke: tcp_fail (no route or refused), tls_fail (TLS handshake or shared-value exchange), duplicate (already connected to that address, not a fault), upgrade_fail (HTTP upgrade or protocol negotiation), timeout (no terminal state in time).*\n\n###### Healthy range:\n*Connected rising to the configured peer count, then flat with failures near zero.*\n\n###### Watch for:\n*All attempts landing on one failure outcome and no connected line — the node has no outbound peers and can never sync.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — an outbound peer connection attempt from TCP connect through TLS to protocol upgrade; each attempt ends in exactly one outcome.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5158,7 +5158,7 @@
       {
         "name": "dial_outcome",
         "label": "Dial Outcome",
-        "description": "Filter outbound dial attempts by terminal outcome [connected / tcp_fail / tls_fail / upgrade_fail / timeout]",
+        "description": "Filter outbound dial attempts by terminal outcome [connected / tcp_fail / tls_fail / duplicate / upgrade_fail / timeout]",
         "type": "query",
         "query": "label_values(overlay_connect_total, outcome)",
         "datasource": {
@@ -5518,7 +5518,7 @@
       {
         "name": "span_outcome",
         "label": "Span Outcome",
-        "description": "Filter the span-derived sync panels by terminal outcome [complete / failed / timeout / abandoned / partial / refused / connected / tcp_fail / tls_fail / upgrade_fail]",
+        "description": "Filter the span-derived sync panels by terminal outcome [complete / failed / timeout / abandoned / partial / refused / connected / tcp_fail / tls_fail / duplicate / upgrade_fail]",
         "type": "query",
         "query": "label_values(span_calls_total, outcome)",
         "datasource": {
