@@ -87,9 +87,20 @@ public:
     std::atomic<std::uint64_t> insertMaxUs{0};
 
     /**
-     * Summed depth observed at each insert.
+     * Summed depth observed at each insert, accumulated at insert entry.
      */
     std::atomic<std::uint64_t> depthSum{0};
+
+    /**
+     * How many depth samples make up @ref depthSum.
+     *
+     * Its own counter rather than reusing the completed-insert count, because
+     * the two are taken at different moments: a depth sample exists as soon
+     * as an insert starts, while the insert count only rises when one
+     * finishes. Dividing by the wrong one biases the mean downward under
+     * load, which is when the mean matters.
+     */
+    std::atomic<std::uint64_t> depthSamples{0};
 
     NuDBBackend(
         size_t keyBytes,
@@ -270,7 +281,16 @@ public:
         // NuDB takes one global mutex for the whole insert, so the wait is
         // invisible from here. Record the depth we joined at and the wall
         // time we spent; the split follows from Little's Law.
+        //
+        // Depth and its sample count are both folded in HERE, at entry, so
+        // the mean is over the same population. Counting the sample at exit
+        // instead would drop every insert still in flight, and those are the
+        // slow, deep ones -- biasing the mean down exactly when queueing is
+        // worst. With all writers inside their first insert the exit-counted
+        // version reports no depth at all.
         auto const depth = concurrentWriters.fetch_add(1, std::memory_order_relaxed) + 1;
+        depthSum.fetch_add(depth, std::memory_order_relaxed);
+        depthSamples.fetch_add(1, std::memory_order_relaxed);
         auto const begin = std::chrono::steady_clock::now();
 
         // A scope guard rather than straight-line code, because the insert
@@ -369,6 +389,7 @@ public:
         stats.insertTotalUs = insertTotalUs.load(std::memory_order_relaxed);
         stats.insertMaxUs = insertMaxUs.load(std::memory_order_relaxed);
         stats.depthSum = depthSum.load(std::memory_order_relaxed);
+        stats.depthSamples = depthSamples.load(std::memory_order_relaxed);
         return stats;
     }
 
@@ -424,7 +445,6 @@ private:
         concurrentWriters.fetch_sub(1, std::memory_order_relaxed);
         insertCount.fetch_add(1, std::memory_order_relaxed);
         insertTotalUs.fetch_add(elapsedUs, std::memory_order_relaxed);
-        depthSum.fetch_add(depth, std::memory_order_relaxed);
 
         // std::atomic has no fetch_max, so raise the maximum with a CAS
         // loop. Mirrors the clamp loop in OTelCollector.cpp.
