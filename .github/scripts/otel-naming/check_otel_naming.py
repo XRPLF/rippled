@@ -183,18 +183,32 @@ BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 # Dashboards reference span attributes in TraceQL as `span.<attr>`; the bare
 # attribute is what must exist in L1, so strip the scope before validating.
 TRACEQL_SCOPE = re.compile(r"^(?:span|resource|event|link|instrumentation_scope)\.")
-# An OTel metric label key as emitted in C++: `Add(.., {{"label", ...}})` /
-# `{{"label", value}}` instrument calls in MetricsRegistry.
+# An OTel metric label map as emitted in C++: the `{{...}}` argument of an
+# instrument call, e.g. `counter->Add(1, {{"job_type", a}, {"handler", b}})`.
+# Matching the whole map first, rather than scanning the file for `{"key",`,
+# keeps ordinary brace initializers (`{"http", "https", ...}`) out of the
+# label set — they are not labels and must not license a dashboard filter.
+METRIC_LABEL_MAP = re.compile(r"\{\{(.*?)\}\}", re.DOTALL)
+# One key inside such a map: a string literal, or a `kFooLabel` constant name
+# resolved through LABEL_CONST_DEF. A label set is a nested initializer list
+# (`{{"a", x}, {"b", y}}`), so inside the map each pair opens with `{` except
+# the first, whose `{` was consumed by the map's own `{{` — hence the `^`
+# alternative. Matching only the doubled-brace form would derive just the first
+# label of every multi-label instrument, silently under-deriving the L6 key set
+# and making Rule D reject a dashboard that queries a label the code genuinely
+# emits.
+METRIC_LABEL = re.compile(r'(?:^|\{)\s*"([a-z_][a-z0-9_]*)"\s*,')
+METRIC_LABEL_CONST = re.compile(r"(?:^|\{)\s*(k[A-Za-z0-9_]*)\s*,")
+# A label-key constant definition, with or without `inline`:
+# `constexpr char kHandlerLabel[] = "handler";`
 #
-# Two patterns are needed because a label set is a nested initializer list:
-# `{{"a", x}, {"b", y}}`. The FIRST label is preceded by the doubled brace that
-# opens both the set and the pair, while every SUBSEQUENT label is preceded by
-# `}, {` closing the previous pair and opening the next. Matching only the
-# doubled-brace form would derive just the first label of every multi-label
-# instrument, silently under-deriving the L6 key set and making Rule D reject a
-# dashboard that queries a label the code genuinely emits.
-METRIC_LABEL = re.compile(r'\{\{\s*"([a-z_][a-z0-9_]*)"\s*,')
-METRIC_LABEL_NEXT = re.compile(r'\}\s*,\s*\{\s*"([a-z_][a-z0-9_]*)"\s*,')
+# This resolves the flat `k`-prefixed per-subsystem header style. The
+# `namespace label` style used by MetricNames.h is covered separately, by
+# metric_constants(), because those identifiers are not `k`-prefixed and are
+# referenced at call sites as `label::jobType` — see metric_label_names().
+LABEL_CONST_DEF = re.compile(
+    r'(?:inline\s+)?constexpr\s+char\s+(k[A-Za-z0-9_]*)\s*\[\s*\]\s*=\s*"([a-z_][a-z0-9_]*)"'
+)
 
 
 def strip_comments(text: str) -> str:
@@ -861,21 +875,43 @@ def metric_label_names(root: Path) -> Set[str]:
     multi-label instrument such as `{{"from", a}, {"to", b}}` contributes ALL
     of its keys.
 
-    Includes the keys declared as constants in `*MetricNames.h` (L1-metrics),
-    because Rule I requires call sites to reference a constant rather than a
-    literal — so once a subsystem is converted, its label keys no longer appear
-    as literals anywhere and a literal-only scan would under-derive the set and
-    make Rule D reject a dashboard querying a label the code really emits."""
+    A label key may be written inline as a string literal or hoisted into a
+    named constant (`constexpr char kHandlerLabel[] = "handler";`, then
+    `{{kHandlerLabel, value}}`). Both forms are collected, and the constants
+    may be declared in a header, so headers are scanned as well as sources.
+
+    Also includes the keys declared as constants in `*MetricNames.h`
+    (L1-metrics), because Rule I requires call sites to reference a constant
+    rather than a literal — so once a subsystem is converted, its label keys no
+    longer appear as literals anywhere and a literal-only scan would
+    under-derive the set and make Rule D reject a dashboard querying a label
+    the code really emits. That covers the `namespace label` header style,
+    whose identifiers are not `k`-prefixed and so are invisible to
+    LABEL_CONST_DEF; the two derivations are complementary."""
     labels: Set[str] = set()
+    # Constant name -> label string, gathered across every scanned file so a
+    # `{{kFooLabel, ...}}` call site resolves even when the definition lives in
+    # a different file from the instrument call.
+    constants: Dict[str, str] = {}
+    used_constants: Set[str] = set()
     for base in ("src", "include"):
-        for p in (root / base).rglob("*.cpp"):
-            if not p.is_file():
-                continue
-            text = read_source(p)
-            if "MetricsRegistry" not in p.name and "metric" not in text.lower():
-                continue
-            labels |= set(METRIC_LABEL.findall(text))
-            labels |= set(METRIC_LABEL_NEXT.findall(text))
+        for pattern in ("*.cpp", "*.h"):
+            for p in (root / base).rglob(pattern):
+                if not p.is_file():
+                    continue
+                # Test code passes arbitrary literal pairs to exercise APIs
+                # (`signers("alice", 1, {{"alice", 1}, {"bob", 2}})`). Those are
+                # not metric labels, and must not license a dashboard filter.
+                if is_test_path(p):
+                    continue
+                text = read_source(p)
+                if "MetricsRegistry" not in p.name and "metric" not in text.lower():
+                    continue
+                constants.update(dict(LABEL_CONST_DEF.findall(text)))
+                for label_map in METRIC_LABEL_MAP.findall(text):
+                    labels |= set(METRIC_LABEL.findall(label_map))
+                    used_constants |= set(METRIC_LABEL_CONST.findall(label_map))
+    labels |= {constants[name] for name in used_constants if name in constants}
     labels |= metric_constants(root)[1]
     return labels
 

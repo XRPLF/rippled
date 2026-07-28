@@ -98,10 +98,22 @@ if(telemetry)
         HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
         REQUIRED
     )
+    # The metric side of the in-memory exporter is a SEPARATE archive
+    # (libopentelemetry_exporter_in_memory_metric.a) with the same
+    # no-declared-libs problem, so it needs its own find_library. The
+    # nodestore read-latency histogram tests use it to read exported
+    # histogram points back and assert per-bucket counts.
+    find_library(
+        OTEL_IN_MEMORY_METRIC_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory_metric
+        HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
+        REQUIRED
+    )
     target_link_libraries(
         xrpl_tests
         PRIVATE
             "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            "${OTEL_IN_MEMORY_METRIC_EXPORTER_LIB}"
             opentelemetry-cpp::opentelemetry-cpp
     )
     # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its

@@ -396,7 +396,11 @@ public:
                   logs_->journal("JobQueue"),
                   *logs_,
                   *perfLog_))
-        , nodeStoreScheduler_(*jobQueue_)
+        // `*this` is passed as a ServiceRegistry only to reach the
+        // MetricsRegistry later, from onFetch(). It is not dereferenced here,
+        // and metricsRegistry_ does not exist yet at this point in the
+        // initializer list -- the metric macros null-check it per call.
+        , nodeStoreScheduler_(*this, *jobQueue_)
         , shaMapStore_(makeSHAMapStore(*this, nodeStoreScheduler_, logs_->journal("SHAMapStore")))
         , tempNodeCache_(
               "NodeCache",
