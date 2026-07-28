@@ -38,6 +38,31 @@ import websockets
 
 logger = logging.getLogger("tx_submitter")
 
+# Failure kinds already reported at WARNING, so a repeated failure is not
+# logged again at that level.
+_reported_failures: set[str] = set()
+
+
+def _log_first_failure(key: str, fmt: str, *args: object) -> None:
+    """Log a submission failure loudly the first time its kind is seen.
+
+    A run in which every transaction fails for one reason -- a refused
+    connection, an unfunded account -- used to leave no trace, because these
+    messages were DEBUG and CI does not enable DEBUG. Logging every failure
+    instead would bury the run in thousands of identical lines, so the first
+    of each distinct kind is a WARNING and the rest stay at DEBUG.
+
+    :param key: Identifies the failure kind, e.g. the engine result code.
+    :param fmt: Logging format string.
+    :param args: Format arguments.
+    """
+    if key in _reported_failures:
+        logger.debug(fmt, *args)
+        return
+    _reported_failures.add(key)
+    logger.warning(fmt, *args)
+
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -631,7 +656,13 @@ async def submit_transaction(
             sender.sequence += 1
 
         if not success:
-            logger.debug(
+            # First occurrence of each distinct result at WARNING, the rest at
+            # DEBUG. A run where every transaction failed previously produced
+            # no diagnostics at all, because DEBUG is off in CI; logging every
+            # failure instead would bury the run in thousands of identical
+            # lines.
+            _log_first_failure(
+                "result:%s" % engine_result,
                 "%s result: %s (%s)",
                 tx_type,
                 engine_result,
@@ -639,7 +670,9 @@ async def submit_transaction(
             )
     except Exception as exc:
         stats.record(tx_type, False)
-        logger.debug("%s error: %s", tx_type, exc)
+        # Same reasoning, keyed on the exception type: a connection that is
+        # refused for the whole run says it once rather than per transaction.
+        _log_first_failure("exc:%s" % type(exc).__name__, "%s error: %s", tx_type, exc)
 
 
 async def _refresh_sequences(
