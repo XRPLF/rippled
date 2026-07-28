@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 TRANSACTIONS = REPO_ROOT / "include/xrpl/protocol/detail/transactions.macro"
 FEATURES = REPO_ROOT / "include/xrpl/protocol/detail/features.macro"
 TXFORMATS = REPO_ROOT / "src/libxrpl/protocol/TxFormats.cpp"
+SFIELDS = REPO_ROOT / "include/xrpl/protocol/detail/sfields.macro"
 
 
 def _expected_transactors() -> int:
@@ -64,7 +65,9 @@ def test_amendments_skip_retire_and_comments(tmp_path):
 def built():
     common = parse_common_fields(TXFORMATS)
     builder = GraphBuilder()
-    globals_map = extract_macros(builder, TRANSACTIONS, FEATURES, common)
+    globals_map = extract_macros(
+        builder, REPO_ROOT, TRANSACTIONS, FEATURES, SFIELDS, common
+    )
     return builder, globals_map
 
 
@@ -129,5 +132,7 @@ def test_bad_delegability_fails_loudly(tmp_path):
     )
     feats = tmp_path / "features.macro"
     feats.write_text("XRPL_FEATURE(Alpha, Supported::Yes, VoteBehavior::DefaultNo)\n")
+    sfields = tmp_path / "sfields.macro"
+    sfields.write_text("TYPED_SFIELD(sfAlpha, UINT8, 1)\n")
     with pytest.raises(ValueError, match="delegab"):
-        extract_macros(GraphBuilder(), txns, feats, set())
+        extract_macros(GraphBuilder(), tmp_path, txns, feats, sfields, set())

@@ -142,6 +142,7 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - impls
   - inequation
   - insuf
   - insuff
@@ -216,8 +217,10 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noprefix
   - noreplace
   - noripple
+  - notrepo
   - nostdinc
   - notifempty
   - nudb
@@ -345,10 +348,12 @@ words:
   - unergonomic
   - unfetched
   - unfindable
+  - unlocatable
   - unflatten
   - unfund
   - ungated
   - unimpair
+  - unioned
   - unroutable
   - unscalable
   - unserviced
