@@ -67,7 +67,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
         // Counted separately from timeouts: this path re-arms the timer
         // without running invokeOnTimer, so timeouts_ does not advance and the
         // give-up test that reads it cannot fire while the lane stays full.
-        app_.getAcquireStats().recordDeferral();
+        app_.getAcquireStats().recordDeferral(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName
                                << " timer due to load";
         setTimer(sl);
@@ -92,7 +92,7 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-        app_.getAcquireStats().recordTimeout();
+        app_.getAcquireStats().recordTimeout(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
                                << " acquiring " << hash_;
         onTimer(false, sl);

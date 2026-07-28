@@ -1253,7 +1253,7 @@ public:
     }
 
     /**
-     * Verify the seven acquire_* labels, published unconditionally, and each
+     * Verify the nine acquire_* labels, published unconditionally, and each
      * wired to its own counter.
      *
      * Every expected value below is distinct, so a getter cross-wired to a
@@ -1270,10 +1270,12 @@ public:
             "acquire_completions",
             "acquire_deferrals",
             "acquire_give_ups",
+            "acquire_ledger_deferrals",
+            "acquire_ledger_timeouts",
             "acquire_sweep_evictions",
             "acquire_timeouts"};
 
-        // A quiet node publishes all seven at zero. Unlike a mean, zero is the
+        // A quiet node publishes all nine at zero. Unlike a mean, zero is the
         // meaningful "no such event yet" reading for a counter, so omitting
         // these would lose the ability to see that nothing happened.
         AcquireStats const quiet;
@@ -1288,10 +1290,13 @@ public:
         // without partial work so the subset relationship is exercised: 5
         // aborts of which 2 discarded partly built maps.
         AcquireStats busy;
-        for (int i = 0; i < 3; ++i)
-            busy.recordDeferral();
-        for (int i = 0; i < 7; ++i)
-            busy.recordTimeout();
+        for (int i = 0; i < 2; ++i)
+            busy.recordDeferral(true);
+        busy.recordDeferral(false);
+        for (int i = 0; i < 5; ++i)
+            busy.recordTimeout(true);
+        for (int i = 0; i < 2; ++i)
+            busy.recordTimeout(false);
         busy.recordGiveUp();
         for (int i = 0; i < 2; ++i)
             busy.recordAbort(true);
@@ -1312,6 +1317,13 @@ public:
         BEAST_EXPECT(sink.value("acquire_aborts_partial") == std::int64_t{2});
         BEAST_EXPECT(sink.value("acquire_completions") == std::int64_t{11});
         BEAST_EXPECT(sink.value("acquire_sweep_evictions") == std::int64_t{13});
+
+        // The ledger-scoped pair must be a strict subset of the all-lane
+        // totals, and the numbers are chosen to differ from them: a counter
+        // wired to the wrong lane, or one that ignored the flag and counted
+        // everything, would land on 3 and 7 instead of 2 and 5.
+        BEAST_EXPECT(sink.value("acquire_ledger_deferrals") == std::int64_t{2});
+        BEAST_EXPECT(sink.value("acquire_ledger_timeouts") == std::int64_t{5});
     }
 
     /**

@@ -25,7 +25,7 @@ namespace xrpl::node_store {
  *               |
  *        concurrentWriters = queue length here
  *        insertTotalUs / insertCount = time in the whole system (W)
- *        depthSum / insertCount      = mean depth (L)
+ *        depthSum / depthSamples     = mean depth (L)
  *
  * @note All fields except @ref concurrentWriters are cumulative for the
  *       life of the backend, so a reader must difference successive
@@ -38,7 +38,7 @@ namespace xrpl::node_store {
  * if (auto const s = backend->getWriteStats(); s && s->insertCount)
  * {
  *     double const meanUs = double(s->insertTotalUs) / s->insertCount;
- *     double const meanDepth = double(s->depthSum) / s->insertCount;
+ *     double const meanDepth = double(s->depthSum) / s->depthSamples;
  *     double const serviceUs = meanUs / meanDepth;  // Little's Law
  * }
  * @endcode
@@ -73,9 +73,18 @@ struct WriteStats
 
     /**
      * Summed writer depth observed at each insert. Divided by
-     * @ref insertCount this gives mean depth.
+     * @ref depthSamples this gives mean depth.
      */
     std::uint64_t depthSum = 0;
+
+    /**
+     * Number of depth samples summed into @ref depthSum.
+     *
+     * Divide @ref depthSum by this, not by @ref insertCount: a sample is
+     * taken when an insert starts, while insertCount only rises when one
+     * finishes, so the two populations differ while inserts are in flight.
+     */
+    std::uint64_t depthSamples = 0;
 };
 
 }  // namespace xrpl::node_store

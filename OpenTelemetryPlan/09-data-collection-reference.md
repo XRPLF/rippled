@@ -1031,8 +1031,9 @@ repeated here:
   `_running` / `_deferred`). These travel the `beast::insight` pipeline, not the
   OTel SDK one, so they are documented in
   [§2.5](#25-per-job-type-queue-gauges).
-- The sync-diagnosis signals — 13 further `nodestore_state` label values — which
-  separate a write-serialized stall from a cold-read stall. See
+- The sync-diagnosis signals — 15 further `nodestore_state` label values (two
+  latency means, four `nudb_*`, nine `acquire_*`) — which separate a
+  write-serialized stall from a cold-read stall. See
   [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state).
 
 ### New Grafana Dashboards (Phase 9)
@@ -1224,37 +1225,44 @@ Further label values on the same instrument, added to separate the two
 bottlenecks that both present as the `ledgerData` job lane pinned at its
 concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
-(`src/xrpld/telemetry/MetricsRegistry.cpp:830-894`).
+(`src/xrpld/telemetry/MetricsRegistry.cpp:805-877`).
 
-| Prometheus Metric                                   | Type  | Labels   | Description                                              |
-| --------------------------------------------------- | ----- | -------- | -------------------------------------------------------- |
-| `nodestore_state{metric="read_mean_us"}`            | Gauge | `metric` | Mean time per backend read (microseconds)                |
-| `nodestore_state{metric="write_mean_us"}`           | Gauge | `metric` | Mean time per backend write (microseconds)               |
-| `nodestore_state{metric="nudb_writers_in_flight"}`  | Gauge | `metric` | Threads inside a NuDB insert at sample time              |
-| `nodestore_state{metric="nudb_writer_depth_x100"}`  | Gauge | `metric` | Mean queue depth at the NuDB insert mutex, scaled ×100   |
-| `nodestore_state{metric="nudb_insert_mean_us"}`     | Gauge | `metric` | Mean NuDB insert time incl. queueing (microseconds)      |
-| `nodestore_state{metric="nudb_insert_max_us"}`      | Gauge | `metric` | Slowest single NuDB insert observed (microseconds)       |
-| `nodestore_state{metric="acquire_deferrals"}`       | Gauge | `metric` | Acquisition timer jobs skipped because the lane was full |
-| `nodestore_state{metric="acquire_timeouts"}`        | Gauge | `metric` | Acquisition timer bodies that ran and advanced retry     |
-| `nodestore_state{metric="acquire_give_ups"}`        | Gauge | `metric` | Acquisitions that exhausted their retry budget           |
-| `nodestore_state{metric="acquire_aborts"}`          | Gauge | `metric` | Acquisitions destroyed before finishing                  |
-| `nodestore_state{metric="acquire_aborts_partial"}`  | Gauge | `metric` | Subset of aborts that discarded partly built maps        |
-| `nodestore_state{metric="acquire_completions"}`     | Gauge | `metric` | Acquisitions that finished successfully                  |
-| `nodestore_state{metric="acquire_sweep_evictions"}` | Gauge | `metric` | Acquisitions evicted by the 1-minute sweep               |
+| Prometheus Metric                                    | Type  | Labels   | Description                                             |
+| ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
+| `nodestore_state{metric="read_mean_us"}`             | Gauge | `metric` | Mean time per backend read (microseconds)               |
+| `nodestore_state{metric="write_mean_us"}`            | Gauge | `metric` | Mean time per backend write (microseconds)              |
+| `nodestore_state{metric="nudb_writers_in_flight"}`   | Gauge | `metric` | Threads inside a NuDB insert at sample time             |
+| `nodestore_state{metric="nudb_writer_depth_x100"}`   | Gauge | `metric` | Mean queue depth at the NuDB insert mutex, scaled ×100  |
+| `nodestore_state{metric="nudb_insert_mean_us"}`      | Gauge | `metric` | Mean NuDB insert time incl. queueing (microseconds)     |
+| `nodestore_state{metric="nudb_insert_max_us"}`       | Gauge | `metric` | Slowest single NuDB insert observed (microseconds)      |
+| `nodestore_state{metric="acquire_deferrals"}`        | Gauge | `metric` | Timer jobs skipped because the lane was full, all lanes |
+| `nodestore_state{metric="acquire_timeouts"}`         | Gauge | `metric` | Timer bodies that ran and advanced retry, all lanes     |
+| `nodestore_state{metric="acquire_ledger_deferrals"}` | Gauge | `metric` | Deferrals from the `InboundLedger` lane alone           |
+| `nodestore_state{metric="acquire_ledger_timeouts"}`  | Gauge | `metric` | Timeouts from the `InboundLedger` lane alone            |
+| `nodestore_state{metric="acquire_give_ups"}`         | Gauge | `metric` | Acquisitions that exhausted their retry budget          |
+| `nodestore_state{metric="acquire_aborts"}`           | Gauge | `metric` | Acquisitions destroyed before finishing                 |
+| `nodestore_state{metric="acquire_aborts_partial"}`   | Gauge | `metric` | Subset of aborts that discarded partly built maps       |
+| `nodestore_state{metric="acquire_completions"}`      | Gauge | `metric` | Acquisitions that finished successfully                 |
+| `nodestore_state{metric="acquire_sweep_evictions"}`  | Gauge | `metric` | Acquisitions evicted by the 1-minute sweep              |
 
 **Three properties to know before querying these.**
 
 - `nudb_writer_depth_x100` is fixed-point — divide by 100. The depth sits just
   above 1.0 even under load, because NuDB takes one global mutex per insert
   (`nudb/impl/basic_store.ipp:288`, a Conan dependency this repo does not patch).
-  An integral gauge would truncate 1.60 to 1 and lose the signal entirely.
+  An integral gauge would truncate 1.60 to 1 and lose the signal entirely. The
+  value is `WriteStats::depthSum / WriteStats::depthSamples`, both folded in when
+  an insert **enters** the critical section, so inserts still in flight count
+  toward the mean. It is not `depthSum / insertCount`: `insertCount` only rises at
+  insert exit, and dividing by it excluded exactly the deep, slow inserts and
+  biased the mean downward when queueing was worst.
 - The four `nudb_*` values are published **only when the writable backend is
   NuDB**. `observeWritePathDetail()` returns early when `getWriteStats()` is
   empty, so a memory or RocksDB backend omits them rather than reporting four
   zeros. Absent is not zero.
 - `read_mean_us` and `write_mean_us` are omitted when nothing has been read or
   written, so a dashboard shows a gap instead of a plausible wrong number. The
-  seven `acquire_*` counters are published unconditionally, because for a counter
+  nine `acquire_*` counters are published unconditionally, because for a counter
   zero is a meaningful reading.
 
 **The pairs, not the individual counts, are diagnostic.** Deferrals rising while
@@ -1263,6 +1271,24 @@ timer without running its body, so the retry counter never advances and the
 6-timeout give-up is unreachable. Sweep evictions rising while completions stay at
 zero means partial work is discarded and redone. Neither pattern is visible from
 one counter. Documented on the class at `src/xrpld/app/ledger/AcquireStats.h`.
+
+**Compare the ledger-scoped pair, not the all-lane pair.** Deferrals and timeouts
+are both recorded in `TimeoutCounter`, a base shared by five subclasses
+(`InboundLedger`, `TransactionAcquire`, `LedgerReplayTask`, `LedgerDeltaAcquire`,
+`SkipListAcquire`) with different job limits, so `acquire_deferrals` and
+`acquire_timeouts` pool every lane — a saturated replay lane reproduces the
+fingerprint while ledger acquisition is healthy. `acquire_ledger_deferrals` and
+`acquire_ledger_timeouts` narrow both events to the `InboundLedger` lane via
+`TimeoutCounter::isLedgerAcquisition()` and are the pair to compare. Both pairs
+multiplex on the existing `metric` label, so no new instrument and no new
+dashboard template variable is involved.
+
+`acquire_completions` counts an acquisition at **both** of its exits — `done()`
+and the `init()` path that is satisfied entirely from the local store — behind an
+idempotent latch, so it is exactly one per completion however the completion was
+reached. Before that latch existed, local-store hits were uncounted and the gauge
+could read zero on a node that was completing steadily; treat a zero on archived
+data as uninformative unless the build is known to include the fix.
 
 #### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
 
@@ -1500,10 +1526,15 @@ nodestore_state{metric="read_mean_us", service_instance_id=~"$node"}
 # Are ledger acquisitions finishing at all? (per minute)
 increase(nodestore_state{metric="acquire_completions", service_instance_id=~"$node"}[1m])
 
-# Livelock fingerprint, first half: deferrals climbing
-increase(nodestore_state{metric="acquire_deferrals", service_instance_id=~"$node"}[5m])
+# Livelock fingerprint, first half: ledger-acquisition deferrals climbing
+increase(nodestore_state{metric="acquire_ledger_deferrals", service_instance_id=~"$node"}[5m])
 
-# Livelock fingerprint, second half: timeouts staying flat while the above climbs
+# Livelock fingerprint, second half: ledger-acquisition timeouts staying flat
+increase(nodestore_state{metric="acquire_ledger_timeouts", service_instance_id=~"$node"}[5m])
+
+# All-lane totals. Answers "is any TimeoutCounter lane deferring", not "is ledger
+# acquisition deferring" -- do not read the fingerprint off this pair.
+increase(nodestore_state{metric="acquire_deferrals", service_instance_id=~"$node"}[5m])
 increase(nodestore_state{metric="acquire_timeouts", service_instance_id=~"$node"}[5m])
 ```
 
