@@ -139,6 +139,23 @@ protected:
 
     QueueJobParameter queueJobParameter_;
 
+    /**
+     * Whether this counter belongs to ledger acquisition.
+     *
+     * Deferrals and timeouts are recorded in this base class, so they would
+     * otherwise pool every subclass together: a saturated replay lane would
+     * look exactly like a stalled ledger acquisition. The job name already
+     * identifies the subclass, so it is the cheapest discriminator available
+     * and needs no extra state.
+     *
+     * @return True for the InboundLedger lane, false for every other.
+     */
+    [[nodiscard]] bool
+    isLedgerAcquisition() const
+    {
+        return queueJobParameter_.jobName == "InboundLedger";
+    }
+
 private:
     /**
      * Calls onTimer() if in the right state.

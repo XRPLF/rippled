@@ -93,9 +93,11 @@ public:
      * advance the retry count toward give-up.
      */
     void
-    recordDeferral()
+    recordDeferral(bool ledgerAcquisition = false)
     {
         deferrals_.fetch_add(1, std::memory_order_relaxed);
+        if (ledgerAcquisition)
+            ledgerDeferrals_.fetch_add(1, std::memory_order_relaxed);
     }
 
     /**
@@ -105,9 +107,11 @@ public:
      * separate from deferrals.
      */
     void
-    recordTimeout()
+    recordTimeout(bool ledgerAcquisition = false)
     {
         timeouts_.fetch_add(1, std::memory_order_relaxed);
+        if (ledgerAcquisition)
+            ledgerTimeouts_.fetch_add(1, std::memory_order_relaxed);
     }
 
     /**
@@ -172,6 +176,32 @@ public:
     }
 
     /**
+     * Deferrals that belong to ledger acquisition only.
+     *
+     * @ref getDeferrals covers every TimeoutCounter subclass, so a busy
+     * replay or transaction-set lane inflates it. Compare this against
+     * @ref getLedgerTimeouts to judge ledger acquisition on its own.
+     */
+    [[nodiscard]] std::uint64_t
+    getLedgerDeferrals() const
+    {
+        return ledgerDeferrals_.load(std::memory_order_relaxed);
+    }
+
+    /**
+     * Timeouts that belong to ledger acquisition only.
+     *
+     * The partner of @ref getLedgerDeferrals: rising deferrals with flat
+     * timeouts here means ledger acquisition's give-up path is disarmed,
+     * which the all-lane counters cannot show.
+     */
+    [[nodiscard]] std::uint64_t
+    getLedgerTimeouts() const
+    {
+        return ledgerTimeouts_.load(std::memory_order_relaxed);
+    }
+
+    /**
      * Return the number of acquisitions that exhausted their retry budget.
      */
     [[nodiscard]] std::uint64_t
@@ -223,6 +253,16 @@ private:
      * Timer jobs skipped because the job lane was at its limit.
      */
     std::atomic<std::uint64_t> deferrals_{0};
+
+    /**
+     * Deferrals attributable to ledger acquisition alone.
+     */
+    std::atomic<std::uint64_t> ledgerDeferrals_{0};
+
+    /**
+     * Timeouts attributable to ledger acquisition alone.
+     */
+    std::atomic<std::uint64_t> ledgerTimeouts_{0};
 
     /**
      * Timer bodies that ran and advanced the retry count.
