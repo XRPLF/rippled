@@ -202,7 +202,7 @@ STTx::getSeqProxy() const
     if (seq != 0)
         return SeqProxy::sequence(seq);
 
-    std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
+    std::optional<std::uint32_t> const ticketSeq{at(~sfTicketSequence)};
     if (!ticketSeq)
     {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
