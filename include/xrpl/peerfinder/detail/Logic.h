@@ -11,6 +11,7 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
 #include <xrpl/peerfinder/detail/Bootcache.h>
