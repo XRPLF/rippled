@@ -540,6 +540,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         Account const alice{"alice"};  // the AMM creator
         Account const gw{"gw"};
         Account const bob{"bob"};
+        // NOLINTNEXTLINE(readability-identifier-naming)
         auto const USD = gw["USD"];
         env.fund(XRP(10000), proposer, alice, gw, bob);
         env.close();
@@ -548,7 +549,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(pay(gw, alice, USD(10'000)));
         env.close();
 
-        AMM amm(env, alice, XRP(1'000), USD(1'000), Ter(tesSUCCESS));
+        AMM const amm(env, alice, XRP(1'000), USD(1'000), Ter(tesSUCCESS));
         env.close();
 
         // A well-formed Payment whose target is the AMM's pseudo-account.
