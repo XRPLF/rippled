@@ -509,8 +509,10 @@ public:
 
             // alice's offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
+            {
                 BEAST_EXPECT(
                     closed->exists(keylet::offer(alice.id(), SeqProxy::sequence(offerSeq0 + i))));
+            }
         }
 
         // Delete alice's account.  Should fail because she has too many
@@ -544,8 +546,10 @@ public:
 
             // alice's former offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
+            {
                 BEAST_EXPECT(
                     !closed->exists(keylet::offer(alice.id(), SeqProxy::sequence(offerSeq0 + i))));
+            }
         }
     }
 
