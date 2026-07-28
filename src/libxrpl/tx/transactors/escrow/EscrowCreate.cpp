@@ -9,8 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -18,6 +17,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -179,162 +179,6 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-template <ValidIssueType T>
-static TER
-escrowCreatePreclaimHelper(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    AccountID const& dest,
-    STAmount const& amount);
-
-template <>
-TER
-escrowCreatePreclaimHelper<Issue>(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    auto const& issue = amount.get<Issue>();
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecNO_PERMISSION
-    if (issuer == account)
-        return tecNO_PERMISSION;
-
-    // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
-    if (!sleIssuer)
-        return tecNO_ISSUER;
-    if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
-        return tecNO_PERMISSION;
-
-    // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::trustLine(account, issuer, issue.currency));
-    if (!sleRippleState)
-        return tecNO_LINE;
-
-    STAmount const balance = (*sleRippleState)[sfBalance];
-
-    // If balance is positive, issuer must have higher address than account
-    if (balance > beast::kZero && issuer < account)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
-
-    // If balance is negative, issuer must have lower address than account
-    if (balance < beast::kZero && issuer > account)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
-
-    // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, account); !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, dest); !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, issue))
-        return tecFROZEN;
-
-    // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, issue))
-        return tecFROZEN;
-
-    STAmount const spendableAmount = accountHolds(
-        ctx.view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, ctx.j);
-
-    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::kZero)
-        return tecINSUFFICIENT_FUNDS;
-
-    // If the spendable amount is less than the amount, return
-    // tecINSUFFICIENT_FUNDS
-    if (spendableAmount < amount)
-        return tecINSUFFICIENT_FUNDS;
-
-    // If the amount is not addable to the balance, return tecPRECISION_LOSS
-    if (!canAdd(spendableAmount, amount))
-        return tecPRECISION_LOSS;
-
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowCreatePreclaimHelper<MPTIssue>(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    AccountID const issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecNO_PERMISSION
-    if (issuer == account)
-        return tecNO_PERMISSION;
-
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
-    if (!sleIssuance->isFlag(lsfMPTCanEscrow))
-        return tecNO_PERMISSION;
-
-    // If the issuer is not the same as the issuer of the mpt, return
-    // tecNO_PERMISSION
-    if (sleIssuance->getAccountID(sfIssuer) != issuer)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
-
-    // If the account does not have the mpt, return tecOBJECT_NOT_FOUND
-    if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, account)))
-        return tecOBJECT_NOT_FOUND;
-
-    // If the issuer has requireAuth set, check if the account is
-    // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has requireAuth set, check if the destination is
-    // authorized
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, mptIssue))
-        return tecLOCKED;
-
-    // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
-        return tecLOCKED;
-
-    // If the mpt cannot be transferred, return tecNO_AUTH
-    if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); !isTesSuccess(ter))
-        return ter;
-
-    STAmount const spendableAmount = accountHolds(
-        ctx.view,
-        account,
-        amount.get<MPTIssue>(),
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        ctx.j);
-
-    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::kZero)
-        return tecINSUFFICIENT_FUNDS;
-
-    // If the spendable amount is less than the amount, return
-    // tecINSUFFICIENT_FUNDS
-    if (spendableAmount < amount)
-        return tecINSUFFICIENT_FUNDS;
-
-    return tesSUCCESS;
-}
-
 TER
 EscrowCreate::preclaim(PreclaimContext const& ctx)
 {
@@ -360,60 +204,12 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
 
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowCreatePreclaimHelper<T>(ctx, account, dest, amount);
+                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
     }
-    return tesSUCCESS;
-}
-
-template <ValidIssueType T>
-static TER
-escrowLockApplyHelper(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal);
-
-template <>
-TER
-escrowLockApplyHelper<Issue>(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal)
-{
-    // Defensive: Issuer cannot create an escrow
-    if (issuer == sender)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const ter =
-        directSendNoFee(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
-    if (!isTesSuccess(ter))
-        return ter;  // LCOV_EXCL_LINE
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowLockApplyHelper<MPTIssue>(
-    ApplyView& view,
-    AccountID const& issuer,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal journal)
-{
-    // Defensive: Issuer cannot create an escrow
-    if (issuer == sender)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const ter = lockEscrowMPT(view, sender, amount, journal);
-    if (!isTesSuccess(ter))
-        return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
 }
 

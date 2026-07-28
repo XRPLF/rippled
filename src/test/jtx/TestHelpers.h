@@ -19,8 +19,8 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PathAsset.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -381,6 +381,20 @@ checkArraySize(json::Value const& val, unsigned int size);
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
+/* Token (IOU/MPT) Locking */
+/******************************************************************************/
+uint64_t
+mptEscrowed(jtx::Env const& env, jtx::Account const& account, jtx::MPT const& mpt);
+
+uint64_t
+issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt);
+
+jtx::PrettyAmount
+issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue);
+
+jtx::PrettyAmount
+issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue);
+
 // Helper function that returns the sponsored owner count on an account.
 std::uint32_t
 sponsoredOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
@@ -596,66 +610,6 @@ accountBalance(Env& env, Account const& acct);
 
 [[nodiscard]] bool
 expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedValue);
-
-/* Payment Channel */
-/******************************************************************************/
-namespace paychan {
-
-json::Value
-create(
-    AccountID const& account,
-    AccountID const& to,
-    STAmount const& amount,
-    NetClock::duration const& settleDelay,
-    PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-    std::optional<std::uint32_t> const& dstTag = std::nullopt);
-
-inline json::Value
-create(
-    Account const& account,
-    Account const& to,
-    STAmount const& amount,
-    NetClock::duration const& settleDelay,
-    PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-    std::optional<std::uint32_t> const& dstTag = std::nullopt)
-{
-    return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
-}
-
-json::Value
-fund(
-    AccountID const& account,
-    uint256 const& channel,
-    STAmount const& amount,
-    std::optional<NetClock::time_point> const& expiration = std::nullopt);
-
-json::Value
-claim(
-    AccountID const& account,
-    uint256 const& channel,
-    std::optional<STAmount> const& balance = std::nullopt,
-    std::optional<STAmount> const& amount = std::nullopt,
-    std::optional<Slice> const& signature = std::nullopt,
-    std::optional<PublicKey> const& pk = std::nullopt);
-
-uint256
-channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue);
-
-inline uint256
-channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
-{
-    return channel(account.id(), dst.id(), seqProxyValue);
-}
-
-STAmount
-channelBalance(ReadView const& view, uint256 const& chan);
-
-bool
-channelExists(ReadView const& view, uint256 const& chan);
-
-}  // namespace paychan
 
 /* Crossing Limits */
 /******************************************************************************/

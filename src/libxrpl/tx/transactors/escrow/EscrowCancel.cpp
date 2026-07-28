@@ -5,15 +5,10 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -30,60 +25,6 @@ namespace xrpl {
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    return tesSUCCESS;
-}
-
-template <ValidIssueType T>
-static TER
-escrowCancelPreclaimHelper(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    STAmount const& amount);
-
-template <>
-TER
-escrowCancelPreclaimHelper<Issue>(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    STAmount const& amount)
-{
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecINTERNAL
-    if (issuer == account)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account); !isTesSuccess(ter))
-        return ter;
-
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowCancelPreclaimHelper<MPTIssue>(
-    PreclaimContext const& ctx,
-    AccountID const& account,
-    STAmount const& amount)
-{
-    AccountID const issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecINTERNAL
-    if (issuer == account)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    // If the issuer has requireAuth set, check if the account is
-    // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        !isTesSuccess(ter))
-        return ter;
-
     return tesSUCCESS;
 }
 
@@ -104,7 +45,7 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
         {
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
-                        return escrowCancelPreclaimHelper<T>(ctx, account, amount);
+                        return escrowUnlockPreclaimHelper<T>(ctx.view, account, amount, false);
                     },
                     amount.asset().value());
                 !isTesSuccess(ret))
