@@ -45,8 +45,8 @@ struct PseudoTx_test : public beast::unit_test::Suite
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj[sfExtensionComputeLimit] = 0;
-                obj[sfExtensionSizeLimit] = 0;
+                obj[sfGasLimit] = 0;
+                obj[sfBytecodeSizeLimit] = 0;
                 obj[sfGasPrice] = 0;
             }
         });

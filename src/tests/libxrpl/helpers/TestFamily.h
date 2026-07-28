@@ -1,20 +1,31 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 
+#include <cstdint>
 #include <memory>
+#include <stdexcept>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-/** Test implementation of Family for unit tests.
-
-    Uses an in-memory NodeStore database and simple caches.
-    The missingNode methods throw since tests shouldn't encounter missing nodes.
-*/
+/**
+ * Test implementation of Family for unit tests.
+ *
+ * Uses an in-memory NodeStore database and simple caches.
+ * The missingNode methods throw since tests shouldn't encounter missing nodes.
+ */
 class TestFamily : public Family
 {
 private:
@@ -38,8 +49,8 @@ public:
         , j_(j)
     {
         Section config;
-        config.set("type", "memory");
-        config.set("path", "TestFamily");
+        config.set(Keys::kType, "memory");
+        config.set(Keys::kPath, "TestFamily");
         db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 
@@ -49,7 +60,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -95,11 +106,13 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
-    /** Access the test clock for time manipulation in tests. */
+    /**
+     * Access the test clock for time manipulation in tests.
+     */
     TestStopwatch&
     clock()
     {
@@ -107,5 +120,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

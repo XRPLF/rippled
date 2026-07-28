@@ -191,7 +191,7 @@ public:
 
         auto const txFee = env.current()->fees().base;
         auto const baseReserve = env.current()->fees().reserve;
-        auto const threelineReserve = env.current()->fees().accountReserve(3);
+        auto const threelineReserve = env.current()->fees().accountReserve(3, 1);
 
         env.fund(XRP(10000), gwA, gwB, assistor);
 
@@ -475,47 +475,43 @@ public:
     }
 
     void
+    testDisallowIncomingWithRequireAuth()
+    {
+        testcase("Create trustline with disallow incoming requiring auth");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        auto const dist = Account("dist");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const distUSD = dist["USD"];
+
+        env.fund(XRP(1000), gw, dist);
+        env.close();
+
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        env(fset(dist, asfDisallowIncomingTrustline));
+        env.close();
+
+        env(trust(dist, usd(10000)));
+        env.close();
+
+        env(trust(gw, distUSD(10000)), Txflags(tfSetfAuth), Ter(tesSUCCESS));
+        env.close();
+
+        env(pay(gw, dist, usd(1000)), Ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
     testDisallowIncoming(FeatureBitset features)
     {
         testcase("Create trustline with disallow incoming");
 
         using namespace test::jtx;
-
-        // fixDisallowIncomingV1
-        {
-            for (bool const withFix : {true, false})
-            {
-                auto const amend = withFix ? features : features - fixDisallowIncomingV1;
-
-                Env env{*this, amend};
-                auto const dist = Account("dist");
-                auto const gw = Account("gw");
-                auto const usd = gw["USD"];
-                auto const distUSD = dist["USD"];
-
-                env.fund(XRP(1000), gw, dist);
-                env.close();
-
-                env(fset(gw, asfRequireAuth));
-                env.close();
-
-                env(fset(dist, asfDisallowIncomingTrustline));
-                env.close();
-
-                env(trust(dist, usd(10000)));
-                env.close();
-
-                // withFix: can set trustline
-                // withOutFix: cannot set trustline
-                auto const trustResult = withFix ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION);
-                env(trust(gw, distUSD(10000)), Txflags(tfSetfAuth), trustResult);
-                env.close();
-
-                auto const txResult = withFix ? Ter(tesSUCCESS) : Ter(tecPATH_DRY);
-                env(pay(gw, dist, usd(1000)), txResult);
-                env.close();
-            }
-        }
 
         Env env{*this, features};
 
@@ -601,6 +597,7 @@ public:
         testModifyQualityOfTrustline(features, false, true);
         testModifyQualityOfTrustline(features, true, false);
         testModifyQualityOfTrustline(features, true, true);
+        testDisallowIncomingWithRequireAuth();
         testDisallowIncoming(features);
         testTrustLineResetWithAuthFlag();
         testTrustLineDelete();

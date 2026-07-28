@@ -1,4 +1,3 @@
-#include <test/csf.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Sim.h>
 #include <test/csf/collectors.h>
@@ -22,7 +21,8 @@
 
 namespace xrpl::test {
 
-/** In progress simulations for diversifying and distributing validators
+/**
+ * In progress simulations for diversifying and distributing validators
  */
 class DistributedValidators_test : public beast::unit_test::Suite
 {

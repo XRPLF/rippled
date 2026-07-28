@@ -9,6 +9,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -125,16 +126,18 @@ Change::preclaim(PreclaimContext const& ctx)
             }
             if (ctx.view.rules().enabled(featureSmartEscrow))
             {
-                if (!ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    !ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
+                    return temBAD_FEE;
             }
             else
             {
-                if (ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
-                    ctx.tx.isFieldPresent(sfGasPrice))
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
                     return temDISABLED;
             }
             return tesSUCCESS;
@@ -268,7 +271,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
+    auto const k = keylet::feeSettings();
 
     SLE::pointer feeObject = view().peek(k);
 
@@ -300,8 +303,8 @@ Change::applyFee()
     }
     if (view().rules().enabled(featureSmartEscrow))
     {
-        set(feeObject, ctx_.tx, sfExtensionComputeLimit);
-        set(feeObject, ctx_.tx, sfExtensionSizeLimit);
+        set(feeObject, ctx_.tx, sfGasLimit);
+        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
         set(feeObject, ctx_.tx, sfGasPrice);
     }
 
@@ -429,10 +432,7 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

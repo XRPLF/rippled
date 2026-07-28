@@ -6,11 +6,11 @@
   ;; If multi-memory is disabled, this line causes a validation error (max 1 memory).
   (memory 1)
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; Query size of Memory Index 1.
     ;; Should return 1 (success).
     memory.size 1
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

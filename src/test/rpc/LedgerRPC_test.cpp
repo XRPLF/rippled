@@ -15,6 +15,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -257,10 +258,12 @@ class LedgerRPC_test : public beast::unit_test::Suite
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
     }
 
-    /// @brief ledger RPC requests as a way to drive
-    /// input options to lookupLedger. The point of this test is
-    /// coverage for lookupLedger, not so much the ledger
-    /// RPC request.
+    /**
+     * @brief ledger RPC requests as a way to drive
+     * input options to lookupLedger. The point of this test is
+     * coverage for lookupLedger, not so much the ledger
+     * RPC request.
+     */
     void
     testLookupLedger()
     {
@@ -268,7 +271,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below
                                                           // assume no amendments
         env.fund(XRP(10000), "alice");
@@ -431,13 +434,13 @@ class LedgerRPC_test : public beast::unit_test::Suite
         testcase("Ledger with Queued Transactions");
         using namespace test::jtx;
         auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
-            auto& section = cfg->section("transaction_queue");
-            section.set("minimum_txn_in_ledger_standalone", "3");
-            section.set("normal_consensus_increase_percent", "0");
+            auto& section = cfg->section(Sections::kTransactionQueue);
+            section.set(Keys::kMinimumTxnInLedgerStandalone, "3");
+            section.set(Keys::kNormalConsensusIncreasePercent, "0");
             return cfg;
         });
 
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         json::Value jv;

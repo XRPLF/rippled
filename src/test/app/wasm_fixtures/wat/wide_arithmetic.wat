@@ -1,5 +1,5 @@
 (module
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; 1. Push operands
     i64.const 1
     i64.const 2
@@ -18,5 +18,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

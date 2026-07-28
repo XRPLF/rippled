@@ -33,7 +33,7 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(std::shared_ptr<SLE const> sle)
+    explicit FeeSettings(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -214,51 +214,51 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionComputeLimit (SoeOptional)
+     * @brief Get sfGasLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getExtensionComputeLimit() const
+    getGasLimit() const
     {
-        if (hasExtensionComputeLimit())
-            return this->sle_->at(sfExtensionComputeLimit);
+        if (hasGasLimit())
+            return this->sle_->at(sfGasLimit);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfExtensionComputeLimit is present.
+     * @brief Check if sfGasLimit is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasExtensionComputeLimit() const
+    hasGasLimit() const
     {
-        return this->sle_->isFieldPresent(sfExtensionComputeLimit);
+        return this->sle_->isFieldPresent(sfGasLimit);
     }
 
     /**
-     * @brief Get sfExtensionSizeLimit (SoeOptional)
+     * @brief Get sfBytecodeSizeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getExtensionSizeLimit() const
+    getBytecodeSizeLimit() const
     {
-        if (hasExtensionSizeLimit())
-            return this->sle_->at(sfExtensionSizeLimit);
+        if (hasBytecodeSizeLimit())
+            return this->sle_->at(sfBytecodeSizeLimit);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfExtensionSizeLimit is present.
+     * @brief Check if sfBytecodeSizeLimit is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasExtensionSizeLimit() const
+    hasBytecodeSizeLimit() const
     {
-        return this->sle_->isFieldPresent(sfExtensionSizeLimit);
+        return this->sle_->isFieldPresent(sfBytecodeSizeLimit);
     }
 
     /**
@@ -357,7 +357,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    FeeSettingsBuilder(std::shared_ptr<SLE const> sle)
+    FeeSettingsBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltFEE_SETTINGS)
         {
@@ -366,7 +366,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfBaseFee (SoeOptional)
@@ -446,24 +448,24 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionComputeLimit (SoeOptional)
+     * @brief Set sfGasLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setExtensionComputeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfExtensionComputeLimit] = value;
+        object_[sfGasLimit] = value;
         return *this;
     }
 
     /**
-     * @brief Set sfExtensionSizeLimit (SoeOptional)
+     * @brief Set sfBytecodeSizeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
-    setExtensionSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfExtensionSizeLimit] = value;
+        object_[sfBytecodeSizeLimit] = value;
         return *this;
     }
 

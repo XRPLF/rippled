@@ -3,7 +3,7 @@
 (module
   (type (;0;) (func (result i32)))
   (type (;1;) (struct (field (mut i32)) (field (mut i32))))
-  (export "finish" (func 0))
+  (export "escrow_finish" (func 0))
   (func (;0;) (type 0) (result i32)
     struct.new_default 1
     drop

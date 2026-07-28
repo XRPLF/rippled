@@ -99,7 +99,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.extension_size_limit = 10;  // 10 bytes
+                    cfg->fees.bytecodeSizeLimit = 10;  // 10 bytes
                     return cfg;
                 }),
                 features);
@@ -125,7 +125,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     // WASM runtime disabled
-                    cfg->FEES.extension_compute_limit = 0;
+                    cfg->fees.gasLimit = 0;
                     return cfg;
                 }),
                 features);
@@ -149,7 +149,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.extension_size_limit = 0;  // WASM upload disabled
+                    cfg->fees.bytecodeSizeLimit = 0;  // WASM upload disabled
                     return cfg;
                 }),
                 features);
@@ -202,8 +202,8 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
             auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            // string of length maxWasmDataLength * 2 + 2
-            std::string const longData((maxWasmDataLength + 1) * 2, 'B');
+            // string of length kMaxWasmDataLength * 2 + 2
+            std::string const longData((kMaxWasmDataLength + 1) * 2, 'B');
             env(escrowCreate,
                 escrow::Data(longData),
                 escrow::Bytecode(kLedgerSqnWasmHex),
@@ -216,7 +216,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->START_UP = StartUpType::Fresh;
+                cfg->startUp = StartUpType::Fresh;
                 return cfg;
             }),
             features);
@@ -374,7 +374,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.extension_compute_limit = 1'000;  // in gas
+                    cfg->fees.gasLimit = 1'000;  // in gas
                     return cfg;
                 }),
                 features);
@@ -397,7 +397,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             using namespace test::jtx;
             using namespace std::chrono;
             Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                        cfg->FEES.extension_compute_limit = 0;
+                        cfg->fees.gasLimit = 0;
                         return cfg;
                     })};
 
@@ -491,7 +491,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env(escrow::finish(carol, alice, seq),
                 Fee(finishFee),
                 escrow::Gas(2),
-                Ter(tecFAILED_PROCESSING));
+                Ter(tecOUT_OF_GAS));
         }
 
         {
@@ -890,7 +890,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.gas_price = 1'000'000;  // in gas
+                    cfg->fees.gasPrice = 1'000'000;  // in gas
                     return cfg;
                 }),
                 features);
@@ -1020,7 +1020,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                 {
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 68'292,
+                        txMeta->getFieldU32(sfGasUsed) == 68'041,
                         std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 }
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfVMReturnCode)))
@@ -1073,7 +1073,8 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env(token::createOffer(carol, tokenId, XRP(100)), token::Owner(alice));
             env(offer(alice, carol["GBP"](0.1), XRP(100)));
             env(paychan::create(alice, carol, XRP(1000), 100s, alice.pk()));
-            pdomain::Credentials const credentials{{alice, "first credential"}};
+            pdomain::Credentials const credentials{
+                {.issuer = alice, .credType = "first credential"}};
             env(pdomain::setTx(alice, credentials));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
@@ -1097,7 +1098,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 env.close();
                 env.close();
 
-                auto const allowance = 184'444;
+                auto const allowance = 184'375;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1;
                 env(escrow::finish(carol, alice, seq), escrow::Gas(allowance), Fee(finishFee));
@@ -1135,7 +1136,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                     return Env(
                         *this,
                         envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
-                            cfg->FEES.extension_size_limit = *sizeLimit;
+                            cfg->fees.bytecodeSizeLimit = *sizeLimit;
                             return cfg;
                         }),
                         features);
@@ -1191,41 +1192,47 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         std::vector<TestCase> const testCases = {
             // Code blob tests
-            {TestCase::BlobType::Code,
-             99'959,
-             std::nullopt,
-             ExpectedStatus::Success},  // just under 100kb
-            {TestCase::BlobType::Code,
-             99'961,
-             std::nullopt,
-             ExpectedStatus::Malformed},  // just over 100kb
-            {TestCase::BlobType::Code, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb
-            {TestCase::BlobType::Code,
-             490'000,
-             10'000'000,
-             ExpectedStatus::Success},  // just under 1MB JSON
-            {TestCase::BlobType::Code,
-             999'999,
-             10'000'000,
-             ExpectedStatus::Crash},  // just over 1MB JSON
+            {.type = TestCase::BlobType::Code,
+             .size = 99'950,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Success},  // just under 100kb
+            {.type = TestCase::BlobType::Code,
+             .size = 99'955,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Malformed},  // just over 100kb
+            {.type = TestCase::BlobType::Code,
+             .size = 200'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // ~200kb
+            {.type = TestCase::BlobType::Code,
+             .size = 490'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // just under 1MB JSON
+            {.type = TestCase::BlobType::Code,
+             .size = 999'999,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
             // Data blob tests
-            {TestCase::BlobType::Data,
-             99'946,
-             std::nullopt,
-             ExpectedStatus::Success},  // just under 100kb
-            {TestCase::BlobType::Data,
-             99'948,
-             std::nullopt,
-             ExpectedStatus::Malformed},  // just over 100kb
-            {TestCase::BlobType::Data, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb
-            {TestCase::BlobType::Data,
-             490'000,
-             10'000'000,
-             ExpectedStatus::Success},  // just under 1MB JSON
-            {TestCase::BlobType::Data,
-             999'950,
-             10'000'000,
-             ExpectedStatus::Crash},  // just over 1MB JSON
+            {.type = TestCase::BlobType::Data,
+             .size = 99'939,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Success},  // just under 100kb
+            {.type = TestCase::BlobType::Data,
+             .size = 99'941,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Malformed},  // just over 100kb
+            {.type = TestCase::BlobType::Data,
+             .size = 200'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // ~200kb
+            {.type = TestCase::BlobType::Data,
+             .size = 490'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // just under 1MB JSON
+            {.type = TestCase::BlobType::Data,
+             .size = 999'950,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
         };
 
         for (auto const& tc : testCases)

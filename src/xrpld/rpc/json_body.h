@@ -6,9 +6,16 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 namespace xrpl {
 
-/// Body that holds JSON
+/**
+ * Body that holds JSON
+ */
 struct JsonBody
 {
     explicit JsonBody() = default;
@@ -22,7 +29,7 @@ struct JsonBody
         dynamic_buffer_type buffer_;
 
     public:
-        using const_buffers_type = typename dynamic_buffer_type::const_buffers_type;
+        using const_buffers_type = dynamic_buffer_type::const_buffers_type;
 
         using is_deferred = std::false_type;
 
@@ -56,7 +63,7 @@ struct JsonBody
 
     class writer  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
     {
-        std::string body_string_;
+        std::string bodyString_;
 
     public:
         using const_buffers_type = boost::asio::const_buffer;
@@ -65,7 +72,7 @@ struct JsonBody
         explicit writer(
             boost::beast::http::header<IsRequest, Fields> const& fields,
             value_type const& value)
-            : body_string_(to_string(value))
+            : bodyString_(to_string(value))
         {
         }
 
@@ -81,7 +88,7 @@ struct JsonBody
         get(boost::beast::error_code& ec)
         {
             ec.assign(0, ec.category());
-            return {{const_buffers_type{body_string_.data(), body_string_.size()}, false}};
+            return {{const_buffers_type{bodyString_.data(), bodyString_.size()}, false}};
         }
     };
 };

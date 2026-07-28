@@ -1,14 +1,26 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <optional>
+#include <utility>
 
 namespace xrpl::detail {
 
@@ -26,7 +38,7 @@ private:
         Modify,
     };
 
-    using items_t = std::map<key_type, std::pair<Action, std::shared_ptr<SLE>>>;
+    using items_t = std::map<key_type, std::pair<Action, SLE::pointer>>;
 
     items_t items_;
     XRPAmount dropsDestroyed_{0};
@@ -62,10 +74,10 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     read(ReadView const& base, Keylet const& k) const;
 
-    std::shared_ptr<SLE>
+    SLE::pointer
     peek(ReadView const& base, Keylet const& k);
 
     [[nodiscard]] std::size_t
@@ -77,23 +89,23 @@ public:
         std::function<void(
             uint256 const& key,
             bool isDelete,
-            std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func) const;
+            SLE::const_ref before,
+            SLE::const_ref after)> const& func) const;
 
     void
-    erase(ReadView const& base, std::shared_ptr<SLE> const& sle);
+    erase(ReadView const& base, SLE::ref sle);
 
     void
-    rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle);
+    rawErase(ReadView const& base, SLE::ref sle);
 
     void
-    insert(ReadView const& base, std::shared_ptr<SLE> const& sle);
+    insert(ReadView const& base, SLE::ref sle);
 
     void
-    update(ReadView const& base, std::shared_ptr<SLE> const& sle);
+    update(ReadView const& base, SLE::ref sle);
 
     void
-    replace(ReadView const& base, std::shared_ptr<SLE> const& sle);
+    replace(ReadView const& base, SLE::ref sle);
 
     void
     destroyXRP(XRPAmount const& fee);
@@ -106,12 +118,12 @@ public:
     }
 
 private:
-    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
+    using Mods = hash_map<key_type, SLE::pointer>;
 
     static void
-    threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
+    threadItem(TxMeta& meta, SLE::ref to);
 
-    std::shared_ptr<SLE>
+    SLE::pointer
     getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j);
 
     void
@@ -121,7 +133,7 @@ private:
     threadOwners(
         ReadView const& base,
         TxMeta& meta,
-        std::shared_ptr<SLE const> const& sle,
+        SLE::const_ref sle,
         Mods& mods,
         beast::Journal j);
 };

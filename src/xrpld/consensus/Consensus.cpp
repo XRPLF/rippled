@@ -35,7 +35,7 @@ shouldCloseLedger(
                << ", timeSincePrevClose: " << timeSincePrevClose.count() << "ms"
                << ", openTime: " << openTime.count() << "ms"
                << ", idleInterval: " << idleInterval.count() << "ms"
-               << ", ledgerMIN_CLOSE: " << parms.ledgerMIN_CLOSE.count() << "ms"
+               << ", ledgerMIN_CLOSE: " << parms.ledgerMinClose.count() << "ms"
                << ". ";
     using namespace std::chrono_literals;
     if ((prevRoundTime < -1s) || (prevRoundTime > 10min) || (timeSincePrevClose > 10min))
@@ -67,7 +67,7 @@ shouldCloseLedger(
     }
 
     // Preserve minimum ledger open time
-    if (openTime < parms.ledgerMIN_CLOSE)
+    if (openTime < parms.ledgerMinClose)
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
         CLOG(clog) << "not closing because under ledgerMIN_CLOSE. ";
@@ -175,12 +175,12 @@ checkConsensus(
                << " agree=" << currentAgree << " validated=" << currentFinished
                << " time=" << currentAgreeTime.count() << "/" << previousAgreeTime.count()
                << " proposing? " << proposing
-               << " minimum duration to reach consensus: " << parms.ledgerMIN_CONSENSUS.count()
+               << " minimum duration to reach consensus: " << parms.ledgerMinConsensus.count()
                << "ms"
-               << " max consensus time " << parms.ledgerMAX_CONSENSUS.count() << "ms"
-               << " minimum consensus percentage: " << parms.minCONSENSUS_PCT << ". ";
+               << " max consensus time " << parms.ledgerMaxConsensus.count() << "ms"
+               << " minimum consensus percentage: " << parms.minConsensusPct << ". ";
 
-    if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
+    if (currentAgreeTime <= parms.ledgerMinConsensus)
     {
         CLOG(clog) << "Not reached. ";
         return ConsensusState::No;
@@ -190,7 +190,7 @@ checkConsensus(
     {
         // Less than 3/4 of the last ledger's proposers are present; don't
         // rush: we may need more time.
-        if (currentAgreeTime < (previousAgreeTime + parms.ledgerMIN_CONSENSUS))
+        if (currentAgreeTime < (previousAgreeTime + parms.ledgerMinConsensus))
         {
             JLOG(j.trace()) << "too fast, not enough proposers";
             CLOG(clog) << "Too fast, not enough proposers. Not reached. ";
@@ -204,8 +204,8 @@ checkConsensus(
             currentAgree,
             currentProposers,
             proposing,
-            parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            parms.minConsensusPct,
+            currentAgreeTime > parms.ledgerMaxConsensus,
             stalled,
             clog))
     {
@@ -221,8 +221,8 @@ checkConsensus(
             currentFinished,
             currentProposers,
             false,
-            parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            parms.minConsensusPct,
+            currentAgreeTime > parms.ledgerMaxConsensus,
             false,
             clog))
     {
@@ -232,9 +232,9 @@ checkConsensus(
     }
 
     std::chrono::milliseconds const maxAgreeTime =
-        previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
+        previousAgreeTime * parms.ledgerAbandonConsensusFactor;
     if (currentAgreeTime >
-        std::clamp(maxAgreeTime, parms.ledgerMAX_CONSENSUS, parms.ledgerABANDON_CONSENSUS))
+        std::clamp(maxAgreeTime, parms.ledgerMaxConsensus, parms.ledgerAbandonConsensus))
     {
         JLOG(j.warn()) << "consensus taken too long";
         CLOG(clog) << "Consensus taken too long. ";

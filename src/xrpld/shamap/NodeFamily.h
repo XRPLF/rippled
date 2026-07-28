@@ -1,8 +1,17 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/CollectorManager.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
+
+#include <cstdint>
+#include <memory>
+#include <mutex>
 
 namespace xrpl {
 

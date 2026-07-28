@@ -25,7 +25,7 @@ Job::Job(
     std::uint64_t index,
     LoadMonitor& lm,
     std::function<void()> const& job)
-    : type_(type), jobIndex_(index), job_(job), name_(name), queue_time_(clock_type::now())
+    : type_(type), jobIndex_(index), job_(job), name_(name), queueTime_(clock_type::now())
 {
     loadEvent_ = std::make_shared<LoadEvent>(std::ref(lm), name, false);
 }
@@ -39,7 +39,7 @@ Job::getType() const
 Job::clock_type::time_point const&
 Job::queueTime() const
 {
-    return queue_time_;
+    return queueTime_;
 }
 
 void

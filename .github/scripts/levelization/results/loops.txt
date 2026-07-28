@@ -1,9 +1,3 @@
-Loop: test.jtx test.toplevel
-  test.toplevel > test.jtx
-
-Loop: test.jtx test.unit_test
-  test.unit_test ~= test.jtx
-
 Loop: xrpld.app xrpld.overlay
   xrpld.app > xrpld.overlay
 

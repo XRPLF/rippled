@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
@@ -39,19 +40,18 @@ namespace xrpl {
 
 using namespace boost::bimaps;
 // sorted descending by lastUpdateTime, ascending by AssetPrice
-using Prices =
-    bimap<multiset_of<std::uint32_t, std::greater<std::uint32_t>>, multiset_of<STAmount>>;
+using Prices = bimap<multiset_of<std::uint32_t, std::greater<>>, multiset_of<STAmount>>;
 
-/** Calls callback "f" on the ledger-object sle and up to three previous
+/**
+ * Calls callback "f" on the ledger-object sle and up to three previous
  * metadata objects. Stops early if the callback returns true.
  */
 static void
 iteratePriceData(
     RPC::JsonContext& context,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::function<bool(STObject const&)> const& f)
 {
-    using Meta = std::shared_ptr<STObject const>;
     static constexpr std::uint8_t kMaxHistory = 3;
     bool isNew = false;
     std::uint8_t history = 0;
@@ -73,7 +73,7 @@ iteratePriceData(
     // for the Oracle is not found in the inner loop
     STObject const* prevChain = nullptr;
 
-    Meta meta = nullptr;
+    std::shared_ptr<STObject const> meta = nullptr;
     while (true)
     {
         if (prevChain == chain)
@@ -93,6 +93,8 @@ iteratePriceData(
             return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
+        if (!meta)
+            return;
 
         prevChain = chain;
         for (STObject const& node : meta->getFieldArray(sfAffectedNodes))

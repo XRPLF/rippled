@@ -1,10 +1,8 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
-#include <xrpl/tx/wasm/ParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <boost/algorithm/hex.hpp>
@@ -43,7 +41,7 @@ struct WasmPerf_test : public beast::unit_test::Suite
             auto result = f();
             BEAST_EXPECT(result);
         }
-        BEAST_EXPECT(hfs.execTimeEvent->count == runs);
+        BEAST_EXPECT(hfs.getExecutionTimeEventImpl()->count == runs);
     }
 
     void
@@ -57,8 +55,8 @@ struct WasmPerf_test : public beast::unit_test::Suite
         auto const wasm = hexToBytes(kAllHostFunctionsWasmHex);
 
         Env env{*this};
-        auto hfns = TestHostFunctions{env, 0};
-        hfns.execTimeEvent->printOnDestruction = true;
+        auto hfns = TestHostFunctions{env};
+        hfns.getExecutionTimeEventImpl()->printOnDestruction = true;
 
         perf(hfns, kRuns, [&] {
             return runEscrowWasm(wasm, hfns, 1'000'000, escrowFunctionName, {}).has_value();
@@ -76,8 +74,8 @@ struct WasmPerf_test : public beast::unit_test::Suite
         auto const wasm = hexToBytes(kAllHostFunctionsWasmHex);
 
         Env env{*this};
-        auto hfns = TestHostFunctions{env, 0};
-        hfns.execTimeEvent->printOnDestruction = true;
+        auto hfns = TestHostFunctions{env};
+        hfns.getExecutionTimeEventImpl()->printOnDestruction = true;
 
         perf(hfns, kRuns, [&] { return !preflightEscrowWasm(wasm, hfns, escrowFunctionName); });
     }
