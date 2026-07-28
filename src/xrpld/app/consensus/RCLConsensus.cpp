@@ -1,4 +1,3 @@
-
 #include <xrpld/app/consensus/RCLConsensus.h>
 
 #include <xrpld/app/consensus/RCLCxLedger.h>

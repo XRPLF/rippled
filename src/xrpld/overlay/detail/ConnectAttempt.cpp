@@ -1,4 +1,3 @@
-
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 
 #include <xrpld/app/main/Application.h>

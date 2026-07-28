@@ -1,4 +1,3 @@
-
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 #include <xrpld/app/misc/ValidatorList.h>

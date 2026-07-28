@@ -1,4 +1,3 @@
-
 #include <xrpld/overlay/detail/PeerImp.h>
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>

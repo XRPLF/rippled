@@ -675,7 +675,7 @@ ValidatorSite::onSiteFetch(
             catch (std::exception const& ex)
             {
                 JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-                onError(ex.what(), false, "parse_error");
+                onError(ex.what(), false, telemetry::lval::unl_fetch::parseError);
             }
         }
         sites_[siteIdx].activeResource.reset();

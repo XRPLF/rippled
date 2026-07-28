@@ -1,4 +1,3 @@
-
 #include <xrpld/app/main/Application.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>

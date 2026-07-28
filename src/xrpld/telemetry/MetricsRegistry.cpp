@@ -1,4 +1,3 @@
-
 /**
  * MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
  *
@@ -111,21 +110,6 @@ constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 // histogram is not created until the first consensus round completes, well
 // after start().
 constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
-
-/**
- * Register an explicit-bucket histogram view for a duration instrument.
- *
- * The SDK's default histogram boundaries top out at 10,000, so any value
- * above that lands in the overflow bucket and every quantile reads as the
- * top boundary. Both duration scales this project records cross that limit
- * (10,000 µs = 10 ms of job wait; 10,000 ms = 10 s of consensus round), so
- * every duration histogram installs its own boundaries instead.
- *
- * @param views      The registry to add the view to.
- * @param name       Instrument name to match (e.g. "job_running_us").
- * @param boundaries Bucket upper bounds, in the instrument's own unit,
- *                   ascending.
- */
 
 /**
  * Bucket boundaries for microsecond-valued duration instruments.
@@ -718,7 +702,7 @@ MetricsRegistry::registerCacheHitRateGauge()
                 auto sleRate = app.getCachedSLEs().rate();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(sleRate, {{"metric", "SLE_hit_rate"}});
+                    ->Observe(sleRate, {{label::metric, "SLE_hit_rate"}});
 
                 // Ledger cache hit rate.
                 // TaggedCache::getHitRate() returns 0-100; normalize to
@@ -727,40 +711,40 @@ MetricsRegistry::registerCacheHitRateGauge()
                 auto ledgerRate = app.getLedgerMaster().getCacheHitRate() / 100.0;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(ledgerRate, {{"metric", "ledger_hit_rate"}});
+                    ->Observe(ledgerRate, {{label::metric, "ledger_hit_rate"}});
 
                 // AcceptedLedger cache hit rate (also 0-100 from
                 // TaggedCache; normalize to 0.0-1.0).
                 auto alRate = app.getAcceptedLedgerCache().getHitRate() / 100.0;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(alRate, {{"metric", "AL_hit_rate"}});
+                    ->Observe(alRate, {{label::metric, "AL_hit_rate"}});
 
                 // TreeNode cache size.
                 auto tnCacheSize = app.getNodeFamily().getTreeNodeCache()->getCacheSize();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(
-                        static_cast<double>(tnCacheSize), {{"metric", "treenode_cache_size"}});
+                        static_cast<double>(tnCacheSize), {{label::metric, "treenode_cache_size"}});
 
                 // TreeNode track size.
                 auto tnTrackSize = app.getNodeFamily().getTreeNodeCache()->getTrackSize();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(
-                        static_cast<double>(tnTrackSize), {{"metric", "treenode_track_size"}});
+                        static_cast<double>(tnTrackSize), {{label::metric, "treenode_track_size"}});
 
                 // FullBelow cache size.
                 auto fbSize = app.getNodeFamily().getFullBelowCache()->size();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(static_cast<double>(fbSize), {{"metric", "fullbelow_size"}});
+                    ->Observe(static_cast<double>(fbSize), {{label::metric, "fullbelow_size"}});
 
                 // AcceptedLedger cache size (entry count).
                 auto alSize = app.getAcceptedLedgerCache().size();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(static_cast<double>(alSize), {{"metric", "AL_size"}});
+                    ->Observe(static_cast<double>(alSize), {{label::metric, "AL_size"}});
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -789,7 +773,7 @@ MetricsRegistry::registerTxqGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("txq_count", static_cast<double>(metrics.txCount));
@@ -870,7 +854,7 @@ MetricsRegistry::registerLoadFactorGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Combined load factor (server component).
@@ -1043,7 +1027,7 @@ MetricsRegistry::registerNodeStoreGauge()
                 ObserveFn const observe = [&](char const* name, std::int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Qualified because the enclosing lambda captures nothing:
@@ -1143,7 +1127,7 @@ MetricsRegistry::registerServerInfoGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Server operating mode (DISCONNECTED=0 .. FULL=4).
@@ -1307,7 +1291,7 @@ MetricsRegistry::registerDbMetricsGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 auto& rdb = app.getRelationalDatabase();
@@ -1346,7 +1330,7 @@ MetricsRegistry::registerValidatorHealthGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("amendment_blocked", app.getOPs().isAmendmentBlocked() ? 1.0 : 0.0);
@@ -1395,7 +1379,7 @@ MetricsRegistry::registerPeerQualityGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Collect latencies, version info, and tracking state from
@@ -1502,7 +1486,7 @@ MetricsRegistry::registerReduceRelayGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Each field is a decimal string; emit when present and parseable.
@@ -1547,7 +1531,7 @@ MetricsRegistry::registerLedgerEconomyGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Local fee (drops).
@@ -1613,7 +1597,7 @@ MetricsRegistry::registerStateTrackingGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
@@ -1671,7 +1655,7 @@ MetricsRegistry::registerStorageDetailGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Cumulative payload bytes handed to the NodeStore. This is
@@ -1726,7 +1710,7 @@ MetricsRegistry::registerValidationAgreementGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("agreement_pct_1h", self->validationTracker_.agreementPct1h());
@@ -1834,7 +1818,7 @@ MetricsRegistry::registerUnlQuorumGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 auto& validators = app.getValidators();
@@ -1895,7 +1879,7 @@ MetricsRegistry::registerClockSkewGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Negative when the local clock runs ahead of the network.
@@ -1931,7 +1915,7 @@ MetricsRegistry::registerSyncStateGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 auto& ops = app.getOPs();
@@ -2017,7 +2001,7 @@ MetricsRegistry::registerSyncAcquireGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // One snapshot feeds all four series, so they are mutually
@@ -2106,7 +2090,7 @@ MetricsRegistry::registerJobQueueSaturationGauge()
                 auto observe = [&](char const* field, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
+                        ->Observe(value, {{label::metric, field}});
                 };
 
                 // One reading feeds all three series so the ratio and the
@@ -2153,7 +2137,7 @@ MetricsRegistry::registerPeerLedgerSupplyGauge()
                 auto observe = [&](char const* field, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
+                        ->Observe(value, {{label::metric, field}});
                 };
 
                 // One pass over the peers, so all five series describe the
@@ -2204,7 +2188,7 @@ MetricsRegistry::registerSlotCensusGauge()
                 auto observe = [&](char const* field, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
+                        ->Observe(value, {{label::metric, field}});
                 };
 
                 // One snapshot under one PeerFinder lock acquire, so occupancy
@@ -2258,7 +2242,7 @@ MetricsRegistry::registerAmendmentBlockGauge()
                 auto observe = [&](char const* field, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
+                        ->Observe(value, {{label::metric, field}});
                 };
 
                 // An unsupported amendment has reached majority. Until now this
@@ -2316,7 +2300,7 @@ MetricsRegistry::registerLedgerQuorumPublishGauge()
                 auto observe = [&](char const* field, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", field}});
+                        ->Observe(value, {{label::metric, field}});
                 };
 
                 auto const& ledgerMaster = app.getLedgerMaster();

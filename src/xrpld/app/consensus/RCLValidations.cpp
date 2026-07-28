@@ -177,35 +177,37 @@ handleNewValidation(
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
+    // Span this validation into the trace of the ledger it validates. The
+    // acceptance it may trigger emits its own span from LedgerMaster, possibly
+    // on another thread; both derive the trace id from the same ledger hash, so
+    // the two land in one trace.
+    //
+    // Started before the outcome is checked, so a rejected validation is
+    // recorded with its real status. Otherwise "validations are counting" and
+    // "validations are all rejected" both look like silence on a stuck node.
+    //
+    // Trusted only: untrusted validations cannot move acceptance, so this stays
+    // bounded by the UNL size per ledger.
+    namespace cs = telemetry::consensus::span;
+    std::optional<telemetry::SpanGuard> span;
+    if (val->isTrusted())
+    {
+        span.emplace(LedgerMaster::makeLedgerTraceSpan(cs::validationAccept, hash, seq));
+        span->setAttribute(
+            cs::attr::validationStatus, cs::validationStatusValue(static_cast<int>(outcome)));
+        span->setAttribute(cs::attr::fullValidation, val->isFull());
+        span->setAttribute(cs::attr::acceptGated, bypassAccept == BypassAccept::Yes);
+    }
+
     if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
-            // Join this trusted validation to the trace of the ledger it
-            // validates. The acceptance decision it triggers runs in
-            // LedgerMaster::checkAccept, which may be this thread or another
-            // (checkAccept is also entered from the acquire completion job and
-            // from switchLCL), and it emits its own ledger.validate span. Both
-            // spans derive their trace id from the SAME validated-ledger hash
-            // via LedgerMaster::makeLedgerTraceSpan, so "which validation
-            // pushed this ledger over quorum, and how long did the resulting
-            // acceptance take" is one trace instead of two unrelated ones.
-            //
-            // Only TRUSTED validations get a span. Untrusted ones cannot move
-            // acceptance, so a span for them would be cost with no causality to
-            // show; this keeps the rate bounded by the UNL size per ledger, in
-            // line with the existing per-message consensus.validation.receive
-            // span rather than on top of it.
-            namespace cs = telemetry::consensus::span;
-            auto span = LedgerMaster::makeLedgerTraceSpan(cs::validationAccept, hash, seq);
-            span.setAttribute(
-                cs::attr::validationStatus, cs::validationStatusValue(static_cast<int>(outcome)));
-            span.setAttribute(cs::attr::fullValidation, val->isFull());
-            span.setAttribute(cs::attr::acceptGated, bypassAccept == BypassAccept::Yes);
-
             // The span stays alive across checkAccept below, so its duration is
             // the time this validation spent driving the acceptance decision --
-            // the number that grows when a node is slow to validate.
+            // the number that grows when a node is slow to validate. A rejected
+            // validation never reaches checkAccept, so its span is just the
+            // record that it arrived and was refused.
             if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
