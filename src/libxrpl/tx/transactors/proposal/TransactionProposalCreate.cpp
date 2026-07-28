@@ -38,9 +38,9 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
         return temBAD_EXPIRATION;
     }
 
-    STObject const raw = ctx.tx.getFieldObject(sfProposedTransaction);
+    STObject const proposedTx = ctx.tx.getFieldObject(sfProposedTransaction);
 
-    if (!raw.isFieldPresent(sfTransactionType) || !raw.isFieldPresent(sfAccount))
+    if (!proposedTx.isFieldPresent(sfTransactionType) || !proposedTx.isFieldPresent(sfAccount))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "lacks TransactionType or Account.";
@@ -50,7 +50,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
     // no batch inner transactions.
-    switch (raw.getFieldU16(sfTransactionType))
+    switch (proposedTx.getFieldU16(sfTransactionType))
     {
         // The Sign/Cancel cases are added with their transaction PRs; those
         // tt values do not exist yet.
@@ -61,14 +61,15 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
             break;
     }
 
-    if (isPseudoTx(raw))
+    if (isPseudoTx(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is a "
                                "pseudo-transaction.";
         return temINVALID;
     }
 
-    if (raw.isFieldPresent(sfFlags) && ((raw.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u))
+    if (proposedTx.isFieldPresent(sfFlags) &&
+        ((proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries tfInnerBatchTxn.";
@@ -77,16 +78,18 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction is stored in its unsigned canonical form; the
     // ledger populates its signature fields as contributions arrive.
-    if (raw.isFieldPresent(sfTxnSignature) || raw.isFieldPresent(sfSigners) ||
-        raw.isFieldPresent(sfBatchSigners) || raw.isFieldPresent(sfCounterpartySignature) ||
-        raw.isFieldPresent(sfSponsorSignature))
+    if (proposedTx.isFieldPresent(sfTxnSignature) || proposedTx.isFieldPresent(sfSigners) ||
+        proposedTx.isFieldPresent(sfBatchSigners) ||
+        proposedTx.isFieldPresent(sfCounterpartySignature) ||
+        proposedTx.isFieldPresent(sfSponsorSignature))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries signature fields.";
         return temBAD_SIGNER;
     }
 
-    if (!raw.isFieldPresent(sfSigningPubKey) || !raw.getFieldVL(sfSigningPubKey).empty())
+    if (!proposedTx.isFieldPresent(sfSigningPubKey) ||
+        !proposedTx.getFieldVL(sfSigningPubKey).empty())
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "SigningPubKey must be present and empty.";
@@ -95,7 +98,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction's fee is charged to the target account when
     // the completed transaction is submitted, so it must be fixed now.
-    if (!raw.isFieldPresent(sfFee) || !raw.isFieldPresent(sfSequence))
+    if (!proposedTx.isFieldPresent(sfFee) || !proposedTx.isFieldPresent(sfSequence))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "lacks Fee or Sequence.";
@@ -107,7 +110,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // ticket decouples the proposal from the target account's live sequence,
     // so unrelated target-account activity cannot invalidate it while
     // signatures are collected (spec §4.2.1).
-    if (!raw.isFieldPresent(sfTicketSequence) || raw.getFieldU32(sfSequence) != 0)
+    if (!proposedTx.isFieldPresent(sfTicketSequence) || proposedTx.getFieldU32(sfSequence) != 0)
         return temSEQ_AND_TICKET;
 
     // The proposed transaction must pass its own static checks under the
@@ -115,7 +118,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // accepts the unsigned canonical form without a signature check.
     try
     {
-        STTx const stx{ctx.tx.getFieldObject(sfProposedTransaction)};
+        STTx const stx{STObject{proposedTx}};
         auto const inner = xrpl::preflight(ctx.registry, ctx.rules, stx, TapDryRun, ctx.j);
         if (!isTesSuccess(inner.ter))
         {
@@ -147,17 +150,17 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    auto const raw = ctx.tx.getFieldObject(sfProposedTransaction);
+    auto const proposedTx = ctx.tx.getFieldObject(sfProposedTransaction);
 
-    if (raw.isFieldPresent(sfLastLedgerSequence) &&
-        raw.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
+    if (proposedTx.isFieldPresent(sfLastLedgerSequence) &&
+        proposedTx.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "LastLedgerSequence has passed.";
         return tecEXPIRED;
     }
 
-    AccountID const target = raw.getAccountID(sfAccount);
+    AccountID const target = proposedTx.getAccountID(sfAccount);
     auto const sleTarget = ctx.view.read(keylet::account(target));
     if (!sleTarget)
     {
@@ -170,7 +173,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleTarget))
         return tecNO_PERMISSION;
 
-    std::uint32_t const ticketSequence = raw.getFieldU32(sfTicketSequence);
+    std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
     if (ctx.view.exists(keylet::txProposal(target, ticketSequence)))
     {
@@ -188,8 +191,8 @@ TransactionProposalCreate::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const raw = ctx_.tx.getFieldObject(sfProposedTransaction);
-    std::uint32_t const ownerCount = proposalOwnerCount(raw);
+    auto const proposedTx = ctx_.tx.getFieldObject(sfProposedTransaction);
+    std::uint32_t const ownerCount = proposalOwnerCount(proposedTx);
 
     // The proposal holds a full transaction plus its collected signatures, so
     // it reserves more than a typical ledger entry (5 increments; 10 for a
@@ -203,13 +206,13 @@ TransactionProposalCreate::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    AccountID const target = raw.getAccountID(sfAccount);
-    std::uint32_t const ticketSequence = raw.getFieldU32(sfTicketSequence);
+    AccountID const target = proposedTx.getAccountID(sfAccount);
+    std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
     Keylet const proposalKeylet = keylet::txProposal(target, ticketSequence);
     auto sleProposal = std::make_shared<SLE>(proposalKeylet);
     sleProposal->setAccountID(sfOwner, accountID_);
-    sleProposal->setFieldObject(sfProposedTransaction, raw);
+    sleProposal->setFieldObject(sfProposedTransaction, proposedTx);
     sleProposal->setFieldU32(sfExpiration, ctx_.tx[sfExpiration]);
 
     view().insert(sleProposal);
@@ -287,9 +290,10 @@ TransactionProposalCreate::finalizeInvariants(
 
     // The stored transaction must be in unsigned canonical form; signatures
     // may only ever arrive through TransactionProposalSign.
-    auto const raw = sle.getFieldObject(sfProposedTransaction);
-    if (raw.isFieldPresent(sfTxnSignature) || raw.isFieldPresent(sfSigners) ||
-        !raw.isFieldPresent(sfSigningPubKey) || !raw.getFieldVL(sfSigningPubKey).empty())
+    auto const proposedTx = sle.getFieldObject(sfProposedTransaction);
+    if (proposedTx.isFieldPresent(sfTxnSignature) || proposedTx.isFieldPresent(sfSigners) ||
+        !proposedTx.isFieldPresent(sfSigningPubKey) ||
+        !proposedTx.getFieldVL(sfSigningPubKey).empty())
     {
         JLOG(j.fatal()) << "Invariant failed: created proposal is not in "
                            "unsigned canonical form.";  // LCOV_EXCL_LINE
@@ -298,8 +302,8 @@ TransactionProposalCreate::finalizeInvariants(
 
     // The entry must live under the key its components hash to, or lookups
     // and duplicate detection fall apart.
-    std::uint32_t const ticketSequence = raw.getFieldU32(sfTicketSequence);
-    if (sle.key() != keylet::txProposal(raw.getAccountID(sfAccount), ticketSequence).key)
+    std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
+    if (sle.key() != keylet::txProposal(proposedTx.getAccountID(sfAccount), ticketSequence).key)
     {
         JLOG(j.fatal()) << "Invariant failed: proposal stored under the "
                            "wrong key.";  // LCOV_EXCL_LINE
