@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -10,6 +11,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -191,6 +193,57 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
             reject(tx, temINVALID);
+        }
+
+        // The remaining signature containers are just as forbidden as a bare
+        // TxnSignature or Signers array.
+        {
+            json::Value tx = payload();
+            auto& bs = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
+            bs[jss::Account] = bob.human();
+            bs[jss::SigningPubKey] = strHex(bob.pk().slice());
+            bs[sfTxnSignature.getJsonName()] = "DEADBEEF";
+            reject(tx, temBAD_SIGNER);
+        }
+        {
+            json::Value tx = payload();
+            tx[sfCounterpartySignature.getJsonName()][jss::SigningPubKey] =
+                strHex(bob.pk().slice());
+            reject(tx, temBAD_SIGNER);
+        }
+        {
+            json::Value tx = payload();
+            tx[sfSponsorSignature.getJsonName()][jss::SigningPubKey] = strHex(bob.pk().slice());
+            reject(tx, temBAD_SIGNER);
+        }
+
+        // The proposed transaction must be ticket-based: a missing
+        // TicketSequence, or a live Sequence alongside it, is rejected.
+        {
+            json::Value tx = payload();
+            tx.removeMember(sfTicketSequence.getJsonName());
+            reject(tx, temSEQ_AND_TICKET);
+        }
+        {
+            json::Value tx = payload();
+            tx[jss::Sequence] = 1;
+            reject(tx, temSEQ_AND_TICKET);
+        }
+
+        // A payload that fails its own transaction type's preflight surfaces
+        // that type's own code, not a generic error (spec §5.3.1.2).
+        {
+            json::Value tx = payload();
+            tx[jss::Amount] = "0";
+            reject(tx, temBAD_AMOUNT);
+        }
+
+        // Expiration must be present and non-zero.
+        {
+            env(proposalCreate(alice, payload(), 0), Ter(temBAD_EXPIRATION));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), targetTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
     }
 
@@ -470,6 +523,50 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
     }
 
+    // The target account must be able to authorize a transaction through a
+    // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
+    // though it exists on-ledger (spec §5.3.2.5).
+    void
+    testPseudoTarget(FeatureBitset features)
+    {
+        testcase("reject proposal targeting a pseudo-account");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const proposer{"proposer"};
+        Account const alice{"alice"};  // the AMM creator
+        Account const gw{"gw"};
+        Account const bob{"bob"};
+        auto const USD = gw["USD"];
+        env.fund(XRP(10000), proposer, alice, gw, bob);
+        env.close();
+        env.trust(USD(1'000'000), alice);
+        env.close();
+        env(pay(gw, alice, USD(10'000)));
+        env.close();
+
+        AMM amm(env, alice, XRP(1'000), USD(1'000), Ter(tesSUCCESS));
+        env.close();
+
+        // A well-formed Payment whose target is the AMM's pseudo-account.
+        json::Value proposedTx = pay(alice, bob, XRP(1));
+        proposedTx[jss::Account] = toBase58(amm.ammAccount());
+        proposedTx[jss::Sequence] = 0;
+        proposedTx[sfTicketSequence.getJsonName()] = 1;
+        proposedTx[jss::Fee] = std::to_string(env.current()->fees().base.drops());
+        proposedTx[jss::SigningPubKey] = "";
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        env(proposalCreate(proposer, proposedTx, expiration), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::txProposal(amm.ammAccount(), 1)));
+        BEAST_EXPECT(ownerCount(env, proposer) == 0);
+    }
+
     void
     run() override
     {
@@ -481,6 +578,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testReserve(testableAmendments());
         testBatchReserve(testableAmendments());
         testMultiAccountBatch(testableAmendments());
+        testPseudoTarget(testableAmendments());
     }
 };
 
