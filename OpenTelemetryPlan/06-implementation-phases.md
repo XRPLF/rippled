@@ -1680,15 +1680,23 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 **Task 7.13: Storage Detail Observable Gauge**
 
-| Gauge Name             | Label `metric=` | Type  | Source                                   |
-| ---------------------- | --------------- | ----- | ---------------------------------------- |
-| `xrpld_storage_detail` | `nudb_bytes`    | int64 | NuDB backend file size (filesystem stat) |
+| Gauge Name             | Label `metric=` | Type  | Source                                               |
+| ---------------------- | --------------- | ----- | ---------------------------------------------------- |
+| `xrpld_storage_detail` | `nudb_bytes`    | int64 | `Database::getStoreSize()` — cumulative object bytes |
+
+Despite the name, this is not a filesystem measurement. `getStoreSize()` sums the
+object payloads this process has written, so it excludes NuDB's keys, bucket padding
+and log, and it resets with the process while the files on disk do not. It is the
+same accessor `node_written_bytes` uses, so the two series are equal by construction
+and any write-amplification ratio built from the pair is a constant 1.0. There is no
+file-size accessor on `Backend` or `Database`, so no metric reports the store's
+on-disk size today.
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 
 **Exit Criteria**:
 
-- [ ] NuDB file size reported in bytes
+- [ ] Cumulative stored object bytes reported
 - [ ] Gracefully returns 0 if NuDB not configured
 
 ---
