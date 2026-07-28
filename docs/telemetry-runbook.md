@@ -2704,17 +2704,17 @@ diagnosed from the **Ledger Sync Health** dashboard (uid `ledger-sync-health`).
 Its nine rows are ordered the way a fresh node progresses, so reading the board
 top-to-bottom walks the same path a sync does:
 
-| #   | Row                                 | Question it answers                                  |
-| --- | ----------------------------------- | ---------------------------------------------------- |
-| 1   | Bootstrap (Domain 0)                | Can the node reach peers and form a quorum at all?   |
-| 2   | Peer supply                         | Does any peer hold what this node needs?             |
-| 3   | Sync state                          | Is the node advancing through the mode machine?      |
-| 4   | Ledger acquire & SHAMap fetch       | Is ledger data arriving and being applied?           |
-| 5   | Job queue                           | Does arrived work ever get a worker thread?          |
-| 6   | Quorum & publish                    | Does a held ledger ever validate, and reach clients? |
-| 7   | Terminal blockers & serving         | Will the node stop validating for good?              |
-| 8   | Back-fill & persistence (collapsed) | Is an existing database the bottleneck?              |
-| 9   | Spans & traces (collapsed)          | _Which_ fetch, peer or object — not how many?        |
+| #   | Row                           | Question it answers                                  |
+| --- | ----------------------------- | ---------------------------------------------------- |
+| 1   | Bootstrap (Domain 0)          | Can the node reach peers and form a quorum at all?   |
+| 2   | Peer supply                   | Does any peer hold what this node needs?             |
+| 3   | Sync state                    | Is the node advancing through the mode machine?      |
+| 4   | Ledger acquire & SHAMap fetch | Is ledger data arriving and being applied?           |
+| 5   | Job queue                     | Does arrived work ever get a worker thread?          |
+| 6   | Quorum & publish              | Does a held ledger ever validate, and reach clients? |
+| 7   | Terminal blockers & serving   | Will the node stop validating for good?              |
+| 8   | Back-fill & persistence       | Is an existing database the bottleneck?              |
+| 9   | Spans & traces                | _Which_ fetch, peer or object — not how many?        |
 
 **Start from the symptom, not from row 1.** Match what you observe to a branch
 below; each branch names the panels that discriminate it, what healthy and
@@ -2844,7 +2844,7 @@ and 18.
 
 The specific symptom: a node with history starts and is slower than the same node
 was when empty. Back-fill is **write**-bound, so no read-side panel shows it.
-Expand the collapsed **Back-fill & persistence** row.
+Read the **Back-fill & persistence** row.
 
 | Look at                                                     | Healthy                                                                   | Unhealthy                                                       | Conclude                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -3315,7 +3315,7 @@ panel it reads.
     database starts and syncs slower than a fresh one"**. Back-fill is
     write-bound, so no read-side panel can show it; check this step whenever a
     node with existing history is the slow one. Both panels live in the
-    collapsed **Back-fill & persistence** row — expand it.
+    **Back-fill & persistence** row.
     Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_state`,
     `metric=node_writes_duration_us` / `node_reads_duration_us` rated against
     their counts) with _NodeStore Operation Rate (writes vs reads)_
@@ -3351,7 +3351,7 @@ panel it reads.
     Only relevant when `[ledger_replay]` is enabled. Panels _Replay Fallback to
     Full Acquire (by stage)_ (`ledger_replay_fallback_total`) and _Replay
     Outcomes (by terminal state)_ (`ledger_replay_outcome_total`), also in the
-    collapsed **Back-fill & persistence** row:
+    **Back-fill & persistence** row:
     - **Any sustained fallback rate** — too few connected peers support the
       `LedgerReplay` protocol feature, so every historical ledger is fetched
       whole instead of as a delta. Back-fill still completes, just far slower,
@@ -3482,7 +3482,7 @@ panel it reads.
     on?**
     Every step above reads a native metric, which is an aggregate: it says how
     much and how often, never _which one_. This step reads the **span-derived**
-    panels in the collapsed **Spans & traces** row, which answer the "which"
+    panels in the **Spans & traces** row, which answer the "which"
     questions the aggregates structurally cannot — and each point on them is
     backed by a trace, so it can be clicked through to the individual fetch,
     request or dial.

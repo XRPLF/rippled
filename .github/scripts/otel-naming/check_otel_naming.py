@@ -966,6 +966,7 @@ def metric_constants(root: Path) -> Tuple[Set[str], Set[str], Set[str]]:
     values: Set[str] = set()
     for h in find_metricname_headers(root):
         text = strip_comments(read_source(h))
+        flat = text
         for ns, bucket in (
             ("metric", names),
             ("label", keys),
@@ -974,9 +975,16 @@ def metric_constants(root: Path) -> Tuple[Set[str], Set[str], Set[str]]:
             for block in namespace_spans(text, ns):
                 for m in METRIC_CONST_DEF.finditer(block):
                     bucket.add(m.group(2))
+                # Remove the block before the flat pass below, so the
+                # enclosing namespace stays the only thing that decides a
+                # namespaced constant's bucket. Without this, a `kLabel`-style
+                # identifier written inside `namespace metric` lands in both
+                # `names` and `keys`, and an instrument name silently becomes
+                # an allowed label key for Rule D.
+                flat = flat.replace(block, "", 1)
         # Flat style: classify by identifier prefix. Only constants outside the
         # namespaced blocks reach here, so a namespaced header is unaffected.
-        for m in METRIC_CONST_DEF.finditer(text):
+        for m in METRIC_CONST_DEF.finditer(flat):
             ident, value = m.group(1), m.group(2)
             if ident.startswith("kLabel"):
                 keys.add(value)

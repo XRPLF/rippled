@@ -1762,12 +1762,13 @@ top-to-bottom walks the same path a sync does:
 5. `Job queue` — does arrived work ever get a worker thread?
 6. `Quorum & publish` — does a held ledger ever validate, and reach clients?
 7. `Terminal blockers & serving` — will the node stop validating for good?
-8. `Back-fill & persistence` (collapsed) — is an existing database the bottleneck?
-9. `Spans & traces` (collapsed) — _which_ fetch, peer or object, not how many?
+8. `Back-fill & persistence` — is an existing database the bottleneck?
+9. `Spans & traces` — _which_ fetch, peer or object, not how many?
 
-Rows 8 and 9 are collapsed by default because they answer conditional questions:
-row 8 only applies to a node with existing history, and row 9 is span-derived, so
-it inherits trace sampling and the `trace_ledger` / `trace_peer` flags.
+Rows 8 and 9 answer conditional questions: row 8 only applies to a node with
+existing history, and row 9 is span-derived, so it inherits trace sampling and
+the `trace_ledger` / `trace_peer` flags. They are still expanded by default --
+a row an operator has to remember to open is a row they read too late.
 
 Operator flow: [telemetry-runbook.md](../docs/telemetry-runbook.md)
 "Diagnosing slow/stuck fresh sync". Terms:

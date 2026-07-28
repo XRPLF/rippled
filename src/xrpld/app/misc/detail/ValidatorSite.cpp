@@ -401,19 +401,35 @@ ValidatorSite::reportFetchOutcome(
     // `https://user:pass@host` could surface -- and from there it would reach
     // the collector, Prometheus and every dashboard.
     //
-    // Scheme, host and path only, and the path truncated at the first '?' or
-    // '#'. Two reasons:
-    //   - The port is omitted because the Resource constructor defaults it to
-    //     443/https and 80/http when the config omits one. Including it would
-    //     rewrite the existing `https://vl.ripple.com` series as
-    //     `https://vl.ripple.com:443/` and break continuity for every deployment
-    //     already scraping this metric.
+    // Scheme, host, port and path, with the path truncated at the first '?' or
+    // '#'. Three details:
+    //   - The port appears only when it differs from the scheme's default. The
+    //     Resource constructor fills in 443/https and 80/http when the config
+    //     omits one, so `pUrl.port` alone cannot say whether an operator asked
+    //     for a port; comparing against the default can. Always printing it
+    //     would rewrite the existing `https://vl.ripple.com` series as
+    //     `https://vl.ripple.com:443/` and break continuity, while always
+    //     dropping it would merge two genuinely different local sites that
+    //     differ only by port.
     //   - parseUrl's path group is `(/.*)?`, which is greedy to end of string, so
     //     a query or fragment lands inside `path`. A list URL authenticated by
     //     `?token=...` would otherwise leak through the label the same way
     //     userinfo would.
+    //   - parseUrl's host group permits '@', so a malformed URI with two of them
+    //     leaves the tail of the userinfo in `domain`. Cutting at the last '@'
+    //     keeps that out of the label too.
     auto const& url = sites_[siteIdx].loadedResource->pUrl;
-    std::string siteLabel = url.scheme + "://" + url.domain;
+
+    std::string host = url.domain;
+    if (auto const at = host.rfind('@'); at != std::string::npos)
+        host.erase(0, at + 1);
+
+    std::string siteLabel = url.scheme + "://" + host;
+
+    auto const defaultPort = url.scheme == "https" ? 443 : 80;
+    if (url.port && *url.port != defaultPort)
+        siteLabel += ":" + std::to_string(*url.port);
+
     siteLabel += url.path.substr(0, url.path.find_first_of("?#"));
 
     XRPL_METRIC_COUNTER_INC_LABELED(

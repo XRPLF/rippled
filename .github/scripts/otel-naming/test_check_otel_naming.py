@@ -1041,6 +1041,37 @@ class MetricConstantExtraction(unittest.TestCase):
         finally:
             shutil.rmtree(d)
 
+    def test_namespaced_constant_ignores_its_flat_prefix(self):
+        # A `kLabel`-prefixed identifier written inside `namespace metric` must
+        # be an instrument name only. The flat prefix pass exists for headers
+        # that have no such namespace, so it must not also claim this one:
+        # letting it through would make an instrument name a valid label key,
+        # and Rule D would then accept `label_peer_total` as a label.
+        names, keys, vals = self._run(
+            _metric_header(
+                metric_body=_mc("kLabelPeerTotal", "label_peer_total"),
+                label_body=_mc("outcome", "outcome"),
+            )
+        )
+        self.assertEqual(names, {"label_peer_total"})
+        self.assertEqual(keys, {"outcome"})
+        self.assertEqual(vals, set())
+
+    def test_flat_prefix_still_read_when_namespaces_absent(self):
+        # The counterpart to the test above: with no `namespace metric`/`label`
+        # block to excise, the flat pass must still classify by prefix.
+        names, keys, vals = self._run(
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            + _mc("kLabelOutcome", "outcome")
+            + "\n"
+            + _mc("kResultResolved", "resolved")
+            + "\n}\n"
+        )
+        self.assertEqual(names, set())
+        self.assertEqual(keys, {"outcome"})
+        self.assertEqual(vals, {"resolved"})
+
 
 class RuleIMetricLiterals(unittest.TestCase):
     """Rule I: literal instrument names / label keys at a metric emit site are
