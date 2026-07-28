@@ -9,6 +9,9 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
+#include <memory>
+
 namespace xrpl {
 
 class TransactionProposalCreate : public Transactor
