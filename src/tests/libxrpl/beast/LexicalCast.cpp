@@ -7,17 +7,26 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace beast {
 namespace {
 
 template <class T>
-[[nodiscard]] bool
-parses(std::string const& text)
+[[nodiscard]] constexpr bool
+parses(std::string_view text)
 {
     T out{};
     return lexicalCastChecked(out, text);
+}
+
+template <class T>
+[[nodiscard]] constexpr T
+parsed(std::string_view text)
+{
+    T out{};
+    return lexicalCastChecked(out, text) ? out : T{};
 }
 
 template <class T>
@@ -66,7 +75,7 @@ struct IntegerTypeNames
     // NOLINTNEXTLINE(readability-identifier-naming) - required by gtest
     GetName(int)
     {
-        return (std::is_signed_v<T> ? "int" : "uint") + std::to_string(sizeof(T) * 8);
+        return (std::is_signed_v<T> ? "int" : "uint") + std::to_string(sizeof(T) * 8) + "_t";
     }
 };
 
@@ -110,79 +119,97 @@ TEST(LexicalCast, round_trips_every_int16_value)
 
 TEST(LexicalCast, rejects_overflow)
 {
-    EXPECT_FALSE(parses<std::uint64_t>("99999999999999999999"));
-    EXPECT_FALSE(parses<std::uint32_t>("4294967300"));
-    EXPECT_FALSE(parses<std::uint16_t>("75821"));
+    static_assert(not parses<std::uint64_t>("99999999999999999999"));
+    static_assert(not parses<std::uint32_t>("4294967300"));
+    static_assert(not parses<std::uint16_t>("75821"));
 }
 
 TEST(LexicalCast, rejects_underflow)
 {
-    EXPECT_FALSE(parses<std::uint32_t>("-1"));
+    static_assert(not parses<std::uint32_t>("-1"));
 
-    EXPECT_FALSE(parses<std::int64_t>("-99999999999999999999"));
-    EXPECT_FALSE(parses<std::int32_t>("-4294967300"));
-    EXPECT_FALSE(parses<std::int16_t>("-75821"));
+    static_assert(not parses<std::int64_t>("-99999999999999999999"));
+    static_assert(not parses<std::int32_t>("-4294967300"));
+    static_assert(not parses<std::int16_t>("-75821"));
 }
 
 TEST(LexicalCast, accepts_up_to_the_maximum)
 {
-    EXPECT_TRUE(roundTrips<std::uint64_t>("18446744073709551614"));
-    EXPECT_TRUE(roundTrips<std::uint64_t>("18446744073709551615"));
-    EXPECT_FALSE(roundTrips<std::uint64_t>("18446744073709551616"));
+    static_assert(parsed<std::uint64_t>("18446744073709551614") == 18446744073709551614ULL);
+    static_assert(parsed<std::uint64_t>("18446744073709551615") == 18446744073709551615ULL);
+    static_assert(not parses<std::uint64_t>("18446744073709551616"));
 
-    EXPECT_TRUE(roundTrips<std::int64_t>("9223372036854775806"));
-    EXPECT_TRUE(roundTrips<std::int64_t>("9223372036854775807"));
-    EXPECT_FALSE(roundTrips<std::int64_t>("9223372036854775808"));
+    static_assert(parsed<std::int64_t>("9223372036854775806") == 9223372036854775806LL);
+    static_assert(parsed<std::int64_t>("9223372036854775807") == 9223372036854775807LL);
+    static_assert(not parses<std::int64_t>("9223372036854775808"));
 
-    EXPECT_TRUE(roundTrips<std::uint32_t>("4294967294"));
-    EXPECT_TRUE(roundTrips<std::uint32_t>("4294967295"));
-    EXPECT_FALSE(roundTrips<std::uint32_t>("4294967296"));
+    static_assert(parsed<std::uint32_t>("4294967294") == 4294967294U);
+    static_assert(parsed<std::uint32_t>("4294967295") == 4294967295U);
+    static_assert(not parses<std::uint32_t>("4294967296"));
 
-    EXPECT_TRUE(roundTrips<std::int32_t>("2147483646"));
-    EXPECT_TRUE(roundTrips<std::int32_t>("2147483647"));
-    EXPECT_FALSE(roundTrips<std::int32_t>("2147483648"));
+    static_assert(parsed<std::int32_t>("2147483646") == 2147483646);
+    static_assert(parsed<std::int32_t>("2147483647") == 2147483647);
+    static_assert(not parses<std::int32_t>("2147483648"));
 
-    EXPECT_TRUE(roundTrips<std::uint16_t>("65534"));
-    EXPECT_TRUE(roundTrips<std::uint16_t>("65535"));
-    EXPECT_FALSE(roundTrips<std::uint16_t>("65536"));
+    static_assert(parsed<std::uint16_t>("65534") == 65534);
+    static_assert(parsed<std::uint16_t>("65535") == 65535);
+    static_assert(not parses<std::uint16_t>("65536"));
 
-    EXPECT_TRUE(roundTrips<std::int16_t>("32766"));
-    EXPECT_TRUE(roundTrips<std::int16_t>("32767"));
-    EXPECT_FALSE(roundTrips<std::int16_t>("32768"));
+    static_assert(parsed<std::int16_t>("32766") == 32766);
+    static_assert(parsed<std::int16_t>("32767") == 32767);
+    static_assert(not parses<std::int16_t>("32768"));
 }
 
 TEST(LexicalCast, accepts_down_to_the_minimum)
 {
-    EXPECT_TRUE(roundTrips<std::int64_t>("-9223372036854775807"));
-    EXPECT_TRUE(roundTrips<std::int64_t>("-9223372036854775808"));
-    EXPECT_FALSE(roundTrips<std::int64_t>("-9223372036854775809"));
+    static_assert(parsed<std::int64_t>("-9223372036854775807") == -9223372036854775807LL);
+    static_assert(
+        parsed<std::int64_t>("-9223372036854775808") == std::numeric_limits<std::int64_t>::min());
+    static_assert(not parses<std::int64_t>("-9223372036854775809"));
 
-    EXPECT_TRUE(roundTrips<std::int32_t>("-2147483647"));
-    EXPECT_TRUE(roundTrips<std::int32_t>("-2147483648"));
-    EXPECT_FALSE(roundTrips<std::int32_t>("-2147483649"));
+    static_assert(parsed<std::int32_t>("-2147483647") == -2147483647);
+    static_assert(parsed<std::int32_t>("-2147483648") == std::numeric_limits<std::int32_t>::min());
+    static_assert(not parses<std::int32_t>("-2147483649"));
 
-    EXPECT_TRUE(roundTrips<std::int16_t>("-32767"));
-    EXPECT_TRUE(roundTrips<std::int16_t>("-32768"));
-    EXPECT_FALSE(roundTrips<std::int16_t>("-32769"));
+    static_assert(parsed<std::int16_t>("-32767") == -32767);
+    static_assert(parsed<std::int16_t>("-32768") == std::numeric_limits<std::int16_t>::min());
+    static_assert(not parses<std::int16_t>("-32769"));
 }
 
-// These two use the `char const*` overload, not the `std::string` one `parses` hits.
+TEST(LexicalCast, limits_round_trip_through_to_string)
+{
+    EXPECT_TRUE(roundTrips<std::uint64_t>("18446744073709551615"));
+    EXPECT_TRUE(roundTrips<std::int64_t>("9223372036854775807"));
+    EXPECT_TRUE(roundTrips<std::int64_t>("-9223372036854775808"));
+    EXPECT_TRUE(roundTrips<std::uint32_t>("4294967295"));
+    EXPECT_TRUE(roundTrips<std::int32_t>("-2147483648"));
+    EXPECT_TRUE(roundTrips<std::uint16_t>("65535"));
+    EXPECT_TRUE(roundTrips<std::int16_t>("-32768"));
+}
+
 TEST(LexicalCast, accepts_signed_zero_in_every_form)
 {
-    std::int32_t out = 0;
-
-    EXPECT_TRUE(lexicalCastChecked(out, "-0"));
-    EXPECT_TRUE(lexicalCastChecked(out, "0"));
-    EXPECT_TRUE(lexicalCastChecked(out, "+0"));
+    static_assert(parsed<std::int32_t>("-0") == 0);
+    static_assert(parsed<std::int32_t>("0") == 0);
+    static_assert(parsed<std::int32_t>("+0") == 0);
 }
 
 TEST(LexicalCast, rejects_negative_zero_when_unsigned)
 {
-    std::uint32_t out = 0;
+    static_assert(not parses<std::uint32_t>("-0"));
+    static_assert(parsed<std::uint32_t>("0") == 0);
+    static_assert(parsed<std::uint32_t>("+0") == 0);
+}
 
-    EXPECT_FALSE(lexicalCastChecked(out, "-0"));
-    EXPECT_TRUE(lexicalCastChecked(out, "0"));
-    EXPECT_TRUE(lexicalCastChecked(out, "+0"));
+TEST(LexicalCast, accepts_char_pointer_and_std_string_input)
+{
+    std::int32_t fromLiteral = 0;
+    EXPECT_TRUE(lexicalCastChecked(fromLiteral, "+42"));
+    EXPECT_EQ(fromLiteral, 42);
+
+    std::int32_t fromString = 0;
+    EXPECT_TRUE(lexicalCastChecked(fromString, std::string{"-42"}));
+    EXPECT_EQ(fromString, -42);
 }
 
 TEST(LexicalCast, throwing_cast_returns_in_range_values)

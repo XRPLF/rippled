@@ -58,7 +58,7 @@ struct LexicalCast<Out, std::string_view>
         "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    bool
+    constexpr bool
     operator()(Integral& out, std::string_view in) const
         requires(std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>)
     {
@@ -177,7 +177,7 @@ struct BadLexicalCast : public std::bad_cast
  * @return `false` if there was a parsing or range error
  */
 template <class Out, class In>
-bool
+constexpr bool
 lexicalCastChecked(Out& out, In in)
 {
     return detail::LexicalCast<Out, In>()(out, in);
@@ -207,7 +207,7 @@ lexicalCastThrow(In in)
  * @return The new type.
  */
 template <class Out, class In>
-Out
+constexpr Out
 lexicalCast(In in, Out defaultValue = Out())
 {
     if (Out out; lexicalCastChecked(out, in))
