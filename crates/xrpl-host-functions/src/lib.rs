@@ -1,5 +1,9 @@
 #![no_std]
-use xrpl_host_functions_macros::host_abi;
+extern crate alloc;
+
+use alloc::vec::Vec;
+
+use xrpl_host_functions_macros::host_functions;
 
 /// Error codes a host function may return.
 ///

@@ -1,4 +1,6 @@
-use syn::{Attribute, Expr, ExprLit, Lit, Signature, TraitItemFn};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{Attribute, Expr, ExprLit, Ident, Lit, LitStr, Signature, TraitItemFn, parse_quote};
 
 use crate::errors;
 
@@ -12,13 +14,55 @@ const DOC: &str = "doc";
 /// One entry of a `host_functions!` block: its ABI metadata and its signature.
 pub(crate) struct ParsedHostFunction {
     pub(crate) gas: u64,
-    pub(crate) wasm_name: String,
+    /// Kept as the literal the user wrote, so diagnostics and the generated
+    /// string both carry that span.
+    pub(crate) wasm_name: LitStr,
     /// Doc comments, in source order, to re-emit on the generated items.
     pub(crate) docs: Vec<Attribute>,
+    /// The enum variant this declaration becomes, spanned at the function name.
+    pub(crate) variant: Ident,
     pub(crate) signature: Signature,
 }
 
 impl ParsedHostFunction {
+    /// `#[doc …] fn get_ledger_sqn(&mut self) -> [u8; 4];`
+    pub(crate) fn trait_method(&self) -> TokenStream {
+        let docs = &self.docs;
+
+        // The receiver is not part of the wasm ABI, so declarations omit it and
+        // only the trait needs one.
+        let mut signature = self.signature.clone();
+        signature.inputs.insert(0, parse_quote!(&mut self));
+
+        quote! {
+            #(#docs)*
+            #signature;
+        }
+    }
+
+    /// `#[doc …] GetLedgerSqn`
+    pub(crate) fn variant_declaration(&self) -> TokenStream {
+        let docs = &self.docs;
+        let variant = &self.variant;
+        quote! {
+            #(#docs)*
+            #variant
+        }
+    }
+
+    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", base_gas: 60u64 }`
+    pub(crate) fn spec_arm(&self) -> TokenStream {
+        let Self {
+            gas,
+            wasm_name,
+            variant,
+            ..
+        } = self;
+        quote! {
+            Self::#variant => HostFnSpec { name: #wasm_name, base_gas: #gas }
+        }
+    }
+
     pub(crate) fn parse(function: TraitItemFn) -> syn::Result<Self> {
         let mut gas = None;
         let mut wasm_name = None;
@@ -97,9 +141,40 @@ impl ParsedHostFunction {
             gas,
             wasm_name,
             docs,
+            variant: variant_ident(&function.sig.ident),
             signature: function.sig,
         })
     }
+}
+
+/// The enum variant a declaration becomes: `get_ledger_sqn` -> `GetLedgerSqn`.
+///
+/// The result carries `ident`'s span, so anything the compiler says about the
+/// variant points at the declaration that produced it.
+fn variant_ident(ident: &Ident) -> Ident {
+    // `to_string` spells raw identifiers `r#type`; the `r#` is not part of the name.
+    let name = ident.to_string();
+    let name = name.strip_prefix("r#").unwrap_or(&name);
+
+    let mut pascal = String::with_capacity(name.len());
+    let mut capitalize = true;
+    for character in name.chars() {
+        if character == '_' {
+            capitalize = true;
+        } else if capitalize {
+            pascal.extend(character.to_uppercase());
+            capitalize = false;
+        } else {
+            pascal.push(character);
+        }
+    }
+
+    // A name of nothing but underscores would leave `pascal` empty, and
+    // `format_ident!` panics on an invalid identifier.
+    if pascal.is_empty() {
+        return ident.clone();
+    }
+    format_ident!("{pascal}", span = ident.span())
 }
 
 /// Records `value`, or reports that the attribute appeared more than once.
@@ -125,12 +200,12 @@ fn int_value(attr: &Attribute) -> syn::Result<u64> {
     }
 }
 
-fn string_value(attr: &Attribute) -> syn::Result<String> {
+fn string_value(attr: &Attribute) -> syn::Result<LitStr> {
     match &attr.meta.require_name_value()?.value {
         Expr::Lit(ExprLit {
             lit: Lit::Str(string),
             ..
-        }) => Ok(string.value()),
+        }) => Ok(string.clone()),
         other => Err(syn::Error::new_spanned(
             other,
             format!("`{}` expects a string literal", path_name(attr)),
@@ -184,9 +259,64 @@ mod tests {
         .unwrap();
 
         assert_eq!(parsed.gas, 60);
-        assert_eq!(parsed.wasm_name, "ldgr_index");
+        assert_eq!(parsed.wasm_name.value(), "ldgr_index");
         assert_eq!(parsed.signature.ident.to_string(), "get_ledger_sqn");
+        assert_eq!(parsed.variant.to_string(), "GetLedgerSqn");
         assert!(parsed.docs.is_empty());
+    }
+
+    #[test]
+    fn derives_variant_names_from_function_names() {
+        for (function, variant) in [
+            ("get_ledger_sqn", "GetLedgerSqn"),
+            ("sha512_half", "Sha512Half"),
+            ("trace", "Trace"),
+            ("get_current_ledger_obj_field", "GetCurrentLedgerObjField"),
+            ("r#type", "Type"),
+            // Pathological, but must not panic: no letters to capitalize.
+            ("__", "__"),
+        ] {
+            let ident = format_ident!("{function}");
+            assert_eq!(variant_ident(&ident).to_string(), variant);
+        }
+    }
+
+    #[test]
+    fn trait_method_takes_a_receiver_and_ends_in_a_semicolon() {
+        let parsed = ParsedHostFunction::parse(parse_quote! {
+            /// Hashes `data`.
+            #[gas = 2000]
+            #[wasm_name = "sha512_half"]
+            fn sha512_half(data: &[u8]) -> [u8; 32];
+        })
+        .unwrap();
+
+        // `///` reaches the macro as `#[doc = r"..."]`: rustc's lexer spells doc
+        // comments as raw string literals.
+        let method = parsed.trait_method().to_string();
+        assert!(
+            method.starts_with("# [doc = r\" Hashes `data`.\"]"),
+            "{method}"
+        );
+        assert!(
+            method.contains("fn sha512_half (& mut self , data : & [u8]) -> [u8 ; 32] ;"),
+            "{method}"
+        );
+    }
+
+    #[test]
+    fn spec_arm_carries_the_name_and_the_gas() {
+        let parsed = ParsedHostFunction::parse(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn() -> [u8; 4];
+        })
+        .unwrap();
+
+        assert_eq!(
+            parsed.spec_arm().to_string(),
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , base_gas : 60u64 }"
+        );
     }
 
     #[test]
