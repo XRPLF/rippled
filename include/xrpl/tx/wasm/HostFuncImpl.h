@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/CollectorManager.h>
 #include <xrpl/core/ServiceRegistry.h>
