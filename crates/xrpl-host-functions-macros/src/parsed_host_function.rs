@@ -34,7 +34,7 @@ impl ParsedHostFunction {
         // The receiver is not part of the wasm ABI, so declarations omit it and
         // only the trait needs one.
         let mut signature = self.signature.clone();
-        signature.inputs.insert(0, parse_quote!(&mut self));
+        signature.inputs.insert(0, parse_quote!(&self));
 
         quote! {
             #(#docs)*
