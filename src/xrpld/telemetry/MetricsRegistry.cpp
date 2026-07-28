@@ -1472,7 +1472,8 @@ MetricsRegistry::registerStorageDetailGauge()
     // --- Task 7.13: Storage detail gauges ---
     // Reports the cumulative payload bytes handed to the NodeStore. See the
     // note at the observe() call below: this is logical bytes stored, not
-    // on-disk file size, because no accessor for the latter exists.
+    // on-disk file size, because no accessor for the latter exists. The label
+    // value names it that way so it is not read as a filesystem measurement.
     storageDetailGauge_ =
         meter_->CreateInt64ObservableGauge("storage_detail", "Storage detail metrics");
     storageDetailGauge_->AddCallback(
@@ -1490,11 +1491,13 @@ MetricsRegistry::registerStorageDetailGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Cumulative payload bytes handed to the NodeStore -- NOT
-                // on-disk file size, despite the name. getStoreSize() sums
-                // the object payloads this process has written, so it
-                // excludes NuDB's keys, bucket padding and log, and it
-                // resets with the process while the files do not.
+                // Cumulative payload bytes handed to the NodeStore. This is
+                // not an on-disk file size: getStoreSize() sums the object
+                // payloads this process has written, so it excludes NuDB's
+                // keys, bucket padding and log, and it resets with the
+                // process while the files do not. The value comes from
+                // Database, not from any backend, so it carries no nudb_
+                // prefix -- it reads the same on RocksDB.
                 //
                 // This is the same call node_written_bytes makes on the
                 // nodestore_state gauge, so the two series are equal by
@@ -1504,7 +1507,8 @@ MetricsRegistry::registerStorageDetailGauge()
                 // computing one would mean stat()ing the backend's files
                 // from the reader thread, which needs a new Backend method
                 // rather than a change at this call site.
-                observe("nudb_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
+                observe(
+                    "stored_object_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

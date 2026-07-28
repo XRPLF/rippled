@@ -1347,8 +1347,8 @@
       }
     },
     {
-      "title": "NuDB Stored Bytes",
-      "description": "###### What this is:\n*Cumulative object-payload bytes this process has written to the NuDB object-store back end. Despite the metric name, this is not the size of the store on disk.*\n\n###### How it's computed:\n*Current value of the nudb_bytes gauge, plotted over time. It observes getStoreSize(), the same accessor node_written_bytes uses, so the two series are equal and their ratio is a constant 1.0 rather than a write-amplification measure.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the write rate. It excludes NuDB's keys, bucket padding and log, and it restarts from zero with the process while the files on disk do not.*\n\n###### Healthy range:\n*Gradual growth consistent with ledger data being stored.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill. Do not use this panel to size the store on disk or to plan disk capacity; no metric reports on-disk size today, so check the filesystem directly.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`",
+      "title": "Stored Object Bytes",
+      "description": "###### What this is:\n*Cumulative object-payload bytes this process has written to the NodeStore object-store back end. This is not the size of the store on disk.*\n\n###### How it's computed:\n*Current value of the stored_object_bytes gauge, plotted over time. It observes getStoreSize(), the same accessor node_written_bytes uses, so the two series are equal and their ratio is a constant 1.0 rather than a write-amplification measure.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the write rate. It excludes NuDB's keys, bucket padding and log, and it restarts from zero with the process while the files on disk do not.*\n\n###### Healthy range:\n*Gradual growth consistent with ledger data being stored.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill. Do not use this panel to size the store on disk or to plan disk capacity; no metric reports on-disk size today, so check the filesystem directly.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1368,7 +1368,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_bytes\"}, \"series\", \"NuDB Stored Bytes\", \"\", \"\")"
+          "expr": "label_replace(storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"stored_object_bytes\"}, \"series\", \"Stored Object Bytes\", \"\", \"\")"
         }
       ],
       "fieldConfig": {

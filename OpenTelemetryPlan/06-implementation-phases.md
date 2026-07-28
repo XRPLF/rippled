@@ -1680,17 +1680,21 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 **Task 7.13: Storage Detail Observable Gauge**
 
-| Gauge Name             | Label `metric=` | Type  | Source                                               |
-| ---------------------- | --------------- | ----- | ---------------------------------------------------- |
-| `xrpld_storage_detail` | `nudb_bytes`    | int64 | `Database::getStoreSize()` — cumulative object bytes |
+| Gauge Name             | Label `metric=`       | Type  | Source                                               |
+| ---------------------- | --------------------- | ----- | ---------------------------------------------------- |
+| `xrpld_storage_detail` | `stored_object_bytes` | int64 | `Database::getStoreSize()` — cumulative object bytes |
 
-Despite the name, this is not a filesystem measurement. `getStoreSize()` sums the
-object payloads this process has written, so it excludes NuDB's keys, bucket padding
-and log, and it resets with the process while the files on disk do not. It is the
-same accessor `node_written_bytes` uses, so the two series are equal by construction
-and any write-amplification ratio built from the pair is a constant 1.0. There is no
+This is not a filesystem measurement. `getStoreSize()` sums the object payloads this
+process has written, so it excludes NuDB's keys, bucket padding and log, and it
+resets with the process while the files on disk do not. It is the same accessor
+`node_written_bytes` uses, so the two series are equal by construction and any
+write-amplification ratio built from the pair is a constant 1.0. There is no
 file-size accessor on `Backend` or `Database`, so no metric reports the store's
 on-disk size today.
+
+The label value was `nudb_bytes` through Phase 8 and was renamed in Phase 9: the
+value is read from `Database`, not from the NuDB backend, so a backend prefix
+misdescribed it and the old name implied an on-disk size it never reported.
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 
@@ -1847,7 +1851,7 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 | `xrpld_ledgers_closed_total`                             |
 | `xrpld_validations_sent_total`                           |
 | `xrpld_state_changes_total`                              |
-| `xrpld_storage_detail{metric="nudb_bytes"}`              |
+| `xrpld_storage_detail{metric="stored_object_bytes"}`     |
 
 **New dashboard load checks (~3)**:
 

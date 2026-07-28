@@ -1565,18 +1565,23 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
-| Prometheus Metric                     | Type  | Labels   | Description                                                |
-| ------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
-| `storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
+| Prometheus Metric                              | Type  | Labels   | Description                                                |
+| ---------------------------------------------- | ----- | -------- | ---------------------------------------------------------- |
+| `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
-> **`nudb_bytes` is not a file size, despite the name.** It observes
-> `getStoreSize()` (`src/xrpld/telemetry/MetricsRegistry.cpp:1507`), which sums the
-> object payloads this process has written. It therefore excludes NuDB's keys,
-> bucket padding and log, and it resets when the process restarts while the files
-> on disk do not. `node_written_bytes` on the `nodestore_state` gauge calls the same
-> accessor (`MetricsRegistry.cpp:836`), so the two series are equal by construction
-> and any write-amplification ratio built from the pair is a constant 1.0. To size
-> the store on disk, stat the backend's files; no metric reports it today.
+> **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:1511`), which sums the object payloads
+> this process has written. It therefore excludes NuDB's keys, bucket padding and
+> log, and it resets when the process restarts while the files on disk do not.
+> `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
+> (`MetricsRegistry.cpp:836`), so the two series are equal by construction and any
+> write-amplification ratio built from the pair is a constant 1.0. To size the store
+> on disk, stat the backend's files; no metric reports it today.
+>
+> This label value was called `nudb_bytes` before Phase 9. The value comes from
+> `node_store::Database`, not from the NuDB backend, so it reads the same on
+> RocksDB and carries no backend prefix. Queries and dashboards pinned to the old
+> name return no data.
 
 #### Synchronous Counters (Phase 7+)
 
