@@ -279,7 +279,8 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     // Before any write the stats exist but are all zero, and no writer is
     // in flight.
     auto const initial = backend->getWriteStats();
-    ASSERT_TRUE(initial.has_value());
+    if (!initial.has_value())
+        FAIL() << "nudb must report write stats";
     EXPECT_EQ(initial->insertCount, 0u);
     EXPECT_EQ(initial->insertTotalUs, 0u);
     EXPECT_EQ(initial->insertMaxUs, 0u);
@@ -294,7 +295,8 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     storeBatch(*backend, batch);
 
     auto const after = backend->getWriteStats();
-    ASSERT_TRUE(after.has_value());
+    if (!after.has_value())
+        FAIL() << "nudb must report write stats after inserts";
     EXPECT_EQ(after->insertCount, kFirstBatch);
     EXPECT_EQ(after->depthSum, kFirstBatch);
     EXPECT_GT(after->insertTotalUs, 0u);
@@ -316,7 +318,8 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
     storeBatch(*backend, more);
 
     auto const cumulative = backend->getWriteStats();
-    ASSERT_TRUE(cumulative.has_value());
+    if (!cumulative.has_value())
+        FAIL() << "nudb must report write stats after a second batch";
     EXPECT_EQ(cumulative->insertCount, kFirstBatch + kSecondBatch);
     EXPECT_EQ(cumulative->depthSum, kFirstBatch + kSecondBatch);
     EXPECT_EQ(cumulative->concurrentWriters, 0u);
@@ -347,7 +350,8 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
     storeBatch(*backend, batch);
 
     auto const first = backend->getWriteStats();
-    ASSERT_TRUE(first.has_value());
+    if (!first.has_value())
+        FAIL() << "nudb must report write stats";
     ASSERT_EQ(first->insertCount, kBatchSize);
 
     // Re-storing the identical batch writes nothing new, but each call is
@@ -355,7 +359,8 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
     storeBatch(*backend, batch);
 
     auto const second = backend->getWriteStats();
-    ASSERT_TRUE(second.has_value());
+    if (!second.has_value())
+        FAIL() << "nudb must report write stats after re-storing";
     EXPECT_EQ(second->insertCount, kBatchSize * 2);
     EXPECT_EQ(second->depthSum, kBatchSize * 2);
     // The depth returned to zero, so the early-return error path did not
@@ -397,7 +402,8 @@ TEST(NuDBFactory, write_stats_observe_concurrent_writers)
         th.join();
 
     auto const stats = backend->getWriteStats();
-    ASSERT_TRUE(stats.has_value());
+    if (!stats.has_value())
+        FAIL() << "nudb must report write stats after concurrent inserts";
     EXPECT_EQ(stats->insertCount, kThreads * kPerThread);
     EXPECT_GE(stats->depthSum, stats->insertCount);
     EXPECT_EQ(stats->concurrentWriters, 0u);

@@ -186,9 +186,9 @@ TEST(NodeStoreMetricNames, latency_guard_admits_zero_and_refuses_negatives)
 #include <opentelemetry/exporters/memory/in_memory_metric_data.h>
 #include <opentelemetry/exporters/memory/in_memory_metric_exporter_factory.h>
 #include <opentelemetry/metrics/meter.h>
+#include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
-#include <opentelemetry/sdk/metrics/data/metric_data.h>
 #include <opentelemetry/sdk/metrics/data/point_data.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
@@ -202,7 +202,7 @@ TEST(NodeStoreMetricNames, latency_guard_admits_zero_and_refuses_negatives)
 
 #include <array>
 #include <chrono>
-#include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -482,10 +482,10 @@ TEST(NodeStoreReadHistogram, the_two_labels_split_the_series_four_ways)
     // the assertion that a label mix-up would break: swapping two values would
     // put a sample in the wrong series and fail here.
     for (auto const& [isAsync, wasFound, value, bucket] : std::array<Expected, 4>{
-             {{true, true, 3.0, 2},
-              {true, false, 9.0, 3},
-              {false, true, 40.0, 5},
-              {false, false, 800.0, 9}}})
+             {{.isAsync = true, .wasFound = true, .value = 3.0, .bucket = 2},
+              {.isAsync = true, .wasFound = false, .value = 9.0, .bucket = 3},
+              {.isAsync = false, .wasFound = true, .value = 40.0, .bucket = 5},
+              {.isAsync = false, .wasFound = false, .value = 800.0, .bucket = 9}}})
     {
         auto const* point = findPoint(points, isAsync, wasFound);
         ASSERT_NE(point, nullptr) << "missing series for fetch_type="

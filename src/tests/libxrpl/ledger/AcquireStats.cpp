@@ -30,7 +30,7 @@ using xrpl::AcquireStats;
  */
 TEST(AcquireStatsTest, StartsAtZero)
 {
-    AcquireStats stats;
+    AcquireStats const stats;
 
     EXPECT_EQ(stats.getDeferrals(), 0u);
     EXPECT_EQ(stats.getTimeouts(), 0u);
