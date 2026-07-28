@@ -13,6 +13,43 @@ use syn::{
 
 use parsed_host_function::ParsedHostFunction;
 
+/// Declares the wasm host ABI once, and generates everything that follows from it.
+///
+/// The input is a block of bare `fn` declarations, each carrying the gas cost the
+/// host charges before the call and the name the guest imports it under. Doc
+/// comments are kept and appear on the generated items.
+///
+/// ```
+/// use xrpl_host_functions_macros::host_functions;
+///
+/// host_functions! {
+///     /// The sequence number of the ledger being built.
+///     #[gas = 60]
+///     #[wasm_name = "ldgr_index"]
+///     fn get_ledger_sqn() -> [u8; 4];
+///
+///     /// Writes `msg` to the trace log.
+///     #[gas = 500]
+///     #[wasm_name = "trace_num"]
+///     fn trace_num(msg: &str, number: i64);
+/// }
+///
+/// // A `HostFunctions` trait, with a `&mut self` receiver added:
+/// struct Host;
+/// impl HostFunctions for Host {
+///     fn get_ledger_sqn(&mut self) -> [u8; 4] { 7u32.to_le_bytes() }
+///     fn trace_num(&mut self, _msg: &str, _number: i64) {}
+/// }
+///
+/// // A `HostFunctionSpec` enum carrying the ABI metadata as a `const` table:
+/// assert_eq!(HostFunctionSpec::GetLedgerSqn.gas(), 60);
+/// assert_eq!(HostFunctionSpec::TraceNum.wasm_name(), "trace_num");
+/// assert_eq!(HostFunctionSpec::ALL.len(), 2);
+/// ```
+///
+/// A declaration must be a plain `fn` with no receiver, no body and no generics:
+/// it maps to exactly one wasm import signature. Two declarations may not share a
+/// `wasm_name`, nor collapse to the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into())
@@ -81,22 +118,53 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
     let all = functions.iter().map(|function| &function.variant);
 
     quote! {
-        /// The host ABI: one method per function a guest may import.
+        /// The host side of the wasm ABI: one method per function a guest may
+        /// import.
+        ///
+        /// Implement it once per execution environment — the ledger host, a test
+        /// double, a benchmark fake — and a guest module cannot tell them apart.
+        /// Each method is a declaration from the `host_functions!` block with a
+        /// `&mut self` receiver added; the receiver is not part of the ABI the
+        /// guest sees.
         pub trait HostFunctions {
             #(#trait_methods)*
         }
 
-        /// Identifies a host function, and carries its ABI metadata.
+        /// The wasm import name and base gas cost of one host function.
+        ///
+        /// Declared by `host_functions!`, and obtained from
+        /// [`HostFunctionSpec::spec`].
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub struct HostFnSpec {
+            /// The name a guest imports the function under.
+            pub name: &'static str,
+            /// Gas charged before the call runs, independent of its arguments.
+            pub gas: u64,
+        }
+
+        /// Identifies one host function, and is the compile-time source of its
+        /// ABI metadata.
+        ///
+        /// One variant per `host_functions!` declaration, named by converting the
+        /// function name to PascalCase. [`Self::ALL`] is the whole ABI, which is
+        /// what a wasm engine iterates to build its import table.
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub enum HostFunctionSpec {
             #(#variants,)*
         }
 
         impl HostFunctionSpec {
-            /// Every host function, in declaration order.
+            /// Every host function, in the order declared.
+            ///
+            /// This is the complete import surface a guest may link against: a
+            /// function absent here cannot be called, and one present here must
+            /// be registered for a module that imports it to instantiate.
             pub const ALL: &'static [Self] = &[#(Self::#all,)*];
 
-            /// The wasm import name and base gas cost of this function.
+            /// This function's import name and base gas cost.
+            ///
+            /// Usable in `const` context, so gas tables and import lists can be
+            /// built at compile time.
             pub const fn spec(self) -> HostFnSpec {
                 match self {
                     #(#spec_arms,)*
@@ -104,13 +172,19 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             }
 
             /// The name a guest imports this function under.
+            ///
+            /// A guest's import name must match this exactly, or the module
+            /// fails to instantiate.
             pub const fn wasm_name(self) -> &'static str {
                 self.spec().name
             }
 
-            /// The consensus-fixed base gas charged before the call runs.
+            /// Gas charged before the call runs, independent of its arguments.
+            ///
+            /// Consensus-relevant: two nodes that disagree on this value
+            /// disagree on transaction outcomes.
             pub const fn gas(self) -> u64 {
-                self.spec().base_gas
+                self.spec().gas
             }
         }
     }
@@ -188,10 +262,13 @@ mod tests {
             "pub trait HostFunctions",
             "fn get_ledger_sqn (& mut self) -> [u8 ; 4] ;",
             "fn trace_num (& mut self , msg : & str , number : i64) ;",
+            "pub struct HostFnSpec",
+            "pub name : & 'static str",
+            "pub gas : u64",
             "pub enum HostFunctionSpec { GetLedgerSqn , TraceNum , }",
             "pub const ALL : & 'static [Self] = & [Self :: GetLedgerSqn , Self :: TraceNum ,]",
             "pub const fn spec (self) -> HostFnSpec",
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , base_gas : 60u64 }",
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }

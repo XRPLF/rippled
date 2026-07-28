@@ -53,7 +53,7 @@ fn the_spec_table_matches_the_declarations() {
         HostFunctionSpec::GetLedgerSqn.spec(),
         HostFnSpec {
             name: "ldgr_index",
-            base_gas: 60
+            gas: 60
         }
     );
     assert_eq!(HostFunctionSpec::Sha512Half.gas(), 2000);

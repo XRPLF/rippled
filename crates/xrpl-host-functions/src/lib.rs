@@ -84,13 +84,6 @@ pub type HostResult<T> = Result<T, HostError>;
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
 
-/// Per-function ABI metadata: the wasm import name and the consensus-fixed base gas cost.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HostFnSpec {
-    pub name: &'static str,
-    pub base_gas: u64,
-}
-
 host_functions! {
     #[gas = 60]
     #[wasm_name = "ldgr_index"]

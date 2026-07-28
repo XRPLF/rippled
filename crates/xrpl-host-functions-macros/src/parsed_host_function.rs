@@ -1,6 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Attribute, Expr, ExprLit, Ident, Lit, LitStr, Signature, TraitItemFn, parse_quote};
+use syn::{
+    Attribute, Expr, ExprLit, Ident, Lit, LitStr, Safety, Signature, TraitItemFn, parse_quote,
+};
 
 use crate::errors;
 
@@ -50,7 +52,7 @@ impl ParsedHostFunction {
         }
     }
 
-    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", base_gas: 60u64 }`
+    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", gas: 60u64 }`
     pub(crate) fn spec_arm(&self) -> TokenStream {
         let Self {
             gas,
@@ -59,7 +61,7 @@ impl ParsedHostFunction {
             ..
         } = self;
         quote! {
-            Self::#variant => HostFnSpec { name: #wasm_name, base_gas: #gas }
+            Self::#variant => HostFnSpec { name: #wasm_name, gas: #gas }
         }
     }
 
@@ -128,30 +130,90 @@ impl ParsedHostFunction {
                 "the receiver is added by the macro; declare only the wasm parameters",
             ));
         }
+        if let Some(name) = &wasm_name {
+            errors.extend(check_wasm_name(name).err());
+        }
+        reject_modifiers(&function.sig, &mut errors);
+
+        // A name whose PascalCase form is not a legal variant is reported here
+        // rather than emitted, which would either panic or fail downstream.
+        let variant = match variant_ident(&function.sig.ident) {
+            Ok(variant) => Some(variant),
+            Err(error) => {
+                errors.push(error);
+                None
+            }
+        };
 
         if let Some(error) = errors::combine(errors) {
             return Err(error);
         }
 
-        let (Some(gas), Some(wasm_name)) = (gas, wasm_name) else {
-            unreachable!("absent attributes are reported above");
+        let (Some(gas), Some(wasm_name), Some(variant)) = (gas, wasm_name, variant) else {
+            unreachable!("every absent field is reported above");
         };
 
         Ok(Self {
             gas,
             wasm_name,
             docs,
-            variant: variant_ident(&function.sig.ident),
+            variant,
             signature: function.sig,
         })
     }
+}
+
+/// `const`, `async`, `unsafe`/`safe` and `extern "…"` have no meaning in the
+/// wasm ABI, and would otherwise pass silently into the generated trait.
+fn reject_modifiers(signature: &Signature, errors: &mut Vec<syn::Error>) {
+    const PLAIN: &str =
+        "a host function must be a plain `fn`: this modifier is not part of the wasm ABI";
+
+    if let Some(constness) = &signature.constness {
+        errors.push(syn::Error::new_spanned(constness, PLAIN));
+    }
+    if let Some(asyncness) = &signature.asyncness {
+        errors.push(syn::Error::new_spanned(asyncness, PLAIN));
+    }
+    match &signature.safety {
+        Safety::Default => {}
+        Safety::Safe(token) => errors.push(syn::Error::new_spanned(token, PLAIN)),
+        Safety::Unsafe(token) => errors.push(syn::Error::new_spanned(token, PLAIN)),
+    }
+    if let Some(abi) = &signature.abi {
+        errors.push(syn::Error::new_spanned(abi, PLAIN));
+    }
+}
+
+/// The wasm import name reaches the engine's import table verbatim, so it is
+/// held to what an import name can sanely be rather than to any string.
+fn check_wasm_name(name: &LitStr) -> syn::Result<()> {
+    let value = name.value();
+    if value.is_empty() {
+        return Err(syn::Error::new_spanned(
+            name,
+            "the wasm name must not be empty",
+        ));
+    }
+    if let Some(character) = value
+        .chars()
+        .find(|c| !c.is_ascii_alphanumeric() && *c != '_')
+    {
+        return Err(syn::Error::new_spanned(
+            name,
+            format!(
+                "a wasm name may only contain `A-Za-z0-9_`, but this one contains {character:?}"
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// The enum variant a declaration becomes: `get_ledger_sqn` -> `GetLedgerSqn`.
 ///
 /// The result carries `ident`'s span, so anything the compiler says about the
 /// variant points at the declaration that produced it.
-fn variant_ident(ident: &Ident) -> Ident {
+fn variant_ident(ident: &Ident) -> syn::Result<Ident> {
     // `to_string` spells raw identifiers `r#type`; the `r#` is not part of the name.
     let name = ident.to_string();
     let name = name.strip_prefix("r#").unwrap_or(&name);
@@ -169,12 +231,25 @@ fn variant_ident(ident: &Ident) -> Ident {
         }
     }
 
-    // A name of nothing but underscores would leave `pascal` empty, and
-    // `format_ident!` panics on an invalid identifier.
+    // A name of nothing but underscores leaves `pascal` empty; the original is
+    // already a legal identifier, so keep it.
     if pascal.is_empty() {
-        return ident.clone();
+        return Ok(ident.clone());
     }
-    format_ident!("{pascal}", span = ident.span())
+
+    // `Ident::new` panics on a leading digit (`_2fa` -> `2fa`) and silently
+    // accepts keyword spellings (`self_` -> `Self`), which then fails to parse
+    // where the variant is emitted. Parsing rejects both, without panicking.
+    if let Err(error) = syn::parse_str::<Ident>(&pascal) {
+        return Err(syn::Error::new_spanned(
+            ident,
+            format!(
+                "this name becomes the enum variant `{pascal}`, which is not a valid \
+                 variant name ({error}); rename the host function"
+            ),
+        ));
+    }
+    Ok(format_ident!("{pascal}", span = ident.span()))
 }
 
 /// Records `value`, or reports that the attribute appeared more than once.
@@ -192,7 +267,17 @@ fn int_value(attr: &Attribute) -> syn::Result<u64> {
     match &attr.meta.require_name_value()?.value {
         Expr::Lit(ExprLit {
             lit: Lit::Int(int), ..
-        }) => int.base10_parse(),
+        }) => {
+            // `LitInt` keeps the sign in its digits, so `base10_parse::<u64>`
+            // would report a negative value as "invalid digit found in string".
+            if int.base10_digits().starts_with('-') {
+                return Err(syn::Error::new_spanned(
+                    int,
+                    format!("`{}` must not be negative", path_name(attr)),
+                ));
+            }
+            int.base10_parse()
+        }
         other => Err(syn::Error::new_spanned(
             other,
             format!("`{}` expects an integer literal", path_name(attr)),
@@ -273,11 +358,102 @@ mod tests {
             ("trace", "Trace"),
             ("get_current_ledger_obj_field", "GetCurrentLedgerObjField"),
             ("r#type", "Type"),
+            ("trace2", "Trace2"),
             // Pathological, but must not panic: no letters to capitalize.
             ("__", "__"),
         ] {
             let ident = format_ident!("{function}");
-            assert_eq!(variant_ident(&ident).to_string(), variant);
+            assert_eq!(
+                variant_ident(&ident).map(|v| v.to_string()).ok(),
+                Some(variant.to_owned()),
+                "{function}"
+            );
+        }
+    }
+
+    /// `_2fa` would PascalCase to `2fa`; building that `Ident` panics, and a
+    /// panic in a proc macro is reported with no useful span at all.
+    #[test]
+    fn rejects_a_name_that_becomes_a_leading_digit() {
+        let messages = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "two_factor"]
+            fn _2fa();
+        });
+
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(
+            messages[0].contains("becomes the enum variant `2fa`"),
+            "{messages:?}"
+        );
+    }
+
+    /// `self_` PascalCases to `Self`, which `Ident::new` accepts and rustc then
+    /// rejects where the variant is emitted. `r#Self` is not a legal escape.
+    #[test]
+    fn rejects_a_name_that_becomes_a_keyword() {
+        for function in ["self_", "_self"] {
+            let ident = format_ident!("{function}");
+            let Err(error) = variant_ident(&ident) else {
+                panic!("expected `{function}` to be rejected");
+            };
+            assert!(
+                error.to_string().contains("variant `Self`"),
+                "{}",
+                error.to_string()
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_negative_gas() {
+        let messages = messages(parse_quote! {
+            #[gas = -5]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn() -> [u8; 4];
+        });
+
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert_eq!(messages[0], "`gas` must not be negative");
+    }
+
+    #[test]
+    fn rejects_unusable_wasm_names() {
+        let empty = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = ""]
+            fn get_ledger_sqn() -> [u8; 4];
+        });
+        assert_eq!(empty.len(), 1, "{empty:?}");
+        assert_eq!(empty[0], "the wasm name must not be empty");
+
+        let spaced = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr index"]
+            fn get_ledger_sqn() -> [u8; 4];
+        });
+        assert_eq!(spaced.len(), 1, "{spaced:?}");
+        assert!(spaced[0].contains("may only contain"), "{spaced:?}");
+    }
+
+    #[test]
+    fn rejects_signature_modifiers() {
+        for declaration in [
+            quote! { unsafe fn get_ledger_sqn() -> [u8; 4]; },
+            quote! { async fn get_ledger_sqn() -> [u8; 4]; },
+            quote! { const fn get_ledger_sqn() -> [u8; 4]; },
+            quote! { extern "C" fn get_ledger_sqn() -> [u8; 4]; },
+        ] {
+            let function: TraitItemFn = syn::parse2(quote! {
+                #[gas = 60]
+                #[wasm_name = "ldgr_index"]
+                #declaration
+            })
+            .unwrap();
+
+            let messages = messages(function);
+            assert_eq!(messages.len(), 1, "{messages:?}");
+            assert!(messages[0].contains("must be a plain `fn`"), "{messages:?}");
         }
     }
 
@@ -315,7 +491,7 @@ mod tests {
 
         assert_eq!(
             parsed.spec_arm().to_string(),
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , base_gas : 60u64 }"
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }"
         );
     }
 
