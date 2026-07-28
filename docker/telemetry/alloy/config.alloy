@@ -234,6 +234,18 @@ otelcol.connector.spanmetrics "xrpld" {
   dimension { name = "outcome" }
   dimension { name = "acquire_reason" }
 
+  // Sync-diagnostic span dimensions. `timed_out` separates "slow but arriving"
+  // from "the retry budget ran out" on the acquire phase spans; `object_type`
+  // splits ledger.serve by what was asked for. Both are small closed sets.
+  dimension { name = "timed_out" }
+  dimension { name = "object_type" }
+
+  // Trace-causality dimensions on consensus.validation.accept. The ledger_hash
+  // join key stays span-only -- one metric series per ledger would be unbounded
+  // -- and is indexed in Tempo instead.
+  dimension { name = "validation_status" }
+  dimension { name = "accept_gated" }
+
   output {
     // Derived span metrics rejoin the metric stream at the batch processor.
     metrics = [otelcol.processor.batch.xrpld.input]
