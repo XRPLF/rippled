@@ -819,8 +819,8 @@ SHAMapStoreImp::healthWait()
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(waitMs);
 
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
         lastLedger = index;
+        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
