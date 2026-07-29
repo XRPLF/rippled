@@ -2,6 +2,7 @@
 //! the spec table agrees with the declarations in `src/lib.rs`.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 
 use xrpl_host_functions::{HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult};
 
@@ -117,42 +118,53 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
     assert_eq!(*fake.traced.borrow(), ["count=1"]);
 }
 
+/// The whole table, written out: the one place the ABI's wire names and gas costs
+/// appear as literals, and a deliberate change-detector, since both are consensus
+/// input. Everything else reads `HostFunctionSpec::gas()` instead.
+///
+/// `ALL` is in declaration order, so comparing the whole vec pins the order and the
+/// membership too.
 #[test]
 fn the_spec_table_matches_the_declarations() {
-    assert_eq!(HostFunctionSpec::ALL.len(), 5);
-    assert_eq!(HostFunctionSpec::GetLedgerSqn.wasm_name(), "ldgr_index");
-    assert_eq!(HostFunctionSpec::GetLedgerSqn.gas(), 60);
-    assert_eq!(HostFunctionSpec::Sha512Half.gas(), 2000);
-    assert_eq!(
-        HostFunctionSpec::GetCurrentLedgerObjField.wasm_name(),
-        "home_le_field"
-    );
-}
-
-/// `ALL` is what a wasm engine iterates to register imports, so it must be complete.
-#[test]
-fn every_variant_appears_in_all_exactly_once() {
-    let mut names: Vec<&str> = HostFunctionSpec::ALL
+    let table: Vec<(&str, u64)> = HostFunctionSpec::ALL
         .iter()
-        .map(|function| function.wasm_name())
+        .map(|function| (function.wasm_name(), function.gas()))
         .collect();
-    names.sort_unstable();
 
     assert_eq!(
-        names,
+        table,
         [
-            "home_le_field",
-            "ldgr_index",
-            "sha512_half",
-            "trace",
-            "trace_num"
+            ("ldgr_index", 60),
+            ("home_le_field", 70),
+            ("sha512_half", 2000),
+            ("trace", 500),
+            ("trace_num", 500),
         ]
     );
 }
 
-/// The generated `spec` is `const`, so gas costs are available at compile time.
+/// `ALL` is what a wasm engine iterates to register imports, so no two declarations
+/// may collapse to the same wire name. The table above pins membership and order;
+/// this adds only uniqueness, and restates nothing.
+#[test]
+fn every_variant_appears_in_all_exactly_once() {
+    let names: HashSet<&str> = HostFunctionSpec::ALL
+        .iter()
+        .map(|function| function.wasm_name())
+        .collect();
+
+    assert_eq!(names.len(), HostFunctionSpec::ALL.len());
+}
+
+/// Both accessors are `const`, so an engine can build its import and gas tables at
+/// compile time rather than on every invocation. The assertions sit in `const`
+/// blocks so they are checked while compiling, which is the claim; the values
+/// themselves are pinned above.
 #[test]
 fn the_table_is_usable_in_const_context() {
-    const TRACE_GAS: u64 = HostFunctionSpec::Trace.gas();
-    assert_eq!(TRACE_GAS, 500);
+    const NAME: &str = HostFunctionSpec::Trace.wasm_name();
+    const GAS: u64 = HostFunctionSpec::Trace.gas();
+
+    const { assert!(!NAME.is_empty()) };
+    const { assert!(GAS > 0) };
 }

@@ -383,6 +383,134 @@ long name `get_ledger_sqn` where the code registered `ldgr_index`, and it refere
 `detail/WasmVM.cpp`, `detail/HostFuncWrapper.cpp` and `ParamsHelper.h`, none of which
 exist (the helper is `WasmImportsHelper.h`).
 
+## `xrpl-wasm-vm` review findings (2026-07-29)
+
+A read of all three files (`vm.rs`, `abi.rs`, `register.rs`) against the vendored
+wasmi 1.1.0 source. Grouped by kind and ordered within each group by how much they
+matter. Items marked ✓ are done.
+
+### A. Correctness — behaviour changes, land before the cxx bridge
+
+1. **Out-of-gas is not a trap, and how much guest code runs after exhaustion is
+   wasmi's business.** `charge` (`abi.rs:77`) returns `HostError::OutOfGas`, which
+   `to_wasm_i32` hands the guest as `-22` with fuel already at 0. wasmi meters by
+   emitting `ConsumeFuel` instructions at *block boundaries*
+   (`engine/translator/func/instrs.rs`), so the guest keeps executing to the end of
+   the current basic block before it traps. The stopping point is a function of
+   wasmi's block layout — implementation-defined behaviour on a consensus path.
+   XLS-0102 requires immediate halting and C++ trapped (`hfErrOutOfGas`); `-22` is
+   also outside the range the SDK's `transmute` accepts (open question 3). Fix is the
+   two-channel design: host-fatal errors (`OutOfGas`, `Internal`, `NoMemExported`)
+   return `Err(wasmi::Error)` from the closure and trap. The wasm signature is
+   unchanged. This reshapes `abi.rs`'s return type, so it precedes any cosmetic work
+   there.
+2. **`run` discards gas accounting on every failure path.** `Result<RunOutcome,
+   String>` (`vm.rs:96`) means a trap yields `Err(String)` with no `fuel_used` — but a
+   contract that traps or exhausts gas still has to be charged (C++: full limit →
+   `tecOUT_OF_GAS`; internal → `tecINTERNAL`). `String` also cannot be matched on, so
+   the cxx bridge would end up string-comparing error text, which is exactly what the
+   deleted C++ did with its `"HfOutOfGas"` trap strings. `fuel_used` belongs on both
+   paths, and the error wants to be a typed enum C++ can map to a TER.
+3. **`HOST_MODULE = "host"` (`register.rs:8`) matches no guest that exists** — the SDK
+   and this fork's own fixtures use `host_lib`, plain clang emits `env`. A decision,
+   not a code fix, but nothing real instantiates until it is made (open question 1).
+4. **The transfer budget is charged for bytes that are never copied, and charged
+   before validation.** `read_borrowed` *aliases* guest memory — zero copies — yet
+   calls `charge_transfer` (`abi.rs:135`); C++ deliberately did not charge plain
+   slice/string reads (`trace` msg/data, `sha512_half` input — see "Reference points"
+   below). The charge also precedes the bounds check, so a guest can drain the 1 MiB
+   budget with out-of-bounds pointers. Related, in `write_into`: `fill` gets a slice
+   of the guest's full `cap`, uncapped by `MAX_WASM_DATA_LEN`, so an over-cap value
+   lands in guest memory before `n > MAX_WASM_DATA_LEN` rejects it — clamping `out` to
+   `min(cap, MAX_WASM_DATA_LEN)` makes that post-check unreachable by construction.
+5. ✓ **`Module::new` accepted WAT text — a behaviour the rewrite introduced by
+   accident.** wasmi's default features include `wat`, and `Module::new` runs
+   `wat::parse_bytes` over its input (`module/mod.rs:228`), so the VM compiled
+   text-format modules straight from a transaction blob and `wat`/`wast`/`bumpalo` sat
+   in the release build.
+
+   **The C++ path did not do this**, and the reason is worth recording, because it is
+   the whole finding. `ModuleWrapper::init` called `wasm_module_new` with the raw
+   transaction bytes (`WasmiVM.cpp:314-318` at `b7059deb9f^`), which wraps
+   `Module::new` (`crates/c_api/src/module.rs:54` of the `wasmi/1.0.9` conan package).
+   wasmi 1.0.9 carries the *same* `#[cfg(feature = "wat")]` parse and the same
+   `default = ["std", "wat"]` — but the C-API crate takes wasmi with
+   `default-features = false` (wasmi workspace `Cargo.toml:34`) and never re-enables
+   `wat` (`wasmi_c_api_impl` has only `std`, `prefix-symbols`, `simd`). So that line was
+   compiled out of the C++ build, and the C-API exposes no wat2wasm entry point either —
+   unlike wasmtime's, `wasmi.h` has nothing of the kind. Binary only, and no mention of
+   WAT anywhere in the deleted C++ wasm sources.
+
+   Linking the wasmi *Rust* crate directly is what picked the default up: the feature
+   the C-API had already turned off upstream came back silently. `default-features =
+   false, features = ["std"]` restores parity — it is not a new policy. (The secondary
+   argument still holds: it also keeps a module's validity a protocol rule rather than a
+   function of a cargo flag.) The tests assemble text themselves from a dev-dependency,
+   so nothing of ours is needed to keep them working — see "Build / test loop".
+
+### B. Dead weight — pure simplification, no behaviour change
+
+6. **`AbiRet` is vestigial.** `type Out` is always `()`, `impl AbiRet for u32` is never
+   used, and the trait's only call site is `<() as AbiRet>::write((), c, ())` — nine
+   tokens for `Ok(0)`. Delete the trait and both impls.
+7. **The `i64` pipeline is pointless and lossy.** Every host function returns `i32` on
+   the wire, but the internals thread `HostResult<i64>` and `to_wasm_i32` then does
+   `v as i32` — a silent truncating cast on a consensus path. `to_wasm_i64` is dead
+   code behind `#[allow]`. `HostResult<i32>` end to end removes both.
+8. **`cxx` is an unused dependency** of this crate — the bridge lives in the ffi crate.
+9. **Stale docs.** Seven broken intra-doc links name types that no longer exist:
+   `AbiArg` (`register.rs:20`, `abi.rs:7`), `HostFn` (`register.rs:14,16`),
+   `run_escrow` (`vm.rs:19,64`). And `abi.rs:147-150` / `vm.rs:71` are historical
+   comments ("used to pay", "The `CxxHost` path additionally used to marshal … that
+   too is gone", "Unchanged from the original skeleton"), against the
+   no-historical-comments convention. `#![deny(rustdoc::broken_intra_doc_links)]`
+   stops the links from rotting again.
+
+### C. Performance
+
+10. **The `"memory"` export is a string hash lookup on every host call.** `memory()`
+    (`abi.rs:104`) → `Caller::get_export` → `InstanceEntity::exports: Map<Box<str>,
+    Extern>`. Resolve it once after instantiation and keep the `Memory` in `VmState`.
+    Two bonuses: `NoMemExported` becomes an instantiation-time error, where it
+    belongs, and a per-call failure path disappears. Cheapest real win in the crate,
+    and the benchmark can measure it.
+11. `read_write` memsets 1 KiB of stack per call and does not generalize past one byte
+    input — that is the scratch-buffer decision already open above. #10 makes either
+    choice easier.
+12. `Linker` is rebuilt per `run` (five `func_wrap`s plus string interning) and the
+    module is compiled per run with no cache. Lower priority. The blocker worth
+    recording: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run.
+
+### D. Hardening
+
+13. ✓ **The public surface was accidental.** `lib.rs` was `pub use vm::run` alone, so
+    `RunOutcome` was `pub` inside a private module and unreachable: a caller could
+    invoke `run` but not name its return type, and `MAX_MEMORY_PAGES` /
+    `TRANSFER_LIMIT_BYTES` / `MAX_MEMORY_BYTES` were likewise unreachable. Exported
+    with the test work, since the tests need to name them.
+
+    The 1 KiB per-field cap was a further case, and the odd one out: three of the four
+    protocol limits lived in `vm.rs` and were `pub`, while this one sat private in
+    `abi.rs` as `MAX_WASM_DATA_LEN`. Being unreachable is why the tests had restated
+    `1024`/`1025` as literals twenty-one times. Now `vm::MAX_FIELD_BYTES`, beside the
+    others — **renamed**, so a search for the old name (or for C++'s
+    `kMaxWasmDataLength`, which its doc comment still cites) lands here.
+14. `#![forbid(unsafe_code)]` — `abi.rs:64` *claims* every access is a checked wasmi
+    slice op; let the compiler enforce the claim. Plus `unreachable_pub` and clippy's
+    cast lints.
+15. ✓ **Zero tests.** Nothing checked the bounds/cap/transfer/gas policy, and every
+    item above edits exactly that policy. Closed first, for that reason.
+16. Minor: `gas = 0` is accepted silently (C++ rejected it as `temBAD_AMOUNT`);
+    `store.get_fuel().unwrap_or(0)` (`vm.rs:137`) swallows an error into a
+    plausible-looking number; `get_typed_func` failure reports "no entry point" when
+    the export exists with the wrong signature.
+17. The start-section TODO (`vm.rs:90`) **cannot** be closed with wasmi 1.1's public
+    API: there is no `InstancePre`/`ensure_no_start`, and `ModuleHeader::start` is
+    private, so only a byte-level section scan would do it. But `set_fuel` and
+    `limiter` are both installed *before* `instantiate_and_start`, so start-section
+    work is already metered and memory-capped. Recorded because the TODO reads like an
+    open hole and is closer to a preference.
+
 ## Reference points from the deleted C++ path
 
 Import names and gas costs are ABI; the rest below is *evidence of prior behaviour*,
@@ -417,6 +545,25 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 - Fast: `cd crates && cargo check --workspace --all-targets`, `cargo test --workspace`,
   `cargo clippy --workspace --all-targets`.
+- `xrpl-wasm-vm`'s tests come in two kinds, and the split is forced rather than
+  stylistic. A wasmi `Caller` exists only for the duration of a host call, so
+  `read_borrowed` / `write_into` / `read_write` / `memory` **cannot be reached from a
+  unit test**. The unit tests in `src/` therefore cover only what needs no live
+  instance (the wire conversions, the transfer-budget arithmetic, the limits), and the
+  guest-memory policy is covered by integration tests in `tests/`, which run real
+  modules against a configurable fake host.
+- Those integration tests write their modules as **WAT text** and assemble it
+  themselves — `wat` is a plain `[dev-dependencies]` entry and `support::assemble` is the
+  only caller, so the assembler never enters the library. `run` takes binaries; there is
+  no `run_wat` and no cargo feature for one. What makes that hold is `wasmi = {
+  default-features = false, features = ["std"] }`: wasmi's `wat` feature is **on by
+  default** and makes `Module::new` accept text as readily as binary (finding A5), which
+  would put the text assembler in the consensus path and make a transaction's validity a
+  build flag. `the_vm_refuses_a_text_format_module` in `vm_limits.rs` is what catches
+  that feature coming back.
+- `tests/support/mod.rs` holds the fake host and the import declarations. `Answer`
+  separates *what the host writes* from *what length it reports*, which is what makes
+  the over-cap and buffer-fit rules testable without values that large existing.
 - Guest-linkability of the ABI crate (needs `rustup target add wasm32-unknown-unknown`):
   `cargo check -p xrpl-host-functions --target wasm32-unknown-unknown`. Worth keeping
   green — the guest stdlib links this crate, so a `std`/`alloc`/dependency creep here
@@ -428,8 +575,82 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 ## Current state (2026-07-29)
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
-`clippy --workspace --all-targets`, `fmt`. 33 macro tests, 9 facade tests, 1 doctest;
-`xrpl-wasm-vm` has no tests of its own yet.
+`clippy --workspace --all-targets`, `fmt`. 111 tests: 33 macro, 9 facade, 1 doctest, and
+**68 in `xrpl-wasm-vm`** (8 unit; 60 integration — 12 `host_calls`, 19 `memory_policy`,
+12 `budgets`, 17 `vm_limits`).
+
+**How the suite was checked.** A code review of the diff mutation-tested it, and the
+result is worth recording because it found a test that pinned nothing: the multi-value
+row of the old `the_disabled_proposals_do_not_compile` left a stray value on the wasm
+stack, so the module was refused as a *type error* rather than for the proposal, and
+`config.wasm_multi_value(false)` could be deleted with the whole suite still green. The
+general lesson — a stage-only `assert_stage(…, "compile")` cannot tell "refused for the
+reason under test" from "my wasm was malformed" — is now the design of
+`every_disabled_feature_is_refused_by_name`: one row per disabled feature, each
+asserting the *fragment of wasmi's message that names the feature*. Verified by deleting
+each knob in turn: ten of twelve rows fail when their knob goes. The two that don't are
+`wasm_custom_page_sizes` and `wasm_wide_arithmetic`, which wasmi 1.1 already defaults to
+off (`engine/config.rs:72,74`), so those calls are redundant and no test can notice them
+going — their rows guard against wasmi changing that default instead.
+
+Three knobs have no module of their own, and `the_knobs_without_a_module_of_their_own`
+records why rather than leaving it to a comment: `wasm_saturating_float_to_int` is masked
+by `floats(false)` (every saturating conversion takes a float operand, and the test
+asserts the message proves which knob answered); `ignore_custom_sections` is not
+observable through accept/reject at all, since a module carrying a custom section
+compiles either way; `consume_fuel` is covered by construction, because with it off
+`Store::set_fuel` fails and every test in the suite breaks.
+
+The other findings acted on: `MAX_MEMORY_PAGES` had **no** golden pin (it could be halved
+with nothing failing), so `the_limits_are_the_protocol_limits` in `vm.rs` now pins all
+four limits against their `Protocol.h` names, and the misnamed
+`the_field_cap_is_far_below_the_run_budget` became the inequality its name promised.
+`generated_abi.rs`'s "one place for literals" claim was false twice in its own file — the
+subsumed name list and a restated `500` are gone. And `Answer::claiming` writes nothing,
+which hid finding A4's actual hazard: `an_over_cap_value_is_written_before_it_is_refused`
+now uses a real over-cap value and shows the bytes reaching guest memory before the
+refusal. Verified by applying the `min(cap, MAX_FIELD_BYTES)` clamp — the test flips, as
+its comment says it should.
+
+Those 65 are review finding 15, closed: the bounds / field-cap / buffer-fit / gas /
+transfer policy now has a net under it, which is what the rest of the findings need
+before they can be acted on. Writing them turned up things reading the code did not:
+
+- **wasmi parses WAT by default** (finding A5), so the VM compiled text-format modules
+  straight from a transaction blob. The C++ path did not — its C-API took wasmi with
+  `default-features = false` — so this was an accidental behaviour change, not a choice.
+  Fixed, and back at parity.
+- `wasm_mutable_global(false)` does **not** forbid a guest's own mutable globals — the
+  proposal is about mutable globals crossing the module boundary. An internal one is
+  core wasm and still compiles.
+- A declared memory *maximum* above the 128-page cap instantiates fine; only the size
+  actually reached is capped. And growth past the cap **traps** rather than answering
+  `-1`, because the limiter is built with `trap_on_grow_failure(true)`.
+- The two directions check in opposite orders, observably: an over-long *input* reports
+  `DataFieldTooLarge` (the cap precedes the bounds check) while an over-long *output*
+  reports `PointerOutOfBounds` (bounds precede the cap).
+- wasmi's guest-side fuel for a host call is exactly `14 × operands + 1` (29/43/57/71
+  for 2/3/4/5 operands, across all five functions; operand *type* is irrelevant — an
+  `i64` costs what an `i32` does). With that and the 30-fuel empty-module floor known, a
+  one-call run's total is known to the unit, so `a_host_call_costs_its_gas_every_time_it_is_called`
+  asserts each function's charge directly rather than by differencing.
+
+**Where the gas numbers live.** `the_spec_table_matches_the_declarations` in the ABI
+crate's `generated_abi.rs` is the **one** place wire names and gas costs appear as
+literals, as a whole-table comparison — a deliberate change-detector on consensus input,
+which also pins `ALL`'s order and membership. Everything else reads
+`HostFunctionSpec::gas()`. That split matters because the two properties are different:
+*what the table says* is the ABI crate's business, while *whether the engine charges the
+row the table holds* is the VM's. Verified by mutating `#[gas = 70]` to `71` — exactly
+one test fails, the table one, and the VM's fuel tests follow the new value. Before the
+split the VM restated all five values, so a legitimate gas change meant editing three
+files. (Corollary: `every_variant_appears_in_all_exactly_once` is now subsumed by the
+table comparison and could go.)
+
+Two tests **pin behaviour a finding says should change**, and say so in their names and
+doc comments: `out_of_gas_in_a_host_call_currently_reaches_the_guest_as_a_code` (A1) and
+`reads_currently_spend_the_transfer_budget_too` (A4). They are meant to be rewritten
+when those decisions land, not to be preserved.
 
 The trait is settled, and every part of it is written in the declaration rather than
 synthesized: `&self`, `HostResult<T>`, and byte outputs as explicit
@@ -442,11 +663,12 @@ Consequences worth remembering:
   `read_write` already took `FnOnce(&dyn HostFunctions, …, &mut [u8]) -> HostResult<usize>`.
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
-- `xrpl-wasm-vm` has **no tests**, so nothing would catch a mistake in `abi.rs`'s
-  bounds/cap/transfer policy. That is the gap to close before refactoring it.
 
-Next, in rough order: the scratch-buffer decision, then real `ApplyContext` wiring and
-the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`). Deferred as before:
+Next, in rough order, from the findings above: the two-channel error decision (A1 + A2,
+which reshape `abi.rs`'s return type and `run`'s signature, so they go before any
+cosmetic work there), then the B and D cleanups as one pass, then the cached `Memory`
+(C10). The scratch-buffer decision (C11) and real `ApplyContext` wiring plus the cxx
+bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) follow. Deferred as before:
 macro-emitted `link_*` shims, the generated C header, the probe-module test.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`

@@ -2,4 +2,6 @@ mod abi;
 mod register;
 mod vm;
 
-pub use vm::run;
+pub use vm::{
+    MAX_FIELD_BYTES, MAX_MEMORY_BYTES, MAX_MEMORY_PAGES, RunOutcome, TRANSFER_LIMIT_BYTES, run,
+};

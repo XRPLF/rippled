@@ -1,22 +1,16 @@
-use crate::vm::VmState;
+use crate::vm::{MAX_FIELD_BYTES, VmState};
 use wasmi::{Caller, Extern, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
 // ---------------------------------------------------------------------------
-// ABI marshaling traits: decode a host-function argument from wasm scalars +
-// guest memory (`AbiArg`), encode a result back into guest memory and a wasm
-// return status (`AbiRet`), and a single-point gas-charging wrapper
-// (`charged`) so every registered closure pays for its call exactly once.
+// ABI marshaling: encode a host-function result as a wasm return status
+// (`AbiRet`), and charge a call's gas at one point (`charged`) so every
+// registered closure pays for itself exactly once.
 // ---------------------------------------------------------------------------
 
-/// Encode a *scalar or unit* host-function result into the status the wasm fn
-/// returns (>= 0 success — a value; < 0 a HostError code, via `to_wasm_*`).
-/// `Out` is the extra wasm scalars for output — always `()` here, since these
-/// returns need no guest buffer.
-///
-/// Value-producing returns (`Vec<u8>` / `[u8; N]`) do *not* go through this
-/// trait: they are serviced by [`write_into`], where the host writes straight
-/// into guest linear memory with no owned buffer to encode.
+/// Encode a scalar or unit host-function result into the status the wasm fn
+/// returns (>= 0 a value, < 0 a `HostError` code). Byte-valued results go
+/// through [`write_into`] instead, which has nothing to encode.
 pub(crate) trait AbiRet {
     type Out;
     fn write(self, caller: &mut Caller<'_, VmState<'_>>, out: Self::Out) -> HostResult<i64>;
@@ -35,8 +29,8 @@ impl AbiRet for u32 {
     }
 }
 
-/// Charge a host call's gas once (from the enum's spec) then run its body.
-/// Because every registered closure goes through here, gas can't be forgotten.
+/// Charge a host call's gas from its spec, then run its body. Every registered
+/// closure goes through here, so gas cannot be forgotten.
 pub(crate) fn charged(
     caller: &mut Caller<'_, VmState<'_>>,
     op: HostFunctionSpec,
@@ -61,17 +55,8 @@ pub(crate) fn to_wasm_i64(r: HostResult<i64>) -> i64 {
 }
 
 // ---------------------------------------------------------------------------
-// Gas + bounds-checked memory helpers (the crate's only "unsafe surface",
-// concentrated and safe: every access is a checked wasmi slice op)
+// Gas + memory helpers. Every guest access is a checked wasmi slice op.
 // ---------------------------------------------------------------------------
-
-/// Per-field size cap for any single value crossing the host/guest boundary.
-///
-/// Mirrors `kMaxWasmDataLength = 1 * 1024` in
-/// `include/xrpl/protocol/Protocol.h:261`, enforced by `getDataSlice`/
-/// `setData` (`src/libxrpl/tx/wasm/HostFuncWrapper.cpp`) returning
-/// `DataFieldTooLarge`.
-const MAX_WASM_DATA_LEN: usize = 1024;
 
 /// Deduct `cost` fuel for a host call; `OutOfGas` if it would go negative.
 fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
@@ -85,9 +70,9 @@ fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
     }
 }
 
-/// Deduct `n` bytes from the per-run transfer-limit budget (see
-/// [`crate::vm::TRANSFER_LIMIT_BYTES`]); `OutOfTransferLimit` if it would go
-/// negative. A separate budget from gas — see `VmState::transfer_budget`.
+/// Deduct `n` bytes from the per-run transfer-limit budget
+/// ([`crate::vm::TRANSFER_LIMIT_BYTES`], separate from gas);
+/// `OutOfTransferLimit` if it would go negative.
 fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     let n = n as u64;
     let remaining = state.transfer_budget.get();
@@ -108,18 +93,13 @@ fn memory<T>(caller: &Caller<'_, T>) -> Result<Memory, HostError> {
     }
 }
 
-/// Bounds-check `[ptr, ptr + len)` and return a `&[u8]` **aliasing guest linear
-/// memory** — no allocation, no copy. The read analog of [`write_into`]: where
-/// `write_into` hands the host a `&mut [u8]` into guest memory, this hands it a
-/// `&[u8]`, so a *read-only* host call touches the guest's bytes in place.
+/// Bounds-check `[ptr, ptr + len)` and return a `&[u8]` aliasing guest linear
+/// memory — no allocation, no copy. The slice borrows `caller`, so it lives only
+/// as long as the host call it feeds; host functions never re-enter the guest and
+/// move its memory.
 ///
-/// The returned slice borrows `caller`, so it is valid only for the duration of
-/// the host call it feeds — the same leaf-call invariant `write_into` relies on
-/// (our host functions don't re-enter the guest and move its memory).
-///
-/// Checks, in order: params validity, the [`MAX_WASM_DATA_LEN`] size cap
-/// (`DataFieldTooLarge`), then the transfer-limit budget — all before the
-/// slice is formed.
+/// Checks params validity, the [`MAX_FIELD_BYTES`] cap (`DataFieldTooLarge`) and
+/// the transfer budget, in that order, before the slice is formed.
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
     ptr: i32,
@@ -129,7 +109,7 @@ pub(crate) fn read_borrowed<'a>(
         return Err(HostError::InvalidParams);
     }
     let (ptr, len) = (ptr as usize, len as usize);
-    if len > MAX_WASM_DATA_LEN {
+    if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
     charge_transfer(caller.data(), len)?;
@@ -140,28 +120,16 @@ pub(crate) fn read_borrowed<'a>(
         .ok_or(HostError::PointerOutOfBounds)
 }
 
-/// Service a "fill-the-caller's-buffer" host call: bounds-check the guest
-/// output region `[dst, dst + cap)`, hand the host a `&mut [u8]` aliasing it,
-/// and let the host write **straight into guest linear memory** — the single
-/// copy, with no owned buffer intermediate (this is what removes the extra copy
-/// the value-producing host functions used to pay: a `Vec<u8>` / `[u8; N]`
-/// materialized on the host side, then copied into guest memory. The `CxxHost`
-/// path additionally used to marshal C++ `Bytes` through a `rust::Vec` /
-/// `HashResult`; that too is gone).
+/// Service a "fill-the-caller's-buffer" host call: bounds-check the guest output
+/// region `[dst, dst + cap)` and hand the host a `&mut [u8]` aliasing it, so the
+/// host writes straight into guest linear memory. Returns the byte count.
 ///
-/// `fill` returns the value's *true* length (it writes only when the value fits
-/// in `dst`), so the engine keeps ownership of the policy the guest observes:
-/// the [`MAX_WASM_DATA_LEN`] field-size cap (`DataFieldTooLarge`), the
-/// buffer-fit check (`BufferTooSmall`), and the transfer-limit budget — checked
-/// here, in the same order as the C++ `setData` path (size cap precedes the
-/// transfer charge). On success returns the byte count.
-///
-/// Ordering note: because the byte count isn't known until `fill` runs, the
-/// transfer budget is charged *after* the write rather than before it (the
-/// pre-write gas charge in [`charged`] still bounds how often this runs). A
-/// value rejected for being over-cap/over-budget may leave bytes in the guest
-/// buffer, but they sit within the guest's own bounds and the guest must treat
-/// a negative status as "don't read the buffer".
+/// `fill` reports the value's true length and writes only what fits, leaving the
+/// engine the policy the guest observes: the [`MAX_FIELD_BYTES`] cap
+/// (`DataFieldTooLarge`), the buffer fit (`BufferTooSmall`), then the transfer
+/// budget — the order the C++ `setData` path uses. Those checks follow `fill`,
+/// since the length is unknown before it runs, so a refused value may leave bytes
+/// in the guest's own buffer; a negative status tells the guest not to read it.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
     dst: i32,
@@ -184,7 +152,7 @@ pub(crate) fn write_into(
 
     let n = fill(host, out)?;
 
-    if n > MAX_WASM_DATA_LEN {
+    if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
     if n > cap {
@@ -197,27 +165,17 @@ pub(crate) fn write_into(
 // The input buffer in `read_write` lives on the stack, sized to the field cap.
 // Guard the assumption that the cap stays small enough for that to be fine.
 const _: () = assert!(
-    MAX_WASM_DATA_LEN <= 8 * 1024,
-    "read_write's input buffer is a stack array; keep MAX_WASM_DATA_LEN small"
+    MAX_FIELD_BYTES <= 8 * 1024,
+    "read_write's input buffer is a stack array; keep MAX_FIELD_BYTES small"
 );
 
-/// Service a host call that reads an input region *and* writes an output region
-/// of guest memory (e.g. `sha512_half`).
+/// Service a host call that reads one region of guest memory and writes another
+/// (e.g. `sha512_half`).
 ///
-/// The input is copied into a fixed **stack** buffer — no heap allocation. It's
-/// bounded by [`MAX_WASM_DATA_LEN`] (the 1 KiB field cap, checked before the
-/// copy), so a plain `[u8; MAX_WASM_DATA_LEN]` array always fits; `&buf[..len]`
-/// carries the length, so no wrapper type is needed. Keeping the input in a
-/// stack local — rather than a borrow of the wasmi store — is what lets it
-/// coexist with the output `&mut [u8]`: [`write_into`] can borrow guest memory
-/// mutably for the output while `input` (borrowing the local) stays valid, with
-/// no aliasing/split reasoning. The output half reuses [`write_into`] verbatim,
-/// so the field-cap / buffer-fit / transfer policy is unchanged.
-///
-/// (The stack buffer is zero-initialized each call — one `memset` of the cap
-/// size. That's the deliberately-simple PoC trade: it drops the per-call heap
-/// allocation the old `Vec<u8>` path paid, at the price of a small fixed
-/// zero-fill; a `MaybeUninit`/arrayvec buffer could drop that too.)
+/// The input is copied into a stack buffer bounded by [`MAX_FIELD_BYTES`], so it
+/// stays valid while [`write_into`] borrows guest memory mutably for the output —
+/// no aliasing reasoning, at the price of zero-filling the buffer each call. The
+/// output half is [`write_into`], so it obeys the same policy as a plain write.
 pub(crate) fn read_write(
     caller: &mut Caller<'_, VmState<'_>>,
     src: i32,
@@ -230,18 +188,131 @@ pub(crate) fn read_write(
         return Err(HostError::InvalidParams);
     }
     let len = src_len as usize;
-    if len > MAX_WASM_DATA_LEN {
+    if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
     charge_transfer(caller.data(), len)?;
 
-    // Copy the input into a stack buffer, then release the (shared) store
-    // borrow before `write_into` takes it mutably for the output.
-    let mut buf = [0u8; MAX_WASM_DATA_LEN];
+    // Copy the input out before `write_into` borrows guest memory mutably.
+    let mut buf = [0u8; MAX_FIELD_BYTES];
     memory(caller)?
         .read(&*caller, src as usize, &mut buf[..len])
         .map_err(|_| HostError::PointerOutOfBounds)?;
     let input = &buf[..len];
 
     write_into(caller, dst, cap, |host, out| call(host, input, out))
+}
+
+// ---------------------------------------------------------------------------
+// Unit tests
+//
+// A `Caller` exists only for the duration of a host call, so `read_borrowed`,
+// `write_into`, `read_write` and `memory` are unreachable from here; `tests/`
+// covers them by running real modules against a fake host.
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vm::TRANSFER_LIMIT_BYTES;
+    use std::cell::Cell;
+    use wasmi::StoreLimitsBuilder;
+
+    /// A host no test here calls; `charge_transfer` takes the store data, which
+    /// has to hold one.
+    struct UncalledHost;
+
+    impl HostFunctions for UncalledHost {
+        fn get_ledger_sqn(&self, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_current_ledger_obj_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn trace(&self, _msg: &str, _data: &[u8], _as_hex: bool) -> HostResult<()> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> {
+            unreachable!("no unit test in this module calls the host")
+        }
+    }
+
+    /// A `VmState` whose transfer budget starts at `budget`.
+    fn state(budget: u64) -> VmState<'static> {
+        VmState {
+            host: &UncalledHost,
+            mem_limits: StoreLimitsBuilder::new().build(),
+            transfer_budget: Cell::new(budget),
+        }
+    }
+
+    #[test]
+    fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
+        assert_eq!(to_wasm_i32(Ok(0)), 0);
+        assert_eq!(to_wasm_i32(Ok(32)), 32);
+        assert_eq!(to_wasm_i32(Err(HostError::BufferTooSmall)), -3);
+        assert_eq!(to_wasm_i64(Ok(32)), 32);
+        assert_eq!(to_wasm_i64(Err(HostError::BufferTooSmall)), -3);
+    }
+
+    /// `to_wasm_i32` narrows to the `i32` the wire carries. No host function
+    /// produces a value that wide, but the cast is silent, so pin it.
+    #[test]
+    fn the_wire_conversion_truncates() {
+        assert_eq!(to_wasm_i32(Ok(i64::from(i32::MAX) + 1)), i32::MIN);
+    }
+
+    #[test]
+    fn a_transfer_spends_the_budget() {
+        let state = state(100);
+
+        assert_eq!(charge_transfer(&state, 30), Ok(()));
+        assert_eq!(state.transfer_budget.get(), 70);
+        assert_eq!(charge_transfer(&state, 70), Ok(()));
+        assert_eq!(state.transfer_budget.get(), 0);
+    }
+
+    /// The budget bounds the total, so the last transfer that fits is allowed and
+    /// the one that would overrun is refused whole — never partially charged.
+    #[test]
+    fn a_transfer_past_the_budget_is_refused_and_charges_nothing() {
+        let state = state(100);
+
+        assert_eq!(
+            charge_transfer(&state, 101),
+            Err(HostError::OutOfTransferLimit)
+        );
+        assert_eq!(
+            state.transfer_budget.get(),
+            100,
+            "a refusal must not charge"
+        );
+        assert_eq!(charge_transfer(&state, 100), Ok(()));
+        assert_eq!(
+            charge_transfer(&state, 1),
+            Err(HostError::OutOfTransferLimit)
+        );
+    }
+
+    #[test]
+    fn transferring_nothing_costs_nothing() {
+        let state = state(0);
+
+        assert_eq!(charge_transfer(&state, 0), Ok(()));
+        assert_eq!(state.transfer_budget.get(), 0);
+    }
+
+    /// The field cap holds any one call to a small share of the run's budget, so
+    /// the budget bounds a run rather than a call. An inequality, not the two
+    /// values: those are pinned in `vm.rs`.
+    #[test]
+    fn no_single_value_can_exhaust_the_run_budget() {
+        assert!(
+            (MAX_FIELD_BYTES as u64) * 64 <= TRANSFER_LIMIT_BYTES,
+            "one {MAX_FIELD_BYTES}-byte value against a {TRANSFER_LIMIT_BYTES}-byte budget"
+        );
+    }
 }
