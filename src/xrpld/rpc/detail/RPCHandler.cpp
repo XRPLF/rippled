@@ -239,6 +239,14 @@ resolveCommandSpanName(JsonContext const& context)
     if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return rpc_span::val::unknownCommand;
 
+    // fillHandler() rejects a request that supplies both fields with differing
+    // values as rpcUNKNOWN_COMMAND. Mirror that here, or the span would be
+    // labelled with one of the two names and misattribute the error to a
+    // command that was never dispatched.
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method) &&
+        context.params[jss::command].asString() != context.params[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
     std::string const cmd = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
@@ -262,6 +270,13 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         auto const cmdName = resolveCommandSpanName(context);
         auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName);
+        // Mirror the attribute set callMethod() puts on a successful command
+        // span, so error spans stay filterable by API version and role.
+        span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+        span.setAttribute(
+            rpc_span::attr::rpcRole,
+            context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                        : std::string_view(rpc_span::val::user));
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
 
