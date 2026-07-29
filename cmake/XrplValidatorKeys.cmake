@@ -5,17 +5,16 @@ option(
 )
 
 if(validator_keys)
-    git_branch(current_branch)
-    # default to tracking VK master branch unless we are on release
-    if(NOT (current_branch STREQUAL "release"))
-        set(current_branch "master")
-    endif()
-    message(STATUS "Tracking ValidatorKeys branch: ${current_branch}")
+    # Pinned to an exact commit, not a branch: the tool ships inside our
+    # packages, so the same xrpld version must always package the same
+    # validator-keys. Bump this deliberately.
+    set(validator_keys_commit "4c0fb75eec9601c711645998c904507e87e910ae")
+    message(STATUS "Using ValidatorKeys commit: ${validator_keys_commit}")
 
     FetchContent_Declare(
         validator_keys
         GIT_REPOSITORY https://github.com/ripple/validator-keys-tool.git
-        GIT_TAG "${current_branch}"
+        GIT_TAG "${validator_keys_commit}"
     )
     FetchContent_MakeAvailable(validator_keys)
     # The tool's own CMakeLists excludes the target from 'all' when it is built
@@ -29,5 +28,10 @@ if(validator_keys)
             EXCLUDE_FROM_ALL OFF
             EXCLUDE_FROM_DEFAULT_BUILD OFF
     )
+    # Like xrpld, this binary leaves the Nix-based build image (we ship it in
+    # the deb/rpm), so it needs the system ELF loader instead of the one in the
+    # Nix store. Without this it cannot run on the target distro at all. The
+    # target belongs to the FetchContent subproject, hence the other_dir form.
+    patch_nix_binary_in_other_dir(validator-keys)
     install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

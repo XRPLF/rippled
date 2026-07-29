@@ -51,3 +51,26 @@ function(patch_nix_binary target)
         VERBATIM
     )
 endfunction()
+
+#[===================================================================[
+   Same as patch_nix_binary, for a target created in another directory,
+   such as a FetchContent subproject. add_custom_command(TARGET) only
+   works in the directory that defined the target, so drive patchelf from
+   a custom target that runs once the binary has been linked. patchelf is
+   idempotent, so re-running it on an up-to-date binary is harmless.
+#]===================================================================]
+function(patch_nix_binary_in_other_dir target)
+    if(NOT PATCH_NIX_BINARIES)
+        return()
+    endif()
+    add_custom_target(
+        ${target}-patch-nix
+        ALL
+        COMMAND
+            "${PATCHELF_COMMAND}" --set-interpreter "${DEFAULT_LOADER_PATH}"
+            --remove-rpath "$<TARGET_FILE:${target}>"
+        COMMENT "Patching ${target}: set default loader, remove rpath"
+        VERBATIM
+    )
+    add_dependencies(${target}-patch-nix ${target})
+endfunction()

@@ -105,3 +105,6 @@ endfunction()
 
 function(patch_nix_binary target)
 endfunction()
+
+function(patch_nix_binary_in_other_dir target)
+endfunction()

@@ -93,6 +93,15 @@ if [[ ! -x "${validator_keys_binary}" ]]; then
     exit 1
 fi
 
+# The binary must also *run* here. Packaging happens in a vanilla distro
+# container, so this is what catches a binary still pointing at the Nix store's
+# ELF loader (see patch_nix_binary in cmake/PatchNixBinary.cmake); xrpld is
+# covered implicitly by the version query below.
+if ! "${validator_keys_binary}" --version >/dev/null; then
+    echo "build_pkg.sh: ${validator_keys_binary} exists but does not run here." >&2
+    exit 1
+fi
+
 xrpld_version="$("${xrpld_binary}" --version | awk 'NR == 1 { print $3 }')"
 
 if [[ -z "${xrpld_version}" ]]; then

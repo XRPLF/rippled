@@ -61,6 +61,10 @@ build job produces `validator-keys` next to `xrpld` and uploads it as the
 both artifacts (`artifact_name` and `validator_keys_artifact_name`), so a
 packaged configuration must keep `-Dvalidator_keys=ON`.
 
+`validator-keys` is fetched from an exact commit pinned in
+[`cmake/XrplValidatorKeys.cmake`](../cmake/XrplValidatorKeys.cmake), so a given
+`xrpld` version always packages the same tool; bump that commit deliberately.
+
 ### Locally (mirrors CI)
 
 With `xrpld` and `validator-keys` binaries already built at `build/xrpld` and
@@ -170,7 +174,10 @@ and lets the script use defaults for the rest.
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the `xrpld` and `validator-keys` binaries, config files,
 and shared support files into the staging area, and invokes the platform build
-tool. Both binaries must be present in `BUILD_DIR`; a missing one fails early.
+tool. Both binaries must be present in `BUILD_DIR` and must run in the packaging
+environment; a missing or non-runnable one fails early. That runtime check is
+what catches a binary still linked against the Nix store's ELF loader (see
+`patch_nix_binary` in `cmake/PatchNixBinary.cmake`).
 
 ### RPM
 
