@@ -47,6 +47,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -186,6 +187,34 @@ categoryToSpanKind(TraceCategory cat)
     return otel_trace::SpanKind::kInternal;  // unreachable
 }
 
+/**
+ * Join a span-name prefix and suffix into the dotted full name.
+ *
+ * Wraps std::format because the callers are noexcept: std::format can throw
+ * (std::bad_alloc, or std::format_error on a malformed spec) and an escaping
+ * exception would terminate the process. Telemetry must never take the node
+ * down, so a failure yields std::nullopt and the caller returns a null guard —
+ * the same degrade-to-no-op path already used when telemetry is disabled.
+ *
+ * @param prefix Segment before the dot (e.g. "consensus").
+ * @param name Segment after the dot (e.g. "round").
+ * @return The joined name, or std::nullopt if formatting failed.
+ */
+[[nodiscard]] std::optional<std::string>
+joinSpanName(std::string_view prefix, std::string_view name) noexcept
+{
+    try
+    {
+        return std::format("{}.{}", prefix, name);
+    }
+    catch (std::exception const&)
+    {
+        // Out of memory or a bad format spec. Drop the span rather than
+        // propagate out of a noexcept factory.
+        return std::nullopt;
+    }
+}
+
 }  // namespace
 
 SpanGuard
@@ -194,10 +223,10 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
-    std::string fullName;
-    fullName.reserve(prefix.size() + 1 + name.size());
-    fullName.append(prefix).append(1, '.').append(name);
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
+    auto const fullName = joinSpanName(prefix, name);
+    if (!fullName)
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(*fullName, categoryToSpanKind(cat))));
 }
 
 SpanGuard
@@ -206,13 +235,13 @@ SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_vie
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
-    std::string fullName;
-    fullName.reserve(prefix.size() + 1 + name.size());
-    fullName.append(prefix).append(1, '.').append(name);
+    auto const fullName = joinSpanName(prefix, name);
+    if (!fullName)
+        return {};
     // Force a fresh trace root: do NOT inherit this thread's active span.
     auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
     return SpanGuard(
-        std::make_unique<Impl>(tel->startSpan(fullName, rootCtx, categoryToSpanKind(cat))));
+        std::make_unique<Impl>(tel->startSpan(*fullName, rootCtx, categoryToSpanKind(cat))));
 }
 
 // ===== Child / linked span creation ========================================
