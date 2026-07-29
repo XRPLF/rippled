@@ -243,8 +243,19 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             {
                 std::pair<Response, grpc::Status> result = handler_(context);
                 setIsUnlimited(result.first, isUnlimited);
-                span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::success);
-                span.setOk();
+                // The handler can return a non-OK status without throwing, so
+                // the span status must follow result.second rather than assume
+                // success — otherwise every failed call traces as OK.
+                if (result.second.ok())
+                {
+                    span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::success);
+                    span.setOk();
+                }
+                else
+                {
+                    span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
+                    span.setError(result.second.error_message());
+                }
                 responder_.Finish(result.first, result.second, this);
             }
         }
