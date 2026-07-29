@@ -1952,7 +1952,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         // Create two tickets.
-        std::uint32_t const tkt1{env.seq(env.master) + 1};
+        SeqProxy tkt1 = SeqProxy::sequence(env.seq(env.master));
         env(ticket::create(env.master, 2));
         env.close();
 
@@ -1963,7 +1963,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Not a valid ticket requested by index.
             json::Value jvParams;
-            jvParams[jss::ticket] = to_string(getTicketIndex(env.master, tkt1 - 1));
+            jvParams[jss::ticket] = to_string(keylet::ticket(env.master, tkt1).key);
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -1972,31 +1972,34 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // First real ticket requested by index.
             json::Value jvParams;
-            jvParams[jss::ticket] = to_string(getTicketIndex(env.master, tkt1));
+            tkt1.advanceBy(1);
+            jvParams[jss::ticket] = to_string(keylet::ticket(env.master, tkt1).key);
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1);
+            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1.value());
         }
         {
             // Second real ticket requested by account and sequence.
+            tkt1.advanceBy(1);
             json::Value jvParams;
             jvParams[jss::ticket] = json::ValueType::Object;
             jvParams[jss::ticket][jss::account] = env.master.human();
-            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 1;
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1.value();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(
-                jrr[jss::node][jss::index] == to_string(getTicketIndex(env.master, tkt1 + 1)));
+                jrr[jss::node][jss::index] == to_string(keylet::ticket(env.master, tkt1).key));
         }
         {
             // Not a valid ticket requested by account and sequence.
+            tkt1.advanceBy(1);
             json::Value jvParams;
             jvParams[jss::ticket] = json::ValueType::Object;
             jvParams[jss::ticket][jss::account] = env.master.human();
-            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 2;
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1.value();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
