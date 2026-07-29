@@ -59,7 +59,7 @@ public:
      * the "primary" sequence of a transaction, `sfSequence`.
      */
     static constexpr SeqProxy
-    sequence(std::uint32_t v)
+    rawSequence(std::uint32_t v)
     {
         return SeqProxy{Type::Seq, v};
     }
@@ -71,7 +71,7 @@ public:
      * the "primary" ticket sequence of a transaction, `sfTicketSequence`.
      */
     static constexpr SeqProxy
-    ticket(std::uint32_t v)
+    rawTicket(std::uint32_t v)
     {
         return SeqProxy{Type::Ticket, v};
     }

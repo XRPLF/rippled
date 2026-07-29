@@ -611,7 +611,7 @@ TEST(AccountSet, Ticket)
 
     // Get alice's current sequence - the ticket will be created at seq + 1
     std::uint32_t const aliceSeqBefore = env.getAccountRoot(alice.id()).getSequence();
-    auto const ticketSeq = SeqProxy::ticket(aliceSeqBefore + 1);
+    auto const ticketSeq = SeqProxy::rawTicket(aliceSeqBefore + 1);
 
     // Create a ticket
     EXPECT_EQ(env.submit(transactions::TicketCreateBuilder{alice, 1}, alice).ter, tesSUCCESS);

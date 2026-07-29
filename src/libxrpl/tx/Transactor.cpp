@@ -709,7 +709,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     }
 
     SeqProxy const tSeqProx = tx.getSeqProxy();
-    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const aSeq = SeqProxy::rawSequence((*sle)[sfSequence]);
 
     if (tSeqProx.isSeq())
     {

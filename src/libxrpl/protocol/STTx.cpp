@@ -200,16 +200,16 @@ STTx::getSeqProxy() const
 {
     std::uint32_t const seq{getFieldU32(sfSequence)};
     if (seq != 0)
-        return SeqProxy::sequence(seq);
+        return SeqProxy::rawSequence(seq);
 
     std::optional<std::uint32_t> const ticketSeq{at(~sfTicketSequence)};
     if (!ticketSeq)
     {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
-        return SeqProxy::sequence(seq);
+        return SeqProxy::rawSequence(seq);
     }
 
-    return SeqProxy::ticket(*ticketSeq);
+    return SeqProxy::rawTicket(*ticketSeq);
 }
 
 std::uint32_t

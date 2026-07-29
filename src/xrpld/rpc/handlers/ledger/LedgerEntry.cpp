@@ -432,7 +432,7 @@ parseEscrow(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::escrow(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::escrow(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
@@ -494,7 +494,7 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanBroker(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::loanBroker(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -516,7 +516,7 @@ parseLoan(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loan(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::loan(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -598,7 +598,7 @@ parseOffer(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::offer(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::offer(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -659,7 +659,7 @@ parsePermissionedDomain(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::permissionedDomain(*account, SeqProxy::sequence(pd[jss::seq].asUInt())).key;
+    return keylet::permissionedDomain(*account, SeqProxy::rawSequence(pd[jss::seq].asUInt())).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -762,7 +762,7 @@ parseTicket(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::ticket(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::ticket(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -784,7 +784,7 @@ parseVault(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, SeqProxy::sequence(*seq)).key;
+    return keylet::vault(*id, SeqProxy::rawSequence(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>

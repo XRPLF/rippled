@@ -204,7 +204,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], SeqProxy::sequence(ctx.tx[sfOfferSequence]));
+        auto const k =
+            keylet::escrow(ctx.tx[sfOwner], SeqProxy::rawSequence(ctx.tx[sfOfferSequence]));
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -229,7 +230,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], SeqProxy::sequence(ctx_.tx[sfOfferSequence]));
+    auto const k =
+        keylet::escrow(ctx_.tx[sfOwner], SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]));
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {

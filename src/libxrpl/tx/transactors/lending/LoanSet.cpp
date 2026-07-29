@@ -595,7 +595,7 @@ LoanSet::doApply()
 
     // Create the loan
     auto loan =
-        std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::sequence(*loanSequenceProxy)));
+        std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
