@@ -5525,9 +5525,9 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // 2. Mantissa larger than uint64 max
-            env.setParseFailureExpected(true);
             try
             {
+                auto const g = env.getParseFailureGuard(true);
                 tx[sfAssetsMaximum] = "18446744073709551617e5";  // uint64 max + 1
                 env(tx);
                 BEAST_EXPECTS(false, "Expected parse_error for mantissa larger than uint64 max");
@@ -5538,7 +5538,6 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
             }
-            env.setParseFailureExpected(false);
         }
     }
 

@@ -10,6 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN <<EOF
 pkgs=()
 pkgs+=(curl)         # Required to install nix.
+pkgs+=(doxygen)      # Needed for Clio's check-doxygen-docs.sh.
 pkgs+=(git)          # Required for prepare-runner.
 pkgs+=(libatomic1)   # Required to run pre-commit provided `node`.
 pkgs+=(python3)      # Python 3 interpreter.
@@ -36,3 +37,19 @@ ENV NIX_SSL_CERT_FILE="/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
 
 # Verify nix installation
 RUN nix --version
+
+ENV RUSTUP_HOME="/opt/rust/rustup"
+ENV CARGO_HOME="/opt/rust/cargo"
+ENV PATH="/opt/rust/cargo/bin:${PATH}"
+
+WORKDIR /tmp
+COPY rust-toolchain.toml /tmp/rust-toolchain.toml
+RUN <<EOF
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none
+rustup toolchain install
+rustup show
+cargo fmt --version
+EOF
+
+WORKDIR /
