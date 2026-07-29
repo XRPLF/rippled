@@ -136,7 +136,7 @@ private:
     addPeers();
 
     void
-    tryDB(NodeStore::Database& srcDB);
+    tryDB(node_store::Database& srcDB);
 
     void
     done();

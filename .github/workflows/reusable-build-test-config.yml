@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -266,7 +266,7 @@ jobs:
           ./xrpld --definitions | python3 -m json.tool >server_definitions.json
 
       - name: Upload server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-gcc-release-amd64' }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: server-definitions
