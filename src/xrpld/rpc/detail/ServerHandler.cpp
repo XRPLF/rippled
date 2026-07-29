@@ -593,7 +593,7 @@ ServerHandler::processSession(
     auto span = ScopedSpanGuard::freshRoot(
         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
-    bool const ok = processRequest(
+    processRequest(
         session->port(),
         buffersToString(session->request().body().data()),
         session->remoteAddress().atPort(0),
@@ -615,15 +615,11 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
-    // Reflect the request outcome on the wrapper span instead of always OK.
-    if (ok)
-    {
-        span.setOk();
-    }
-    else
-    {
-        span.setError(rpc_span::val::error);
-    }
+    // Status is left unset: the OTel spec says instrumentation should leave it
+    // unset unless the operation itself errored, and reserves Ok for an
+    // operator asserting success. This span only delimits the HTTP request and
+    // has no error of its own to report — the outcome is determined inside
+    // rpc.process, which sets its own status.
 }
 
 static json::Value
@@ -642,7 +638,7 @@ constexpr json::Int kServerOverloaded = -32604;
 constexpr json::Int kForbidden = -32605;
 constexpr json::Int kWrongVersion = -32606;
 
-bool
+void
 ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
@@ -671,6 +667,7 @@ ServerHandler::processRequest(
     // (the span would otherwise end UNSET, invisible to {status.code=error}).
     auto httpReplyError = [&](int status, std::string const& message) {
         spanHadError = true;
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(message);
         httpReply(status, message, output, rpcJ);
     };
@@ -682,7 +679,7 @@ ServerHandler::processRequest(
             !jsonOrig || !jsonOrig.isObject())
         {
             httpReplyError(400, "Unable to parse request: " + reader.getFormattedErrorMessages());
-            return false;
+            return;
         }
     }
 
@@ -694,12 +691,23 @@ ServerHandler::processRequest(
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
             httpReplyError(400, "Malformed batch request");
-            return false;
+            return;
         }
         size = jsonOrig[jss::params].size();
     }
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
+
+    // Append a per-request error item and record that the request failed.
+    // Batch responses (and ripplerpc < 3.0) always carry HTTP 200, so the
+    // span status can only learn about these failures through spanHadError.
+    // Every per-item error path must go through here, or an entirely failed
+    // batch would end its span as successful.
+    auto appendItemError = [&](json::Value&& item) {
+        spanHadError = true;
+        reply.append(std::move(item));
+    };
+
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -710,7 +718,7 @@ ServerHandler::processRequest(
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -733,12 +741,12 @@ ServerHandler::processRequest(
             if (!batch)
             {
                 httpReplyError(400, jss::invalid_API_version.cStr());
-                return false;
+                return;
             }
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -776,11 +784,11 @@ ServerHandler::processRequest(
                 if (!batch)
                 {
                     httpReplyError(503, "Server is overloaded");
-                    return false;
+                    return;
                 }
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
         }
@@ -791,11 +799,11 @@ ServerHandler::processRequest(
             if (!batch)
             {
                 httpReplyError(403, "Forbidden");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -805,11 +813,11 @@ ServerHandler::processRequest(
             if (!batch)
             {
                 httpReplyError(400, "Null method");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -820,11 +828,11 @@ ServerHandler::processRequest(
             if (!batch)
             {
                 httpReplyError(400, "method is not string");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -835,11 +843,11 @@ ServerHandler::processRequest(
             if (!batch)
             {
                 httpReplyError(400, "method is empty");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -861,7 +869,7 @@ ServerHandler::processRequest(
             {
                 usage.charge(Resource::kFeeMalformedRpc);
                 httpReplyError(400, "params unparsable");
-                return false;
+                return;
             }
             else
             {
@@ -870,7 +878,7 @@ ServerHandler::processRequest(
                 {
                     usage.charge(Resource::kFeeMalformedRpc);
                     httpReplyError(400, "params unparsable");
-                    return false;
+                    return;
                 }
             }
         }
@@ -888,12 +896,12 @@ ServerHandler::processRequest(
                 if (!batch)
                 {
                     httpReplyError(400, "ripplerpc is not a string");
-                    return false;
+                    return;
                 }
 
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
             ripplerpc = params[jss::ripplerpc].asString();
@@ -1094,7 +1102,6 @@ ServerHandler::processRequest(
         span.setOk();
     }
     httpReply(httpStatus, response, output, rpcJ);
-    return !spanHadError;
 }
 
 //------------------------------------------------------------------------------
