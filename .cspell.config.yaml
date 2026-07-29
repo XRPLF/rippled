@@ -112,6 +112,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dthms
   - dxrpl
   - elgamal
   - enabled
@@ -232,6 +233,7 @@ words:
   - onlatest
   - ostr
   - otelc
+  - otelcol
   - oxalica
   - pargs
   - partitioner

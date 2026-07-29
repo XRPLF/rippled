@@ -92,19 +92,19 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Queued/s\", \"\", \"\")"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Queued/s\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_started_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Started/s\", \"\", \"\")"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_started_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Started/s\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Finished/s\", \"\", \"\")"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval])), \"series\", \"Finished/s\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
@@ -156,7 +156,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(topk(10, sum by (job_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval]))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
+          "expr": "label_replace(topk(10, sum by (job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval]))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
@@ -208,7 +208,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(topk(10, sum by (job_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval]))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
+          "expr": "label_replace(topk(10, sum by (job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[$__rate_interval]))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
@@ -235,7 +235,7 @@
     },
     {
       "title": "Job Queue Wait Time",
-      "description": "###### What this is:\n*Distribution of how long jobs sit in the queue before a worker picks them up (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job wait-time histogram over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; a widening gap between p75 and p99 signals occasional stalls.*\n\n###### Healthy range:\n*Sub-millisecond to low-millisecond waits on an unloaded node.*\n\n###### Watch for:\n*Rising p99 wait, an early sign of worker-thread saturation.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted`",
+      "description": "###### What this is:\n*How long jobs sit in the queue before a worker picks them up, split by job type (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job wait-time histogram over a 5-minute window, kept per job type. Limited to the ten types with the highest wait so the legend stays readable.*\n\n###### Reading it:\n*Lower is better. The legend names the job type, so a single slow queue is identifiable rather than hidden in an all-types average. A widening p75-to-p99 gap on one type signals occasional stalls there.*\n\n###### Healthy range:\n*Sub-millisecond to low-millisecond waits on an unloaded node.*\n\n###### Watch for:\n*Rising p99 wait on a capped type -- ledgerRequest, ledgerData and makeFetchPack have small concurrency limits, so they queue first. Cross-check the deferred gauge for that type.*\n\n###### Keywords:\n- **Job queue** *(per node)* — the worker pool that runs xrpld's background work; each unit of work is a job with a type.\n- **Dequeue wait** *(per node)* — time a job sits enqueued before a worker starts it, as distinct from how long it then runs.\n- **Concurrency limit** *(per node)* — the maximum number of jobs of one type allowed to run at once; work beyond it is deferred, not rejected.\n\n###### Computation boundary:\n*Result: Per node and job type — each series is one server's own value for one job type.*\n*Recorded in code as an OTel SDK histogram, then aggregated to percentiles by the Grafana query.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted`\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type) · [Concurrency limit](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#concurrency-limit)\n",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -255,13 +255,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.75, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p75 Wait\", \"\", \"\")"
+          "expr": "label_replace(topk(10, histogram_quantile(0.75, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"p75 Wait $1\", \"job_type\", \"(.*)\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
+          "expr": "label_replace(topk(10, histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"p99 Wait $1\", \"job_type\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
@@ -288,7 +288,7 @@
     },
     {
       "title": "Job Execution Time",
-      "description": "###### What this is:\n*Distribution of how long jobs run once started (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job run-time histogram over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; stable p75 with a controlled p99 is healthy.*\n\n###### Healthy range:\n*Workload-dependent, but stable over time.*\n\n###### Watch for:\n*Growing execution times, which point to CPU pressure or expensive individual jobs.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`",
+      "description": "###### What this is:\n*How long jobs run once started, split by job type (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job run-time histogram over a 5-minute window, kept per job type. Limited to the ten slowest types so the legend stays readable.*\n\n###### Reading it:\n*Lower is better. The legend names the job type, so an expensive job type is identifiable rather than averaged away. Stable p75 with a controlled p99 is healthy.*\n\n###### Healthy range:\n*Workload-dependent, but stable over time.*\n\n###### Watch for:\n*Growing execution times, which point to CPU pressure or expensive individual jobs.*\n\n###### Keywords:\n- **Job queue** *(per node)* — the worker pool that runs xrpld's background work; each unit of work is a job with a type.\n- **Execution time** *(per node)* — time a job spends running after a worker picks it up, excluding its queue wait.\n\n###### Computation boundary:\n*Result: Per node and job type — each series is one server's own value for one job type.*\n*Recorded in code as an OTel SDK histogram, then aggregated to percentiles by the Grafana query.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)\n",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -308,13 +308,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.75, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p75 Exec\", \"\", \"\")"
+          "expr": "label_replace(topk(10, histogram_quantile(0.75, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"p75 Exec $1\", \"job_type\", \"(.*)\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
+          "expr": "label_replace(topk(10, histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"p99 Exec $1\", \"job_type\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
@@ -366,7 +366,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(topk(10, histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
+          "expr": "label_replace(topk(10, histogram_quantile(0.99, sum by (le, job_type, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m])))), \"series\", \"$1\", \"job_type\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
