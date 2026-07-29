@@ -181,12 +181,12 @@ getQuality(uint256 const& uBase)
 }
 
 MPTID
-makeMptID(std::uint32_t sequence, AccountID const& account)
+makeMptID(std::uint32_t const sequence, AccountID const& account)
 {
     MPTID u;
-    sequence = boost::endian::native_to_big(sequence);
-    memcpy(u.data(), &sequence, sizeof(sequence));
-    memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
+    auto const bigEndianSequence = boost::endian::native_to_big(sequence);
+    memcpy(u.data(), &bigEndianSequence, sizeof(bigEndianSequence));
+    memcpy(u.data() + sizeof(bigEndianSequence), account.data(), sizeof(account));
     return u;
 }
 
@@ -273,13 +273,13 @@ trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) 
 }
 
 Keylet
-offer(AccountID const& id, SeqProxy seq) noexcept
+offer(AccountID const& id, SeqProxy const& seq) noexcept
 {
     return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq.value())};
 }
 
 Keylet
-quality(Keylet const& k, std::uint64_t q) noexcept
+quality(Keylet const& k, std::uint64_t const q) noexcept
 {
     XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::quality : valid input type");
 
@@ -307,7 +307,7 @@ next(Keylet const& k)
 }
 
 Keylet
-ticket(AccountID const& id, SeqProxy seq)
+ticket(AccountID const& id, SeqProxy const& seq)
 {
     return {ltTICKET, indexHash(LedgerNameSpace::Ticket, id, seq.value())};
 }
@@ -316,7 +316,7 @@ ticket(AccountID const& id, SeqProxy seq)
 // else. If we ever support multiple pages of signer lists, this would be the
 // keylet used to locate them.
 static Keylet
-signerList(AccountID const& account, std::uint32_t page) noexcept
+signerList(AccountID const& account, std::uint32_t const page) noexcept
 {
     return {ltSIGNER_LIST, indexHash(LedgerNameSpace::SignerList, account, page)};
 }
@@ -334,7 +334,7 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
 }
 
 Keylet
-check(AccountID const& id, SeqProxy seq) noexcept
+check(AccountID const& id, SeqProxy const& seq) noexcept
 {
     return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq.value())};
 }
@@ -375,7 +375,7 @@ ownerDir(AccountID const& id) noexcept
 }
 
 Keylet
-page(uint256 const& key, std::uint64_t index) noexcept
+page(uint256 const& key, std::uint64_t const index) noexcept
 {
     if (index == 0)
         return {ltDIR_NODE, key};
@@ -384,13 +384,13 @@ page(uint256 const& key, std::uint64_t index) noexcept
 }
 
 Keylet
-escrow(AccountID const& src, SeqProxy seq) noexcept
+escrow(AccountID const& src, SeqProxy const& seq) noexcept
 {
     return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq.value())};
 }
 
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, SeqProxy seq) noexcept
+payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noexcept
 {
     return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq.value())};
 }
@@ -419,7 +419,7 @@ nftokenPage(Keylet const& k, uint256 const& token)
 }
 
 Keylet
-nftokenOffer(AccountID const& owner, SeqProxy seq)
+nftokenOffer(AccountID const& owner, SeqProxy const& seq)
 {
     return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq.value())};
 }
@@ -493,7 +493,7 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
 }
 
 Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
 {
     return {
         ltXCHAIN_OWNED_CLAIM_ID,
@@ -507,7 +507,7 @@ xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 }
 
 Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
 {
     return {
         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
@@ -527,15 +527,9 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
+oracle(AccountID const& account, std::uint32_t const documentID) noexcept
 {
     return {ltORACLE, indexHash(LedgerNameSpace::Oracle, account, documentID)};
-}
-
-Keylet
-mptokenIssuance(SeqProxy seq, AccountID const& issuer) noexcept
-{
-    return mptokenIssuance(makeMptID(seq.value(), issuer));
 }
 
 Keylet
@@ -563,13 +557,13 @@ credential(AccountID const& subject, AccountID const& issuer, Slice const& credT
 }
 
 Keylet
-vault(AccountID const& owner, SeqProxy seq) noexcept
+vault(AccountID const& owner, SeqProxy const& seq) noexcept
 {
     return vault(indexHash(LedgerNameSpace::Vault, owner, seq.value()));
 }
 
 Keylet
-loanBroker(AccountID const& owner, SeqProxy seq) noexcept
+loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept
 {
     return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq.value()));
 }
@@ -581,7 +575,7 @@ loan(uint256 const& loanBrokerID, SeqProxy loanSeq) noexcept
 }
 
 Keylet
-permissionedDomain(AccountID const& account, SeqProxy seq) noexcept
+permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept
 {
     return {
         ltPERMISSIONED_DOMAIN,

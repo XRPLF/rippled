@@ -122,7 +122,7 @@ trustLine(AccountID const& id, Issue const& issue) noexcept
  */
 /** @{ */
 Keylet
-offer(AccountID const& id, SeqProxy seq) noexcept;
+offer(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
 offer(uint256 const& key) noexcept
@@ -135,7 +135,7 @@ offer(uint256 const& key) noexcept
  * The initial directory page for a specific quality
  */
 Keylet
-quality(Keylet const& k, std::uint64_t q) noexcept;
+quality(Keylet const& k, std::uint64_t const q) noexcept;
 
 /**
  * The directory for the next lower quality
@@ -174,7 +174,7 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
  */
 /** @{ */
 Keylet
-check(AccountID const& id, SeqProxy seq) noexcept;
+check(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
 check(uint256 const& key) noexcept
@@ -221,10 +221,10 @@ ownerDir(AccountID const& id) noexcept;
  */
 /** @{ */
 Keylet
-page(uint256 const& root, std::uint64_t index = 0) noexcept;
+page(uint256 const& root, std::uint64_t const index = 0) noexcept;
 
 inline Keylet
-page(Keylet const& root, std::uint64_t index = 0) noexcept
+page(Keylet const& root, std::uint64_t const index = 0) noexcept
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
@@ -235,13 +235,13 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
  * An escrow entry
  */
 Keylet
-escrow(AccountID const& src, SeqProxy seq) noexcept;
+escrow(AccountID const& src, SeqProxy const& seq) noexcept;
 
 /**
  * A PaymentChannel
  */
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, SeqProxy seq) noexcept;
+payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noexcept;
 
 /**
  * NFT page keylets
@@ -272,7 +272,7 @@ nftokenPage(Keylet const& k, uint256 const& token);
  * An offer from an account to buy or sell an NFT
  */
 Keylet
-nftokenOffer(AccountID const& owner, SeqProxy seq);
+nftokenOffer(AccountID const& owner, SeqProxy const& seq);
 
 inline Keylet
 nftokenOffer(uint256 const& offer)
@@ -312,17 +312,17 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
 // `seq` is stored as `sfXChainClaimID` in the object
 Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
 
 // `seq` is stored as `sfXChainAccountCreateCount` in the object
 Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
 
 Keylet
 did(AccountID const& account) noexcept;
 
 Keylet
-oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
+oracle(AccountID const& account, std::uint32_t const documentID) noexcept;
 
 Keylet
 credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
@@ -332,9 +332,6 @@ credential(uint256 const& key) noexcept
 {
     return {ltCREDENTIAL, key};
 }
-
-Keylet
-mptokenIssuance(SeqProxy seq, AccountID const& issuer) noexcept;
 
 Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept;
@@ -358,7 +355,7 @@ Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
-vault(AccountID const& owner, SeqProxy seq) noexcept;
+vault(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
 vault(uint256 const& vaultKey)
@@ -367,7 +364,7 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
-loanBroker(AccountID const& owner, SeqProxy seq) noexcept;
+loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
 loanBroker(uint256 const& key)
@@ -385,7 +382,7 @@ loan(uint256 const& key)
 }
 
 Keylet
-permissionedDomain(AccountID const& account, SeqProxy seq) noexcept;
+permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
@@ -416,6 +413,6 @@ struct KeyletDesc
 extern std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets;
 
 MPTID
-makeMptID(std::uint32_t sequence, AccountID const& account);
+makeMptID(std::uint32_t const sequence, AccountID const& account);
 
 }  // namespace xrpl
