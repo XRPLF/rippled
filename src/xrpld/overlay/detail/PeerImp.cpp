@@ -1741,7 +1741,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
             {
                 auto* ledgerNode = m->mutable_nodes(i);
 
-                if (ledgerNode->has_nodedata().empty())
+                // All nodes should have non-empty data. The field is required so we don't need to
+                // check for presence first.
+                if (ledgerNode->nodedata().empty())
                 {
                     badData(
                         "Received node with empty data while relaying ledger data for " +
