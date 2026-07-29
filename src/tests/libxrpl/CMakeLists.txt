@@ -32,16 +32,18 @@ target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 # supported on Windows.
 set(test_modules
     basics
+    beast
     consensus
     crypto
     json
     ledger
+    nodestore
     peerfinder
+    protocol
     resource
     shamap
     tx
     protocol_autogen
-    nodestore
     telemetry
 )
 if(NOT WIN32)
