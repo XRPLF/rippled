@@ -6,13 +6,20 @@ onto it. This is the substrate for a PR-review assistant that flags untested
 feature-interaction boundaries. See [DESIGN.md](DESIGN.md) for the model and
 rationale.
 
-Two tools:
+Four tools, run in order, each reading the previous one's artifact:
 
 - `build_graph.py` (Component A) — extract the graph and the interaction set.
 - `pr_map.py` (Component B, first half) — resolve a git diff to the graph nodes
   it touches.
+- `select_interactions.py` (Component B, second half) — rank the feature pairs
+  those touched nodes put in scope.
+- `render_comment.py` — render the ranked pairs as the advisory PR comment.
 
-Test location and LLM test-sufficiency grading are not built yet.
+`.github/workflows/interaction-review.yml` runs all four on a PR; see
+[CI wiring](#ci-wiring) below.
+
+Test location and LLM test-sufficiency grading are not built yet, so the comment
+names boundaries worth reviewing — never boundaries that are untested.
 
 ## Install
 
@@ -124,6 +131,68 @@ mistaken for levers.
   the boundary test from one that does not. That is the test locator's job.
 - Off-span changes are reported but never attributed, so an edit to a free
   function in `Transactor.cpp` (~30% of that file's lines) names no node.
+
+## Selecting the interactions in scope
+
+```
+python select_interactions.py            # reads out/graph.json, interactions.json, touched.json
+python render_comment.py --out comment.md
+```
+
+`select_interactions.py` writes `out/selected.json` (validated against
+`selected.schema.json`). An interaction is a **candidate** when the diff touched
+the resource the pair shares, or either feature of the pair — the four cases in
+DESIGN.md. Candidacy is far too broad to hand a reviewer: one line changed in
+`Payment.cpp` makes Payment a member of several hundred pairs. So candidates are
+then scored, filtered, and capped:
+
+- **Score** (ordinal, not a probability — it only decides comment order):
+  resource signal, interaction kind (`mediator×mediator` > `mediator×consumer` >
+  `consumer×consumer`), how the diff hit the resource (`span` beats `file`),
+  whether each feature was hit, and whether the resource has an extracted state
+  space. A **new lever** outweighs everything else, because the diff is then
+  changing the graph's own edge set rather than one path through it.
+- **Tiers** — `review` (≥60), `consider` (≥35), `context`.
+- **Noise filter** — `consumer×consumer` pairs sharing only a low-signal SField
+  are dropped unless the field itself changed or both transactors were edited.
+  Two transactors both declaring `sfAmount` interact only in the weakest sense,
+  and those pairs are the bulk of the 4350-interaction set.
+- **Caps** — 25 interactions, 6 per resource, 6 resources, keeping the
+  best-scoring resources whole rather than a thin slice of each. Every cap and
+  filter reports its count in the summary and in the comment; nothing is dropped
+  silently.
+
+Features are resolved from interaction names back to node ids **through the edge
+list**, not by string match, so a transactor and an amendment that share a name
+are not conflated.
+
+`render_comment.py` is pure formatting over `selected.json`, so a comment can be
+regenerated from a CI artifact without re-running the extractors. It groups by
+resource (the boundary is a property of the resource), states the boundary state
+space where one was extracted, cites `file:line` evidence, lists what the report
+does not cover, and truncates to fit GitHub's comment limit. The body opens with
+an HTML marker so CI updates one comment per PR instead of appending per push.
+
+## CI wiring
+
+Two workflows, split so a fork PR can be commented on without granting write
+access to a job that checked out untrusted code:
+
+- `interaction-review.yml` — on `pull_request`, path-filtered to diffs that can
+  touch a node. Configures CMake (for `compile_commands.json`), builds
+  `xrpl.libpb` (Transactor.cpp's TU needs the generated protobuf headers, or the
+  parse silently degrades), then runs all four tools and uploads `comment.md`
+  plus every JSON artifact. It has **no write permissions** and posts nothing.
+- `interaction-review-comment.yml` — on `workflow_run`, downloads that artifact
+  and either rewrites the existing comment (found by its marker) or posts a
+  new one. It never checks out PR code.
+
+The graph is rebuilt on the PR head rather than reused from a develop-side
+nightly, because node locations are head-side line spans: a develop-built graph
+would not line up with the diff. That is what makes the configure step
+unavoidable. Nothing here is a required check, and failures are left visible
+rather than swallowed — for a recall-oriented tool a silently broken extractor is
+worse than a red advisory job.
 
 ## Human-maintained inputs
 

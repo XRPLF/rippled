@@ -1,0 +1,189 @@
+# Builds the feature-interaction graph for a PR's head revision, maps the diff
+# onto it, and renders an advisory comment body.
+#
+# This workflow deliberately has NO write permissions and does not post
+# anything: on a fork PR the token is read-only, so the comment is uploaded as
+# an artifact and posted by `interaction-review-comment.yml`, which runs on
+# `workflow_run` with the base repository's permissions. That split is the
+# standard pattern for commenting on fork PRs without granting write access to a
+# job that has checked out untrusted code.
+#
+# The graph must be extracted from the *head* revision: node locations are
+# head-side line spans, so a graph built from develop would not line up with the
+# diff (see bin/interaction_review/diffparse.py). That is why this pays for a
+# configure step rather than reusing a nightly artifact.
+#
+# Nothing here is a required check. Failures are left visible rather than
+# swallowed: this tool is about recall, and a silently broken extractor is worse
+# than a red advisory job.
+
+name: Feature-interaction review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # Only diffs that can touch a graph node are worth a configure for.
+    paths:
+      - "include/xrpl/protocol/detail/*.macro"
+      - "include/xrpl/protocol/InvariantCheckPrivilege.h"
+      - "src/libxrpl/tx/**"
+      - "src/libxrpl/protocol/TxFormats.cpp"
+      - "bin/interaction_review/**"
+      - ".github/workflows/interaction-review*.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+  BUILD_TYPE: Debug
+  COMPILER: clang
+  OUT_DIR: bin/interaction_review/out
+  ARTIFACT_DIR: /tmp/interaction-review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Map the diff onto the interaction graph
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the PR head
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # The head commit itself, not the merge commit: the graph's line spans
+          # must match the revision the diff is computed against.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Full history so the merge base with the base branch is reachable.
+          fetch-depth: 0
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c
+        with:
+          enable_ccache: false
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+
+      - name: Set compiler environment
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: ${{ env.COMPILER }}
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: ${{ env.BUILD_TYPE }}
+          log_verbosity: verbose
+
+      # Produces compile_commands.json (CMAKE_EXPORT_COMPILE_COMMANDS is ON in
+      # the top-level CMakeLists), which the fork extractor parses against.
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+              -G 'Ninja' \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+              -Dtests=ON \
+              -Dxrpld=ON \
+              ..
+
+      # Transactor.cpp's translation unit includes protobuf-generated headers.
+      # Without them the parse degrades and amendment-gate references vanish
+      # silently, which is exactly the recall loss the extractor guards against.
+      - name: Build generated headers
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
+
+      - name: Locate libclang
+        id: libclang
+        run: |
+          # The extractor needs the dylib whose resource dir matches the clang
+          # that produced compile_commands.json; a mismatch degrades the AST
+          # instead of erroring.
+          libdir="$(llvm-config --libdir 2>/dev/null || true)"
+          lib=""
+          for candidate in "${libdir}/libclang.so" "${libdir}/libclang.so."*; do
+              if [ -f "${candidate}" ]; then
+                  lib="${candidate}"
+                  break
+              fi
+          done
+          if [ -z "${lib}" ]; then
+              lib="$(find /usr /nix /opt -name 'libclang.so*' -type f 2>/dev/null | head -1)"
+          fi
+          if [ -z "${lib}" ]; then
+              echo "no libclang found; cannot extract the fork graph" >&2
+              exit 1
+          fi
+          echo "Using ${lib}"
+          echo "path=${lib}" >>"${GITHUB_OUTPUT}"
+
+      - name: Install Python dependencies
+        working-directory: bin/interaction_review
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r requirements.txt
+
+      - name: Build the interaction graph
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python build_graph.py \
+              --build-dir "../../${BUILD_DIR}" \
+              --libclang "${{ steps.libclang.outputs.path }}" \
+              --out out/
+
+      - name: Map the diff onto the graph
+        working-directory: bin/interaction_review
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+          .venv/bin/python pr_map.py \
+              --base "origin/${BASE_REF}" \
+              --head "${{ github.event.pull_request.head.sha || github.sha }}"
+
+      - name: Select the in-scope interactions
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python select_interactions.py
+
+      - name: Render the comment
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python render_comment.py --out "${{ env.ARTIFACT_DIR }}/comment.md"
+
+      - name: Collect the artifact
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "${ARTIFACT_DIR}"
+          # The posting workflow only sees this artifact, so the PR number has to
+          # travel with it. Empty on workflow_dispatch, where nothing is posted.
+          echo "${PR_NUMBER}" >"${ARTIFACT_DIR}/pr-number.txt"
+          cp "${OUT_DIR}/graph.json" "${OUT_DIR}/interactions.json" \
+              "${OUT_DIR}/touched.json" "${OUT_DIR}/selected.json" "${ARTIFACT_DIR}/"
+          echo "### Feature-interaction review" >>"${GITHUB_STEP_SUMMARY}"
+          cat "${ARTIFACT_DIR}/comment.md" >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload the report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: interaction-review
+          path: ${{ env.ARTIFACT_DIR }}
+          retention-days: 14
