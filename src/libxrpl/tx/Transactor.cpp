@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -1544,7 +1543,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check)
     if (check == CheckTxInvariants::No)
         return xrpl::checkInvariants(ctx_, result, fee);
 
-    return xrpl::checkInvariants(ctx_, result, fee, std::ref(*this));
+    return xrpl::checkInvariants(ctx_, result, fee, *this);
 }
 
 //------------------------------------------------------------------------------

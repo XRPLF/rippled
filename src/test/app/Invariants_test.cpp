@@ -21,6 +21,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -54,6 +55,7 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -64,6 +66,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -5917,6 +5920,54 @@ class Invariants_test : public beast::unit_test::Suite
     }
 
     void
+    testTxCheckException()
+    {
+        testcase << "txCheck exception";
+        using namespace jtx;
+
+        // A TxInvariantCheck that always throws from finalize, so we can
+        // exercise checkInvariantsHelper's catch block via the
+        // transaction-specific layer (as opposed to the protocol layer,
+        // which testObjectHasPseudoAccount's last case already covers via a
+        // real Transactor's finalizeInvariants).
+        struct ThrowingTxInvariantCheck : TxInvariantCheck
+        {
+            void
+            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            {
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                throw std::runtime_error("test-injected txCheck exception");
+            }
+        };
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        ThrowingTxInvariantCheck throwing;
+        TER terActual = tesSUCCESS;
+        for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+        {
+            terActual = checkInvariants(ac, terActual, XRPAmount{}, throwing);
+            BEAST_EXPECT(terExpect == terActual);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "Transaction caused an exception during invariant checks"));
+        }
+    }
+
+    void
     testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
@@ -6200,6 +6251,7 @@ public:
         testAMM();
         testObjectHasPseudoAccount();
         testSponsorship();
+        testTxCheckException();
     }
 };
 

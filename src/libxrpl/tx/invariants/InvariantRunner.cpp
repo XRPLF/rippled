@@ -9,7 +9,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <algorithm>
@@ -39,23 +38,24 @@ checkInvariantsHelper(
     ApplyContext& ctx,
     TER const result,
     XRPAmount const fee,
-    std::optional<std::reference_wrapper<Transactor>> txCheck,
+    std::optional<std::reference_wrapper<TxInvariantCheck>> txCheck,
     std::index_sequence<Is...>)
 {
-    auto checkers = getInvariantChecks();
     bool allOk = true;
 
     try
     {
+        auto checkers = getInvariantChecks();
+
         ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
             if (txCheck)
-                txCheck->get().visitInvariantEntry(isDelete, before, after);
+                txCheck->get().visitEntry(isDelete, before, after);
             (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
         });
 
         if (txCheck)
         {
-            if (!txCheck->get().finalizeInvariants(ctx.tx, result, fee, ctx.view(), ctx.journal))
+            if (!txCheck->get().finalize(ctx.tx, result, fee, ctx.view(), ctx.journal))
             {
                 JLOG(ctx.journal.fatal())
                     << "Transaction has failed one or more transaction invariants: "
@@ -69,12 +69,8 @@ checkInvariantsHelper(
         // short-circuits). While the logic is still correct, the log
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
-        std::array<bool, sizeof...(Is)> const finalizers{{std::get<Is>(checkers).finalize(
-            ctx.tx,
-            result,
-            fee,
-            ctx.view(),
-            ctx.journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
+        std::array<bool, sizeof...(Is)> const finalizers{
+            {std::get<Is>(checkers).finalize(ctx.tx, result, fee, ctx.view(), ctx.journal)...}};
 
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
@@ -101,7 +97,7 @@ checkInvariants(
     ApplyContext& ctx,
     TER const result,
     XRPAmount const fee,
-    std::optional<std::reference_wrapper<Transactor>> txCheck)
+    std::optional<std::reference_wrapper<TxInvariantCheck>> txCheck)
 {
     XRPL_ASSERT(
         isTesSuccess(result) || isTecClaim(result),
