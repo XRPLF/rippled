@@ -43,19 +43,8 @@ IOUAmount::minPositiveAmount()
 }
 
 void
-IOUAmount::normalize()
+IOUAmount::enforceExponentBounds()
 {
-    if (mantissa_ == 0)
-    {
-        *this = beast::kZero;
-        return;
-    }
-    std::tie(mantissa_, exponent_) =
-        Number::normalizeToRange<kMinMantissa, kMaxMantissa>(mantissa_, exponent_);
-
-    // normalizeToRange only enforces Number's much wider exponent bounds.
-    // Re-apply IOUAmount's narrower range here, matching the check
-    // IOUAmount(Number const&) applies on its own construction path.
     if (exponent_ > kMaxExponent)
     {
         Throw<std::overflow_error>("value overflow");
@@ -66,16 +55,25 @@ IOUAmount::normalize()
     }
 }
 
-IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
+void
+IOUAmount::normalize()
 {
-    if (exponent_ > kMaxExponent)
-    {
-        Throw<std::overflow_error>("value overflow");
-    }
-    if (exponent_ < kMinExponent)
+    if (mantissa_ == 0)
     {
         *this = beast::kZero;
+        return;
     }
+    std::tie(mantissa_, exponent_) =
+        Number::normalizeToRange<kMinMantissa, kMaxMantissa>(mantissa_, exponent_);
+
+    // normalizeToRange only enforces Number's much wider exponent bounds, so
+    // IOUAmount's narrower range still has to be applied on top.
+    enforceExponentBounds();
+}
+
+IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
+{
+    enforceExponentBounds();
 }
 
 IOUAmount&
