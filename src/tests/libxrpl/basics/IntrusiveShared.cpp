@@ -458,13 +458,24 @@ TEST(IntrusiveSharedTest, destructor)
     std::latch weakResetSyncPoint{2};
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan.exchange(true));
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     std::thread t1{[&] {
@@ -506,15 +517,26 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers = [&](auto const& toClone, std::default_random_engine& eng)
@@ -637,15 +659,26 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers =
@@ -775,15 +808,26 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
 
