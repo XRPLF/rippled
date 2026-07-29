@@ -1,41 +1,48 @@
 //! Exercises what `host_functions!` generates: the trait is implementable and
 //! the spec table agrees with the declarations in `src/lib.rs`.
 
+use std::cell::RefCell;
+
 use xrpl_host_functions::{HASH_LEN, HostFnSpec, HostFunctionSpec, HostFunctions};
 
 /// Records what it was asked to do; enough to prove the trait is usable.
+///
+/// Every method takes `&self`, so a host that records anything keeps it behind
+/// interior mutability.
 #[derive(Default)]
 struct FakeHost {
-    traced: Vec<String>,
+    traced: RefCell<Vec<String>>,
 }
 
 impl HostFunctions for FakeHost {
-    fn get_ledger_sqn(&mut self) -> [u8; 4] {
+    fn get_ledger_sqn(&self) -> [u8; 4] {
         7u32.to_le_bytes()
     }
 
-    fn get_current_ledger_obj_field(&mut self, field: i32) -> Vec<u8> {
+    fn get_current_ledger_obj_field(&self, field: i32) -> Vec<u8> {
         vec![field as u8]
     }
 
-    fn sha512_half(&mut self, data: &[u8]) -> [u8; HASH_LEN] {
+    fn sha512_half(&self, data: &[u8]) -> [u8; HASH_LEN] {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
         digest
     }
 
-    fn trace(&mut self, msg: &str, data: &[u8], as_hex: bool) {
-        self.traced.push(format!("{msg}/{}/{as_hex}", data.len()));
+    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) {
+        self.traced
+            .borrow_mut()
+            .push(format!("{msg}/{}/{as_hex}", data.len()));
     }
 
-    fn trace_num(&mut self, msg: &str, number: i64) {
-        self.traced.push(format!("{msg}={number}"));
+    fn trace_num(&self, msg: &str, number: i64) {
+        self.traced.borrow_mut().push(format!("{msg}={number}"));
     }
 }
 
 #[test]
 fn the_trait_is_implementable() {
-    let mut host = FakeHost::default();
+    let host = FakeHost::default();
 
     assert_eq!(host.get_ledger_sqn(), [7, 0, 0, 0]);
     assert_eq!(host.get_current_ledger_obj_field(3), vec![3]);
@@ -43,7 +50,20 @@ fn the_trait_is_implementable() {
     host.trace("hello", b"xy", true);
     host.trace_num("count", -1);
 
-    assert_eq!(host.traced, ["hello/2/true", "count=-1"]);
+    assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
+}
+
+/// The VM reaches the host as one shared trait object held in the wasmi `Store`,
+/// which is what the `&self` receivers are for.
+#[test]
+fn the_trait_is_callable_through_a_shared_trait_object() {
+    let fake = FakeHost::default();
+    let host: &dyn HostFunctions = &fake;
+
+    assert_eq!(host.get_ledger_sqn(), [7, 0, 0, 0]);
+    host.trace_num("count", 1);
+
+    assert_eq!(*fake.traced.borrow(), ["count=1"]);
 }
 
 #[test]

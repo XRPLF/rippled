@@ -87,21 +87,21 @@ pub const HASH_LEN: usize = 32;
 host_functions! {
     #[gas = 60]
     #[wasm_name = "ldgr_index"]
-    fn get_ledger_sqn() -> [u8; 4];
+    fn get_ledger_sqn(&self) -> [u8; 4];
 
     #[gas = 70]
     #[wasm_name = "home_le_field"]
-    fn get_current_ledger_obj_field(field: i32) -> Vec<u8>;
+    fn get_current_ledger_obj_field(&self, field: i32) -> Vec<u8>;
 
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
-    fn sha512_half(data: &[u8]) -> [u8; 32];
+    fn sha512_half(&self, data: &[u8]) -> [u8; 32];
 
     #[gas = 500]
     #[wasm_name = "trace"]
-    fn trace(msg: &str, data: &[u8], as_hex: bool);
+    fn trace(&self, msg: &str, data: &[u8], as_hex: bool);
 
     #[gas = 500]
     #[wasm_name = "trace_num"]
-    fn trace_num(msg: &str, number: i64);
+    fn trace_num(&self, msg: &str, number: i64);
 }

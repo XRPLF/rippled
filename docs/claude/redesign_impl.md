@@ -25,6 +25,10 @@ only for reference. Anything we need about the old semantics is recoverable with
     `host_functions! { ... }` generates the `HostFunctions` trait + the
     `HostFunctionSpec` enum (wasm import name + gas per function). Also `HostError`.
     **This crate is the single source of truth for the ABI.**
+    Each declaration spells its receiver — always `&self`, checked by the macro, so
+    a declaration reads exactly as the trait method it becomes. `&self` is what lets
+    the VM hold the host as one shared `&dyn HostFunctions` in the wasmi `Store`; a
+    host that needs to mutate uses interior mutability.
   - `crates/xrpl-host-functions-macros/` — the `host_functions!` proc macro.
   - `crates/xrpl-wasm-vm/` — the wasmi wrapper: `vm.rs` (engine/store/run),
     `abi.rs` (gas + transfer-limit + guest-memory marshaling), `register.rs`
@@ -129,6 +133,7 @@ That is the entire gap.
 
 ```
 params:
+  &self              -> nothing                   (receiver, not part of the ABI)
   i32, bool          -> i32                       (bool: nonzero = true)
   i64                -> i64
   &[u8], &str        -> i32 ptr, i32 len          const uint8_t*, int32_t
@@ -338,10 +343,12 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 ## Current state (2026-07-29)
 
 `crates/` does **not** compile: the macro-generated trait (value-returning,
-infallible) and the uncommitted VM code (fill-caller's-buffer, `HostResult<usize>`,
-`&dyn`) are two different ABI shapes. Every call site in `register.rs` is affected,
-as are the macro's own doctests and `xrpl-host-functions/tests/generated_abi.rs`
-(which still use `&mut self` and value returns).
+infallible) and the VM code (fill-caller's-buffer, `HostResult<usize>`) are two
+different ABI shapes. The 8 errors are all in `xrpl-wasm-vm` — every byte-returning
+call site in `register.rs`, plus `?` on the infallible `trace`/`trace_num`.
+
+`xrpl-host-functions` and `xrpl-host-functions-macros` are green (`cargo test` +
+`clippy`): 28 macro tests, 5 ABI tests, 1 doctest.
 
 Resolving that shape is the immediate work. Per the mechanism note above, the
 value-returning direction (plus `HostResult<T>`) is the one that composes with

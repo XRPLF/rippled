@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    Attribute, Expr, ExprLit, Ident, Lit, LitStr, Safety, Signature, TraitItemFn, parse_quote,
+    Attribute, Expr, ExprLit, Ident, Lit, LitStr, ReceiverKind, Safety, Signature, TraitItemFn,
 };
 
 use crate::errors;
@@ -27,14 +27,12 @@ pub(crate) struct ParsedHostFunction {
 }
 
 impl ParsedHostFunction {
-    /// `#[doc …] fn get_ledger_sqn(&mut self) -> [u8; 4];`
+    /// `#[doc …] fn get_ledger_sqn(&self) -> [u8; 4];`
     pub(crate) fn trait_method(&self) -> TokenStream {
         let docs = &self.docs;
-
-        // The receiver is not part of the wasm ABI, so declarations omit it and
-        // only the trait needs one.
-        let mut signature = self.signature.clone();
-        signature.inputs.insert(0, parse_quote!(&self));
+        // The declaration is already a trait method: emitted verbatim, so what
+        // the block reads like is what the trait is.
+        let signature = &self.signature;
 
         quote! {
             #(#docs)*
@@ -124,12 +122,7 @@ impl ParsedHostFunction {
                 "a host function must not be generic: it maps to one wasm import signature",
             ));
         }
-        if let Some(receiver) = function.sig.receiver() {
-            errors.push(syn::Error::new_spanned(
-                receiver,
-                "the receiver is added by the macro; declare only the wasm parameters",
-            ));
-        }
+        errors.extend(check_receiver(&function.sig).err());
         if let Some(name) = &wasm_name {
             errors.extend(check_wasm_name(name).err());
         }
@@ -161,6 +154,35 @@ impl ParsedHostFunction {
             signature: function.sig,
         })
     }
+}
+
+/// Every declaration carries a receiver, and it is always `&self`.
+///
+/// `&self` is the only receiver that can work: the VM reaches the host through a
+/// shared `&dyn HostFunctions` stored in the wasmi `Store`, and a host that needs
+/// to mutate does so behind interior mutability. The receiver is not part of the
+/// wasm ABI — the guest passes no `self` — so it is uniform across the block.
+fn check_receiver(signature: &Signature) -> syn::Result<()> {
+    let Some(receiver) = signature.receiver() else {
+        return Err(syn::Error::new_spanned(
+            &signature.ident,
+            format!(
+                "a host function must declare its receiver: `fn {}(&self, ...)`",
+                signature.ident
+            ),
+        ));
+    };
+
+    // `&self` and nothing else: not `&mut self`, not `self`/`mut self`, not a
+    // typed `self: Box<Self>`, and not a spelled-out lifetime.
+    if !matches!(receiver.kind, ReceiverKind::Reference(_, None, None)) {
+        return Err(syn::Error::new_spanned(
+            receiver,
+            "a host function's receiver must be exactly `&self`: the VM calls the host \
+             through a shared `&dyn HostFunctions`",
+        ));
+    }
+    Ok(())
 }
 
 /// `const`, `async`, `unsafe`/`safe` and `extern "…"` have no meaning in the
@@ -339,7 +361,7 @@ mod tests {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         })
         .unwrap();
 
@@ -378,7 +400,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "two_factor"]
-            fn _2fa();
+            fn _2fa(&self);
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -410,7 +432,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = -5]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -422,7 +444,7 @@ mod tests {
         let empty = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = ""]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(empty.len(), 1, "{empty:?}");
         assert_eq!(empty[0], "the wasm name must not be empty");
@@ -430,7 +452,7 @@ mod tests {
         let spaced = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(spaced.len(), 1, "{spaced:?}");
         assert!(spaced[0].contains("may only contain"), "{spaced:?}");
@@ -439,10 +461,10 @@ mod tests {
     #[test]
     fn rejects_signature_modifiers() {
         for declaration in [
-            quote! { unsafe fn get_ledger_sqn() -> [u8; 4]; },
-            quote! { async fn get_ledger_sqn() -> [u8; 4]; },
-            quote! { const fn get_ledger_sqn() -> [u8; 4]; },
-            quote! { extern "C" fn get_ledger_sqn() -> [u8; 4]; },
+            quote! { unsafe fn get_ledger_sqn(&self) -> [u8; 4]; },
+            quote! { async fn get_ledger_sqn(&self) -> [u8; 4]; },
+            quote! { const fn get_ledger_sqn(&self) -> [u8; 4]; },
+            quote! { extern "C" fn get_ledger_sqn(&self) -> [u8; 4]; },
         ] {
             let function: TraitItemFn = syn::parse2(quote! {
                 #[gas = 60]
@@ -458,12 +480,12 @@ mod tests {
     }
 
     #[test]
-    fn trait_method_takes_a_receiver_and_ends_in_a_semicolon() {
+    fn trait_method_keeps_the_declared_receiver_and_ends_in_a_semicolon() {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             /// Hashes `data`.
             #[gas = 2000]
             #[wasm_name = "sha512_half"]
-            fn sha512_half(data: &[u8]) -> [u8; 32];
+            fn sha512_half(&self, data: &[u8]) -> [u8; 32];
         })
         .unwrap();
 
@@ -475,7 +497,7 @@ mod tests {
             "{method}"
         );
         assert!(
-            method.contains("fn sha512_half (& mut self , data : & [u8]) -> [u8 ; 32] ;"),
+            method.contains("fn sha512_half (& self , data : & [u8]) -> [u8 ; 32] ;"),
             "{method}"
         );
     }
@@ -485,7 +507,7 @@ mod tests {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         })
         .unwrap();
 
@@ -503,7 +525,7 @@ mod tests {
             /// Third line.
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         })
         .unwrap();
 
@@ -516,16 +538,17 @@ mod tests {
         let traced = ParsedHostFunction::parse(parse_quote! {
             #[gas = 500]
             #[wasm_name = "trace"]
-            fn trace(msg: &str, data: &[u8], as_hex: bool);
+            fn trace(&self, msg: &str, data: &[u8], as_hex: bool);
         })
         .unwrap();
-        assert_eq!(traced.signature.inputs.len(), 3);
+        // The receiver is `inputs[0]`; the three wasm parameters follow it.
+        assert_eq!(traced.signature.inputs.len(), 4);
         assert!(matches!(traced.signature.output, syn::ReturnType::Default));
 
         let hashed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 2000]
             #[wasm_name = "sha512_half"]
-            fn sha512_half(data: &[u8]) -> [u8; 32];
+            fn sha512_half(&self, data: &[u8]) -> [u8; 32];
         })
         .unwrap();
         assert!(matches!(hashed.signature.output, syn::ReturnType::Type(..)));
@@ -534,7 +557,7 @@ mod tests {
     #[test]
     fn reports_both_missing_attributes_at_once() {
         let messages = messages(parse_quote! {
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 2);
@@ -547,7 +570,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wsam_name = "typo"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         // The typo'd attribute, plus the `wasm_name` it failed to be.
@@ -563,7 +586,7 @@ mod tests {
         let gas = messages(parse_quote! {
             #[gas = "60"]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(gas.len(), 1, "{gas:?}");
         assert!(
@@ -574,7 +597,7 @@ mod tests {
         let name = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = 7]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(name.len(), 1, "{name:?}");
         assert!(
@@ -588,7 +611,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 99999999999999999999999]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -600,7 +623,7 @@ mod tests {
         let bare = messages(parse_quote! {
             #[gas]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(bare.len(), 1, "{bare:?}");
         assert!(bare[0].contains("gas = ..."), "{bare:?}");
@@ -608,7 +631,7 @@ mod tests {
         let list = messages(parse_quote! {
             #[gas(60)]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
         assert_eq!(list.len(), 1, "{list:?}");
     }
@@ -620,7 +643,7 @@ mod tests {
             #[gas = 70]
             #[wasm_name = "ldgr_index"]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 2, "{messages:?}");
@@ -637,7 +660,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = "60"]
             #[wasm_name = 7]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 2, "{messages:?}");
@@ -652,7 +675,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4] { [0; 4] }
+            fn get_ledger_sqn(&self) -> [u8; 4] { [0; 4] }
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -664,7 +687,7 @@ mod tests {
         let parameter = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn<T>() -> T;
+            fn get_ledger_sqn<T>(&self) -> T;
         });
         assert_eq!(parameter.len(), 1, "{parameter:?}");
         assert!(
@@ -675,20 +698,50 @@ mod tests {
         let clause = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4] where Self: Sized;
+            fn get_ledger_sqn(&self) -> [u8; 4] where Self: Sized;
         });
         assert_eq!(clause.len(), 1, "{clause:?}");
     }
 
     #[test]
-    fn rejects_an_explicit_receiver() {
+    fn requires_a_receiver() {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> [u8; 4];
+            fn get_ledger_sqn() -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
-        assert!(messages[0].contains("receiver"), "{messages:?}");
+        assert!(
+            messages[0].contains("must declare its receiver: `fn get_ledger_sqn(&self, ...)`"),
+            "{messages:?}"
+        );
+    }
+
+    /// Anything but `&self` would need a host the VM cannot hand out: it holds
+    /// one shared `&dyn HostFunctions` for the whole run.
+    #[test]
+    fn rejects_receivers_other_than_shared_self() {
+        for receiver in [
+            quote! { &mut self },
+            quote! { self },
+            quote! { mut self },
+            quote! { self: Box<Self> },
+            quote! { &'a self },
+        ] {
+            let function: TraitItemFn = syn::parse2(quote! {
+                #[gas = 60]
+                #[wasm_name = "ldgr_index"]
+                fn get_ledger_sqn(#receiver) -> [u8; 4];
+            })
+            .unwrap_or_else(|_| panic!("`{receiver}` should parse"));
+
+            let messages = messages(function);
+            assert_eq!(messages.len(), 1, "`{receiver}`: {messages:?}");
+            assert!(
+                messages[0].contains("must be exactly `&self`"),
+                "`{receiver}`: {messages:?}"
+            );
+        }
     }
 }

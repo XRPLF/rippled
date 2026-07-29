@@ -15,9 +15,9 @@ use parsed_host_function::ParsedHostFunction;
 
 /// Declares the wasm host ABI once, and generates everything that follows from it.
 ///
-/// The input is a block of bare `fn` declarations, each carrying the gas cost the
-/// host charges before the call and the name the guest imports it under. Doc
-/// comments are kept and appear on the generated items.
+/// The input is a block of `fn` declarations, each carrying the gas cost the host
+/// charges before the call and the name the guest imports it under. Doc comments
+/// are kept and appear on the generated items.
 ///
 /// ```
 /// use xrpl_host_functions_macros::host_functions;
@@ -26,19 +26,19 @@ use parsed_host_function::ParsedHostFunction;
 ///     /// The sequence number of the ledger being built.
 ///     #[gas = 60]
 ///     #[wasm_name = "ldgr_index"]
-///     fn get_ledger_sqn() -> [u8; 4];
+///     fn get_ledger_sqn(&self) -> [u8; 4];
 ///
 ///     /// Writes `msg` to the trace log.
 ///     #[gas = 500]
 ///     #[wasm_name = "trace_num"]
-///     fn trace_num(msg: &str, number: i64);
+///     fn trace_num(&self, msg: &str, number: i64);
 /// }
 ///
-/// // A `HostFunctions` trait, with a `&mut self` receiver added:
+/// // A `HostFunctions` trait, holding the declarations verbatim:
 /// struct Host;
 /// impl HostFunctions for Host {
-///     fn get_ledger_sqn(&mut self) -> [u8; 4] { 7u32.to_le_bytes() }
-///     fn trace_num(&mut self, _msg: &str, _number: i64) {}
+///     fn get_ledger_sqn(&self) -> [u8; 4] { 7u32.to_le_bytes() }
+///     fn trace_num(&self, _msg: &str, _number: i64) {}
 /// }
 ///
 /// // A `HostFunctionSpec` enum carrying the ABI metadata as a `const` table:
@@ -47,9 +47,9 @@ use parsed_host_function::ParsedHostFunction;
 /// assert_eq!(HostFunctionSpec::ALL.len(), 2);
 /// ```
 ///
-/// A declaration must be a plain `fn` with no receiver, no body and no generics:
-/// it maps to exactly one wasm import signature. Two declarations may not share a
-/// `wasm_name`, nor collapse to the same PascalCase variant.
+/// A declaration must be a plain `fn` taking `&self`, with no body and no
+/// generics: it maps to exactly one wasm import signature. Two declarations may
+/// not share a `wasm_name`, nor collapse to the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into())
@@ -123,9 +123,9 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         ///
         /// Implement it once per execution environment — the ledger host, a test
         /// double, a benchmark fake — and a guest module cannot tell them apart.
-        /// Each method is a declaration from the `host_functions!` block with a
-        /// `&mut self` receiver added; the receiver is not part of the ABI the
-        /// guest sees.
+        /// Each method is one declaration from the `host_functions!` block, as
+        /// written; its `&self` receiver is not part of the ABI the guest sees,
+        /// so a host that must mutate does so behind interior mutability.
         pub trait HostFunctions {
             #(#trait_methods)*
         }
@@ -217,10 +217,10 @@ mod tests {
     fn reports_mistakes_from_every_function() {
         let error = expand(quote! {
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
 
             #[gas = 2000]
-            fn sha512_half(data: &[u8]) -> [u8; 32];
+            fn sha512_half(&self, data: &[u8]) -> [u8; 32];
         })
         .expect_err("expected parsing to fail");
 
@@ -249,19 +249,19 @@ mod tests {
         let generated = expand(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
 
             #[gas = 500]
             #[wasm_name = "trace_num"]
-            fn trace_num(msg: &str, number: i64);
+            fn trace_num(&self, msg: &str, number: i64);
         })
         .unwrap()
         .to_string();
 
         for expected in [
             "pub trait HostFunctions",
-            "fn get_ledger_sqn (& mut self) -> [u8 ; 4] ;",
-            "fn trace_num (& mut self , msg : & str , number : i64) ;",
+            "fn get_ledger_sqn (& self) -> [u8 ; 4] ;",
+            "fn trace_num (& self , msg : & str , number : i64) ;",
             "pub struct HostFnSpec",
             "pub name : & 'static str",
             "pub gas : u64",
@@ -279,11 +279,11 @@ mod tests {
         let messages = messages(quote! {
             #[gas = 60]
             #[wasm_name = "trace"]
-            fn trace(msg: &str);
+            fn trace(&self, msg: &str);
 
             #[gas = 70]
             #[wasm_name = "trace"]
-            fn trace_num(msg: &str, number: i64);
+            fn trace_num(&self, msg: &str, number: i64);
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -299,11 +299,11 @@ mod tests {
         let messages = messages(quote! {
             #[gas = 60]
             #[wasm_name = "a"]
-            fn get_ledger_sqn() -> [u8; 4];
+            fn get_ledger_sqn(&self) -> [u8; 4];
 
             #[gas = 70]
             #[wasm_name = "b"]
-            fn get_ledger__sqn() -> [u8; 4];
+            fn get_ledger__sqn(&self) -> [u8; 4];
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
