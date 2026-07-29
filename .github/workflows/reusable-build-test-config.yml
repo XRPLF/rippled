@@ -266,7 +266,7 @@ jobs:
           ./xrpld --definitions | python3 -m json.tool >server_definitions.json
 
       - name: Upload server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-gcc-release-amd64' }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: server-definitions

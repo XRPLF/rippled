@@ -348,11 +348,13 @@ run-clang-tidy -p build -allow-no-checks src tests
 ```
 
 This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
-If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
 
 ```
-run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
 ```
+
+`-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
 ## Telemetry span attribute naming
 
