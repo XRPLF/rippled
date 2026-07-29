@@ -1741,6 +1741,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
             {
                 auto* ledgerNode = m->mutable_nodes(i);
 
+                if (ledgerNode->has_nodedata().empty())
+                {
+                    badData(
+                        "Received node with empty data while relaying ledger data for " +
+                        to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                        std::to_string(peer->id()));
+                    return;
+                }
+
                 MessageType msgType = MessageType::Unknown;
                 if (m->type() == protocol::liBASE)
                 {
@@ -1772,11 +1781,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                 if (peerSupportsNodeDepth || msgType != MessageType::Depth)
                     continue;
 
+                SOMETIMES(
+                    !peerSupportsNodeDepth,
+                    "xrpl::PeerImp : relaying depth-format ledger data to pre-2.3 peer");
                 switch (ledgerNode->reference_case())
                 {
                     case protocol::TMLedgerNode::kId: {
                         // We can directly copy the `id` field, because it uses the same wire format
                         // as the legacy `nodeid` field.
+                        REACHABLE("xrpl::PeerImp : relay downgrade id to nodeid");
                         ledgerNode->set_nodeid(ledgerNode->id());
                         ledgerNode->clear_id();
                         break;
@@ -1803,11 +1816,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                             return;
                         }
 
+                        REACHABLE("xrpl::PeerImp : relay downgrade depth to nodeid");
                         ledgerNode->set_nodeid(nodeID->getRawString());
                         ledgerNode->clear_depth();
                         break;
                     }
                     default: {
+                        SOMETIMES(true, "xrpl::PeerImp : relay node has empty reference");
                         badData(
                             "Empty node reference while relaying ledger data for " +
                             to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
@@ -3539,10 +3554,12 @@ PeerImp::processLedgerRequest(
                         }
                         else if (d.isLeaf)
                         {
+                            REACHABLE("xrpl::PeerImp : emit leaf depth in reply");
                             node->set_depth(d.nodeID.getDepth());
                         }
                         else
                         {
+                            REACHABLE("xrpl::PeerImp : emit inner id in reply");
                             node->set_id(d.nodeID.getRawString());
                         }
                     }

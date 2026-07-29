@@ -43,15 +43,20 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
             if (!ledgerNode.has_id())
                 return std::nullopt;
 
+            REACHABLE("xrpl::getSHAMapNodeID : inner node ID from id field");
             return deserializeSHAMapNodeID(ledgerNode.id());
         }
 
         if (treeNode.isLeaf())
         {
+            SOMETIMES(
+                ledgerNode.has_depth() && ledgerNode.depth() > SHAMap::kLeafDepth,
+                "xrpl::getSHAMapNodeID : leaf depth exceeds max");
             if (!ledgerNode.has_depth() || ledgerNode.depth() > SHAMap::kLeafDepth)
                 return std::nullopt;
 
             auto const key = leafKey(treeNode);
+            REACHABLE("xrpl::getSHAMapNodeID : leaf node ID reconstructed from depth");
             return SHAMapNodeID::createID(ledgerNode.depth(), key);
         }
         // LCOV_EXCL_START
@@ -71,6 +76,9 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
     {
         auto const key = leafKey(treeNode);
         auto const expectedID = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
+        SOMETIMES(
+            nodeID->getNodeID() != expectedID.getNodeID(),
+            "xrpl::getSHAMapNodeID : legacy leaf ID inconsistent with key");
         if (nodeID->getNodeID() != expectedID.getNodeID())
             return std::nullopt;
     }
