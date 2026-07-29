@@ -320,6 +320,21 @@ class TelemetryImpl : public Telemetry
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
     {
+        // Build the metrics pipeline NOW, in the constructor, so the global
+        // MeterProvider is published before any subsystem is constructed.
+        // beast::insight instruments are created eagerly in subsystem
+        // constructors (e.g. LedgerMaster, NetworkOPs, ServerHandler), which
+        // run during ApplicationImp's member-init list — long before start().
+        // opentelemetry-cpp has no proxy MeterProvider, so an instrument
+        // created before SetMeterProvider() binds to the noop provider forever.
+        // Tracing does not have this problem because getTracer() is called
+        // fresh at each span creation (runtime, after start()).
+        //
+        // The metrics resource uses setup_.serviceInstanceId as provided by
+        // config. A later setServiceInstanceId() (node-key fallback) cannot
+        // change this immutable resource, so operators relying on the node-key
+        // identity should set [telemetry] service_instance_id explicitly.
+        initMetrics();
     }
 
     void
@@ -407,10 +422,30 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
-        // Build the metrics pipeline, parallel to the tracer above and
-        // reusing the same resourceAttrs so metrics and traces share one
-        // resource identity.
+        // The metrics pipeline (meterProvider_) was already built and published
+        // in the constructor via initMetrics(), before any subsystem could
+        // create a beast::insight instrument. See initMetrics().
 
+        // Register as the global Telemetry instance so SpanGuard factory
+        // methods can access it without callers passing a reference.
+        Telemetry::setInstance(this);
+
+        JLOG(journal_.info()) << "Telemetry started successfully";
+    }
+
+    /**
+     * Build and publish the metrics pipeline (MeterProvider + periodic
+     * reader + OTLP exporter + histogram view).
+     *
+     * Called from the constructor, NOT start(), so the global MeterProvider
+     * exists before subsystems construct their beast::insight instruments
+     * during ApplicationImp's member-init list. The metrics resource uses
+     * setup_.serviceInstanceId from config; it is immutable once the provider
+     * is built, so a later node-key setServiceInstanceId() does not affect it.
+     */
+    void
+    initMetrics()
+    {
         // Derive the metrics endpoint from the trace endpoint by swapping
         // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
         // shape is used as-is.
@@ -444,24 +479,44 @@ public:
         auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
             std::move(metricExporter), readerOpts);
 
+        // Metrics resource: same attributes as the tracer resource so metrics
+        // and traces share one identity. Built here (not shared with start())
+        // because start() runs later; serviceInstanceId comes from config.
+        auto resourceAttrs = resource::Resource::Create({
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
+            {std::string(attr::networkType), setup_.networkType},
+        });
+
         // Create MeterProvider with the shared resource, then attach reader.
         meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
             std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
         meterProvider_->AddMetricReader(std::move(reader));
 
         // Histogram view: SpanMetrics-compatible bucket boundaries (ms) so
-        // histogram instruments align with the collector's SpanMetrics.
+        // histogram instruments align with the collector's SpanMetrics. The
+        // view is created with an EMPTY name so it applies the buckets WITHOUT
+        // renaming instruments — a non-empty view name would collapse every
+        // matching histogram (ios_latency, rpc_size, rpc_time, pathfind_*)
+        // into a single series under that one name.
         auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
             metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-        auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
+        // Meter selector MUST match the meter name used by getMeter() and the
+        // beast OTelCollector (kMeterName = "xrpld"); otherwise this histogram
+        // view never applies and duration histograms fall back to the SDK
+        // default boundaries instead of these SpanMetrics-aligned buckets.
+        auto meterSelector =
+            metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
         auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
         histogramConfig->boundaries_ =
             std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
         auto histogramView = metrics_sdk::ViewFactory::Create(
-            "default_histogram",
-            "Default histogram view with SpanMetrics-compatible buckets",
+            "",  // empty name: keep each instrument's own name, only set buckets
+            "SpanMetrics-compatible histogram buckets",
             metrics_sdk::AggregationType::kHistogram,
-            std::move(histogramConfig));
+            histogramConfig);
 
         meterProvider_->AddView(
             std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
@@ -470,12 +525,6 @@ public:
         // OTelCollector shim) reach the same pipeline.
         metrics_api::Provider::SetMeterProvider(
             opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
-
-        // Register as the global Telemetry instance so SpanGuard factory
-        // methods can access it without callers passing a reference.
-        Telemetry::setInstance(this);
-
-        JLOG(journal_.info()) << "Telemetry started successfully";
     }
 
     void
