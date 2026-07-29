@@ -351,10 +351,28 @@ span runs past its file, and that a `macro`/`definition` span contains its own
 node's name — the cheap check that catches a line number drifting off its
 declaration.
 
+## Interaction selection and the PR comment (Component B, second half)
+
+`select_interactions.py` joins `touched.json` against `interactions.json`: a pair
+is a candidate when the diff touched their shared resource or either feature.
+Candidacy is orders of magnitude too broad, so candidates are scored (resource
+signal, interaction kind, match precision, and above all whether the diff
+introduced a **new lever** — an edge the graph did not have), tiered, filtered of
+low-signal `consumer×consumer` noise, and capped. `render_comment.py` formats the
+result. Both are documented in [README.md](README.md); the scoring weights are
+ordinal and live at the top of `select_interactions.py`.
+
+The comment is advisory and makes no claim about test coverage, because the test
+locator does not exist yet. It states the boundary **state space** so a reviewer
+can check the states themselves — which is the same input Component C will grade
+against once it exists.
+
+CI is two workflows (`.github/workflows/interaction-review*.yml`): one computes
+with no write permissions, one posts on `workflow_run`. The graph is rebuilt on
+the PR head because node locations are head-side spans.
+
 ## Out of scope (later phases)
 
-- Interaction selection and ranking from the touched set (Component B, second
-  half).
 - Resource families for `src/libxrpl/tx/paths/` and `ledger/helpers/`, and
   following one hop of callees out of fork bodies. Both would raise recall
   materially; both change the resource taxonomy rather than the mapping.
