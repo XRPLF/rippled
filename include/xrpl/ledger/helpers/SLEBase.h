@@ -297,7 +297,7 @@ public:
     }
 
 protected:
-    view_ref_type view_{};
+    view_ref_type view_;
 
     // Keylet is only meaningful for writable views, but we conditionally
     // include it to avoid wasting space in read-only wrappers.
