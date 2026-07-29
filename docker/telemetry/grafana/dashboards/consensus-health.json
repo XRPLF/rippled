@@ -1,6 +1,36 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Annotate perf-iac runs",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
@@ -10,7 +40,7 @@
   "panels": [
     {
       "title": "Validation Send Rate",
-      "description": "###### What this is:\n*How often this node issues a ledger validation to the network. Each validation asserts the node fully validated one ledger.*\n\n###### How it's computed:\n*Per-second rate of validation events sent, summed per node over a 5-minute window.*\n\n###### Reading it:\n*A flat line at the network's ledger cadence is normal; higher is not better and lower means the node is validating less often.*\n\n###### Healthy range:\n*Roughly one validation per closed ledger (about 0.2-0.3/s on a healthy chain).*\n\n###### Watch for:\n*A drop to zero on a validator means it stopped validating; a value well below the close rate means validation is lagging.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::createValidationSpan`",
+      "description": "###### What this is:\n*How often this node issues a ledger validation to the network. Each validation asserts the node fully validated one ledger.*\n\n###### How it's computed:\n*Per-second rate of validation events sent, summed per node over a 5-minute window.*\n\n###### Reading it:\n*A flat line at the network's ledger cadence is normal; higher is not better and lower means the node is validating less often.*\n\n###### Healthy range:\n*Roughly one validation per closed ledger (about 0.2-0.3/s on a healthy chain).*\n\n###### Watch for:\n*A drop to zero on a validator means it stopped validating; a value well below the close rate means validation is lagging.*\n\n###### Keywords:\n- **Ledger validation** *(network event)* \u2014 the second consensus stage where the node confirms a built ledger matches the trusted validator quorum and marks it final.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::createValidationSpan`\n\n###### References:\n[Ledger validation](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-validation)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -28,14 +58,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops"
         },
         "overrides": []
@@ -44,7 +75,7 @@
     },
     {
       "title": "Consensus Mode Over Time",
-      "description": "###### What this is:\n*Ledger-close activity split by the node's consensus mode (Proposing, Observing, Wrong Ledger, Switched Ledger).*\n\n###### How it's computed:\n*Per-second rate of ledger-close events grouped by consensus mode, per node, over a 5-minute window.*\n\n###### Reading it:\n*One dominant band is normal; a validator should sit almost entirely in Proposing, a stock node in Observing.*\n\n###### Healthy range:\n*Nearly all activity in a single expected mode.*\n\n###### Watch for:\n*Sustained time in Wrong Ledger or Switched Ledger indicates the node is out of sync or flapping between chains.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onClose`",
+      "description": "###### What this is:\n*Ledger-close activity split by the node's consensus mode (Proposing, Observing, Wrong Ledger, Switched Ledger).*\n\n###### How it's computed:\n*Per-second rate of ledger-close events grouped by consensus mode, per node, over a 5-minute window.*\n\n###### Reading it:\n*One dominant band is normal; a validator should sit almost entirely in Proposing, a stock node in Observing.*\n\n###### Healthy range:\n*Nearly all activity in a single expected mode.*\n\n###### Watch for:\n*Sustained time in Wrong Ledger or Switched Ledger indicates the node is out of sync or flapping between chains.*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onClose`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -62,14 +93,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (consensus_mode, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"$1\", \"consensus_mode\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (consensus_mode, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"$1\", \"consensus_mode\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -85,7 +117,7 @@
     },
     {
       "title": "Consensus Proposals Sent Rate",
-      "description": "###### What this is:\n*How often this node proposes its candidate transaction set to peers during consensus.*\n\n###### How it's computed:\n*Per-second rate of proposal-send events, summed per node over a 5-minute window.*\n\n###### Reading it:\n*A steady line tracking the ledger cadence is healthy; only proposing (validator) nodes show activity.*\n\n###### Healthy range:\n*Steady output in step with the close rate for a proposing node; zero for a non-proposing node.*\n\n###### Watch for:\n*A proposing validator dropping to zero, or erratic spikes suggesting repeated re-proposals within rounds.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::propose`",
+      "description": "###### What this is:\n*How often this node proposes its candidate transaction set to peers during consensus.*\n\n###### How it's computed:\n*Per-second rate of proposal-send events, summed per node over a 5-minute window.*\n\n###### Reading it:\n*A steady line tracking the ledger cadence is healthy; only proposing (validator) nodes show activity.*\n\n###### Healthy range:\n*Steady output in step with the close rate for a proposing node; zero for a non-proposing node.*\n\n###### Watch for:\n*A proposing validator dropping to zero, or erratic spikes suggesting repeated re-proposals within rounds.*\n\n###### Keywords:\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::propose`\n\n###### References:\n[Proposal](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposal)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -103,14 +135,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.proposal.send\"}[$__rate_interval])), \"series\", \"Proposals / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.proposal.send\"}[$__rate_interval])), \"series\", \"Proposals / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Proposals / Sec",
@@ -126,7 +159,7 @@
     },
     {
       "title": "Accept vs Close Rate",
-      "description": "###### What this is:\n*Two rates side by side: ledgers accepted after consensus versus ledger closes initiated.*\n\n###### How it's computed:\n*Per-second rate of accept events and of close events, each summed per node over a 5-minute window.*\n\n###### Reading it:\n*The two lines should overlap; read any gap between them as closes that did not finish accepting.*\n\n###### Healthy range:\n*Both lines equal and tracking the network close cadence.*\n\n###### Watch for:\n*A persistent gap where closes exceed accepts points to consensus rounds failing or timing out before acceptance.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan / RCLConsensus::Adaptor::onClose`",
+      "description": "###### What this is:\n*Two rates side by side: ledgers accepted after consensus versus ledger closes initiated.*\n\n###### How it's computed:\n*Per-second rate of accept events and of close events, each summed per node over a 5-minute window.*\n\n###### Reading it:\n*The two lines should overlap; read any gap between them as closes that did not finish accepting.*\n\n###### Healthy range:\n*Both lines equal and tracking the network close cadence.*\n\n###### Watch for:\n*A persistent gap where closes exceed accepts points to consensus rounds failing or timing out before acceptance.*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan / RCLConsensus::Adaptor::onClose`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -144,20 +177,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\"}[$__rate_interval])), \"series\", \"Accepts / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\"}[$__rate_interval])), \"series\", \"Accepts / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"Closes / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"Closes / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -173,7 +208,7 @@
     },
     {
       "title": "Validation vs Close Rate",
-      "description": "###### What this is:\n*Two rates side by side: validations sent versus ledger closes, so you can see whether every closed ledger gets validated.*\n\n###### How it's computed:\n*Per-second rate of validation-send events and of close events, each summed per node over a 5-minute window.*\n\n###### Reading it:\n*The lines should overlap; a validation line below the close line means validation is falling behind.*\n\n###### Healthy range:\n*Both lines equal at the network close cadence.*\n\n###### Watch for:\n*Validations persistently trailing closes, which means the node validates fewer ledgers than it closes.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::createValidationSpan / RCLConsensus::Adaptor::onClose`",
+      "description": "###### What this is:\n*Two rates side by side: validations sent versus ledger closes, so you can see whether every closed ledger gets validated.*\n\n###### How it's computed:\n*Per-second rate of validation-send events and of close events, each summed per node over a 5-minute window.*\n\n###### Reading it:\n*The lines should overlap; a validation line below the close line means validation is falling behind.*\n\n###### Healthy range:\n*Both lines equal at the network close cadence.*\n\n###### Watch for:\n*Validations persistently trailing closes, which means the node validates fewer ledgers than it closes.*\n\n###### Keywords:\n- **Validations checked vs sent** *(per node)* \u2014 validations this node received from peers and checked, versus validations it issued itself.\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::createValidationSpan / RCLConsensus::Adaptor::onClose`\n\n###### References:\n[Validations checked vs sent](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validations-checked-vs-sent)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -191,20 +226,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.validation.send\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.validation.send\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"Closes / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.ledger_close\"}[$__rate_interval])), \"series\", \"Closes / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -220,7 +257,7 @@
     },
     {
       "title": "Time to Reach Consensus (p50/p95)",
-      "description": "###### What this is:\n*Wall-clock time for the network to agree a ledger, at the median and 95th percentile.*\n\n###### How it's computed:\n*The recorded per-round agreement time is aggregated to its 50th and 95th percentile over the window.*\n\n###### Reading it:\n*Lower is better; the p95 line shows the worst typical rounds while p50 shows the common case.*\n\n###### Healthy range:\n*Roughly 2-4 seconds on mainnet; workload- and network-dependent.*\n\n###### Watch for:\n*Rising percentiles, or a p95 that pulls far above p50, signal slow or contentious rounds under load or poor peer connectivity.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`",
+      "description": "###### What this is:\n*Wall-clock time for the network to agree a ledger, at the median and 95th percentile.*\n\n###### How it's computed:\n*The recorded per-round agreement time is aggregated to its 50th and 95th percentile over the window.*\n\n###### Reading it:\n*Lower is better; the p95 line shows the worst typical rounds while p50 shows the common case.*\n\n###### Healthy range:\n*Roughly 2-4 seconds on mainnet; workload- and network-dependent.*\n\n###### Watch for:\n*Rising percentiles, or a p95 that pulls far above p50, signal slow or contentious rounds under load or poor peer connectivity.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Convergence time** *(network event)* \u2014 the wall-clock time the network took to agree a ledger in a round.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -238,7 +275,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.round_time_ms, .5)",
@@ -248,7 +285,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "refId": "B",
@@ -273,7 +310,7 @@
     },
     {
       "title": "Average Time to Reach Consensus",
-      "description": "###### What this is:\n*Mean wall-clock time for the network to agree a ledger.*\n\n###### How it's computed:\n*The recorded per-round agreement time averaged over the window.*\n\n###### Reading it:\n*Lower is better; watch the trend rather than any single point.*\n\n###### Healthy range:\n*Roughly 2-4 seconds on mainnet; workload-dependent.*\n\n###### Watch for:\n*A steady upward drift indicates the network is taking longer to converge, often from load or connectivity problems.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`",
+      "description": "###### What this is:\n*Mean wall-clock time for the network to agree a ledger.*\n\n###### How it's computed:\n*The recorded per-round agreement time averaged over the window.*\n\n###### Reading it:\n*Lower is better; watch the trend rather than any single point.*\n\n###### Healthy range:\n*Roughly 2-4 seconds on mainnet; workload-dependent.*\n\n###### Watch for:\n*A steady upward drift indicates the network is taking longer to converge, often from load or connectivity problems.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Convergence time** *(network event)* \u2014 the wall-clock time the network took to agree a ledger in a round.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -291,7 +328,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.round_time_ms)",
@@ -316,7 +353,7 @@
     },
     {
       "title": "Consensus Rounds per Ledger (Establish Count)",
-      "description": "###### What this is:\n*How many establish-phase iterations each ledger needed before validators converged.*\n\n###### How it's computed:\n*Ledgers are counted over the window and grouped by their iteration count; each series is one count value.*\n\n###### Reading it:\n*Most weight on the '1' series is ideal; weight shifting to 2, 3 or more shows harder convergence.*\n\n###### Healthy range:\n*The large majority of ledgers converging in one iteration.*\n\n###### Watch for:\n*A growing share of ledgers needing several iterations, indicating disagreement or network stress.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::startEstablishTracing`",
+      "description": "###### What this is:\n*How many establish-phase iterations each ledger needed before validators converged.*\n\n###### How it's computed:\n*Ledgers are counted over the window and grouped by their iteration count; each series is one count value.*\n\n###### Reading it:\n*Most weight on the '1' series is ideal; weight shifting to 2, 3 or more shows harder convergence.*\n\n###### Healthy range:\n*The large majority of ledgers converging in one iteration.*\n\n###### Watch for:\n*A growing share of ledgers needing several iterations, indicating disagreement or network stress.*\n\n###### Keywords:\n- **Establish phase** *(network event)* \u2014 the consensus phase where validators iterate proposals; the establish count is how many iterations a ledger needed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::startEstablishTracing`\n\n###### References:\n[Establish phase](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#establish-phase)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -340,7 +377,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "refId": "A",
@@ -366,7 +403,7 @@
     },
     {
       "title": "Previous Round Time per Ledger",
-      "description": "###### What this is:\n*Duration of the immediately preceding consensus round, at the 95th percentile.*\n\n###### How it's computed:\n*The prior round's recorded duration is aggregated to its 95th percentile over the window.*\n\n###### Reading it:\n*Lower is better; complements the time-to-consensus panels with the previous round's cost.*\n\n###### Healthy range:\n*Comparable to the current time-to-consensus, roughly a few seconds.*\n\n###### Watch for:\n*A rising p95 means recent rounds have been expensive, often preceding a slowdown in ledger cadence.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::startRoundTracing`",
+      "description": "###### What this is:\n*Duration of the immediately preceding consensus round, at the 95th percentile.*\n\n###### How it's computed:\n*The prior round's recorded duration is aggregated to its 95th percentile over the window.*\n\n###### Reading it:\n*Lower is better; complements the time-to-consensus panels with the previous round's cost.*\n\n###### Healthy range:\n*Comparable to the current time-to-consensus, roughly a few seconds.*\n\n###### Watch for:\n*A rising p95 means recent rounds have been expensive, often preceding a slowdown in ledger cadence.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Convergence time** *(network event)* \u2014 the wall-clock time the network took to agree a ledger in a round.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::startRoundTracing`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -384,7 +421,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.round\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.previous_round_time_ms, .95)",
@@ -409,7 +446,7 @@
     },
     {
       "title": "Position Update Duration",
-      "description": "###### What this is:\n*Time this node spends each round tallying disputes and updating its consensus position, at the 95th percentile.*\n\n###### How it's computed:\n*Per-round position-update durations are aggregated to their 95th percentile over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; short, flat durations are normal.*\n\n###### Healthy range:\n*A few milliseconds under normal load.*\n\n###### Watch for:\n*Sustained high durations point to heavy dispute resolution or slow convergence on close time.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::updateOurPositions`",
+      "description": "###### What this is:\n*Time this node spends each round tallying disputes and updating its consensus position, at the 95th percentile.*\n\n###### How it's computed:\n*Per-round position-update durations are aggregated to their 95th percentile over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; short, flat durations are normal.*\n\n###### Healthy range:\n*A few milliseconds under normal load.*\n\n###### Watch for:\n*Sustained high durations point to heavy dispute resolution or slow convergence on close time.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Position update** *(per node)* \u2014 the per-round work of tallying disputes and revising the node's own consensus position.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::updateOurPositions`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Close time](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -427,14 +464,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.update_positions\"}[5m]))), \"series\", \"P95 Update\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.update_positions\"}[5m]))), \"series\", \"P95 Update\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -450,7 +488,7 @@
     },
     {
       "title": "Ledger Close Duration",
-      "description": "###### What this is:\n*Time from when consensus triggers a ledger close to when the close completes, at the 95th percentile.*\n\n###### How it's computed:\n*Per-close durations are aggregated to their 95th percentile per node over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; compare against the round time to see how much of it the close accounts for.*\n\n###### Healthy range:\n*A few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A rising p95 indicates the close step is becoming a bottleneck, often under heavy transaction volume.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onClose`",
+      "description": "###### What this is:\n*Full consensus round duration (open to accept) at the 95th percentile — the time a ledger takes to close.*\n\n###### How it's computed:\n*95th percentile of the consensus.round span duration per node over a 5-minute window.*\n\n###### Reading it:\n*Tracks the network close interval (~3-5s on mainnet); lower and steadier is better.*\n\n###### Healthy range:\n*A few seconds, matching the close cadence; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising p95 means rounds are taking longer to converge.*\n\n###### Note:\n*Uses consensus.round, not consensus.ledger_close: the latter span only wraps the sub-millisecond onClose() prologue and is not the ledger close time.*\n\n###### Keywords:\n- **Consensus round** *(network event)* — one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Ledger close interval** *(network-wide)* — the network's steady ledger rhythm — roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Convergence time** *(network event)* — the wall-clock time the network took to agree a ledger in a round.\n- **Ledger close** *(network event)* — the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onClose (round span)`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -468,14 +506,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[5m]))), \"series\", \"P95 Close Duration\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.round\"}[5m]))), \"series\", \"P95 Close (consensus.round)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -491,7 +530,7 @@
     },
     {
       "title": "Ledger Apply Duration (doAccept)",
-      "description": "###### What this is:\n*Time spent applying the agreed transaction set to build the new ledger, at the 95th percentile.*\n\n###### How it's computed:\n*Per-apply durations are aggregated to their 95th percentile per node over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; this is the cost of executing the ledger's transactions.*\n\n###### Healthy range:\n*A few to tens of milliseconds, scaling with the number of transactions in the ledger.*\n\n###### Watch for:\n*A rising p95 alongside high transaction counts signals apply-stage load, whether organic or from a flood of transactions.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`",
+      "description": "###### What this is:\n*Time spent applying the agreed transaction set to build the new ledger, at the 95th percentile.*\n\n###### How it's computed:\n*Per-apply durations are aggregated to their 95th percentile per node over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; this is the cost of executing the ledger's transactions.*\n\n###### Healthy range:\n*A few to tens of milliseconds, scaling with the number of transactions in the ledger.*\n\n###### Watch for:\n*A rising p95 alongside high transaction counts signals apply-stage load, whether organic or from a flood of transactions.*\n\n###### Keywords:\n- **Transaction apply phase** *(per node)* \u2014 the step that executes the agreed transaction set into the new ledger during a close.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Transaction apply phase](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-apply-phase)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -502,14 +541,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m]))), \"series\", \"P95 Apply Duration\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m]))), \"series\", \"P95 Apply Duration\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -525,7 +565,7 @@
     },
     {
       "title": "Consensus Accept Duration Heatmap",
-      "description": "###### What this is:\n*Distribution of how long the accept step takes across rounds, over time.*\n\n###### How it's computed:\n*Accept durations are bucketed by duration band and counted per 5-minute window, drawn as a heatmap.*\n\n###### Reading it:\n*A tight low band is healthy; brighter cells higher up mean more slow rounds.*\n\n###### Healthy range:\n*Most rounds concentrated in the lowest duration bands.*\n\n###### Watch for:\n*A widening or upward-drifting hot band flags outlier rounds that take abnormally long.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`",
+      "description": "###### What this is:\n*Distribution of how long the accept step takes across rounds, over time.*\n\n###### How it's computed:\n*Accept durations are bucketed by duration band and counted per 5-minute window, drawn as a heatmap.*\n\n###### Reading it:\n*A tight low band is healthy; brighter cells higher up mean more slow rounds.*\n\n###### Healthy range:\n*Most rounds concentrated in the lowest duration bands.*\n\n###### Watch for:\n*A widening or upward-drifting hot band flags outlier rounds that take abnormally long.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -546,7 +586,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum(increase(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
@@ -562,7 +603,7 @@
     },
     {
       "title": "Close-Time Agreement Rate (Agreed vs Disagreed)",
-      "description": "###### What this is:\n*How often validators agreed on the ledger close time versus agreed to disagree.*\n\n###### How it's computed:\n*Per-second rate of rounds split into Agreed and Disagreed, per node, over the rate interval.*\n\n###### Reading it:\n*Mostly Agreed is healthy; occasional Disagreed is normal when validator clocks differ slightly.*\n\n###### Healthy range:\n*Overwhelmingly Agreed.*\n\n###### Watch for:\n*A sustained rise in Disagreed points to clock drift or latency spread across the validator set.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`",
+      "description": "###### What this is:\n*How often validators agreed on the ledger close time versus agreed to disagree.*\n\n###### How it's computed:\n*Per-second rate of rounds split into Agreed and Disagreed, per node, over the rate interval.*\n\n###### Reading it:\n*Mostly Agreed is healthy; occasional Disagreed is normal when validator clocks differ slightly.*\n\n###### Healthy range:\n*Overwhelmingly Agreed.*\n\n###### Watch for:\n*A sustained rise in Disagreed points to clock drift or latency spread across the validator set.*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Clock drift** *(network event)* \u2014 differences between validators' clocks, which spread their proposed close times.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Clock drift](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -573,14 +614,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (close_time_correct, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{span_name=\"consensus.accept.apply\", consensus_mode=~\"$consensus_mode\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"close_time_correct\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (close_time_correct, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{span_name=\"consensus.accept.apply\", consensus_mode=~\"$consensus_mode\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"close_time_correct\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Rounds / Sec",
@@ -596,7 +638,7 @@
     },
     {
       "title": "Close Time Vote Bins & Resolution",
-      "description": "###### What this is:\n*Two related values: how many distinct close-time votes were seen, and the current close-time rounding granularity in ms.*\n\n###### How it's computed:\n*Both values are averaged over the window and plotted on dual axes.*\n\n###### Reading it:\n*Fewer vote bins and a fine resolution mean tight agreement; more bins and a coarse resolution mean disagreement.*\n\n###### Healthy range:\n*Few bins with a fine (about 10s) resolution.*\n\n###### Watch for:\n*Rising bins with the resolution widening (toward 120s) shows validators struggling to agree on close time.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`",
+      "description": "###### What this is:\n*Two related values: how many distinct close-time votes were seen, and the current close-time rounding granularity in ms.*\n\n###### How it's computed:\n*Both values are averaged over the window and plotted on dual axes.*\n\n###### Reading it:\n*Fewer vote bins and a fine resolution mean tight agreement; more bins and a coarse resolution mean disagreement.*\n\n###### Healthy range:\n*Few bins with a fine (about 10s) resolution.*\n\n###### Watch for:\n*Rising bins with the resolution widening (toward 120s) shows validators struggling to agree on close time.*\n\n###### Keywords:\n- **Distinct positions** *(network event)* \u2014 the number of different close-time values validators proposed in a round; one means full agreement.\n- **Close-time resolution** *(network event)* \u2014 the granularity (in seconds) that close times are rounded to; widens when validators disagree.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Distinct positions](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#distinct-positions)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -666,7 +708,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_vote_bins)",
@@ -676,7 +718,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_resolution_ms)",
@@ -688,7 +730,7 @@
     },
     {
       "title": "Close-Time Resolution Change (per Round)",
-      "description": "###### What this is:\n*Whether the close-time rounding granularity moved Coarser, Finer, or stayed Steady versus the previous round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by direction of change.*\n\n###### Reading it:\n*Mostly Steady is healthy; Coarser means widening bins (more disagreement), Finer means tightening.*\n\n###### Healthy range:\n*Predominantly Steady.*\n\n###### Watch for:\n*Frequent Coarser shifts indicate the network is repeatedly failing to agree on close time.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`",
+      "description": "###### What this is:\n*Whether the close-time rounding granularity moved Coarser, Finer, or stayed Steady versus the previous round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by direction of change.*\n\n###### Reading it:\n*Mostly Steady is healthy; Coarser means widening bins (more disagreement), Finer means tightening.*\n\n###### Healthy range:\n*Predominantly Steady.*\n\n###### Watch for:\n*Frequent Coarser shifts indicate the network is repeatedly failing to agree on close time.*\n\n###### Keywords:\n- **Close-time resolution** *(network event)* \u2014 the granularity (in seconds) that close times are rounded to; widens when validators disagree.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Close-time resolution](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#close-time-resolution)",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -724,7 +766,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
@@ -759,7 +801,7 @@
     },
     {
       "title": "Close-Time Proposal Spread (Distinct Positions per Round)",
-      "description": "###### What this is:\n*How spread out validators' proposed close times were, as the number of distinct positions per round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by their distinct-position count; each bar is one count value.*\n\n###### Reading it:\n*Weight on '1 distinct position' means everyone agreed; weight on 2 or more means the proposals split.*\n\n###### Healthy range:\n*Most rounds at a single distinct position.*\n\n###### Watch for:\n*A shift toward two or more distinct positions signals growing clock drift or latency across validators.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`",
+      "description": "###### What this is:\n*How spread out validators' proposed close times were, as the number of distinct positions per round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by their distinct-position count; each bar is one count value.*\n\n###### Reading it:\n*Weight on '1 distinct position' means everyone agreed; weight on 2 or more means the proposals split.*\n\n###### Healthy range:\n*Most rounds at a single distinct position.*\n\n###### Watch for:\n*A shift toward two or more distinct positions signals growing clock drift or latency across validators.*\n\n###### Keywords:\n- **Distinct positions** *(network event)* \u2014 the number of different close-time values validators proposed in a round; one means full agreement.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Clock drift** *(network event)* \u2014 differences between validators' clocks, which spread their proposed close times.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Distinct positions](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#distinct-positions)",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -795,7 +837,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
@@ -807,7 +849,7 @@
     },
     {
       "title": "Consensus Outcome Distribution (per Round)",
-      "description": "###### What this is:\n*How consensus rounds concluded: Agreed, Moved On (partial), Expired (timeout), or No Consensus.*\n\n###### How it's computed:\n*Rounds over the window are counted and grouped by outcome, shown as shares of a pie.*\n\n###### Reading it:\n*An almost fully Agreed pie is healthy; other slices represent degraded outcomes.*\n\n###### Healthy range:\n*Nearly 100 percent Agreed.*\n\n###### Watch for:\n*A growing Moved On or Expired share signals network stress, disagreement, or connectivity loss.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`",
+      "description": "###### What this is:\n*How consensus rounds concluded: Agreed, Moved On (partial), Expired (timeout), or No Consensus.*\n\n###### How it's computed:\n*Rounds over the window are counted and grouped by outcome, shown as shares of a pie.*\n\n###### Reading it:\n*An almost fully Agreed pie is healthy; other slices represent degraded outcomes.*\n\n###### Healthy range:\n*Nearly 100 percent Agreed.*\n\n###### Watch for:\n*A growing Moved On or Expired share signals network stress, disagreement, or connectivity loss.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus outcome** *(network event)* \u2014 how a round concluded: Agreed, Moved On (partial), Expired (timeout), or No Consensus.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Consensus outcome](https://xrpl.org/docs/concepts/consensus-protocol/consensus-principles-and-rules) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -829,14 +871,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (consensus_state, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state!=\"\"}[$__rate_interval])), \"series\", \"$1\", \"consensus_state\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, consensus_state, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state!=\"\"}[$__rate_interval])), \"series\", \"$1\", \"consensus_state\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short"
         },
         "overrides": []
@@ -845,7 +888,7 @@
     },
     {
       "title": "Consensus Failures Over Time",
-      "description": "###### What this is:\n*Rate of non-normal consensus outcomes (moved-on plus expired) over time.*\n\n###### How it's computed:\n*Per-second rate of the moved-on and expired outcomes, summed per node over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; any sustained line is a concern.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Spikes or a persistent nonzero rate indicate consensus instability that can precede ledger stalls or forks.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`",
+      "description": "###### What this is:\n*Rate of non-normal consensus outcomes (moved-on plus expired) over time.*\n\n###### How it's computed:\n*Per-second rate of the moved-on and expired outcomes, summed per node over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; any sustained line is a concern.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Spikes or a persistent nonzero rate indicate consensus instability that can precede ledger stalls or forks.*\n\n###### Keywords:\n- **Consensus outcome** *(network event)* \u2014 how a round concluded: Agreed, Moved On (partial), Expired (timeout), or No Consensus.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::makeAcceptSpan`\n\n###### References:\n[Consensus outcome](https://xrpl.org/docs/concepts/consensus-protocol/consensus-principles-and-rules) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-outcome)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -863,20 +906,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state=\"moved_on\"}[$__rate_interval])), \"series\", \"moved_on\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state=\"moved_on\"}[$__rate_interval])), \"series\", \"moved_on\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state=\"expired\"}[$__rate_interval])), \"series\", \"expired\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.accept\", consensus_state=\"expired\"}[$__rate_interval])), \"series\", \"expired\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Failures / Sec",
@@ -892,7 +937,7 @@
     },
     {
       "title": "Consensus Stall Rate",
-      "description": "###### What this is:\n*Rate at which consensus health checks report a stalled condition versus not stalled.*\n\n###### How it's computed:\n*Per-second rate of consensus checks split by stalled flag, summed per node over a 5-minute window.*\n\n###### Reading it:\n*The Not Stalled line should carry all the weight; any Stalled line is an early warning.*\n\n###### Healthy range:\n*Stalled at zero.*\n\n###### Watch for:\n*A nonzero stalled rate surfaces stalls before they show up as validated-ledger-age alarms.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::haveConsensus`",
+      "description": "###### What this is:\n*Rate at which consensus health checks report a stalled condition versus not stalled.*\n\n###### How it's computed:\n*Per-second rate of consensus checks split by stalled flag, summed per node over a 5-minute window.*\n\n###### Reading it:\n*The Not Stalled line should carry all the weight; any Stalled line is an early warning.*\n\n###### Healthy range:\n*Stalled at zero.*\n\n###### Watch for:\n*A nonzero stalled rate surfaces stalls before they show up as validated-ledger-age alarms.*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Consensus stall** *(per node)* \u2014 a health check reporting that consensus is not making forward progress.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::haveConsensus`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Consensus stall](https://xrpl.org/docs/concepts/consensus-protocol/consensus-principles-and-rules) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -910,20 +955,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.check\", consensus_stalled=\"true\"}[$__rate_interval])), \"series\", \"Stalled\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.check\", consensus_stalled=\"true\"}[$__rate_interval])), \"series\", \"Stalled\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.check\", consensus_stalled=\"false\"}[$__rate_interval])), \"series\", \"Not Stalled\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.check\", consensus_stalled=\"false\"}[$__rate_interval])), \"series\", \"Not Stalled\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Checks / Sec",
@@ -939,7 +986,7 @@
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
-      "description": "###### What this is:\n*How often the node switches consensus mode, broken down by the mode it switched into.*\n\n###### How it's computed:\n*Per-second rate of mode-change events grouped by target mode, per node, over a 5-minute window.*\n\n###### Reading it:\n*Near-zero is healthy; a stable node rarely changes mode.*\n\n###### Healthy range:\n*Essentially zero mode changes in steady state.*\n\n###### Watch for:\n*Frequent switches into Wrong Ledger or Switched Ledger mark an unstable node at risk of forking.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onModeChange`",
+      "description": "###### What this is:\n*How often the node switches consensus mode, broken down by the mode it switched into.*\n\n###### How it's computed:\n*Per-second rate of mode-change events grouped by target mode, per node, over a 5-minute window.*\n\n###### Reading it:\n*Near-zero is healthy; a stable node rarely changes mode.*\n\n###### Healthy range:\n*Essentially zero mode changes in steady state.*\n\n###### Watch for:\n*Frequent switches into Wrong Ledger or Switched Ledger mark an unstable node at risk of forking.*\n\n###### Keywords:\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n- **Fork** *(network-wide)* \u2014 when nodes validate divergent ledger chains instead of a single agreed history.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::onModeChange`\n\n###### References:\n[Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Fork](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-mode)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -957,14 +1004,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (mode_new, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.mode_change\"}[$__rate_interval])), \"series\", \"$1\", \"mode_new\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (mode_new, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.mode_change\"}[$__rate_interval])), \"series\", \"$1\", \"mode_new\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mode Changes / Sec",
@@ -980,7 +1028,7 @@
     },
     {
       "title": "Ledger History Mismatch Rate by Reason",
-      "description": "###### What this is:\n*Rate of built-versus-validated ledger mismatches, broken down by why they diverged.*\n\n###### How it's computed:\n*Per-second rate of mismatch events grouped by reason, per node, over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; the reason label tells you the nature of any divergence.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Any sustained rate marks a fork; the reason distinguishes close-time disagreement, sync drift, and transaction-processing differences.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`",
+      "description": "###### What this is:\n*Rate of built-versus-validated ledger mismatches, broken down by why they diverged.*\n\n###### How it's computed:\n*Per-second rate of mismatch events grouped by reason, per node, over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is healthy; the reason label tells you the nature of any divergence.*\n\n###### Healthy range:\n*Zero under normal operation.*\n\n###### Watch for:\n*Any sustained rate marks a fork; the reason distinguishes close-time disagreement, sync drift, and transaction-processing differences.*\n\n###### Keywords:\n- **Ledger history mismatch** *(per node)* \u2014 when a locally built ledger's hash does not match the network-validated hash.\n- **Fork** *(network-wide)* \u2014 when nodes validate divergent ledger chains instead of a single agreed history.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`\n\n###### References:\n[Fork](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Close time](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-history-mismatch)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -998,14 +1046,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mismatches / Sec",
@@ -1025,6 +1074,32 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "DS_TEMPO",
+        "type": "datasource",
+        "label": "Tempo",
+        "query": "tempo",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "service_name",
         "label": "Service Name",
         "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
@@ -1032,7 +1107,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1052,7 +1127,7 @@
         "query": "label_values(deployment_environment)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1072,7 +1147,7 @@
         "query": "label_values(xrpl_network_type)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1152,7 +1227,7 @@
         "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1172,7 +1247,7 @@
         "query": "label_values(span_calls_total{span_name=\"consensus.ledger_close\"}, consensus_mode)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1257,5 +1332,6 @@
   },
   "title": "Consensus Health",
   "uid": "consensus-health",
-  "description": "What this shows: Consensus health for XRPL nodes: how reliably and quickly the network agrees each ledger, and where agreement breaks down.\nUse it to: Spot stalled or slow consensus rounds and pinpoint the phase where agreement is failing."
+  "description": "What this shows: Consensus health for XRPL nodes: how reliably and quickly the network agrees each ledger, and where agreement breaks down.  \u2014  Use it to: Spot stalled or slow consensus rounds and pinpoint the phase where agreement is failing.",
+  "refresh": "30s"
 }

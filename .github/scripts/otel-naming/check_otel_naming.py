@@ -19,12 +19,16 @@ Design principles
        and the `join(seg::..., ...)` dotted resource compositions), and
      * the keys the code passes to `Resource::Create({ ... })` in Telemetry.cpp
        (the standard `semconv::service::*` keys -> service.name/version/...).
-   The one narrow, explicit exception is EXTERNAL_INFRA_LABELS (Rule D):
+   The one narrow, explicit exception is EXTERNAL_INFRA_LABELS (Rules D & E):
    identity labels stamped by infrastructure outside this repo's OTel code
    (the perf-iac harness), which by definition have no source in-tree to
    derive from. Kept separate from the generic Prometheus/Grafana builtins
    set so the exception stays visible rather than blending into "things
-   every OTel setup has".
+   every OTel setup has". perf-iac's alloy pipeline stamps each identity at
+   two layers -- dotted on the OTel resource attribute (xrpl.work.item/
+   .branch/.node.role, checked by Rule E) and underscore on the derived
+   Prometheus metric-datapoint label (xrpl_work_item/_branch/_node_role,
+   checked by Rule D) -- so both forms are exempt from the same constant.
 
 2. Presence-gated enforcement. Every rule runs ONLY when the source files it
    needs are present in the tree, and is otherwise skipped (never failed). This
@@ -63,7 +67,9 @@ Rules (each FAILS the build, when its inputs are present)
      native-metric label, or a builtin. TraceQL `span.`/`resource.` scope
      prefixes are stripped before the L1 lookup.
   E  No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the
-     L1 resource attrs xrpl.network.* may be dotted). Span names, filenames,
+     L1 resource attrs xrpl.network.* and the EXTERNAL_INFRA_LABELS dotted
+     form -- xrpl.work.item/.branch/.node.role -- may be dotted). Span names,
+     filenames,
      OTel-standard keys, and metric labels are not flagged.
 
 Warnings (printed, but do NOT fail the build)
@@ -148,9 +154,22 @@ BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 # Dashboards reference span attributes in TraceQL as `span.<attr>`; the bare
 # attribute is what must exist in L1, so strip the scope before validating.
 TRACEQL_SCOPE = re.compile(r"^(?:span|resource|event|link|instrumentation_scope)\.")
-# An OTel metric label key as emitted in C++: `Add(.., {{"label", ...}})` /
-# `{{"label", value}}` instrument calls in MetricsRegistry.
-METRIC_LABEL = re.compile(r'\{\{\s*"([a-z_][a-z0-9_]*)"\s*,')
+# An OTel metric label map as emitted in C++: the `{{...}}` argument of an
+# instrument call, e.g. `counter->Add(1, {{"job_type", a}, {"handler", b}})`.
+# Matching the whole map first, rather than scanning the file for `{"key",`,
+# keeps ordinary brace initializers (`{"http", "https", ...}`) out of the
+# label set — they are not labels and must not license a dashboard filter.
+METRIC_LABEL_MAP = re.compile(r"\{\{(.*?)\}\}", re.DOTALL)
+# One key inside such a map: a string literal, or a `kFooLabel` constant name
+# resolved through LABEL_CONST_DEF. Inside the map, each pair opens with `{`,
+# except the first, whose `{` was consumed by the map's own `{{`.
+METRIC_LABEL = re.compile(r'(?:^|\{)\s*"([a-z_][a-z0-9_]*)"\s*,')
+METRIC_LABEL_CONST = re.compile(r"(?:^|\{)\s*(k[A-Za-z0-9_]*)\s*,")
+# A label-key constant definition, with or without `inline`:
+# `constexpr char kHandlerLabel[] = "handler";`
+LABEL_CONST_DEF = re.compile(
+    r'(?:inline\s+)?constexpr\s+char\s+(k[A-Za-z0-9_]*)\s*\[\s*\]\s*=\s*"([a-z_][a-z0-9_]*)"'
+)
 
 
 def strip_comments(text: str) -> str:
@@ -793,16 +812,36 @@ def run_rule_c_tempo(root: Path, l1_keys: Set[str], report: Report) -> None:
 def metric_label_names(root: Path) -> Set[str]:
     """L6: OTel native-metric label keys emitted by the telemetry code, e.g.
     `counter->Add(1, {{"job_type", value}})` in MetricsRegistry.cpp. These are
-    a valid source of dashboard labels distinct from span attributes (L1)."""
+    a valid source of dashboard labels distinct from span attributes (L1).
+
+    A label key may be written inline as a string literal or hoisted into a
+    named constant (`constexpr char kHandlerLabel[] = "handler";`, then
+    `{{kHandlerLabel, value}}`). Both forms are collected, and the constants
+    may be declared in a header, so headers are scanned as well as sources."""
     labels: Set[str] = set()
+    # Constant name -> label string, gathered across every scanned file so a
+    # `{{kFooLabel, ...}}` call site resolves even when the definition lives in
+    # a different file from the instrument call.
+    constants: Dict[str, str] = {}
+    used_constants: Set[str] = set()
     for base in ("src", "include"):
-        for p in (root / base).rglob("*.cpp"):
-            if not p.is_file():
-                continue
-            text = read_source(p)
-            if "MetricsRegistry" not in p.name and "metric" not in text.lower():
-                continue
-            labels |= set(METRIC_LABEL.findall(text))
+        for pattern in ("*.cpp", "*.h"):
+            for p in (root / base).rglob(pattern):
+                if not p.is_file():
+                    continue
+                # Test code passes arbitrary literal pairs to exercise APIs
+                # (`signers("alice", 1, {{"alice", 1}, {"bob", 2}})`). Those are
+                # not metric labels, and must not license a dashboard filter.
+                if is_test_path(p):
+                    continue
+                text = read_source(p)
+                if "MetricsRegistry" not in p.name and "metric" not in text.lower():
+                    continue
+                constants.update(dict(LABEL_CONST_DEF.findall(text)))
+                for label_map in METRIC_LABEL_MAP.findall(text):
+                    labels |= set(METRIC_LABEL.findall(label_map))
+                    used_constants |= set(METRIC_LABEL_CONST.findall(label_map))
+    labels |= {constants[name] for name in used_constants if name in constants}
     return labels
 
 
@@ -818,6 +857,7 @@ def metric_label_names(root: Path) -> Set[str]:
 # repo's OTel code (never as a workaround for a dashboard querying a label
 # that nothing actually emits — that is a real Rule D violation).
 EXTERNAL_INFRA_LABELS = {
+    "xrpl_work_item",  # perf-iac: ticket/work-item id for the perf comparison run
     "xrpl_branch",  # perf-iac: git ref of the xrpld build under test
     "xrpl_node_role",  # perf-iac: validator/peer role in the perf cluster
 }
@@ -901,9 +941,17 @@ def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
     # Legitimate dotted resource attrs (`xrpl.network.id`/`.type`) are in L1 and
     # are skipped. A dotted `xrpl.` token absent from L1 is a genuine doc/code
     # mismatch (e.g. `xrpl.tx.hash` where the code emits `tx_hash`).
+    # EXTERNAL_INFRA_LABELS (Rule D) holds the underscore/metric-label form of
+    # the perf-iac identity attrs; the resource-attribute layer stamps the same
+    # identities dotted (xrpl.work.item/.branch/.node.role -- see the alloy
+    # pipeline that owns them), so also skip a token whose dotted-to-underscore
+    # form is in that set.
+    external_infra_dotted = {lbl.replace("_", ".") for lbl in EXTERNAL_INFRA_LABELS}
     for m in re.finditer(r"`(xrpl\.[a-z][a-z0-9_.]*)`", text):
         token = m.group(1)
         if token in l1_keys:  # legitimate dotted resource attr (xrpl.network.*)
+            continue
+        if token in external_infra_dotted:  # perf-iac resource-attribute layer
             continue
         found = True
         report.violation(

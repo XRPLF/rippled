@@ -43,7 +43,7 @@ graph LR
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R1 -->|"* gauges<br/>* counters<br/>* histograms"| E
+    R1 -->|"gauges, counters,<br/>histograms (OTLP)"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
@@ -732,15 +732,24 @@ sampled at the same instant.
 
 ### 3.3 Deployment-Tier Template Variables
 
-Every dashboard carries four filtering template variables (each variable name
-matches its Prometheus label), letting one Grafana stack be sliced by tier:
+Every dashboard carries seven filtering template variables (each variable name
+matches its Prometheus label), letting one Grafana stack be sliced by tier and
+by perf-comparison run:
 
-| Variable                  | Source label             | Description                                                  |
-| ------------------------- | ------------------------ | ------------------------------------------------------------ |
-| `$node`                   | `exported_instance`      | Filter by xrpld node instance                                |
-| `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)             |
-| `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`) |
-| `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet`)         |
+| Variable                  | Source label             | Description                                                      |
+| ------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| `$node`                   | `service_instance_id`    | Filter by xrpld node instance                                    |
+| `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)                 |
+| `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`)     |
+| `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet` / `perf`)    |
+| `$xrpl_work_item`         | `xrpl_work_item`         | Filter by perf-iac work item / ticket (e.g. `RIPD-7455`)         |
+| `$xrpl_branch`            | `xrpl_branch`            | Filter by comparison side (`baseline:<ref>:<commit>` / `test:…`) |
+| `$xrpl_node_role`         | `xrpl_node_role`         | Filter by node role (`validator` / `peer`)                       |
+
+The last three are populated only during perf-iac comparison runs (stamped as
+resource attributes by perf-iac's own alloy pipeline, not the repo collector).
+Outside those runs the labels are absent; the filters default to **All**, which
+matches series lacking the label so every dashboard still renders.
 
 See [telemetry-runbook.md](../docs/telemetry-runbook.md) "Deployment Tiers"
 for how the tier attributes are set and reach metrics.
@@ -869,7 +878,7 @@ Example:
 2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
-- **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo/Jaeger.
+- **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo.
 - **`span_id=<hex16>`** — 16-character lowercase hex span identifier. Identifies the specific span within the trace.
 - **Only present** when the log is emitted within an active OTel span. Log lines outside of traced code paths have no trace context fields.
 
@@ -942,16 +951,17 @@ async callbacks for new categories.
 
 #### Server Info (via OTel MetricsRegistry)
 
-| Prometheus Metric                                   | Type  | Labels   | Description                                  |
-| --------------------------------------------------- | ----- | -------- | -------------------------------------------- |
-| `server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)    |
-| `server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                   |
-| `server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                        |
-| `server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number             |
-| `server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                 |
-| `server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects |
-| `server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round               |
-| `server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)   |
+| Prometheus Metric                                   | Type  | Labels   | Description                                                                                                                                                                                                                     |
+| --------------------------------------------------- | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                                                                       |
+| `server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                                                                                                                                                                                                      |
+| `server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                                                                                                                                                                                                           |
+| `server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number                                                                                                                                                                                                |
+| `server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                                                                                                                                                                                                    |
+| `server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects                                                                                                                                                                                    |
+| `server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round                                                                                                                                                                                                  |
+| `server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)                                                                                                                                                                                      |
+| `server_info{metric="last_close_time"}`             | Gauge | `metric` | Network close time of last closed ledger (NetClock secs since XRPL epoch). Query `time() - (value + 946684800)` for last-close age (staleness). Use `1/rate(ledgers_closed_total)` — not a gauge delta — for the close interval |
 
 #### Build Info (via OTel MetricsRegistry)
 
@@ -1016,11 +1026,24 @@ repeated here:
 
 ## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
 
-> **Status**: Planned, not yet implemented.
 > **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
 > **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
+> **Tools**: [docker/telemetry/workload/](../docker/telemetry/workload/) — RPC load generator, transaction submitter, validation suite, benchmarks
 
 Phase 10 builds a 5-node validator docker-compose harness with RPC load generators, transaction submitters, and automated validation scripts that verify all spans, metrics, dashboards, and log-trace correlation work end-to-end. Includes a benchmark suite comparing telemetry-ON vs telemetry-OFF overhead.
+
+### Running the Validation Suite
+
+```bash
+# Full end-to-end validation (start cluster, generate load, validate):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+
+# Validation only (assumes stack and cluster are already running):
+python3 docker/telemetry/workload/validate_telemetry.py --report /tmp/report.json
+
+# Performance benchmark (baseline vs telemetry):
+docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
+```
 
 ### Validated Telemetry Inventory
 
@@ -1032,17 +1055,17 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 > below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
 > per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
 
-| Category                  | Expected Count      | Validation Method                |
-| ------------------------- | ------------------- | -------------------------------- |
-| Trace spans               | 16                  | Jaeger/Tempo API query           |
-| Span attributes           | 22                  | Per-span attribute assertion     |
-| Legacy `*` families       | ~270 (≈224 traffic) | Prometheus `__name__` query      |
-| Native MetricsRegistry    | 35 instruments      | Prometheus query                 |
-| Call-site `XRPL_METRIC_*` | 7 instruments       | Prometheus query                 |
-| Per-job-type gauges       | 105 (35 types × 3)  | Prometheus `__name__` query      |
-| SpanMetrics RED           | 4 per span          | Prometheus query                 |
-| Grafana dashboards        | 10                  | Dashboard API "no data" check    |
-| Log-trace links           | Present             | Loki query + Tempo reverse check |
+| Category                       | Expected Count            | Validation Method                | Config File             |
+| ------------------------------ | ------------------------- | -------------------------------- | ----------------------- |
+| Trace spans                    | ~37 (required + optional) | Tempo API query                  | `expected_spans.json`   |
+| Span attributes                | per-span assertion        | Per-span attribute assertion     | `expected_spans.json`   |
+| Legacy beast::insight families | ~270 (≈224 traffic)       | Prometheus `__name__` query      | `expected_metrics.json` |
+| Native MetricsRegistry         | 35 instruments            | Prometheus query                 | `expected_metrics.json` |
+| Call-site `XRPL_METRIC_*`      | 7 instruments             | Prometheus query                 | `expected_metrics.json` |
+| Per-job-type gauges            | 105 (35 types × 3)        | Prometheus `__name__` query      | `expected_metrics.json` |
+| SpanMetrics RED                | 4 per span                | Prometheus query                 | `expected_metrics.json` |
+| Grafana dashboards             | 15                        | Dashboard API "no data" check    | `expected_metrics.json` |
+| Log-trace links                | Present                   | Loki query + Tempo reverse check | —                       |
 
 The two added rows are the families that do not originate as `MetricsRegistry`
 members. **Call-site** instruments are declared by the `XRPL_METRIC_*` macros
@@ -1054,6 +1077,16 @@ request, and the `getobject_*` family as a whole needs an inbound
 from [§2.5](#25-per-job-type-queue-gauges); all 105 should be present on any
 running node, but `_deferred` reads zero unless a capped type is actually
 saturated.
+
+### Performance Overhead Targets
+
+| Metric            | Target       | Measurement Method                  |
+| ----------------- | ------------ | ----------------------------------- |
+| CPU overhead      | < 3%         | ps avg CPU% baseline vs telemetry   |
+| Memory overhead   | < 5MB        | ps peak RSS baseline vs telemetry   |
+| RPC p99 latency   | < 2ms impact | server_info round-trip timing       |
+| Throughput impact | < 5%         | Ledger close rate comparison        |
+| Consensus impact  | < 1%         | Consensus round time p95 comparison |
 
 ---
 

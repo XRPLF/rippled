@@ -42,7 +42,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 - In `src/libxrpl/nodestore/Database.cpp`, extend existing `beast::insight` registrations to add:
   - Gauge: `node_reads_total` (cumulative read operations)
-  - Gauge: `node_reads_hit` (cache-served reads)
+  - Gauge: `node_reads_hit` (fetches that found an object — not a cache hit; `fetchHitCount_` increments whatever served the fetch)
   - Gauge: `node_writes` (cumulative write operations)
   - Gauge: `node_written_bytes` (cumulative bytes written)
   - Gauge: `node_read_bytes` (cumulative bytes read)
@@ -127,10 +127,10 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel instruments for PerfLog RPC counters (from `PerfLogImp.cpp` line ~63):
-  - Counter: `rpc_method_started_total{method="<name>"}` — calls started
-  - Counter: `rpc_method_finished_total{method="<name>"}` — calls completed
-  - Counter: `rpc_method_errored_total{method="<name>"}` — calls errored
-  - Histogram: `rpc_method_duration_us{method="<name>"}` — execution time distribution
+  - Counter: `xrpld_rpc_method_started_total{method="<name>"}` — calls started
+  - Counter: `xrpld_rpc_method_finished_total{method="<name>"}` — calls completed
+  - Counter: `xrpld_rpc_method_errored_total{method="<name>"}` — calls errored
+  - Histogram: `xrpld_rpc_method_duration_us{method="<name>"}` — execution time distribution
 
 - Use OTel `Counter<int64_t>` and `Histogram<double>` instruments with `method` attribute label.
 
@@ -154,11 +154,11 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel instruments for PerfLog job counters:
-  - Counter: `job_queued_total{job_type="<name>"}` — jobs queued
-  - Counter: `job_started_total{job_type="<name>"}` — jobs started
-  - Counter: `job_finished_total{job_type="<name>"}` — jobs completed
-  - Histogram: `job_queued_duration_us{job_type="<name>"}` — time spent waiting in queue
-  - Histogram: `job_running_duration_us{job_type="<name>"}` — execution time distribution
+  - Counter: `xrpld_job_queued_total{job_type="<name>"}` — jobs queued
+  - Counter: `xrpld_job_started_total{job_type="<name>"}` — jobs started
+  - Counter: `xrpld_job_finished_total{job_type="<name>"}` — jobs completed
+  - Histogram: `xrpld_job_queued_duration_us{job_type="<name>"}` — time spent waiting in queue
+  - Histogram: `xrpld_job_running_duration_us{job_type="<name>"}` — execution time distribution
 
 - Hook into PerfLog's existing job tracking alongside Task 9.4.
 
@@ -180,15 +180,15 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel `ObservableGauge` callbacks for `CountedObject<T>` instance counts:
-  - `object_count{type="Transaction"}` — live Transaction objects
-  - `object_count{type="Ledger"}` — live Ledger objects
-  - `object_count{type="NodeObject"}` — live NodeObject instances
-  - `object_count{type="STTx"}` — serialized transaction objects
-  - `object_count{type="STLedgerEntry"}` — serialized ledger entries
-  - `object_count{type="InboundLedger"}` — ledgers being fetched
-  - `object_count{type="Pathfinder"}` — active pathfinding computations
-  - `object_count{type="PathRequest"}` — active path requests
-  - `object_count{type="HashRouterEntry"}` — hash router entries
+  - `xrpld_object_count{type="Transaction"}` — live Transaction objects
+  - `xrpld_object_count{type="Ledger"}` — live Ledger objects
+  - `xrpld_object_count{type="NodeObject"}` — live NodeObject instances
+  - `xrpld_object_count{type="STTx"}` — serialized transaction objects
+  - `xrpld_object_count{type="STLedgerEntry"}` — serialized ledger entries
+  - `xrpld_object_count{type="InboundLedger"}` — ledgers being fetched
+  - `xrpld_object_count{type="Pathfinder"}` — active pathfinding computations
+  - `xrpld_object_count{type="PathRequest"}` — active path requests
+  - `xrpld_object_count{type="HashRouterEntry"}` — hash router entries
 
 - The `CountedObject` template already tracks these via atomic counters. The callback just reads the current counts.
 

@@ -121,6 +121,14 @@ class RuleERunbook(unittest.TestCase):
     def test_legit_dotted_resource_attrs_in_l1(self):
         self.assertEqual(_run_rule_e("`xrpl.network.id` `xrpl.network.type`"), [])
 
+    def test_external_infra_dotted_resource_attrs_not_flagged(self):
+        # perf-iac stamps these as dotted resource attrs (alloy pipeline);
+        # EXTERNAL_INFRA_LABELS (Rule D) holds their underscore metric-label
+        # form -- Rule E must also exempt the dotted resource-attr form.
+        self.assertEqual(
+            _run_rule_e("`xrpl.work.item` `xrpl.branch` `xrpl.node.role`"), []
+        )
+
     def test_prose_word(self):
         self.assertEqual(_run_rule_e("the `command` attribute"), [])
 
@@ -823,6 +831,69 @@ class MetricLabelExtraction(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         try:
             (d / "src").mkdir()
+            self.assertEqual(chk.metric_label_names(d), set())
+        finally:
+            shutil.rmtree(d)
+
+    def test_extracts_second_label_of_a_pair(self):
+        """A multi-label map opens the first pair with `{{` and later ones with
+        a single `{`; every key must be collected, not just the first."""
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricsRegistry.cpp",
+                'h->Record(v, {{"job_type", std::string(t)}, {"handler", h2}});\n',
+            )
+            self.assertEqual(chk.metric_label_names(d), {"job_type", "handler"})
+        finally:
+            shutil.rmtree(d)
+
+    def test_resolves_label_key_constants(self):
+        """A key hoisted into a `constexpr char k...[]` constant resolves to its
+        string, including when the constant is declared in a header."""
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "include" / "xrpl" / "telemetry" / "GetObjectMetricNames.h",
+                "// metric name constants\n"
+                'inline constexpr char kLabelResult[] = "result";\n',
+            )
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricsRegistry.cpp",
+                'constexpr char kHandlerLabel[] = "handler";\n'
+                "counter->Add(1, {{kLabelResult, std::string(r)}});\n"
+                'c2->Add(1, {{"job_type", std::string(t)}, {kHandlerLabel, h}});\n',
+            )
+            self.assertEqual(
+                chk.metric_label_names(d), {"result", "handler", "job_type"}
+            )
+        finally:
+            shutil.rmtree(d)
+
+    def test_ignores_plain_brace_initializers(self):
+        """Ordinary brace lists are not label maps: a bare `{"http", "https"}`
+        array must not license a dashboard filter on `http`."""
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricsRegistry.cpp",
+                'std::array schemes{"http", "https", "ws"};\n'
+                'for (auto const* k : {"read_request_bundle", "read_threads"})\n'
+                "    use(k);\n"
+                'counter->Add(1, {{"job_type", std::string(t)}});\n',
+            )
+            self.assertEqual(chk.metric_label_names(d), {"job_type"})
+        finally:
+            shutil.rmtree(d)
+
+    def test_ignores_test_code_literals(self):
+        """Test fixtures pass arbitrary literal pairs; they define no labels."""
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "test" / "jtx" / "Env_test.cpp",
+                "// metric\n" 'env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}));\n',
+            )
             self.assertEqual(chk.metric_label_names(d), set())
         finally:
             shutil.rmtree(d)
