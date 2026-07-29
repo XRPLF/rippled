@@ -48,30 +48,32 @@ constexpr T kOverMin = kMin<T> + 1;
 constexpr auto kNearMax32 = kMax<uint32_t> - 5;
 constexpr auto kNearMin32 = kMin<int32_t> + 4;
 constexpr auto kUnderInt64Max = uint64_t{kMax<int64_t>} - 1;
+constexpr auto kInRangeInt16 = int16_t{-5711};
 
 // No wider integer type can hold these, so ToString cannot produce them.
-constexpr std::string_view kAboveUint64Max = "18446744073709551616";
-constexpr std::string_view kBelowInt64Min = "-9223372036854775809";
+constexpr auto kAboveUint64Max = "18446744073709551616";
+constexpr auto kBelowInt64Min = "-9223372036854775809";
 
 // Out of range for every integer type we test.
-constexpr std::string_view kTwentyNines = "99999999999999999999";
-constexpr std::string_view kNegativeTwentyNines = "-99999999999999999999";
+constexpr auto kTwentyNines = "99999999999999999999";
+constexpr auto kNegativeTwentyNines = "-99999999999999999999";
 
 // Arbitrary values chosen to sit well outside a type's range, not just over it.
-constexpr std::string_view kAboveUint16Max = "75821";
-constexpr std::string_view kBelowInt16Min = "-75821";
-constexpr std::string_view kAboveInt32Max = "5294967295";
-constexpr std::string_view kAboveInt16Max = "66666";
+constexpr auto kAboveUint16Max = "75821";
+constexpr auto kBelowInt16Min = "-75821";
+constexpr auto kAboveInt32Max = "5294967295";
+constexpr auto kAboveInt16Max = "66666";
 
-// Arbitrary values comfortably inside a type's range.
-constexpr std::string_view kInRangeInt16 = "-5711";
-constexpr std::string_view kPositiveInt32 = "+42";
-constexpr std::string_view kNegativeInt32 = "-42";
+constexpr auto kPositiveInt32 = int32_t{42};
+constexpr auto kNegativeInt32 = int32_t{-42};
 
-constexpr std::string_view kNegativeOne = "-1";
-constexpr std::string_view kNegativeZero = "-0";
-constexpr std::string_view kZero = "0";
-constexpr std::string_view kPositiveZero = "+0";
+constexpr auto kPositiveInt32Text = "+42";
+constexpr auto kNegativeInt32Text = "-42";
+
+constexpr auto kNegativeOne = "-1";
+constexpr auto kNegativeZero = "-0";
+constexpr auto kZero = "0";
+constexpr auto kPositiveZero = "+0";
 
 // Full-width digits one and zero, not ASCII ones.
 constexpr std::string_view kFullWidthDigits = "\xef\xbc\x91\xef\xbc\x90";
@@ -120,7 +122,7 @@ constexpr auto kNegatedOverUint32MaxText = ToString{-(int64_t{kMax<uint32_t>} + 
 // lexicalCastThrow deduces its input type, so the text has to be an explicit
 // string_view rather than a ToString.
 template <class T, class Value>
-[[nodiscard]] T
+[[nodiscard]] constexpr T
 castThrow(Value value)
 {
     return lexicalCastThrow<T>(std::string_view{ToString{value}});
@@ -297,21 +299,20 @@ TEST(LexicalCast, rejects_negative_zero_when_unsigned)
 TEST(LexicalCast, accepts_char_pointer_and_std_string_input)
 {
     int32_t fromLiteral = 0;
-    // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
-    EXPECT_TRUE(lexicalCastChecked(fromLiteral, kPositiveInt32.data()));
-    EXPECT_EQ(fromLiteral, 42);
+    EXPECT_TRUE(lexicalCastChecked(fromLiteral, kPositiveInt32Text));
+    EXPECT_EQ(fromLiteral, kPositiveInt32);
 
     int32_t fromString = 0;
-    EXPECT_TRUE(lexicalCastChecked(fromString, std::string{kNegativeInt32}));
-    EXPECT_EQ(fromString, -42);
+    EXPECT_TRUE(lexicalCastChecked(fromString, std::string{kNegativeInt32Text}));
+    EXPECT_EQ(fromString, kNegativeInt32);
 }
 
 TEST(LexicalCast, throwing_cast_returns_in_range_values)
 {
-    EXPECT_EQ(castThrow<uint64_t>(kUnderInt64Max), kUnderInt64Max);
-    EXPECT_EQ(castThrow<uint32_t>(kNearMax32), kNearMax32);
-    EXPECT_EQ(castThrow<int32_t>(kNearMin32), kNearMin32);
-    EXPECT_EQ(lexicalCastThrow<int16_t>(kInRangeInt16), -5711);
+    static_assert(castThrow<uint64_t>(kUnderInt64Max) == kUnderInt64Max);
+    static_assert(castThrow<uint32_t>(kNearMax32) == kNearMax32);
+    static_assert(castThrow<int32_t>(kNearMin32) == kNearMin32);
+    static_assert(castThrow<int16_t>(kInRangeInt16) == kInRangeInt16);
 }
 
 TEST(LexicalCast, throwing_cast_throws_on_out_of_range)

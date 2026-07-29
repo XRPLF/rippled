@@ -110,7 +110,7 @@ struct LexicalCast<Out, boost::core::basic_string_view<char>>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, boost::core::basic_string_view<char> in) const
     {
         return LexicalCast<Out, std::string_view>()(out, in);
@@ -123,7 +123,7 @@ struct LexicalCast<Out, std::string>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, std::string in) const
     {
         return LexicalCast<Out, std::string_view>()(out, in);
@@ -136,7 +136,7 @@ struct LexicalCast<Out, char const*>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, char const* in) const
     {
         XRPL_ASSERT(in, "beast::detail::LexicalCast(char const*) : non-null input");
@@ -151,7 +151,7 @@ struct LexicalCast<Out, char*>
 {
     explicit LexicalCast() = default;
 
-    bool
+    constexpr bool
     operator()(Out& out, char* in) const
     {
         XRPL_ASSERT(in, "beast::detail::LexicalCast(char*) : non-null input");
@@ -191,7 +191,7 @@ lexicalCastChecked(Out& out, In in)
  * @return The new type.
  */
 template <class Out, class In>
-Out
+constexpr Out
 lexicalCastThrow(In in)
 {
     if (Out out; lexicalCastChecked(out, in))
