@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <utility>
@@ -31,6 +32,29 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER
 deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
+
+/**
+ * @brief Remove credentials pinned to a pseudo-account's owner directory.
+ *
+ * Cleans up credentials that were linked to a pseudo-account (Vault, LoanBroker,
+ * AMM) before fixCleanup3_4_0, which such an account can neither accept nor
+ * delete. Only credentials are removed, at most @p maxNodesToDelete of them; on
+ * reaching that bound the result is `tecINCOMPLETE` and the caller must
+ * propagate it so a later transaction resumes.
+ *
+ * @param view Mutable ledger view.
+ * @param pseudoAcct The pseudo-account whose directory is cleaned.
+ * @param maxNodesToDelete Upper bound on directory entries processed in one call.
+ * @param j Journal for diagnostics.
+ * @return tesSUCCESS once no credentials remain, tecINCOMPLETE if the bound was
+ *         reached, or a deletion error.
+ */
+[[nodiscard]] TER
+deletePseudoAccountCredentials(
+    ApplyView& view,
+    AccountID const& pseudoAcct,
+    std::uint16_t maxNodesToDelete,
+    beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC

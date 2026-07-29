@@ -231,6 +231,13 @@ ValidMPTIssuance::finalize(
 
         if (hasPrivilege(tx, DestroyMptIssuance))
         {
+            // A VaultDelete that is still cleaning up credentials pinned to its
+            // pseudo-account before fixCleanup3_4_0 returns tecINCOMPLETE and has
+            // not yet reached the share issuance. Don't require the issuance to
+            // be removed until the deletion completes (a later transaction).
+            if (rules.enabled(fixCleanup3_4_0) && result == tecINCOMPLETE)
+                return mptIssuancesDeleted_ == 0 && mptIssuancesCreated_ == 0;
+
             if (mptIssuancesDeleted_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "

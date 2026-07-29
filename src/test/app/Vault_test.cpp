@@ -7723,6 +7723,124 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testCredentialPinsPseudoAccount()
+    {
+        using namespace test::jtx;
+
+        // FN-36: a credential issued to a vault pseudo-account can't be
+        // accepted or deleted by it (pseudo-accounts can't sign), so it stays
+        // pinned in the pseudo-account's owner directory and blocks VaultDelete
+        // with tecHAS_OBLIGATIONS. fixCleanup3_4_0 rejects such
+        // credentials up front and, for pins created before the amendment,
+        // removes them on VaultDelete.
+        Account const owner{"owner"};
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env{*this, all_ - fixCleanup3_4_0};
+        env.fund(XRP(1'000'000), owner, attacker);
+        env.close();
+
+        Vault const vault{env};
+        PrettyAsset const asset = xrpIssue();
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const vaultSle = env.le(keylet);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+        env.memoize(pseudo);
+
+        // The pseudo-account owns the share issuance; the pin must not change
+        // its owner count (an unaccepted credential is owned by the issuer).
+        auto const pseudoOwnerCount = ownerCount(env, pseudo);
+
+        // Before the amendment: the pin succeeds.
+        testcase("Credential pins vault pseudo-account (amendment disabled)");
+        env(credentials::create(pseudo, attacker, credType));
+        env.close();
+
+        auto const credKey = credentials::keylet(pseudo, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+        BEAST_EXPECT(ownerCount(env, attacker) == 1);
+        BEAST_EXPECT(ownerCount(env, pseudo) == pseudoOwnerCount);
+
+        // The pin blocks deletion of an otherwise-empty vault.
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // Part 1: a new pin is rejected outright.
+        testcase("Credential on vault pseudo-account rejected (amendment enabled)");
+        env(credentials::create(pseudo, attacker, "FN36B"), Ter(tecPSEUDO_ACCOUNT));
+        env.close();
+
+        // Part 2: the pre-existing pin no longer blocks deletion; the credential
+        // is cleaned up and the issuer's owner count is restored.
+        testcase("VaultDelete removes pinned credential (amendment enabled)");
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
+        BEAST_EXPECT(ownerCount(env, attacker) == 0);
+    }
+
+    void
+    testCredentialPinOverflow()
+    {
+        using namespace test::jtx;
+        testcase("Credential pin cleanup is bounded (tecINCOMPLETE)");
+
+        // A pseudo-account can be pinned with more credentials than one
+        // transaction is allowed to clean up. VaultDelete then removes them a
+        // bounded batch at a time, returning tecINCOMPLETE until the last batch.
+        Account const owner{"owner"};
+        Account const attacker{"attacker"};
+
+        Env env{*this, all_ - fixCleanup3_4_0};
+        env.fund(XRP(10'000'000), owner, attacker);
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+        auto const vaultSle = env.le(keylet);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+        env.memoize(pseudo);
+
+        // Pin more than one cleanup batch's worth of credentials.
+        std::uint16_t const count = kMaxDeletablePseudoAccountCredentials + 3;
+        for (std::uint16_t i = 0; i < count; ++i)
+            env(credentials::create(pseudo, attacker, std::to_string(i)));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, attacker) == count);
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // First delete removes one bounded batch and reports it isn't finished.
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecINCOMPLETE));
+        env.close();
+        BEAST_EXPECT(env.le(keylet));  // vault still exists
+        auto const remaining = ownerCount(env, attacker);
+        BEAST_EXPECT(remaining > 0 && remaining < count);
+
+        // Second delete finishes the cleanup and removes the vault.
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
+        BEAST_EXPECT(ownerCount(env, attacker) == 0);
+    }
+
+    void
     testVaultDepositFreezeIOU()
     {
         using namespace test::jtx;
@@ -8395,6 +8513,8 @@ public:
         testAssetsMaximum();
         testVaultDeleteMemoData();
         testVaultCreateLEVersion();
+        testCredentialPinsPseudoAccount();
+        testCredentialPinOverflow();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();

@@ -90,6 +90,16 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
+    // A pseudo-account (Vault, LoanBroker, AMM) can't sign, so it can never
+    // accept or delete a credential issued to it. Such a credential would stay
+    // pinned in the pseudo-account's owner directory forever and block deletion
+    // of the owning object (tecHAS_OBLIGATIONS). Reject it up front.
+    if (ctx.view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(ctx.view, subject))
+    {
+        JLOG(ctx.j.trace()) << "Subject is a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
+    }
+
     if (ctx.view.exists(keylet::credential(subject, ctx.tx[sfAccount], credType)))
     {
         JLOG(ctx.j.trace()) << "Credential already exists.";

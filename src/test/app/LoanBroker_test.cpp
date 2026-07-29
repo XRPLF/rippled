@@ -6,6 +6,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -2723,6 +2724,72 @@ class LoanBroker_test : public beast::unit_test::Suite
         runTestCases(all_ - fixCleanup3_2_0);
     }
 
+    void
+    testCredentialPinsPseudoAccount()
+    {
+        using namespace test::jtx;
+        using namespace loanBroker;
+
+        // FN-36: a credential issued to a LoanBroker pseudo-account can't be
+        // accepted or deleted by it, so it stays pinned in the pseudo-account's
+        // owner directory and blocks LoanBrokerDelete with tecHAS_OBLIGATIONS.
+        // fixCleanup3_4_0 rejects such credentials up front and, for
+        // pins created before the amendment, removes them on LoanBrokerDelete.
+        Account const alice{"alice"};  // vault & broker owner
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env{*this, all_ - fixCleanup3_4_0};
+        env.fund(XRP(1'000'000), alice, attacker);
+        env.close();
+
+        Vault const vault{env};
+        auto [vtx, vkeylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(vtx);
+        env.close();
+        BEAST_EXPECT(env.le(vkeylet));
+
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+        env(set(alice.id(), vkeylet.key));
+        env.close();
+
+        auto const broker = env.le(brokerKeylet);
+        BEAST_EXPECT(broker);
+        Account const pseudo{"broker pseudo-account", broker->at(sfAccount)};
+        env.memoize(pseudo);
+
+        // Before the amendment: the pin succeeds and blocks broker deletion.
+        testcase("Credential pins broker pseudo-account (amendment disabled)");
+        env(credentials::create(pseudo, attacker, credType));
+        env.close();
+
+        auto const credKey = credentials::keylet(pseudo, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+        BEAST_EXPECT(ownerCount(env, attacker) == 1);
+
+        env(del(alice.id(), brokerKeylet.key), Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // Part 1: a new pin is rejected outright.
+        testcase("Credential on broker pseudo-account rejected (amendment enabled)");
+        env(credentials::create(pseudo, attacker, "FN36B"), Ter(tecPSEUDO_ACCOUNT));
+        env.close();
+
+        // Part 2: the pre-existing pin no longer blocks deletion; the credential
+        // is cleaned up and the issuer's owner count is restored.
+        testcase("LoanBrokerDelete removes pinned credential (amendment enabled)");
+        env(del(alice.id(), brokerKeylet.key));
+        env.close();
+
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(brokerKeylet));
+        BEAST_EXPECT(!env.le(keylet::account(pseudo.id())));
+        BEAST_EXPECT(ownerCount(env, attacker) == 0);
+    }
+
 public:
     void
     run() override
@@ -2741,6 +2808,7 @@ public:
 
         testDisabled();
         testLifecycle();
+        testCredentialPinsPseudoAccount();
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();

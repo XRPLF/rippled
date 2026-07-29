@@ -366,6 +366,12 @@ using TxID = uint256;
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
 
 /**
+ * The maximum number of credentials to delete from a pseudo-account's owner
+ * directory in a single transaction.
+ */
+constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
+
+/**
  * The maximum length of a URI inside an Oracle
  */
 constexpr std::size_t kMaxOracleUri = 256;
