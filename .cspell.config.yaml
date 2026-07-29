@@ -95,6 +95,7 @@ words:
   - ctest
   - ctid
   - currenttxhash
+  - custodied
   - daria
   - dcmake
   - dearmor
@@ -148,6 +149,7 @@ words:
   - jemalloc
   - jlog
   - jtnofill
+  - Kahan
   - keylet
   - keylets
   - keyvadb

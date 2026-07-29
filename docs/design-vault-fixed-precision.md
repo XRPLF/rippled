@@ -103,14 +103,73 @@ accept further inflow at _any_ scale. `Dust`, in its own account with its own he
 would be invisible — depositors' claims and withdrawal liquidity would both stop reflecting real
 inflows once `AssetsTotal` maxes out, even as the Vault keeps receiving (and owing) more.
 
+**Why folding `Dust` into both totals doesn't cause anyone to be overpaid.** This looks, at first
+glance, like it could commit the Vault to paying out value that only exists in a separate account no
+withdrawal ever touches (except the terminal case, §4.3). It doesn't, for two reasons that hold
+together:
+
+- **Day to day, it's mathematically real but numerically invisible.** `Dust` only exists because
+  it's smaller than one representable unit at the current `effective(AssetsTotal)` — that's the
+  definition of dust (§4.1). Adding a sub-unit quantity into either total before computing a share
+  price or a withdrawal amount changes that computation by less than one representable unit — which
+  then rounds away in the same settlement step (§3.1's `round(amount_requested,
+effective(AssetsTotal))`) that produces the amount actually paid. Including `Dust` in the formula
+  is correct, but for a healthy Vault it never changes what any single depositor or withdrawer
+  actually receives.
+- **Once it's not invisible, it's not `Dust` for long.** `MaybeSweep` (§4.2) runs after every
+  fund-moving operation and folds any dust balance that's grown past one representable unit straight
+  into `AssetsTotal`/`AssetsAvailable` — at which point it's ordinary, fully-backed Vault money, not a
+  separate pool anything else needs to account for. The only way `Dust` sits at an economically
+  material level is transiently, between the moment it crosses that threshold and the next operation
+  that triggers a sweep.
+
+So both totals in §2.2 are correct to include even though nothing pays out of the Dust Pseudo-account
+directly in the common case — the inclusion only ever matters in the regime this design already calls
+out separately: near the absolute `STAmount` ceiling, where `AssetsTotal` itself can't grow further
+and `Dust`'s own headroom is what keeps the Vault's reported totals honest.
+
 **Scope note on `AssetsAvailable`.** The fuller share-pricing model (`VaultSharePricing_test.cpp`
 PoC) also tracks `interestUnrealized`/`lossUnrealized`, under which `AssetsTotal` and
-`AssetsAvailable` can diverge — e.g. funding a loan moves principal out of `AssetsAvailable` without
-touching `AssetsTotal`, since the loan remains an asset, just an illiquid one. **This document
-doesn't model that bucket** — it's scoped to precision/dust. Within that scope, every operation in
-§3 moves `AssetsAvailable` by the same `settled` delta as `AssetsTotal` (§4). Wiring into the full
-interest-accrual model may require Loan funding/repayment to diverge the two — flagged in §5, not
-resolved here.
+`AssetsAvailable` can diverge further still — e.g. funding a loan moves principal out of
+`AssetsAvailable` without touching `AssetsTotal`, since the loan remains an asset, just an illiquid
+one. **This document doesn't model that bucket** — it's scoped to precision/dust.
+
+Within that narrower scope, `AssetsTotal` and `AssetsAvailable` already diverge on their own, by
+construction, not as future work: `SettleAdd` (§4.1) moves `AssetsAvailable` by the full dust-routed
+settlement (`settled` — real cash landing in custody), but moves `AssetsTotal` by a separately
+supplied `assetsTotalDelta`, which is **not** `settled` for a cash-basis repayment (§3.3) — Deposit
+is the one degenerate case where the two happen to coincide. That divergence is required for
+cash-basis correctness (§3.3); it's not the same divergence as the interest-accrual bucket above,
+which is what's flagged in §5, not resolved here.
+
+### 2.3 Why `DebtTotal` doesn't need this
+
+`ltLOAN_BROKER.sfDebtTotal` has its own rounding mechanism, already in production, that looks
+structurally similar to the problem §2.2 solves: `adjustImpreciseNumber` (`LendingHelpers.h`) rounds
+every adjustment to `DebtTotal` to the Vault's current `vaultScale`, and its own comment at the
+`LoanPay.cpp` call site says so plainly — "despite our best efforts, it's possible for rounding
+errors to accumulate in the loan broker's debt total... because the broker may have more than one
+loan with significantly different scales." That's the same shape of problem: an aggregate bounded by
+the 16-sig-digit ceiling, fed by inputs at multiple different fixed scales, coarsening as it grows.
+Worth stating explicitly why this document doesn't extend `Dust`/`SettleAdd` to cover it too:
+
+- **`DebtTotal` isn't custodied money.** `AssetsTotal` must reconcile exactly with a real balance —
+  the Vault's Pseudo-account — which is why a dropped remainder needs somewhere to go (`Dust`).
+  `DebtTotal` is a receivables _estimate_ (how much principal this broker's loans still owe); no
+  account balance anywhere corresponds to it, so there's nothing for its rounding error to
+  misplace.
+- **The error is symmetric, not a one-directional drain.** `Number`'s default rounding mode is
+  `ToNearest`, so `DebtTotal`'s accumulated error random-walks rather than systematically leaking in
+  one direction.
+- **Its one safety-relevant consumer already rounds conservatively.** `minimumBrokerCover` rounds
+  its result _up_, specifically "to be conservative... ensures `CoverAvailable` never drops below
+  the theoretical minimum" — so any drift in `DebtTotal` can only make the required cover look
+  slightly larger than the true debt, never smaller, which is the safe direction for solvency.
+- **It predates this design and isn't changed by it.** This is existing, already-accepted behavior,
+  not something introduced or made worse by `sfPrecision`/`Dust` — nothing in §3–§4 touches how
+  `DebtTotal` is computed or rounded.
+
+**Conclusion: left as-is, deliberately, not an oversight.**
 
 ## 3. Case by case: how rounding actually works
 
@@ -122,8 +181,15 @@ resolved here.
 amount_settled = round(amount_requested, effective(AssetsTotal))
 ```
 
-Representable by construction, so §2.2 never fires — no `Dust` entry, no custody routing. Acceptable
-because none of these are obligations owed in full.
+This pre-rounding eliminates Case 1 (§4.1) — `dust_0` is always `0` for these callers, unlike
+repayment. It does **not** eliminate Case 2: a Deposit that pushes `AssetsTotal` across a magnitude
+boundary can still coarsen the effective scale between the caller's rounding and the moment
+`SettleAdd` applies it, producing `dust_1` the same way a repayment can (§4.1's notes). That's rare —
+it only fires exactly at a growth boundary — but it isn't structurally impossible, so Deposit still
+goes through `SettleAdd`/`AddAssetsToVault` like every other operation, not a separate dust-free path.
+What _is_ true for these operations: none of them are obligations owed in full, so if Case 2 fires,
+it's the caller's own requested amount that silently absorbs the truncation (§2.2) — never an
+already-agreed, mandatory amount the way a repayment's `loan.precision` mismatch is.
 
 ### 3.2 Loan issuance (funding) — Vault → Loan
 
@@ -131,11 +197,43 @@ Funding is a Vault-initiated disbursement, not a debt obligation — structurall
 Follows the §3.1 rule: rounds directly to the Vault's _current_ effective scale, no dust.
 
 Consequence: **the Loan's own precision is fixed once, at funding time, to the effective scale used
-for that disbursement** — not the Vault's raw `sfPrecision` ceiling:
+for that disbursement** — not the Vault's raw `sfPrecision` ceiling. But "the effective scale used
+for that disbursement" isn't just the Vault's own scale: it's the coarser of two independent floors —
+one knowable only from the Vault's current state, the other knowable in full from the Loan's own
+terms, before a single payment is ever made:
 
 ```
-loan.precision = effective(AssetsTotal at funding time)   [ = min(sfPrecision, ...) ]
+loan.precision = max(
+    effective(AssetsTotal at funding time),      # Vault-side floor: what the Vault can
+                                                   # represent right now
+    scale(totalValueOutstanding, asset)           # Loan-side floor: what this Loan's own
+                                                   # projected lifetime value needs
+)
 ```
+
+The Loan-side floor is `scale(principal + all future interest, asset)` — Equation (30) of the XLS-66
+spec, `totalValueOutstanding = periodicPayment × paymentsRemaining`. `computeLoanProperties`
+(`LendingHelpers.cpp`) already computes exactly this today, as
+`loanScale = max(minimumScale, amount.exponent())`, where `minimumScale` is the Vault-side floor
+passed in by the caller (see its "base the loan scale on the total value, since that's going to be
+the biggest number involved" comment). This document's earlier formula dropped that second term —
+worth stating explicitly why it's safe, and necessary, to fold back in rather than leave as an open
+unknown:
+
+- **The Loan-side floor is fully deterministic at creation time.** Interest rate, payment interval,
+  and payment count are all fixed loan terms chosen at `LoanSet`, so `totalValueOutstanding` — and
+  therefore its natural scale — is computable synchronously, with no dependency on anything that
+  hasn't happened yet. A modest principal at a high rate over a long term can have
+  `principal + total future interest` land at a materially larger order of magnitude than the Vault's current
+  `AssetsTotal`, even though the principal itself came from (and is bounded by) the Vault — nothing
+  bounds future interest by the Vault's present size, especially under cash-basis accounting, where
+  `AssetsTotal` doesn't recognize interest until it's actually paid (§3.3).
+- **The Vault-side floor is not knowable in advance.** How much _more_ the Vault's own effective
+  scale might degrade over the Loan's life — from other loans funding/repaying, deposits, sweeps,
+  other borrowers' interest accruing — depends on the whole Vault's future activity, not this Loan's
+  terms. That unpredictability is the actual reason `loan.precision` must be pinned immutably at
+  funding at all: if it were knowable in advance the way the Loan-side floor is, there'd be no need
+  to freeze it.
 
 Stored as the existing **`sfLoanScale`** field on `ltLOAN` (set in `LoanSet.cpp`, read in
 `LoanPay.cpp`/`LoanManage.cpp`) — same relationship as `sfPrecision`/`sfScale` on the Vault side:
@@ -146,9 +244,12 @@ Immutable thereafter, same as `sfPrecision` is for the Vault. Operating a Loan a
 than it was actually funded with would assert false precision across all its future accounting.
 
 **Worked example.** Vault `sfPrecision` = 6. Loan A funds while `AssetsTotal` is small (effective
-scale 6) → `loan.precision` = 6. Later `AssetsTotal` grows enough to degrade effective scale to 5;
-Loan B funds then → `loan.precision` = 5, permanently — same Vault, two Loans, two fixed precisions,
-set by Vault size at each funding moment.
+scale 6) and Loan A's own `totalValueOutstanding` also fits at scale 6 (short term, low rate) →
+`loan.precision` = 6, the Vault-side floor binds. Later `AssetsTotal` grows enough to degrade
+effective scale to 5; Loan B funds then, with a long term and high rate whose projected
+`totalValueOutstanding` alone needs scale 4 → `loan.precision` = 4, the coarser of the two floors —
+Loan B's _own_ terms are the binding constraint here, not the Vault's size at all. Same Vault, two
+Loans, two fixed precisions, each set by whichever floor is coarser at that Loan's funding moment.
 
 #### 3.2.1 Pending Loans: acceptance can straddle a scale change
 
@@ -156,7 +257,9 @@ Issuance is two steps: **create** (amount agreed/reserved, funds not yet moved) 
 (funds move). "Funding time" above is really **acceptance time**.
 
 Between create and accept, `AssetsTotal` can degrade the effective scale enough that the agreed
-amount is no longer representable. Two options:
+amount is no longer representable. Only the Vault-side floor (above) can move in that window — the
+Loan-side floor is already fixed at create time, from the Loan's own agreed terms, and doesn't
+change while pending. Two options:
 
 - Silently re-round at acceptance — rejected: mutates agreed loan terms invisibly, exactly the
   non-determinism this design eliminates.
@@ -166,39 +269,74 @@ amount is no longer representable. Two options:
 So a pending Loan's amount is re-validated against `effective(AssetsTotal)` at acceptance; on
 failure, acceptance is rejected outright, never adjusted.
 
+**This is griefable, not just naturally rare — accepted anyway.** `effective(AssetsTotal)` is a
+public, deterministic function of `AssetsTotal`, and a pending Loan's agreed principal/scale is
+visible on-ledger from the moment it's created. Anyone able to deposit into the Vault can compute
+exactly how much more `AssetsTotal` needs to grow to cross the next magnitude boundary, deposit that
+amount right before the borrower's `LoanAccept`, degrade the effective scale, and force the
+acceptance to fail — at essentially no cost, since the deposit isn't spent, it converts to shares the
+attacker still holds (and can withdraw right back out afterward). A motivated party could grief a
+specific pending Loan's acceptance repeatedly, each time forcing the borrower to eat a re-quote
+(possibly at worse terms if the market's moved), for reasons unrelated to that Loan's own terms.
+
+Unlike §4.4.3's address-squatting vector — which costs real (if modest) XRP per attempt and is
+single-ledger-use, and which this document treats as worth designing around — this one is cheaper
+and repeatable. **Decision: accepted risk anyway**, on the same cost/benefit basis as ordinary
+transaction-propagation risk elsewhere: the failure mode is a rejected acceptance and a forced
+re-quote, not a loss of funds or a stuck Vault, and building in tolerance (e.g. letting acceptance
+absorb one boundary crossing via the Dust mechanism, the way repayment does, instead of hard-
+rejecting) is real added complexity for a griefing outcome that's merely annoying, not unsafe. Flagged
+here rather than fixed.
+
 ### 3.3 Loan repayment — Loan → Vault
 
 **Mandatory operation.** Two-stage:
 
 1. Round to the Loan's own fixed `loan.precision` (§3.2) — may already be coarser than the Vault's
-   current `sfPrecision` ceiling.
+   current `sfPrecision` ceiling. This applies to the combined cash figure that actually settles —
+   principal plus interest together — not principal alone; `LoanPay.cpp` already rounds
+   `principalPaid + interestPaid` as one figure before this point today.
 2. Check representability at the Vault's _current_ `effective(AssetsTotal)`:
    - `loan.precision <= effective(AssetsTotal)`: settles in full, no dust.
    - Otherwise: split. The representable portion settles into main custody; the delta routes to the
      Dust Pseudo-account, recorded in `Dust` (§2.2).
 
-The only case that invokes dust routing. The borrower's payment is always collected in full — the
-split is a custody-routing detail, invisible to the borrower's accounting.
+The common case for Case 1 dust (§4.1) — a loan's fixed precision going stale as the Vault has grown
+since funding. The borrower's payment is always collected in full — the split is a custody-routing
+detail, invisible to the borrower's accounting.
 
-**Principal and interest hit `AssetsTotal` differently, so `AddAssetsToVault`/`SettleAdd` take a
-separate `interest` parameter.** `AddAssetsToVault(view, vault, from, amount, interest, j)`:
-`amount` (principal) goes through the normal dust/precision-routed path exactly as before —
-`AssetsAvailable` moves in lockstep, dust possible. `interest` only increments `vault.AssetsTotal`
-directly (§4.1) — no dust routing, no `AssetsAvailable` change, no transfer of its own (it's a
-bookkeeping-only split on top of the same real cash movement as `amount`, not a second transfer).
+**`AssetsTotal` and custody settlement are driven by two different numbers, so `AddAssetsToVault`/
+`SettleAdd` take them as two separate parameters, not one.** `AddAssetsToVault(view, vault, from,
+amount, assetsTotalDelta, j)`:
 
-Why they need separating: this mirrors `LendingProtocolV1_1`'s cash-basis accounting model
-([#7817](https://github.com/XRPLF/rippled/pull/7817)) — `AssetsTotal` tracks **principal only**, and
-interest is recognized **only once paid**, not at origination. Principal returning at repayment
-doesn't grow `AssetsTotal` (already counted as a receivable since funding); only interest is
-genuinely new value. Folding both into one undifferentiated `settled` value, as this doc originally
-did, would have made `AssetsTotal` cash-basis-wrong by construction.
+- `amount` — the real cash settling into custody (principal + interest combined, for a repayment).
+  Goes through the full dust/precision-routed path (§4.1): `AssetsAvailable` moves by whatever of it
+  actually lands (`settled`); any truncated remainder routes to `Dust`.
+- `assetsTotalDelta` — how much `vault.AssetsTotal` itself moves. Supplied by the caller, defaulting
+  to `settled` (§4.1) when not overridden — that default is what makes Deposit's case (§3.1) and
+  `MaybeSweep`'s sweep leg (§4.2) work correctly, since for both of those, landed custody genuinely
+  _is_ new value to `AssetsTotal`. A cash-basis repayment is the one caller that must override this
+  default, passing `interestPaid` instead of letting it default to `settled` — never dust-routed,
+  never changing `AssetsAvailable`, no transfer of its own (bookkeeping only, layered on the same
+  real cash movement as `amount`).
+
+Why a cash-basis repayment can't just take the default: this mirrors `LendingProtocolV1_1`'s
+cash-basis accounting model ([#7817](https://github.com/XRPLF/rippled/pull/7817)) — `AssetsTotal`
+tracks **principal only**, as a receivable recognized once, at origination; interest is recognized
+**only once paid**, not at origination. Principal cash returning at repayment must _not_ grow
+`AssetsTotal` again — it's the same receivable converting from loan back to cash, not new value —
+whereas `settled` (the thing `SettleAdd` defaults `assetsTotalDelta` to) is principal _and_ interest
+combined. Letting `AssetsTotal` default to `settled` here, as this doc's algorithm originally did
+unconditionally, double-counts principal into `AssetsTotal` on every cash-basis repayment — that was
+a real bug in the original `SettleAdd` pseudocode (§4.1), not just an accounting simplification, and
+is why the override exists as an explicit, required parameter rather than an afterthought.
 
 **Open question this raises, not resolved here:** dust/precision routing exists to protect
-`AssetsTotal` additions from exceeding the 16-sig-digit ceiling (§2.2). Under cash-basis, `interest`
-— not principal — is what actually drives `AssetsTotal` growth on repayment, so it's the value that
-could need the same two-stage truncation `SettleAdd` already does for `amount`. This document gives
-`interest` no dust routing of its own (§5) — assumed small enough to add cleanly, not verified.
+`AssetsTotal` additions from exceeding the 16-sig-digit ceiling (§2.2). Under cash-basis,
+`assetsTotalDelta` (i.e. `interestPaid`) is the only thing that grows `AssetsTotal` on repayment, so
+it's the value that could, in principle, need the same two-stage truncation `SettleAdd` already does
+for `amount`. This document gives it no dust routing of its own (§5) — assumed small enough relative
+to `AssetsTotal` to add cleanly, not verified.
 
 ## 4. Algorithms
 
@@ -207,9 +345,11 @@ own settlement/dust logic: **add assets to Vault**, **remove assets from Vault**
 
 ### 4.1 Add assets to Vault
 
-**Precondition:** the caller has already rounded the amount to _some_ target scale (Deposit →
-`effective(AssetsTotal)`; repayment → `loan.precision`). This algorithm only decides how much of
-that amount `AssetsTotal` can absorb right now, and routes the rest.
+**Precondition:** the caller has already rounded `amount` — the cash settlement figure — to _some_
+target scale (Deposit → `effective(AssetsTotal)`; repayment → `loan.precision`, applied to
+principal+interest combined). This algorithm decides how much of `amount` custody
+(`AssetsAvailable`) can absorb right now and routes the rest to `Dust`; `AssetsTotal` moves
+separately, driven by the caller-supplied `assetsTotalDelta` (§3.3), not by this truncation.
 
 Two independent, _composable_ dust sources, not exclusive cases:
 
@@ -217,7 +357,7 @@ Two independent, _composable_ dust sources, not exclusive cases:
    `loan.precision > e0`). Detectable before touching `AssetsTotal`.
 2. **Addition-induced coarsening** — even after trimming to `e0`, adding the result can cross a
    magnitude boundary and coarsen the scale further (`e1 = effective(AssetsTotal + settled_0) <
-   e0`).
+e0`).
 
 Both can fire on one call: trim against `e0`, then trim the result again against `e1`. Converges in
 one extra pass — `settled_1 <= settled_0`, so re-adding it can't coarsen below `e1`.
@@ -232,11 +372,19 @@ settling to the Vault's Pseudo-account and the broker's payee simultaneously via
 `SettleAdd`'s main/dust split is the same shape: one sender, up to two destinations, atomic.
 
 ```
-function SettleAdd(view, vault, from, amount, interest, j) -> Expected<Number, TER>:
+function SettleAdd(view, vault, from, amount, assetsTotalDelta, j) -> Expected<Number, TER>:
     # amount already rounded to caller's target scale; may or may not
     # fit the Vault's current effective scale. Never triggers a Sweep.
-    # `interest` (default 0) ONLY increments vault.AssetsTotal, below —
-    # no dust routing, no AssetsAvailable change, no separate transfer.
+    #
+    # assetsTotalDelta is the amount by which vault.AssetsTotal moves.
+    # It defaults to `settled` (computed below) when the caller omits it —
+    # correct for Deposit (§3.1) and MaybeSweep's sweep leg (§4.2), where
+    # landed custody genuinely is new value to AssetsTotal. A cash-basis
+    # repayment (§3.3) is the one caller that MUST override this default,
+    # passing `interestPaid` instead — `settled` there is principal+interest
+    # combined, and principal must not double-count into AssetsTotal.
+    # assetsTotalDelta is never dust-routed and never changes
+    # AssetsAvailable — bookkeeping only, no transfer of its own.
 
     e0 = effective(vault.AssetsTotal)
     settled_0, dust_0 = truncate(amount, e0)          # Case 1: pre-existing excess
@@ -252,6 +400,9 @@ function SettleAdd(view, vault, from, amount, interest, j) -> Expected<Number, T
     settled = settled_1
     dust = dust_0 + dust_1
 
+    if assetsTotalDelta is None:
+        assetsTotalDelta = settled   # Deposit / sweep default (§3.3)
+
     # Move the real asset first; bookkeeping only applies once it succeeds
     # (mirrors existing transactors, e.g. VaultDeposit.cpp).
     if dust > 0:
@@ -265,19 +416,17 @@ function SettleAdd(view, vault, from, amount, interest, j) -> Expected<Number, T
     if ter is not tesSUCCESS:
         return Unexpected(ter)
 
-    vault.AssetsTotal += settled
-    vault.AssetsAvailable += settled   # §2.2 scope note: moves in lockstep
-                                        # with AssetsTotal within this doc
+    vault.AssetsAvailable += settled   # real custody landed, dust-routed
     if dust > 0:
         vault.Dust += dust
-    vault.AssetsTotal += interest   # separate from settled/dust above
+    vault.AssetsTotal += assetsTotalDelta   # sole driver of AssetsTotal — NOT `settled`
 
     return settled   # callers needing the actually-landed amount (e.g.
                       # share issuance math) must use this, not `amount`
 
 
-function AddAssetsToVault(view, vault, from, amount, interest, j) -> Expected<Number, TER>:
-    settledResult = SettleAdd(view, vault, from, amount, interest, j)
+function AddAssetsToVault(view, vault, from, amount, assetsTotalDelta, j) -> Expected<Number, TER>:
+    settledResult = SettleAdd(view, vault, from, amount, assetsTotalDelta, j)
     if settledResult is error: return settledResult
     MaybeSweep(view, vault, j)   # §4.2 — cheap no-op if dust is insufficient
     return settledResult
@@ -315,8 +464,12 @@ function MaybeSweep(view, vault, j) -> TER:
         return tesSUCCESS   # not enough accumulated yet
 
     # NOT AddAssetsToVault (see below). `from` is the Dust Pseudo-account
-    # itself; a sweep never carries an interest component.
-    result = SettleAdd(view, vault, vault.sle[sfDustAccount], candidate, 0, j)
+    # itself; assetsTotalDelta is omitted (None) so it defaults to
+    # whatever this call's own `settled` turns out to be (§4.1/§3.3) —
+    # swept dust was never counted in AssetsTotal to begin with, so
+    # landing it here is exactly the "new value" default case, same as
+    # Deposit.
+    result = SettleAdd(view, vault, vault.sle[sfDustAccount], candidate, None, j)
     if result is error: return result.error()
     return tesSUCCESS
     # If this transfer induces further coarsening (§4.1 Case 2),
@@ -351,11 +504,16 @@ setup (trust-line/MPToken creation, `verifyDepositPreauth`) stays the caller's j
 `VaultWithdraw::doApply`/`doWithdraw` today.
 
 **Terminal withdrawal: all `Dust` settles to the last withdrawer.** §2.2 established `Dust` counts
-toward every shareholder's value — but while _other_ shares remain outstanding, there's no clean way
-to pay out one depositor's fractional slice of unswept dust without leaving the rest ambiguous (§5).
-That ambiguity disappears the moment a withdrawal drains the Vault to zero: no other shareholders
-remain to divide anything with, so the entire `Dust` balance pays out to the one withdrawer closing
-out the Vault. This also leaves `Dust` custody at zero, which `VaultDelete` needs anyway (§4.4.4).
+toward every shareholder's value, and also explains why that's never a live problem for non-terminal
+withdrawers: `MaybeSweep` keeps `Dust` folded back into `AssetsTotal` as soon as it's big enough to
+move any settlement, so anyone withdrawing while other shares remain outstanding is pricing against a
+total that's already either recognized `Dust` for real or is carrying an amount too small to change
+their payout. What's left once a withdrawal drains the Vault to zero is only the residual that's
+_structurally_ un-sweepable — below one representable unit at closure, with no future operation left
+to ever cross that threshold, and no other shareholder left to divide it with. That's genuinely the
+one case needing a special rule: pay the whole residual to the one withdrawer closing out the Vault,
+rather than leave it stranded forever. This also leaves `Dust` custody at zero, which `VaultDelete`
+needs anyway (§4.4.4).
 
 ```
 function RemoveAssetsFromVault(view, vault, to, amount, j) -> Expected<Number, TER>:
@@ -605,16 +763,24 @@ just the holding, the balance/owner-count/directory checks, and the erase.
 
 ## 5. Open questions / not yet resolved
 
-- **Does `interest` (§3.3/§4.1) need its own dust/precision routing?** `AddAssetsToVault`'s
-  `interest` parameter only does `vault.AssetsTotal += interest`, with no routing, unlike `amount`.
-  Under cash-basis accounting ([#7817](https://github.com/XRPLF/rippled/pull/7817)), `interest` is
-  what actually drives `AssetsTotal` growth at repayment — so it's the value that could exceed the
-  16-sig-digit ceiling `SettleAdd` exists to protect against, not principal. Currently assumed small
-  enough to add cleanly; not verified.
+- **Does `assetsTotalDelta` (§3.3/§4.1) need its own dust/precision routing?** For a cash-basis
+  repayment it's `interestPaid`, and `SettleAdd` only does `vault.AssetsTotal += assetsTotalDelta`,
+  with no routing, unlike `amount`. Under cash-basis accounting
+  ([#7817](https://github.com/XRPLF/rippled/pull/7817)), `interestPaid` is what actually drives
+  `AssetsTotal` growth at repayment — so it's the value that could exceed the 16-sig-digit ceiling
+  `SettleAdd` exists to protect against, not principal. Currently assumed small enough to add
+  cleanly; not verified.
 - **No invariant-check design.** Candidates implied by the design but never stated: Dust
   Pseudo-account's real balance ≡ `vault.Dust`; post-`MaybeSweep`, dust custody never exceeds one
   representable unit at the current effective scale; a global conservation identity across
   `AssetsTotal`/`Dust`/`AssetsAvailable`.
+- **Dust-sweep timing has a narrow, bounded attribution quirk — accepted, not fixed.** A withdrawal's
+  own settlement amount is computed against `AssetsTotal` _before_ that same transaction's
+  `MaybeSweep` call (§4.3) runs. If unswept `Dust` crosses the representable-unit threshold as a side
+  effect of this withdrawal, the withdrawer doesn't get credit for it — the next depositor's or
+  withdrawer's exchange rate does. Bounded to less than one representable unit by construction
+  (§2.2), the same order of magnitude as ordinary rounding noise elsewhere in this design; not
+  considered worth a dedicated fix.
 - **`sfPrecision` immutability asserted, not enforced.** No confirmation `VaultSet` rejects attempts
   to change it post-creation.
 - **PoC test file is stale.** Predates the `Dust` rename, eager-creation decision (§4.4.4),
@@ -629,4 +795,3 @@ just the holding, the balance/owner-count/directory checks, and the erase.
 - Audit Loan/LoanBroker code paths for assumptions of dynamic Vault scale — confirm `loan.precision`
   is captured at funding (§3.2), not recomputed per-operation.
 - Resolve §5 before finalizing the dust-custody mechanism.
-
