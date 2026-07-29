@@ -9,7 +9,20 @@ of the PoC — not a cleanup pass over the PoC itself.
 `Rust_wasm_PoC` (and `Rust_wasm_PoC_benchmark`) are **reference branches**: the PoC
 lives there, read-only, to be consulted for approach and prior art. Code copied
 across from it is a starting point, not a baseline to preserve — the PoC's shapes,
-comments and trade-offs are all open for redesign here.
+comments and trade-offs are all open for redesign here. Its crates are named
+differently: `host_functions`, `host_functions_macros`, `wasm_vm` (with `imports.rs`
+where we have `register.rs`, plus `ffi.rs`), `stdlib`, `example_contract`. Read them
+with `git show Rust_wasm_PoC:crates/<path>`.
+
+**Read this before `register.rs` confuses you.** `abi.rs`/`register.rs`/`vm.rs` were
+brought over from the PoC in `d8d1ec46` ("WIP"), and the PoC's macro was doing far more
+than ours: `host_abi!` inserted `&self`, wrapped the declared return in `HostResult<_>`,
+and — for a `Vec<u8>` or `[u8; N]` return — **appended `out: &mut [u8]` and replaced the
+return with `HostResult<usize>`** (`crates/host_functions_macros/src/lib.rs` on that
+branch). So a declaration reading `-> [u8; 4]` produced a trait method taking an output
+region, which is why the copied VM code expects one. It also generated the whole wasm32
+guest side. This branch does none of that: the declaration *is* the signature. Those
+transformations are what "no magic" refers to throughout this document.
 
 The C-API path is already gone: commit `b7059deb9f` ("Remove wasmi dependency")
 deleted `WasmVM.{h,cpp}`, `WasmiVM.h`, `HostFuncWrapper.cpp` and dropped the conan
@@ -61,6 +74,42 @@ only for reference. Anything we need about the old semantics is recoverable with
   ~60-method `HostFunctions` interface the ledger implements), `HostFuncImpl*.cpp`
   (its implementations), `WasmCommon.h` (`HostFunctionError`, `Wmem`, `WasmTER`,
   `FieldLocator`), `README.md` (ABI docs, worth reading — but stale in places, see below).
+
+## The ABI crate is a library both sides link (2026-07-29)
+
+`xrpl-host-functions` is the single source of truth, and the way that is realised is:
+**it is consumed as an ordinary dependency**, by `xrpl-wasm-vm` today and by the guest
+stdlib next. Neither invokes `host_functions!` — the macro has exactly one call site,
+inside the ABI crate itself, which is why it is deliberately not re-exported. Consumers
+get the *generated code*, not the generator.
+
+That makes four properties load-bearing rather than incidental:
+
+| Property | Why | Status |
+|---|---|---|
+| `#![no_std]`, **no allocator** | the guest stdlib is strictly `no_std` | ✓ `Vec` left the ABI when byte outputs became `out: &mut [u8]`; `extern crate alloc` went with it |
+| **zero runtime dependencies** | anything else must also build for the guest | ✓ `cargo tree` is the proc-macro crate alone (build-time, host-side) |
+| builds for **`wasm32-unknown-unknown`** | it links into the guest | ✓ verified 2026-07-29 |
+| the trait is implementable by **both** sides | one declaration, two implementors | ✓ see below |
+
+The last one is what the out-param shape buys. A host impl writes into `out` and returns
+the length; a guest impl forwards to the import, passing `out.as_mut_ptr()` / `out.len()`
+and decoding the returned `i32` through `HostError::from_code`. One trait serves both
+*because it is now the wire shape* — with value-returning signatures the guest side
+would need the macro to transform them again, which is exactly the PoC magic we removed
+(see "The lowering table" below).
+
+A side effect worth having: the guest inherits `HostError::from_code`, which range-checks
+the wire code. The SDK today transmutes it unchecked — open question 3.
+
+**Known gap.** The `#[link(wasm_import_module = "…")] unsafe extern "C" { … }`
+declarations are *not* generated; the PoC's `host_abi!` did generate them, along with a
+`GuestHost` impl, behind `#[cfg(target_arch = "wasm32")]`. If stdlib hand-writes that
+extern block, it is precisely the drift the single source of truth exists to prevent, so
+generating it is the natural follow-up. One wrinkle to decide first: the generated guest
+impl needs `HostError::from_code`, a name no declaration mentions, so it would be the
+first thing to put a vocabulary dependency back into the expansion (which is otherwise
+closed — see the convention note above).
 
 ## Agreed direction (2026-07-28)
 
@@ -154,43 +203,48 @@ The existing DSL vocabulary already implies this; it was simply never written do
 That is the entire gap.
 
 ```
-params:
+params, in declared order:
   &self              -> nothing                   (receiver, not part of the ABI)
   i32, bool          -> i32                       (bool: nonzero = true)
   i64                -> i64
   &[u8], &str        -> i32 ptr, i32 len          const uint8_t*, int32_t
+  &mut [u8]          -> i32 ptr, i32 len          uint8_t*, int32_t   (an output region)
 
 returns, always `HostResult<T>`; `Err(e)` -> negative code, or a trap when host-fatal:
-  HostResult<[u8; N]>     -> appends i32 out_ptr, i32 out_len; result i32 = bytes written
-  HostResult<Vec<u8>>     -> same
-  HostResult<i32>, <bool> -> no out params; result i32 = the value
-  HostResult<()>          -> no out params; result i32 = 0
+  HostResult<usize>       -> result i32 = bytes written into the output region
+  HostResult<i32>, <bool> -> result i32 = the value
+  HostResult<()>          -> result i32 = 0
 ```
 
-Total and unambiguous. **The macro must reject any type not in this table** — that is
-`WasmImpArgs`' `static_assert`, restored, and it is what guarantees the C API is
-always surfaceable.
+Total, unambiguous, and **positional**: every wasm parameter is a declared parameter,
+in order, so the C prototype is a direct reading of the declaration rather than
+something the macro appends to it. **The macro must reject any type not in this
+table** — that is `WasmImpArgs`' `static_assert`, restored, and it is what guarantees
+the C API is always surfaceable.
 
 **Validation** — all five current declarations (the `host_functions!` block at the
 bottom of `xrpl-host-functions/src/lib.rs`) lower to exactly the deleted C++ `_proto`
-aliases. Abbreviated below: each real declaration reads
-`fn f(&self, …) -> HostResult<T>`, and neither the receiver nor the `HostResult`
-wrapper contributes a C parameter.
+aliases. Abbreviated below by dropping `&self`, which contributes no C parameter.
 
 | Declaration | Derived C | C++ `_proto` |
 |---|---|---|
-| `fn get_ledger_sqn() -> [u8; 4]` | `int32_t(uint8_t*, int32_t)` | `getLedgerSqn_proto` ✓ |
-| `fn get_current_ledger_obj_field(field: i32) -> Vec<u8>` | `int32_t(int32_t, uint8_t*, int32_t)` | `getTxField_proto` ✓ |
-| `fn sha512_half(data: &[u8]) -> [u8; 32]` | `int32_t(const uint8_t*, int32_t, uint8_t*, int32_t)` | ✓ |
-| `fn trace(msg: &str, data: &[u8], as_hex: bool)` | `int32_t(const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t)` | `trace_proto` ✓ |
-| `fn trace_num(msg: &str, number: i64)` | `int32_t(const uint8_t*, int32_t, int64_t)` | `traceNum_proto` ✓ |
+| `fn get_ledger_sqn(out: &mut [u8]) -> HostResult<usize>` | `int32_t(uint8_t*, int32_t)` | `getLedgerSqn_proto` ✓ |
+| `fn get_current_ledger_obj_field(field: i32, out: &mut [u8]) -> HostResult<usize>` | `int32_t(int32_t, uint8_t*, int32_t)` | `getTxField_proto` ✓ |
+| `fn sha512_half(data: &[u8], out: &mut [u8]) -> HostResult<usize>` | `int32_t(const uint8_t*, int32_t, uint8_t*, int32_t)` | ✓ |
+| `fn trace(msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t)` | `trace_proto` ✓ |
+| `fn trace_num(msg: &str, number: i64) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, int64_t)` | `traceNum_proto` ✓ |
 
-**Discipline the table requires**: byte outputs must be spelled as arrays.
-`get_ledger_sqn` is correctly `-> [u8; 4]` (C++ writes 4 LE bytes and returns 4 — it
-does *not* return the sequence number). By the same rule `float_to_int` must be
-declared `-> [u8; 8]`, never `-> i64`. A scalar return type means value-in-the-return-
-register (`get_tx_array_len(field: i32) -> i32`, `nft_flags`, `float_cmp`, `cache_le`,
-`check_sig`, `amendment_enabled`).
+**Discipline the table requires**: a byte output is an explicit `out: &mut [u8]`
+parameter plus `HostResult<usize>`, never a returned value. `get_ledger_sqn` writes 4
+LE bytes and returns 4 — it does *not* return the sequence number, and by the same
+rule `float_to_int` takes an out region rather than returning `i64`. A scalar
+`HostResult<T>` means value-in-the-return-register (`get_tx_array_len(field: i32) ->
+HostResult<i32>`, `nft_flags`, `float_cmp`, `cache_le`, `check_sig`,
+`amendment_enabled`).
+
+The contract on an out region, which the engine relies on: **write only if the value
+fits, and return its true length either way.** The host therefore never needs to know
+the guest's buffer size — the engine turns `n > cap` into `BufferTooSmall`.
 
 ### Closing the drift gap between `register.rs` and the generated header
 
@@ -246,34 +300,35 @@ type, then `linker.instantiate()` it. A signature mismatch fails instantiation. 
 is the only check that also catches module-name and missing-import mistakes, and it
 tests the *guest's* view end-to-end.
 
-### Mechanism note: why the PoC's value-returning trait is the right shape
+### Open: where the output region points (2026-07-29)
 
-Generated or type-checked registration needs one uniform phase order:
+Nothing above depends on this — the declaration is the same either way, and it is
+internal to `abi.rs`. Both `register.rs` and the trait are untouched by the choice.
 
-> lift inputs with `&Caller` → call the host → lower outputs with `&mut Caller`
+`write_into` today hands the host a slice **of guest linear memory**
+(`mem.data_mut(&mut *caller).get_mut(dst..end)`), so the host writes straight into wasm
+memory with no copy. The cost is that this `&mut` borrow cannot coexist with a `&`
+borrow of guest memory for the inputs, which is the only reason `read_write` exists: it
+memcpies the input into a `[0u8; MAX_WASM_DATA_LEN]` stack array first. That does not
+generalize — `credential_keylet`, `check_sig` and `paychan_keylet` each take three byte
+inputs, so each would need its own stack buffer.
 
-The uncommitted `write_into` / `HostResult<usize>` fill-the-guest-buffer code fights
-this: it hands the host impl a `&mut [u8]` **into guest memory** while inputs also
-alias guest memory. That is why `read_write` has to memcpy inputs into a
-`[0u8; MAX_WASM_DATA_LEN]` stack array first — and that workaround does not
-generalize, because `credential_keylet`, `check_sig` and `paychan_keylet` each take
-three byte inputs.
+The alternative is a **host-side scratch buffer** the adapter owns, with one copy into
+guest memory after the call. Then inputs stay borrowed from guest memory (any number of
+them, zero copies), `read_write` disappears, and the fit check precedes the guest write.
+This is what C++ did (`std::expected<Bytes, …>` + `setData`), so gas/behaviour parity
+is preserved.
 
-The fix is for the host to write into a **host-side scratch buffer** that the dispatch
-adapter owns, with a single copy into guest memory afterwards. Not guest memory → no
-aliasing → no scratch-per-input. This is what C++ did (`std::expected<Bytes, …>` +
-`setData`), so gas/behaviour parity is preserved, and it is essentially the PoC's
-original value-returning trait plus `HostResult<T>` for the error channel.
+Cost is roughly a wash:
+- `sha512_half` — today ≤1 KiB input copied to stack + 32 bytes written ≈ 1056 bytes
+  moved. Scratch: input borrowed zero-copy, 32 bytes copied out. **Better.**
+- `get_tx_field` (no byte input, ≤1 KiB output) — today 1024 direct; scratch 1024 +
+  1024. **Worse.**
 
-Cost is roughly a wash, not a straight loss of the zero-extra-copy work:
-- `sha512_half` — today: ≤1 KiB input copied to stack + 32 bytes written ≈ 1056 bytes
-  moved. New: input borrowed zero-copy, 32 bytes copied out. **Better.**
-- `get_tx_field` (no byte input, ≤1 KiB output) — today 1024 direct; new 1024 + 1024.
-  **Worse.**
-
-It also fixes a real wart: `write_into` checks `n > cap` *after* `fill` has already
-written, so a rejected call leaves garbage in the guest buffer. C++ `setData` checked
-before the memcpy.
+Scratch also fixes a real wart: `write_into` checks `n > cap` *after* `fill` has
+already written, so a rejected call leaves bytes in the guest buffer. Its own doc
+comment accepts this ("the guest must treat a negative status as don't read the
+buffer"); C++ `setData` checked before the memcpy.
 
 ### Status: deferred
 
@@ -362,26 +417,37 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 - Fast: `cd crates && cargo check --workspace --all-targets`, `cargo test --workspace`,
   `cargo clippy --workspace --all-targets`.
+- Guest-linkability of the ABI crate (needs `rustup target add wasm32-unknown-unknown`):
+  `cargo check -p xrpl-host-functions --target wasm32-unknown-unknown`. Worth keeping
+  green — the guest stdlib links this crate, so a `std`/`alloc`/dependency creep here
+  breaks it there. Only the ABI crate: `xrpl-wasm-vm` is host-side and pulls in wasmi.
 - Full C++↔Rust: normal CMake build, then `xrpl_tests` (`src/test/app/Wasm_test.cpp`,
   `HostFuncImpl_test.cpp`).
 - VCS is **jj** (`jj st`, `jj log`), not raw git, for local work.
 
 ## Current state (2026-07-29)
 
-The trait is settled and declared: `&self`, one method per declaration, uniform
-`HostResult<T>` returns, all three checked by the macro. `xrpl-host-functions` and
-`xrpl-host-functions-macros` are green (`cargo test` + `clippy` + `fmt`): 32 macro
-tests, 8 facade tests, 1 doctest.
+**`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
+`clippy --workspace --all-targets`, `fmt`. 33 macro tests, 9 facade tests, 1 doctest;
+`xrpl-wasm-vm` has no tests of its own yet.
 
-`crates/` as a whole still does **not** compile: the VM's marshaling is the other
-ABI shape (fill the caller's buffer, `HostResult<usize>`). All 6 errors are in
-`xrpl-wasm-vm/src/register.rs`, at the three byte-returning call sites — `write_into`
-and `read_write` pass an `&mut [u8]` the trait no longer takes and expect a
-`HostResult<usize>` the trait no longer returns.
+The trait is settled, and every part of it is written in the declaration rather than
+synthesized: `&self`, `HostResult<T>`, and byte outputs as explicit
+`out: &mut [u8]` parameters. The macro checks the first two. Nothing is appended to a
+signature behind the reader's back, which is what the PoC's `host_abi!` did — see the
+lowering table above and "Open: where the output region points".
 
-Rewriting `abi.rs` to lift → call → lower against the value-returning trait (host
-writes into a host-side scratch buffer, one copy into guest memory afterwards, gas
-and transfer limit counted there) is the immediate work.
+Consequences worth remembering:
+- Declaring the out-params is what made the VM compile *unchanged* — `write_into` and
+  `read_write` already took `FnOnce(&dyn HostFunctions, …, &mut [u8]) -> HostResult<usize>`.
+- The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
+  for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
+- `xrpl-wasm-vm` has **no tests**, so nothing would catch a mistake in `abi.rs`'s
+  bounds/cap/transfer policy. That is the gap to close before refactoring it.
+
+Next, in rough order: the scratch-buffer decision, then real `ApplyContext` wiring and
+the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`). Deferred as before:
+macro-emitted `link_*` shims, the generated C header, the probe-module test.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`
 shims, the generated C header, and the probe-module conformance test.

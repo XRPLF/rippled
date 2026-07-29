@@ -29,10 +29,10 @@ use parsed_host_function::ParsedHostFunction;
 /// use xrpl_host_functions_macros::host_functions;
 ///
 /// host_functions! {
-///     /// The sequence number of the ledger being built.
+///     /// The sequence number of the ledger being built, as 4 little-endian bytes.
 ///     #[gas = 60]
 ///     #[wasm_name = "ldgr_index"]
-///     fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+///     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 ///
 ///     /// Writes `msg` to the trace log.
 ///     #[gas = 500]
@@ -43,7 +43,10 @@ use parsed_host_function::ParsedHostFunction;
 /// // A `HostFunctions` trait, holding the declarations verbatim:
 /// struct Host;
 /// impl HostFunctions for Host {
-///     fn get_ledger_sqn(&self) -> HostResult<[u8; 4]> { Ok(7u32.to_le_bytes()) }
+///     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
+///         out[..4].copy_from_slice(&7u32.to_le_bytes());
+///         Ok(4)
+///     }
 ///     fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> { Ok(()) }
 /// }
 ///

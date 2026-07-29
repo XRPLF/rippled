@@ -10,9 +10,6 @@
 //! two sides meet only in the block below.
 
 #![no_std]
-extern crate alloc;
-
-use alloc::vec::Vec;
 
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::host_functions;
@@ -97,22 +94,27 @@ pub type HostResult<T> = Result<T, HostError>;
 pub const HASH_LEN: usize = 32;
 
 host_functions! {
+    /// The sequence number of the ledger being built, as 4 little-endian bytes.
     #[gas = 60]
     #[wasm_name = "ldgr_index"]
-    fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+    fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]
-    fn get_current_ledger_obj_field(&self, field: i32) -> HostResult<Vec<u8>>;
+    fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
-    fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; HASH_LEN]>;
+    fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
+    /// Writes `msg` and `data` to the trace log, `data` in hex if `as_hex`.
     #[gas = 500]
     #[wasm_name = "trace"]
     fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>;
 
+    /// Writes `msg` and `number` to the trace log.
     #[gas = 500]
     #[wasm_name = "trace_num"]
     fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
