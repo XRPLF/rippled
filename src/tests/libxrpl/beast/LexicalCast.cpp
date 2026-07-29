@@ -38,6 +38,12 @@ constexpr T kMax = std::numeric_limits<T>::max();
 template <class T>
 constexpr T kMin = std::numeric_limits<T>::min();
 
+template <class T>
+constexpr T kUnderMax = kMax<T> - 1;
+
+template <class T>
+constexpr T kOverMin = kMin<T> + 1;
+
 // Comfortably inside the range, not boundary values.
 constexpr auto kNearMax32 = kMax<uint32_t> - 5;
 constexpr auto kNearMin32 = kMin<int32_t> + 4;
@@ -46,6 +52,29 @@ constexpr auto kUnderInt64Max = uint64_t{kMax<int64_t>} - 1;
 // No wider integer type can hold these, so ToString cannot produce them.
 constexpr std::string_view kAboveUint64Max = "18446744073709551616";
 constexpr std::string_view kBelowInt64Min = "-9223372036854775809";
+
+// Out of range for every integer type we test.
+constexpr std::string_view kTwentyNines = "99999999999999999999";
+constexpr std::string_view kNegativeTwentyNines = "-99999999999999999999";
+
+// Arbitrary values chosen to sit well outside a type's range, not just over it.
+constexpr std::string_view kAboveUint16Max = "75821";
+constexpr std::string_view kBelowInt16Min = "-75821";
+constexpr std::string_view kAboveInt32Max = "5294967295";
+constexpr std::string_view kAboveInt16Max = "66666";
+
+// Arbitrary values comfortably inside a type's range.
+constexpr std::string_view kInRangeInt16 = "-5711";
+constexpr std::string_view kPositiveInt32 = "+42";
+constexpr std::string_view kNegativeInt32 = "-42";
+
+constexpr std::string_view kNegativeOne = "-1";
+constexpr std::string_view kNegativeZero = "-0";
+constexpr std::string_view kZero = "0";
+constexpr std::string_view kPositiveZero = "+0";
+
+// Full-width digits one and zero, not ASCII ones.
+constexpr std::string_view kFullWidthDigits = "\xef\xbc\x91\xef\xbc\x90";
 
 // The decimal text of a value, usable in a constant expression.
 template <class T>
@@ -66,6 +95,27 @@ struct ToString
         return {buffer.data(), length};
     }
 };
+
+template <class T>
+constexpr auto kMaxText = ToString{kMax<T>};
+
+template <class T>
+constexpr auto kUnderMaxText = ToString{kUnderMax<T>};
+
+template <class T, class Wider>
+constexpr auto kOverMaxText = ToString{Wider{kMax<T>} + 1};
+
+template <class T>
+constexpr auto kMinText = ToString{kMin<T>};
+
+template <class T>
+constexpr auto kOverMinText = ToString{kOverMin<T>};
+
+template <class T, class Wider>
+constexpr auto kUnderMinText = ToString{Wider{kMin<T>} - 1};
+
+constexpr auto kOverUint32MaxText = ToString{uint64_t{kMax<uint32_t>} + 5};
+constexpr auto kNegatedOverUint32MaxText = ToString{-(int64_t{kMax<uint32_t>} + 5)};
 
 // lexicalCastThrow deduces its input type, so the text has to be an explicit
 // string_view rather than a ToString.
@@ -164,97 +214,95 @@ TEST(LexicalCast, round_trips_every_int16_value)
 
 TEST(LexicalCast, rejects_overflow)
 {
-    static_assert(not parses<uint32_t>(ToString{uint64_t{kMax<uint32_t>} + 5}));
-
-    // Well past the maximum rather than just over it.
-    static_assert(not parses<uint64_t>("99999999999999999999"));
-    static_assert(not parses<uint16_t>("75821"));
+    static_assert(not parses<uint32_t>(kOverUint32MaxText));
+    static_assert(not parses<uint64_t>(kTwentyNines));
+    static_assert(not parses<uint16_t>(kAboveUint16Max));
 }
 
 TEST(LexicalCast, rejects_underflow)
 {
-    static_assert(not parses<uint32_t>("-1"));
-    static_assert(not parses<int32_t>(ToString{-(int64_t{kMax<uint32_t>} + 5)}));
-
-    static_assert(not parses<int64_t>("-99999999999999999999"));
-    static_assert(not parses<int16_t>("-75821"));
+    static_assert(not parses<uint32_t>(kNegativeOne));
+    static_assert(not parses<int32_t>(kNegatedOverUint32MaxText));
+    static_assert(not parses<int64_t>(kNegativeTwentyNines));
+    static_assert(not parses<int16_t>(kBelowInt16Min));
 }
 
 TEST(LexicalCast, accepts_up_to_the_maximum)
 {
-    static_assert(parsed<uint16_t>(ToString{kMax<uint16_t> - 1}) == kMax < uint16_t > -1);
-    static_assert(parsed<uint16_t>(ToString{kMax<uint16_t>}) == kMax<uint16_t>);
-    static_assert(not parses<uint16_t>(ToString{uint32_t{kMax<uint16_t>} + 1}));
+    static_assert(parsed<uint16_t>(kUnderMaxText<uint16_t>) == kUnderMax<uint16_t>);
+    static_assert(parsed<uint16_t>(kMaxText<uint16_t>) == kMax<uint16_t>);
+    static_assert(not parses<uint16_t>(kOverMaxText<uint16_t, uint32_t>));
 
-    static_assert(parsed<int16_t>(ToString{kMax<int16_t> - 1}) == kMax < int16_t > -1);
-    static_assert(parsed<int16_t>(ToString{kMax<int16_t>}) == kMax<int16_t>);
-    static_assert(not parses<int16_t>(ToString{int32_t{kMax<int16_t>} + 1}));
+    static_assert(parsed<int16_t>(kUnderMaxText<int16_t>) == kUnderMax<int16_t>);
+    static_assert(parsed<int16_t>(kMaxText<int16_t>) == kMax<int16_t>);
+    static_assert(not parses<int16_t>(kOverMaxText<int16_t, int32_t>));
 
-    static_assert(parsed<uint32_t>(ToString{kMax<uint32_t> - 1}) == kMax < uint32_t > -1);
-    static_assert(parsed<uint32_t>(ToString{kMax<uint32_t>}) == kMax<uint32_t>);
-    static_assert(not parses<uint32_t>(ToString{uint64_t{kMax<uint32_t>} + 1}));
+    static_assert(parsed<uint32_t>(kUnderMaxText<uint32_t>) == kUnderMax<uint32_t>);
+    static_assert(parsed<uint32_t>(kMaxText<uint32_t>) == kMax<uint32_t>);
+    static_assert(not parses<uint32_t>(kOverMaxText<uint32_t, uint64_t>));
 
-    static_assert(parsed<int32_t>(ToString{kMax<int32_t> - 1}) == kMax < int32_t > -1);
-    static_assert(parsed<int32_t>(ToString{kMax<int32_t>}) == kMax<int32_t>);
-    static_assert(not parses<int32_t>(ToString{int64_t{kMax<int32_t>} + 1}));
+    static_assert(parsed<int32_t>(kUnderMaxText<int32_t>) == kUnderMax<int32_t>);
+    static_assert(parsed<int32_t>(kMaxText<int32_t>) == kMax<int32_t>);
+    static_assert(not parses<int32_t>(kOverMaxText<int32_t, int64_t>));
 
-    static_assert(parsed<int64_t>(ToString{kMax<int64_t> - 1}) == kMax < int64_t > -1);
-    static_assert(parsed<int64_t>(ToString{kMax<int64_t>}) == kMax<int64_t>);
-    static_assert(not parses<int64_t>(ToString{uint64_t{kMax<int64_t>} + 1}));
+    static_assert(parsed<int64_t>(kUnderMaxText<int64_t>) == kUnderMax<int64_t>);
+    static_assert(parsed<int64_t>(kMaxText<int64_t>) == kMax<int64_t>);
+    static_assert(not parses<int64_t>(kOverMaxText<int64_t, uint64_t>));
 
-    static_assert(parsed<uint64_t>(ToString{kMax<uint64_t> - 1}) == kMax < uint64_t > -1);
-    static_assert(parsed<uint64_t>(ToString{kMax<uint64_t>}) == kMax<uint64_t>);
+    static_assert(parsed<uint64_t>(kUnderMaxText<uint64_t>) == kUnderMax<uint64_t>);
+    static_assert(parsed<uint64_t>(kMaxText<uint64_t>) == kMax<uint64_t>);
     static_assert(not parses<uint64_t>(kAboveUint64Max));
 }
 
 TEST(LexicalCast, accepts_down_to_the_minimum)
 {
-    static_assert(parsed<int16_t>(ToString{kMin<int16_t> + 1}) == kMin<int16_t> + 1);
-    static_assert(parsed<int16_t>(ToString{kMin<int16_t>}) == kMin<int16_t>);
-    static_assert(not parses<int16_t>(ToString{int32_t{kMin<int16_t>} - 1}));
+    static_assert(parsed<int16_t>(kOverMinText<int16_t>) == kOverMin<int16_t>);
+    static_assert(parsed<int16_t>(kMinText<int16_t>) == kMin<int16_t>);
+    static_assert(not parses<int16_t>(kUnderMinText<int16_t, int32_t>));
 
-    static_assert(parsed<int32_t>(ToString{kMin<int32_t> + 1}) == kMin<int32_t> + 1);
-    static_assert(parsed<int32_t>(ToString{kMin<int32_t>}) == kMin<int32_t>);
-    static_assert(not parses<int32_t>(ToString{int64_t{kMin<int32_t>} - 1}));
+    static_assert(parsed<int32_t>(kOverMinText<int32_t>) == kOverMin<int32_t>);
+    static_assert(parsed<int32_t>(kMinText<int32_t>) == kMin<int32_t>);
+    static_assert(not parses<int32_t>(kUnderMinText<int32_t, int64_t>));
 
-    static_assert(parsed<int64_t>(ToString{kMin<int64_t> + 1}) == kMin<int64_t> + 1);
-    static_assert(parsed<int64_t>(ToString{kMin<int64_t>}) == kMin<int64_t>);
+    static_assert(parsed<int64_t>(kOverMinText<int64_t>) == kOverMin<int64_t>);
+    static_assert(parsed<int64_t>(kMinText<int64_t>) == kMin<int64_t>);
     static_assert(not parses<int64_t>(kBelowInt64Min));
 }
 
 TEST(LexicalCast, limits_round_trip_through_to_string)
 {
-    EXPECT_TRUE(roundTrips<uint64_t>(ToString{kMax<uint64_t>}));
-    EXPECT_TRUE(roundTrips<int64_t>(ToString{kMax<int64_t>}));
-    EXPECT_TRUE(roundTrips<int64_t>(ToString{kMin<int64_t>}));
-    EXPECT_TRUE(roundTrips<uint32_t>(ToString{kMax<uint32_t>}));
-    EXPECT_TRUE(roundTrips<int32_t>(ToString{kMin<int32_t>}));
-    EXPECT_TRUE(roundTrips<uint16_t>(ToString{kMax<uint16_t>}));
-    EXPECT_TRUE(roundTrips<int16_t>(ToString{kMin<int16_t>}));
+    EXPECT_TRUE(roundTrips<uint64_t>(kMaxText<uint64_t>));
+    EXPECT_TRUE(roundTrips<int64_t>(kMaxText<int64_t>));
+    EXPECT_TRUE(roundTrips<int64_t>(kMinText<int64_t>));
+    EXPECT_TRUE(roundTrips<uint32_t>(kMaxText<uint32_t>));
+    EXPECT_TRUE(roundTrips<int32_t>(kMinText<int32_t>));
+    EXPECT_TRUE(roundTrips<uint16_t>(kMaxText<uint16_t>));
+    EXPECT_TRUE(roundTrips<int16_t>(kMinText<int16_t>));
 }
 
 TEST(LexicalCast, accepts_signed_zero_in_every_form)
 {
-    static_assert(parsed<int32_t>("-0") == 0);
-    static_assert(parsed<int32_t>("0") == 0);
-    static_assert(parsed<int32_t>("+0") == 0);
+    static_assert(parsed<int32_t>(kNegativeZero) == 0);
+    static_assert(parsed<int32_t>(kZero) == 0);
+    static_assert(parsed<int32_t>(kPositiveZero) == 0);
 }
 
 TEST(LexicalCast, rejects_negative_zero_when_unsigned)
 {
-    static_assert(not parses<uint32_t>("-0"));
-    static_assert(parsed<uint32_t>("0") == 0);
-    static_assert(parsed<uint32_t>("+0") == 0);
+    static_assert(not parses<uint32_t>(kNegativeZero));
+    static_assert(parsed<uint32_t>(kZero) == 0);
+    static_assert(parsed<uint32_t>(kPositiveZero) == 0);
 }
 
 TEST(LexicalCast, accepts_char_pointer_and_std_string_input)
 {
     int32_t fromLiteral = 0;
-    EXPECT_TRUE(lexicalCastChecked(fromLiteral, "+42"));
+    // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+    EXPECT_TRUE(lexicalCastChecked(fromLiteral, kPositiveInt32.data()));
     EXPECT_EQ(fromLiteral, 42);
 
     int32_t fromString = 0;
-    EXPECT_TRUE(lexicalCastChecked(fromString, std::string{"-42"}));
+    EXPECT_TRUE(lexicalCastChecked(fromString, std::string{kNegativeInt32}));
     EXPECT_EQ(fromString, -42);
 }
 
@@ -263,12 +311,12 @@ TEST(LexicalCast, throwing_cast_returns_in_range_values)
     EXPECT_EQ(castThrow<uint64_t>(kUnderInt64Max), kUnderInt64Max);
     EXPECT_EQ(castThrow<uint32_t>(kNearMax32), kNearMax32);
     EXPECT_EQ(castThrow<int32_t>(kNearMin32), kNearMin32);
-    EXPECT_EQ(lexicalCastThrow<int16_t>("-5711"), -5711);
+    EXPECT_EQ(lexicalCastThrow<int16_t>(kInRangeInt16), -5711);
 }
 
 TEST(LexicalCast, throwing_cast_throws_on_out_of_range)
 {
-    EXPECT_THROW(lexicalCastThrow<uint64_t>("99999999999999999999"), BadLexicalCast);
+    EXPECT_THROW(lexicalCastThrow<uint64_t>(kTwentyNines), BadLexicalCast);
 
     // kNearMax32 with digits appended, so each is further past uint32_t's range.
     for (auto const scale : {10, 100, 1000})
@@ -277,14 +325,14 @@ TEST(LexicalCast, throwing_cast_throws_on_out_of_range)
         EXPECT_THROW(lexicalCastThrow<uint32_t>(std::string_view{tooBig}), BadLexicalCast);
     }
 
-    EXPECT_THROW(lexicalCastThrow<int32_t>("5294967295"), BadLexicalCast);
-    EXPECT_THROW(lexicalCastThrow<int16_t>("66666"), BadLexicalCast);
+    EXPECT_THROW(lexicalCastThrow<int32_t>(kAboveInt32Max), BadLexicalCast);
+    EXPECT_THROW(lexicalCastThrow<int16_t>(kAboveInt16Max), BadLexicalCast);
 }
 
 // Full-width digits, not ASCII ones.
 TEST(LexicalCast, throwing_cast_throws_on_utf8_digits)
 {
-    EXPECT_THROW(lexicalCastThrow<int>("\xef\xbc\x91\xef\xbc\x90"), BadLexicalCast);
+    EXPECT_THROW(lexicalCastThrow<int>(kFullWidthDigits), BadLexicalCast);
 }
 
 }  // namespace beast
