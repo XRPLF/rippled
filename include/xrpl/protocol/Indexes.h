@@ -148,7 +148,7 @@ next(Keylet const& k);
  */
 /** @{ */
 Keylet
-ticket(AccountID const& id, SeqProxy ticketSeq);
+ticket(AccountID const& id, SeqProxy const& ticketSeq);
 
 inline Keylet
 ticket(uint256 const& key)
@@ -373,7 +373,7 @@ loanBroker(uint256 const& key)
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy loanSeq) noexcept;
+loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
 
 inline Keylet
 loan(uint256 const& key)

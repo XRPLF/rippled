@@ -569,7 +569,7 @@ loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy loanSeq) noexcept
+loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
 }
