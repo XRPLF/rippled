@@ -782,7 +782,7 @@ inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 inline uint256
 getCheckIndex(AccountID const& account, std::uint32_t const sequence)
 {
-    return keylet::check(account, SeqProxy::sequence(sequence)).key;
+    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
 }
 
 template <class Suite>

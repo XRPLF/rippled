@@ -167,7 +167,7 @@ class Batch_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, SeqProxy::sequence(uSequence)).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
     static std::unique_ptr<Config>
@@ -3178,7 +3178,7 @@ class Batch_test : public beast::unit_test::Suite
         env.close();
 
         auto const brokerKeylet =
-            keylet::loanBroker(lender.id(), SeqProxy::sequence(env.seq(lender)));
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         {
             using namespace loanBroker;
@@ -3200,7 +3200,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const lenderSeq = env.seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,

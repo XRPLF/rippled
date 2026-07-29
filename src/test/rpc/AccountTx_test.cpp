@@ -594,7 +594,7 @@ class AccountTx_test : public beast::unit_test::Suite
             env.close();
 
             std::string const payChanIndex{
-                strHex(keylet::payChannel(alice, gw, SeqProxy::sequence(payChanSeq)).key)};
+                strHex(keylet::payChannel(alice, gw, SeqProxy::rawSequence(payChanSeq)).key)};
 
             {
                 json::Value payChanFund;
@@ -619,10 +619,11 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Check
         {
-            auto const aliceCheckId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
+            auto const aliceCheckId =
+                keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, gw, XRP(300)), Sig(alie));
 
-            auto const gwCheckId = keylet::check(gw, SeqProxy::sequence(env.seq(gw))).key;
+            auto const gwCheckId = keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key;
             env(check::create(gw, alice, XRP(200)));
             env.close();
 
@@ -1357,7 +1358,7 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(sponsor, jss::SponsorshipSet);
 
         // create an object with sponsor
-        auto const checkId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
+        auto const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
         env(check::create(alice, sponsor, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
         env.close();
         checkTx(alice, jss::CheckCreate);

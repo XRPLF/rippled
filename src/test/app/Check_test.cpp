@@ -54,7 +54,7 @@ class Check_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, SeqProxy::sequence(uSequence)).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
     // Helper function that returns the Checks on an account.

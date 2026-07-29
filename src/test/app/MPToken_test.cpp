@@ -2384,7 +2384,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::sequence(checkSeq));
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 auto const sleCheck = env.le(checkKeylet);
                 BEAST_EXPECT((sleCheck != nullptr) == !bad.negative);
                 if (sleCheck && !bad.negative)
@@ -2412,7 +2412,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::sequence(checkSeq));
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2440,7 +2440,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::sequence(checkSeq));
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2471,7 +2471,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
 
-                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::sequence(checkSeq));
+                auto const checkKeylet = keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq));
                 BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
                 if (!bad.negative)
                 {
@@ -2500,7 +2500,7 @@ class MPToken_test : public beast::unit_test::Suite
                     env.jt(
                         check::cash(
                             bob,
-                            keylet::check(alice.id(), SeqProxy::sequence(checkSeq)).key,
+                            keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq)).key,
                             STAmount{issue, std::uint64_t{1}})),
                     sfAmount,
                     badCashAmount,
@@ -2510,7 +2510,7 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
                 BEAST_EXPECT(
-                    env.le(keylet::check(alice.id(), SeqProxy::sequence(checkSeq))) != nullptr);
+                    env.le(keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq))) != nullptr);
                 BEAST_EXPECT(
                     (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
                 BEAST_EXPECT(
@@ -2534,7 +2534,7 @@ class MPToken_test : public beast::unit_test::Suite
                     env.jt(
                         check::cash(
                             bob,
-                            keylet::check(alice.id(), SeqProxy::sequence(checkSeq)).key,
+                            keylet::check(alice.id(), SeqProxy::rawSequence(checkSeq)).key,
                             STAmount{issue, std::uint64_t{1}})),
                     sfAmount,
                     badCashAmount,
@@ -2563,7 +2563,8 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
                 env.close();
                 BEAST_EXPECT(
-                    env.le(keylet::escrow(alice.id(), SeqProxy::sequence(escrowSeq))) == nullptr);
+                    env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(escrowSeq))) ==
+                    nullptr);
             }
             {
                 Env env{*this, withFix};
@@ -2964,7 +2965,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto const issue = makeIssue(env);
 
                 auto const badAmount = badMPTAmount(issue, bad);
-                uint256 const fakeVaultId = keylet::vault(gw.id(), SeqProxy::sequence(1)).key;
+                uint256 const fakeVaultId = keylet::vault(gw.id(), SeqProxy::rawSequence(1)).key;
                 auto tx = withNonCanonicalMPTAmount(
                     env.jt(
                         Vault::clawback(
@@ -6554,7 +6555,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto const mpt = mptTester["MPT"];
             mptTester.authorize({.account = alice});
 
-            uint256 const checkId{keylet::check(gw, SeqProxy::sequence(env.seq(gw))).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             env(check::create(gw, alice, mpt(100)), Ter(temDISABLED));
             env.close();
@@ -6575,7 +6576,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptTester.authorize({.account = alice});
             mptTester.pay(gw, alice, 50);
 
-            uint256 const checkId{keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6605,7 +6606,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .flags = tfMPTCanTransfer | tfMPTCanTrade});
             auto const mpt = mptTester["MPT"];
 
-            uint256 const checkId{keylet::check(gw, SeqProxy::sequence(env.seq(gw))).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             // can create
             env(check::create(gw, alice, mpt(200)));
@@ -6763,7 +6764,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .mutableFlags = tmfMPTCanEnableCanTransfer});
 
             // src is issuer
-            uint256 checkId{keylet::check(gw, SeqProxy::sequence(env.seq(gw))).key};
+            uint256 checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             // can create
             env(check::create(gw, alice, mpt(100)));
@@ -6777,7 +6778,7 @@ class MPToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(-100));
 
             // dst is issuer
-            checkId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
 
             // can create
             env(check::create(alice, gw, mpt(100)));
@@ -6791,13 +6792,13 @@ class MPToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(0));
 
             // neither src nor dst is issuer, can't create
-            checkId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, carol, mpt(100)), Ter(tecNO_AUTH));
             env.close();
 
             // can create now
             mpt.set({.account = gw, .mutableFlags = tmfMPTSetCanTransfer});
-            checkId = keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key;
+            checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, carol, mpt(100)));
             env.close();
             env(pay(gw, alice, mpt(10)));
@@ -6821,7 +6822,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .pay = 10,
                  .flags = tfMPTCanTransfer});
 
-            uint256 const checkId{keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6895,7 +6896,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.fund(XRP(1'000), alice, carol);
 
             // src is issuer
-            uint256 const checkId{keylet::check(alice, SeqProxy::sequence(env.seq(alice))).key};
+            uint256 const checkId{keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key};
 
             // can create
             env(check::create(alice, carol, mpt(100)));
@@ -6923,7 +6924,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto const mpt = mptTester["MPT"];
             mptTester.authorize({.account = alice});
 
-            uint256 const checkId{keylet::check(gw, SeqProxy::sequence(env.seq(gw))).key};
+            uint256 const checkId{keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key};
 
             env(check::create(gw, alice, mpt(100)));
             env.close();

@@ -45,7 +45,7 @@ class NFTokenAuth_test : public beast::unit_test::Suite
         env.close();
 
         auto const sellIdx =
-            keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key;
+            keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key;
         env(token::createOffer(account, nftID, currency), Txflags(tfSellNFToken));
         env.close();
 
@@ -76,7 +76,7 @@ public:
         env(pay(g1, a1, usd(1000)));
 
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
-        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
 
         // It should be possible to create a buy offer even if NFT owner is not
         // authorized
@@ -181,7 +181,7 @@ public:
         env(pay(g1, a2, usd(10)));
         env.close();
 
-        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         env.close();
 
@@ -246,7 +246,7 @@ public:
             // Authorizing trustline to make an offer creation possible
             env(trust(g1, usd(0), a2, tfSetfAuth));
             env.close();
-            auto const sellIdx = keylet::nftokenOffer(a2, SeqProxy::sequence(env.seq(a2))).key;
+            auto const sellIdx = keylet::nftokenOffer(a2, SeqProxy::rawSequence(env.seq(a2))).key;
             env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
             //
@@ -270,7 +270,7 @@ public:
         }
         else
         {
-            auto const sellIdx = keylet::nftokenOffer(a2, SeqProxy::sequence(env.seq(a2))).key;
+            auto const sellIdx = keylet::nftokenOffer(a2, SeqProxy::rawSequence(env.seq(a2))).key;
 
             // Old behavior: sell offer can be created without authorization
             env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
@@ -355,7 +355,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
@@ -424,7 +424,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
@@ -485,7 +485,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        auto const buyIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
@@ -561,7 +561,7 @@ public:
         auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(a1, minterSellIdx));
 
-        uint256 const sellIdx = keylet::nftokenOffer(a1, SeqProxy::sequence(env.seq(a1))).key;
+        uint256 const sellIdx = keylet::nftokenOffer(a1, SeqProxy::rawSequence(env.seq(a1))).key;
         env(token::createOffer(a1, nftID, usd(100)), Txflags(tfSellNFToken));
 
         if (features[fixEnforceNFTokenTrustlineV2])

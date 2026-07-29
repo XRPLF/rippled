@@ -369,7 +369,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         for (int i = 0; i < 32; ++i)
         {
             uint256 const offerIndex =
-                keylet::nftokenOffer(carol, SeqProxy::sequence(env.seq(carol))).key;
+                keylet::nftokenOffer(carol, SeqProxy::rawSequence(env.seq(carol))).key;
             env(token::createOffer(carol, carolNFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
@@ -404,7 +404,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         for (uint256 const& nft : dariaNFTs)
         {
             uint256 const offerIndex =
-                keylet::nftokenOffer(carol, SeqProxy::sequence(env.seq(carol))).key;
+                keylet::nftokenOffer(carol, SeqProxy::rawSequence(env.seq(carol))).key;
             env(token::createOffer(carol, nft, drops(1)), token::Owner(daria));
             env.close();
 

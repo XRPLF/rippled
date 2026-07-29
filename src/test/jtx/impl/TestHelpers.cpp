@@ -572,7 +572,7 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChannel(account, dst, SeqProxy::sequence(seqProxyValue));
+    auto const k = keylet::payChannel(account, dst, SeqProxy::rawSequence(seqProxyValue));
     return k.key;
 }
 

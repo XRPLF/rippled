@@ -144,7 +144,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         for (uint256 const& nftID : nftIDs)
         {
             offers.emplace_back(
-                keylet::nftokenOffer(issuer, SeqProxy::sequence(env.seq(issuer))).key);
+                keylet::nftokenOffer(issuer, SeqProxy::rawSequence(env.seq(issuer))).key);
             env(token::createOffer(issuer, nftID, XRP(0)), Txflags(tfSellNFToken));
             env.close();
         }
@@ -217,7 +217,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
                 // Create an offer to give the NFT to buyer for free.
                 offers.emplace_back(
-                    keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key);
+                    keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
                     Txflags(tfSellNFToken));
@@ -241,7 +241,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             for (uint256 const& nftID : nftIDs)
             {
                 uint256 const offerID =
-                    keylet::nftokenOffer(buyer, SeqProxy::sequence(env.seq(buyer))).key;
+                    keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
                 env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
@@ -423,7 +423,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
                 // Create an offer to give the NFT to buyer for free.
                 offers.emplace_back(
-                    keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key);
+                    keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
                     Txflags(tfSellNFToken));
@@ -451,7 +451,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             for (uint256 const& nftID : nftIDs)
             {
                 uint256 const offerID =
-                    keylet::nftokenOffer(buyer, SeqProxy::sequence(env.seq(buyer))).key;
+                    keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
                 env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
@@ -655,7 +655,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
             // Create an offer to give the NFT to buyer for free.
             offers.emplace_back(
-                keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key);
+                keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key);
             env(token::createOffer(account, nftID, XRP(0)),
                 token::Destination(buyer),
                 Txflags(tfSellNFToken));
@@ -692,7 +692,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         for (uint256 const& nftID : nftIDs)
         {
             uint256 const offerID =
-                keylet::nftokenOffer(buyer, SeqProxy::sequence(env.seq(buyer))).key;
+                keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
             env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
             env.close();
 
@@ -829,7 +829,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
                 // Create an offer to give the NFT to buyer for free.
                 offers[i].emplace_back(
-                    keylet::nftokenOffer(account, SeqProxy::sequence(env.seq(account))).key);
+                    keylet::nftokenOffer(account, SeqProxy::rawSequence(env.seq(account))).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
                     Txflags(tfSellNFToken));

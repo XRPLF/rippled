@@ -3129,7 +3129,7 @@ class Vault_test : public beast::unit_test::Suite
         Vault const vault{env};
         env.fund(XRP(1000), owner);
 
-        auto const keylet = keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
         for (int i = 0; i < 256; ++i)
         {
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
@@ -3952,7 +3952,7 @@ class Vault_test : public beast::unit_test::Suite
 
             // Create a loan broker backed by this vault
             auto const brokerKeylet =
-                keylet::loanBroker(d.owner.id(), SeqProxy::sequence(env.seq(d.owner)));
+                keylet::loanBroker(d.owner.id(), SeqProxy::rawSequence(env.seq(d.owner)));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4467,12 +4467,12 @@ class Vault_test : public beast::unit_test::Suite
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
             auto const& brokerKeylet =
-                keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             env(set(owner, vaultKeylet.key));
             env.close();
 
-            auto const& loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::sequence(1));
+            auto const& loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
@@ -4861,7 +4861,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
-                    keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4920,7 +4920,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
-                    keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4976,7 +4976,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
-                    keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5031,7 +5031,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 auto const brokerKeylet =
-                    keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5080,7 +5080,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 auto const brokerKeylet =
-                    keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5188,7 +5188,7 @@ class Vault_test : public beast::unit_test::Suite
 
             // Create a loan broker backed by this vault
             auto const brokerKeylet =
-                keylet::loanBroker(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             env(set(owner, vaultKeylet.key));
             env.close();
 
@@ -5322,7 +5322,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 3;
@@ -5390,7 +5390,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5463,7 +5463,7 @@ class Vault_test : public beast::unit_test::Suite
             // These values will be rounded to 15 significant digits
             {
                 auto const newKeylet =
-                    keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 try
                 {
                     auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5488,7 +5488,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e40";  // max int64 * 10^40
                 auto const newKeylet =
-                    keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5503,7 +5503,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-40";  // max int64 * 10^-40
                 auto const newKeylet =
-                    keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5518,7 +5518,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-100";  // max int64 * 10^-100
                 auto const newKeylet =
-                    keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -6104,7 +6104,8 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanBroker(f.lender.id(), SeqProxy::sequence(env.seq(f.lender))).key;
+        f.brokerID =
+            keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender))).key;
         {
             using namespace loanBroker;
             env(set(f.lender, vaultKeylet.key),
@@ -6116,7 +6117,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
-        f.loanKeylet = keylet::loan(f.brokerID, SeqProxy::sequence(sleBroker->at(sfLoanSequence)));
+        f.loanKeylet =
+            keylet::loan(f.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         {
             using namespace loan;
@@ -7603,7 +7605,7 @@ class Vault_test : public beast::unit_test::Suite
 
         Vault const vault{env};
 
-        auto const keylet = keylet::vault(owner.id(), SeqProxy::sequence(1));
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(1));
         auto delTx = vault.del({.owner = owner, .id = keylet.key});
 
         // Test VaultDelete with featureLendingProtocolV1_1 disabled
@@ -7635,7 +7637,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled no vault");
-            auto const keylet = keylet::vault(owner.id(), SeqProxy::sequence(env.seq(owner)));
+            auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});

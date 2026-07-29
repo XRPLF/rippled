@@ -944,7 +944,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             if (env.current()->rules().enabled(fixCleanup3_2_0))
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(seq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
                 BEAST_EXPECT(env.current()->exists(trustLineKey));
                 BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
             }
@@ -1073,7 +1073,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq)));
+            auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(aa);
             {
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
@@ -1097,7 +1097,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const bb = env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq)));
+            auto const bb = env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bb);
 
             {
@@ -1119,7 +1119,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -1145,7 +1145,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bob, bob, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -1189,10 +1189,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
 
-            auto const ab = env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq)));
+            auto const ab = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ab);
 
-            auto const bc = env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq)));
+            auto const bc = env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bc);
 
             {
@@ -1230,8 +1230,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
-                BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -1264,8 +1264,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bob, bob, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
-                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -1321,7 +1321,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 Ter(tecNO_PERMISSION));
             env.close(5s);
 
-            auto const ag = env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq)));
+            auto const ag = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ag);
 
             {
@@ -1344,7 +1344,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -2704,7 +2704,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
                 auto sleNew =
-                    std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::sequence(seq1)));
+                    std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
                 sleNew->setAccountID(sfDestination, bob);
@@ -2932,7 +2932,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
                 auto sleNew =
-                    std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::sequence(seq1)));
+                    std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
                 sleNew->setAccountID(sfDestination, bob);
@@ -3283,7 +3283,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq)));
+            auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(aa);
             {
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
@@ -3307,7 +3307,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const bb = env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq)));
+            auto const bb = env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bb);
 
             {
@@ -3321,7 +3321,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -3341,7 +3341,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bob, bob, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -3382,10 +3382,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
 
-            auto const ab = env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq)));
+            auto const ab = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ab);
 
-            auto const bc = env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq)));
+            auto const bc = env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bc);
 
             {
@@ -3414,8 +3414,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
-                BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
@@ -3439,8 +3439,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bob, bob, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::sequence(aseq))));
-                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::sequence(bseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);

@@ -554,12 +554,13 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             if (features[fixCleanup3_1_3])
             {
                 BEAST_EXPECT(
-                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::sequence(seq)).key);
+                    domain ==
+                    keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(seq)).key);
             }
             else
             {
                 BEAST_EXPECT(
-                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::sequence(0)).key);
+                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(0)).key);
             }
         }
 

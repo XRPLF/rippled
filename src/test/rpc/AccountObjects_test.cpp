@@ -1547,7 +1547,7 @@ public:
             env(check::create(owner, dest, XRP(1)));
             env.close();
 
-            auto const checkId = keylet::check(owner, SeqProxy::sequence(checkSeq));
+            auto const checkId = keylet::check(owner, SeqProxy::rawSequence(checkSeq));
             if (!BEAST_EXPECT(env.le(checkId)))
                 return;
 

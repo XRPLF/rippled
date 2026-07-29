@@ -635,7 +635,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // unsupported value so that the valid type invariant check
                 // will fail.
                 auto const sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 // We don't use ltNICKNAME directly since it's marked deprecated
                 // to prevent accidental use elsewhere.
@@ -923,7 +923,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::offer(a1.id(), SeqProxy::sequence((*sle)[sfSequence])));
+                    keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, XRP(-1));
@@ -938,7 +938,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::offer(a1.id(), SeqProxy::sequence((*sle)[sfSequence])));
+                    keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -954,7 +954,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::offer(a1.id(), SeqProxy::sequence((*sle)[sfSequence])));
+                    keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, XRP(10));
@@ -979,7 +979,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
                 sleNew->setFieldAmount(sfAmount, XRP(-1));
                 ac.view().insert(sleNew);
                 return true;
@@ -994,7 +994,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
                 sleNew->setFieldAmount(sfAmount, kInitialXrp + drops(1));
@@ -1011,7 +1011,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
                 STAmount const amt(usd, -1);
@@ -1029,7 +1029,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 Issue const bad{badCurrency(), AccountID(0x4985601)};
                 STAmount const amt(bad, 1);
@@ -1047,7 +1047,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(a1, SeqProxy::sequence((*sle)[sfSequence] + 2)));
+                    keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 STAmount const amt(mpt, -1);
@@ -1472,7 +1472,7 @@ class Invariants_test : public beast::unit_test::Suite
         std::uint32_t numCreds = 2,
         std::uint32_t seq = 10)
     {
-        Keylet const pdKeylet = keylet::permissionedDomain(a1.id(), SeqProxy::sequence(seq));
+        Keylet const pdKeylet = keylet::permissionedDomain(a1.id(), SeqProxy::rawSequence(seq));
         auto sle = std::make_shared<SLE>(pdKeylet);
 
         sle->setAccountID(sfOwner, a1);
@@ -2014,7 +2014,7 @@ class Invariants_test : public beast::unit_test::Suite
             makeEnv(features),
             {{"domain doesn't exist"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                Keylet const offerKey = keylet::offer(a1.id(), SeqProxy::sequence(10));
+                Keylet const offerKey = keylet::offer(a1.id(), SeqProxy::rawSequence(10));
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a1);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2041,7 +2041,7 @@ class Invariants_test : public beast::unit_test::Suite
             makeEnv(features),
             {{"hybrid offer is malformed"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a2);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2076,7 +2076,7 @@ class Invariants_test : public beast::unit_test::Suite
                 a2,
                 {{"hybrid offer is malformed"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2115,7 +2115,7 @@ class Invariants_test : public beast::unit_test::Suite
                 fixEnabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
                            : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2152,7 +2152,7 @@ class Invariants_test : public beast::unit_test::Suite
                 a2,
                 {{"hybrid offer is malformed"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2185,7 +2185,7 @@ class Invariants_test : public beast::unit_test::Suite
                 a2,
                 {{"transaction consumed wrong domains"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2222,7 +2222,7 @@ class Invariants_test : public beast::unit_test::Suite
                 a2,
                 {{"domain transaction affected regular offers"}},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::sequence(10));
+                    Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -2423,7 +2423,7 @@ class Invariants_test : public beast::unit_test::Suite
         // Create Loan Broker
         using namespace loanBroker;
 
-        auto const loanBrokerKeylet = keylet::loanBroker(a.id(), SeqProxy::sequence(env.seq(a)));
+        auto const loanBrokerKeylet = keylet::loanBroker(a.id(), SeqProxy::rawSequence(env.seq(a)));
         // Create a Loan Broker with all default values.
         env(set(a, vaultID), Fee(kIncrement));
 
@@ -2927,7 +2927,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"vault deletion succeeded without deleting a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -2948,7 +2948,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault updated by a wrong transaction type",
              "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -2968,7 +2968,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"vault updated by a wrong transaction type"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -2989,7 +2989,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault updated by a wrong transaction type"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::sequence(sequence));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
                 auto sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
@@ -3006,7 +3006,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault deleted by a wrong transaction type",
              "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3028,14 +3028,16 @@ class Invariants_test : public beast::unit_test::Suite
              "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
-                    auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                    auto const keylet =
+                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                     auto sleVault = ac.view().peek(keylet);
                     if (!sleVault)
                         return false;
                     ac.view().erase(sleVault);
                 }
                 {
-                    auto const keylet = keylet::vault(a2.id(), SeqProxy::sequence(ac.view().seq()));
+                    auto const keylet =
+                        keylet::vault(a2.id(), SeqProxy::rawSequence(ac.view().seq()));
                     auto sleVault = ac.view().peek(keylet);
                     if (!sleVault)
                         return false;
@@ -3064,7 +3066,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
                 auto const insertVault = [&](Account const a) {
-                    auto const vaultKeylet = keylet::vault(a.id(), SeqProxy::sequence(sequence));
+                    auto const vaultKeylet = keylet::vault(a.id(), SeqProxy::rawSequence(sequence));
                     auto sleVault = std::make_shared<SLE>(vaultKeylet);
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
@@ -3084,7 +3086,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deleted vault must also delete shares",
              "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3106,7 +3108,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deleted vault must have no assets outstanding",
              "deleted vault must have no assets available"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3131,7 +3133,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"vault operation succeeded without modifying a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3218,7 +3220,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"updated vault must have shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3245,7 +3247,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault operation succeeded without updating shares",
              "assets available must not be greater than assets outstanding"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3273,7 +3275,7 @@ class Invariants_test : public beast::unit_test::Suite
              "assets available must not be greater than assets outstanding",
              "assets outstanding must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3305,7 +3307,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3321,7 +3323,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3337,7 +3339,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3354,7 +3356,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault transaction must not change loss unrealized",
              "set must not change assets outstanding"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                    sample.assetsTotal = 20;
@@ -3371,7 +3373,7 @@ class Invariants_test : public beast::unit_test::Suite
              "between assets outstanding and available",
              "vault transaction must not change loss unrealized"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 100, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                }));
@@ -3386,7 +3388,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
@@ -3400,7 +3402,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"assets maximum must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = -1;
                                }));
@@ -3416,7 +3418,7 @@ class Invariants_test : public beast::unit_test::Suite
              "updated zero sized vault must have no assets outstanding",
              "updated zero sized vault must have no assets available"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3437,7 +3439,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"updated shares must not exceed maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3458,7 +3460,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"updated shares must not exceed maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
 
                 auto sleVault = ac.view().peek(keylet);
@@ -3485,7 +3487,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3511,7 +3513,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3538,7 +3540,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3562,7 +3564,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3590,7 +3592,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3614,7 +3616,7 @@ class Invariants_test : public beast::unit_test::Suite
              "shares issuer must be a pseudo-account",
              "shares issuer pseudo-account must point back to the vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -3643,7 +3645,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // the invariants holding. Except one: it is created by the
                 // wrong transaction type.
                 auto const sequence = ac.view().seq();
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::sequence(sequence));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
                 auto sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
@@ -3699,7 +3701,7 @@ class Invariants_test : public beast::unit_test::Suite
              "shares issuer pseudo-account must point back to the vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::sequence(sequence));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
                 auto sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
@@ -3758,7 +3760,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"shares issuer and vault pseudo-account must be the same", "shares issuer must exist"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::sequence(sequence));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
                 auto sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
@@ -3799,7 +3801,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
@@ -3812,7 +3814,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 200, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
@@ -3831,7 +3833,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit must increase vault balance", "deposit must change depositor balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops to A4 to enforce total XRP balance
                 auto sleA4 = ac.view().peek(keylet::account(a4.id()));
@@ -3861,7 +3863,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deposit and assets outstanding must add up",
              "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A2 to A3 to enforce total XRP balance
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -3884,7 +3886,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit must change depositor balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A3 to vault to enforce total XRP balance
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -3906,7 +3908,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
@@ -3920,7 +3922,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"deposit must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
@@ -3938,7 +3940,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deposit must not change vault balance by more than deposited "
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -5;
                                    sample.sharesTotal = -10;
@@ -3957,7 +3959,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
                 ac.view().update(sleA3);
 
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 11;
                                }));
@@ -3978,7 +3980,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit and assets outstanding must add up",
              "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 7;
                                    sample.assetsAvailable = 7;
@@ -3994,7 +3996,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"withdrawal must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
@@ -4011,7 +4013,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"withdrawal must change one destination balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops to A4 to enforce total XRP balance
                 auto sleA4 = ac.view().peek(keylet::account(a4.id()));
@@ -4045,7 +4047,7 @@ class Invariants_test : public beast::unit_test::Suite
                 "withdrawal and assets available must add up",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A2 to A3 to enforce total XRP balance
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -4068,7 +4070,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"withdrawal must change one destination balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 if (!kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                  *sample.vaultAssets -= 5;
                              })))
@@ -4089,7 +4091,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"withdrawal must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
@@ -4103,7 +4105,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"withdrawal must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
@@ -4119,7 +4121,7 @@ class Invariants_test : public beast::unit_test::Suite
              "withdrawal must change depositor and vault shares by equal "
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                    sample.sharesTotal = 10;
@@ -4135,7 +4137,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal and assets outstanding must add up",
              "withdrawal and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -15;
                                    sample.assetsAvailable = -15;
@@ -4154,7 +4156,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
                 ac.view().update(sleA3);
 
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -7;
                                }));
@@ -4222,7 +4224,8 @@ class Invariants_test : public beast::unit_test::Suite
              "withdrawal must change depositor and vault shares by equal "
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                }));
@@ -4237,7 +4240,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"clawback must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -1, [&](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
@@ -4251,7 +4255,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
@@ -4263,7 +4267,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
@@ -4276,7 +4281,8 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback must decrease holder shares",
              "clawback must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a4.id(), 10, [&](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
@@ -4294,7 +4300,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"clawback must change holder shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
@@ -4314,7 +4321,8 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback and assets outstanding must add up",
              "clawback and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::sequence(ac.view().seq() - 2));
+                auto const keylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
                 return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -8;
                                    sample.assetsTotal = -7;
@@ -4373,7 +4381,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::check(a1.id(), SeqProxy::sequence((*sle)[sfSequence])));
+                    keylet::check(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setAccountID(sfDestination, a2.id());
                 sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
@@ -4389,7 +4397,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 auto sleNew = std::make_shared<SLE>(
-                    keylet::check(a1.id(), SeqProxy::sequence((*sle)[sfSequence])));
+                    keylet::check(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setAccountID(sfDestination, a2.id());
                 sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
@@ -5773,7 +5781,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&checkID](Account const& a1, Account const& a2, Env& env) {
-                    checkID = keylet::check(a1.id(), SeqProxy::sequence(env.seq(a1))).key;
+                    checkID = keylet::check(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
                     env(check::create(a1, a2, XRP(1)));
                     return true;
                 });
@@ -5899,7 +5907,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::sequence(ov.seq()));
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
             auto sleVault = std::make_shared<SLE>(vaultKeylet);
             sleVault->makeFieldAbsent(sfAccount);
             ov.rawInsert(sleVault);

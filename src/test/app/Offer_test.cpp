@@ -798,13 +798,15 @@ public:
             // The offer expires (it's not removed yet).
             env.close();
             env.require(Owners(bob, 1), offers(bob, 1));
-            auto const expiredBobOffer = keylet::offer(bob, SeqProxy::sequence(env.seq(bob) - 1));
+            auto const expiredBobOffer =
+                keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob) - 1));
 
             // bob creates the offer that will be crossed.
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
             env.require(Owners(bob, 2), offers(bob, 2));
-            auto const crossedBobOffer = keylet::offer(bob, SeqProxy::sequence(env.seq(bob) - 1));
+            auto const crossedBobOffer =
+                keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob) - 1));
 
             env(trust(alice, usd(1000)), Ter(tesSUCCESS));
             env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
@@ -851,7 +853,7 @@ public:
 
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
-            auto const bobOffer = keylet::offer(bob, SeqProxy::sequence(env.seq(bob) - 1));
+            auto const bobOffer = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob) - 1));
 
             env(trust(alice, usd(1000)), Ter(tesSUCCESS));
             env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));

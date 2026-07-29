@@ -63,7 +63,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const sle = view.read(keylet::account(account));
         if (!sle)
             return {};
-        auto const k = keylet::payChannel(account, dst, SeqProxy::sequence((*sle)[sfSequence] - 1));
+        auto const k =
+            keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
         return {k.key, view.read(k)};
     }
 
