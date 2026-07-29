@@ -1,6 +1,5 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
 
-#include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLCxTx.h>
@@ -17,9 +16,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Consensus.h>
-#include <xrpld/consensus/ConsensusSpanNames.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/telemetry/MetricMacros.h>
@@ -35,6 +31,10 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/CensorshipDetector.h>
+#include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/crypto/csprng.h>
@@ -424,7 +424,7 @@ RCLConsensus::Adaptor::onClose(
     if (!wrongLCL)
     {
         LedgerIndex const seq = prevLedger->header().seq + 1;
-        RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
+        CensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
             [&proposed, seq](boost::intrusive_ptr<SHAMapItem const> const& item) {

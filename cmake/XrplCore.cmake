@@ -146,6 +146,12 @@ target_link_libraries(
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
+add_module(xrpl peerfinder)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
+
 # Level 08
 add_module(xrpl net)
 target_link_libraries(
@@ -217,6 +223,10 @@ target_link_libraries(
 # opentelemetry-cpp::opentelemetry-cpp (individual component targets like
 # ::api, ::sdk are not available in the Conan package).
 #
+# Declared before its consumers (consensus, tx) because add_module isolates
+# each module's headers: a module can only include xrpl/telemetry/ headers if
+# it links this target, and the target must already exist at that point.
+#
 # Links xrpl.libxrpl.protocol PRIVATELY for sha512Half (digest.h)
 add_module(xrpl telemetry)
 target_link_libraries(
@@ -235,6 +245,19 @@ if(telemetry)
         PUBLIC opentelemetry-cpp::opentelemetry-cpp
     )
 endif()
+
+# Links xrpl.libxrpl.telemetry for the consensus tracing spans declared in
+# include/xrpl/consensus/ConsensusSpanNames.h.
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+        xrpl.libxrpl.telemetry
+)
 
 add_module(xrpl tx)
 target_link_libraries(
@@ -261,6 +284,7 @@ target_link_modules(
     beast
     conditions
     config
+    consensus
     core
     crypto
     git
@@ -268,6 +292,7 @@ target_link_modules(
     ledger
     net
     nodestore
+    peerfinder
     protocol
     protocol_autogen
     rdb

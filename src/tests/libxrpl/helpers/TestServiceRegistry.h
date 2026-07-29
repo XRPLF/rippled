@@ -221,7 +221,7 @@ public:
     }
 
     // Storage services
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");

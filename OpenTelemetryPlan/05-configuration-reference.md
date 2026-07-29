@@ -266,7 +266,7 @@ In the Prometheus datasource, set `exemplarTraceIdDestinations` to map the `trac
 
 **Step 4: Dashboard panel with exemplars**
 
-Add a timeseries panel over Prometheus (e.g. `histogram_quantile(0.99, rate(xrpld_rpc_duration_seconds_bucket[5m]))`) with `exemplar: true` enabled.
+Add a timeseries panel over Prometheus (e.g. `histogram_quantile(0.99, rate(rpc_duration_seconds_bucket[5m]))`) with `exemplar: true` enabled.
 
 This allows clicking on metric data points to jump directly to the related trace.
 
