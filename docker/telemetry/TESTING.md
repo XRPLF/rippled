@@ -380,8 +380,8 @@ All 16 production span names instrumented across Phases 2-5:
 | `rpc.ws_upgrade`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket upgrade         |
 | `rpc.ws_message`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket RPC message     |
 | `rpc.process`               | ServerHandler.cpp | 2     | --                                                                                       | RPC processing            |
-| `rpc.command.<name>`        | RPCHandler.cpp    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp    | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `rpc.command.<name>`        | RPCHandler.cpp    | 2     | `command`, `version`, `rpc_role`                                                         | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp    | 3     | `xrpl.tx.hash`, `local`, `path`                                                          | Submit transaction        |
 | `tx.receive`                | PeerImp.cpp       | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
 | `consensus.proposal.send`   | RCLConsensus.cpp  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
 | `consensus.ledger_close`    | RCLConsensus.cpp  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
@@ -392,8 +392,8 @@ All 16 production span names instrumented across Phases 2-5:
 | `ledger.build`              | BuildLedger.cpp   | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
 | `ledger.validate`           | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
 | `ledger.store`              | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
-| `peer.proposal.receive`     | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
-| `peer.validation.receive`   | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
+| `peer.proposal.receive`     | PeerImp.cpp       | 5     | `xrpl.peer.id`, `proposal_trusted`                                                       | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp       | 5     | `xrpl.peer.id`, `validation_trusted`                                                     | Peer sends validation     |
 
 ---
 
@@ -434,21 +434,21 @@ Base URL: `http://localhost:9090`
 PROM="http://localhost:9090"
 
 # Span call counts (from spanmetrics connector)
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # Latency histogram
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+curl -s "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # RPC calls by command
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
-    jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
+curl -s "$PROM/api/v1/query?query=span_calls_total{span_name=~\"rpc.command.*\"}" |
+    jq '.data.result[] | {command: .metric["command"], count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
 # Expect deployment_environment and xrpl_network_type on each series.
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[0].metric | {deployment_environment, xrpl_network_type, service_name}'
 ```
 
@@ -469,6 +469,65 @@ Pre-configured datasources:
 - **Tempo**: Trace data at `http://tempo:3200`
 - **Prometheus**: Metrics at `http://prometheus:9090`
 - **Loki**: Log data at `http://loki:3100` (via Grafana Explore)
+
+---
+
+## Exporting to Grafana Cloud
+
+Instead of (or alongside) the local backends, the collector can forward
+traces, metrics, and logs to a hosted **Grafana Cloud** stack. This is a
+runtime choice layered on top of the base stack — xrpld and the base
+`docker-compose.yml` are unchanged.
+
+### Step 1: Get Grafana Cloud OTLP credentials
+
+From **Grafana Cloud → Connections → OpenTelemetry (OTLP)**, note the OTLP
+gateway endpoint (ends in `/otlp`), the numeric instance id, and an
+access-policy token with `metrics:write`, `traces:write`, and `logs:write`.
+
+### Step 2: Fill in the env file
+
+```bash
+cp docker/telemetry/.env.grafanacloud.example docker/telemetry/.env.grafanacloud
+# edit .env.grafanacloud:
+#   GRAFANA_CLOUD_OTLP_ENDPOINT=https://otlp-gateway-<zone>.grafana.net/otlp
+#   GRAFANA_CLOUD_INSTANCE_ID=<instance id>
+#   GRAFANA_CLOUD_API_TOKEN=<token>
+```
+
+`.env.grafanacloud` is gitignored — never commit real tokens.
+
+### Step 3: Start the stack with cloud export enabled
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+```
+
+The override swaps the collector onto `otel-collector-config.grafanacloud.yaml`,
+which keeps the local Tempo/Prometheus/Loki exporters and adds one
+OTLP/HTTP exporter to Grafana Cloud on all three pipelines. Bring the stack
+up with just the base file to return to local-only.
+
+### Step 4: Verify data reaches Grafana Cloud
+
+After exercising RPC/transaction workflows (Tests 1 or 2), open your Grafana
+Cloud instance and confirm:
+
+- **Traces**: Explore → hosted Tempo datasource → search `{resource.service.name="xrpld"}`
+- **Metrics**: Explore → hosted Prometheus/Mimir → query `span_calls_total`
+- **Logs**: Explore → hosted Loki → query `{job="xrpld"}` (requires `warning`+ file logging)
+
+If nothing appears, check the collector logs for auth/export errors:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml \
+    logs otel-collector | grep -iE 'grafanacloud|401|403|export'
+```
+
+A `401`/`403` means the instance id or token is wrong; a connection error
+means the endpoint URL is wrong or missing the `/otlp` path.
 
 ---
 
@@ -504,10 +563,10 @@ Extract a `trace_id` from the log and verify it exists in Tempo:
 ```bash
 TRACE_ID=$(grep -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | head -1 | cut -d= -f2)
 echo "Checking trace: $TRACE_ID"
-curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.data | length'
+curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.batches | length'
 ```
 
-Expected result: `1` (the trace exists in Tempo).
+Expected result: `> 0` (the trace exists in Tempo).
 
 ### Step 3: Verify Loki log ingestion
 

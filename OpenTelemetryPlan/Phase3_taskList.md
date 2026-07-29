@@ -289,7 +289,7 @@ design.
 
 - [ ] `tx.receive` spans carry `peer_version` attribute with a non-empty version string
 - [ ] Attribute is omitted (not set to empty string) when `getVersion()` returns empty
-- [ ] Attribute visible in Jaeger span detail view
+- [ ] Attribute visible in Tempo trace detail view
 
 ---
 
