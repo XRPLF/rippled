@@ -1,0 +1,149 @@
+{
+  "description": "Expected metric inventory for xrpld telemetry validation. Metric names have no prefix (the xrpld_ prefix was removed). beast::insight metrics are lowercased by formatName. Sourced from the live Grafana dashboards and MetricsRegistry.cpp.",
+  "spanmetrics": {
+    "description": "SpanMetrics-derived RED metrics from the OTel Collector spanmetrics connector.",
+    "metrics": [
+      "span_calls_total",
+      "span_duration_milliseconds_bucket",
+      "span_duration_milliseconds_count",
+      "span_duration_milliseconds_sum"
+    ],
+    "required_labels": [
+      "span_name",
+      "status_code",
+      "service_name",
+      "span_kind"
+    ],
+    "dimension_labels": [
+      "command",
+      "rpc_status",
+      "consensus_mode",
+      "local",
+      "proposal_trusted",
+      "validation_trusted",
+      "tx_type",
+      "ter_result",
+      "stage",
+      "txq_status",
+      "close_time_correct",
+      "consensus_state",
+      "suppressed"
+    ],
+    "_dimension_labels_note": "Bare label names as configured in otel-collector-config.yaml spanmetrics dimensions. Informational only (not asserted by the validator)."
+  },
+  "statsd_gauges": {
+    "description": "beast::insight gauges exported via OTLP/HTTP to the collector (server=otel).",
+    "metrics": [
+      "ledgermaster_validated_ledger_age",
+      "ledgermaster_published_ledger_age",
+      "state_accounting_full_duration",
+      "peer_finder_active_inbound_peers",
+      "peer_finder_active_outbound_peers",
+      "jobq_job_count"
+    ]
+  },
+  "statsd_counters": {
+    "description": "beast::insight counters exported via OTLP/HTTP. The OTel Prometheus exporter appends _total to monotonic counters.",
+    "metrics": ["rpc_requests_total", "ledger_fetches_total"]
+  },
+  "overlay_traffic": {
+    "description": "Overlay traffic metrics (subset — full list has 45+ categories).",
+    "metrics": [
+      "total_bytes_in",
+      "total_bytes_out",
+      "total_messages_in",
+      "total_messages_out"
+    ]
+  },
+  "phase9_nodestore": {
+    "description": "Phase 9 NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
+    "metrics": ["nodestore_state"]
+  },
+  "phase9_cache": {
+    "description": "Phase 9 cache hit rate observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+    "metrics": ["cache_metrics"]
+  },
+  "phase9_txq": {
+    "description": "Phase 9 transaction queue observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+    "metrics": ["txq_metrics"]
+  },
+  "phase9_rpc_method": {
+    "description": "Phase 9 per-RPC-method counters (MetricsRegistry via OTLP).",
+    "metrics": ["rpc_method_started_total"]
+  },
+  "rpc_in_flight": {
+    "description": "In-flight RPC gauge via the XRPL_METRIC_UPDOWN_ADD call-site macro (PerfLogImp.cpp, +1 rpcStart / -1 rpcEnd). UpDownCounter: no _total suffix.",
+    "metrics": ["rpc_in_flight_requests"]
+  },
+  "phase9_objects": {
+    "description": "Phase 9 counted object instances observable gauge (MetricsRegistry via OTLP).",
+    "metrics": ["object_count"]
+  },
+  "phase9_load": {
+    "description": "Phase 9 fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
+    "metrics": ["load_factor_metrics"]
+  },
+  "parity_validation_agreement": {
+    "description": "External dashboard parity: validation agreement percentages (MetricsRegistry).",
+    "metrics": [
+      "validation_agreement{metric=\"agreement_pct_1h\"}",
+      "validation_agreement{metric=\"agreement_pct_24h\"}"
+    ]
+  },
+  "parity_validator_health": {
+    "description": "External dashboard parity: validator health indicators (MetricsRegistry).",
+    "metrics": [
+      "validator_health{metric=\"amendment_blocked\"}",
+      "validator_health{metric=\"unl_expiry_days\"}"
+    ]
+  },
+  "parity_peer_quality": {
+    "description": "External dashboard parity: peer quality metrics (MetricsRegistry).",
+    "metrics": [
+      "peer_quality{metric=\"peer_latency_p90_ms\"}",
+      "peer_quality{metric=\"peers_insane_count\"}"
+    ]
+  },
+  "parity_ledger_economy": {
+    "description": "External dashboard parity: ledger economy metrics (MetricsRegistry).",
+    "metrics": [
+      "ledger_economy{metric=\"base_fee_xrp\"}",
+      "ledger_economy{metric=\"transaction_rate\"}"
+    ]
+  },
+  "parity_state_tracking": {
+    "description": "External dashboard parity: server state tracking (MetricsRegistry).",
+    "metrics": ["state_tracking{metric=\"state_value\"}"]
+  },
+  "parity_counters": {
+    "description": "External dashboard parity: monotonic counters (MetricsRegistry).",
+    "metrics": [
+      "ledgers_closed_total",
+      "validations_sent_total",
+      "state_changes_total"
+    ]
+  },
+  "parity_storage": {
+    "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
+    "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
+  },
+  "grafana_dashboards": {
+    "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",
+    "uids": [
+      "rpc-performance",
+      "transaction-overview",
+      "consensus-health",
+      "ledger-operations",
+      "peer-network",
+      "peer-quality",
+      "fee-market",
+      "job-queue",
+      "validator-health",
+      "node-health",
+      "network-traffic",
+      "rpc-pathfinding",
+      "overlay-traffic-detail",
+      "ledger-data-sync"
+    ]
+  }
+}

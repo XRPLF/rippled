@@ -1,0 +1,419 @@
+{
+  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, missing-ledger fetch, mode transitions) and are not failed when absent.",
+  "spans": [
+    {
+      "name": "rpc.ws_message",
+      "category": "rpc",
+      "parent": null,
+      "required_attributes": ["command"],
+      "config_flag": "trace_rpc",
+      "note": "WebSocket RPC root span. The load generator uses WS, so this is the RPC entry span (not rpc.http_request, which needs an HTTP/JSON-RPC client)."
+    },
+    {
+      "name": "rpc.process",
+      "category": "rpc",
+      "parent": "rpc.ws_message",
+      "required_attributes": [],
+      "config_flag": "trace_rpc"
+    },
+    {
+      "name": "rpc.command.*",
+      "category": "rpc",
+      "parent": "rpc.process",
+      "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
+      "config_flag": "trace_rpc",
+      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc."
+    },
+    {
+      "name": "rpc.http_request",
+      "category": "rpc",
+      "parent": null,
+      "required_attributes": ["request_payload_size"],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "HTTP/JSON-RPC root span. The harness load generator is WebSocket-only, so this does not fire."
+    },
+    {
+      "name": "tx.process",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["tx_hash", "local", "path"],
+      "config_flag": "trace_transactions"
+    },
+    {
+      "name": "tx.receive",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["tx_hash", "peer_id", "suppressed"],
+      "config_flag": "trace_transactions",
+      "note": "Cross-node span: parent context propagated from the sender's tx.process via protobuf. Also carries tx_type and peer_version. tx_status is only set when a tx is suppressed/known-bad, so it is not a required attribute on every tx.receive."
+    },
+    {
+      "name": "tx.apply",
+      "category": "transaction",
+      "parent": "ledger.build",
+      "required_attributes": ["tx_count", "tx_failed"],
+      "config_flag": "trace_transactions",
+      "note": "Apply-step span inside BuildLedger. Carries tx_count/tx_failed (ledger_seq lives on the parent ledger.build span)."
+    },
+    {
+      "name": "tx.preflight",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["stage", "tx_type", "ter_result"],
+      "config_flag": "trace_transactions",
+      "note": "Apply-pipeline stage span (stage=preflight). Shares a deterministic trace_id (txID[0:16]) with tx.preclaim/tx.transactor."
+    },
+    {
+      "name": "tx.preclaim",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["stage", "tx_type", "ter_result"],
+      "config_flag": "trace_transactions",
+      "note": "Apply-pipeline stage span (stage=preclaim)."
+    },
+    {
+      "name": "tx.transactor",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["stage", "tx_type"],
+      "config_flag": "trace_transactions",
+      "note": "Apply-pipeline stage span (stage=apply). Also carries applied."
+    },
+    {
+      "name": "txq.enqueue",
+      "category": "transaction",
+      "parent": "tx.process",
+      "required_attributes": ["tx_hash", "tx_type", "txq_status"],
+      "config_flag": "trace_transactions",
+      "optional": true,
+      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required."
+    },
+    {
+      "name": "txq.apply_direct",
+      "category": "transaction",
+      "parent": "txq.enqueue",
+      "required_attributes": [],
+      "config_flag": "trace_transactions",
+      "optional": true,
+      "note": "Child of txq.enqueue when the tx applies directly without queueing."
+    },
+    {
+      "name": "txq.batch_clear",
+      "category": "transaction",
+      "parent": "txq.enqueue",
+      "required_attributes": ["num_cleared"],
+      "config_flag": "trace_transactions",
+      "optional": true
+    },
+    {
+      "name": "txq.accept",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["queue_size", "ledger_changed"],
+      "config_flag": "trace_transactions",
+      "optional": true,
+      "note": "Ledger-close accept loop. Fires on the consensus thread; only meaningful when the queue is non-empty."
+    },
+    {
+      "name": "txq.accept_tx",
+      "category": "transaction",
+      "parent": "txq.accept",
+      "required_attributes": [
+        "tx_hash",
+        "ter_code",
+        "retries_remaining",
+        "txq_status"
+      ],
+      "config_flag": "trace_transactions",
+      "optional": true
+    },
+    {
+      "name": "txq.cleanup",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["ledger_seq", "expired_count"],
+      "config_flag": "trace_transactions",
+      "optional": true
+    },
+    {
+      "name": "consensus.round",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "consensus_ledger_id",
+        "ledger_seq",
+        "consensus_mode",
+        "consensus_round_id",
+        "consensus_phase"
+      ],
+      "config_flag": "trace_consensus",
+      "note": "Root consensus span created per round. Also carries trace_strategy, previous_ledger_seq, previous_proposers, previous_round_time_ms."
+    },
+    {
+      "name": "consensus.phase.open",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": [],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.proposal.send",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": ["consensus_round"],
+      "config_flag": "trace_consensus",
+      "note": "Also carries is_bow_out."
+    },
+    {
+      "name": "consensus.ledger_close",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": ["ledger_seq", "consensus_mode"],
+      "config_flag": "trace_consensus",
+      "note": "Also carries tx_count_open, close_time_resolution_ms."
+    },
+    {
+      "name": "consensus.establish",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": [
+        "converge_percent",
+        "establish_count",
+        "proposers",
+        "disputes_count"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.update_positions",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": [
+        "converge_percent",
+        "proposers",
+        "disputes_count"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.check",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": [
+        "agree_count",
+        "disagree_count",
+        "threshold_percent",
+        "consensus_result"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.accept",
+      "category": "consensus",
+      "parent": "consensus.round",
+      "required_attributes": ["proposers", "round_time_ms", "quorum"],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.accept.apply",
+      "category": "consensus",
+      "parent": "consensus.accept",
+      "required_attributes": [
+        "ledger_seq",
+        "close_time",
+        "parent_close_time",
+        "close_time_self",
+        "close_time_vote_bins",
+        "resolution_direction"
+      ],
+      "config_flag": "trace_consensus",
+      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count."
+    },
+    {
+      "name": "consensus.validation.send",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "ledger_seq",
+        "proposing",
+        "ledger_hash",
+        "full_validation"
+      ],
+      "config_flag": "trace_consensus",
+      "note": "follows-from consensus.accept. ledger_hash and full_validation are shared with peer.validation.receive (same keys, told apart by span name). Also carries validation_sign_time."
+    },
+    {
+      "name": "consensus.proposal.receive",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [],
+      "config_flag": "trace_consensus",
+      "note": "Context-propagated from the sending peer. No required local attributes."
+    },
+    {
+      "name": "consensus.validation.receive",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [],
+      "config_flag": "trace_consensus",
+      "note": "Context-propagated from the sending peer. No required local attributes."
+    },
+    {
+      "name": "consensus.mode_change",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": ["mode_old", "mode_new"],
+      "config_flag": "trace_consensus",
+      "optional": true,
+      "note": "Only fires on an operating-mode transition; a steady cluster rarely changes mode after warmup."
+    },
+    {
+      "name": "ledger.build",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": [
+        "ledger_seq",
+        "close_time",
+        "close_time_correct",
+        "close_resolution_ms"
+      ],
+      "config_flag": "trace_ledger",
+      "note": "tx_count/tx_failed live on the child tx.apply span, not here."
+    },
+    {
+      "name": "ledger.validate",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": ["ledger_seq", "validations"],
+      "config_flag": "trace_ledger"
+    },
+    {
+      "name": "ledger.store",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": ["ledger_seq"],
+      "config_flag": "trace_ledger"
+    },
+    {
+      "name": "ledger.acquire",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": [
+        "ledger_seq",
+        "acquire_reason",
+        "timeouts",
+        "peer_count",
+        "outcome"
+      ],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history."
+    },
+    {
+      "name": "peer.proposal.receive",
+      "category": "peer",
+      "parent": null,
+      "required_attributes": ["peer_id", "proposal_trusted"],
+      "config_flag": "trace_peer"
+    },
+    {
+      "name": "peer.validation.receive",
+      "category": "peer",
+      "parent": null,
+      "required_attributes": [
+        "peer_id",
+        "validation_trusted",
+        "ledger_hash",
+        "full_validation"
+      ],
+      "config_flag": "trace_peer",
+      "note": "ledger_hash and full_validation are shared with consensus.validation.send (same keys, told apart by span name)."
+    },
+    {
+      "name": "pathfind.request",
+      "category": "pathfind",
+      "parent": null,
+      "required_attributes": [
+        "pathfind_source_account",
+        "pathfind_dest_account"
+      ],
+      "config_flag": "trace_rpc",
+      "note": "Fires on ripple_path_find / path_find RPC. Driven by the ripple_path_find load in rpc_load_generator.py."
+    },
+    {
+      "name": "pathfind.compute",
+      "category": "pathfind",
+      "parent": "pathfind.request",
+      "required_attributes": ["pathfind_fast"],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "Only fires when PathRequest::doUpdate runs a computation; the self-to-self XRP probe from the load generator returns early without computing paths in a fresh cluster with no liquidity."
+    },
+    {
+      "name": "pathfind.discover",
+      "category": "pathfind",
+      "parent": "pathfind.compute",
+      "required_attributes": ["pathfind_search_level", "pathfind_num_paths"],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "Graph exploration; only fires under pathfind.compute, which needs real path liquidity not present in the fresh test cluster."
+    },
+    {
+      "name": "pathfind.update_all",
+      "category": "pathfind",
+      "parent": null,
+      "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "Async recomputation at ledger close; only fires when there are active path_find subscriptions (the one-shot ripple_path_find load does not register one)."
+    },
+    {
+      "name": "grpc.*",
+      "category": "grpc",
+      "parent": null,
+      "required_attributes": ["method", "grpc_role", "grpc_status"],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "Wildcard — grpc.<MethodName>. The harness has no gRPC client, so these do not fire. Tracked for completeness."
+    }
+  ],
+  "parent_child_relationships": [
+    {
+      "parent": "rpc.ws_message",
+      "child": "rpc.process",
+      "description": "WebSocket message contains processing span",
+      "skip": true,
+      "skip_reason": "rpc.ws_message and rpc.process run on different threads (the WS handler posts a coroutine to JobQueue for processing). Span context is not propagated across the thread boundary. Requires a C++ fix to capture and forward the span context through the coroutine lambda."
+    },
+    {
+      "parent": "rpc.process",
+      "child": "rpc.command.*",
+      "description": "Processing span contains per-command span"
+    },
+    {
+      "parent": "ledger.build",
+      "child": "tx.apply",
+      "description": "Ledger build contains transaction application"
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.accept",
+      "description": "Consensus round contains the accept sub-span"
+    },
+    {
+      "parent": "consensus.accept",
+      "child": "consensus.accept.apply",
+      "description": "Accept contains the ledger-apply sub-span"
+    },
+    {
+      "parent": "pathfind.request",
+      "child": "pathfind.compute",
+      "description": "Pathfind request contains the compute sub-span",
+      "skip": true,
+      "skip_reason": "pathfind.compute only fires when a path computation actually runs; the self-to-self XRP probe in a fresh cluster with no liquidity returns before computing, so the child is not emitted under the harness workload."
+    }
+  ],
+  "total_span_types": 40,
+  "total_unique_attributes": 58
+}
