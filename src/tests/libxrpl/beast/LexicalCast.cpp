@@ -72,7 +72,7 @@ constexpr auto kNegativeInt32Text = "-42";
 
 constexpr auto kNegativeOne = "-1";
 constexpr auto kNegativeZero = "-0";
-constexpr auto kZero = "0";
+constexpr auto kBareZero = "0";
 constexpr auto kPositiveZero = "+0";
 
 // Full-width digits one and zero, not ASCII ones.
@@ -285,14 +285,14 @@ TEST(LexicalCast, limits_round_trip_through_to_string)
 TEST(LexicalCast, accepts_signed_zero_in_every_form)
 {
     static_assert(parsed<int32_t>(kNegativeZero) == 0);
-    static_assert(parsed<int32_t>(kZero) == 0);
+    static_assert(parsed<int32_t>(kBareZero) == 0);
     static_assert(parsed<int32_t>(kPositiveZero) == 0);
 }
 
 TEST(LexicalCast, rejects_negative_zero_when_unsigned)
 {
     static_assert(not parses<uint32_t>(kNegativeZero));
-    static_assert(parsed<uint32_t>(kZero) == 0);
+    static_assert(parsed<uint32_t>(kBareZero) == 0);
     static_assert(parsed<uint32_t>(kPositiveZero) == 0);
 }
 
