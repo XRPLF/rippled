@@ -8583,7 +8583,7 @@ protected:
 
         auto const loanOpt =
             createLoan(env, AssetType::XRP, brokerParams, loanParams, issuer, lender, borrower);
-        if (!BEAST_EXPECT(loanOpt))
+        if (BEAST_EXPECT(loanOpt); !loanOpt.has_value())
             return;
         auto const& [broker, loanKeylet, brokerPseudo] = *loanOpt;
 
