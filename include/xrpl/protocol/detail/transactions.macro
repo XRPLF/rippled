@@ -1189,9 +1189,9 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     ({
     {sfCounterpartySponsor, SoeOptional},
     {sfSponsee, SoeOptional},
-    {sfFeeAmount, SoeOptional},
+    {sfFeeAmountDelta, SoeOptional},
     {sfMaxFee, SoeOptional},
-    {sfRemainingOwnerCount, SoeOptional},
+    {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

@@ -238,6 +238,7 @@ TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset 
 
 // int32
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
+TYPED_SFIELD(sfRemainingOwnerCountDelta, INT32,      2)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -277,6 +278,7 @@ TYPED_SFIELD(sfMinAccountCreateAmount,   AMOUNT,    30)
 TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
 TYPED_SFIELD(sfFeeAmount,                AMOUNT,    32)
 TYPED_SFIELD(sfMaxFee,                   AMOUNT,    33)
+TYPED_SFIELD(sfFeeAmountDelta,           AMOUNT,    34)
 
 // variable length (common)
 TYPED_SFIELD(sfPublicKey,                VL,         1)
