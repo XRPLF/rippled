@@ -1,0 +1,6 @@
+# Python dependencies for Phase 10 workload tools.
+#
+# Install: pip install -r requirements.txt
+
+websockets>=12.0
+aiohttp>=3.9.0
