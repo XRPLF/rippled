@@ -403,12 +403,6 @@ getQualityNext(uint256 const& uBase);
 std::uint64_t
 getQuality(uint256 const& uBase);
 
-uint256
-getTicketIndex(AccountID const& account, std::uint32_t uSequence);
-
-uint256
-getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
-
 template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct KeyletDesc

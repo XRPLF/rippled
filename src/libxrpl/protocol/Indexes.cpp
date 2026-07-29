@@ -180,19 +180,6 @@ getQuality(uint256 const& uBase)
     return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
-uint256
-getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
-{
-    return indexHash(LedgerNameSpace::Ticket, account, ticketSeq);
-}
-
-uint256
-getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
-{
-    XRPL_ASSERT(ticketSeq.isTicket(), "xrpl::getTicketIndex : valid input");
-    return getTicketIndex(account, ticketSeq.value());
-}
-
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account)
 {
@@ -320,9 +307,9 @@ next(Keylet const& k)
 }
 
 Keylet
-ticket(AccountID const& id, SeqProxy ticketSeq)
+ticket(AccountID const& id, SeqProxy seq)
 {
-    return {ltTICKET, getTicketIndex(id, ticketSeq)};
+    return {ltTICKET, indexHash(LedgerNameSpace::Ticket, id, seq.value())};
 }
 
 // This function is presently static, since it's never accessed from anywhere
