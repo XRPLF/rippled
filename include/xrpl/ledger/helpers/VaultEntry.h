@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::vault(owner, seq), view, j)
     {
     }
+
+    explicit VaultEntry(
+        uint256 const& vaultID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::vault(vaultID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

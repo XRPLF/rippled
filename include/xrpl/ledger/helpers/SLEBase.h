@@ -84,6 +84,34 @@ public:
     }
 
     /**
+     * Returns the keylet identifying this entry.
+     *
+     * Writable wrappers keep the keylet they were built from, so it is valid
+     * even before newSLE(). Read-only wrappers derive it from the entry, which
+     * must therefore exist.
+     */
+    [[nodiscard]] Keylet
+    keylet() const
+    {
+        if constexpr (kIsWritable)
+            return key_;
+        else
+        {
+            XRPL_ASSERT(exists(), "xrpl::SLEBase::keylet : exists");
+            return Keylet(sle_->getType(), sle_->key());
+        }
+    }
+
+    /**
+     * Returns the ledger key of this entry. See keylet() for validity.
+     */
+    [[nodiscard]] uint256
+    key() const
+    {
+        return keylet().key;
+    }
+
+    /**
      * Returns the read view (always available; ApplyView inherits ReadView)
      */
     [[nodiscard]] ReadView const&
@@ -299,8 +327,8 @@ public:
 protected:
     view_ref_type view_;
 
-    // Keylet is only meaningful for writable views, but we conditionally
-    // include it to avoid wasting space in read-only wrappers.
+    // Keylet is only meaningful for writable views, which need it to build an
+    // SLE that does not exist yet; read-only wrappers derive it from the entry.
     struct Empty
     {
     };

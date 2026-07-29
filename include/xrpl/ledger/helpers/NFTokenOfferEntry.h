@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::nftokenOffer(owner, seq), view, j)
     {
     }
+
+    explicit NFTokenOfferEntry(
+        uint256 const& offerID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::nftokenOffer(offerID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

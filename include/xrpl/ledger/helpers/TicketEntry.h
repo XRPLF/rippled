@@ -4,6 +4,7 @@
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 #include <cstdint>
 
@@ -23,6 +24,23 @@ public:
         SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::ticket(id, ticketSeq), view, j)
+    {
+    }
+
+    explicit TicketEntry(
+        AccountID const& id,
+        SeqProxy ticketSeq,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::ticket(id, ticketSeq), view, j)
+    {
+    }
+
+    explicit TicketEntry(
+        uint256 const& ticketID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::ticket(ticketID), view, j)
     {
     }
 };

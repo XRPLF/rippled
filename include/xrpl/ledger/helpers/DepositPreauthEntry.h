@@ -1,9 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+
+#include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -21,6 +25,23 @@ public:
         SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::depositPreauth(owner, preauthorized), view, j)
+    {
+    }
+
+    explicit DepositPreauthEntry(
+        AccountID const& owner,
+        std::set<std::pair<AccountID, Slice>> const& authCreds,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::depositPreauth(owner, authCreds), view, j)
+    {
+    }
+
+    explicit DepositPreauthEntry(
+        uint256 const& preauthID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::depositPreauth(preauthID), view, j)
     {
     }
 };

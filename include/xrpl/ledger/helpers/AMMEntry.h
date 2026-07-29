@@ -23,6 +23,14 @@ public:
         : SLEBase<ViewT>(keylet::amm(issue1, issue2), view, j)
     {
     }
+
+    explicit AMMEntry(
+        uint256 const& ammID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::amm(ammID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl
