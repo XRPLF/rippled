@@ -2,9 +2,12 @@
 //!
 //! `host_functions!` turns the declaration block at the bottom of this file into the
 //! [`HostFunctions`] trait a host implements and the [`HostFunctionSpec`] table a
-//! wasm engine registers from. Everything the expansion refers to — [`HostFnSpec`],
-//! [`HostError`] — is written by hand here, and referred to by absolute path, so the
-//! generated code never depends on what a caller happens to have imported.
+//! wasm engine registers from.
+//!
+//! The split: hand-written here is the vocabulary the declarations are written in —
+//! [`HostError`], [`HostResult`], [`HASH_LEN`] — and everything derived from the
+//! declarations is generated. The expansion names nothing this file does not, so the
+//! two sides meet only in the block below.
 
 #![no_std]
 extern crate alloc;
@@ -93,40 +96,24 @@ pub type HostResult<T> = Result<T, HostError>;
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
 
-/// The wasm import name and base gas cost of one host function.
-///
-/// The same for every host function, so it is declared here rather than generated;
-/// [`HostFunctionSpec::spec`] returns one of these per declaration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HostFnSpec {
-    /// The name a guest imports the function under.
-    pub name: &'static str,
-    /// Gas charged before the call runs, independent of its arguments.
-    pub gas: u64,
-}
-
-// Lets the generated code name this crate (`::xrpl_host_functions::HostFnSpec`)
-// even though it is expanded here, inside the crate itself.
-extern crate self as xrpl_host_functions;
-
 host_functions! {
     #[gas = 60]
     #[wasm_name = "ldgr_index"]
-    fn get_ledger_sqn(&self) -> [u8; 4];
+    fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
 
     #[gas = 70]
     #[wasm_name = "home_le_field"]
-    fn get_current_ledger_obj_field(&self, field: i32) -> Vec<u8>;
+    fn get_current_ledger_obj_field(&self, field: i32) -> HostResult<Vec<u8>>;
 
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
-    fn sha512_half(&self, data: &[u8]) -> [u8; 32];
+    fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; HASH_LEN]>;
 
     #[gas = 500]
     #[wasm_name = "trace"]
-    fn trace(&self, msg: &str, data: &[u8], as_hex: bool);
+    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>;
 
     #[gas = 500]
     #[wasm_name = "trace_num"]
-    fn trace_num(&self, msg: &str, number: i64);
+    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
 }

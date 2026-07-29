@@ -3,7 +3,7 @@
 
 use std::cell::RefCell;
 
-use xrpl_host_functions::{HASH_LEN, HostFnSpec, HostFunctionSpec, HostFunctions};
+use xrpl_host_functions::{HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult};
 
 /// Records what it was asked to do; enough to prove the trait is usable.
 ///
@@ -15,28 +15,34 @@ struct FakeHost {
 }
 
 impl HostFunctions for FakeHost {
-    fn get_ledger_sqn(&self) -> [u8; 4] {
-        7u32.to_le_bytes()
+    fn get_ledger_sqn(&self) -> HostResult<[u8; 4]> {
+        Ok(7u32.to_le_bytes())
     }
 
-    fn get_current_ledger_obj_field(&self, field: i32) -> Vec<u8> {
-        vec![field as u8]
+    /// Fails on a field it doesn't know, so the error channel is exercised too.
+    fn get_current_ledger_obj_field(&self, field: i32) -> HostResult<Vec<u8>> {
+        if field < 0 {
+            return Err(HostError::FieldNotFound);
+        }
+        Ok(vec![field as u8])
     }
 
-    fn sha512_half(&self, data: &[u8]) -> [u8; HASH_LEN] {
+    fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; HASH_LEN]> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
-        digest
+        Ok(digest)
     }
 
-    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) {
+    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()> {
         self.traced
             .borrow_mut()
             .push(format!("{msg}/{}/{as_hex}", data.len()));
+        Ok(())
     }
 
-    fn trace_num(&self, msg: &str, number: i64) {
+    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
         self.traced.borrow_mut().push(format!("{msg}={number}"));
+        Ok(())
     }
 }
 
@@ -44,13 +50,26 @@ impl HostFunctions for FakeHost {
 fn the_trait_is_implementable() {
     let host = FakeHost::default();
 
-    assert_eq!(host.get_ledger_sqn(), [7, 0, 0, 0]);
-    assert_eq!(host.get_current_ledger_obj_field(3), vec![3]);
-    assert_eq!(host.sha512_half(b"abc")[0], 3);
-    host.trace("hello", b"xy", true);
-    host.trace_num("count", -1);
+    assert_eq!(host.get_ledger_sqn(), Ok([7, 0, 0, 0]));
+    assert_eq!(host.get_current_ledger_obj_field(3), Ok(vec![3]));
+    assert_eq!(host.sha512_half(b"abc").unwrap()[0], 3);
+    assert_eq!(host.trace("hello", b"xy", true), Ok(()));
+    assert_eq!(host.trace_num("count", -1), Ok(()));
 
     assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
+}
+
+/// The error channel every declaration carries: an `Err` the VM turns into the
+/// wire's negative return code.
+#[test]
+fn a_failing_call_reports_its_error_code() {
+    let host = FakeHost::default();
+
+    assert_eq!(
+        host.get_current_ledger_obj_field(-1),
+        Err(HostError::FieldNotFound)
+    );
+    assert_eq!(HostError::FieldNotFound.code(), -2);
 }
 
 /// The VM reaches the host as one shared trait object held in the wasmi `Store`,
@@ -60,8 +79,8 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
     let fake = FakeHost::default();
     let host: &dyn HostFunctions = &fake;
 
-    assert_eq!(host.get_ledger_sqn(), [7, 0, 0, 0]);
-    host.trace_num("count", 1);
+    assert_eq!(host.get_ledger_sqn(), Ok([7, 0, 0, 0]));
+    assert_eq!(host.trace_num("count", 1), Ok(()));
 
     assert_eq!(*fake.traced.borrow(), ["count=1"]);
 }
@@ -69,13 +88,8 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
 #[test]
 fn the_spec_table_matches_the_declarations() {
     assert_eq!(HostFunctionSpec::ALL.len(), 5);
-    assert_eq!(
-        HostFunctionSpec::GetLedgerSqn.spec(),
-        HostFnSpec {
-            name: "ldgr_index",
-            gas: 60
-        }
-    );
+    assert_eq!(HostFunctionSpec::GetLedgerSqn.wasm_name(), "ldgr_index");
+    assert_eq!(HostFunctionSpec::GetLedgerSqn.gas(), 60);
     assert_eq!(HostFunctionSpec::Sha512Half.gas(), 2000);
     assert_eq!(
         HostFunctionSpec::GetCurrentLedgerObjField.wasm_name(),

@@ -29,7 +29,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
         match op {
             HostFunctionSpec::GetLedgerSqn => linker.func_wrap(
                 HOST_MODULE,
-                op.spec().name,
+                op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>, out_ptr: i32, out_len: i32| -> i32 {
                     to_wasm_i32(charged(&mut caller, HostFunctionSpec::GetLedgerSqn, |c| {
                         // The host writes the serialized sequence number
@@ -41,7 +41,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
             ),
             HostFunctionSpec::GetCurrentLedgerObjField => linker.func_wrap(
                 HOST_MODULE,
-                op.spec().name,
+                op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>,
                  field: i32,
                  out_ptr: i32,
@@ -63,7 +63,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
             ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
-                op.spec().name,
+                op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>,
                  data_ptr: i32,
                  data_len: i32,
@@ -87,7 +87,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
             ),
             HostFunctionSpec::Trace => linker.func_wrap(
                 HOST_MODULE,
-                op.spec().name,
+                op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>,
                  msg_ptr: i32,
                  msg_len: i32,
@@ -110,7 +110,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
             ),
             HostFunctionSpec::TraceNum => linker.func_wrap(
                 HOST_MODULE,
-                op.spec().name,
+                op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>,
                  msg_ptr: i32,
                  msg_len: i32,

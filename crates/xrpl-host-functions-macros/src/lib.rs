@@ -25,25 +25,26 @@ use parsed_host_function::ParsedHostFunction;
 /// `xrpl-host-functions` as a dependency but no imports from it.
 ///
 /// ```
+/// use xrpl_host_functions::HostResult;
 /// use xrpl_host_functions_macros::host_functions;
 ///
 /// host_functions! {
 ///     /// The sequence number of the ledger being built.
 ///     #[gas = 60]
 ///     #[wasm_name = "ldgr_index"]
-///     fn get_ledger_sqn(&self) -> [u8; 4];
+///     fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
 ///
 ///     /// Writes `msg` to the trace log.
 ///     #[gas = 500]
 ///     #[wasm_name = "trace_num"]
-///     fn trace_num(&self, msg: &str, number: i64);
+///     fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
 /// }
 ///
 /// // A `HostFunctions` trait, holding the declarations verbatim:
 /// struct Host;
 /// impl HostFunctions for Host {
-///     fn get_ledger_sqn(&self) -> [u8; 4] { 7u32.to_le_bytes() }
-///     fn trace_num(&self, _msg: &str, _number: i64) {}
+///     fn get_ledger_sqn(&self) -> HostResult<[u8; 4]> { Ok(7u32.to_le_bytes()) }
+///     fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> { Ok(()) }
 /// }
 ///
 /// // A `HostFunctionSpec` enum carrying the ABI metadata as a `const` table:
@@ -52,9 +53,10 @@ use parsed_host_function::ParsedHostFunction;
 /// assert_eq!(HostFunctionSpec::ALL.len(), 2);
 /// ```
 ///
-/// A declaration must be a plain `fn` taking `&self`, with no body and no
-/// generics: it maps to exactly one wasm import signature. Two declarations may
-/// not share a `wasm_name`, nor collapse to the same PascalCase variant.
+/// A declaration must be a plain `fn` taking `&self` and returning
+/// `HostResult<T>`, with no body and no generics: it maps to exactly one wasm
+/// import signature. Two declarations may not share a `wasm_name`, nor collapse to
+/// the same PascalCase variant.
 #[proc_macro]
 pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into())
@@ -114,16 +116,6 @@ fn collisions(functions: &[ParsedHostFunction]) -> Vec<syn::Error> {
     errors
 }
 
-/// Path to the hand-written `HostFnSpec` the expansion refers to.
-///
-/// Absolute, so the generated code resolves whatever the caller has imported and
-/// whatever else is named `HostFnSpec` in scope. `xrpl-host-functions` declares
-/// `extern crate self as xrpl_host_functions;`, which is what lets this path
-/// resolve inside the crate the ABI is declared in.
-pub(crate) fn host_fn_spec_path() -> TokenStream {
-    quote! { ::xrpl_host_functions::HostFnSpec }
-}
-
 fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
     let trait_methods = functions.iter().map(ParsedHostFunction::trait_method);
     let variants = functions
@@ -131,7 +123,6 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         .map(ParsedHostFunction::variant_declaration);
     let spec_arms = functions.iter().map(ParsedHostFunction::spec_arm);
     let all = functions.iter().map(|function| &function.variant);
-    let spec_type = host_fn_spec_path();
 
     quote! {
         /// The host side of the wasm ABI: one method per function a guest may
@@ -144,6 +135,16 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         /// so a host that must mutate does so behind interior mutability.
         pub trait HostFunctions {
             #(#trait_methods)*
+        }
+
+        /// One row of the ABI table: what [`HostFunctionSpec::wasm_name`] and
+        /// [`HostFunctionSpec::gas`] read from.
+        ///
+        /// Private, and the only reason it exists is to keep both of them fed
+        /// from a single `match` over the declarations.
+        struct HostFnSpec {
+            name: &'static str,
+            gas: u64,
         }
 
         /// Identifies one host function, and is the compile-time source of its
@@ -165,11 +166,8 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             /// be registered for a module that imports it to instantiate.
             pub const ALL: &'static [Self] = &[#(Self::#all,)*];
 
-            /// This function's import name and base gas cost.
-            ///
-            /// Usable in `const` context, so gas tables and import lists can be
-            /// built at compile time.
-            pub const fn spec(self) -> #spec_type {
+            /// This function's row of the ABI table.
+            const fn spec(self) -> HostFnSpec {
                 match self {
                     #(#spec_arms,)*
                 }
@@ -178,7 +176,8 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             /// The name a guest imports this function under.
             ///
             /// A guest's import name must match this exactly, or the module
-            /// fails to instantiate.
+            /// fails to instantiate. Usable in `const` context, so import lists
+            /// can be built at compile time.
             pub const fn wasm_name(self) -> &'static str {
                 self.spec().name
             }
@@ -186,7 +185,8 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             /// Gas charged before the call runs, independent of its arguments.
             ///
             /// Consensus-relevant: two nodes that disagree on this value
-            /// disagree on transaction outcomes.
+            /// disagree on transaction outcomes. Usable in `const` context, so
+            /// gas tables can be built at compile time.
             pub const fn gas(self) -> u64 {
                 self.spec().gas
             }
@@ -221,10 +221,10 @@ mod tests {
     fn reports_mistakes_from_every_function() {
         let error = expand(quote! {
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> [u8; 4];
+            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
 
             #[gas = 2000]
-            fn sha512_half(&self, data: &[u8]) -> [u8; 32];
+            fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; 32]>;
         })
         .expect_err("expected parsing to fail");
 
@@ -253,49 +253,71 @@ mod tests {
         let generated = expand(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> [u8; 4];
+            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
 
             #[gas = 500]
             #[wasm_name = "trace_num"]
-            fn trace_num(&self, msg: &str, number: i64);
+            fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
         })
         .unwrap()
         .to_string();
 
         for expected in [
             "pub trait HostFunctions",
-            "fn get_ledger_sqn (& self) -> [u8 ; 4] ;",
-            "fn trace_num (& self , msg : & str , number : i64) ;",
+            "fn get_ledger_sqn (& self) -> HostResult < [u8 ; 4] > ;",
+            "fn trace_num (& self , msg : & str , number : i64) -> HostResult < () > ;",
             "pub enum HostFunctionSpec { GetLedgerSqn , TraceNum , }",
             "pub const ALL : & 'static [Self] = & [Self :: GetLedgerSqn , Self :: TraceNum ,]",
-            "pub const fn spec (self) -> :: xrpl_host_functions :: HostFnSpec",
-            "Self :: GetLedgerSqn => :: xrpl_host_functions :: HostFnSpec \
-             { name : \"ldgr_index\" , gas : 60u64 }",
+            // The table's row type is generated too, and stays private.
+            "struct HostFnSpec { name : & 'static str , gas : u64 , }",
+            "const fn spec (self) -> HostFnSpec",
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }",
+            "pub const fn wasm_name (self) -> & 'static str",
+            "pub const fn gas (self) -> u64",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }
     }
 
-    /// The expansion names the types it needs by absolute path, so it cannot pick
-    /// up a different `HostFnSpec` that happens to be in scope where it lands.
+    /// The expansion stands alone: every name in it is either generated here or
+    /// written in the declarations, so it cannot depend on the crate it lands in.
     #[test]
-    fn refers_to_the_declaring_crate_by_absolute_path() {
+    fn names_no_crate_of_its_own() {
         let generated = expand(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> [u8; 4];
+            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
         })
         .unwrap()
         .to_string();
 
-        assert_eq!(generated.matches("HostFnSpec").count(), 2, "{generated}");
-        assert_eq!(
-            generated
-                .matches(":: xrpl_host_functions :: HostFnSpec")
-                .count(),
-            2,
-            "{generated}"
-        );
+        assert!(!generated.contains("xrpl_host_functions"), "{generated}");
+
+        // `Self::Variant` is the only path the expansion may build: anything else
+        // would reach out of the generated code. Doc comments spell paths without
+        // spaces (`Self::ALL`), so they do not match.
+        for (index, _) in generated.match_indices(" :: ") {
+            assert!(
+                generated[..index].ends_with("Self"),
+                "path out of the expansion at {index}: {generated}"
+            );
+        }
+    }
+
+    /// `spec` is an implementation detail of the two accessors, so it must not
+    /// become part of the ABI crate's public surface.
+    #[test]
+    fn keeps_the_table_row_private() {
+        let generated = expand(quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+        })
+        .unwrap()
+        .to_string();
+
+        assert!(!generated.contains("pub struct HostFnSpec"), "{generated}");
+        assert!(!generated.contains("pub const fn spec"), "{generated}");
     }
 
     #[test]
@@ -303,11 +325,11 @@ mod tests {
         let messages = messages(quote! {
             #[gas = 60]
             #[wasm_name = "trace"]
-            fn trace(&self, msg: &str);
+            fn trace(&self, msg: &str) -> HostResult<()>;
 
             #[gas = 70]
             #[wasm_name = "trace"]
-            fn trace_num(&self, msg: &str, number: i64);
+            fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -323,11 +345,11 @@ mod tests {
         let messages = messages(quote! {
             #[gas = 60]
             #[wasm_name = "a"]
-            fn get_ledger_sqn(&self) -> [u8; 4];
+            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
 
             #[gas = 70]
             #[wasm_name = "b"]
-            fn get_ledger__sqn(&self) -> [u8; 4];
+            fn get_ledger__sqn(&self) -> HostResult<[u8; 4]>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");

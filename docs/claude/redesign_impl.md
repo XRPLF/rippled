@@ -35,18 +35,23 @@ only for reference. Anything we need about the old semantics is recoverable with
     re-exported — the ABI has one declaration site, so nothing outside
     `xrpl-host-functions` should be invoking it.
 
-    **Convention: the macro emits what varies per declaration; the facade
-    hand-writes the invariants and the macro refers to them by absolute path.**
-    So `HostFunctions`, `HostFunctionSpec` and its spec table are generated, while
-    `HostError`, `HostResult` and `HostFnSpec` are hand-written (greppable,
-    documented, testable, one rustdoc page). `host_fn_spec_path()` in the macro is
-    the single place that path is spelled; `extern crate self as
-    xrpl_host_functions;` in the facade is what makes it resolve inside the crate
-    the ABI is declared in. Never emit a bare type name — an absolute path is what
-    keeps the expansion independent of what the call site imported.
+    **Convention: the expansion is closed.** Every name in it is either generated
+    or written in the declarations — `Self::Variant` is the only path it builds, and
+    a test (`names_no_crate_of_its_own`) enforces that. So the macro owns
+    `HostFunctions`, `HostFunctionSpec`, `ALL`, `wasm_name()`, `gas()`, and the
+    private `HostFnSpec` row type that keeps both accessors fed from one `match`.
+    The facade hand-writes only the *vocabulary the declarations are written in* —
+    `HostError` (23 codes plus `from_code`, which wants to stay greppable and
+    testable), `HostResult`, `HASH_LEN`. Those resolve at the call site because the
+    declarations name them, exactly like `Vec<u8>` and `&[u8]`; the macro never
+    emits them.
 
-    The macro crate dev-depends on the facade so its doctest compiles; cargo allows
-    that cycle because dev-dependencies sit outside the library build graph.
+    Corollary: `HostFnSpec` and `spec()` are **private** to the ABI crate. Read the
+    table through `HostFunctionSpec::wasm_name()` / `::gas()`.
+
+    The macro crate dev-depends on the facade so its doctest — whose declarations
+    name `HostResult` — compiles; cargo allows that cycle because dev-dependencies
+    sit outside the library build graph.
   - `crates/xrpl-wasm-vm/` — the wasmi wrapper: `vm.rs` (engine/store/run),
     `abi.rs` (gas + transfer-limit + guest-memory marshaling), `register.rs`
     (hand-written `Linker::func_wrap` per host function).
@@ -155,18 +160,22 @@ params:
   i64                -> i64
   &[u8], &str        -> i32 ptr, i32 len          const uint8_t*, int32_t
 
-returns:
-  [u8; N], Vec<u8>   -> appends i32 out_ptr, i32 out_len; result i32 = bytes written
-  i32, bool          -> no out params; result i32 = the value
-  ()                 -> no out params; result i32 = 0
+returns, always `HostResult<T>`; `Err(e)` -> negative code, or a trap when host-fatal:
+  HostResult<[u8; N]>     -> appends i32 out_ptr, i32 out_len; result i32 = bytes written
+  HostResult<Vec<u8>>     -> same
+  HostResult<i32>, <bool> -> no out params; result i32 = the value
+  HostResult<()>          -> no out params; result i32 = 0
 ```
 
 Total and unambiguous. **The macro must reject any type not in this table** — that is
 `WasmImpArgs`' `static_assert`, restored, and it is what guarantees the C API is
 always surfaceable.
 
-**Validation** — all five current declarations (`xrpl-host-functions/src/lib.rs:87-107`)
-lower to exactly the deleted C++ `_proto` aliases:
+**Validation** — all five current declarations (the `host_functions!` block at the
+bottom of `xrpl-host-functions/src/lib.rs`) lower to exactly the deleted C++ `_proto`
+aliases. Abbreviated below: each real declaration reads
+`fn f(&self, …) -> HostResult<T>`, and neither the receiver nor the `HostResult`
+wrapper contributes a C parameter.
 
 | Declaration | Derived C | C++ `_proto` |
 |---|---|---|
@@ -359,17 +368,20 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 ## Current state (2026-07-29)
 
-`crates/` does **not** compile: the macro-generated trait (value-returning,
-infallible) and the VM code (fill-caller's-buffer, `HostResult<usize>`) are two
-different ABI shapes. The 8 errors are all in `xrpl-wasm-vm` — every byte-returning
-call site in `register.rs`, plus `?` on the infallible `trace`/`trace_num`.
+The trait is settled and declared: `&self`, one method per declaration, uniform
+`HostResult<T>` returns, all three checked by the macro. `xrpl-host-functions` and
+`xrpl-host-functions-macros` are green (`cargo test` + `clippy` + `fmt`): 32 macro
+tests, 8 facade tests, 1 doctest.
 
-`xrpl-host-functions` and `xrpl-host-functions-macros` are green (`cargo test` +
-`clippy`): 28 macro tests, 5 ABI tests, 1 doctest.
+`crates/` as a whole still does **not** compile: the VM's marshaling is the other
+ABI shape (fill the caller's buffer, `HostResult<usize>`). All 6 errors are in
+`xrpl-wasm-vm/src/register.rs`, at the three byte-returning call sites — `write_into`
+and `read_write` pass an `&mut [u8]` the trait no longer takes and expect a
+`HostResult<usize>` the trait no longer returns.
 
-Resolving that shape is the immediate work. Per the mechanism note above, the
-value-returning direction (plus `HostResult<T>`) is the one that composes with
-typed/generated registration; the fill-the-guest-buffer shape is what fights it.
+Rewriting `abi.rs` to lift → call → lower against the value-returning trait (host
+writes into a host-side scratch buffer, one copy into guest memory afterwards, gas
+and transfer limit counted there) is the immediate work.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`
 shims, the generated C header, and the probe-module conformance test.

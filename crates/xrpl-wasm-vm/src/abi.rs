@@ -42,7 +42,7 @@ pub(crate) fn charged(
     op: HostFunctionSpec,
     body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> HostResult<i64>,
 ) -> HostResult<i64> {
-    charge(caller, op.spec().gas)?;
+    charge(caller, op.gas())?;
     body(caller)
 }
 
