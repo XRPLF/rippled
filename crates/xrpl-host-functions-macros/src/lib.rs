@@ -19,6 +19,11 @@ use parsed_host_function::ParsedHostFunction;
 /// charges before the call and the name the guest imports it under. Doc comments
 /// are kept and appear on the generated items.
 ///
+/// This crate is an implementation detail of `xrpl-host-functions`, which
+/// hand-writes the types the expansion refers to and holds the one declaration
+/// block. The expansion names those types by absolute path, so a call site needs
+/// `xrpl-host-functions` as a dependency but no imports from it.
+///
 /// ```
 /// use xrpl_host_functions_macros::host_functions;
 ///
@@ -109,6 +114,16 @@ fn collisions(functions: &[ParsedHostFunction]) -> Vec<syn::Error> {
     errors
 }
 
+/// Path to the hand-written `HostFnSpec` the expansion refers to.
+///
+/// Absolute, so the generated code resolves whatever the caller has imported and
+/// whatever else is named `HostFnSpec` in scope. `xrpl-host-functions` declares
+/// `extern crate self as xrpl_host_functions;`, which is what lets this path
+/// resolve inside the crate the ABI is declared in.
+pub(crate) fn host_fn_spec_path() -> TokenStream {
+    quote! { ::xrpl_host_functions::HostFnSpec }
+}
+
 fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
     let trait_methods = functions.iter().map(ParsedHostFunction::trait_method);
     let variants = functions
@@ -116,6 +131,7 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         .map(ParsedHostFunction::variant_declaration);
     let spec_arms = functions.iter().map(ParsedHostFunction::spec_arm);
     let all = functions.iter().map(|function| &function.variant);
+    let spec_type = host_fn_spec_path();
 
     quote! {
         /// The host side of the wasm ABI: one method per function a guest may
@@ -128,18 +144,6 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         /// so a host that must mutate does so behind interior mutability.
         pub trait HostFunctions {
             #(#trait_methods)*
-        }
-
-        /// The wasm import name and base gas cost of one host function.
-        ///
-        /// Declared by `host_functions!`, and obtained from
-        /// [`HostFunctionSpec::spec`].
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        pub struct HostFnSpec {
-            /// The name a guest imports the function under.
-            pub name: &'static str,
-            /// Gas charged before the call runs, independent of its arguments.
-            pub gas: u64,
         }
 
         /// Identifies one host function, and is the compile-time source of its
@@ -165,7 +169,7 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
             ///
             /// Usable in `const` context, so gas tables and import lists can be
             /// built at compile time.
-            pub const fn spec(self) -> HostFnSpec {
+            pub const fn spec(self) -> #spec_type {
                 match self {
                     #(#spec_arms,)*
                 }
@@ -262,16 +266,36 @@ mod tests {
             "pub trait HostFunctions",
             "fn get_ledger_sqn (& self) -> [u8 ; 4] ;",
             "fn trace_num (& self , msg : & str , number : i64) ;",
-            "pub struct HostFnSpec",
-            "pub name : & 'static str",
-            "pub gas : u64",
             "pub enum HostFunctionSpec { GetLedgerSqn , TraceNum , }",
             "pub const ALL : & 'static [Self] = & [Self :: GetLedgerSqn , Self :: TraceNum ,]",
-            "pub const fn spec (self) -> HostFnSpec",
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }",
+            "pub const fn spec (self) -> :: xrpl_host_functions :: HostFnSpec",
+            "Self :: GetLedgerSqn => :: xrpl_host_functions :: HostFnSpec \
+             { name : \"ldgr_index\" , gas : 60u64 }",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }
+    }
+
+    /// The expansion names the types it needs by absolute path, so it cannot pick
+    /// up a different `HostFnSpec` that happens to be in scope where it lands.
+    #[test]
+    fn refers_to_the_declaring_crate_by_absolute_path() {
+        let generated = expand(quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self) -> [u8; 4];
+        })
+        .unwrap()
+        .to_string();
+
+        assert_eq!(generated.matches("HostFnSpec").count(), 2, "{generated}");
+        assert_eq!(
+            generated
+                .matches(":: xrpl_host_functions :: HostFnSpec")
+                .count(),
+            2,
+            "{generated}"
+        );
     }
 
     #[test]

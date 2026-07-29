@@ -1,8 +1,17 @@
+//! The wasm host ABI: the one place it is declared.
+//!
+//! `host_functions!` turns the declaration block at the bottom of this file into the
+//! [`HostFunctions`] trait a host implements and the [`HostFunctionSpec`] table a
+//! wasm engine registers from. Everything the expansion refers to — [`HostFnSpec`],
+//! [`HostError`] — is written by hand here, and referred to by absolute path, so the
+//! generated code never depends on what a caller happens to have imported.
+
 #![no_std]
 extern crate alloc;
 
 use alloc::vec::Vec;
 
+// Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::host_functions;
 
 /// Error codes a host function may return.
@@ -83,6 +92,22 @@ pub type HostResult<T> = Result<T, HostError>;
 
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;
+
+/// The wasm import name and base gas cost of one host function.
+///
+/// The same for every host function, so it is declared here rather than generated;
+/// [`HostFunctionSpec::spec`] returns one of these per declaration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HostFnSpec {
+    /// The name a guest imports the function under.
+    pub name: &'static str,
+    /// Gas charged before the call runs, independent of its arguments.
+    pub gas: u64,
+}
+
+// Lets the generated code name this crate (`::xrpl_host_functions::HostFnSpec`)
+// even though it is expanded here, inside the crate itself.
+extern crate self as xrpl_host_functions;
 
 host_functions! {
     #[gas = 60]

@@ -50,7 +50,7 @@ impl ParsedHostFunction {
         }
     }
 
-    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", gas: 60u64 }`
+    /// `Self::GetLedgerSqn => ::xrpl_host_functions::HostFnSpec { name: "ldgr_index", gas: 60u64 }`
     pub(crate) fn spec_arm(&self) -> TokenStream {
         let Self {
             gas,
@@ -58,8 +58,9 @@ impl ParsedHostFunction {
             variant,
             ..
         } = self;
+        let spec = crate::host_fn_spec_path();
         quote! {
-            Self::#variant => HostFnSpec { name: #wasm_name, gas: #gas }
+            Self::#variant => #spec { name: #wasm_name, gas: #gas }
         }
     }
 
@@ -513,7 +514,8 @@ mod tests {
 
         assert_eq!(
             parsed.spec_arm().to_string(),
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }"
+            "Self :: GetLedgerSqn => :: xrpl_host_functions :: HostFnSpec \
+             { name : \"ldgr_index\" , gas : 60u64 }"
         );
     }
 

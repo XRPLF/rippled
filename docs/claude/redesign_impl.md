@@ -29,7 +29,24 @@ only for reference. Anything we need about the old semantics is recoverable with
     a declaration reads exactly as the trait method it becomes. `&self` is what lets
     the VM hold the host as one shared `&dyn HostFunctions` in the wasmi `Store`; a
     host that needs to mutate uses interior mutability.
-  - `crates/xrpl-host-functions-macros/` — the `host_functions!` proc macro.
+  - `crates/xrpl-host-functions-macros/` — the `host_functions!` proc macro. An
+    implementation detail of the crate above: the dependency arrow runs facade →
+    macro, and the macro depends on nothing but syn/quote. It is deliberately *not*
+    re-exported — the ABI has one declaration site, so nothing outside
+    `xrpl-host-functions` should be invoking it.
+
+    **Convention: the macro emits what varies per declaration; the facade
+    hand-writes the invariants and the macro refers to them by absolute path.**
+    So `HostFunctions`, `HostFunctionSpec` and its spec table are generated, while
+    `HostError`, `HostResult` and `HostFnSpec` are hand-written (greppable,
+    documented, testable, one rustdoc page). `host_fn_spec_path()` in the macro is
+    the single place that path is spelled; `extern crate self as
+    xrpl_host_functions;` in the facade is what makes it resolve inside the crate
+    the ABI is declared in. Never emit a bare type name — an absolute path is what
+    keeps the expansion independent of what the call site imported.
+
+    The macro crate dev-depends on the facade so its doctest compiles; cargo allows
+    that cycle because dev-dependencies sit outside the library build graph.
   - `crates/xrpl-wasm-vm/` — the wasmi wrapper: `vm.rs` (engine/store/run),
     `abi.rs` (gas + transfer-limit + guest-memory marshaling), `register.rs`
     (hand-written `Linker::func_wrap` per host function).
