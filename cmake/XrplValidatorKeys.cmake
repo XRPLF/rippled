@@ -30,8 +30,7 @@ if(validator_keys)
     )
     # Like xrpld, this binary leaves the Nix-based build image (we ship it in
     # the deb/rpm), so it needs the system ELF loader instead of the one in the
-    # Nix store. Without this it cannot run on the target distro at all. The
-    # target belongs to the FetchContent subproject, hence the other_dir form.
-    patch_nix_binary_in_other_dir(validator-keys)
+    # Nix store. Without this it cannot run on the target distro at all.
+    patch_nix_binary(validator-keys)
     install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
