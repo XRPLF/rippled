@@ -73,23 +73,23 @@ struct BaseUintTest : public ::testing::Test
 
             for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<64> const u{smallerText}, v{largerText};
+                xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
                 // For code readability, we want to use general boolean
                 // expectations instead of specific EXPECT_LT etc.
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
 
@@ -105,21 +105,21 @@ struct BaseUintTest : public ::testing::Test
 
             for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<96> const u{smallerText}, v{largerText};
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
     }

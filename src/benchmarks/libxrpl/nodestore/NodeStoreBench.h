@@ -141,7 +141,7 @@ makePool(std::uint8_t prefix, std::size_t count, std::size_t start = 0)
     Sequence seq(prefix);
     Batch pool;
     pool.reserve(count);
-    for (auto const i : std::views::iota(0uz, count))
+    for (auto i = 0uz; i < count; ++i)
         pool.push_back(seq.obj(start + i));
     return pool;
 }
@@ -154,7 +154,7 @@ makeMissingKeys(std::size_t count)
     Sequence seq(2);
     std::vector<uint256> keys;
     keys.reserve(count);
-    for (auto const i : std::views::iota(0uz, count))
+    for (auto i = 0uz; i < count; ++i)
         keys.push_back(seq.key(i));
     return keys;
 }
