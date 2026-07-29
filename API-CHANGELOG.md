@@ -53,7 +53,7 @@ This section contains changes targeting a future version.
 - `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
-- `get_counts`: The `min_count` field now returns `invalidParams` if the value is not a non-negative integer. Previously, values that could not be converted returned an `internal` error, and strings, booleans, and `null` were silently coerced. [#NNNN](https://github.com/XRPLF/rippled/pull/NNNN)
+- `get_counts`: The `min_count` field now returns `invalidParams` if the value is not a non-negative integer. Previously, values that could not be converted returned an `internal` error, and strings, booleans, and `null` were silently coerced. [#7904](https://github.com/XRPLF/rippled/pull/7904)
 
 ## XRP Ledger server version 3.1.0
 
