@@ -137,11 +137,23 @@ ConfidentialMPTClawback::doApply()
     // After clawback, the balance should be encrypted zero.
     auto const encZeroForHolder = encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
     if (!encZeroForHolder)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback failed to encrypt canonical zero for holder.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto encZeroForIssuer = encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
     if (!encZeroForIssuer)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback failed to encrypt canonical zero for issuer.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
@@ -161,7 +173,13 @@ ConfidentialMPTClawback::doApply()
         auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTClawback failed to encrypt canonical zero for auditor.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
     }

@@ -114,7 +114,13 @@ ConfidentialMPTMergeInbox::doApply()
         encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTMergeInbox failed to encrypt canonical zero for inbox reset.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*zeroEncryption);
 

@@ -353,7 +353,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedDestEc = rerandomizeCiphertext(
             destEc, (*sleDestinationMPToken)[sfHolderEncryptionKey], sendChallenge);
         if (!rerandomizedDestEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination inbox ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         auto newInbox = homomorphicAdd(curInbox, *rerandomizedDestEc);
@@ -374,7 +380,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedIssuerEc =
             rerandomizeCiphertext(issuerEc, (*sleIssuance)[sfIssuerEncryptionKey], sendChallenge);
         if (!rerandomizedIssuerEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination issuer ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicAdd(curIssuerEnc, *rerandomizedIssuerEc);
@@ -396,7 +408,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedAuditorEc = rerandomizeCiphertext(
             *auditorEc, (*sleIssuance)[sfAuditorEncryptionKey], sendChallenge);
         if (!rerandomizedAuditorEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination auditor ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *rerandomizedAuditorEc);

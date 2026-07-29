@@ -308,7 +308,13 @@ ConfidentialMPTConvert::doApply()
             (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
         if (!zeroBalance)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTConvert failed to encrypt canonical zero spending balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*zeroBalance);
     }
