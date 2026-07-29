@@ -247,6 +247,28 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+      # Only the configurations built with -Dvalidator_keys=ON produce this
+      # binary (see linux.json), so probe for it rather than keying the upload
+      # off a list of configuration names.
+      - name: Check for the validator-keys binary (Linux)
+        id: validator_keys
+        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        run: |
+          if [ -x "${BUILD_DIR}/validator-keys" ]; then
+              echo "present=true" >>"${GITHUB_OUTPUT}"
+          else
+              echo "present=false" >>"${GITHUB_OUTPUT}"
+          fi
+
+      - name: Upload the validator-keys binary (Linux)
+        if: ${{ steps.validator_keys.outputs.present == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validator-keys-${{ inputs.config_name }}
+          path: ${{ env.BUILD_DIR }}/validator-keys
+          retention-days: 3
+          if-no-files-found: error
+
       - name: Upload the test binary (Linux)
         if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

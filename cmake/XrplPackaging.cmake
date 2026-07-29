@@ -25,6 +25,20 @@ if(NOT (RPMBUILD_EXECUTABLE OR DPKG_BUILDPACKAGE_EXECUTABLE))
     return()
 endif()
 
+# The packages ship both binaries, so both targets must exist.
+if(NOT TARGET xrpld)
+    message(STATUS "xrpld=ON is required; 'package' target not available")
+    return()
+endif()
+
+if(NOT TARGET validator-keys)
+    message(
+        STATUS
+        "validator_keys=ON is required; 'package' target not available"
+    )
+    return()
+endif()
+
 set(package_env
     SRC_DIR=${CMAKE_SOURCE_DIR}
     BUILD_DIR=${CMAKE_BINARY_DIR}
@@ -37,7 +51,7 @@ add_custom_target(
         ${CMAKE_COMMAND} -E env ${package_env}
         ${CMAKE_SOURCE_DIR}/package/build_pkg.sh
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    DEPENDS xrpld
+    DEPENDS xrpld validator-keys
     COMMENT "Building Linux package (deb/rpm inferred from host tooling)"
     VERBATIM
 )

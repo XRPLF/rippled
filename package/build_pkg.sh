@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an RPM or Debian package from a pre-built xrpld binary.
+# Build an RPM or Debian package from the pre-built xrpld and validator-keys
+# binaries.
 #
 # Flags override env vars; env vars override defaults.
 
@@ -11,7 +12,9 @@ Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
   --src-dir DIR            repo root                 [SRC_DIR;           default: ${PWD}]
-  --build-dir DIR          directory holding xrpld   [BUILD_DIR;         default: ${PWD}/build]
+  --build-dir DIR          directory holding the
+                           xrpld and validator-keys
+                           binaries                  [BUILD_DIR;         default: ${PWD}/build]
   --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
   --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help               show this help and exit
@@ -69,7 +72,7 @@ SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="${BUILD_DIR:-${PWD}/build}"
 if [[ ! -d "${BUILD_DIR}" ]]; then
     echo "build_pkg.sh: build directory not found: ${BUILD_DIR}" >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing the binaries." >&2
     exit 1
 fi
 BUILD_DIR="$(cd "${BUILD_DIR}" && pwd)"
@@ -78,6 +81,15 @@ xrpld_binary="${BUILD_DIR}/xrpld"
 if [[ ! -x "${xrpld_binary}" ]]; then
     echo "build_pkg.sh: expected executable xrpld binary at ${xrpld_binary}." >&2
     echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+    exit 1
+fi
+
+# The packages ship validator-keys alongside xrpld, so it is required here too.
+validator_keys_binary="${BUILD_DIR}/validator-keys"
+if [[ ! -x "${validator_keys_binary}" ]]; then
+    echo "build_pkg.sh: expected executable validator-keys binary at ${validator_keys_binary}." >&2
+    echo "Configure with -Dvalidator_keys=ON and build the validator-keys target before packaging," >&2
+    echo "or set BUILD_DIR to the directory containing validator-keys." >&2
     exit 1
 fi
 
@@ -150,7 +162,8 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${xrpld_binary}" "${dest}/xrpld"
+    cp "${validator_keys_binary}" "${dest}/validator-keys"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"
