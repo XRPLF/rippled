@@ -50,7 +50,7 @@ concurrency:
 jobs:
   analyze:
     name: Map the diff onto the interaction graph
-    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    runs-on: ubuntu-latest
     container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
     permissions:
       contents: read
