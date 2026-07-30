@@ -9,15 +9,21 @@ mod support;
 use support::{
     FakeHost, ONE_PAGE, PLENTY_OF_GAS, failure, import, module, run, run_entry, run_with_gas,
 };
-use xrpl_wasm_vm::MAX_MEMORY_PAGES;
+use xrpl_wasm_vm::{MAX_MEMORY_PAGES, RunError};
 
-/// A failure message has to say which stage failed, because the caller maps the
-/// stages to different outcomes.
-fn assert_stage(message: &str, stage: &str) {
-    assert!(
-        message.starts_with(stage),
-        "expected a {stage:?} failure, got: {message}"
-    );
+/// Assert which stage a run failed at, because the caller maps the stages to
+/// different outcomes. A stage is one `RunError` variant, so the expectation is a
+/// pattern; the failure comes back out for the tests that also read its message.
+macro_rules! assert_stage {
+    ($failure:expr, $stage:pat) => {{
+        let failure = $failure;
+        assert!(
+            matches!(failure.error, $stage),
+            concat!("expected a ", stringify!($stage), " failure, got: {}"),
+            failure
+        );
+        failure
+    }};
 }
 
 // ---------------------------------------------------------------------------
@@ -37,7 +43,7 @@ fn an_initial_memory_past_the_cap_is_refused() {
         )],
         "(i32.const 0)",
     );
-    assert_stage(&failure(&wat, &host), "instantiate");
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
 }
 
 /// The cap itself is allowed.
@@ -73,7 +79,7 @@ fn growth_stops_at_the_cap() {
         &[ONE_PAGE],
         &format!("(memory.grow (i32.const {MAX_MEMORY_PAGES}))"),
     );
-    assert_stage(&failure(&wat, &host), "trap");
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }
 
 /// A module may declare a maximum above the cap: the cap is enforced on the initial
@@ -90,7 +96,7 @@ fn a_declared_maximum_past_the_cap_is_allowed_but_unreachable() {
         &[&memory],
         &format!("(memory.grow (i32.const {MAX_MEMORY_PAGES}))"),
     );
-    assert_stage(&failure(&wat, &host), "trap");
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }
 
 // ---------------------------------------------------------------------------
@@ -201,9 +207,8 @@ fn every_disabled_feature_is_refused_by_name() {
 
     for (knob, parts, body, expected) in disabled_features() {
         let wat = module(&parts, body);
-        let failure = failure(&wat, &host);
+        let failure = assert_stage!(failure(&wat, &host), RunError::Compile(_)).to_string();
 
-        assert_stage(&failure, "compile");
         assert!(
             failure.contains(expected),
             "{knob}: expected a refusal mentioning {expected:?}, got: {failure}"
@@ -222,7 +227,7 @@ fn the_knobs_without_a_module_of_their_own() {
     // `wasm_saturating_float_to_int(false)`: every saturating conversion takes a
     // float operand, so `floats(false)` refuses it first, as the message shows.
     let wat = module(&[ONE_PAGE], "(i32.trunc_sat_f32_s (f32.const 1))");
-    let refusal = failure(&wat, &host);
+    let refusal = failure(&wat, &host).to_string();
     assert!(refusal.contains("floating-point"), "{refusal}");
     assert!(!refusal.contains("saturating"), "{refusal}");
 
@@ -261,7 +266,7 @@ fn garbage_does_not_compile() {
     for bytes in [b"".as_slice(), b"not wasm", &[0x00, 0x61, 0x73, 0x6d]] {
         let failure = xrpl_wasm_vm::run(bytes, PLENTY_OF_GAS, &host, support::ENTRY)
             .expect_err("garbage must not compile");
-        assert_stage(&failure, "compile");
+        assert_stage!(failure, RunError::Compile(_));
     }
 }
 
@@ -275,7 +280,7 @@ fn the_vm_refuses_a_text_format_module() {
 
     let failure = xrpl_wasm_vm::run(text.as_bytes(), PLENTY_OF_GAS, &host, support::ENTRY)
         .expect_err("text must not compile as a module");
-    assert_stage(&failure, "compile");
+    assert_stage!(failure, RunError::Compile(_));
 
     // The same module, assembled first, runs: the text is sound and only the
     // format was refused.
@@ -294,23 +299,22 @@ fn an_unknown_import_fails_instantiation() {
 
     let wat = module(
         &[
-            r#"(import "host" "no_such_function" (func $f (param i32) (result i32)))"#,
+            r#"(import "host_lib" "no_such_function" (func $f (param i32) (result i32)))"#,
             ONE_PAGE,
         ],
         "(call $f (i32.const 0))",
     );
-    assert_stage(&failure(&wat, &host), "instantiate");
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
 }
 
-/// Host functions are registered under one module name, and a guest naming a
-/// different one does not link. Which name is an open ABI question: this fork
-/// registers `host`, the guest SDK and this repo's fixtures use `host_lib`, and
-/// plain clang emits `env`.
+/// Host functions are registered under one module name — `host_lib`, the name the
+/// guest SDK and this repo's fixtures import from — and a guest naming a different
+/// one does not link. `env` is in the list because that is what plain clang emits.
 #[test]
 fn the_import_module_name_must_match() {
     let host = FakeHost::new();
 
-    for module_name in ["host_lib", "env", ""] {
+    for module_name in ["host", "env", ""] {
         let wat = module(
             &[
                 &format!(
@@ -320,7 +324,7 @@ fn the_import_module_name_must_match() {
             ],
             "(call $f (i32.const 0) (i32.const 4))",
         );
-        assert_stage(&failure(&wat, &host), "instantiate");
+        assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
     }
 }
 
@@ -339,12 +343,12 @@ fn an_import_with_the_wrong_signature_fails_instantiation() {
     ] {
         let wat = module(
             &[
-                &format!(r#"(import "host" "ldgr_index" (func $f {signature}))"#),
+                &format!(r#"(import "host_lib" "ldgr_index" (func $f {signature}))"#),
                 ONE_PAGE,
             ],
             "(i32.const 0)",
         );
-        assert_stage(&failure(&wat, &host), "instantiate");
+        assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
     }
 }
 
@@ -361,6 +365,61 @@ fn an_unused_import_is_still_linked() {
 }
 
 // ---------------------------------------------------------------------------
+// The start section
+// ---------------------------------------------------------------------------
+
+/// A start section runs guest code during instantiation, before the entry point
+/// is even looked up, and `set_fuel` and the memory limiter are both installed by
+/// then — so it is metered like any other guest code, and a run it stops is
+/// charged for what it burned.
+#[test]
+fn a_trapping_start_section_fails_instantiation_and_is_charged() {
+    let host = FakeHost::new();
+
+    let wat = format!(
+        r#"(module {ONE_PAGE}
+             (func $init (unreachable))
+             (start $init)
+             (func (export "finish") (result i32) (i32.const 0)))"#
+    );
+    let failure = assert_stage!(
+        run_with_gas(&wat, PLENTY_OF_GAS, &host)
+            .expect_err("a start section that traps must not instantiate"),
+        RunError::Instantiate(_)
+    );
+    assert!(
+        failure.fuel_used > 0,
+        "the start section's instructions are metered: {failure}"
+    );
+}
+
+/// A start section that runs out of gas is reported as out of gas, not as a module
+/// that would not instantiate. The stage a run stopped at is not what the caller
+/// maps — the reason is — and gas exhaustion is one outcome wherever the guest
+/// reaches it.
+#[test]
+fn a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure() {
+    const GAS: u64 = 10_000;
+
+    let host = FakeHost::new();
+    let wat = format!(
+        r#"(module {ONE_PAGE}
+             (func $init (loop $l (br $l)))
+             (start $init)
+             (func (export "finish") (result i32) (i32.const 0)))"#
+    );
+
+    let failure = assert_stage!(
+        run_with_gas(&wat, GAS, &host).expect_err("an endless start section must not instantiate"),
+        RunError::OutOfGas
+    );
+    assert_eq!(
+        failure.fuel_used, GAS,
+        "a runaway start section burns the whole limit"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // The entry point
 // ---------------------------------------------------------------------------
 
@@ -369,9 +428,15 @@ fn a_missing_entry_point_fails() {
     let host = FakeHost::new();
 
     let wat = r#"(module (memory (export "memory") 1) (func (export "other") (result i32) (i32.const 0)))"#;
-    let failure = run_with_gas(wat, PLENTY_OF_GAS, &host)
-        .expect_err("a module without the entry point must not run");
-    assert!(failure.contains("no entry point 'finish'"), "{failure}");
+    let failure = assert_stage!(
+        run_with_gas(wat, PLENTY_OF_GAS, &host)
+            .expect_err("a module without the entry point must not run"),
+        RunError::EntryPoint(_)
+    );
+    assert!(
+        failure.to_string().contains("no entry point 'finish'"),
+        "{failure}"
+    );
 }
 
 /// The entry point is looked up by the name the caller asks for.
@@ -403,7 +468,8 @@ fn an_entry_point_of_the_wrong_type_fails() {
             r#"(module (memory (export "memory") 1) (func (export "finish") {signature} {body}))"#
         );
         let failure = run_with_gas(&wat, PLENTY_OF_GAS, &host)
-            .expect_err("a wrongly-typed entry point must not run");
+            .expect_err("a wrongly-typed entry point must not run")
+            .to_string();
         assert!(failure.contains("no entry point"), "{signature}: {failure}");
     }
 }
@@ -414,10 +480,10 @@ fn a_trapping_guest_fails_the_run() {
     let host = FakeHost::new();
 
     let wat = module(&[ONE_PAGE], "(unreachable)");
-    assert_stage(&failure(&wat, &host), "trap");
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
 
     // An out-of-bounds guest access is a trap too, caught by the engine rather
     // than anything the host is asked about.
     let wat = module(&[ONE_PAGE], "(i32.load (i32.const 100000))");
-    assert_stage(&failure(&wat, &host), "trap");
+    assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }

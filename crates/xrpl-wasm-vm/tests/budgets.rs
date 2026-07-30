@@ -6,7 +6,7 @@ mod support;
 
 use support::{Answer, FakeHost, ONE_PAGE, PLENTY_OF_GAS, code, import, module, run, run_with_gas};
 use xrpl_host_functions::{HostError, HostFunctionSpec};
-use xrpl_wasm_vm::{MAX_FIELD_BYTES, TRANSFER_LIMIT_BYTES};
+use xrpl_wasm_vm::{MAX_FIELD_BYTES, RunError, TRANSFER_LIMIT_BYTES};
 
 // ---------------------------------------------------------------------------
 // Gas
@@ -157,8 +157,8 @@ fn fuel_used_is_what_was_spent_not_what_was_supplied() {
     let cost = EMPTY_MODULE_FUEL + wasmi_call_fuel(operands) + op.gas();
 
     // Exactly its cost is enough, and no amount above it changes the figure. The
-    // result is checked too: a refused call burns the whole limit, which at
-    // `gas == cost` is the same number.
+    // result is checked too, so the figure belongs to a run that did the work
+    // rather than to one that was cut short.
     for gas in [cost, cost + 1, cost * 100, PLENTY_OF_GAS] {
         let outcome = run_with_gas(&wat, gas, &host).expect("should run");
         assert_eq!(
@@ -168,16 +168,15 @@ fn fuel_used_is_what_was_spent_not_what_was_supplied() {
         assert_eq!(outcome.fuel_used, cost, "gas {gas}");
     }
 
-    // One fuel short: the call is refused rather than fatal, so the run completes
-    // and the guest reads `OutOfGas` off the return (finding A1).
-    let short = run_with_gas(&wat, cost - 1, &host).expect("completes today; see finding A1");
-    assert_eq!(short.result, code(HostError::OutOfGas));
-    assert_eq!(
-        short.fuel_used,
-        cost - 1,
-        "a call it cannot afford burns the whole limit — `charge` zeroes the fuel, \
-         which is what makes the reported cost the full budget as in C++"
+    // One fuel short: the run ends at the call it cannot pay for, and still owes
+    // the gas — the whole limit, because `charge` spends what is left, which is
+    // what makes the reported cost the full budget as in C++.
+    let short = run_with_gas(&wat, cost - 1, &host).expect_err("one fuel short must not complete");
+    assert!(
+        matches!(short.error, RunError::OutOfGas),
+        "expected the run to end out of gas, got: {short}"
     );
+    assert_eq!(short.fuel_used, cost - 1);
 }
 
 /// Fuel is metered, so the same module burns the same fuel every time — a
@@ -199,7 +198,8 @@ fn the_same_run_burns_the_same_fuel() {
     assert!(first > HostFunctionSpec::Trace.gas());
 }
 
-/// Too little gas to finish stops the run.
+/// Too little gas to finish stops the run: the meter refuses the guest's own
+/// instructions before it ever reaches the host call.
 #[test]
 fn a_run_that_cannot_afford_itself_fails() {
     let host = FakeHost::new();
@@ -209,53 +209,69 @@ fn a_run_that_cannot_afford_itself_fails() {
     );
 
     for gas in [0, 1, 10] {
-        let outcome = run_with_gas(&wat, gas, &host);
+        let Err(failure) = run_with_gas(&wat, gas, &host) else {
+            panic!("gas {gas} should not have completed");
+        };
         assert!(
-            outcome.is_err(),
-            "gas {gas} should not have completed: {outcome:?}"
+            matches!(failure.error, RunError::OutOfGas),
+            "gas {gas}: expected the run to end out of gas, got: {failure}"
         );
     }
 }
 
-/// A guest looping forever is stopped by gas rather than running away.
+/// A guest looping forever is stopped by gas rather than running away, and owes
+/// the gas it burned doing it.
 #[test]
 fn an_endless_loop_is_stopped_by_gas() {
+    const GAS: u64 = 100_000;
+
     let host = FakeHost::new();
     let wat = module(&[ONE_PAGE], "(loop $l (br $l)) (i32.const 0)");
 
-    let failure =
-        run_with_gas(&wat, 100_000, &host).expect_err("an endless loop must not complete");
-    assert!(failure.contains("trap"), "{failure}");
+    let failure = run_with_gas(&wat, GAS, &host).expect_err("an endless loop must not complete");
+    assert!(
+        matches!(failure.error, RunError::OutOfGas),
+        "expected the meter to stop it, got: {failure}"
+    );
+    assert_eq!(
+        failure.fuel_used, GAS,
+        "a runaway guest burns the whole limit"
+    );
 }
 
-/// **Pins current behaviour, not a decision.** A host call that runs out of gas
-/// returns `OutOfGas` to the guest as a negative code, and the guest keeps running.
-/// Finding A1 in `docs/claude/redesign_impl.md` says this should become a trap.
+/// A host call refused its gas stops the run: the guest never gets a chance to
+/// ignore the refusal and carry on, and it is charged the whole limit.
+///
+/// The gas range is every amount that reaches the call and cannot pay for it, so
+/// the case is the whole boundary rather than one number.
 #[test]
-fn out_of_gas_in_a_host_call_currently_reaches_the_guest_as_a_code() {
+fn a_host_call_refused_its_gas_stops_the_run() {
     let host = FakeHost::new();
+    let op = HostFunctionSpec::TraceNum;
+    let Call {
+        import,
+        call,
+        operands,
+    } = call_for(op);
+    let wat = module(&[import, ONE_PAGE], call);
+    // What the guest spends getting as far as the call. Below it the meter stops
+    // the guest's own instructions instead, which is
+    // `a_run_that_cannot_afford_itself_fails`'s case, not this one.
+    let reaching_the_call = EMPTY_MODULE_FUEL + wasmi_call_fuel(operands);
 
-    // Enough gas to enter the call and be refused its 500, then return.
-    let wat = module(
-        &[import::TRACE_NUM, ONE_PAGE],
-        "(call $trace_num (i32.const 0) (i32.const 0) (i64.const 0))",
-    );
-
-    let mut seen_as_code = false;
-    for gas in 20..500 {
-        if let Ok(outcome) = run_with_gas(&wat, gas, &host) {
-            assert_eq!(
-                outcome.result,
-                code(HostError::OutOfGas),
-                "gas {gas} completed with an unexpected status"
-            );
-            seen_as_code = true;
-        }
+    for gas in reaching_the_call..reaching_the_call + op.gas() {
+        let Err(failure) = run_with_gas(&wat, gas, &host) else {
+            panic!("gas {gas}: the run completed, so the guest was handed the refusal");
+        };
+        assert!(
+            matches!(failure.error, RunError::OutOfGas),
+            "gas {gas}: expected the run to end out of gas, got: {failure}"
+        );
+        assert_eq!(
+            failure.fuel_used, gas,
+            "gas {gas}: a call it cannot afford burns the whole limit"
+        );
     }
-    assert!(
-        seen_as_code,
-        "expected some gas amount to let the guest observe OutOfGas as a return code"
-    );
     assert!(host.traces().is_empty(), "the host body must not have run");
 }
 

@@ -3,54 +3,72 @@ use wasmi::{Caller, Extern, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
 // ---------------------------------------------------------------------------
-// ABI marshaling: encode a host-function result as a wasm return status
-// (`AbiRet`), and charge a call's gas at one point (`charged`) so every
-// registered closure pays for itself exactly once.
+// ABI marshaling: charge a call's gas at one point (`charged`) so every
+// registered closure pays for itself exactly once, and hand the result to the
+// engine on one of the two channels a host call answers on — a return code the
+// guest reads, or a trap it cannot observe.
 // ---------------------------------------------------------------------------
 
-/// Encode a scalar or unit host-function result into the status the wasm fn
-/// returns (>= 0 a value, < 0 a `HostError` code). Byte-valued results go
-/// through [`write_into`] instead, which has nothing to encode.
-pub(crate) trait AbiRet {
-    type Out;
-    fn write(self, caller: &mut Caller<'_, VmState<'_>>, out: Self::Out) -> HostResult<i64>;
-}
+/// A host-fatal [`HostError`] on its way out of a host call as a wasmi trap.
+///
+/// wasmi takes an arbitrary payload out of a host function as long as it
+/// implements `wasmi::errors::HostError`, a trait with no methods and no blanket
+/// impl. Carrying the `HostError` itself is what lets [`crate::vm::run`] name the
+/// condition with `downcast_ref` rather than string-comparing a message, as the
+/// C++ path did with its `hfErrOutOfGas` trap strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct FatalHostError(pub(crate) HostError);
 
-impl AbiRet for () {
-    type Out = ();
-    fn write(self, _c: &mut Caller<'_, VmState<'_>>, _o: ()) -> HostResult<i64> {
-        Ok(0)
+impl wasmi::errors::HostError for FatalHostError {}
+
+impl core::fmt::Display for FatalHostError {
+    /// A fixed prefix and the variant's name. wasmi folds this text into its own
+    /// `Error`'s `Display`, which is the only place it surfaces, so keep it
+    /// stable and greppable.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "host call refused: {:?}", self.0)
     }
 }
-impl AbiRet for u32 {
-    type Out = ();
-    fn write(self, _c: &mut Caller<'_, VmState<'_>>, _o: ()) -> HostResult<i64> {
-        Ok(self as i64)
-    }
+
+/// Whether a [`HostError`] is host-fatal: the host could not serve the call at
+/// all, so the guest is stopped where it stands rather than handed a code it may
+/// ignore. Everything else is guest-visible — `OutOfTransferLimit` included,
+/// which was the one soft failure in C++ too.
+///
+/// Spelled variant by variant rather than as a range over `code()`, so which
+/// channel a `HostError` added to the ABI later takes is a choice someone makes
+/// here rather than one its number makes for it.
+pub(crate) fn is_fatal(error: HostError) -> bool {
+    matches!(
+        error,
+        HostError::OutOfGas | HostError::Internal | HostError::NoMemExported
+    )
 }
 
-/// Charge a host call's gas from its spec, then run its body. Every registered
-/// closure goes through here, so gas cannot be forgotten.
+/// Charge a host call's gas from its spec, run its body, and hand the result to
+/// the engine. Every registered closure goes through here, so gas cannot be
+/// forgotten.
 pub(crate) fn charged(
     caller: &mut Caller<'_, VmState<'_>>,
     op: HostFunctionSpec,
-    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> HostResult<i64>,
-) -> HostResult<i64> {
-    charge(caller, op.gas())?;
-    body(caller)
+    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> HostResult<i32>,
+) -> Result<i32, wasmi::Error> {
+    to_wire(charge(caller, op.gas()).and_then(|()| body(caller)))
 }
 
-pub(crate) fn to_wasm_i32(r: HostResult<i64>) -> i32 {
-    match r {
-        Ok(v) => v as i32,
-        Err(e) => e.code(),
-    }
-}
-#[allow(dead_code)]
-pub(crate) fn to_wasm_i64(r: HostResult<i64>) -> i64 {
-    match r {
-        Ok(v) => v,
-        Err(e) => e.code() as i64,
+/// Put a host-function result on one of the two channels a host call answers on.
+///
+/// A value, or an error the guest is meant to act on, is the `i32` the wasm
+/// function returns: `>= 0` a value, `< 0` a [`HostError`] code. A host-fatal
+/// error ([`is_fatal`]) leaves as a `wasmi::Error` instead, unwinding the guest
+/// at the call — C++ threw for exactly these, and a guest handed `OutOfGas` as a
+/// code runs on to the end of its current basic block, a stopping point wasmi's
+/// `ConsumeFuel` placement decides rather than the protocol.
+fn to_wire(result: HostResult<i32>) -> Result<i32, wasmi::Error> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(error) if is_fatal(error) => Err(wasmi::Error::host(FatalHostError(error))),
+        Err(error) => Ok(error.code()),
     }
 }
 
@@ -64,6 +82,9 @@ fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
     match remaining.checked_sub(cost) {
         Some(left) => caller.set_fuel(left).map_err(|_| HostError::Internal),
         None => {
+            // Spending what is left makes the run's reported cost the whole gas
+            // limit, as C++ reports it on out-of-gas. The store outlives the
+            // trap `OutOfGas` becomes, and `run` reads the cost off it.
             let _ = caller.set_fuel(0);
             Err(HostError::OutOfGas)
         }
@@ -135,7 +156,7 @@ pub(crate) fn write_into(
     dst: i32,
     cap: i32,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
-) -> HostResult<i64> {
+) -> HostResult<i32> {
     if dst < 0 || cap < 0 {
         return Err(HostError::InvalidParams);
     }
@@ -159,7 +180,9 @@ pub(crate) fn write_into(
         return Err(HostError::BufferTooSmall);
     }
     charge_transfer(caller.data(), n)?;
-    Ok(n as i64)
+    // The cap check above bounds `n`, so the count reaches the wire whole: an
+    // `i32` the guest reads as a byte count, never a truncation of a larger one.
+    Ok(n as i32)
 }
 
 // The input buffer in `read_write` lives on the stack, sized to the field cap.
@@ -183,7 +206,7 @@ pub(crate) fn read_write(
     dst: i32,
     cap: i32,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
-) -> HostResult<i64> {
+) -> HostResult<i32> {
     if src < 0 || src_len < 0 {
         return Err(HostError::InvalidParams);
     }
@@ -249,20 +272,71 @@ mod tests {
         }
     }
 
-    #[test]
-    fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
-        assert_eq!(to_wasm_i32(Ok(0)), 0);
-        assert_eq!(to_wasm_i32(Ok(32)), 32);
-        assert_eq!(to_wasm_i32(Err(HostError::BufferTooSmall)), -3);
-        assert_eq!(to_wasm_i64(Ok(32)), 32);
-        assert_eq!(to_wasm_i64(Err(HostError::BufferTooSmall)), -3);
+    /// The status a result reaches the guest as. `wasmi::Error` is not `PartialEq`,
+    /// so a test that expects the guest-visible channel says so here.
+    fn wire(result: HostResult<i32>) -> i32 {
+        to_wire(result)
+            .unwrap_or_else(|trap| panic!("expected a guest-visible status, got a trap: {trap}"))
     }
 
-    /// `to_wasm_i32` narrows to the `i32` the wire carries. No host function
-    /// produces a value that wide, but the cast is silent, so pin it.
+    /// The guest-visible channel: a value passes through, and a soft error
+    /// arrives as its negative wire code — a call the engine served either way,
+    /// because the guest is the one who decides what to do about it.
     #[test]
-    fn the_wire_conversion_truncates() {
-        assert_eq!(to_wasm_i32(Ok(i64::from(i32::MAX) + 1)), i32::MIN);
+    fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
+        assert_eq!(wire(Ok(0)), 0);
+        assert_eq!(wire(Ok(32)), 32);
+        assert_eq!(wire(Err(HostError::BufferTooSmall)), -3);
+    }
+
+    /// The three conditions the host cannot serve a call under. Named once, so the
+    /// two tests below are one statement about the same set.
+    const FATAL: [HostError; 3] = [
+        HostError::OutOfGas,
+        HostError::Internal,
+        HostError::NoMemExported,
+    ];
+
+    /// The fatal channel: a trap, carrying the condition so `run` can name the
+    /// outcome without parsing a message.
+    #[test]
+    fn a_host_fatal_error_becomes_a_trap_carrying_it() {
+        for error in FATAL {
+            let trap =
+                to_wire(Err(error)).expect_err("a fatal error must not reach the guest as a code");
+            let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
+                panic!("{error:?}: expected a FatalHostError payload, got: {trap}")
+            });
+            assert_eq!(*payload, FatalHostError(error));
+        }
+    }
+
+    /// Which errors take which channel, as a deliberate change-detector: the
+    /// three in [`FATAL`] trap, and everything else is a code the guest acts on.
+    ///
+    /// `OutOfTransferLimit` is the row worth reading twice. It is the one budget
+    /// a contract can be expected to handle — C++ made it the single soft failure
+    /// among these, and this fork keeps that — so a guest asking for more than
+    /// the run's remaining 1 MiB is told no, not killed.
+    #[test]
+    fn only_the_host_fatal_errors_trap() {
+        for error in FATAL {
+            assert!(is_fatal(error), "{error:?} must stop the run");
+        }
+
+        for error in [
+            HostError::OutOfTransferLimit,
+            HostError::DataFieldTooLarge,
+            HostError::BufferTooSmall,
+            HostError::PointerOutOfBounds,
+            HostError::InvalidParams,
+            HostError::FieldNotFound,
+            HostError::Decoding,
+            HostError::NoRuntime,
+        ] {
+            assert!(!is_fatal(error), "{error:?} must reach the guest as a code");
+            assert_eq!(wire(Err(error)), error.code());
+        }
     }
 
     #[test]

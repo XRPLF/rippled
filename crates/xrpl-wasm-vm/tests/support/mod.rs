@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use xrpl_host_functions::{HostError, HostFunctions, HostResult};
-use xrpl_wasm_vm::RunOutcome;
+use xrpl_wasm_vm::{RunFailure, RunOutcome};
 
 /// The entry point every test module exports.
 pub const ENTRY: &str = "finish";
@@ -185,20 +185,18 @@ impl HostFunctions for FakeHost {
 // Module pieces
 // ---------------------------------------------------------------------------
 
-/// One `(import …)` declaration per host function, spelled with the signature it
-/// is registered under and binding the `$name` call sites use. A wrong signature
-/// fails instantiation.
+/// One `(import …)` declaration per host function, spelled with the module name
+/// and signature it is registered under and binding the `$name` call sites use. A
+/// wrong module name or signature fails instantiation.
 pub mod import {
     pub const LDGR_INDEX: &str =
-        r#"(import "host" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))"#;
-    pub const HOME_LE_FIELD: &str =
-        r#"(import "host" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
-    pub const SHA512_HALF: &str =
-        r#"(import "host" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
+        r#"(import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))"#;
+    pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
+    pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
-        r#"(import "host" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
+        r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE_NUM: &str =
-        r#"(import "host" "trace_num" (func $trace_num (param i32 i32 i64) (result i32)))"#;
+        r#"(import "host_lib" "trace_num" (func $trace_num (param i32 i32 i64) (result i32)))"#;
 }
 
 /// One page of linear memory, exported under the name the engine looks for.
@@ -229,17 +227,17 @@ pub fn assemble(wat: &str) -> Vec<u8> {
 }
 
 /// Runs `wat`'s `finish` against `host` with gas to spare.
-pub fn run(wat: &str, host: &FakeHost) -> Result<RunOutcome, String> {
+pub fn run(wat: &str, host: &FakeHost) -> Result<RunOutcome, RunFailure> {
     run_with_gas(wat, PLENTY_OF_GAS, host)
 }
 
 /// Runs `wat`'s `finish` against `host` with exactly `gas` to spend.
-pub fn run_with_gas(wat: &str, gas: u64, host: &FakeHost) -> Result<RunOutcome, String> {
+pub fn run_with_gas(wat: &str, gas: u64, host: &FakeHost) -> Result<RunOutcome, RunFailure> {
     xrpl_wasm_vm::run(&assemble(wat), gas, host, ENTRY)
 }
 
 /// Runs the export named `entry` rather than `finish`.
-pub fn run_entry(wat: &str, host: &FakeHost, entry: &str) -> Result<RunOutcome, String> {
+pub fn run_entry(wat: &str, host: &FakeHost, entry: &str) -> Result<RunOutcome, RunFailure> {
     xrpl_wasm_vm::run(&assemble(wat), PLENTY_OF_GAS, host, entry)
 }
 
@@ -256,10 +254,10 @@ pub fn code(error: HostError) -> i32 {
     error.code()
 }
 
-/// The error message from a run that was expected to fail.
-pub fn failure(wat: &str, host: &FakeHost) -> String {
+/// The failure from a run that was expected not to complete.
+pub fn failure(wat: &str, host: &FakeHost) -> RunFailure {
     match run(wat, host) {
-        Err(message) => message,
+        Err(failure) => failure,
         Ok(outcome) => panic!(
             "expected a failure, but the module returned {}",
             outcome.result

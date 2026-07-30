@@ -4,9 +4,9 @@
 
 mod support;
 
-use support::{Answer, FakeHost, ONE_PAGE, code, import, module, status};
+use support::{Answer, FakeHost, ONE_PAGE, code, failure, import, module, status};
 use xrpl_host_functions::{HASH_LEN, HostError};
-use xrpl_wasm_vm::MAX_FIELD_BYTES;
+use xrpl_wasm_vm::{MAX_FIELD_BYTES, RunError};
 
 /// One page, so anything at or past 65536 is out of bounds.
 const PAGE: i64 = 64 * 1024;
@@ -371,6 +371,19 @@ fn an_input_may_overlap_the_output() {
 // The memory export itself
 // ---------------------------------------------------------------------------
 
+/// A host call with no memory to work in ends the run instead of answering the
+/// guest: there is no buffer for a status to describe, and nothing the guest could
+/// do about the answer — which is what puts this beside out-of-gas on the fatal
+/// channel. What the guest burned getting there is still charged.
+fn assert_no_memory(wat: &str, host: &FakeHost) {
+    let failure = failure(wat, host);
+    assert!(
+        matches!(failure.error, RunError::NoMemory),
+        "expected the run to end for want of a memory export, got: {failure}"
+    );
+    assert!(failure.fuel_used > 0, "{failure}");
+}
+
 /// Every region is relative to the guest's exported memory, so a module without
 /// one cannot make a host call at all.
 #[test]
@@ -381,7 +394,7 @@ fn a_module_that_exports_no_memory_cannot_call_the_host() {
         &[import::LDGR_INDEX, "(memory 1)"],
         "(call $ldgr_index (i32.const 0) (i32.const 4))",
     );
-    assert_eq!(status(&wat, &host), code(HostError::NoMemExported));
+    assert_no_memory(&wat, &host);
 }
 
 /// The export has to be named `memory`, and it has to *be* a memory — a global
@@ -395,7 +408,7 @@ fn the_memory_export_must_be_a_memory_named_memory() {
         &[import::LDGR_INDEX, r#"(memory (export "mem") 1)"#],
         "(call $ldgr_index (i32.const 0) (i32.const 4))",
     );
-    assert_eq!(status(&misnamed, &host), code(HostError::NoMemExported));
+    assert_no_memory(&misnamed, &host);
 
     // The right name on the wrong kind, which is the other arm of the match.
     let wrong_kind = module(
@@ -406,7 +419,7 @@ fn the_memory_export_must_be_a_memory_named_memory() {
         ],
         "(call $ldgr_index (i32.const 0) (i32.const 4))",
     );
-    assert_eq!(status(&wrong_kind, &host), code(HostError::NoMemExported));
+    assert_no_memory(&wrong_kind, &host);
 }
 
 /// Bounds follow the memory the module actually declared, not a fixed page.

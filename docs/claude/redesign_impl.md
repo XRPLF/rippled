@@ -344,8 +344,8 @@ Found while auditing the guest SDK (`~/Documents/rust/xrpl-wasm-stdlib`, checkou
    `wasm_importtype_module()` is commented out at `src/libxrpl/tx/wasm/WasmiVM.cpp:429-431`
    and only the field name is looked up. `register.rs:8` now enforces `"host"`. The SDK
    and the fork's own fixture (`src/test/app/wasm_fixtures/codecov_tests/src/host_bindings_loose.rs:20`)
-   use `"host_lib"`. Plain clang emits `"env"` unless annotated. `"host"` currently
-   matches nothing that exists.
+   use `"host_lib"`. Plain clang emits `"env"` unless annotated. `"host"` matched
+   nothing that exists. **Resolved: `host_lib`** (finding A3).
 2. **Import name lineage.** The fixtures pin the SDK at `branch = renames` and use
    **short** wire names (`parent_ldgr_hash`, `cache_le`, `tx_inner_arr_len`,
    `accountroot_id`, `trustline_id`), matching rippled's `ldgr_index` / `home_le_field`
@@ -365,6 +365,15 @@ Found while auditing the guest SDK (`~/Documents/rust/xrpl-wasm-stdlib`, checkou
    *Still open*: is `OutOfTransferLimit` soft or fatal? The guest has no code for it —
    `-11` is `InvalidDecoding` there but `OutOfTransferLimit` in `WasmCommon.h:47`.
    Fatal is the only resolution that needs no SDK change.
+
+   **Partly resolved by A1**, and the remainder is sharper for it. The trap channel
+   exists, and `OutOfGas = -22` no longer reaches the guest at all. But the decision
+   was **`OutOfTransferLimit` stays soft** (C++ parity — it was the one soft failure
+   there), so `-23` still reaches a guest that transmutes it, and `NoRuntime = -21`
+   still would if anything returned it. So the guest-visible table is `-1..-20` plus
+   those two, not `-1..-20`: closing this needs either a range check in the SDK or
+   `OutOfTransferLimit` remapped onto an in-range code. The soft/fatal question is
+   settled; the encoding question is not.
 4. **`-1` collides semantically**: host `Unimplemented` vs guest `InternalError`.
 5. **`float_to_mant_exp` byte count.** Host returns **12** (8 mantissa + 4 exponent,
    `HostFuncWrapper.cpp:497` at `b7059deb9f^`); the guest doc says 8. The guest's
@@ -391,8 +400,8 @@ matter. Items marked ✓ are done.
 
 ### A. Correctness — behaviour changes, land before the cxx bridge
 
-1. **Out-of-gas is not a trap, and how much guest code runs after exhaustion is
-   wasmi's business.** `charge` (`abi.rs:77`) returns `HostError::OutOfGas`, which
+1. ✓ **Out-of-gas is not a trap, and how much guest code runs after exhaustion is
+   wasmi's business.** `charge` (`abi.rs:77`) returned `HostError::OutOfGas`, which
    `to_wasm_i32` hands the guest as `-22` with fuel already at 0. wasmi meters by
    emitting `ConsumeFuel` instructions at *block boundaries*
    (`engine/translator/func/instrs.rs`), so the guest keeps executing to the end of
@@ -404,16 +413,39 @@ matter. Items marked ✓ are done.
    return `Err(wasmi::Error)` from the closure and trap. The wasm signature is
    unchanged. This reshapes `abi.rs`'s return type, so it precedes any cosmetic work
    there.
-2. **`run` discards gas accounting on every failure path.** `Result<RunOutcome,
-   String>` (`vm.rs:96`) means a trap yields `Err(String)` with no `fuel_used` — but a
+
+   Landed with A2 and A3. The fatal set is carried out of a closure as
+   `abi::FatalHostError(HostError)`, a payload `wasmi::Error::host` accepts and
+   `run` names again with `downcast_ref` — so the condition survives the crossing
+   as a value rather than as message text, which is what the C++ path had to
+   string-compare (`"HfOutOfGas"`). `is_fatal` spells the set variant by variant,
+   so which channel a new `HostError` takes is a choice someone makes rather than
+   one its number makes for it. **`OutOfTransferLimit` stays soft** — the decision
+   below, and C++'s behaviour.
+2. ✓ **`run` discards gas accounting on every failure path.** `Result<RunOutcome,
+   String>` (`vm.rs:96`) meant a trap yielded `Err(String)` with no `fuel_used` — but a
    contract that traps or exhausts gas still has to be charged (C++: full limit →
    `tecOUT_OF_GAS`; internal → `tecINTERNAL`). `String` also cannot be matched on, so
    the cxx bridge would end up string-comparing error text, which is exactly what the
    deleted C++ did with its `"HfOutOfGas"` trap strings. `fuel_used` belongs on both
    paths, and the error wants to be a typed enum C++ can map to a TER.
-3. **`HOST_MODULE = "host"` (`register.rs:8`) matches no guest that exists** — the SDK
+
+   Now `Result<RunOutcome, RunFailure>`, where `RunFailure` is `{ error: RunError,
+   fuel_used }` — so the gas is on both paths by construction rather than by
+   remembering. `RunError` is `Compile`/`Instantiate`/`EntryPoint`/`Trap`, each
+   carrying wasmi's diagnostic, plus `OutOfGas`/`Internal`/`NoMemory`, which carry
+   nothing because the variant *is* the information C++ needs. Gas exhaustion
+   reaches `run` by two routes — wasmi's own `OutOfFuel` for guest instructions,
+   our trap payload for a refused host charge — and both land on `OutOfGas`.
+   `guest_halted` asks that question at **every** stage from instantiation on, so a
+   start section that burns the limit is `OutOfGas` and not `Instantiate`: the stage
+   a run stopped at is not what the caller maps.
+3. ✓ **`HOST_MODULE = "host"` (`register.rs:8`) matches no guest that exists** — the SDK
    and this fork's own fixtures use `host_lib`, plain clang emits `env`. A decision,
    not a code fix, but nothing real instantiates until it is made (open question 1).
+   **Decided: `host_lib`**, matching the SDK and the fixtures. `the_import_module_name_must_match`
+   now rejects `host`, `env` and the empty name, so the choice is pinned rather than
+   incidental.
 4. **The transfer budget is charged for bytes that are never copied, and charged
    before validation.** `read_borrowed` *aliases* guest memory — zero copies — yet
    calls `charge_transfer` (`abi.rs:135`); C++ deliberately did not charge plain
@@ -450,13 +482,17 @@ matter. Items marked ✓ are done.
 
 ### B. Dead weight — pure simplification, no behaviour change
 
-6. **`AbiRet` is vestigial.** `type Out` is always `()`, `impl AbiRet for u32` is never
+6. ✓ **`AbiRet` is vestigial.** `type Out` is always `()`, `impl AbiRet for u32` is never
    used, and the trait's only call site is `<() as AbiRet>::write((), c, ())` — nine
-   tokens for `Ok(0)`. Delete the trait and both impls.
-7. **The `i64` pipeline is pointless and lossy.** Every host function returns `i32` on
-   the wire, but the internals thread `HostResult<i64>` and `to_wasm_i32` then does
-   `v as i32` — a silent truncating cast on a consensus path. `to_wasm_i64` is dead
-   code behind `#[allow]`. `HostResult<i32>` end to end removes both.
+   tokens for `Ok(0)`. Delete the trait and both impls. Done with A1, which rewrote
+   those call sites anyway.
+7. ✓ **The `i64` pipeline is pointless and lossy.** Every host function returns `i32` on
+   the wire, but the internals threaded `HostResult<i64>` and `to_wasm_i32` then did
+   `v as i32` — a silent truncating cast on a consensus path. `to_wasm_i64` was dead
+   code behind `#[allow]`. `HostResult<i32>` end to end removed both. Done with A1
+   for the same reason as B6: A1 rewrites exactly these signatures, and the `n as
+   i32` in `write_into` now sits after the `MAX_FIELD_BYTES` check, where it cannot
+   lose bits.
 8. **`cxx` is an unused dependency** of this crate — the bridge lives in the ffi crate.
 9. **Stale docs.** Seven broken intra-doc links name types that no longer exist:
    `AbiArg` (`register.rs:20`, `abi.rs:7`), `HostFn` (`register.rs:14,16`),
@@ -572,12 +608,46 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
   `HostFuncImpl_test.cpp`).
 - VCS is **jj** (`jj st`, `jj log`), not raw git, for local work.
 
-## Current state (2026-07-29)
+## Current state (2026-07-30)
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
-`clippy --workspace --all-targets`, `fmt`. 111 tests: 33 macro, 9 facade, 1 doctest, and
-**68 in `xrpl-wasm-vm`** (8 unit; 60 integration — 12 `host_calls`, 19 `memory_policy`,
-12 `budgets`, 17 `vm_limits`).
+`clippy --workspace --all-targets`, `fmt`. 114 tests: 33 macro, 9 facade, 1 doctest, and
+**71 in `xrpl-wasm-vm`** (9 unit; 62 integration — 12 `host_calls`, 19 `memory_policy`,
+12 `budgets`, 19 `vm_limits`).
+
+**Findings A1, A2, A3 and B6, B7 are done** (2026-07-30). `run` is
+`Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
+instead of answering the guest a code; the import module is `host_lib`; the `i64`
+pipeline and `AbiRet` are gone. See those entries for what landed and why. Two
+decisions were taken to get there and are recorded at their findings:
+**`OutOfTransferLimit` stays soft** (A1) and **the module name is `host_lib`** (A3).
+
+The two tests that existed only to pin behaviour A1 changed are gone, replaced by
+tests of the new behaviour (`a_host_call_refused_its_gas_stops_the_run`,
+`an_endless_loop_is_stopped_by_gas`). `the_wire_conversion_truncates` went with the
+cast it pinned. What the rewrite turned up that reading the code did not:
+
+- **An endless guest loop and a refused host charge are the same outcome**, and both
+  report the whole limit as spent — the loop because wasmi's meter reaches zero, the
+  refused charge because `charge` spends what is left before it fails, which is what
+  makes C++'s "reported cost is the full limit" fall out rather than be arranged.
+- **A start section is guest code, so the stage is not the reason.** Gas exhausted
+  during `instantiate_and_start` first reported `Instantiate`, hiding a
+  `tecOUT_OF_GAS`, because every error from that call was named after the stage.
+  `guest_halted` runs at both stages now, and
+  `a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure`
+  pins it. `as_trap_code()` is what makes this work at all: it reports
+  `TrapCode::OutOfFuel` for whichever of wasmi's several error kinds carried the
+  exhaustion (`error.rs:236-252`).
+- **The compile-time guarantee on the fatal set is narrower than it looks.**
+  `vm::host_fatal` is exhaustive over `HostError`, so a variant *added to the ABI*
+  cannot compile until it is placed. But moving an *existing* variant into
+  `abi::is_fatal`'s set is not caught: it falls into the grouped soft arm and
+  reports `Internal`. The two lists are read together, and the doc comment says so.
+- `NoMemExported` being fatal makes C10 (resolve the `"memory"` export once at
+  instantiation) a move rather than a behaviour change — its failure is already a
+  run-ender, so hoisting it to an instantiation-time `RunError::NoMemory` only
+  changes which stage reports it.
 
 **How the suite was checked.** A code review of the diff mutation-tested it, and the
 result is worth recording because it found a test that pinned nothing: the multi-value
@@ -647,10 +717,9 @@ split the VM restated all five values, so a legitimate gas change meant editing 
 files. (Corollary: `every_variant_appears_in_all_exactly_once` is now subsumed by the
 table comparison and could go.)
 
-Two tests **pin behaviour a finding says should change**, and say so in their names and
-doc comments: `out_of_gas_in_a_host_call_currently_reaches_the_guest_as_a_code` (A1) and
-`reads_currently_spend_the_transfer_budget_too` (A4). They are meant to be rewritten
-when those decisions land, not to be preserved.
+One test still **pins behaviour a finding says should change**, and says so in its name
+and doc comment: `reads_currently_spend_the_transfer_budget_too` (A4). It is meant to be
+rewritten when that decision lands, not preserved. Its A1 counterpart already was.
 
 The trait is settled, and every part of it is written in the declaration rather than
 synthesized: `&self`, `HostResult<T>`, and byte outputs as explicit
@@ -664,12 +733,21 @@ Consequences worth remembering:
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
 
-Next, in rough order, from the findings above: the two-channel error decision (A1 + A2,
-which reshape `abi.rs`'s return type and `run`'s signature, so they go before any
-cosmetic work there), then the B and D cleanups as one pass, then the cached `Memory`
-(C10). The scratch-buffer decision (C11) and real `ApplyContext` wiring plus the cxx
-bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) follow. Deferred as before:
-macro-emitted `link_*` shims, the generated C header, the probe-module test.
+Next, in rough order, from the findings above: **A4** — the transfer budget charged for
+bytes never copied and charged before validation, plus `write_into`'s
+`min(cap, MAX_FIELD_BYTES)` clamp. It is the last correctness item, and `is_fatal`
+answers the question it used to raise: a mis-charge cannot end a run, only mis-report a
+byte count, because `OutOfTransferLimit` is soft. Then the remaining B and D cleanups as
+one pass (B8's unused `cxx` dep, B9's stale links, D14's `forbid(unsafe_code)`, D16's
+three papercuts — `get_fuel().unwrap_or(0)` now appears once, in `vm::fuel_used`), then
+the cached `Memory` (C10). The scratch-buffer decision (C11) and real `ApplyContext`
+wiring plus the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) follow. Deferred as
+before: macro-emitted `link_*` shims, the generated C header, the probe-module test.
+
+`register_host_functions` still returns `Result<(), String>` and `run` now discards that
+string (a linker failure is `RunError::Internal`, which carries nothing), so its
+`format!` is dead. `Result<(), wasmi::errors::LinkerError>` is the honest signature —
+small enough to fold into the B/D pass.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`
 shims, the generated C header, and the probe-module conformance test.
