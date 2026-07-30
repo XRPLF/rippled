@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::permissionedDomain(account, seq), view, j)
     {
     }
+
+    explicit PermissionedDomainEntry(
+        uint256 const& domainID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::permissionedDomain(domainID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

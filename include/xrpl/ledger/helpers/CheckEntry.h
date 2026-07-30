@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::check(id, seq), view, j)
     {
     }
+
+    explicit CheckEntry(
+        uint256 const& checkID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::check(checkID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

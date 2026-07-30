@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::loanBroker(owner, seq), view, j)
     {
     }
+
+    explicit LoanBrokerEntry(
+        uint256 const& loanBrokerID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::loanBroker(loanBrokerID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

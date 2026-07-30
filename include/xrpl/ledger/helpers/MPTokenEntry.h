@@ -24,6 +24,23 @@ public:
         : SLEBase<ViewT>(keylet::mptoken(issuanceID, holder), view, j)
     {
     }
+
+    explicit MPTokenEntry(
+        uint256 const& issuanceKey,
+        AccountID const& holder,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::mptoken(issuanceKey, holder), view, j)
+    {
+    }
+
+    explicit MPTokenEntry(
+        uint256 const& mptokenKey,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::mptoken(mptokenKey), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl

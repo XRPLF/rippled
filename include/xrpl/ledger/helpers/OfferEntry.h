@@ -25,6 +25,14 @@ public:
         : SLEBase<ViewT>(keylet::offer(id, seq), view, j)
     {
     }
+
+    explicit OfferEntry(
+        uint256 const& offerID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::offer(offerID), view, j)
+    {
+    }
 };
 
 }  // namespace xrpl
