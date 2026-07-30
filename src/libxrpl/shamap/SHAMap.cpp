@@ -116,7 +116,8 @@ SHAMap::dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNode
         stack.pop();
         XRPL_ASSERT(node, "xrpl::SHAMap::dirtyUp : non-null node");
 
-        auto const branch = selectBranch(nodeID, target);
+        int const branch = selectBranch(nodeID, target);
+        XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::dirtyUp : valid branch");
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild(branch, std::move(child));
@@ -558,12 +559,12 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
         auto [node, nodeID] = stack.top();
         XRPL_ASSERT(!node->isLeaf(), "xrpl::SHAMap::peekNextItem : another node is not leaf");
         auto inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
-        for (auto branch = selectBranch(nodeID, id) + 1; branch < kBranchFactor; ++branch)
+        for (auto i = selectBranch(nodeID, id) + 1; i < kBranchFactor; ++i)
         {
-            if (!inner->isEmptyBranch(branch))
+            if (!inner->isEmptyBranch(i))
             {
-                node = descendThrow(*inner, branch);
-                auto leaf = firstBelow(node, stack, branch);
+                node = descendThrow(*inner, i);
+                auto leaf = firstBelow(node, stack, i);
                 if (leaf == nullptr)
                     Throw<SHAMapMissingNode>(type_, id);
                 XRPL_ASSERT(leaf->isLeaf(), "xrpl::SHAMap::peekNextItem : leaf is valid");
@@ -649,7 +650,7 @@ SHAMap::lowerBound(uint256 const& id) const
         else
         {
             auto inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
-            for (auto branch = selectBranch(nodeID, id) - 1; branch >= 0; --branch)
+            for (int branch = selectBranch(nodeID, id) - 1; branch >= 0; --branch)
             {
                 if (!inner->isEmptyBranch(branch))
                 {
@@ -785,7 +786,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     {
         // easy case, we end on an inner node
         auto inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
-        auto const branch = selectBranch(nodeID, tag);
+        int const branch = selectBranch(nodeID, tag);
         XRPL_ASSERT(
             inner->isEmptyBranch(branch), "xrpl::SHAMap::addGiveItem : inner branch is empty");
         inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
@@ -801,7 +802,8 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         node = intr_ptr::makeShared<SHAMapInnerNode>(node->cowid());
 
-        auto b1 = 0u, b2 = 0u;
+        unsigned int b1 = 0, b2 = 0;
+
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
             stack.emplace(node, nodeID);

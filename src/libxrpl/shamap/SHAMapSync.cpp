@@ -423,7 +423,7 @@ SHAMap::getNodeFat(
 
     while ((node != nullptr) && node->isInner() && (nodeID.getDepth() < wanted.getDepth()))
     {
-        auto const branch = selectBranch(nodeID, wanted.getNodeID());
+        int const branch = selectBranch(nodeID, wanted.getNodeID());
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -575,7 +575,8 @@ SHAMap::addKnownNode(
            !safeDowncast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
            (currNodeID.getDepth() < nodeID.getDepth()))
     {
-        auto const branch = selectBranch(currNodeID, nodeID.getNodeID());
+        int const branch = selectBranch(currNodeID, nodeID.getNodeID());
+        XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::addKnownNode : valid branch");
         auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
         {
@@ -724,7 +725,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
 
     while (node->isInner() && (nodeID.getDepth() < targetNodeID.getDepth()))
     {
-        auto const branch = selectBranch(nodeID, targetNodeID.getNodeID());
+        int const branch = selectBranch(nodeID, targetNodeID.getNodeID());
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -750,7 +751,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     do
     {
-        auto const branch = selectBranch(nodeID, tag);
+        int const branch = selectBranch(nodeID, tag);
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;  // Dead end, node must not be here
