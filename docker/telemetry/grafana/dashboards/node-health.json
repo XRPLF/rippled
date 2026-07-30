@@ -113,10 +113,11 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -163,7 +164,7 @@
           "unit": "percentunit",
           "custom": {
             "axisLabel": "Time in mode",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3,
@@ -183,10 +184,11 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -233,7 +235,7 @@
           "unit": "short",
           "custom": {
             "axisLabel": "Transitions",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -254,6 +256,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -279,7 +282,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -300,6 +303,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -318,7 +322,7 @@
           "unit": "short",
           "custom": {
             "axisLabel": "Jobs",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -335,7 +339,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -354,7 +358,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "suffix: fetches/s"
         },
         "overrides": []
       }
@@ -367,7 +371,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -386,7 +390,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: mismatches/s",
           "thresholds": {
             "steps": [
               {
@@ -427,6 +431,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -512,10 +517,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "axisLabel": "Duration (µs)",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -536,6 +541,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -621,10 +627,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Wait Time (ms)",
-            "spanNulls": true,
+            "axisLabel": "Wait Time (µs)",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -645,6 +651,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -663,7 +670,7 @@
           "unit": "short",
           "custom": {
             "axisLabel": "Entries",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -782,6 +789,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -804,10 +812,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "suffix: s/s",
           "custom": {
             "axisLabel": "Rate (s/s)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -828,6 +836,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -843,10 +852,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "axisLabel": "Duration (µs)",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -867,6 +876,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -882,10 +892,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Wait Time (ms)",
-            "spanNulls": true,
+            "axisLabel": "Wait Time (µs)",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3

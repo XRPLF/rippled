@@ -67,9 +67,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -195,9 +195,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Count",
+            "axisLabel": "Messages / Sec & Bytes / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -328,9 +328,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

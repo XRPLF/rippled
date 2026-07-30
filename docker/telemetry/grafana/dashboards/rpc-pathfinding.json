@@ -54,6 +54,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -81,7 +82,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -98,10 +99,11 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -129,7 +131,7 @@
           "unit": "decbytes",
           "custom": {
             "axisLabel": "Size (Bytes)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -146,10 +148,11 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -193,7 +196,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -214,6 +217,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -241,7 +245,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -262,6 +266,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -289,7 +294,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -306,7 +311,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -326,7 +331,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: warnings/s",
           "thresholds": {
             "steps": [
               {
@@ -355,7 +360,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -375,7 +380,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: drops/s",
           "thresholds": {
             "steps": [
               {
@@ -408,6 +413,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -424,10 +430,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -448,6 +454,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -467,7 +474,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -488,6 +495,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -504,10 +512,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -528,6 +536,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -555,7 +564,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -576,6 +585,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -600,10 +610,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: operations/s",
           "custom": {
             "axisLabel": "Operations / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3

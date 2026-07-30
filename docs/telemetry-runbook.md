@@ -671,7 +671,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
-| Transaction Path Distribution      | piechart       | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))`                        | `local`                             |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[5m]))`                    | `local`                             |
 | Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
@@ -711,33 +711,33 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
-| Panel                            | Type       | PromQL                         | Labels Used          |
-| -------------------------------- | ---------- | ------------------------------ | -------------------- |
-| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate   | —                    |
-| Validation Receive Rate          | timeseries | `peer.validation.receive` rate | —                    |
-| Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
-| Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
+| Panel                            | Type       | PromQL                                                                    | Labels Used          |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------- | -------------------- |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate                                              | —                    |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate                                            | —                    |
+| Proposals Trusted vs Untrusted   | piechart   | `increase()` counts in the selected window, split by `proposal_trusted`   | `proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | `increase()` counts in the selected window, split by `validation_trusted` | `validation_trusted` |
 
 ### Node Health -- System Metrics (`node-health`)
 
-| Panel                                  | Type       | PromQL                                                     | Labels Used |
-| -------------------------------------- | ---------- | ---------------------------------------------------------- | ----------- |
-| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                        | —           |
-| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                        | —           |
-| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))` | —           |
-| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                           | —           |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`             | —           |
-| Job Queue Depth                        | timeseries | `job_count`                                                | —           |
-| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                 | —           |
-| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                        | —           |
-| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)  | `quantile`  |
-| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)         | `quantile`  |
-| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                        | —           |
-| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                    | —           |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`              | —           |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`       | —           |
-| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`           | `quantile`  |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`         | `quantile`  |
+| Panel                                  | Type       | PromQL                                                                            | Labels Used |
+| -------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                                               | —           |
+| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                                               | —           |
+| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                        | —           |
+| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                                                  | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                    | —           |
+| Job Queue Depth                        | timeseries | `job_count`                                                                       | —           |
+| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                    | —           |
+| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                           | —           |
+| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                         | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)                                | `quantile`  |
+| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                                               | —           |
+| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                                           | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                     | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                              | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `histogram_quantile($quantile, rate(job_running_us_bucket[5m])) by job_type` — µs | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `histogram_quantile($quantile, rate(job_queued_us_bucket[5m])) by job_type` — µs  | `quantile`  |
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
@@ -764,8 +764,8 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | RPC Response Time Heatmap | heatmap    | `rpc_time_bucket`                                | —           |
 | Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_bucket)` | —           |
 | Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(warn[5m])`                                 | —           |
-| Resource Drops Rate       | stat       | `rate(drop[5m])`                                 | —           |
+| Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`             | —           |
+| Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`             | —           |
 
 ### Span → Metric → Dashboard Summary
 
