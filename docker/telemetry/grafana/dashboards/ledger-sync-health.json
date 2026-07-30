@@ -2118,7 +2118,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: nodes/s"
         }
       },
       "gridPos": {
@@ -3662,7 +3662,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Ops / Sec",
+            "axisLabel": "Operations / Sec",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -3702,7 +3702,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: operations/s"
         }
       },
       "gridPos": {
@@ -4174,7 +4174,7 @@
               },
               {
                 "id": "unit",
-                "value": "cps"
+                "value": "suffix: writes/s"
               },
               {
                 "id": "custom.axisLabel",
@@ -4556,7 +4556,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: acquisitions/s"
         }
       },
       "gridPos": {
@@ -4754,7 +4754,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: dials/s"
         }
       },
       "gridPos": {
@@ -4853,7 +4853,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: requests/s"
         }
       },
       "gridPos": {
@@ -4952,7 +4952,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: validations/s"
         },
         "overrides": []
       },
