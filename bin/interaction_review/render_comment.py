@@ -132,9 +132,17 @@ def _header(report: dict) -> list[str]:
         levers = ", ".join(f"`{lever}`" for lever in summary["new_levers"])
         lines += [
             "",
-            f"⚠️ **This diff branches on {levers} somewhere it did not before.** "
-            f"That changes *which* features meet here, not just how they behave "
-            f"once they do — the strongest signal this tool has.",
+            # Two different things produce this, and the banner is global, so it
+            # cannot tell them apart: on a shared decision the diff added a
+            # branch, on a transaction type the implementation reads an
+            # amendment its declaration never mentions (pr_map.py). Claiming the
+            # first when it was the second is an overclaim a reader catches by
+            # opening the diff, so say what is actually known.
+            f"⚠️ **The code you touched reads {levers}, which is not part of "
+            f"what it declares.** Either this diff started branching on it, or "
+            f"the code was already consulting an amendment nothing declares. "
+            f"Either way, this is about *which* features meet here, not just "
+            f"how they behave once they do.",
         ]
     return lines
 
