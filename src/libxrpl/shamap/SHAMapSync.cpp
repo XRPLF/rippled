@@ -107,7 +107,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 
 void
 SHAMap::visitDifferences(
-    SHAMap const* have,
+    SHAMap const* map,
     std::function<bool(SHAMapTreeNode const&)> const& function) const
 {
     // Visit every node in this SHAMap that is not present
@@ -118,13 +118,13 @@ SHAMap::visitDifferences(
     if (root_->getHash().isZero())
         return;
 
-    if ((have != nullptr) && (root_->getHash() == have->root_->getHash()))
+    if ((map != nullptr) && (root_->getHash() == map->root_->getHash()))
         return;
 
     if (root_->isLeaf())
     {
         auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
-        if ((have == nullptr) || !have->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
+        if ((map == nullptr) || !map->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
     }
@@ -149,15 +149,15 @@ SHAMap::visitDifferences(
             if (!node->isEmptyBranch(i))
             {
                 auto const& childHash = node->getChildHash(i);
-                SHAMapNodeID const childID = nodeID.getChildNodeID(i);
+                auto const childID = nodeID.getChildNodeID(i);
                 auto next = descendThrow(node, i);
 
                 if (next->isInner())
                 {
-                    if ((have == nullptr) || !have->hasInnerNode(childID, childHash))
+                    if ((map == nullptr) || !map->hasInnerNode(childID, childHash))
                         stack.emplace(safeDowncast<SHAMapInnerNode*>(next), childID);
                 }
-                else if ((have == nullptr) || !have->hasLeafNode(leafKey(*next), childHash))
+                else if ((map == nullptr) || !map->hasLeafNode(leafKey(*next), childHash))
                 {
                     if (!function(*next))
                         return;
@@ -575,7 +575,7 @@ SHAMap::addKnownNode(
            !safeDowncast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
            (currNodeID.getDepth() < nodeID.getDepth()))
     {
-        int const branch = selectBranch(currNodeID, nodeID.getNodeID());
+        auto const branch = selectBranch(currNodeID, nodeID.getNodeID());
         XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::addKnownNode : valid branch");
         auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
