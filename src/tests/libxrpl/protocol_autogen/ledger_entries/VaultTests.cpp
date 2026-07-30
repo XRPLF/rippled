@@ -35,6 +35,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -54,6 +55,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setScale(scaleValue);
+    builder.setLEVersion(lEVersionValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -166,6 +168,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasScale());
     }
 
+    {
+        auto const& expected = lEVersionValue;
+        auto const actualOpt = entry.getLEVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLEVersion");
+        EXPECT_TRUE(entry.hasLEVersion());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -194,6 +204,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -212,6 +223,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
+    sle->at(sfLEVersion) = lEVersionValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -390,6 +402,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfScale");
     }
 
+    {
+        auto const& expected = lEVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getLEVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getLEVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLEVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfLEVersion");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -472,5 +497,7 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
+    EXPECT_FALSE(entry.hasLEVersion());
+    EXPECT_FALSE(entry.getLEVersion().has_value());
 }
 }
