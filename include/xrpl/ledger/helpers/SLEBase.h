@@ -120,13 +120,7 @@ public:
     {
         if constexpr (kIsWritable)
         {
-            {
-                {
-                    {
-                        return key_;
-                    }
-                }
-            }
+            return key_;
         }
         else
         {
