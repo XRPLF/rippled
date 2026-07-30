@@ -1419,6 +1419,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 
 // The sole purpose of this function is to provide a convenient, named
 // location to set a breakpoint, to be used when replaying transactions.
+// It is deliberately trivial: anything added here runs on every trapped
+// transaction and would change replay timing.
 void
 Transactor::trapTransaction(uint256 txHash) const
 {
