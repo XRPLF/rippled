@@ -762,7 +762,7 @@ parseTicket(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::ticket(*id, SeqProxy::rawSequence(*seq)).key;
+    return keylet::ticket(*id, SeqProxy::rawTicket(*seq)).key;
 }
 
 static std::expected<uint256, json::Value>
