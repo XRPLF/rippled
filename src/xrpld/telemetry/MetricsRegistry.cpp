@@ -1392,14 +1392,13 @@ MetricsRegistry::registerLedgerEconomyGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Local fee (drops).
-                observe("base_fee_xrp", static_cast<double>(app.getFeeTrack().getLocalFee()));
-
-                // Reserve values from the validated ledger.
+                // Fee and reserve values from the validated ledger.
                 auto const ledger = app.getLedgerMaster().getValidatedLedger();
                 if (ledger)
                 {
                     auto const& fees = ledger->fees();
+                    // Cost of a reference transaction (drops).
+                    observe("base_fee_xrp", static_cast<double>(fees.base.drops()));
                     // Base reserve = one account, zero owned objects:
                     // accountReserve(ownerCount=0, accountCount=1) == reserve.
                     observe(
