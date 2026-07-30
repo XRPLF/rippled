@@ -330,9 +330,10 @@ jobs:
       # benchmarks still build and execute. This is a correctness check, not a
       # performance measurement, so it is skipped for instrumented builds
       # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
-      # and on Windows, where the `install` target does not build them.
+      # for debug builds, where it is much slower, and on Windows, where the
+      # `install` target does not build them.
       - name: Run the benchmarks
-        if: ${{ !inputs.build_only && runner.os != 'Windows' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        if: ${{ !inputs.build_only && runner.os != 'Windows' && inputs.build_type != 'Debug' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           rc=0
