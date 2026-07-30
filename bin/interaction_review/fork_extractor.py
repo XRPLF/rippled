@@ -195,6 +195,28 @@ def _parse_args(entry: dict, resource_dir: str | None) -> list[str]:
     return args
 
 
+def _kind(node: ci.Cursor | None) -> ci.CursorKind | None:
+    """The cursor's kind, or None when the bindings cannot name it.
+
+    The pinned bindings are older than the dylib they drive (requirements.in;
+    18.1.1 is the newest on PyPI, and the CI container ships a newer LLVM).
+    That is fine for the C API but not for this enum: cindex maps kind ids
+    through a hand-maintained table and raises ValueError on any id added after
+    the bindings were cut, so one unrelated attribute cursor anywhere in the TU
+    aborts the whole extraction.
+
+    A kind the bindings cannot name is a kind we cannot match on either, so
+    skipping it costs no recall. Every caller compares against a known
+    CursorKind, and None matches none of them.
+    """
+    if node is None:
+        return None
+    try:
+        return node.kind
+    except ValueError:
+        return None
+
+
 def _is_local(node: ci.Cursor) -> bool:
     """True if the reference resolves to a function-scope declaration.
 
@@ -207,8 +229,7 @@ def _is_local(node: ci.Cursor) -> bool:
     referenced = node.referenced
     if referenced is None:
         return False
-    parent = referenced.semantic_parent
-    return parent is not None and parent.kind in (
+    return _kind(referenced.semantic_parent) in (
         ci.CursorKind.FUNCTION_DECL,
         ci.CursorKind.CXX_METHOD,
         ci.CursorKind.FUNCTION_TEMPLATE,
@@ -222,7 +243,7 @@ def _collect_refs(fn: ci.Cursor) -> tuple[set[str], set[str], set[str]]:
     flags: set[str] = set()
     gates: set[str] = set()
     for node in fn.walk_preorder():
-        if node.kind != ci.CursorKind.DECL_REF_EXPR:
+        if _kind(node) != ci.CursorKind.DECL_REF_EXPR:
             continue
         name = node.spelling
         if _is_local(node):
@@ -255,7 +276,7 @@ def _owner_name(fn: ci.Cursor, file_name: str) -> str:
     helper headers, so the file is folded in for those.
     """
     parent = fn.semantic_parent
-    if parent is not None and parent.kind in (
+    if _kind(parent) in (
         ci.CursorKind.CLASS_DECL,
         ci.CursorKind.STRUCT_DECL,
         ci.CursorKind.CLASS_TEMPLATE,
@@ -267,7 +288,7 @@ def _owner_name(fn: ci.Cursor, file_name: str) -> str:
 
 def _qualified_enum_name(enum: ci.Cursor) -> str:
     parent = enum.semantic_parent
-    if parent is not None and parent.kind in (
+    if _kind(parent) in (
         ci.CursorKind.CLASS_DECL,
         ci.CursorKind.STRUCT_DECL,
     ):
@@ -330,12 +351,13 @@ def scan_translation_unit(
     owners: dict[str, str] = {}
 
     for node in tu.cursor.walk_preorder():
-        if node.kind == ci.CursorKind.ENUM_DECL and node.spelling:
+        node_kind = _kind(node)
+        if node_kind == ci.CursorKind.ENUM_DECL and node.spelling:
             qname = _qualified_enum_name(node)
             values = [
                 c.spelling
                 for c in node.get_children()
-                if c.kind == ci.CursorKind.ENUM_CONSTANT_DECL
+                if _kind(c) == ci.CursorKind.ENUM_CONSTANT_DECL
             ]
             if values:
                 enums.setdefault(qname, values)
@@ -353,7 +375,7 @@ def scan_translation_unit(
                             node, loc.name, repo_root, role=LOC_STATE_ENUM
                         ),
                     )
-        elif node.kind in (ci.CursorKind.CXX_METHOD, ci.CursorKind.FUNCTION_DECL):
+        elif node_kind in (ci.CursorKind.CXX_METHOD, ci.CursorKind.FUNCTION_DECL):
             loc = node.location.file
             if not node.is_definition() or loc is None:
                 continue

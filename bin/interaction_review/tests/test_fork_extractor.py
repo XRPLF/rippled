@@ -213,6 +213,51 @@ def test_no_empty_forks(real_forks):
         assert fork.lever_fields or fork.lever_flags or fork.gate_globals
 
 
+# --- unrecognised cursor kinds ------------------------------------------------
+# cindex maps kind ids through a hand-maintained table, so a dylib newer than
+# the pinned bindings yields ids it cannot name. Those must be skipped, not
+# fatal: one unrelated attribute cursor would otherwise abort the extraction.
+
+
+class _UnknownKindCursor:
+    """A cursor whose kind id postdates the bindings, as cindex reports it."""
+
+    @property
+    def kind(self):
+        raise ValueError("Unknown template argument kind 437")
+
+
+def test_kind_of_unrecognised_cursor_is_none():
+    assert fork_extractor._kind(_UnknownKindCursor()) is None
+
+
+def test_kind_of_none_is_none():
+    # Callers pass semantic_parent straight through, which is often absent.
+    assert fork_extractor._kind(None) is None
+
+
+def test_unrecognised_kind_matches_no_branch():
+    # The property every caller relies on: an unnameable kind compares equal to
+    # nothing, so it silently falls through instead of being misclassified.
+    kind = fork_extractor._kind(_UnknownKindCursor())
+    assert kind != ci.CursorKind.ENUM_DECL
+    assert kind != ci.CursorKind.DECL_REF_EXPR
+    assert kind not in (ci.CursorKind.CXX_METHOD, ci.CursorKind.FUNCTION_DECL)
+
+
+def test_kind_passes_through_known_cursors(libclang_dylib, tmp_path):
+    # The helper must not blunt real matching: known kinds still resolve, so
+    # the fall-through above is reached only by genuinely unnameable cursors.
+    src = tmp_path / "fixture.cpp"
+    src.write_text(FIXTURE)
+    tu = ci.Index.create().parse(
+        str(src), args=["-std=c++20"], unsaved_files=[(str(src), FIXTURE)]
+    )
+    kinds = {fork_extractor._kind(n) for n in tu.cursor.walk_preorder()}
+    assert ci.CursorKind.FUNCTION_DECL in kinds
+    assert ci.CursorKind.DECL_REF_EXPR in kinds
+
+
 # --- driver-implicit include paths -------------------------------------------
 # The compile DB records no C++ standard library path: the clang driver injects
 # it at invocation time. libclang, driven through ctypes, does not, so without
