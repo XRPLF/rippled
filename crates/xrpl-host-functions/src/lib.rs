@@ -14,16 +14,53 @@
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::host_functions;
 
-/// Error codes a host function may return.
+/// Declares [`HostError`] from one list: the variants, [`HostError::ALL`] and
+/// [`HostError::from_code`]'s table all expand from the codes below.
 ///
-/// The discriminants mirror `HostFunctionError` in
-/// `include/xrpl/tx/wasm/WasmCommon.h`, so a negative `i32` crossing the wasm
-/// boundary means the same thing to the guest, the Rust host, and the existing
-/// C++ code. The full set is kept (not just the ones the PoC uses today) to
-/// preserve that shared meaning.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(i32)]
-pub enum HostError {
+/// One list is what makes `ALL` complete. Rust cannot enumerate an enum's
+/// variants — an exhaustive `match` forces an arm per variant but gives nothing to
+/// iterate — so a hand-written `ALL` beside a hand-written enum could only be kept
+/// in step by review, and `ALL`'s whole purpose is to be the set a test can trust.
+/// A code added below gains its `ALL` entry and its `from_code` arm by
+/// construction. `HostFunctionSpec::ALL` is complete the same way, from the
+/// `host_functions!` block.
+macro_rules! host_errors {
+    ($($variant:ident = $code:literal,)+) => {
+        /// Error codes a host function may return.
+        ///
+        /// The discriminants mirror `HostFunctionError` in
+        /// `include/xrpl/tx/wasm/WasmCommon.h`, so a negative `i32` crossing the wasm
+        /// boundary means the same thing to the guest, the Rust host, and the existing
+        /// C++ code. The full set is kept (not just the ones the PoC uses today) to
+        /// preserve that shared meaning.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[repr(i32)]
+        pub enum HostError {
+            $($variant = $code,)+
+        }
+
+        impl HostError {
+            /// Every error a host function may return, in code order.
+            ///
+            /// The complete set, and complete by construction: a wasm engine's
+            /// split between the codes it hands the guest and the conditions it
+            /// traps on is a decision per variant, so the test that checks the
+            /// split iterates this and a code added to the ABI cannot slip past it.
+            pub const ALL: &'static [HostError] = &[$(HostError::$variant,)+];
+
+            /// Reconstruct a `HostError` from its wire code; unknown/positive values
+            /// map to `Internal`.
+            pub const fn from_code(code: i32) -> HostError {
+                match code {
+                    $($code => HostError::$variant,)+
+                    _ => HostError::Internal,
+                }
+            }
+        }
+    };
+}
+
+host_errors! {
     Internal = -1,
     FieldNotFound = -2,
     BufferTooSmall = -3,
@@ -54,36 +91,6 @@ impl HostError {
     #[inline]
     pub const fn code(self) -> i32 {
         self as i32
-    }
-
-    /// Reconstruct a `HostError` from its wire code; unknown/positive values map to `Internal`.
-    pub const fn from_code(code: i32) -> HostError {
-        match code {
-            -1 => HostError::Internal,
-            -2 => HostError::FieldNotFound,
-            -3 => HostError::BufferTooSmall,
-            -4 => HostError::NoArray,
-            -5 => HostError::NotLeafField,
-            -6 => HostError::LocatorMalformed,
-            -7 => HostError::SlotOutRange,
-            -8 => HostError::SlotsFull,
-            -9 => HostError::EmptySlot,
-            -10 => HostError::LedgerObjNotFound,
-            -11 => HostError::Decoding,
-            -12 => HostError::DataFieldTooLarge,
-            -13 => HostError::PointerOutOfBounds,
-            -14 => HostError::NoMemExported,
-            -15 => HostError::InvalidParams,
-            -16 => HostError::InvalidAccount,
-            -17 => HostError::InvalidField,
-            -18 => HostError::IndexOutOfBounds,
-            -19 => HostError::FloatInputMalformed,
-            -20 => HostError::FloatComputationError,
-            -21 => HostError::NoRuntime,
-            -22 => HostError::OutOfGas,
-            -23 => HostError::OutOfTransferLimit,
-            _ => HostError::Internal,
-        }
     }
 }
 

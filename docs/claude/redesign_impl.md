@@ -519,14 +519,21 @@ matter. Items marked ✓ are done.
    for the same reason as B6: A1 rewrites exactly these signatures, and the `n as
    i32` in `write_into` now sits after the `MAX_FIELD_BYTES` check, where it cannot
    lose bits.
-8. **`cxx` is an unused dependency** of this crate — the bridge lives in the ffi crate.
-9. **Stale docs.** Seven broken intra-doc links name types that no longer exist:
+8. ✓ **`cxx` is an unused dependency** of this crate — the bridge lives in the ffi crate.
+9. ✓ **Stale docs.** Seven broken intra-doc links name types that no longer exist:
    `AbiArg` (`register.rs:20`, `abi.rs:7`), `HostFn` (`register.rs:14,16`),
    `run_escrow` (`vm.rs:19,64`). And `abi.rs:147-150` / `vm.rs:71` are historical
    comments ("used to pay", "The `CxxHost` path additionally used to marshal … that
    too is gone", "Unchanged from the original skeleton"), against the
    no-historical-comments convention. `#![deny(rustdoc::broken_intra_doc_links)]`
    stops the links from rotting again.
+
+   The links are fixed and the `deny` is in. **The historical comments were already
+   gone** — the A1–A4 slices rewrote those lines. A sweep for `used to` / `no longer` /
+   `formerly` / `originally` / `unchanged from` / `previously` across `crates/` found
+   nothing but present-tense prose and C++ reference points, which the convention
+   allows. The one stale comment left was in `vm_limits.rs`, citing D16 as an open bug;
+   it went with D16.
 
 ### C. Performance
 
@@ -557,15 +564,46 @@ matter. Items marked ✓ are done.
     `1024`/`1025` as literals twenty-one times. Now `vm::MAX_FIELD_BYTES`, beside the
     others — **renamed**, so a search for the old name (or for C++'s
     `kMaxWasmDataLength`, which its doc comment still cites) lands here.
-14. `#![forbid(unsafe_code)]` — `abi.rs:64` *claims* every access is a checked wasmi
+14. ✓ `#![forbid(unsafe_code)]` — `abi.rs:64` *claims* every access is a checked wasmi
     slice op; let the compiler enforce the claim. Plus `unreachable_pub` and clippy's
     cast lints.
+
+    All three are on, and the two warning lints each paid for themselves.
+    `unreachable_pub` found `VmState` and `wasm_engine`: `pub` inside a private module
+    and never re-exported, so unreachable from outside the crate — now `pub(crate)`,
+    with nothing silenced. The cast lints found **8 sites, all in `abi.rs`**. Six were
+    `cast_sign_loss` on the guest's `i32` pointers and lengths, and the fix removed
+    code rather than adding it: `let (Ok(ptr), Ok(len)) = (usize::try_from(ptr),
+    usize::try_from(len)) else { … }` — **the conversion is the negativity check**, so
+    the separate `ptr < 0 || len < 0` guards are gone rather than duplicated. The
+    remaining two are the one `n as i32` in `write_into`, bounded by the
+    `MAX_FIELD_BYTES` return directly above it, under a scoped `#[expect]` — `expect`
+    rather than `allow`, so it fires if a later restructure makes it unnecessary.
 15. ✓ **Zero tests.** Nothing checked the bounds/cap/transfer/gas policy, and every
     item above edits exactly that policy. Closed first, for that reason.
 16. Minor: `gas = 0` is accepted silently (C++ rejected it as `temBAD_AMOUNT`);
     `store.get_fuel().unwrap_or(0)` (`vm.rs:137`) swallows an error into a
     plausible-looking number; `get_typed_func` failure reports "no entry point" when
     the export exists with the wrong signature.
+
+    **Two of the three are done.** `fuel_used` returns `Result<u64, RunError>`, folded
+    through a `failed(store, gas, error)` helper so all four report sites read the
+    meter in one place. Worth recording *why* it is not a document-and-assert: the
+    `unwrap_or(0)` did not merely swallow an error, it reported `gas - 0`, **the whole
+    limit** — an untouched contract charged for everything. No fallback is defensible
+    (`0` forgives the run, `gas` overcharges), so a cost that cannot be read replaces
+    the outcome with `Internal` rather than being invented. No panic on a consensus
+    path. And the entry-point diagnostic is now three cases, told apart by
+    `Instance::get_export`: no such export, an export of the wrong signature, and an
+    export that is not a function at all — the last two used to claim "no entry point"
+    about an export that was right there. `RunError::EntryPoint`'s `Display` carries the
+    detail bare for that reason, the one variant without a `stage:` prefix.
+
+    **Still open, and now a decision rather than a bug:** `gas = 0` no longer passes
+    silently — it fails with a typed `OutOfGas`. Whether the caller should instead
+    reject it up front as C++'s `temBAD_AMOUNT` is a TER question, so it belongs with
+    the cxx bridge, where the mapping gets written. (`gas` is `u64`, so C++'s negative
+    case cannot arise.)
 17. The start-section TODO (`vm.rs:90`) **cannot** be closed with wasmi 1.1's public
     API: there is no `InstancePre`/`ensure_no_start`, and `ModuleHeader::start` is
     private, so only a byte-level section scan would do it. But `set_fuel` and
@@ -637,11 +675,14 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 ## Current state (2026-07-30)
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
-`clippy --workspace --all-targets`, `fmt`. 115 tests: 33 macro, 9 facade, 1 doctest, and
-**72 in `xrpl-wasm-vm`** (9 unit; 63 integration — 12 `host_calls`, 19 `memory_policy`,
-13 `budgets`, 19 `vm_limits`).
+`clippy --workspace --all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`
+(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 120 tests: 33
+macro, 12 facade, 1 doctest, and **74 in `xrpl-wasm-vm`** (10 unit; 64 integration — 12
+`host_calls`, 19 `memory_policy`, 13 `budgets`, 20 `vm_limits`).
 
-**Section A is closed, and B6/B7 with it** (2026-07-30). `run` is
+**Section A is closed, B6/B7 with it, and the B/D cleanup after that** (2026-07-30) —
+B8, B9, D14 and two thirds of D16. Only C10/C11/C12, D17 and D16's `gas = 0` decision
+are left of the seventeen. `run` is
 `Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
 instead of answering the guest a code; the import module is `host_lib`; the `i64`
 pipeline and `AbiRet` are gone; the transfer budget counts only bytes actually copied
@@ -771,32 +812,58 @@ Consequences worth remembering:
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
 
-Next, in rough order, from the findings above: **the remaining B and D cleanups as one
-pass** — B8's unused `cxx` dep, B9's stale links and historical comments, D14's
-`forbid(unsafe_code)` plus `unreachable_pub` and the cast lints, and D16's papercuts.
-Then the cached `Memory` (C10), which `NoMemExported` being fatal has already made a
-move rather than a behaviour change. The scratch-buffer decision (C11) and real
-`ApplyContext` wiring plus the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`)
-follow. C12 (per-run `Linker` and no module cache) stays last: `VmState<'h>`'s lifetime
-is the blocker. Deferred as before: macro-emitted `link_*` shims, the generated C
-header, the probe-module test.
+Next, from the findings above, only section C is left. **The cached `Memory` (C10)**
+first: it is the one item with a measurable payoff, the benchmark can show it, and
+`NoMemExported` being fatal has already made it a move rather than a behaviour change —
+only `assert_no_memory`'s expected stage shifts from a trap to instantiation. Then
+**C11**, which needs the scratch-buffer decision made before it is codeable, and C10
+makes either answer easier. **C12** (per-run `Linker`, no module cache) stays last:
+`VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run, so it is a design
+change rather than a tweak, and the cxx bridge will force that lifetime question anyway.
 
-Four small things belong in that B/D pass, each found by a slice rather than by the
-original read:
+The real remaining work is not in the findings list: **the cxx bridge**
+(`xrpl-wasm-vm-ffi` is still `mod ffi {}`) and **real `ApplyContext` wiring**. A1 and A2
+were sequenced first so the bridge has a typed `RunError` and a `fuel_used` to marshal
+instead of error text to parse. D16's `gas = 0` decision belongs there too, since it is
+a TER choice. Deferred as before: macro-emitted `link_*` shims, the generated C header,
+the probe-module test.
 
-- `register_host_functions` returns `Result<(), String>` and `run` discards the string
-  (a linker failure is `RunError::Internal`, which carries nothing), so its `format!`
-  is dead. `Result<(), wasmi::errors::LinkerError>` is the honest signature.
-- `only_the_host_fatal_errors_trap`'s soft list is representative, not exhaustive —
-  nothing in the ABI crate enumerates `HostError`. A `HostError::ALL` there would close
-  it, and this pins a consensus-relevant channel split, so it is worth closing.
-- D16's `gas = 0` item has shifted from a bug to a decision: it no longer passes
-  silently but fails with a typed `OutOfGas`, so the question is whether it deserves
-  C++'s `temBAD_AMOUNT` at the caller instead. `gas` is `u64`, so C++'s negative case
-  cannot arise.
-- The `HostFunctions` declaration should say that a host writes into `out` only when
-  the whole value fits — see A4's last paragraph, where that is what makes "a refused
-  value leaves nothing behind" hold end to end.
+One incidental constraint found while checking the guest target: `crates/hello_world`
+cannot be checked for `wasm32-unknown-unknown` — it depends on `cxx` →
+`link-cplusplus`, which wants a C++ toolchain for the target. Pre-existing, but it means
+the guest-linkability check has to name the ABI crate rather than being a blanket
+workspace command.
+
+Four things the slices turned up rather than the original read went into that pass, and
+one of them is worth more than its size:
+
+- `register_host_functions` now returns `Result<(), wasmi::errors::LinkerError>`; its
+  `format!` was dead once `run` began discarding the string.
+- **`HostError::ALL` exists, and how it had to be built is the interesting part.**
+  `only_the_host_fatal_errors_trap` checked a hand-listed sample, so a variant added to
+  the ABI was not covered. The obvious fix — a wildcard-free `match`, the trick
+  `vm::host_fatal` uses — **cannot close this**, and the reason generalizes: an
+  exhaustive `match` forces you to *write an arm*, but checking "every variant is in
+  `ALL`" requires *enumerating* variants, and Rust has no stable way to do that
+  (`mem::variant_count` is unstable). Every const-assertion scheme over `ALL` is beaten
+  by "add the variant, give its arm a value, leave `ALL`
+  alone", because the assertion only ever iterates `ALL` — the very thing missing the
+  variant. So the airtight mechanism is a **single declaration site**: a `host_errors!`
+  macro emits the enum, `ALL` and `from_code` from one list of codes.
+  `HostFunctionSpec::ALL` is complete for exactly the same reason. It also retired a
+  hand-duplicated 23-arm `from_code` table that nothing tested; `tests/host_errors.rs`
+  now pins the 23 wire codes as literals, which is where a consensus-visible number
+  belongs.
+- With `ALL` in hand, `every_fatal_error_has_an_outcome_of_its_own` closes the
+  `is_fatal`/`host_fatal` coupling gap the other direction — an existing variant moved
+  into `is_fatal` without `host_fatal` gaining an arm now fails a test instead of
+  silently reporting `Internal`. (Its wrinkle: `RunError::Internal` is both the soft
+  arm's answer and `HostError::Internal`'s own, so the test asks about that one by
+  name.)
+- The generated `HostFunctions` trait now carries an output contract: a host writes into
+  `out` only when the whole value fits, and returns the value's true length either way.
+  That is what makes A4's "a refused value leaves nothing behind" hold end to end,
+  since `write_into` can only bound what is *writable*.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`
 shims, the generated C header, and the probe-module conformance test.

@@ -136,6 +136,26 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         /// Each method is one declaration from the `host_functions!` block, as
         /// written; its `&self` receiver is not part of the ABI the guest sees,
         /// so a host that must mutate does so behind interior mutability.
+        ///
+        /// # The output contract
+        ///
+        /// A method handed an `out` buffer **writes into it only when the whole
+        /// value fits, and returns the value's true length whether it fitted or
+        /// not.**
+        ///
+        /// The length is the value's, not the number of bytes written, because it
+        /// is how a guest that asked with too small a buffer learns the size to
+        /// ask for next time. The engine turns a length past the buffer into
+        /// `BufferTooSmall`, and one past the field cap into `DataFieldTooLarge`,
+        /// so a host needs to know neither.
+        ///
+        /// Writing nothing unless the value fits is the half only a host can hold
+        /// up. An engine can bound how many bytes are *writable* — and does, by
+        /// handing over a region clamped to the field cap — but it cannot take
+        /// back what a method already put there. A host that wrote a truncated
+        /// prefix and then reported the larger length would leave those bytes in
+        /// guest memory behind a refusal the guest is told to ignore. C++'s
+        /// `setData` is the reference point: it wrote only on a value that fit.
         pub trait HostFunctions {
             #(#trait_methods)*
         }

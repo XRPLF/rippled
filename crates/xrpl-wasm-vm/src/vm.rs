@@ -1,7 +1,9 @@
 use std::cell::Cell;
 use std::fmt;
 use std::sync::LazyLock;
-use wasmi::{Config, Engine, Linker, Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode};
+use wasmi::{
+    Config, Engine, Extern, Linker, Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
+};
 use xrpl_host_functions::{HostError, HostFunctions};
 
 use crate::abi::FatalHostError;
@@ -29,7 +31,7 @@ pub const TRANSFER_LIMIT_BYTES: u64 = 1 << 20;
 pub const MAX_FIELD_BYTES: usize = 1024;
 
 /// State threaded through every host call, stored in the wasmi [`Store`].
-pub struct VmState<'h> {
+pub(crate) struct VmState<'h> {
     pub(crate) host: &'h dyn HostFunctions,
     /// Enforces [`MAX_MEMORY_BYTES`] via `Store::limiter`. It lives here because
     /// the limiter callback wasmi holds has to produce a `&mut` into it from
@@ -68,7 +70,8 @@ pub enum RunError {
     /// The module compiled but would not instantiate: an import the linker does
     /// not define, an initial memory past the page cap, a trapping start section.
     Instantiate(String),
-    /// No export named `function_name` with signature `() -> i32`.
+    /// No export named `function_name` with signature `() -> i32`: absent, not a
+    /// function, or a function of another type — which the detail tells apart.
     EntryPoint(String),
     /// Gas exhausted — by the guest's own instructions or by a host call's
     /// charge. [`RunFailure::fuel_used`] is the whole limit.
@@ -87,7 +90,9 @@ impl fmt::Display for RunError {
         match self {
             RunError::Compile(detail) => write!(f, "compile: {detail}"),
             RunError::Instantiate(detail) => write!(f, "instantiate: {detail}"),
-            RunError::EntryPoint(detail) => write!(f, "no entry point {detail}"),
+            // The detail says which of the entry point's failures this is, since
+            // "no entry point" would be wrong for an export of the wrong type.
+            RunError::EntryPoint(detail) => write!(f, "{detail}"),
             RunError::OutOfGas => write!(f, "out of gas"),
             RunError::Internal => write!(f, "internal error"),
             RunError::NoMemory => write!(f, "no exported memory"),
@@ -113,8 +118,9 @@ impl fmt::Display for RunFailure {
 }
 
 impl RunFailure {
-    /// A failure the guest cannot have burned fuel before, because it stopped the
-    /// run at or before the point the guest first gets to execute.
+    /// A failure that costs nothing: it stopped the run at or before the point the
+    /// guest first gets to execute, or it stopped it under a store with no meter to
+    /// read, which comes to the same thing — no fuel was accounted either way.
     fn owing_nothing(error: RunError) -> RunFailure {
         RunFailure {
             error,
@@ -125,8 +131,32 @@ impl RunFailure {
 
 /// Fuel spent out of `gas`: the one place a run's cost is measured, so success,
 /// trap and refusal all report it the same way.
-fn fuel_used(store: &Store<VmState<'_>>, gas: u64) -> u64 {
-    gas.saturating_sub(store.get_fuel().unwrap_or(0))
+///
+/// `Store::get_fuel` fails on exactly one condition — a store whose engine was
+/// built without fuel metering — and that is a property of
+/// [`build_wasm_engine`], which turns metering on, and one `run` has already
+/// established for this store by the time anything is measured: its `set_fuel`
+/// fails under the same condition and returns first. So a failure here is a defect
+/// in this crate, and the one thing it must not become is a number: `0` would
+/// forgive a run its whole cost and `gas` would charge an untouched one for
+/// everything. It leaves as [`RunError::Internal`] instead, which is what the
+/// caller maps a defect to.
+fn fuel_used(store: &Store<VmState<'_>>, gas: u64) -> Result<u64, RunError> {
+    store
+        .get_fuel()
+        .map(|remaining| gas.saturating_sub(remaining))
+        .map_err(|_| RunError::Internal)
+}
+
+/// Report `error` with the run's cost attached, from the one point that reads it.
+///
+/// A cost that cannot be read replaces the outcome rather than being invented,
+/// because the cost is what the caller charges for — see [`fuel_used`].
+fn failed(store: &Store<VmState<'_>>, gas: u64, error: RunError) -> RunFailure {
+    match fuel_used(store, gas) {
+        Ok(fuel_used) => RunFailure { error, fuel_used },
+        Err(unmetered) => RunFailure::owing_nothing(unmetered),
+    }
 }
 
 /// The outcome a `wasmi::Error` names for itself, if it names one, rather than
@@ -151,11 +181,14 @@ fn guest_halted(error: &wasmi::Error) -> Option<RunError> {
 /// The outcome a host-fatal `HostError` is.
 ///
 /// Exhaustive over `HostError` rather than closed with a wildcard, so a variant
-/// added to the ABI has to be placed here before this compiles. Moving an
-/// existing variant into [`crate::abi::is_fatal`]'s set is not caught that way —
-/// it lands in the soft arm and reports `Internal` — so the two are read
-/// together. The soft arm is otherwise unreachable: a guest-visible error is a
-/// return code and never becomes a trap for [`guest_halted`] to unwrap.
+/// added to the ABI has to be placed here before this compiles. That covers one
+/// direction of the agreement with [`crate::abi::is_fatal`], which decides the
+/// channel; the other — an existing variant moved into `is_fatal`'s set, which
+/// would land in the soft arm here and report `Internal` instead of the condition
+/// it was — is covered by `tests::every_fatal_error_has_an_outcome_of_its_own`.
+///
+/// The soft arm is otherwise unreachable: a guest-visible error is a return code
+/// and never becomes a trap for [`guest_halted`] to unwrap.
 fn host_fatal(error: HostError) -> RunError {
     match error {
         HostError::OutOfGas => RunError::OutOfGas,
@@ -189,7 +222,7 @@ fn host_fatal(error: HostError) -> RunError {
 /// The configuration is consensus-fixed and identical for every invocation, and
 /// an [`Engine`] is an internally `Arc`ed `Send + Sync` handle, so one shared
 /// engine serves concurrent [`run`] calls.
-pub fn wasm_engine() -> &'static Engine {
+pub(crate) fn wasm_engine() -> &'static Engine {
     static ENGINE: LazyLock<Engine> = LazyLock::new(build_wasm_engine);
     &ENGINE
 }
@@ -261,47 +294,94 @@ pub fn run<'h>(
     let instance = match linker.instantiate_and_start(&mut store, &module) {
         Ok(instance) => instance,
         Err(e) => {
-            return Err(RunFailure {
-                error: guest_halted(&e).unwrap_or_else(|| RunError::Instantiate(e.to_string())),
-                fuel_used: fuel_used(&store, gas),
-            });
+            let error = guest_halted(&e).unwrap_or_else(|| RunError::Instantiate(e.to_string()));
+            return Err(failed(&store, gas, error));
         }
     };
     let finish = match instance.get_typed_func::<(), i32>(&store, function_name) {
         Ok(finish) => finish,
         Err(e) => {
-            return Err(RunFailure {
-                error: RunError::EntryPoint(format!("'{function_name}': {e}")),
-                fuel_used: fuel_used(&store, gas),
-            });
+            let error = RunError::EntryPoint(entry_point_detail(
+                instance.get_export(&store, function_name),
+                function_name,
+                &e,
+            ));
+            return Err(failed(&store, gas, error));
         }
     };
 
     let result = match finish.call(&mut store, ()) {
         Ok(result) => result,
         Err(e) => {
-            return Err(RunFailure {
-                error: guest_halted(&e).unwrap_or_else(|| RunError::Trap(e.to_string())),
-                fuel_used: fuel_used(&store, gas),
-            });
+            let error = guest_halted(&e).unwrap_or_else(|| RunError::Trap(e.to_string()));
+            return Err(failed(&store, gas, error));
         }
     };
 
-    Ok(RunOutcome {
-        result,
-        fuel_used: fuel_used(&store, gas),
-    })
+    let fuel_used = fuel_used(&store, gas).map_err(RunFailure::owing_nothing)?;
+    Ok(RunOutcome { result, fuel_used })
+}
+
+/// Why `get_typed_func` would not hand over the entry point, told apart by what
+/// the module exports under that name.
+///
+/// wasmi answers all three cases with one error, so the message would otherwise
+/// read "no entry point" for a contract that exports the name with the wrong
+/// signature — a diagnostic that sends the author looking for a missing export
+/// they already have. `export` is what [`wasmi::Instance::get_export`] found.
+fn entry_point_detail(export: Option<Extern>, name: &str, error: &wasmi::Error) -> String {
+    match export {
+        Some(Extern::Func(_)) => {
+            format!("entry point '{name}' has the wrong signature, expected '() -> i32': {error}")
+        }
+        Some(_) => format!("export '{name}' is not a function: {error}"),
+        None => format!("no entry point '{name}': {error}"),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::abi::is_fatal;
 
     /// The engine is built once and shared, so two invocations must not compile
     /// their modules against different engines.
     #[test]
     fn the_engine_is_one_engine() {
         assert!(Engine::same(wasm_engine(), wasm_engine()));
+    }
+
+    /// The two lists that decide a host error's fate must name the same set.
+    /// [`is_fatal`] picks the channel; [`host_fatal`] names the outcome of the
+    /// fatal one. Only one direction of that agreement is compiler-enforced — a
+    /// *new* variant fails to compile until `host_fatal` places it — so a variant
+    /// moved into `is_fatal`'s set would trap and then be reported as `Internal`,
+    /// losing the condition it was. This is the other direction.
+    ///
+    /// The soft arm's answer is `Internal`, which `HostError::Internal` also
+    /// answers, so "named in its own right" is the outcome being anything else,
+    /// with `Internal` itself asked about by name.
+    #[test]
+    fn every_fatal_error_has_an_outcome_of_its_own() {
+        for &error in HostError::ALL {
+            let named = !matches!(host_fatal(error), RunError::Internal)
+                || matches!(error, HostError::Internal);
+            assert_eq!(
+                is_fatal(error),
+                named,
+                "{error:?}: abi::is_fatal {}, host_fatal {}",
+                if is_fatal(error) {
+                    "traps it"
+                } else {
+                    "passes it to the guest"
+                },
+                if named {
+                    "names its outcome"
+                } else {
+                    "groups it with the soft errors"
+                }
+            );
+        }
     }
 
     /// The four protocol limits against the C++ values they mirror: a deliberate

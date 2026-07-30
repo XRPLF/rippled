@@ -12,19 +12,19 @@ const HOST_MODULE: &str = "host_lib";
 // Import registration
 // ---------------------------------------------------------------------------
 
-/// Register the PoC's host functions on `linker`, one per [`HostFn`] variant.
+/// Register the PoC's host functions on `linker`, one per [`HostFunctionSpec`]
+/// variant.
 ///
-/// Driven by an exhaustive `match` over [`HostFn::ALL`]: adding a variant to
-/// the ABI won't compile until it has an arm here (that's the "can't forget to
-/// register" guarantee). Each arm is one [`charged`] call — the sole entry point
-/// for `charge`, and the one place a result is split between the status the guest
-/// reads and the trap it cannot — wrapping a body that calls straight into the
-/// [`HostFunctions`] trait object held in the [`Store`].
-pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Result<(), String> {
-    fn link_err(e: wasmi::errors::LinkerError) -> String {
-        format!("register import: {e}")
-    }
-
+/// Driven by an exhaustive `match` over [`HostFunctionSpec::ALL`]: adding a
+/// variant to the ABI won't compile until it has an arm here (that's the "can't
+/// forget to register" guarantee). Each arm is one [`charged`] call — the sole
+/// entry point for `charge`, and the one place a result is split between the
+/// status the guest reads and the trap it cannot — wrapping a body that calls
+/// straight into the [`xrpl_host_functions::HostFunctions`] trait object held in
+/// the [`wasmi::Store`].
+pub(crate) fn register_host_functions(
+    linker: &mut Linker<VmState<'_>>,
+) -> Result<(), wasmi::errors::LinkerError> {
     // TODO: think on how to make it better
     for &op in HostFunctionSpec::ALL {
         match op {
@@ -130,8 +130,7 @@ pub(crate) fn register_host_functions(linker: &mut Linker<VmState<'_>>) -> Resul
                     })
                 },
             ),
-        }
-        .map_err(link_err)?;
+        }?;
     }
     Ok(())
 }

@@ -449,9 +449,10 @@ fn the_entry_point_is_the_name_the_caller_gives() {
     assert_eq!(outcome.result, 9);
 }
 
-/// The entry point must take nothing and return an `i32`. A wrongly-typed export is
-/// reported as a missing entry point, which reads as though it were absent —
-/// finding D16 in `docs/claude/redesign_impl.md`.
+/// The entry point must take nothing and return an `i32`. A module that exports the
+/// name with another signature is told so, rather than being told the export is
+/// missing: wasmi answers both cases with one error, and "no entry point" would send
+/// a contract author looking for a function they already have.
 #[test]
 fn an_entry_point_of_the_wrong_type_fails() {
     let host = FakeHost::new();
@@ -467,11 +468,40 @@ fn an_entry_point_of_the_wrong_type_fails() {
         let wat = format!(
             r#"(module (memory (export "memory") 1) (func (export "finish") {signature} {body}))"#
         );
-        let failure = run_with_gas(&wat, PLENTY_OF_GAS, &host)
-            .expect_err("a wrongly-typed entry point must not run")
-            .to_string();
-        assert!(failure.contains("no entry point"), "{signature}: {failure}");
+        let failure = assert_stage!(
+            run_with_gas(&wat, PLENTY_OF_GAS, &host)
+                .expect_err("a wrongly-typed entry point must not run"),
+            RunError::EntryPoint(_)
+        )
+        .to_string();
+        assert!(
+            failure.contains("entry point 'finish' has the wrong signature"),
+            "{signature}: {failure}"
+        );
+        assert!(
+            !failure.contains("no entry point"),
+            "a present export must not be reported as absent — {signature}: {failure}"
+        );
     }
+}
+
+/// An export of the entry point's name that is not a function at all is a third
+/// case, and named as such: nothing is missing and no signature is wrong.
+#[test]
+fn an_entry_point_that_is_not_a_function_fails() {
+    let host = FakeHost::new();
+
+    let wat =
+        r#"(module (memory (export "memory") 1) (global (export "finish") i32 (i32.const 0)))"#;
+    let failure = assert_stage!(
+        run_with_gas(wat, PLENTY_OF_GAS, &host).expect_err("a non-function export must not run"),
+        RunError::EntryPoint(_)
+    )
+    .to_string();
+    assert!(
+        failure.contains("export 'finish' is not a function"),
+        "{failure}"
+    );
 }
 
 /// A guest that traps fails the run rather than returning a value.

@@ -140,10 +140,11 @@ pub(crate) fn read_borrowed<'a>(
     ptr: i32,
     len: i32,
 ) -> HostResult<&'a [u8]> {
-    if ptr < 0 || len < 0 {
+    // A guest's pointer and length are `i32` on the wire and indices here, so the
+    // conversion is the validity check: it fails on exactly the negative values.
+    let (Ok(ptr), Ok(len)) = (usize::try_from(ptr), usize::try_from(len)) else {
         return Err(HostError::InvalidParams);
-    }
-    let (ptr, len) = (ptr as usize, len as usize);
+    };
     if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
@@ -187,10 +188,10 @@ pub(crate) fn write_into(
     cap: i32,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
-    if dst < 0 || cap < 0 {
+    // As in `read_borrowed`: the conversion to an index is the validity check.
+    let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
         return Err(HostError::InvalidParams);
-    }
-    let (dst, cap) = (dst as usize, cap as usize);
+    };
     let mem = memory(caller)?;
     // Copy the shared `&dyn HostFunctions` out of the store data (references are
     // Copy) so the data borrow ends before we borrow guest memory mutably.
@@ -222,7 +223,13 @@ pub(crate) fn write_into(
     charge_transfer(caller.data(), n)?;
     // The cap check above bounds `n`, so the count reaches the wire whole: an
     // `i32` the guest reads as a byte count, never a truncation of a larger one.
-    Ok(n as i32)
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        reason = "`n > MAX_FIELD_BYTES` returned above, and the cap is far inside i32"
+    )]
+    let n = n as i32;
+    Ok(n)
 }
 
 // The input buffer in `read_write` lives on the stack, sized to the field cap.
@@ -250,10 +257,10 @@ pub(crate) fn read_write(
     cap: i32,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
-    if src < 0 || src_len < 0 {
+    // As in `read_borrowed`: the conversion to an index is the validity check.
+    let (Ok(src), Ok(len)) = (usize::try_from(src), usize::try_from(src_len)) else {
         return Err(HostError::InvalidParams);
-    }
-    let len = src_len as usize;
+    };
     if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
@@ -261,7 +268,7 @@ pub(crate) fn read_write(
     // Copy the input out before `write_into` borrows guest memory mutably.
     let mut buf = [0u8; MAX_FIELD_BYTES];
     memory(caller)?
-        .read(&*caller, src as usize, &mut buf[..len])
+        .read(&*caller, src, &mut buf[..len])
         .map_err(|_| HostError::PointerOutOfBounds)?;
     let input = &buf[..len];
 
@@ -331,9 +338,12 @@ mod tests {
         assert_eq!(wire(Err(HostError::BufferTooSmall)), -3);
     }
 
-    /// The three conditions the host cannot serve a call under. Named once, so the
-    /// two tests below are one statement about the same set.
-    const FATAL: [HostError; 3] = [
+    /// The three conditions the host cannot serve a call under, as the tests
+    /// *expect* them rather than as [`is_fatal`] reports them — deriving this from
+    /// `is_fatal` would make both tests below vacuous, since a condition wrongly
+    /// classified as soft would simply be skipped. Named once, so the two are one
+    /// statement about the same set.
+    const MUST_TRAP: [HostError; 3] = [
         HostError::OutOfGas,
         HostError::Internal,
         HostError::NoMemExported,
@@ -343,7 +353,7 @@ mod tests {
     /// outcome without parsing a message.
     #[test]
     fn a_host_fatal_error_becomes_a_trap_carrying_it() {
-        for error in FATAL {
+        for error in MUST_TRAP {
             let trap =
                 to_wire(Err(error)).expect_err("a fatal error must not reach the guest as a code");
             let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
@@ -354,7 +364,11 @@ mod tests {
     }
 
     /// Which errors take which channel, as a deliberate change-detector: the
-    /// three in [`FATAL`] trap, and everything else is a code the guest acts on.
+    /// three in [`MUST_TRAP`] trap, and everything else is a code the guest acts on.
+    ///
+    /// Over `HostError::ALL`, so it is the whole ABI and not a sample: a code
+    /// added to the ABI arrives here already asserted to be guest-visible, and
+    /// making it fatal is then a change someone has to come and make.
     ///
     /// `OutOfTransferLimit` is the row worth reading twice. It is the one budget
     /// a contract can be expected to handle — C++ made it the single soft failure
@@ -362,22 +376,13 @@ mod tests {
     /// the run's remaining 1 MiB is told no, not killed.
     #[test]
     fn only_the_host_fatal_errors_trap() {
-        for error in FATAL {
-            assert!(is_fatal(error), "{error:?} must stop the run");
-        }
-
-        for error in [
-            HostError::OutOfTransferLimit,
-            HostError::DataFieldTooLarge,
-            HostError::BufferTooSmall,
-            HostError::PointerOutOfBounds,
-            HostError::InvalidParams,
-            HostError::FieldNotFound,
-            HostError::Decoding,
-            HostError::NoRuntime,
-        ] {
-            assert!(!is_fatal(error), "{error:?} must reach the guest as a code");
-            assert_eq!(wire(Err(error)), error.code());
+        for &error in HostError::ALL {
+            if MUST_TRAP.contains(&error) {
+                assert!(is_fatal(error), "{error:?} must stop the run");
+            } else {
+                assert!(!is_fatal(error), "{error:?} must reach the guest as a code");
+                assert_eq!(wire(Err(error)), error.code());
+            }
         }
     }
 
