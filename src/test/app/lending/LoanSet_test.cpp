@@ -1,4 +1,4 @@
-#include <test/app/LoanTestBase.h>
+#include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -32,7 +32,7 @@
 
 namespace xrpl::test {
 
-class Loan_test : public LoanTestBase
+class LoanSet_test : public LoanTestBase
 {
 private:
     void
@@ -602,6 +602,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
+BEAST_DEFINE_TESTSUITE(LoanSet, tx, xrpl);
 
 }  // namespace xrpl::test

@@ -1,4 +1,4 @@
-#include <test/app/LoanTestBase.h>
+#include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>

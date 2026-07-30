@@ -295,6 +295,20 @@ public:
         return runner_->arg();
     }
 
+protected:
+    /**
+     * Return the runner this suite is executing under.
+     *
+     * Lets a suite compose other suites (e.g. an aggregator that reruns a
+     * group of related suites under its own name) via `SuiteInfo::run`.
+     */
+    Runner&
+    runner() const
+    {
+        return *runner_;
+    }
+
+public:
     /**
      * DEPRECATED
      * @return `true` if the test condition indicates success(a false value)
