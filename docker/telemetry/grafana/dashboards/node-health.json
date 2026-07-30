@@ -2375,7 +2375,7 @@
       "options": {
         "mergeValues": true,
         "showValue": "auto",
-        "alignValue": "left",
+        "alignValue": "center",
         "rowHeight": 0.9,
         "tooltip": {
           "mode": "single",
