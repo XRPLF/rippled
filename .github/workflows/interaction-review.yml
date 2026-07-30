@@ -1,12 +1,14 @@
 # Builds the feature-interaction graph for a PR's head revision, maps the diff
 # onto it, and renders an advisory comment body.
 #
-# This workflow deliberately has NO write permissions and does not post
-# anything: on a fork PR the token is read-only, so the comment is uploaded as
-# an artifact and posted by `interaction-review-comment.yml`, which runs on
-# `workflow_run` with the base repository's permissions. That split is the
-# standard pattern for commenting on fork PRs without granting write access to a
-# job that has checked out untrusted code.
+# The job that checks out PR code (`analyze`) deliberately has NO write
+# permissions and posts nothing: on a fork PR the token is read-only, so the
+# comment is uploaded as an artifact and posted by
+# `interaction-review-comment.yml`, which runs on `workflow_run` with the base
+# repository's permissions. That split is the standard pattern for commenting on
+# fork PRs without granting write access to a job that has checked out untrusted
+# code. `resolve` holds `issues: write` only to leave a reaction on the
+# triggering comment, and never checks anything out.
 #
 # The graph must be extracted from the *head* revision: node locations are
 # head-side line spans, so a graph built from develop would not line up with the
@@ -30,6 +32,12 @@ on:
       - "src/libxrpl/protocol/TxFormats.cpp"
       - "bin/interaction_review/**"
       - ".github/workflows/interaction-review*.yml"
+  # `/interaction-review` on a PR forces a run, including on a diff the path
+  # filter above skipped. GitHub only fires `issue_comment` from the default
+  # branch's copy of this file, so a change to the trigger has to be merged
+  # before it takes effect.
+  issue_comment:
+    types: [created]
   workflow_dispatch:
 
 defaults:
@@ -44,13 +52,94 @@ env:
   ARTIFACT_DIR: /tmp/interaction-review
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Normalises the three triggers down to one (pr, head_sha, base_ref) tuple, so
+  # `analyze` does not care how it was started. `issue_comment` is the reason
+  # this job exists: that payload describes a comment, not a revision, so the
+  # head SHA has to come from the API.
+  resolve:
+    name: Resolve the target revision
+    runs-on: ubuntu-latest
+    # A comment only counts when it is on a PR, starts with the command, and
+    # comes from someone who could push anyway. Without the last check any
+    # passer-by could spend a dependency build.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request != null &&
+       startsWith(github.event.comment.body, '/interaction-review') &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    permissions:
+      contents: read
+      pull-requests: read
+      # Only to acknowledge the command with a reaction; nothing is posted here.
+      issues: write
+    outputs:
+      pr: ${{ steps.target.outputs.pr }}
+      head_sha: ${{ steps.target.outputs.head_sha }}
+      base_ref: ${{ steps.target.outputs.base_ref }}
+    steps:
+      - name: Acknowledge the command
+        if: ${{ github.event_name == 'issue_comment' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          # A dependency build takes tens of minutes; without this the thread
+          # shows no sign the command was picked up.
+          gh api -X POST "repos/${GH_REPO}/issues/comments/${COMMENT_ID}/reactions" \
+              -f content=eyes --silent
+
+      - name: Resolve the target revision
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_EVENT_NUMBER: ${{ github.event.pull_request.number }}
+          PR_EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_EVENT_BASE: ${{ github.event.pull_request.base.ref }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          DISPATCH_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          case "${EVENT}" in
+              pull_request)
+                  pr="${PR_EVENT_NUMBER}"
+                  head="${PR_EVENT_HEAD}"
+                  base="${PR_EVENT_BASE}"
+                  ;;
+              issue_comment)
+                  pr="${ISSUE_NUMBER}"
+                  read -r head base < <(gh api "repos/${GH_REPO}/pulls/${pr}" \
+                      --jq '"\(.head.sha) \(.base.ref)"')
+                  ;;
+              *)
+                  # workflow_dispatch: no PR, so nothing is posted downstream.
+                  pr=""
+                  head="${DISPATCH_SHA}"
+                  base="${DEFAULT_BRANCH}"
+                  ;;
+          esac
+          if [ -z "${head}" ] || [ -z "${base}" ]; then
+              echo "could not resolve a revision for ${EVENT}" >&2
+              exit 1
+          fi
+          echo "event=${EVENT} pr=${pr:-none} head=${head} base=${base}"
+          {
+              echo "pr=${pr}"
+              echo "head_sha=${head}"
+              echo "base_ref=${base}"
+          } >>"${GITHUB_OUTPUT}"
+
   analyze:
     name: Map the diff onto the interaction graph
-    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    needs: resolve
+    runs-on: ubuntu-latest
     container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
     permissions:
       contents: read
@@ -60,7 +149,7 @@ jobs:
         with:
           # The head commit itself, not the merge commit: the graph's line spans
           # must match the revision the diff is computed against.
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.resolve.outputs.head_sha }}
           # Full history so the merge base with the base branch is reachable.
           fetch-depth: 0
 
@@ -150,13 +239,14 @@ jobs:
       - name: Map the diff onto the graph
         working-directory: bin/interaction_review
         env:
-          BASE_REF: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+          BASE_REF: ${{ needs.resolve.outputs.base_ref }}
+          HEAD_SHA: ${{ needs.resolve.outputs.head_sha }}
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
           .venv/bin/python pr_map.py \
               --base "origin/${BASE_REF}" \
-              --head "${{ github.event.pull_request.head.sha || github.sha }}"
+              --head "${HEAD_SHA}"
 
       - name: Select the in-scope interactions
         working-directory: bin/interaction_review
@@ -170,7 +260,7 @@ jobs:
 
       - name: Collect the artifact
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.resolve.outputs.pr }}
         run: |
           mkdir -p "${ARTIFACT_DIR}"
           # The posting workflow only sees this artifact, so the PR number has to

@@ -182,7 +182,18 @@ access to a job that checked out untrusted code:
   touch a node. Configures CMake (for `compile_commands.json`), builds
   `xrpl.libpb` (Transactor.cpp's TU needs the generated protobuf headers, or the
   parse silently degrades), then runs all four tools and uploads `comment.md`
-  plus every JSON artifact. It has **no write permissions** and posts nothing.
+  plus every JSON artifact. The job that checks out PR code has **no write
+  permissions** and posts nothing.
+
+  Commenting `/interaction-review` on a PR forces a run, including on a diff the
+  path filter skipped — useful after changing the tool itself, or to refresh a
+  report without pushing. The command is accepted only from an author who could
+  push anyway, since each run costs a dependency build. A `resolve` job turns
+  whichever trigger fired into one `(pr, head_sha, base_ref)` tuple; the
+  `issue_comment` payload describes a comment rather than a revision, so the head
+  SHA is read from the API. Because GitHub fires `issue_comment` from the
+  **default branch's** copy of a workflow, a change to the command only takes
+  effect once merged.
 - `interaction-review-comment.yml` — on `workflow_run`, downloads that artifact
   and either rewrites the existing comment (found by its marker) or posts a
   new one. It never checks out PR code.
