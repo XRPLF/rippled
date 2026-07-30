@@ -3,9 +3,9 @@
 
    The Nix-based CI image links binaries against an ELF interpreter (loader)
    that lives in the Nix store, so the resulting binaries don't run elsewhere
-   (including once installed from the .deb package). `patch_nix_binary` adds a
-   POST_BUILD step that resets the interpreter to the system default loader and
-   drops the rpath.
+   (including once installed from the .deb package). `patch_nix_binary` resets
+   the interpreter to the system default loader and drops the rpath, once the
+   binary has been linked.
 
    This is only active inside the Nix-based image, detected by the presence of
    /tmp/loader-path.sh (shipped by that image, resolves the default loader). It
@@ -41,13 +41,38 @@ function(patch_nix_binary target)
     if(NOT PATCH_NIX_BINARIES)
         return()
     endif()
-    add_custom_command(
-        TARGET ${target}
-        POST_BUILD
-        COMMAND
-            "${PATCHELF_COMMAND}" --set-interpreter "${DEFAULT_LOADER_PATH}"
-            --remove-rpath "$<TARGET_FILE:${target}>"
-        COMMENT "Patching ${target}: set default loader, remove rpath"
-        VERBATIM
+
+    set(patch_command
+        "${PATCHELF_COMMAND}"
+        --set-interpreter
+        "${DEFAULT_LOADER_PATH}"
+        --remove-rpath
+        "$<TARGET_FILE:${target}>"
     )
+    set(comment "Patching ${target}: set default loader, remove rpath")
+
+    # POST_BUILD is the cheap way to do this: it runs only when the binary is
+    # relinked. It is also only available in the directory that defined the
+    # target, so for a target from elsewhere (e.g. a FetchContent subproject)
+    # fall back to a custom target that runs after the binary is linked. That
+    # one runs on every build, which is harmless because patchelf is idempotent.
+    get_target_property(target_source_dir ${target} SOURCE_DIR)
+    if("${target_source_dir}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+        add_custom_command(
+            TARGET ${target}
+            POST_BUILD
+            COMMAND ${patch_command}
+            COMMENT "${comment}"
+            VERBATIM
+        )
+    else()
+        add_custom_target(
+            ${target}-patch-nix
+            ALL
+            COMMAND ${patch_command}
+            COMMENT "${comment}"
+            VERBATIM
+        )
+        add_dependencies(${target}-patch-nix ${target})
+    endif()
 endfunction()

@@ -138,8 +138,10 @@ endif()
 include(XrplCore)
 include(XrplProtocolAutogen)
 include(XrplInstall)
-include(XrplPackaging)
 include(XrplValidatorKeys)
+# Must come after XrplValidatorKeys: the 'package' target depends on the
+# validator-keys target existing.
+include(XrplPackaging)
 
 if(tests)
     include(CTest)

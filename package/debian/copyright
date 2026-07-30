@@ -5,6 +5,25 @@ Source: https://github.com/XRPLF/rippled
 Files: *
 Copyright: 2011-present, the XRP Ledger developers
 License: ISC
+
+Files: validator-keys
+Copyright: 2016, Ripple Labs Inc.
+ 2011, Arthur Britto, David Schwartz, Jed McCaleb, Vinnie Falco, Bob Way,
+ Eric Lombrozo, Nikolaos D. Bougalis, Howard Hinnant
+ 2013, Raw Material Software Ltd.
+ 2003-2011, Christopher M. Kohlhoff
+ 2009-2010, Satoshi Nakamoto
+ 2011, The Bitcoin developers
+ 2003-2005, Tom Wu
+License: ISC
+Comment: Built from https://github.com/ripple/validator-keys-tool at the commit
+ pinned in cmake/XrplValidatorKeys.cmake. Besides ISC-licensed code it
+ incorporates work under the Boost Software License 1.0 (ASIO), the MIT/X11
+ license (Bitcoin) and Tom Wu's license, whose terms require its notice to be
+ retained intact. The complete upstream notice is therefore shipped verbatim as
+ /usr/share/doc/xrpld/validator-keys-LICENSE.
+
+License: ISC
  Permission to use, copy, modify, and distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
  copyright notice and this permission notice appear in all copies.
