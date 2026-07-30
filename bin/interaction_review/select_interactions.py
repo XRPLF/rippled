@@ -365,30 +365,41 @@ def _group(
     }
 
 
+def _n(count: int, singular: str, plural: str | None = None) -> str:
+    """`1 file` / `3 files`. "(s)" on every noun reads like a form letter."""
+    return f"{count} {singular if count == 1 else (plural or singular + 's')}"
+
+
 def _caveats(touched: dict) -> list[str]:
-    """Everything the reviewer must not read this report as having covered."""
+    """Everything the reviewer must not read this report as having covered.
+
+    Written for someone reading their own PR, so this keeps to plain words for
+    the same reason render_comment.py does -- see the note in its docstring.
+    """
     out: list[str] = []
     for entry in touched["off_span_changes"]:
         out.append(
-            f"`{entry['file']}` changed outside every node span in it "
-            f"({len(entry['hosts'])} node(s) live in that file). Not attributed "
-            f"to any node, so no interaction below reflects it."
+            f"`{entry['file']}` changed, but outside the parts of it this tool "
+            f"tracks ({_n(len(entry['hosts']), 'tracked piece')} live in that "
+            f"file). Those edits are not counted anywhere above."
         )
     for entry in touched["structural_changes"]:
         out.append(
-            f"`{entry['file']}` changed with no line content ({entry['kind']}), "
-            f"hosting {len(entry['hosted'])} node(s). No span can match it."
+            f"`{entry['file']}` changed without any line edits ({entry['kind']}), "
+            f"and {_n(len(entry['hosted']), 'tracked piece')} live there. There "
+            f"are no changed lines to match against."
         )
     unmapped = touched["summary"]["unmapped_files"]
     if unmapped:
         out.append(
-            f"{unmapped} changed file(s) map to no graph node — including all of "
-            f"`src/test`, `tx/paths/`, and most invariants. See the known limits "
-            f"in `bin/interaction_review/README.md`."
+            f"{_n(unmapped, 'changed file')} not tracked at all — that includes "
+            f"everything under `src/test`, the payment engine in `tx/paths/`, and "
+            f"most invariants. The known gaps are listed in "
+            f"`bin/interaction_review/README.md`."
         )
     out.append(
-        "Test coverage is **not** checked yet: this names boundaries worth a "
-        "look, not boundaries that are untested."
+        "Test coverage is **not** checked yet. This points at combinations worth "
+        "a look; it does not know whether you have already tested them."
     )
     return out
 
