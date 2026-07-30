@@ -498,12 +498,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -550,12 +550,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -602,12 +602,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: errors/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Errors / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

@@ -526,7 +526,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: operations/s",
           "custom": {
             "axisLabel": "Operations / Sec",
             "drawStyle": "line",
@@ -1196,7 +1196,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 88,
+        "y": 96,
         "w": 12,
         "h": 8
       },
@@ -1240,7 +1240,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 88,
+        "y": 96,
         "w": 12,
         "h": 8
       },
@@ -1285,8 +1285,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 96
+        "x": 0,
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -1319,8 +1319,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 104
+        "x": 12,
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -1353,7 +1353,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 104
       },
       "options": {
@@ -1407,9 +1407,9 @@
       "type": "table",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 113
+        "y": 121
       },
       "options": {
         "showHeader": true
@@ -1440,8 +1440,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 113
+        "x": 0,
+        "y": 129
       },
       "options": {
         "tooltip": {
@@ -1494,9 +1494,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 121
+        "y": 113
       },
       "options": {
         "tooltip": {
@@ -1516,7 +1516,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cpm",
+          "unit": "suffix: fetches/min",
           "custom": {}
         },
         "overrides": []
@@ -1530,7 +1530,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 121
+        "y": 129
       },
       "options": {
         "tooltip": {
@@ -1571,7 +1571,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 129
+        "y": 137
       },
       "collapsed": false,
       "panels": []
@@ -1584,7 +1584,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -1618,7 +1618,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -1652,7 +1652,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -1686,7 +1686,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -1748,7 +1748,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 138
+        "y": 146
       },
       "options": {
         "tooltip": {
@@ -1768,9 +1768,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: transactions/s",
           "custom": {
-            "axisLabel": "Transactions",
+            "axisLabel": "Transactions / Sec",
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
@@ -1886,9 +1886,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Duration (ms)",
+            "axisLabel": "Duration (µs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1986,9 +1986,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Wait Time (ms)",
+            "axisLabel": "Wait Time (µs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -2290,7 +2290,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -2330,7 +2330,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 130
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -2350,7 +2350,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: acquisitions/s",
           "custom": {
             "axisLabel": "Acquisitions / Sec",
             "spanNulls": 1800000,
@@ -2370,7 +2370,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 138
+        "y": 146
       },
       "options": {
         "mergeValues": true,
@@ -2378,8 +2378,9 @@
         "alignValue": "center",
         "rowHeight": 0.9,
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -2444,7 +2445,9 @@
           ],
           "custom": {
             "fillOpacity": 80,
-            "lineWidth": 0
+            "lineWidth": 0,
+            "spanNulls": 1800000,
+            "insertNulls": false
           }
         },
         "overrides": []
@@ -2458,7 +2461,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 138
+        "y": 146
       },
       "options": {
         "reduceOptions": {
@@ -2519,7 +2522,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 146
+        "y": 154
       },
       "collapsed": false,
       "panels": []
@@ -2532,7 +2535,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 147
+        "y": 155
       },
       "options": {
         "tooltip": {

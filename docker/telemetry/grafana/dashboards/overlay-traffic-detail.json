@@ -590,7 +590,7 @@
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "µs",
           "custom": {
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (µs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -639,7 +639,11 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "custom": {
+            "spanNulls": 1800000,
+            "insertNulls": false
+          }
         },
         "overrides": []
       }
@@ -672,7 +676,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: lookups/s",
           "custom": {
             "axisLabel": "Lookups / Sec",
             "spanNulls": 1800000,
@@ -712,7 +716,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: rejections/s",
           "custom": {
             "axisLabel": "Rejections / Sec",
             "spanNulls": 1800000,

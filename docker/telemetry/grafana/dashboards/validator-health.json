@@ -297,7 +297,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "thresholds": {
             "steps": [
               {
@@ -347,7 +347,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "custom": {}
         },
         "overrides": []
@@ -569,9 +569,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "custom": {
-            "axisLabel": "Per Minute",
+            "axisLabel": "Validations / Min",
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
@@ -657,7 +657,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 91
+        "y": 123
       },
       "options": {
         "tooltip": {
@@ -703,7 +703,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 91
       },
       "options": {
         "tooltip": {
@@ -737,7 +737,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 107
+        "y": 99
       },
       "options": {
         "tooltip": {
@@ -757,7 +757,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "suffix:/hr",
+          "unit": "suffix: changes/hr",
           "thresholds": {
             "steps": [
               {
@@ -787,7 +787,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 115
+        "y": 107
       },
       "options": {
         "tooltip": {
@@ -807,7 +807,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cpm",
+          "unit": "suffix: ledgers/min",
           "thresholds": {
             "steps": [
               {
@@ -837,7 +837,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 123
+        "y": 115
       },
       "options": {
         "tooltip": {

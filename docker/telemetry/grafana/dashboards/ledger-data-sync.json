@@ -1117,16 +1117,33 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "reqps",
+          "unit": "suffix: ledgers/s",
           "custom": {
-            "axisLabel": "Rate (per second)",
+            "axisLabel": "Ledgers / Sec & Fetches / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Ledger Fetches/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: fetches/s"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
       },
       "id": 19
     },
@@ -1826,9 +1843,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
-            "axisLabel": "Events (Per Second)",
+            "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1882,9 +1899,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: outcomes/s",
           "custom": {
-            "axisLabel": "Outcomes (Per Second)",
+            "axisLabel": "Outcomes / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1931,9 +1948,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: acquisitions/s",
           "custom": {
-            "axisLabel": "Discarded Acquisitions (Per Second)",
+            "axisLabel": "Acquisitions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1980,9 +1997,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
-            "axisLabel": "Ledger Lane Events (Per Second)",
+            "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
