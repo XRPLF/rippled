@@ -65,10 +65,13 @@ inline constexpr auto discover = makeStr("discover");
 }  // namespace op
 
 // ===== Attribute keys ======================================================
-//
-// All pathfind attributes are namespaced under `pathfind_*` (underscore form,
-// per Phase 1c naming spec rule 5). Avoids collisions with bare keys like
-// `fast` or `num_paths` that other subsystems may introduce.
+
+/**
+ * All pathfind attributes are namespaced under `pathfind_*`, in underscore
+ * form, per the span attribute naming convention in CONTRIBUTING.md. Avoids
+ * collisions with bare keys like `fast` or `num_paths` that other subsystems
+ * may introduce.
+ */
 
 namespace attr {
 /**
