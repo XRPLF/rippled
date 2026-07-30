@@ -14,15 +14,17 @@
  *     on the nodestore_state gauge. Also a public static constexpr inline,
  *     so it runs in both builds for the same reason.
  *
- *  3. The no-op / telemetry-disabled path — construction, start()/stop()
- *     lifecycle, and the synchronous record*() methods. Guarded, because
+ *  3. The no-op / telemetry-disabled path — construction, the two-phase
+ *     start() / startAsyncGauges() / stop() lifecycle, and the synchronous
+ *     record*() methods. Guarded, because
  *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
  *     compiled into this binary (see src/tests/libxrpl/CMakeLists.txt) and
  *     its out-of-line symbols are unresolvable here.
  *
  *  Tests cover:
  *  - Construction with telemetry disabled (no-op behavior).
- *  - start()/stop() lifecycle when disabled.
+ *  - The two-phase start() / startAsyncGauges() / stop() lifecycle when
+ *    disabled.
  *  - Synchronous instrument recording methods do not crash when disabled.
  *  - Double stop() is safe.
  *  - Destructor handles cleanup without crash.
@@ -465,12 +467,21 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
 using namespace xrpl;
 
 namespace {
+
+/**
+ * OTLP/HTTP endpoint passed to every start() call below. Nothing ever dials
+ * it -- these tests exercise the no-op path -- it just has to be a plausible
+ * URL. start() takes `std::string const&`, so call sites construct one from
+ * this view rather than repeating the literal.
+ */
+constexpr std::string_view kTestEndpoint{"http://localhost:4318/v1/metrics"};
 
 /**
  * Minimal mock ServiceRegistry for MetricsRegistry testing.
@@ -765,17 +776,108 @@ TEST_F(MetricsRegistryTest, disabled_start_stop)
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
 
     // start() and stop() should be no-ops when disabled.
-    registry.start("http://localhost:4318/v1/metrics");
+    registry.start(std::string{kTestEndpoint});
     registry.stop();
 
     // Double stop should be safe.
     registry.stop();
 }
 
+// ---------------------------------------------------------------------------
+// The two-phase startup split: start() then startAsyncGauges().
+//
+// Why the split exists: start() reads only config strings, while the
+// observable-instrument callbacks registered by startAsyncGauges() read live
+// Application services (getOverlay() asserts overlay_ is non-null). The split
+// lets the meter go live before the first consensus round records its
+// mode-transition counter, while the callbacks still wait for the subsystems.
+//
+// SCOPE OF THESE TESTS -- read before adding to them. MetricsRegistry.cpp is
+// compiled into this binary ONLY when telemetry is OFF
+// (src/tests/libxrpl/CMakeLists.txt:117-126 -- the `else()` branch; when it is
+// ON the .cpp needs concrete xrpld types such as LedgerMaster, TxQ, NetworkOPs,
+// Overlay and node_store::Database, which a standalone GTest binary cannot
+// link). Both start() and startAsyncGauges() therefore compile here to their
+// `#else` branch, which only (void)-casts its arguments. So these tests pin the
+// API SURFACE -- that both entry points exist, are callable in either order,
+// and leave the object usable -- and NOT the gauge behaviour. Real coverage of
+// "gauges observe values only after startAsyncGauges()" is unreachable from
+// this target; it needs the enabled path plus an in-memory metric reader.
+//
+// Two properties the production code does NOT have, so nothing below asserts
+// them: startAsyncGauges() has no idempotency guard (a second call on the
+// enabled path would create a second set of same-named instruments), and
+// callbacksDetached_ is one-way, so detachCallbacks() followed by
+// startAsyncGauges() would register permanently-dead instruments.
+// ---------------------------------------------------------------------------
+
+TEST_F(MetricsRegistryTest, async_gauges_start_after_start_is_safe)
+{
+    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+
+    // The documented order: provider/sync instruments first, gauges second.
+    registry.start(std::string{kTestEndpoint});
+    registry.startAsyncGauges();
+
+    // State: the enable flag is untouched by either phase. Exact value, not
+    // merely "falsy" -- a phase that flipped it would be a real defect.
+    EXPECT_EQ(registry.isEnabled(), false);
+
+    // Synchronous recording must work off phase 1 alone. This is the whole
+    // point of the split: nothing here needs the gauges to be registered.
+    registry.recordRpcStarted("server_info");
+    registry.recordRpcFinished("server_info", 1000);
+
+    registry.stop();
+    EXPECT_EQ(registry.isEnabled(), false);
+}
+
+TEST_F(MetricsRegistryTest, async_gauges_before_start_does_not_break_start)
+{
+    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+
+    // Negative path: the mis-ordered call, gauges before the provider exists.
+    // In THIS build it reaches the (void)-cast stub, so what is actually
+    // proven is only that the entry point tolerates being called first and
+    // leaves the object usable -- not that the enabled path's `if (!meter_)`
+    // guard works, since that guard is inside #ifdef XRPL_ENABLE_TELEMETRY and
+    // is not compiled here.
+    registry.startAsyncGauges();
+    EXPECT_EQ(registry.isEnabled(), false);
+
+    // Phase 1 still works afterwards, so the bad call left no state behind.
+    registry.start(std::string{kTestEndpoint});
+    registry.recordJobQueued("ledgerData", "ProcessLData");
+    EXPECT_EQ(registry.isEnabled(), false);
+
+    registry.stop();
+}
+
+TEST_F(MetricsRegistryTest, async_gauges_respect_the_compile_time_guard)
+{
+    // Constructed with enabled=true, which on the enabled path would register
+    // instruments for real. In this build XRPL_ENABLE_TELEMETRY is undefined,
+    // so both phases compile to the (void)-cast stub branch and neither
+    // touches the mock -- every MockServiceRegistry accessor throws, so a
+    // callback that actually ran would surface as a thrown exception here.
+    telemetry::MetricsRegistry registry(true, mockApp_, j_);
+
+    // Cause, not just state: the flag really is true, so the no-op below is
+    // attributable to the compile-time guard and not to an early enabled_
+    // return.
+    EXPECT_EQ(registry.isEnabled(), true);
+
+    EXPECT_NO_THROW(registry.start(std::string{kTestEndpoint}));
+    EXPECT_NO_THROW(registry.startAsyncGauges());
+    EXPECT_NO_THROW(registry.stop());
+
+    EXPECT_EQ(registry.isEnabled(), true);
+}
+
 TEST_F(MetricsRegistryTest, disabled_recording_methods)
 {
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
-    registry.start("http://localhost:4318/v1/metrics");
+    registry.start(std::string{kTestEndpoint});
 
     // All recording methods should be no-ops (not crash).
     registry.recordRpcStarted("server_info");
@@ -793,7 +895,7 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
     {
         // Let the destructor handle cleanup.
         telemetry::MetricsRegistry registry(false, mockApp_, j_);
-        registry.start("http://localhost:4318/v1/metrics");
+        registry.start(std::string{kTestEndpoint});
     }
     // If we get here without crash, the destructor handled stop.
 }

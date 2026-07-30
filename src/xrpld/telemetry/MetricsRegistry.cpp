@@ -255,14 +255,45 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
                           << ", instanceId=" << instanceId;
 
+    // Rule for anything added below: this phase may create only instruments
+    // whose recording is PUSHED from app code -- counters and histograms. An
+    // instrument registered here is live immediately, and the reader thread
+    // may invoke a registered callback before the rest of the Application is
+    // built, so any observable whose callback reads an Application service
+    // belongs in startAsyncGauges(), not here. That includes observable
+    // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
+    // its callback read getOverlay(), which asserts overlay_ is non-null.
     initExporterAndProvider(endpoint, instanceId);
     initSyncInstruments();
+
+    JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
+#else
+    (void)endpoint;
+    (void)instanceId;
+    (void)enabled_;
+#endif  // XRPL_ENABLE_TELEMETRY
+}
+
+void
+MetricsRegistry::startAsyncGauges()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (!enabled_)
+        return;
+
+    // A mis-ordered call must not crash: without a meter there is nothing to
+    // create instruments on, so registration is skipped entirely.
+    if (!meter_)
+    {
+        JLOG(journal_.warn()) << "MetricsRegistry: startAsyncGauges() called "
+                                 "before start(); no gauges registered";
+        return;
+    }
+
     registerAsyncGauges();
 
     JLOG(journal_.info()) << "MetricsRegistry: started successfully";
 #else
-    (void)endpoint;
-    (void)instanceId;
     (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
@@ -428,30 +459,6 @@ MetricsRegistry::initSyncInstruments()
     // (NetworkOPsImp::setMode) through XRPL_METRIC_COUNTER_INC_LABELED so it
     // can carry the {from,to} transition labels; a registry-owned instrument
     // would only give an unlabelled total.
-    // jq_trans_overflow_total is observed from Overlay's existing cumulative
-    // atomic (Overlay::getJqTransOverflow()) rather than pushed. The overlay
-    // owns the only increment site (PeerImp), so an ObservableCounter reads the
-    // live total each collection cycle without threading a push path through
-    // develop-owned overlay code.
-    jqTransOverflowObservable_ = meter_->CreateInt64ObservableCounter(
-        "jq_trans_overflow_total", "Total job queue transaction overflows");
-    jqTransOverflowObservable_->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
-            if (self->callbacksDetached_.load(std::memory_order_acquire))
-                return;
-            try
-            {
-                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
-                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                    ->Observe(static_cast<int64_t>(self->app_.getOverlay().getJqTransOverflow()));
-            }
-            catch (...)  // NOLINT(bugprone-empty-catch)
-            {
-                // Silently skip on error.
-            }
-        },
-        this);
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
         metric::ledgerHistoryMismatchTotal, "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
@@ -652,6 +659,7 @@ MetricsRegistry::registerAsyncGauges()
     // Each helper creates one observable instrument and attaches one
     // callback. Keeping the registration bodies in separate methods
     // preserves the 80-line-per-function limit enforced by CLAUDE.md.
+    registerJqTransOverflowCounter();
     registerCacheHitRateGauge();
     registerTxqGauge();
     registerObjectCountGauge();
@@ -681,6 +689,40 @@ MetricsRegistry::registerAsyncGauges()
     registerSlotCensusGauge();
     registerAmendmentBlockGauge();
     registerLedgerQuorumPublishGauge();
+}
+
+void
+MetricsRegistry::registerJqTransOverflowCounter()
+{
+    // jq_trans_overflow_total is observed from Overlay's existing cumulative
+    // atomic (Overlay::getJqTransOverflow()) rather than pushed. The overlay
+    // owns the only increment site (PeerImp), so an ObservableCounter reads the
+    // live total each collection cycle without threading a push path through
+    // develop-owned overlay code.
+    //
+    // Registered with the gauges, not with the synchronous instruments: the
+    // callback reads getOverlay(), which asserts overlay_ is non-null. Arming
+    // it any earlier would let a reader tick fire before the overlay exists,
+    // and an assert is not caught by the try block below.
+    jqTransOverflowObservable_ = meter_->CreateInt64ObservableCounter(
+        "jq_trans_overflow_total", "Total job queue transaction overflows");
+    jqTransOverflowObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(static_cast<int64_t>(self->app_.getOverlay().getJqTransOverflow()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
 }
 
 void
@@ -1534,14 +1576,13 @@ MetricsRegistry::registerLedgerEconomyGauge()
                         ->Observe(value, {{label::metric, name}});
                 };
 
-                // Local fee (drops).
-                observe("base_fee_xrp", static_cast<double>(app.getFeeTrack().getLocalFee()));
-
-                // Reserve values from the validated ledger.
+                // Fee and reserve values from the validated ledger.
                 auto const ledger = app.getLedgerMaster().getValidatedLedger();
                 if (ledger)
                 {
                     auto const& fees = ledger->fees();
+                    // Cost of a reference transaction (drops).
+                    observe("base_fee_xrp", static_cast<double>(fees.base.drops()));
                     // Base reserve = one account, zero owned objects:
                     // accountReserve(ownerCount=0, accountCount=1) == reserve.
                     observe(

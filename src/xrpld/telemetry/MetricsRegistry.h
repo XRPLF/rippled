@@ -104,10 +104,16 @@
  * Example usage:
  *
  * @code
- * // In Application::setup(), after telemetry_ is created:
+ * // In Application::setup(), after telemetry_ is created. Phase 1 needs
+ * // only the config strings, so it runs immediately and the meter is live
+ * // before any metric-emitting code:
  * metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
  * telemetry_->isEnabled(), app, journal);
  * metricsRegistry_->start(setup.exporterEndpoint);
+ *
+ * // Later in setup(), once overlay_ exists (the last of the services the
+ * // callbacks read). Phase 2 registers the observable instruments:
+ * metricsRegistry_->startAsyncGauges();
  *
  * // In PerfLogImp::rpcStart():
  * if (auto* mr = app_.getMetricsRegistry())
@@ -217,9 +223,9 @@ namespace telemetry {
  * catch-all try block so a transient failure never crashes
  * the reader thread.
  * - ValidationTracker protects its rolling windows internally.
- * - start() and stop() are NOT thread-safe with each other and
- * must be called from the single Application lifecycle
- * thread.
+ * - start(), startAsyncGauges() and stop() are NOT thread-safe
+ * with each other and must all be called, in that order, from
+ * the single Application lifecycle thread.
  *
  * @note Lifetime:
  * - Must be constructed AFTER telemetry_ (reads isEnabled()).
@@ -264,7 +270,24 @@ public:
     operator=(MetricsRegistry const&) = delete;
 
     /**
-     * Initialize the OTel metrics pipeline and register all instruments.
+     * Initialize the OTel metrics pipeline and create the SYNCHRONOUS
+     * instruments (counters and histograms).
+     *
+     * This is the first of two startup phases, and it can be called as soon
+     * as the registry is constructed — which is what makes the meter live
+     * before the first metric-emitting code runs. Startup RPCs and the first
+     * consensus round both record metrics; a call-site metric macro caches
+     * its instrument on first use, so a first use before the meter exists
+     * latches null for the process lifetime.
+     *
+     * @note Invariant for future changes: this phase may create only
+     * instruments with NO Application-reading callback. Push-model
+     * counters and histograms qualify; app code records into them
+     * when it is ready. Any observable instrument whose callback
+     * reads an Application service belongs in `startAsyncGauges()`,
+     * because registering it here arms the reader thread to invoke
+     * that callback against a half-built Application. This applies
+     * to observable COUNTERS as well as gauges.
      *
      * @param endpoint    OTLP/HTTP endpoint URL for metric export
      * (e.g. "http://localhost:4318/v1/metrics").
@@ -277,6 +300,37 @@ public:
     start(std::string const& endpoint, std::string const& instanceId = {});
 
     /**
+     * Register the pull-model observable instruments — the second startup
+     * phase. Mostly ObservableGauges, plus the ObservableCounters whose
+     * source value is already cumulative.
+     *
+     * Split from `start()` because the two halves have different
+     * prerequisites. `start()` needs only config strings; these callbacks
+     * read live Application services, so this half must run later.
+     * Registering an observable also arms the reader thread to invoke its
+     * callback on the next tick, which is why the split is about ordering
+     * and not just tidiness.
+     *
+     * @pre `start()` has already run (the meter exists). If it has not,
+     * this is a logged no-op rather than a crash.
+     * @pre Every service the callbacks read is constructed. The full set,
+     * from the `app.get*()` calls in the registration helpers, is:
+     * Overlay, OPs (NetworkOPs), LedgerMaster, OpenLedger, TxQ,
+     * NodeStore, NodeFamily, Validators, AcceptedLedgerCache,
+     * CachedSLEs, AcquireStats, TimeKeeper, RelationalDatabase,
+     * InboundLedgers and FeeTrack.
+     * All but Overlay already exist by the time `start()` is
+     * callable, so Overlay is what fixes this call's position:
+     * `ServiceRegistry::getOverlay()` `XRPL_ASSERT`s that
+     * `overlay_` is non-null, and a reader-thread tick before the
+     * overlay exists aborts a Debug build. The callbacks' catch-all
+     * try block does not catch an assert. `getTxQ()` and
+     * `getRelationalDatabase()` assert likewise.
+     */
+    void
+    startAsyncGauges();
+
+    /**
      * Detach all ObservableGauge callbacks so they no-op on the next
      * reader-thread tick.
      *
@@ -287,9 +341,15 @@ public:
      * guarantees that once `detachCallbacks()` returns, no subsequent
      * callback invocation will dereference an already-stopped service.
      *
-     * Idempotent. Safe to call multiple times. Safe to call before
-     * `start()` (has no effect). The actual SDK-level provider
-     * shutdown still happens in `stop()`.
+     * Idempotent, and safe to call multiple times: the flag is one-way,
+     * only ever set to true, and nothing clears it. The actual
+     * SDK-level provider shutdown still happens in `stop()`.
+     *
+     * @note One-way means this is a shutdown-only call. Calling it before
+     * `startAsyncGauges()` does not "have no effect" — it
+     * permanently disarms every gauge the later call registers, so
+     * the instruments exist but never observe a value. Only call it
+     * once the process is shutting down.
      */
     void
     detachCallbacks() noexcept;
@@ -1019,14 +1079,21 @@ private:
      * Register all observable gauge callbacks with the OTel SDK.
      * Dispatches to one helper per metric domain so that each helper
      * stays well under the 80-line-per-function limit.
+     *
+     * Called only from `startAsyncGauges()`, which owns the enabled_ and
+     * meter_ guards and the Application-state precondition.
      */
     void
     registerAsyncGauges();
 
-    // Per-domain gauge registration helpers. Each creates its instrument
-    // and attaches a single ObservableGauge callback that reads current
-    // values from Application services. The callbacks run on the OTel
+    // Per-domain registration helpers for the async (pull-model) phase.
+    // Each creates its instrument -- an ObservableGauge, or an
+    // ObservableCounter where the underlying value is cumulative -- and
+    // attaches a single callback that reads current values from Application
+    // services. The callbacks run on the OTel
     // PeriodicExportingMetricReader background thread (~10 s tick).
+    void
+    registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
     void
     registerCacheHitRateGauge();  // Task 9.2
     void
