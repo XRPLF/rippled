@@ -119,7 +119,9 @@ public:
     keylet() const
     {
         if constexpr (kIsWritable)
+        {
             return key_;
+        }
         else
         {
             XRPL_ASSERT(exists(), "xrpl::SLEBase::keylet : exists");
