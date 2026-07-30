@@ -8634,7 +8634,7 @@ protected:
             Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
             Number const debtTotalBefore = brokerBefore->at(sfDebtTotal);
 
-            auto const loanSequence = brokerBefore->at(sfLoanSequence);
+            auto const loanSequence = SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence));
             auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
 
             env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
@@ -8858,7 +8858,8 @@ protected:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -9079,7 +9080,8 @@ protected:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -9284,7 +9286,7 @@ protected:
         auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         // ---- LoanSet origination: whole-life formulas expected ----
         auto const vaultBeforeSet = env.le(broker.vaultKeylet());
@@ -9492,7 +9494,7 @@ protected:
         auto const brokerBeforeLoan = env.le(brokerKeylet);
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         LoanParameters const loanParams{
             .account = borrower,
