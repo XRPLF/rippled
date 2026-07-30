@@ -194,10 +194,8 @@ private:
 
     /**
      * Process an RPC request and write the reply to `output`.
-     * @return false if the request resulted in an error response, true
-     * otherwise. Lets the caller's enclosing span reflect the outcome.
      */
-    bool
+    void
     processRequest(
         Port const& port,
         std::string const& request,

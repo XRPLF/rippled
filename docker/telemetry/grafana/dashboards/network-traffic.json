@@ -212,9 +212,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -267,9 +267,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -329,9 +329,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -391,9 +391,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

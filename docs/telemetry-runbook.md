@@ -1873,7 +1873,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
-| Transaction Path Distribution      | piechart       | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))`                        | `local`                             |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[5m]))`                    | `local`                             |
 | Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
@@ -1914,12 +1914,12 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
-| Panel                            | Type       | PromQL                         | Labels Used          |
-| -------------------------------- | ---------- | ------------------------------ | -------------------- |
-| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate   | —                    |
-| Validation Receive Rate          | timeseries | `peer.validation.receive` rate | —                    |
-| Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
-| Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
+| Panel                            | Type       | PromQL                                                                    | Labels Used          |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------- | -------------------- |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate                                              | —                    |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate                                            | —                    |
+| Proposals Trusted vs Untrusted   | piechart   | `increase()` counts in the selected window, split by `proposal_trusted`   | `proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | `increase()` counts in the selected window, split by `validation_trusted` | `validation_trusted` |
 
 ### Node Health -- System Metrics (`node-health`)
 
@@ -1985,8 +1985,8 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | RPC Response Time Heatmap | heatmap    | `rpc_time_bucket`                                | —           |
 | Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_bucket)` | —           |
 | Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(warn[5m])`                                 | —           |
-| Resource Drops Rate       | stat       | `rate(drop[5m])`                                 | —           |
+| Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`             | —           |
+| Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`             | —           |
 
 ### Span → Metric → Dashboard Summary
 

@@ -32,7 +32,7 @@
       }
     ]
   },
-  "description": "What this shows: Operational health of an XRPL node: sync state, ledger progress, caches, storage, job queue, and network economy.  —  Use it to: Get an at-a-glance read on whether the node is healthy, synced, and keeping up with the network.",
+  "description": "What this shows: Operational health of an XRPL node: sync state, ledger progress, caches, storage, job queue, and network economy.  \u2014  Use it to: Get an at-a-glance read on whether the node is healthy, synced, and keeping up with the network.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -43,7 +43,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*A single at-a-glance verdict: is this node healthy and doing its job (fully synced and keeping up with the network)?*\n\n###### How it's computed:\n*1 (Healthy) only when server_state == Full AND the validated ledger age is under 30s; otherwise 0 (Not Healthy). Combines server_info{metric=\"server_state\"} and ledgermaster_validated_ledger_age.*\n\n###### Reading it:\n*Green \"Healthy\" = full sync and current. Red \"Not Healthy\" = not full, or lagging the network (catching up, flapping, or stalled).*\n\n###### Healthy range:\n*Healthy (green) in steady state.*\n\n###### Watch for:\n*Any sustained Not Healthy — drill into the Operating Mode and Validated Ledger Age panels below to see whether it is a state or a lag problem.*\n\n###### Keywords:\n- **Full** *(per node)* — the node has the current validated ledger and complete recent history.\n- **Validated ledger age** *(per node)* — seconds since the last freshly validated ledger.\n\n###### Computation boundary:\n*Result: Per node — a boolean AND of two native metrics.*\n*Recorded in xrpld code as native metrics (beast::insight); the collector only forwards them; the Grafana query combines them.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode / getValidatedLedgerAge`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
+      "description": "###### What this is:\n*A single at-a-glance verdict: is this node healthy and doing its job (fully synced and keeping up with the network)?*\n\n###### How it's computed:\n*1 (Healthy) only when server_state == Full AND the validated ledger age is under 30s; otherwise 0 (Not Healthy). Combines server_info{metric=\"server_state\"} and ledgermaster_validated_ledger_age.*\n\n###### Reading it:\n*Green \"Healthy\" = full sync and current. Red \"Not Healthy\" = not full, or lagging the network (catching up, flapping, or stalled).*\n\n###### Healthy range:\n*Healthy (green) in steady state.*\n\n###### Watch for:\n*Any sustained Not Healthy \u2014 drill into the Operating Mode and Validated Ledger Age panels below to see whether it is a state or a lag problem.*\n\n###### Keywords:\n- **Full** *(per node)* \u2014 the node has the current validated ledger and complete recent history.\n- **Validated ledger age** *(per node)* \u2014 seconds since the last freshly validated ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 a boolean AND of two native metrics.*\n*Recorded in xrpld code as native metrics (beast::insight); the collector only forwards them; the Grafana query combines them.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode / getValidatedLedgerAge`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -102,7 +102,8 @@
         },
         "showPercentChange": false,
         "textMode": "value_and_name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -122,7 +123,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How old the most recently validated ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the validated-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the network close interval.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*Values above 20 seconds mean the node is falling behind the network.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Ledger close interval** *(network-wide)* — the network's steady ledger rhythm — roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
+      "description": "###### What this is:\n*How old the most recently validated ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the validated-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the network close interval.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*Values above 20 seconds mean the node is falling behind the network.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -192,7 +193,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How old the most recently published ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the published-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; should track close to the validated ledger age.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*A growing gap above the validated age indicates the publish pipeline is backing up.*\n\n###### Keywords:\n- **Published ledger** *(per node)* — the most recent validated ledger the node has finished publishing to its subscribers.\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#published-ledger)",
+      "description": "###### What this is:\n*How old the most recently published ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the published-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; should track close to the validated ledger age.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*A growing gap above the validated age indicates the publish pipeline is backing up.*\n\n###### Keywords:\n- **Published ledger** *(per node)* \u2014 the most recent validated ledger the node has finished publishing to its subscribers.\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#published-ledger)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -262,7 +263,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How often the node requests a ledger from its peers.*\n\n###### How it's computed:\n*Per-second rate of ledger-fetch requests over a 5-minute window.*\n\n###### Reading it:\n*Near zero in steady state; elevated while catching up.*\n\n###### Healthy range:\n*Close to zero once fully synced.*\n\n###### Watch for:\n*A sustained high rate means the node is repeatedly missing ledgers and back-filling from peers.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* — fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[InboundLedgers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedgers.cpp)\n\n###### Function:\n`InboundLedgersImp`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
+      "description": "###### What this is:\n*How often the node requests a ledger from its peers.*\n\n###### How it's computed:\n*Per-second rate of ledger-fetch requests over a 5-minute window.*\n\n###### Reading it:\n*Near zero in steady state; elevated while catching up.*\n\n###### Healthy range:\n*Close to zero once fully synced.*\n\n###### Watch for:\n*A sustained high rate means the node is repeatedly missing ledgers and back-filling from peers.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* \u2014 fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[InboundLedgers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedgers.cpp)\n\n###### Function:\n`InboundLedgersImp`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -279,7 +280,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: fetches/s"
         }
       },
       "gridPos": {
@@ -328,7 +329,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate at which a locally built ledger hash fails to match the network-validated hash.*\n\n###### How it's computed:\n*Per-second rate of history-mismatch events over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is the only healthy reading.*\n\n###### Healthy range:\n*Zero.*\n\n###### Watch for:\n*Any nonzero value indicates consensus divergence or database corruption and warrants immediate investigation.*\n\n###### Keywords:\n- **Ledger history mismatch** *(per node)* — when a locally built ledger's hash does not match the network-validated hash.\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-history-mismatch)",
+      "description": "###### What this is:\n*Rate at which a locally built ledger hash fails to match the network-validated hash.*\n\n###### How it's computed:\n*Per-second rate of history-mismatch events over a 5-minute window.*\n\n###### Reading it:\n*Flat at zero is the only healthy reading.*\n\n###### Healthy range:\n*Zero.*\n\n###### Watch for:\n*Any nonzero value indicates consensus divergence or database corruption and warrants immediate investigation.*\n\n###### Keywords:\n- **Ledger history mismatch** *(per node)* \u2014 when a locally built ledger's hash does not match the network-validated hash.\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgerHistoryMismatch`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-history-mismatch)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -345,7 +346,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: mismatches/s"
         }
       },
       "gridPos": {
@@ -394,7 +395,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The lag between published and validated ledger ages, in seconds.*\n\n###### How it's computed:\n*Published ledger age minus validated ledger age, as a single derived value.*\n\n###### Reading it:\n*Near zero is healthy; a positive value is how far publishing trails validation.*\n\n###### Healthy range:\n*Close to zero.*\n\n###### Watch for:\n*A growing gap means the publish pipeline is falling behind and subscribers may see stale data.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Published ledger** *(per node)* — the most recent validated ledger the node has finished publishing to its subscribers.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
+      "description": "###### What this is:\n*The lag between published and validated ledger ages, in seconds.*\n\n###### How it's computed:\n*Published ledger age minus validated ledger age, as a single derived value.*\n\n###### Reading it:\n*Near zero is healthy; a positive value is how far publishing trails validation.*\n\n###### Healthy range:\n*Close to zero.*\n\n###### Watch for:\n*A growing gap means the publish pipeline is falling behind and subscribers may see stale data.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Published ledger** *(per node)* \u2014 the most recent validated ledger the node has finished publishing to its subscribers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -579,7 +580,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Fraction of recent wall-clock time the node spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full).*\n\n###### How it's computed:\n*Per-second rate of each per-mode duration counter divided by the sum of all five mode rates, giving each mode's time share.*\n\n###### Reading it:\n*The Full share should sit at or near 1.0 and dominate; other shares should be near 0.*\n\n###### Healthy range:\n*Full share close to 1.0.*\n\n###### Watch for:\n*Share accumulating in Syncing, Connected, or Disconnected means the node is not staying fully synced.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "###### What this is:\n*Fraction of recent wall-clock time the node spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full).*\n\n###### How it's computed:\n*Per-second rate of each per-mode duration counter divided by the sum of all five mode rates, giving each mode's time share.*\n\n###### Reading it:\n*The Full share should sit at or near 1.0 and dominate; other shares should be near 0.*\n\n###### Healthy range:\n*Full share close to 1.0.*\n\n###### Watch for:\n*Share accumulating in Syncing, Connected, or Disconnected means the node is not staying fully synced.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -716,7 +717,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative count of transitions into each operating mode.*\n\n###### How it's computed:\n*Current value of each per-mode transition counter, plotted as lines.*\n\n###### Reading it:\n*Flat lines are healthy; steps up mean the node changed mode.*\n\n###### Healthy range:\n*Few transitions once the node is stable in Full mode.*\n\n###### Watch for:\n*Frequent transitions out of Full, or into Disconnected or Syncing, indicate instability.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "###### What this is:\n*Cumulative count of transitions into each operating mode.*\n\n###### How it's computed:\n*Current value of each per-mode transition counter, plotted as lines.*\n\n###### Reading it:\n*Flat lines are healthy; steps up mean the node changed mode.*\n\n###### Healthy range:\n*Few transitions once the node is stable in Full mode.*\n\n###### Watch for:\n*Frequent transitions out of Full, or into Disconnected or Syncing, indicate instability.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -851,7 +852,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Which operating mode the node is accumulating time in right now, one line per state, normalized to seconds per second.*\n\n###### How it's computed:\n*Per-second rate of each state's duration counter, scaled from microseconds to seconds. The five lines sum to about 1.0 because the node is always in exactly one state.*\n\n###### Reading it:\n*The line sitting near 1.0 is the state the node is currently in; the others sit at 0. A handover between two lines marks a state change, and its width is how long that state lasted.*\n\n###### Healthy range:\n*Full near 1.0 with every other line at 0.*\n\n###### Watch for:\n*Time accumulating in Connected or Syncing means the node is catching up rather than serving; repeated handovers mean it is flapping.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
+      "description": "###### What this is:\n*Which operating mode the node is accumulating time in right now, one line per state, normalized to seconds per second.*\n\n###### How it's computed:\n*Per-second rate of each state's duration counter, scaled from microseconds to seconds. The five lines sum to about 1.0 because the node is always in exactly one state.*\n\n###### Reading it:\n*The line sitting near 1.0 is the state the node is currently in; the others sit at 0. A handover between two lines marks a state change, and its width is how long that state lasted.*\n\n###### Healthy range:\n*Full near 1.0 with every other line at 0.*\n\n###### Watch for:\n*Time accumulating in Connected or Syncing means the node is catching up rather than serving; repeated handovers mean it is flapping.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -905,7 +906,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "suffix: s/s"
         }
       },
       "gridPos": {
@@ -986,7 +987,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The share of recent wall-clock time the node spent in Full mode.*\n\n###### How it's computed:\n*Per-second rate of the Full-mode duration counter divided by the sum of the per-second rates of all five mode duration counters.*\n\n###### Reading it:\n*Higher is better; 1.0 means the node was fully synced for the entire window.*\n\n###### Healthy range:\n*At or above 0.99.*\n\n###### Watch for:\n*Values dropping below 0.9, meaning the node spent meaningful time outside Full mode.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "###### What this is:\n*The share of recent wall-clock time the node spent in Full mode.*\n\n###### How it's computed:\n*Per-second rate of the Full-mode duration counter divided by the sum of the per-second rates of all five mode duration counters.*\n\n###### Reading it:\n*Higher is better; 1.0 means the node was fully synced for the entire window.*\n\n###### Healthy range:\n*At or above 0.99.*\n\n###### Watch for:\n*Values dropping below 0.9, meaning the node spent meaningful time outside Full mode.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -1058,7 +1059,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The node's operating mode over time as a colored timeline (Disconnected, Connected, Syncing, Tracking, Full).*\n\n###### How it's computed:\n*Current value of the server-state gauge mapped to a mode name; equal consecutive samples are merged into a single band.*\n\n###### Reading it:\n*A solid green Full band across the window is the goal; other colors mark periods the node was not fully synced.*\n\n###### Healthy range:\n*Continuously Full (green).*\n\n###### Watch for:\n*Bands of Syncing, Connected, or Disconnected, which pinpoint exactly when the node dropped out of Full.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "###### What this is:\n*The node's operating mode over time as a colored timeline (Disconnected, Connected, Syncing, Tracking, Full).*\n\n###### How it's computed:\n*Current value of the server-state gauge mapped to a mode name; equal consecutive samples are merged into a single band.*\n\n###### Reading it:\n*A solid green Full band across the window is the goal; other colors mark periods the node was not fully synced.*\n\n###### Healthy range:\n*Continuously Full (green).*\n\n###### Watch for:\n*Bands of Syncing, Connected, or Disconnected, which pinpoint exactly when the node dropped out of Full.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1074,7 +1075,7 @@
             },
             "insertNulls": false,
             "lineWidth": 0,
-            "spanNulls": false
+            "spanNulls": 1800000
           },
           "mappings": [
             {
@@ -1163,8 +1164,9 @@
         "showValue": "auto",
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "pluginVersion": "13.2.0-28926505616",
@@ -1199,7 +1201,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1253,7 +1255,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: operations/s"
         }
       },
       "gridPos": {
@@ -1318,7 +1320,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1421,7 +1423,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Instantaneous write-load score and read-queue depth of the object store.*\n\n###### How it's computed:\n*Current values of the write-load and read-queue gauges, plotted over time.*\n\n###### Reading it:\n*Lower is better for both; short, flat lines are healthy.*\n\n###### Healthy range:\n*Write load near zero and read queue in low double digits or less.*\n\n###### Watch for:\n*High write load means back-end pressure; a high read queue means the prefetch threads are saturated.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* — holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Read threads / read queue / write load** *(per node)* — NodeStore back-end I/O internals — worker threads reading, their queue depth, and write pressure.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
+      "description": "###### What this is:\n*Instantaneous write-load score and read-queue depth of the object store.*\n\n###### How it's computed:\n*Current values of the write-load and read-queue gauges, plotted over time.*\n\n###### Reading it:\n*Lower is better for both; short, flat lines are healthy.*\n\n###### Healthy range:\n*Write load near zero and read queue in low double digits or less.*\n\n###### Watch for:\n*High write load means back-end pressure; a high read queue means the prefetch threads are saturated.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Read threads / read queue / write load** *(per node)* \u2014 NodeStore back-end I/O internals \u2014 worker threads reading, their queue depth, and write pressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1536,7 +1538,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative bytes read from and written to the object-store back end.*\n\n###### How it's computed:\n*Current values of the bytes-read and bytes-written counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope shows throughput.*\n\n###### Healthy range:\n*Smooth growth consistent with ledger and query activity.*\n\n###### Watch for:\n*A sharp acceleration indicates a heavy I/O phase such as sync, replay, or large queries.*\n\n###### Keywords:\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Cumulative bytes read from and written to the object-store back end.*\n\n###### How it's computed:\n*Current values of the bytes-read and bytes-written counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope shows throughput.*\n\n###### Healthy range:\n*Smooth growth consistent with ledger and query activity.*\n\n###### Watch for:\n*A sharp acceleration indicates a heavy I/O phase such as sync, replay, or large queries.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1647,7 +1649,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Read-thread utilization, bundled read count, and cumulative read time for the object store.*\n\n###### How it's computed:\n*Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.*\n\n###### Reading it:\n*Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.*\n\n###### Healthy range:\n*Running threads below the total count most of the time.*\n\n###### Watch for:\n*Running threads pinned at the total for long periods means read I/O is saturated.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* — NodeStore back-end I/O internals — worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
+      "description": "###### What this is:\n*Read-thread utilization, bundled read count, and cumulative read time for the object store.*\n\n###### How it's computed:\n*Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.*\n\n###### Reading it:\n*Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.*\n\n###### Healthy range:\n*Running threads below the total count most of the time.*\n\n###### Watch for:\n*Running threads pinned at the total for long periods means read I/O is saturated.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* \u2014 NodeStore back-end I/O internals \u2014 worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1766,7 +1768,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Read-thread utilization, bundled read count, and cumulative read time for the object store.*\n\n###### How it's computed:\n*Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.*\n\n###### Reading it:\n*Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.*\n\n###### Healthy range:\n*Running threads below the total count most of the time.*\n\n###### Watch for:\n*Running threads pinned at the total for long periods means read I/O is saturated.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* — NodeStore back-end I/O internals — worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
+      "description": "###### What this is:\n*Read-thread utilization, bundled read count, and cumulative read time for the object store.*\n\n###### How it's computed:\n*Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.*\n\n###### Reading it:\n*Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.*\n\n###### Healthy range:\n*Running threads below the total count most of the time.*\n\n###### Watch for:\n*Running threads pinned at the total for long periods means read I/O is saturated.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* \u2014 NodeStore back-end I/O internals \u2014 worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1994,7 +1996,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Duration (ms)",
+            "axisLabel": "Duration (\u00b5s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -2038,7 +2040,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "\u00b5s"
         }
       },
       "gridPos": {
@@ -2177,7 +2179,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Wait Time (ms)",
+            "axisLabel": "Wait Time (\u00b5s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -2221,7 +2223,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "\u00b5s"
         }
       },
       "gridPos": {
@@ -2360,7 +2362,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Duration (ms)",
+            "axisLabel": "Duration (\u00b5s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -2404,7 +2406,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "\u00b5s"
         }
       },
       "gridPos": {
@@ -2463,7 +2465,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Wait Time (ms)",
+            "axisLabel": "Wait Time (\u00b5s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -2507,7 +2509,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "\u00b5s"
         }
       },
       "gridPos": {
@@ -2566,7 +2568,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "###### What this is:\n*Hit rates for the SLE, Ledger, and AcceptedLedger caches, from 0 to 1.*\n\n###### How it's computed:\n*Current values of the per-cache hit-rate gauges, plotted as lines.*\n\n###### Reading it:\n*Higher is better; each line is the fraction of lookups served from cache.*\n\n###### Healthy range:\n*Above roughly 0.8 in steady state.*\n\n###### Watch for:\n*Low or falling hit rates indicate cache thrashing and extra back-end reads.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* — in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCacheHitRateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
+          "description": "###### What this is:\n*Hit rates for the SLE, Ledger, and AcceptedLedger caches, from 0 to 1.*\n\n###### How it's computed:\n*Current values of the per-cache hit-rate gauges, plotted as lines.*\n\n###### Reading it:\n*Higher is better; each line is the fraction of lookups served from cache.*\n\n###### Healthy range:\n*Above roughly 0.8 in steady state.*\n\n###### Watch for:\n*Low or falling hit rates indicate cache thrashing and extra back-end reads.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* \u2014 in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCacheHitRateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2687,7 +2689,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "###### What this is:\n*Entry counts for the TreeNode cache and track set, the FullBelow cache, and the AcceptedLedger cache.*\n\n###### How it's computed:\n*Current values of the per-cache size gauges, plotted as lines.*\n\n###### Reading it:\n*Stable lines are normal; sizes grow with working set and shrink after sweeps.*\n\n###### Healthy range:\n*Stable within configured limits.*\n\n###### Watch for:\n*Unbounded growth suggests memory pressure or a cache not being swept.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* — in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCacheHitRateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
+          "description": "###### What this is:\n*Entry counts for the TreeNode cache and track set, the FullBelow cache, and the AcceptedLedger cache.*\n\n###### How it's computed:\n*Current values of the per-cache size gauges, plotted as lines.*\n\n###### Reading it:\n*Stable lines are normal; sizes grow with working set and shrink after sweeps.*\n\n###### Healthy range:\n*Stable within configured limits.*\n\n###### Watch for:\n*Unbounded growth suggests memory pressure or a cache not being swept.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* \u2014 in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCacheHitRateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2814,7 +2816,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "###### What this is:\n*Number of entries in the FullBelowCache, which tracks subtrees known to be fully present locally.*\n\n###### How it's computed:\n*Current value of the cache size gauge, plotted over time.*\n\n###### Reading it:\n*A stable size is normal; it grows during acquisition and is trimmed by sweeps.*\n\n###### Healthy range:\n*Stable within its configured bound.*\n\n###### Watch for:\n*Unbounded growth suggests the cache is not being swept.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* — in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n- **Ledger acquire (inbound fetch)** *(per node)* — fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.h)\n\n###### Function:\n`TaggedCache::Stats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
+          "description": "###### What this is:\n*Number of entries in the FullBelowCache, which tracks subtrees known to be fully present locally.*\n\n###### How it's computed:\n*Current value of the cache size gauge, plotted over time.*\n\n###### Reading it:\n*A stable size is normal; it grows during acquisition and is trimmed by sweeps.*\n\n###### Healthy range:\n*Stable within its configured bound.*\n\n###### Watch for:\n*Unbounded growth suggests the cache is not being swept.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* \u2014 in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n- **Ledger acquire (inbound fetch)** *(per node)* \u2014 fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.h)\n\n###### Function:\n`TaggedCache::Stats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2917,7 +2919,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "###### What this is:\n*Hit-rate percentage for the FullBelowCache.*\n\n###### How it's computed:\n*Current value of the cache hit-rate gauge.*\n\n###### Reading it:\n*Higher is better; it shows how often cached subtree knowledge is reused.*\n\n###### Healthy range:\n*Above roughly 50 percent in steady state.*\n\n###### Watch for:\n*A low hit rate during steady state means redundant subtree work and warrants investigation.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* — in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.h)\n\n###### Function:\n`TaggedCache::Stats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
+          "description": "###### What this is:\n*Hit-rate percentage for the FullBelowCache.*\n\n###### How it's computed:\n*Current value of the cache hit-rate gauge.*\n\n###### Reading it:\n*Higher is better; it shows how often cached subtree knowledge is reused.*\n\n###### Healthy range:\n*Above roughly 50 percent in steady state.*\n\n###### Watch for:\n*A low hit rate during steady state means redundant subtree work and warrants investigation.*\n\n###### Keywords:\n- **Caches (SLE / Ledger / TreeNode / FullBelow / AcceptedLedger)** *(per node)* \u2014 in-memory caches that avoid re-reading or re-computing ledger data; higher hit rates mean less back-end work.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[TaggedCache.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/basics/TaggedCache.h)\n\n###### Function:\n`TaggedCache::Stats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#caches)",
           "fieldConfig": {
             "defaults": {
               "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -3016,7 +3018,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Current state of each XRPL node. Green = FULL (healthy); orange/yellow = syncing in progress; red = disconnected.\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "Current state of each XRPL node. Green = FULL (healthy); orange/yellow = syncing in progress; red = disconnected.\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3162,7 +3164,8 @@
         },
         "showPercentChange": false,
         "textMode": "value_and_name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -3226,7 +3229,8 @@
         },
         "showPercentChange": false,
         "textMode": "value_and_name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -3295,7 +3299,8 @@
         },
         "showPercentChange": false,
         "textMode": "value_and_name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -3318,7 +3323,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Sequence number of the current open ledger.*\n\n###### How it's computed:\n*Current value of the open-ledger index gauge.*\n\n###### Reading it:\n*Should climb steadily; the gap above the validated sequence is the ledgers in flight.*\n\n###### Healthy range:\n*One or two ahead of the validated sequence.*\n\n###### Watch for:\n*A large or growing gap above the validated sequence means validation is lagging behind ledger creation.*\n\n###### Keywords:\n- **Ledger index** *(network-wide)* — the sequence number identifying a ledger version; increases by one each close.\n- **Open ledger** *(per node)* — the temporary workspace ledger where incoming transactions are provisionally applied before a close.\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Ledger index](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#ledger-index) · [Open ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-index)",
+      "description": "###### What this is:\n*Sequence number of the current open ledger.*\n\n###### How it's computed:\n*Current value of the open-ledger index gauge.*\n\n###### Reading it:\n*Should climb steadily; the gap above the validated sequence is the ledgers in flight.*\n\n###### Healthy range:\n*One or two ahead of the validated sequence.*\n\n###### Watch for:\n*A large or growing gap above the validated sequence means validation is lagging behind ledger creation.*\n\n###### Keywords:\n- **Ledger index** *(network-wide)* \u2014 the sequence number identifying a ledger version; increases by one each close.\n- **Open ledger** *(per node)* \u2014 the temporary workspace ledger where incoming transactions are provisionally applied before a close.\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Ledger index](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#ledger-index) \u00b7 [Open ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-index)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -3380,7 +3385,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The spread in validated ledger sequence across all selected nodes.*\n\n###### How it's computed:\n*Highest validated ledger sequence minus the lowest, across the selected nodes.*\n\n###### Reading it:\n*0 means every node agrees on the same validated ledger; larger means they diverge.*\n\n###### Healthy range:\n*0 to 1 ledger in steady state.*\n\n###### Watch for:\n*A sustained spread above a few ledgers means some nodes are lagging or the fleet is diverging.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Across the selected nodes — the query aggregates instances into one series.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
+      "description": "###### What this is:\n*The spread in validated ledger sequence across all selected nodes.*\n\n###### How it's computed:\n*Highest validated ledger sequence minus the lowest, across the selected nodes.*\n\n###### Reading it:\n*0 means every node agrees on the same validated ledger; larger means they diverge.*\n\n###### Healthy range:\n*0 to 1 ledger in steady state.*\n\n###### Watch for:\n*A sustained spread above a few ledgers means some nodes are lagging or the fleet is diverging.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n\n###### Computation boundary:\n*Result: Across the selected nodes \u2014 the query aggregates instances into one series.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3470,7 +3475,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Seq — Convergence (Max − Min)",
+      "title": "Validated Ledger Seq \u2014 Convergence (Max \u2212 Min)",
       "type": "stat"
     },
     {
@@ -3478,7 +3483,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How far each node's validated ledger lags behind the network tip, in ledgers.*\n\n###### How it's computed:\n*Highest validated ledger sequence across the selected nodes, minus each node's own sequence.*\n\n###### Reading it:\n*0 means the node is at the tip; larger values mean it trails further behind.*\n\n###### Healthy range:\n*0 to 1 ledger on a synced node.*\n\n###### Watch for:\n*A node stuck at a growing value is falling behind and not keeping up with consensus.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Across the selected nodes — the query aggregates instances into one series.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
+      "description": "###### What this is:\n*How far each node's validated ledger lags behind the network tip, in ledgers.*\n\n###### How it's computed:\n*Highest validated ledger sequence across the selected nodes, minus each node's own sequence.*\n\n###### Reading it:\n*0 means the node is at the tip; larger values mean it trails further behind.*\n\n###### Healthy range:\n*0 to 1 ledger on a synced node.*\n\n###### Watch for:\n*A node stuck at a growing value is falling behind and not keeping up with consensus.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Across the selected nodes \u2014 the query aggregates instances into one series.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3516,7 +3521,8 @@
         },
         "showPercentChange": false,
         "textMode": "value_and_name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -3535,7 +3541,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Seq — Current (Stat)",
+      "title": "Validated Ledger Seq \u2014 Current (Stat)",
       "type": "stat"
     },
     {
@@ -3577,7 +3583,8 @@
         },
         "showPercentChange": false,
         "textMode": "name",
-        "wideLayout": true
+        "wideLayout": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -3603,7 +3610,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Proposer count and convergence time from the last closed consensus round.*\n\n###### How it's computed:\n*Current values of the last-close proposer-count and convergence-time gauges, plotted as lines.*\n\n###### Reading it:\n*A healthy proposer count with a low convergence time is good.*\n\n###### Healthy range:\n*Convergence time of a few seconds with the expected number of proposers.*\n\n###### Watch for:\n*A falling proposer count or rising convergence time signals degrading consensus conditions.*\n\n###### Keywords:\n- **Proposers** *(network event)* — the count of validators whose proposals this node heard in the last closed round.\n- **Convergence time** *(network event)* — the wall-clock time the network took to agree a ledger in a round.\n- **Consensus round** *(network event)* — one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Proposers](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposers)",
+      "description": "###### What this is:\n*Proposer count and convergence time from the last closed consensus round.*\n\n###### How it's computed:\n*Current values of the last-close proposer-count and convergence-time gauges, plotted as lines.*\n\n###### Reading it:\n*A healthy proposer count with a low convergence time is good.*\n\n###### Healthy range:\n*Convergence time of a few seconds with the expected number of proposers.*\n\n###### Watch for:\n*A falling proposer count or rising convergence time signals degrading consensus conditions.*\n\n###### Keywords:\n- **Proposers** *(network event)* \u2014 the count of validators whose proposals this node heard in the last closed round.\n- **Convergence time** *(network event)* \u2014 the wall-clock time the network took to agree a ledger in a round.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Proposers](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposers)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3694,7 +3701,7 @@
           "refId": "A"
         }
       ],
-      "title": "Last Close — Converge Time",
+      "title": "Last Close \u2014 Converge Time",
       "type": "timeseries"
     },
     {
@@ -3702,7 +3709,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Proposer count and convergence time from the last closed consensus round.*\n\n###### How it's computed:\n*Current values of the last-close proposer-count and convergence-time gauges, plotted as lines.*\n\n###### Reading it:\n*A healthy proposer count with a low convergence time is good.*\n\n###### Healthy range:\n*Convergence time of a few seconds with the expected number of proposers.*\n\n###### Watch for:\n*A falling proposer count or rising convergence time signals degrading consensus conditions.*\n\n###### Keywords:\n- **Proposers** *(network event)* — the count of validators whose proposals this node heard in the last closed round.\n- **Convergence time** *(network event)* — the wall-clock time the network took to agree a ledger in a round.\n- **Consensus round** *(network event)* — one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Proposers](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposers)",
+      "description": "###### What this is:\n*Proposer count and convergence time from the last closed consensus round.*\n\n###### How it's computed:\n*Current values of the last-close proposer-count and convergence-time gauges, plotted as lines.*\n\n###### Reading it:\n*A healthy proposer count with a low convergence time is good.*\n\n###### Healthy range:\n*Convergence time of a few seconds with the expected number of proposers.*\n\n###### Watch for:\n*A falling proposer count or rising convergence time signals degrading consensus conditions.*\n\n###### Keywords:\n- **Proposers** *(network event)* \u2014 the count of validators whose proposals this node heard in the last closed round.\n- **Convergence time** *(network event)* \u2014 the wall-clock time the network took to agree a ledger in a round.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Proposers](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposers)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3793,7 +3800,7 @@
           "refId": "A"
         }
       ],
-      "title": "Last Close — Proposers",
+      "title": "Last Close \u2014 Proposers",
       "type": "timeseries"
     },
     {
@@ -3801,7 +3808,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The wall-clock time between consecutive ledger closes — the network close cadence.*\n\n###### How it's computed:\n*Close Interval: 1 / rate(ledgers_closed_total), the average seconds between closes from the monotonic close counter (scrape-independent, unlike a gauge delta which would alias to the scrape period). Last-Close Age: time() minus the last-close network time (server_info last_close_time gauge + Ripple-epoch offset), i.e. seconds since the last ledger closed.*\n\n###### Reading it:\n*A steady line near the network's target close interval.*\n\n###### Healthy range:\n*About 3-5s on mainnet; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising interval (consensus slowing or the node lagging) or a flat line at zero (ledgers no longer closing).*\n\n###### Keywords:\n- **Ledger close** *(network event)* — the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* — the network's steady ledger rhythm — roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp) · [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`registerServerInfoGauge (last_close_time) ; ledgers_closed_total`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
+      "description": "###### What this is:\n*The wall-clock time between consecutive ledger closes \u2014 the network close cadence.*\n\n###### How it's computed:\n*Close Interval: 1 / rate(ledgers_closed_total), the average seconds between closes from the monotonic close counter (scrape-independent, unlike a gauge delta which would alias to the scrape period). Last-Close Age: time() minus the last-close network time (server_info last_close_time gauge + Ripple-epoch offset), i.e. seconds since the last ledger closed.*\n\n###### Reading it:\n*A steady line near the network's target close interval.*\n\n###### Healthy range:\n*About 3-5s on mainnet; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising interval (consensus slowing or the node lagging) or a flat line at zero (ledgers no longer closing).*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp) \u00b7 [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`registerServerInfoGauge (last_close_time) ; ledgers_closed_total`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3852,7 +3859,45 @@
             ]
           },
           "unit": "s"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Last-Close Age/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Age Since Last Close (Sec)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Close Interval/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Close Interval (Sec)"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 12,
@@ -3908,7 +3953,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative object-payload bytes this process has written to the NodeStore back end. This is not the size of the store on disk.*\n\n###### How it's computed:\n*Current value of the stored_object_bytes gauge, plotted over time. It observes getStoreSize(), the same accessor node_written_bytes uses, so the two series are equal and their ratio is a constant 1.0 rather than a write-amplification measure.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the write rate. It excludes NuDB's keys, bucket padding and log, and it restarts from zero with the process while the files on disk do not.*\n\n###### Healthy range:\n*Gradual growth consistent with ledger data being stored.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill. Do not use this panel to size the store on disk or to plan disk capacity; no metric reports on-disk size today, so check the filesystem directly.*\n\n###### Keywords:\n- **NuDB** *(per node)* — the append-only key-value database used as the default NodeStore backend.\n- **NodeStore** *(per node)* — the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nudb)",
+      "description": "###### What this is:\n*Cumulative object-payload bytes this process has written to the NodeStore back end. This is not the size of the store on disk.*\n\n###### How it's computed:\n*Current value of the stored_object_bytes gauge, plotted over time. It observes getStoreSize(), the same accessor node_written_bytes uses, so the two series are equal and their ratio is a constant 1.0 rather than a write-amplification measure.*\n\n###### Reading it:\n*A smoothly growing line is normal; the slope is the write rate. It excludes NuDB's keys, bucket padding and log, and it restarts from zero with the process while the files on disk do not.*\n\n###### Healthy range:\n*Gradual growth consistent with ledger data being stored.*\n\n###### Watch for:\n*A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill. Do not use this panel to size the store on disk or to plan disk capacity; no metric reports on-disk size today, so check the filesystem directly.*\n\n###### Keywords:\n- **NuDB** *(per node)* \u2014 the append-only key-value database used as the default NodeStore backend.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStorageDetailGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nudb)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4122,7 +4167,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The contiguous ranges of ledgers the node holds locally.*\n\n###### How it's computed:\n*Current start and end bounds of each complete range, listed as table rows.*\n\n###### Reading it:\n*Fewer ranges is better; one continuous range means an unbroken history.*\n\n###### Healthy range:\n*A single range covering the configured retention window.*\n\n###### Watch for:\n*Many fragmented ranges indicate gaps in stored history from missed or failed fetches.*\n\n###### Keywords:\n- **Complete ledger ranges** *(per node)* — the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCompleteLedgersGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#complete-ledger-ranges)",
+      "description": "###### What this is:\n*The contiguous ranges of ledgers the node holds locally.*\n\n###### How it's computed:\n*Current start and end bounds of each complete range, listed as table rows.*\n\n###### Reading it:\n*Fewer ranges is better; one continuous range means an unbroken history.*\n\n###### Healthy range:\n*A single range covering the configured retention window.*\n\n###### Watch for:\n*Many fragmented ranges indicate gaps in stored history from missed or failed fetches.*\n\n###### Keywords:\n- **Complete ledger ranges** *(per node)* \u2014 the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerCompleteLedgersGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#complete-ledger-ranges)",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -4160,7 +4205,8 @@
       "id": 109,
       "options": {
         "cellHeight": "sm",
-        "showHeader": true
+        "showHeader": true,
+        "tooltip": {}
       },
       "pluginVersion": "13.2.0-28926505616",
       "targets": [
@@ -4303,7 +4349,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How many historical ledgers the node is back-filling per minute.*\n\n###### How it's computed:\n*Current value of the historical-fetch-per-minute gauge.*\n\n###### Reading it:\n*Near zero once history is complete; elevated while back-filling.*\n\n###### Healthy range:\n*Close to zero in steady state.*\n\n###### Watch for:\n*A sustained high rate means the node is still filling gaps in its stored history.*\n\n###### Keywords:\n- **Historical fetch rate** *(per node)* — how many historical ledgers the node is back-filling per minute.\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Complete ledger ranges** *(per node)* — the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerDbMetricsGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#historical-fetch-rate)",
+      "description": "###### What this is:\n*How many historical ledgers the node is back-filling per minute.*\n\n###### How it's computed:\n*Current value of the historical-fetch-per-minute gauge.*\n\n###### Reading it:\n*Near zero once history is complete; elevated while back-filling.*\n\n###### Healthy range:\n*Close to zero in steady state.*\n\n###### Watch for:\n*A sustained high rate means the node is still filling gaps in its stored history.*\n\n###### Keywords:\n- **Historical fetch rate** *(per node)* \u2014 how many historical ledgers the node is back-filling per minute.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Complete ledger ranges** *(per node)* \u2014 the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerDbMetricsGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#historical-fetch-rate)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -4320,7 +4366,7 @@
               }
             ]
           },
-          "unit": "cpm"
+          "unit": "suffix: fetches/min"
         }
       },
       "gridPos": {
@@ -4369,7 +4415,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Cumulative count of peers disconnected for exceeding resource limits.*\n\n###### How it's computed:\n*Current value of the resource-disconnect gauge, plotted over time.*\n\n###### Reading it:\n*A flat line is healthy; steps up mean peers were dropped for overuse.*\n\n###### Healthy range:\n*Flat or very slowly rising.*\n\n###### Watch for:\n*A rising line indicates peers are being throttled off, consistent with abusive or misbehaving peers.*\n\n###### Keywords:\n- **Resource disconnect** *(per node)* — a peer dropped for exceeding resource/load limits — the node shedding abusive or overactive peers.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
+      "description": "###### What this is:\n*Cumulative count of peers disconnected for exceeding resource limits.*\n\n###### How it's computed:\n*Current value of the resource-disconnect gauge, plotted over time.*\n\n###### Reading it:\n*A flat line is healthy; steps up mean peers were dropped for overuse.*\n\n###### Healthy range:\n*Flat or very slowly rising.*\n\n###### Watch for:\n*A rising line indicates peers are being throttled off, consistent with abusive or misbehaving peers.*\n\n###### Keywords:\n- **Resource disconnect** *(per node)* \u2014 a peer dropped for exceeding resource/load limits \u2014 the node shedding abusive or overactive peers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4484,7 +4530,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The node's local load-based fee factor that scales its minimum transaction cost; baseline 256 at idle.*\n\n###### How it's computed:\n*Current value of the local load-fee economy gauge.*\n\n###### Reading it:\n*Steady at the baseline (256) is normal; higher values mean the node is raising its fee in response to load.*\n\n###### Healthy range:\n*Around 256 (the normal baseline) when idle.*\n\n###### Watch for:\n*A climbing factor, which indicates the node is under transaction load pressure.*\n\n###### Keywords:\n- **Load factor** *(per node)* — a unitless multiplier (1.0 = no load) that scales the base transaction cost as the node comes under load.\n- **Base fee** *(network-wide)* — the baseline transaction cost for a reference transaction under minimum load, in drops.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Load factor](https://xrpl.org/docs/concepts/transactions/transaction-cost#local-load-cost) · [Base fee](https://xrpl.org/docs/concepts/transactions/transaction-cost) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
+      "description": "###### What this is:\n*The node's local load-based fee factor that scales its minimum transaction cost; baseline 256 at idle.*\n\n###### How it's computed:\n*Current value of the local load-fee economy gauge.*\n\n###### Reading it:\n*Steady at the baseline (256) is normal; higher values mean the node is raising its fee in response to load.*\n\n###### Healthy range:\n*Around 256 (the normal baseline) when idle.*\n\n###### Watch for:\n*A climbing factor, which indicates the node is under transaction load pressure.*\n\n###### Keywords:\n- **Load factor** *(per node)* \u2014 a unitless multiplier (1.0 = no load) that scales the base transaction cost as the node comes under load.\n- **Base fee** *(network-wide)* \u2014 the baseline transaction cost for a reference transaction under minimum load, in drops.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Load factor](https://xrpl.org/docs/concepts/transactions/transaction-cost#local-load-cost) \u00b7 [Base fee](https://xrpl.org/docs/concepts/transactions/transaction-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -4550,7 +4596,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The minimum XRP balance required to keep an account on the ledger, in drops.*\n\n###### How it's computed:\n*Current value of the reserve-base economy gauge.*\n\n###### Reading it:\n*A stable value is expected; it changes only via network amendment or vote.*\n\n###### Healthy range:\n*The configured network reserve base.*\n\n###### Watch for:\n*An unexpected change outside a known amendment or fee vote.*\n\n###### Keywords:\n- **drops** *(network-wide)* — the smallest XRP unit — one drop is 0.000001 XRP (one millionth).\n- **Reserve (base & owner)** *(network-wide)* — the minimum XRP an account must hold — a base reserve plus an increment per owned ledger object.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[drops](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#specifying-currency-amounts) · [Reserve (base & owner)](https://xrpl.org/docs/concepts/accounts/reserves) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#drops)",
+      "description": "###### What this is:\n*The minimum XRP balance required to keep an account on the ledger, in drops.*\n\n###### How it's computed:\n*Current value of the reserve-base economy gauge.*\n\n###### Reading it:\n*A stable value is expected; it changes only via network amendment or vote.*\n\n###### Healthy range:\n*The configured network reserve base.*\n\n###### Watch for:\n*An unexpected change outside a known amendment or fee vote.*\n\n###### Keywords:\n- **drops** *(network-wide)* \u2014 the smallest XRP unit \u2014 one drop is 0.000001 XRP (one millionth).\n- **Reserve (base & owner)** *(network-wide)* \u2014 the minimum XRP an account must hold \u2014 a base reserve plus an increment per owned ledger object.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[drops](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#specifying-currency-amounts) \u00b7 [Reserve (base & owner)](https://xrpl.org/docs/concepts/accounts/reserves) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#drops)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -4616,7 +4662,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The additional XRP reserve required per owned ledger object, in drops.*\n\n###### How it's computed:\n*Current value of the reserve-increment economy gauge.*\n\n###### Reading it:\n*A stable value is expected; it changes only via network amendment or vote.*\n\n###### Healthy range:\n*The configured network owner reserve increment.*\n\n###### Watch for:\n*An unexpected change outside a known amendment or fee vote.*\n\n###### Keywords:\n- **Reserve (base & owner)** *(network-wide)* — the minimum XRP an account must hold — a base reserve plus an increment per owned ledger object.\n- **drops** *(network-wide)* — the smallest XRP unit — one drop is 0.000001 XRP (one millionth).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Reserve (base & owner)](https://xrpl.org/docs/concepts/accounts/reserves) · [drops](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#specifying-currency-amounts) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#reserve-base-owner)",
+      "description": "###### What this is:\n*The additional XRP reserve required per owned ledger object, in drops.*\n\n###### How it's computed:\n*Current value of the reserve-increment economy gauge.*\n\n###### Reading it:\n*A stable value is expected; it changes only via network amendment or vote.*\n\n###### Healthy range:\n*The configured network owner reserve increment.*\n\n###### Watch for:\n*An unexpected change outside a known amendment or fee vote.*\n\n###### Keywords:\n- **Reserve (base & owner)** *(network-wide)* \u2014 the minimum XRP an account must hold \u2014 a base reserve plus an increment per owned ledger object.\n- **drops** *(network-wide)* \u2014 the smallest XRP unit \u2014 one drop is 0.000001 XRP (one millionth).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Reserve (base & owner)](https://xrpl.org/docs/concepts/accounts/reserves) \u00b7 [drops](https://xrpl.org/docs/references/protocol/data-types/basic-data-types#specifying-currency-amounts) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#reserve-base-owner)",
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -4682,7 +4728,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Seconds since the last validated ledger closed, plotted over time.*\n\n###### How it's computed:\n*Current value of the ledger-age economy gauge, sampled each interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the ledger close interval. Mirrors the Validated Ledger Age panel.*\n\n###### Healthy range:\n*Under about 10 seconds.*\n\n###### Watch for:\n*Growth beyond the expected close interval, meaning the node is not keeping up with validated ledgers.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* — a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Ledger close interval** *(network-wide)* — the network's steady ledger rhythm — roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
+      "description": "###### What this is:\n*Seconds since the last validated ledger closed, plotted over time.*\n\n###### How it's computed:\n*Current value of the ledger-age economy gauge, sampled each interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the ledger close interval. Mirrors the Validated Ledger Age panel.*\n\n###### Healthy range:\n*Under about 10 seconds.*\n\n###### Watch for:\n*Growth beyond the expected close interval, meaning the node is not keeping up with validated ledgers.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4789,7 +4835,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The network transaction throughput reported by the ledger economy metrics.*\n\n###### How it's computed:\n*Current value of the transaction-rate economy gauge, plotted over time.*\n\n###### Reading it:\n*Reflects how many transactions are being processed; higher means busier.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A sudden sustained surge can indicate a transaction flood; a drop to zero can indicate the node stopped processing.*\n\n###### Keywords:\n- **Transaction type** *(network-wide)* — the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-type)",
+      "description": "###### What this is:\n*The network transaction throughput reported by the ledger economy metrics.*\n\n###### How it's computed:\n*Current value of the transaction-rate economy gauge, plotted over time.*\n\n###### Reading it:\n*Reflects how many transactions are being processed; higher means busier.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A sudden sustained surge can indicate a transaction flood; a drop to zero can indicate the node stopped processing.*\n\n###### Keywords:\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLedgerEconomyGauge`\n\n###### References:\n[Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-type)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4799,7 +4845,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Transactions",
+            "axisLabel": "Transactions / Sec",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -4843,7 +4889,7 @@
               }
             ]
           },
-          "unit": "cps"
+          "unit": "suffix: transactions/s"
         }
       },
       "gridPos": {
@@ -4892,7 +4938,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Time to fetch a missing ledger from peers, at the 95th percentile.*\n\n###### How it's computed:\n*Per-acquire durations aggregated to their 95th percentile per node over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; populated mainly during sync or back-fill.*\n\n###### Healthy range:\n*Low when synced; higher and more active while catching up.*\n\n###### Watch for:\n*A spike signals the node is falling behind or recovering from a fork.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* — fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n- **Back-fill / catch-up** *(per node)* — fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Fork** *(network-wide)* — when nodes validate divergent ledger chains instead of a single agreed history.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::init`\n\n###### References:\n[Fork](https://xrpl.org/docs/concepts/consensus-protocol) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
+      "description": "###### What this is:\n*Time to fetch a missing ledger from peers, at the 95th percentile.*\n\n###### How it's computed:\n*Per-acquire durations aggregated to their 95th percentile per node over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; populated mainly during sync or back-fill.*\n\n###### Healthy range:\n*Low when synced; higher and more active while catching up.*\n\n###### Watch for:\n*A spike signals the node is falling behind or recovering from a fork.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* \u2014 fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Fork** *(network-wide)* \u2014 when nodes validate divergent ledger chains instead of a single agreed history.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::init`\n\n###### References:\n[Fork](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4995,7 +5041,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate of completed ledger fetches split by outcome (complete or failed).*\n\n###### How it's computed:\n*Per-second rate of finished acquisitions grouped by outcome, per node, over a 5-minute window.*\n\n###### Reading it:\n*Complete should dominate; the failed line should stay near zero.*\n\n###### Healthy range:\n*Complete tracking fetch demand, failed near zero.*\n\n###### Watch for:\n*A rising failed rate means the node cannot fetch needed ledgers from its peers.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* — fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::init`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
+      "description": "###### What this is:\n*Rate of completed ledger fetches split by outcome (complete or failed).*\n\n###### How it's computed:\n*Per-second rate of finished acquisitions grouped by outcome, per node, over a 5-minute window.*\n\n###### Reading it:\n*Complete should dominate; the failed line should stay near zero.*\n\n###### Healthy range:\n*Complete tracking fetch demand, failed near zero.*\n\n###### Watch for:\n*A rising failed rate means the node cannot fetch needed ledgers from its peers.*\n\n###### Keywords:\n- **Ledger acquire (inbound fetch)** *(per node)* \u2014 fetching a specific missing ledger from peers; tracked by duration and outcome (complete/failed).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::init`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-acquire-inbound-fetch)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -5049,7 +5095,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "suffix: acquisitions/s"
         }
       },
       "gridPos": {
@@ -5107,7 +5153,7 @@
     },
     {
       "title": "Job Queue Saturation (Running vs Limit)",
-      "description": "###### What this is:\n*How close each concurrency-capped job type is to its ceiling. JobQueue enforces a per-type limit on how many jobs of that type may run at once, and the tight ones carry ledger-sync traffic: makeFetchPack 1, ledgerRequest 3, ledgerData 3, updatePaths 1, fetchTxnData 5. A type at its ceiling cannot start more work no matter how many workers are idle, so this is a different kind of limit from CPU or disk.*\n\n###### How it's computed:\n*Each jobq_<jobtype>_running gauge divided by that type's own limit from JobTypes.h, so every line shares one 0-to-1 axis. 1.0 means running equals the limit. Multiply a reading by the limit shown in its legend to recover the raw job count. JobQueue::collect snapshots all three per-type counters under the queue's own lock and publishes them after releasing it, on the 1-second export cycle.*\n\n###### Reading it:\n*Read the distance to 1.0, not the absolute height. Below 1.0 the type has spare slots and its queue wait is not the limit's fault. Touching 1.0 briefly is normal work. Sitting at 1.0 means the type is pinned at its ceiling and every further job of that type is being deferred rather than started, which is what turns into queue wait downstream. Because the limits differ, a raw count of 3 is saturation for ledgerRequest but only 60 percent for fetchTxnData; normalizing is what makes the lines comparable.*\n\n###### Healthy range:\n*Below 1.0, with brief touches under load.*\n\n###### Watch for:\n*A line flat at 1.0: that type is the binding constraint. ledgerRequest pinned means the 3 slots shared by RcvGetLedger and RcvGetObjByHash are full, so peer ledger and object requests are queueing behind each other; the Ledger Data and Sync dashboard splits that wait by handler and shows the matching deferred depth. ledgerData or fetchTxnData pinned means inbound ledger data cannot be absorbed and validated ledger age will grow. makeFetchPack or updatePaths pinned at their limit of 1 means a single long job is blocking the whole type. These are sampled gauges, so a line that never reaches 1.0 is not proof the type was never momentarily saturated.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* — xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Concurrency limit** *(per node)* — the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Deferred job** *(per node)* — a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getNextJob (limit enforcement) / JobQueue::collect (publication)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#concurrency-limit)",
+      "description": "###### What this is:\n*How close each concurrency-capped job type is to its ceiling. JobQueue enforces a per-type limit on how many jobs of that type may run at once, and the tight ones carry ledger-sync traffic: makeFetchPack 1, ledgerRequest 3, ledgerData 3, updatePaths 1, fetchTxnData 5. A type at its ceiling cannot start more work no matter how many workers are idle, so this is a different kind of limit from CPU or disk.*\n\n###### How it's computed:\n*Each jobq_<jobtype>_running gauge divided by that type's own limit from JobTypes.h, so every line shares one 0-to-1 axis. 1.0 means running equals the limit. Multiply a reading by the limit shown in its legend to recover the raw job count. JobQueue::collect snapshots all three per-type counters under the queue's own lock and publishes them after releasing it, on the 1-second export cycle.*\n\n###### Reading it:\n*Read the distance to 1.0, not the absolute height. Below 1.0 the type has spare slots and its queue wait is not the limit's fault. Touching 1.0 briefly is normal work. Sitting at 1.0 means the type is pinned at its ceiling and every further job of that type is being deferred rather than started, which is what turns into queue wait downstream. Because the limits differ, a raw count of 3 is saturation for ledgerRequest but only 60 percent for fetchTxnData; normalizing is what makes the lines comparable.*\n\n###### Healthy range:\n*Below 1.0, with brief touches under load.*\n\n###### Watch for:\n*A line flat at 1.0: that type is the binding constraint. ledgerRequest pinned means the 3 slots shared by RcvGetLedger and RcvGetObjByHash are full, so peer ledger and object requests are queueing behind each other; the Ledger Data and Sync dashboard splits that wait by handler and shows the matching deferred depth. ledgerData or fetchTxnData pinned means inbound ledger data cannot be absorbed and validated ledger age will grow. makeFetchPack or updatePaths pinned at their limit of 1 means a single long job is blocking the whole type. These are sampled gauges, so a line that never reaches 1.0 is not proof the type was never momentarily saturated.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Concurrency limit** *(per node)* \u2014 the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getNextJob (limit enforcement) / JobQueue::collect (publication)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#concurrency-limit)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
