@@ -338,8 +338,9 @@ bin/interaction_review/build_graph.py --build-dir .build --out /tmp/out` complet
 ## Node locations and PR mapping (Component B, first half)
 
 Every node records the source spans it was derived from — `macro` rows,
-`definition` spans from libclang extents, and whole-file `impl` attributions —
-and `pr_map.py` intersects a git diff with them to produce `touched.json`. See
+`definition` spans from libclang extents, precise `reference` sites for
+privilege checks, and whole-file `impl` attributions — and `pr_map.py`
+intersects a git diff with them to produce `touched.json`. See
 [README.md](README.md) for the roles, match strengths, and the resolution rules
 for transactor implementations. New modules: `sourceutil.py` (text helpers),
 `impl_locator.py` (transactor -> files), `diffparse.py` (git plumbing),
@@ -347,9 +348,9 @@ for transactor implementations. New modules: `sourceutil.py` (text helpers),
 `config/transactor_impl_overrides.yml`.
 
 `build_graph.validate_locations` enforces that every node is locatable, that no
-span runs past its file, and that a `macro`/`definition` span contains its own
-node's name — the cheap check that catches a line number drifting off its
-declaration.
+span runs past its file, and that a `macro`/`definition`/`reference` span
+contains its own node's name — the cheap check that catches a line number
+drifting off its declaration or enforcement site.
 
 ## Interaction selection and the PR comment (Component B, second half)
 
@@ -358,9 +359,12 @@ is a candidate when the diff touched their shared resource or either feature.
 Candidacy is orders of magnitude too broad, so candidates are scored (resource
 signal, interaction kind, match precision, and above all whether the diff
 introduced a **new lever** — an edge the graph did not have), tiered, filtered of
-low-signal `consumer×consumer` noise, and capped. `render_comment.py` formats the
-result. Both are documented in [README.md](README.md); the scoring weights are
-ordinal and live at the top of `select_interactions.py`.
+low-signal `consumer×consumer` noise, summarized into exact pass-through cohorts
+when a base decision itself changed, and capped. Invariant privileges render as
+the authorized transaction set versus the protected default path rather than as
+arbitrary pair rows. `render_comment.py` formats the result. Both are documented
+in [README.md](README.md); the scoring weights are ordinal and live at the top
+of `select_interactions.py`.
 
 The comment is advisory and makes no claim about test coverage, because the test
 locator does not exist yet. It states the boundary **state space** so a reviewer

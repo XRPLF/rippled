@@ -46,8 +46,9 @@ LOC_MACRO = "macro"  # the declaring row in a .macro file or an enum header
 LOC_DEFINITION = "definition"  # a C++ definition span (function, overload)
 LOC_IMPL = "impl"  # a whole implementation file attributed to a feature
 LOC_STATE_ENUM = "state_enum"  # the enum declaring a fork's boundary states
+LOC_REFERENCE = "reference"  # a precise use site that enforces a resource
 
-LOC_ROLES = (LOC_MACRO, LOC_DEFINITION, LOC_IMPL, LOC_STATE_ENUM)
+LOC_ROLES = (LOC_MACRO, LOC_DEFINITION, LOC_IMPL, LOC_STATE_ENUM, LOC_REFERENCE)
 
 
 @dataclass(frozen=True, order=True)

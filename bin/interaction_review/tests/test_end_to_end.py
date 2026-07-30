@@ -300,15 +300,15 @@ def test_validate_locations_rejects_out_of_bounds_span():
 
 
 def test_invariant_nodes_carry_their_enforcement_files(outputs):
-    """The enum row says a bit exists; the checks that consult it are what a PR
-    edits. Without these an amendment x invariant change maps to nothing."""
+    """The enum row says a bit exists; the precise calls that consult it are
+    what a PR edits. Without these an invariant change maps to nothing."""
     graph, _ = outputs
     invariants = [r for r in graph["resources"] if r["kind"] == "invariant"]
     assert invariants
     for node in invariants:
-        impls = [loc for loc in node["locations"] if loc["role"] == "impl"]
-        assert impls, f"{node['id']} has no enforcement file"
-        assert all("tx/invariants/" in loc["file"] for loc in impls), node["id"]
+        references = [loc for loc in node["locations"] if loc["role"] == "reference"]
+        assert references, f"{node['id']} has no enforcement call"
+        assert all("tx/invariants/" in loc["file"] for loc in references), node["id"]
 
 
 def test_ord_privilege_mask_is_resolved(outputs):
@@ -318,7 +318,7 @@ def test_ord_privilege_mask_is_resolved(outputs):
     create_acct = next(
         r for r in graph["resources"] if r["id"] == "resource:invariant:CreateAcct"
     )
-    assert any(loc["role"] == "impl" for loc in create_acct["locations"])
+    assert any(loc["role"] == "reference" for loc in create_acct["locations"])
 
 
 def test_fork_carries_its_state_enum_span(outputs):

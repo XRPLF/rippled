@@ -134,7 +134,7 @@
                   "pattern": "^[^/].*"
                 },
                 "role": {
-                  "enum": ["macro", "definition", "impl", "state_enum"]
+                  "enum": ["macro", "definition", "impl", "state_enum", "reference"]
                 },
                 "span": {
                   "type": "array",

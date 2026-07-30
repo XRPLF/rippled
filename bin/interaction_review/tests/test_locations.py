@@ -11,13 +11,14 @@ from graph import (
     FEATURE_TRANSACTOR,
     LOC_IMPL,
     LOC_MACRO,
+    LOC_REFERENCE,
     FeatureNode,
     Location,
     add_locations,
     feature_id,
 )
 from macro_extractor import macro_invocation_spans, parse_sfield_rows
-from privilege_extractor import parse_privilege_rows
+from privilege_extractor import locate_privilege_checks, parse_privilege_rows
 from sourceutil import line_count, repo_relative, strip_comments, whole_file_location
 
 # --- Location model ---------------------------------------------------------
@@ -179,6 +180,35 @@ def test_privilege_rows_missing_enum_is_fatal(tmp_path):
     header.write_text("enum Other { A = 0x1 };\n")
     with pytest.raises(ValueError, match="enum Privilege not found"):
         parse_privilege_rows(header)
+
+
+def test_privilege_checks_report_precise_reference_spans(tmp_path):
+    source = tmp_path / "src/libxrpl/tx/invariants"
+    header = tmp_path / "include/xrpl/tx/invariants"
+    source.mkdir(parents=True)
+    header.mkdir(parents=True)
+    path = source / "Example.cpp"
+    path.write_text(
+        "\n".join(
+            [
+                "void check(Tx const& tx)",
+                "{",
+                "    if (!hasPrivilege(",
+                "            tx, ChangeNftCounts | OverrideFreeze))",
+                "        fail();",
+                "}",
+            ]
+        )
+    )
+    checks = locate_privilege_checks(tmp_path)
+    expected = Location(
+        "src/libxrpl/tx/invariants/Example.cpp",
+        3,
+        4,
+        LOC_REFERENCE,
+    )
+    assert checks["ChangeNftCounts"] == [expected]
+    assert checks["OverrideFreeze"] == [expected]
 
 
 # --- path and whole-file helpers -------------------------------------------

@@ -57,6 +57,12 @@ TIER_CONSIDER = "consider"
 TIER_CONTEXT = "context"
 TIER_THRESHOLDS = ((TIER_REVIEW, 60), (TIER_CONSIDER, 35))
 
+RESOURCE_WHY = {
+    "fork": "shared decision",
+    "invariant": "authorization check",
+    "shared_sfield": "shared field",
+}
+
 # Caps. Without them a fork edit emits every pair on that fork (up to 82 x 82),
 # which is a wall of text a reviewer scrolls past.
 DEFAULT_MAX_INTERACTIONS = 25
@@ -132,6 +138,17 @@ def _feature_ids_by_resource(graph: dict) -> dict[str, dict[str, list[str]]]:
     return out
 
 
+def _feature_names_by_resource(graph: dict) -> dict[str, list[str]]:
+    """All feature names edged to each resource, in stable order."""
+    names = {f["id"]: f["name"] for f in graph["features"]}
+    out: dict[str, set[str]] = {}
+    for edge in graph["edges"]:
+        name = names.get(edge["src"])
+        if name is not None:
+            out.setdefault(edge["dst"], set()).add(name)
+    return {rid: sorted(members) for rid, members in out.items()}
+
+
 def _is_noise(interaction: dict, resource_touched: bool, features_touched: int) -> bool:
     """Drop consumer-x-consumer pairs on low-signal resources with weak evidence.
 
@@ -159,8 +176,14 @@ def select(
     """Rank the interactions this diff puts in scope, grouped by resource."""
     nodes = {e["id"]: TouchedNode.from_json(e) for e in touched["touched"]}
     ids_by_resource = _feature_ids_by_resource(graph)
+    names_by_resource = _feature_names_by_resource(graph)
 
     candidates: list[dict] = []
+    # Editing a base-pipeline decision puts every transaction type that passes
+    # through it into scope. Materializing mediator x transaction rows adds no
+    # information when the transaction itself was not edited, so retain the
+    # exact population here and render it once as a cohort.
+    cohorts: dict[str, dict] = {}
     dropped_noise = 0
     for interaction in interactions["interactions"]:
         rid = resource_id(interaction["resource_kind"], interaction["resource"])
@@ -177,6 +200,48 @@ def select(
         n_features = sum(1 for h in hits if h is not None)
         if resource is None and n_features == 0:
             continue
+
+        if (
+            resource is not None
+            and interaction["roles"].count("consumer") == 1
+        ):
+            consumer_index = interaction["roles"].index("consumer")
+            if hits[consumer_index] is None:
+                mediator_index = 1 - consumer_index
+                cohort = cohorts.setdefault(
+                    rid,
+                    {
+                        "resource": interaction["resource"],
+                        "resource_kind": interaction["resource_kind"],
+                        "signal": interaction["signal"],
+                        "resource_match": resource.match,
+                        "new_levers": list(resource.new_levers),
+                        "boundary_states": list(interaction["boundary_states"]),
+                        "mediators": set(),
+                        "consumers": set(),
+                        "pair_count": 0,
+                        "score": (
+                            SIGNAL_SCORE.get(interaction["signal"], 0)
+                            + KIND_SCORE[interaction["kind"]]
+                            + RESOURCE_MATCH_SCORE.get(resource.match, 0)
+                            + (
+                                NEW_LEVER_SCORE
+                                if resource.new_levers
+                                else 0
+                            )
+                            + (
+                                BOUNDARY_STATE_SCORE
+                                if interaction["boundary_states"]
+                                else 0
+                            )
+                        ),
+                    },
+                )
+                cohort["mediators"].add(interaction["features"][mediator_index])
+                cohort["consumers"].add(interaction["features"][consumer_index])
+                cohort["pair_count"] += 1
+                continue
+
         if _is_noise(interaction, resource is not None, n_features):
             dropped_noise += 1
             continue
@@ -192,15 +257,18 @@ def select(
                 if resource.match == "span"
                 else "edited (whole-file attribution)"
             )
+            label = RESOURCE_WHY.get(
+                interaction["resource_kind"], "shared code"
+            )
             why.append(
-                f"{interaction['resource_kind']} `{interaction['resource']}` {where}"
+                f"{label} `{interaction['resource']}` {where}"
             )
             if resource.new_levers:
                 score += NEW_LEVER_SCORE
                 levers = ", ".join(f"`{lever}`" for lever in resource.new_levers)
                 why.append(
-                    f"new lever {levers} on this resource — the diff changes the "
-                    f"graph's own edge set"
+                    f"{levers} appears in the changed code but is not recorded "
+                    f"for this {label}"
                 )
         for name, hit in zip(interaction["features"], hits, strict=True):
             if hit is None:
@@ -243,6 +311,8 @@ def select(
     return _group(
         candidates,
         touched,
+        cohorts=cohorts,
+        names_by_resource=names_by_resource,
         dropped_noise=dropped_noise,
         max_interactions=max_interactions,
         max_per_resource=max_per_resource,
@@ -264,6 +334,8 @@ def _group(
     candidates: list[dict],
     touched: dict,
     *,
+    cohorts: dict[str, dict],
+    names_by_resource: dict[str, list[str]],
     dropped_noise: int,
     max_interactions: int,
     max_per_resource: int,
@@ -279,6 +351,10 @@ def _group(
         rid = candidate["resource_id"]
         best_by_resource[rid] = max(
             best_by_resource.get(rid, candidate["score"]), candidate["score"]
+        )
+    for rid, cohort in cohorts.items():
+        best_by_resource[rid] = max(
+            best_by_resource.get(rid, cohort["score"]), cohort["score"]
         )
     ranked = sorted(best_by_resource, key=lambda rid: (-best_by_resource[rid], rid))
     allowed = set(ranked[:max_resources])
@@ -313,6 +389,12 @@ def _group(
                 "boundary_states": candidate["boundary_states"],
                 "score": candidate["score"],
                 "omitted": truncated_per_resource.get(rid, 0),
+                "consumer_cohort": _cohort_json(cohorts.get(rid)),
+                "authorized_features": (
+                    names_by_resource.get(rid, [])
+                    if candidate["resource_kind"] == "invariant"
+                    else []
+                ),
                 "interactions": [],
             }
         group["score"] = max(group["score"], candidate["score"])
@@ -334,6 +416,25 @@ def _group(
             }
         )
 
+    # A fork with one behavior-changing feature has no mediator x mediator row,
+    # but its pass-through cohort is still meaningful and must not disappear.
+    for rid, cohort in cohorts.items():
+        if rid not in allowed or rid in groups:
+            continue
+        groups[rid] = {
+            "resource": cohort["resource"],
+            "resource_kind": cohort["resource_kind"],
+            "signal": cohort["signal"],
+            "resource_match": cohort["resource_match"],
+            "new_levers": cohort["new_levers"],
+            "boundary_states": cohort["boundary_states"],
+            "score": cohort["score"],
+            "omitted": 0,
+            "consumer_cohort": _cohort_json(cohort),
+            "authorized_features": [],
+            "interactions": [],
+        }
+
     ordered = sorted(
         groups.values(),
         key=lambda g: (-g["score"], g["resource_kind"], g["resource"]),
@@ -350,8 +451,10 @@ def _group(
         "summary": {
             "changed_files": touched["summary"]["changed_files"],
             "touched_nodes": touched["summary"]["touched_nodes"],
-            "candidates": len(candidates),
+            "candidates": len(candidates)
+            + sum(c["pair_count"] for c in cohorts.values()),
             "selected": len(kept),
+            "cohort_pairs": sum(c["pair_count"] for c in cohorts.values()),
             "dropped_low_signal": dropped_noise,
             "truncated": len(candidates) - len(kept),
             "omitted_resources": omitted_resources,
@@ -362,6 +465,16 @@ def _group(
         },
         "groups": ordered,
         "caveats": _caveats(touched),
+    }
+
+
+def _cohort_json(cohort: dict | None) -> dict | None:
+    if cohort is None:
+        return None
+    return {
+        "mediators": sorted(cohort["mediators"]),
+        "consumers": sorted(cohort["consumers"]),
+        "pair_count": cohort["pair_count"],
     }
 
 

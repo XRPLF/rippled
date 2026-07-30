@@ -51,7 +51,7 @@ ROLE_GLOSS = {
 # What kind of shared thing the two features met at.
 RESOURCE_GLOSS = {
     "fork": "a shared decision",
-    "invariant": "a shared invariant check",
+    "invariant": "an authorization check",
     "shared_sfield": "a shared field",
 }
 # Whether the diff hit the shared code itself, or only something that uses it.
@@ -93,6 +93,15 @@ def _short_evidence(evidence: list[dict], limit: int = 3) -> str:
     return ", ".join(seen)
 
 
+def _code_list(names: list[str]) -> str:
+    quoted = [f"`{name}`" for name in names]
+    if len(quoted) < 2:
+        return "".join(quoted)
+    if len(quoted) == 2:
+        return " and ".join(quoted)
+    return ", ".join(quoted[:-1]) + f", and {quoted[-1]}"
+
+
 def _header(report: dict) -> list[str]:
     summary = report["summary"]
     lines = [
@@ -107,7 +116,21 @@ def _header(report: dict) -> list[str]:
         ]
         return lines
 
-    counts = summary["by_tier"]
+    counts: dict[str, int] = {}
+    display_items = 0
+    has_authorization_check = False
+    for group in report["groups"]:
+        if group["resource_kind"] == "invariant":
+            has_authorization_check = True
+            if group["interactions"]:
+                tier = group["interactions"][0]["tier"]
+                counts[tier] = counts.get(tier, 0) + 1
+                display_items += 1
+            continue
+        for item in group["interactions"]:
+            tier = item["tier"]
+            counts[tier] = counts.get(tier, 0) + 1
+            display_items += 1
     tiers = ", ".join(
         f"{counts[tier]} {TIER_LABEL[tier]}"
         for tier in ("review", "consider", "context")
@@ -120,14 +143,21 @@ def _header(report: dict) -> list[str]:
         if len(report["groups"]) > 1
         else ""
     )
-    lines += [
-        PREMISE,
-        "",
-        f"You touched **{_n(summary['touched_nodes'], 'piece')} of code that "
-        f"features share**, in {_n(summary['changed_files'], 'changed file')}. "
-        f"That brings **{_n(summary['selected'], 'feature pair')}** into view"
-        f"{spread}: {tiers}.",
-    ]
+    lines += [PREMISE, ""]
+    if display_items:
+        item_name = "review item" if has_authorization_check else "feature pair"
+        lines += [
+            f"You touched **{_n(summary['touched_nodes'], 'piece')} of code that "
+            f"features share**, in {_n(summary['changed_files'], 'changed file')}. "
+            f"That brings **{_n(display_items, item_name)}** into view"
+            f"{spread}: {tiers}.",
+        ]
+    else:
+        lines += [
+            f"You touched **{_n(summary['touched_nodes'], 'piece')} of code that "
+            f"features share**, in {_n(summary['changed_files'], 'changed file')}. "
+            f"The transaction types that pass through it are summarized below.",
+        ]
     if summary["new_levers"]:
         levers = ", ".join(f"`{lever}`" for lever in summary["new_levers"])
         lines += [
@@ -154,6 +184,28 @@ def _group_section(group: dict, show_omitted: bool) -> list[str]:
         "",
         f"### `{group['resource']}` — {kind} ({hit})",
     ]
+    if group["resource_kind"] == "invariant":
+        authorized = group["authorized_features"]
+        evidence = [
+            entry
+            for item in group["interactions"]
+            for entry in item["evidence"]
+        ]
+        lines += [
+            "",
+            f"The transaction declarations grant this permission to "
+            f"{_code_list(authorized)}. Every other transaction type takes the "
+            f"protected branch.",
+            "",
+            f"Check both sides of that rule: a listed transaction may make the "
+            f"protected change, while an unlisted transaction must fail if it "
+            f"does.",
+        ]
+        where = _short_evidence(evidence)
+        if where:
+            lines += ["", f"Changed here: {where}."]
+        return lines
+
     if group["boundary_states"]:
         states = ", ".join(f"`{state}`" for state in group["boundary_states"])
         lines += [
@@ -162,9 +214,26 @@ def _group_section(group: dict, show_omitted: bool) -> list[str]:
             f"but only ever reaches one of those has not really tested the "
             f"combination.",
         ]
+    cohort = group["consumer_cohort"]
+    if cohort:
+        lines += [
+            "",
+            f"This decision is part of the common transaction path: "
+            f"**{_n(len(cohort['consumers']), 'transaction type')}** "
+            f"{'passes' if len(cohort['consumers']) == 1 else 'pass'} through it. "
+            f"The features that change the decision are "
+            f"{_code_list(cohort['mediators'])}. Their "
+            f"{_n(cohort['pair_count'], 'feature-by-transaction combination')} "
+            f"{'is' if cohort['pair_count'] == 1 else 'are'} summarized here "
+            f"because every transaction type has the same "
+            f"pass-through relationship.",
+        ]
     if group["new_levers"]:
         levers = ", ".join(f"`{lever}`" for lever in group["new_levers"])
         lines += ["", f"New here: this code now branches on {levers}."]
+
+    if not group["interactions"]:
+        return lines
 
     lines += [
         "",

@@ -36,6 +36,8 @@ def graph() -> dict:
                 "name": "PermissionDelegation",
             },
             {"id": "feature:transactor:Payment", "name": "Payment"},
+            {"id": "feature:transactor:NFTokenBurn", "name": "NFTokenBurn"},
+            {"id": "feature:transactor:NFTokenMint", "name": "NFTokenMint"},
         ],
         "resources": [
             {
@@ -47,6 +49,11 @@ def graph() -> dict:
                 "id": "resource:shared_sfield:sfAmount",
                 "name": "sfAmount",
                 "signal": "low",
+            },
+            {
+                "id": "resource:invariant:ChangeNftCounts",
+                "name": "ChangeNftCounts",
+                "signal": "medium",
             },
         ],
         "edges": [
@@ -79,6 +86,18 @@ def graph() -> dict:
                 "src": "feature:transactor:Batch",
                 "dst": "resource:shared_sfield:sfAmount",
                 "via": "sfAmount",
+            },
+            {
+                "kind": "consumer",
+                "src": "feature:transactor:NFTokenBurn",
+                "dst": "resource:invariant:ChangeNftCounts",
+                "via": "ChangeNftCounts",
+            },
+            {
+                "kind": "consumer",
+                "src": "feature:transactor:NFTokenMint",
+                "dst": "resource:invariant:ChangeNftCounts",
+                "via": "ChangeNftCounts",
             },
         ],
     }
@@ -121,6 +140,13 @@ def interactions() -> dict:
                 "shared_sfield",
                 "low",
                 ("Batch", "Payment"),
+                ("consumer", "consumer"),
+            ),
+            pair(
+                "ChangeNftCounts",
+                "invariant",
+                "medium",
+                ("NFTokenBurn", "NFTokenMint"),
                 ("consumer", "consumer"),
             ),
         ],
@@ -182,16 +208,44 @@ def test_untouched_diff_selects_nothing():
     assert report["caveats"]
 
 
-def test_editing_a_fork_puts_every_pair_on_it_in_scope():
+def test_editing_a_fork_keeps_mediator_pairs_and_summarizes_pass_throughs():
     report = select(node(FORK, "fork", "getFeePayer", signal="high"))
     assert [g["resource"] for g in report["groups"]] == ["getFeePayer"]
     pairs = {tuple(i["features"]) for i in report["groups"][0]["interactions"]}
-    assert pairs == {("PermissionDelegation", "Batch"), ("Batch", "Payment")}
-    # The mediator×mediator pair outranks mediator×consumer on the same resource.
+    assert pairs == {("PermissionDelegation", "Batch")}
+    assert report["groups"][0]["consumer_cohort"] == {
+        "mediators": ["Batch"],
+        "consumers": ["Payment"],
+        "pair_count": 1,
+    }
+    assert report["summary"]["candidates"] == 2
+    assert report["summary"]["cohort_pairs"] == 1
+    assert report["summary"]["truncated"] == 0
     assert report["groups"][0]["interactions"][0]["features"] == [
         "PermissionDelegation",
         "Batch",
     ]
+
+
+def test_a_cohort_only_fork_still_renders_a_group():
+    only_pass_through = interactions()
+    only_pass_through["interactions"] = [
+        item
+        for item in only_pass_through["interactions"]
+        if item["resource"] == "getFeePayer"
+        and item["roles"].count("consumer") == 1
+    ]
+    report = sel.select(
+        graph(),
+        only_pass_through,
+        touched(node(FORK, "fork", "getFeePayer", signal="high")),
+    )
+    assert len(report["groups"]) == 1
+    assert report["groups"][0]["interactions"] == []
+    assert report["groups"][0]["consumer_cohort"]["consumers"] == ["Payment"]
+    body = render_comment.render(report)
+    assert "The transaction types that pass through it are summarized below" in body
+    assert "| features |" not in body
 
 
 def test_mediator_pair_on_an_edited_fork_reaches_the_review_tier():
@@ -215,7 +269,7 @@ def test_a_new_lever_dominates_the_ranking():
     assert delta == sel.NEW_LEVER_SCORE
     assert lever["summary"]["new_levers"] == ["featureFoo"]
     why = " ".join(lever["groups"][0]["interactions"][0]["why"])
-    assert "featureFoo" in why and "edge set" in why
+    assert "featureFoo" in why and "not recorded" in why
 
 
 def test_low_signal_consumer_pairs_are_dropped_but_counted():
@@ -248,11 +302,27 @@ def test_features_resolve_through_edges_not_by_name():
 
 def test_caps_are_reported_never_silent():
     report = select(
-        node(FORK, "fork", "getFeePayer", signal="high"), max_per_resource=1
+        node(FORK, "fork", "getFeePayer", signal="high"),
+        node("feature:transactor:Payment", "transactor", "Payment", "file"),
+        max_per_resource=1,
     )
     assert len(report["groups"][0]["interactions"]) == 1
     assert report["groups"][0]["omitted"] == 1
     assert report["summary"]["truncated"] == 1
+
+
+def test_invariant_group_carries_the_complete_authorized_set():
+    report = select(
+        node(
+            "resource:invariant:ChangeNftCounts",
+            "invariant",
+            "ChangeNftCounts",
+            signal="medium",
+        )
+    )
+    group = report["groups"][0]
+    assert group["authorized_features"] == ["NFTokenBurn", "NFTokenMint"]
+    assert group["consumer_cohort"] is None
 
 
 def test_resource_cap_keeps_the_best_resource_whole():
@@ -278,7 +348,7 @@ def test_off_span_and_structural_changes_become_caveats():
     joined = " ".join(report["caveats"])
     assert "Transactor.cpp" in joined
     assert "gone.cpp" in joined
-    assert "3 changed file(s)" in joined
+    assert "3 changed files" in joined
     assert "not** checked" in joined
 
 
@@ -310,6 +380,33 @@ def test_rendered_comment_names_the_pair_and_the_boundary_states():
     # The comment must disclaim rather than assert anything about test coverage.
     assert "Test coverage is **not** checked yet" in body
     assert "What this misses" in body
+
+
+def test_rendered_comment_summarizes_uniform_transaction_consumers():
+    body = render_comment.render(
+        select(node(FORK, "fork", "getFeePayer", signal="high"))
+    )
+    assert "1 transaction type" in body
+    assert "1 feature-by-transaction combination" in body
+    assert "`Batch` (changes it) × `Payment` (uses it)" not in body
+
+
+def test_rendered_invariant_is_an_authorization_boundary_not_a_pair_table():
+    body = render_comment.render(
+        select(
+            node(
+                "resource:invariant:ChangeNftCounts",
+                "invariant",
+                "ChangeNftCounts",
+                signal="medium",
+            )
+        )
+    )
+    assert "an authorization check" in body
+    assert "grant this permission to `NFTokenBurn` and `NFTokenMint`" in body
+    assert "Every other transaction type takes the protected branch" in body
+    assert "1 review item" in body
+    assert "| features |" not in body
 
 
 def test_rendered_comment_is_explicit_when_nothing_is_in_scope():

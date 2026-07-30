@@ -62,7 +62,9 @@ diff be mapped back onto the graph:
 | ------------ | --------------------------------------------------- | ----------------------------------------------------- |
 | `macro`      | the declaring row in a `.macro` file or enum header | a transactor's `TRANSACTION(...)` row                 |
 | `definition` | a C++ definition span, one per merged overload      | each `Transactor::checkSign` body                     |
-| `impl`       | a whole file attributed to a node                   | `transactors/payment/Payment.cpp`, an invariant check |
+| `reference`  | a precise use site that enforces a shared rule      | `hasPrivilege(tx, ChangeNftCounts)`                   |
+| `state_enum` | the enum declaring a decision's known outcomes      | `FeePayerType`                                        |
+| `impl`       | a whole file attributed to a node                   | `transactors/payment/Payment.cpp`                     |
 
 Transactor implementation files are derived, not declared
 (`impl_locator.py`): by file stem, then by a column-0 `Name::method` definition
@@ -72,14 +74,15 @@ and the three pseudo-transactions aliased to `Change`. The column-0 anchor
 matters: an unanchored match also hits qualified _calls_, which attributed
 `AMMClawback.cpp` to the `AMMWithdraw` transactor.
 
-Invariant nodes also carry the files whose `hasPrivilege(tx, Bit)` checks
+Invariant nodes also carry the precise `hasPrivilege(tx, Bit)` calls that
 enforce them, and a fork carries the enum declaring its boundary states. Without
 those, an amendment x invariant PR or a new `FeePayerType` value would map to no
 node at all.
 
 The build fails if a node has no location, if a span runs past the end of its
-file, or if a `macro`/`definition` span does not contain the node's own name —
-the cheap check that catches a line number drifting off its declaration.
+file, or if a `macro`/`definition`/`reference` span does not contain the node's
+own name — the cheap check that catches a line number drifting off its
+declaration or enforcement site.
 
 ## Mapping a PR
 
@@ -92,7 +95,7 @@ Reads `out/graph.json` and writes `out/touched.json`
 (validated against `touched.schema.json`), containing:
 
 - `touched` — nodes with a changed line inside one of their spans. `match` is
-  `span` for a precise `macro`/`definition` hit and `file` for a whole-file
+  `span` for a precise `macro`/`definition`/`reference` hit and `file` for a whole-file
   `impl` hit. For fork resources, lever tokens on the changed lines are split
   into `known_levers` and `new_levers`; a new lever means the diff is changing
   the graph's own edge set, which is the strongest signal available.
@@ -120,7 +123,7 @@ mistaken for levers.
   `invariants/` 7, tx-root plumbing 4, `transactors/` 1. Covering them means
   adding resource families, which is a graph-model decision, not a mapping fix.
 - **Invariant coverage is per-privilege-bit, not per-file.** All 14 bits carry
-  the files whose `hasPrivilege` checks consult them, but only checks that call
+  the precise `hasPrivilege` calls that consult them, but only checks that call
   `hasPrivilege` are located at all — 5 of 12 invariant `.cpp` files. A PR
   editing an invariant that owns no privilege bit (`AccountRootsDeletedClean`)
   or one that never calls `hasPrivilege` (`AMMInvariant`) still maps to no node.
@@ -157,6 +160,11 @@ then scored, filtered, and capped:
   are dropped unless the field itself changed or both transactors were edited.
   Two transactors both declaring `sfAmount` interact only in the weakest sense,
   and those pairs are the bulk of the 4350-interaction set.
+- **Pass-through cohorts** — when the shared base-pipeline decision itself
+  changed, transaction types that merely pass through it are summarized as one
+  exact cohort. A touched transaction type still gets its own row. This keeps
+  the behavior-changing feature pairs visible without materializing the same
+  generic relationship once per transaction type.
 - **Caps** — 25 interactions, 6 per resource, 6 resources, keeping the
   best-scoring resources whole rather than a thin slice of each. Every cap and
   filter reports its count in the summary and in the comment; nothing is dropped
@@ -169,9 +177,11 @@ are not conflated.
 `render_comment.py` is pure formatting over `selected.json`, so a comment can be
 regenerated from a CI artifact without re-running the extractors. It groups by
 resource (the boundary is a property of the resource), states the boundary state
-space where one was extracted, cites `file:line` evidence, lists what the report
-does not cover, and truncates to fit GitHub's comment limit. The body opens with
-an HTML marker so CI updates one comment per PR instead of appending per push.
+space where one was extracted, and renders invariant privileges as the
+authorized transaction set versus the protected default path. It cites
+`file:line` evidence, lists what the report does not cover, and truncates to fit
+GitHub's comment limit. The body opens with an HTML marker so CI updates one
+comment per PR instead of appending per push.
 
 ## CI wiring
 

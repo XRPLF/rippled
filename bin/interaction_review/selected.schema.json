@@ -24,6 +24,7 @@
         "touched_nodes",
         "candidates",
         "selected",
+        "cohort_pairs",
         "dropped_low_signal",
         "truncated",
         "omitted_resources",
@@ -40,6 +41,11 @@
           "minimum": 0
         },
         "selected": { "type": "integer", "minimum": 0 },
+        "cohort_pairs": {
+          "description": "Uniform mediator-by-transaction combinations summarized as cohorts instead of repeated as rows.",
+          "type": "integer",
+          "minimum": 0
+        },
         "dropped_low_signal": {
           "description": "consumer×consumer pairs on low-signal resources with weak evidence.",
           "type": "integer",
@@ -80,6 +86,8 @@
           "boundary_states",
           "score",
           "omitted",
+          "consumer_cohort",
+          "authorized_features",
           "interactions"
         ],
         "additionalProperties": false,
@@ -101,9 +109,38 @@
             "type": "integer",
             "minimum": 0
           },
+          "consumer_cohort": {
+            "description": "Uniform pass-through relationships summarized for a directly edited fork.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["mediators", "consumers", "pair_count"],
+                "additionalProperties": false,
+                "properties": {
+                  "mediators": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "consumers": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "pair_count": { "type": "integer", "minimum": 1 }
+                }
+              }
+            ]
+          },
+          "authorized_features": {
+            "description": "Transaction types declaring an invariant privilege; empty for non-invariant resources.",
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
           "interactions": {
             "type": "array",
-            "minItems": 1,
             "items": {
               "type": "object",
               "required": [

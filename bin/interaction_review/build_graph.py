@@ -255,12 +255,10 @@ def validate_locations(builder: GraphBuilder, repo_root: Path) -> None:
                     f"{node.id}: span {loc.file}:{loc.start_line}-{loc.end_line} "
                     f"runs past end of file ({len(lines)} lines)"
                 )
-            # A span that declares or defines the node must contain its name.
+            # A span that declares, defines, or precisely references the node
+            # must contain its name.
             # This is the cheap check that catches an off-by-N span: a line
             # number can drift silently, but drifting off the name cannot.
-            # `impl` spans are exempt — they cover a whole file, and a
-            # transactor reached through a `using` alias (EnableAmendment ->
-            # Change) never spells its own name there.
             # `impl` spans cover a whole file, and a `state_enum` span is a
             # different declaration entirely (the enum naming a fork's boundary
             # states), so neither is expected to spell the node's own name.

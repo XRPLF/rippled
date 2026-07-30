@@ -14,8 +14,8 @@ from pathlib import Path
 from graph import (
     EDGE_CONSUMER,
     FEATURE_TRANSACTOR,
-    LOC_IMPL,
     LOC_MACRO,
+    LOC_REFERENCE,
     RESOURCE_INVARIANT,
     SIGNAL_MEDIUM,
     Edge,
@@ -24,7 +24,7 @@ from graph import (
     ResourceNode,
     resource_id,
 )
-from sourceutil import repo_relative, strip_comments, whole_file_location
+from sourceutil import repo_relative, strip_comments
 
 # Trees holding the checks that enforce the privilege bits.
 INVARIANT_TREES = (
@@ -78,11 +78,12 @@ def parse_privilege_rows(header_path: Path) -> dict[str, int]:
 
 
 def locate_privilege_checks(repo_root: Path) -> dict[str, list[Location]]:
-    """Privilege bit -> the files whose checks consult it.
+    """Privilege bit -> the precise call sites whose checks consult it.
 
-    The enum row says a bit exists; these files are where it is enforced, and
-    they are what a PR actually edits. Without them an amendment x invariant
-    change — the tool's own target class of bug — maps to nothing.
+    The enum row says a bit exists; these calls are where it is enforced, and
+    they are what a PR actually edits. Recording the call rather than its whole
+    file avoids attributing an unrelated invariant edit to every privilege that
+    happens to be checked somewhere in that file.
     """
     found: dict[str, set[Location]] = {}
     for tree in INVARIANT_TREES:
@@ -96,14 +97,20 @@ def locate_privilege_checks(repo_root: Path) -> dict[str, list[Location]]:
             if path.suffix not in _INVARIANT_SUFFIXES or not path.is_file():
                 continue
             text = strip_comments(path.read_text())
-            for mask in set(_HAS_PRIVILEGE_RE.findall(text)):
-                mask = mask.strip()
+            for match in _HAS_PRIVILEGE_RE.finditer(text):
+                mask = match.group(1).strip()
                 if not _BIT_MASK_RE.match(mask):
                     continue
+                start_line = text.count("\n", 0, match.start()) + 1
+                end_line = text.count("\n", 0, match.end()) + 1
+                location = Location(
+                    repo_relative(path, repo_root),
+                    start_line,
+                    end_line,
+                    LOC_REFERENCE,
+                )
                 for bit in _BIT_SPLIT_RE.split(mask):
-                    found.setdefault(bit, set()).add(
-                        whole_file_location(path, repo_root, LOC_IMPL)
-                    )
+                    found.setdefault(bit, set()).add(location)
     return {bit: sorted(locs) for bit, locs in found.items()}
 
 
