@@ -16,12 +16,13 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 24
       },
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -39,7 +40,7 @@
           "unit": "reqps",
           "custom": {
             "axisLabel": "Requests / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -56,12 +57,13 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 24
       },
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -79,7 +81,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -150,7 +152,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "yAxis": {
           "axisLabel": "Duration (ms)",
@@ -170,7 +173,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "ms",
+          "custom": {
+            "spanNulls": 1800000
+          }
         }
       }
     },
@@ -187,7 +193,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -213,7 +220,7 @@
           "unit": "reqps",
           "custom": {
             "axisLabel": "Requests / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -235,7 +242,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -258,10 +266,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: commands/s",
           "custom": {
             "axisLabel": "Commands / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -278,7 +286,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -311,7 +319,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -331,7 +339,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "suffix: messages/s"
         },
         "overrides": []
       }
@@ -349,7 +357,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -369,10 +378,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: requests/s",
           "custom": {
             "axisLabel": "Requests / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -394,7 +403,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -417,10 +427,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: requests/s",
           "custom": {
             "axisLabel": "Requests / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
