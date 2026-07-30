@@ -1,11 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <concepts>
