@@ -211,7 +211,7 @@ makeShuffle(std::size_t size, std::uint64_t seed)
 // Partition a pool into fixed-size batches. Any trailing remainder shorter than
 // `batchSize` is dropped, so every returned batch has exactly `batchSize`.
 inline std::vector<Batch>
-slicePreciseBatches(Batch const& pool, std::size_t batchSize)
+sliceFixedBatches(Batch const& pool, std::size_t batchSize)
 {
     std::vector<Batch> batches;
     if (batchSize == 0)

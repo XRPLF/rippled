@@ -17,9 +17,10 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
-#include <array>
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <ranges>
 #include <string>
 #include <utility>
 
@@ -56,9 +57,10 @@ protected:
 
     //--------------------------------------------------------------------------
 
-    static void
-    populateGossip(Gossip& gossip)
+    static Gossip
+    makeGossip()
     {
+        Gossip gossip;
         std::uint8_t const v(10 + randInt(9));
         std::uint8_t const n(10 + randInt(9));
         gossip.items.reserve(n);
@@ -75,6 +77,7 @@ protected:
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
             gossip.items.push_back(std::move(item));
         }
+        return gossip;
     }
 };
 
@@ -215,14 +218,9 @@ TEST_F(ResourceManagerTest, imports)
     TestLogic logic{j_};
 
     static constexpr auto kGossipSources = 5uz;
-
-    std::array<Gossip, kGossipSources> gossip;
-
-    for (auto& g : gossip)
-        populateGossip(g);
-
-    for (auto i = 0uz; i < gossip.size(); ++i)
-        logic.importConsumers(std::to_string(i), gossip[i]);
+    std::ranges::for_each(std::views::iota(0uz, kGossipSources), [&](auto const i) {
+        logic.importConsumers(std::to_string(i), makeGossip());
+    });
 }
 
 TEST_F(ResourceManagerTest, import)
