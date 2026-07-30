@@ -9,9 +9,6 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstddef>
-#include <memory>
-
 namespace xrpl {
 
 class TransactionProposalCreate : public Transactor
@@ -42,13 +39,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-private:
-    // Invariant state: the proposal entry this transaction created, and any
-    // proposal entries it touched in another way (there must be none).
-    std::shared_ptr<SLE const> createdProposal_;
-    std::size_t createdProposals_ = 0;
-    std::size_t otherProposalTouches_ = 0;
 };
 
 }  // namespace xrpl

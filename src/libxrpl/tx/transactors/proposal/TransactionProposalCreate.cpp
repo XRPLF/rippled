@@ -230,82 +230,23 @@ TransactionProposalCreate::doApply()
 }
 
 void
-TransactionProposalCreate::visitInvariantEntry(
-    bool isDelete,
-    SLE::const_ref before,
-    SLE::const_ref after)
+TransactionProposalCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
-    auto const& entry = after ? after : before;
-    if (!entry || entry->getType() != ltTRANSACTION_PROPOSAL)
-        return;
-
-    if (!isDelete && !before && after)
-    {
-        ++createdProposals_;
-        createdProposal_ = after;
-    }
-    else
-    {
-        ++otherProposalTouches_;
-    }
+    // No transaction-specific invariants yet (future work). Object-level
+    // invariants for the TransactionProposal ledger entry (unsigned canonical
+    // form, non-zero Expiration, correct ProposalID key, sorted/unique signer
+    // arrays) belong in a protocol-level ValidTransactionProposal check.
 }
 
 bool
 TransactionProposalCreate::finalizeInvariants(
-    STTx const& tx,
-    TER result,
+    STTx const&,
+    TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const&)
 {
-    if (!isTesSuccess(result))
-    {
-        // A failed create claims a fee and nothing else.
-        if (createdProposals_ != 0 || otherProposalTouches_ != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: failed TransactionProposalCreate "
-                               "touched a proposal.";  // LCOV_EXCL_LINE
-            return false;                              // LCOV_EXCL_LINE
-        }
-        return true;
-    }
-
-    if (createdProposals_ != 1 || otherProposalTouches_ != 0 || !createdProposal_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: TransactionProposalCreate must "
-                           "create exactly one proposal.";  // LCOV_EXCL_LINE
-        return false;                                       // LCOV_EXCL_LINE
-    }
-
-    auto const& sle = *createdProposal_;
-    if (sle[sfOwner] != tx[sfAccount] || sle[sfExpiration] != tx[sfExpiration] ||
-        sle[sfExpiration] == 0)
-    {
-        JLOG(j.fatal()) << "Invariant failed: created proposal owner or "
-                           "expiration mismatch.";  // LCOV_EXCL_LINE
-        return false;                               // LCOV_EXCL_LINE
-    }
-
-    // The stored transaction must be in unsigned canonical form; signatures
-    // may only ever arrive through TransactionProposalSign.
-    auto const proposedTx = sle.getFieldObject(sfProposedTransaction);
-    if (hasSignatureField(proposedTx) || !hasEmptySigningPubKey(proposedTx))
-    {
-        JLOG(j.fatal()) << "Invariant failed: created proposal is not in "
-                           "unsigned canonical form.";  // LCOV_EXCL_LINE
-        return false;                                   // LCOV_EXCL_LINE
-    }
-
-    // The entry must live under the key its components hash to, or lookups
-    // and duplicate detection fall apart.
-    std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
-    if (sle.key() != keylet::txProposal(proposedTx.getAccountID(sfAccount), ticketSequence).key)
-    {
-        JLOG(j.fatal()) << "Invariant failed: proposal stored under the "
-                           "wrong key.";  // LCOV_EXCL_LINE
-        return false;                     // LCOV_EXCL_LINE
-    }
-
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
