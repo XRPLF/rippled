@@ -72,23 +72,25 @@ SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="${BUILD_DIR:-${PWD}/build}"
 if [[ ! -d "${BUILD_DIR}" ]]; then
     echo "build_pkg.sh: build directory not found: ${BUILD_DIR}" >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing the binaries." >&2
+    echo "Build the binaries before packaging, or set BUILD_DIR to the directory containing them." >&2
     exit 1
 fi
 BUILD_DIR="$(cd "${BUILD_DIR}" && pwd)"
 
 xrpld_binary="${BUILD_DIR}/xrpld"
-if [[ ! -x "${xrpld_binary}" ]]; then
-    echo "build_pkg.sh: expected executable xrpld binary at ${xrpld_binary}." >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
-    exit 1
-fi
-
 validator_keys_binary="${BUILD_DIR}/validator-keys"
-if [[ ! -x "${validator_keys_binary}" ]]; then
-    echo "build_pkg.sh: expected executable validator-keys binary at ${validator_keys_binary}." >&2
-    echo "Configure with -Dvalidator_keys=ON and build the validator-keys target before packaging," >&2
-    echo "or set BUILD_DIR to the directory containing validator-keys." >&2
+
+# Report both binaries at once: they share a single BUILD_DIR, so telling the
+# reader to point it at one of them in isolation is advice they cannot follow.
+missing=()
+[[ -x "${xrpld_binary}" ]] || missing+=(xrpld)
+[[ -x "${validator_keys_binary}" ]] || missing+=(validator-keys)
+
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "build_pkg.sh: missing or not executable in ${BUILD_DIR}: ${missing[*]}" >&2
+    echo "Both binaries come from a single CMake build directory configured with" >&2
+    echo "-Dxrpld=ON -Dvalidator_keys=ON. Build them, then point BUILD_DIR at that" >&2
+    echo "directory." >&2
     exit 1
 fi
 
