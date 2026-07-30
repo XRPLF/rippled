@@ -446,15 +446,41 @@ matter. Items marked ✓ are done.
    **Decided: `host_lib`**, matching the SDK and the fixtures. `the_import_module_name_must_match`
    now rejects `host`, `env` and the empty name, so the choice is pinned rather than
    incidental.
-4. **The transfer budget is charged for bytes that are never copied, and charged
+4. ✓ **The transfer budget is charged for bytes that are never copied, and charged
    before validation.** `read_borrowed` *aliases* guest memory — zero copies — yet
-   calls `charge_transfer` (`abi.rs:135`); C++ deliberately did not charge plain
+   called `charge_transfer` (`abi.rs:135`); C++ deliberately did not charge plain
    slice/string reads (`trace` msg/data, `sha512_half` input — see "Reference points"
    below). The charge also precedes the bounds check, so a guest can drain the 1 MiB
    budget with out-of-bounds pointers. Related, in `write_into`: `fill` gets a slice
    of the guest's full `cap`, uncapped by `MAX_WASM_DATA_LEN`, so an over-cap value
    lands in guest memory before `n > MAX_WASM_DATA_LEN` rejects it — clamping `out` to
    `min(cap, MAX_WASM_DATA_LEN)` makes that post-check unreachable by construction.
+
+   Landed, with **one claim in the paragraph above corrected**: the clamp does *not*
+   make the post-check unreachable, and the check is load-bearing. `fill` reports the
+   value's *true* length, which can exceed the region it was handed, so `n >
+   MAX_FIELD_BYTES` is what turns an over-cap value into `DataFieldTooLarge` instead
+   of a silently-accepted 1025-byte count. Deleting it fails three tests. The clamp
+   and the check bound different things: the clamp bounds the **bytes** that can reach
+   guest memory, the check bounds the **status** the guest is given.
+
+   Both read charges are gone — `read_borrowed`'s and `read_write`'s input — so
+   `charge_transfer` has exactly one call site, in `write_into`, and the budget means
+   what C++ meant by it: bytes actually copied host→guest. Removing the read charge
+   also dissolves the out-of-bounds drain rather than reordering around it. Nothing
+   replaces those charges: gas already bounds how many reads a run can make, since
+   every host call pays its spec's gas before its body runs, which is the property
+   C++ relied on. The bounds check still spans the guest's **whole declared `cap`**,
+   not the clamped length, so a buffer running past memory is `PointerOutOfBounds`
+   even when its first `MAX_FIELD_BYTES` bytes would have been valid.
+
+   *Partly a host contract, not an engine guarantee.* The engine guarantees at most
+   `min(cap, MAX_FIELD_BYTES)` bytes are **writable**. That a refused over-cap value
+   leaves *nothing* behind additionally relies on the host writing only when the whole
+   value fits `out` — what `setData` did and what `Answer::bytes` does. A host impl
+   that scribbled the clamped prefix and then reported a larger `n` would still leave
+   bytes behind. Worth stating in the `HostFunctions` declaration's doc comment; the
+   ABI crate was not touched here.
 5. ✓ **`Module::new` accepted WAT text — a behaviour the rewrite introduced by
    accident.** wasmi's default features include `wat`, and `Module::new` runs
    `wat::parse_bytes` over its input (`module/mod.rs:228`), so the VM compiled
@@ -611,21 +637,25 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 ## Current state (2026-07-30)
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
-`clippy --workspace --all-targets`, `fmt`. 114 tests: 33 macro, 9 facade, 1 doctest, and
-**71 in `xrpl-wasm-vm`** (9 unit; 62 integration — 12 `host_calls`, 19 `memory_policy`,
-12 `budgets`, 19 `vm_limits`).
+`clippy --workspace --all-targets`, `fmt`. 115 tests: 33 macro, 9 facade, 1 doctest, and
+**72 in `xrpl-wasm-vm`** (9 unit; 63 integration — 12 `host_calls`, 19 `memory_policy`,
+13 `budgets`, 19 `vm_limits`).
 
-**Findings A1, A2, A3 and B6, B7 are done** (2026-07-30). `run` is
+**Section A is closed, and B6/B7 with it** (2026-07-30). `run` is
 `Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
 instead of answering the guest a code; the import module is `host_lib`; the `i64`
-pipeline and `AbiRet` are gone. See those entries for what landed and why. Two
-decisions were taken to get there and are recorded at their findings:
-**`OutOfTransferLimit` stays soft** (A1) and **the module name is `host_lib`** (A3).
+pipeline and `AbiRet` are gone; the transfer budget counts only bytes actually copied
+host→guest, and no more than the field cap can reach guest memory. See those entries
+for what landed and why. Two decisions were taken to get there and are recorded at
+their findings: **`OutOfTransferLimit` stays soft** (A1) and **the module name is
+`host_lib`** (A3).
 
-The two tests that existed only to pin behaviour A1 changed are gone, replaced by
-tests of the new behaviour (`a_host_call_refused_its_gas_stops_the_run`,
-`an_endless_loop_is_stopped_by_gas`). `the_wire_conversion_truncates` went with the
-cast it pinned. What the rewrite turned up that reading the code did not:
+Every test that existed only to pin behaviour a finding said should change is gone,
+replaced by a test of the new behaviour: `a_host_call_refused_its_gas_stops_the_run`
+and `an_endless_loop_is_stopped_by_gas` for A1, `reads_do_not_spend_the_transfer_budget`
+and `an_over_cap_value_is_refused_without_reaching_guest_memory` for A4.
+`the_wire_conversion_truncates` went with the cast it pinned. What the work turned up
+that reading the code did not:
 
 - **An endless guest loop and a refused host charge are the same outcome**, and both
   report the whole limit as spent — the loop because wasmi's meter reaches zero, the
@@ -648,6 +678,15 @@ cast it pinned. What the rewrite turned up that reading the code did not:
   instantiation) a move rather than a behaviour change — its failure is already a
   run-ender, so hoisting it to an instantiation-time `RunError::NoMemory` only
   changes which stage reports it.
+- **A clamp and a check that look redundant are not.** See A4: the clamp bounds the
+  bytes, the `MAX_FIELD_BYTES` check bounds the status. The finding's own text claimed
+  the clamp made the check unreachable; a mutation proved otherwise, which is the
+  argument for mutating rather than reasoning about a test's value.
+- **Nothing in the suite reached the budget through `sha512_half`.** Removing
+  `read_write`'s input charge would have been invisible, so
+  `only_the_output_half_of_a_read_write_spends_the_budget` was written to catch it —
+  2048 calls hashing twice the budget while writing a sixteenth of it. A finding whose
+  fix no test can notice is a finding with no net under it.
 
 **How the suite was checked.** A code review of the diff mutation-tested it, and the
 result is worth recording because it found a test that pinned nothing: the multi-value
@@ -717,9 +756,8 @@ split the VM restated all five values, so a legitimate gas change meant editing 
 files. (Corollary: `every_variant_appears_in_all_exactly_once` is now subsumed by the
 table comparison and could go.)
 
-One test still **pins behaviour a finding says should change**, and says so in its name
-and doc comment: `reads_currently_spend_the_transfer_budget_too` (A4). It is meant to be
-rewritten when that decision lands, not preserved. Its A1 counterpart already was.
+No test now **pins behaviour a finding says should change**. The two that did were
+rewritten when their findings landed, which is what they were for.
 
 The trait is settled, and every part of it is written in the declaration rather than
 synthesized: `&self`, `HostResult<T>`, and byte outputs as explicit
@@ -733,21 +771,32 @@ Consequences worth remembering:
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
 
-Next, in rough order, from the findings above: **A4** — the transfer budget charged for
-bytes never copied and charged before validation, plus `write_into`'s
-`min(cap, MAX_FIELD_BYTES)` clamp. It is the last correctness item, and `is_fatal`
-answers the question it used to raise: a mis-charge cannot end a run, only mis-report a
-byte count, because `OutOfTransferLimit` is soft. Then the remaining B and D cleanups as
-one pass (B8's unused `cxx` dep, B9's stale links, D14's `forbid(unsafe_code)`, D16's
-three papercuts — `get_fuel().unwrap_or(0)` now appears once, in `vm::fuel_used`), then
-the cached `Memory` (C10). The scratch-buffer decision (C11) and real `ApplyContext`
-wiring plus the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) follow. Deferred as
-before: macro-emitted `link_*` shims, the generated C header, the probe-module test.
+Next, in rough order, from the findings above: **the remaining B and D cleanups as one
+pass** — B8's unused `cxx` dep, B9's stale links and historical comments, D14's
+`forbid(unsafe_code)` plus `unreachable_pub` and the cast lints, and D16's papercuts.
+Then the cached `Memory` (C10), which `NoMemExported` being fatal has already made a
+move rather than a behaviour change. The scratch-buffer decision (C11) and real
+`ApplyContext` wiring plus the cxx bridge (`xrpl-wasm-vm-ffi` is still `mod ffi {}`)
+follow. C12 (per-run `Linker` and no module cache) stays last: `VmState<'h>`'s lifetime
+is the blocker. Deferred as before: macro-emitted `link_*` shims, the generated C
+header, the probe-module test.
 
-`register_host_functions` still returns `Result<(), String>` and `run` now discards that
-string (a linker failure is `RunError::Internal`, which carries nothing), so its
-`format!` is dead. `Result<(), wasmi::errors::LinkerError>` is the honest signature —
-small enough to fold into the B/D pass.
+Four small things belong in that B/D pass, each found by a slice rather than by the
+original read:
+
+- `register_host_functions` returns `Result<(), String>` and `run` discards the string
+  (a linker failure is `RunError::Internal`, which carries nothing), so its `format!`
+  is dead. `Result<(), wasmi::errors::LinkerError>` is the honest signature.
+- `only_the_host_fatal_errors_trap`'s soft list is representative, not exhaustive —
+  nothing in the ABI crate enumerates `HostError`. A `HostError::ALL` there would close
+  it, and this pins a consensus-relevant channel split, so it is worth closing.
+- D16's `gas = 0` item has shifted from a bug to a decision: it no longer passes
+  silently but fails with a typed `OutOfGas`, so the question is whether it deserves
+  C++'s `temBAD_AMOUNT` at the caller instead. `gas` is `u64`, so C++'s negative case
+  cannot arise.
+- The `HostFunctions` declaration should say that a host writes into `out` only when
+  the whole value fits — see A4's last paragraph, where that is what makes "a refused
+  value leaves nothing behind" hold end to end.
 
 Deferred to a later refactor, once there is working code: macro-emitted `link_*`
 shims, the generated C header, and the probe-module conformance test.

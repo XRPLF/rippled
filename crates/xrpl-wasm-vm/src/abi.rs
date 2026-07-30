@@ -94,6 +94,17 @@ fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
 /// Deduct `n` bytes from the per-run transfer-limit budget
 /// ([`crate::vm::TRANSFER_LIMIT_BYTES`], separate from gas);
 /// `OutOfTransferLimit` if it would go negative.
+///
+/// The budget counts bytes that **cross the boundary as copies**: host→guest
+/// writes (C++'s `setData`, here [`write_into`], this function's one call site)
+/// and typed reads that materialize a host object out of guest bytes (C++ charged
+/// uint256, AccountID, Currency, Asset). Plain borrowed reads are not charged,
+/// because nothing is copied — the host is handed a slice aliasing guest memory.
+/// This ABI has no typed reads yet; the rule is here for the ones that arrive,
+/// which will charge the object they materialize.
+///
+/// What bounds how many reads a run can make is gas, charged per host call before
+/// its body runs ([`charged`]) — the same property C++ relied on.
 fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     let n = n as u64;
     let remaining = state.transfer_budget.get();
@@ -119,8 +130,11 @@ fn memory<T>(caller: &Caller<'_, T>) -> Result<Memory, HostError> {
 /// as long as the host call it feeds; host functions never re-enter the guest and
 /// move its memory.
 ///
-/// Checks params validity, the [`MAX_FIELD_BYTES`] cap (`DataFieldTooLarge`) and
-/// the transfer budget, in that order, before the slice is formed.
+/// Checks params validity then the [`MAX_FIELD_BYTES`] cap
+/// (`DataFieldTooLarge`), in that order, before the slice is formed. The transfer
+/// budget is not among them: there are no copied bytes to charge, which is why
+/// C++ left plain slice/string reads (`trace`'s msg/data, `sha512_half`'s input)
+/// free of it — see [`charge_transfer`].
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
     ptr: i32,
@@ -133,7 +147,6 @@ pub(crate) fn read_borrowed<'a>(
     if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
-    charge_transfer(caller.data(), len)?;
     let end = ptr.checked_add(len).ok_or(HostError::PointerOutOfBounds)?;
     memory(caller)?
         .data(caller)
@@ -145,12 +158,29 @@ pub(crate) fn read_borrowed<'a>(
 /// region `[dst, dst + cap)` and hand the host a `&mut [u8]` aliasing it, so the
 /// host writes straight into guest linear memory. Returns the byte count.
 ///
-/// `fill` reports the value's true length and writes only what fits, leaving the
-/// engine the policy the guest observes: the [`MAX_FIELD_BYTES`] cap
+/// **`fill`'s `usize` is the value's true length, not the number of bytes it
+/// wrote.** A host holding a 64-byte value, handed a 4-byte region, writes nothing
+/// and answers `64` — which is how the guest learns the size to ask for next time.
+/// The count is therefore bounded by neither the region nor the cap, and that is
+/// what makes both checks below reachable.
+///
+/// The engine owns the policy the guest observes: the [`MAX_FIELD_BYTES`] cap
 /// (`DataFieldTooLarge`), the buffer fit (`BufferTooSmall`), then the transfer
 /// budget — the order the C++ `setData` path uses. Those checks follow `fill`,
-/// since the length is unknown before it runs, so a refused value may leave bytes
-/// in the guest's own buffer; a negative status tells the guest not to read it.
+/// since the length is unknown before it runs, which is why the region `fill`
+/// receives is clamped to the cap: the checks decide the *status*, and the clamp
+/// is what keeps an over-cap value's bytes out of guest memory regardless.
+///
+/// A refusal says nothing about what is in the guest's buffer, and the guest must
+/// not read it on a negative status. Over the cap, the clamp does bound what could
+/// have landed. Under it the clamp is a no-op — `fill` holds exactly the region the
+/// guest asked for — so whether a host that cannot fit a value leaves a prefix
+/// behind is that host's choice, not something the engine can enforce.
+///
+/// The bounds check covers the guest's whole declared `cap`, not the clamped
+/// length, so a buffer running past memory is `PointerOutOfBounds` even when its
+/// first [`MAX_FIELD_BYTES`] bytes would have been in bounds — the guest is told
+/// its pointer is wrong rather than being served a truncated prefix of it.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
     dst: i32,
@@ -166,13 +196,23 @@ pub(crate) fn write_into(
     // Copy) so the data borrow ends before we borrow guest memory mutably.
     let host: &dyn HostFunctions = caller.data().host;
     let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
+    // The guest's whole declared region, so the bounds rule is about what it asked
+    // for…
     let out = mem
         .data_mut(&mut *caller)
         .get_mut(dst..end)
         .ok_or(HostError::PointerOutOfBounds)?;
+    // …of which at most the field cap is writable. Narrowed here rather than at the
+    // call below, so no call can put more than MAX_FIELD_BYTES into guest memory
+    // whatever the guest declared, and the wider slice cannot be reached again.
+    let out = &mut out[..cap.min(MAX_FIELD_BYTES)];
 
     let n = fill(host, out)?;
 
+    // Not subsumed by the clamp: `fill` reports the value's *true* length, which
+    // can exceed the region it was offered, and this is how the guest learns the
+    // value was too large rather than merely unwritten. The clamp bounds the
+    // bytes; this bounds the status.
     if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
@@ -198,7 +238,10 @@ const _: () = assert!(
 /// The input is copied into a stack buffer bounded by [`MAX_FIELD_BYTES`], so it
 /// stays valid while [`write_into`] borrows guest memory mutably for the output —
 /// no aliasing reasoning, at the price of zero-filling the buffer each call. The
-/// output half is [`write_into`], so it obeys the same policy as a plain write.
+/// copy is host-private scratch rather than a value crossing the boundary, so it
+/// costs no transfer budget, as C++'s `sha512_half` input did not
+/// ([`charge_transfer`]). The output half is [`write_into`], so it obeys the same
+/// policy as a plain write — including the charge.
 pub(crate) fn read_write(
     caller: &mut Caller<'_, VmState<'_>>,
     src: i32,
@@ -214,7 +257,6 @@ pub(crate) fn read_write(
     if len > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
-    charge_transfer(caller.data(), len)?;
 
     // Copy the input out before `write_into` borrows guest memory mutably.
     let mut buf = [0u8; MAX_FIELD_BYTES];

@@ -121,37 +121,51 @@ fn a_value_past_the_field_cap_is_refused() {
     assert_eq!(status(&wat, &host), CAP as i32, "the cap itself is allowed");
 }
 
-/// **Pins current behaviour, not a decision.** `write_into` checks the field cap
-/// after `fill` has written, so an over-cap value reaches the guest's own buffer
-/// and is then refused. Finding A4 in `docs/claude/redesign_impl.md` says the write
-/// should be clamped instead.
+/// A refused over-cap value leaves nothing behind. `write_into` hands the host at
+/// most [`MAX_FIELD_BYTES`] of the guest's buffer however much room the guest
+/// declared, so a value past the cap does not fit the region it is offered and no
+/// prefix of it can reach guest memory either.
 ///
 /// The host answers with a real over-cap value: [`Answer::claiming`] writes
-/// nothing and so could not show the bytes landing.
+/// nothing whatever the engine does, so it could not tell the two apart. The
+/// second module folds the *whole* declared buffer rather than one byte, so the
+/// claim is about the region and not about its first byte.
 #[test]
-fn an_over_cap_value_is_written_before_it_is_refused() {
+fn an_over_cap_value_is_refused_without_reaching_guest_memory() {
+    /// The buffer the guest declares: well over the cap, so the clamp bites.
+    const BUFFER: usize = 4096;
+
     let over_cap = vec![0xff; MAX_FIELD_BYTES + 1];
     let host = FakeHost::new().answering_field(1, Answer::bytes(over_cap));
+    let call = format!("(call $home_le_field (i32.const 1) (i32.const 0) (i32.const {BUFFER}))");
 
-    let wat = module(
-        &[import::HOME_LE_FIELD, ONE_PAGE],
-        "(drop (call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4096)))
-         (i32.load8_u (i32.const 0))",
-    );
     // The status the guest sees, from a module that returns it directly.
-    let refusing = module(
-        &[import::HOME_LE_FIELD, ONE_PAGE],
-        "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4096))",
-    );
+    let refusing = module(&[import::HOME_LE_FIELD, ONE_PAGE], &call);
     assert_eq!(
         status(&refusing, &host),
         code(HostError::DataFieldTooLarge),
         "the value is refused"
     );
+
+    // Every byte of the buffer, or-ed together: guest memory starts zero-filled,
+    // so any byte the host wrote shows up here.
+    let reading = module(
+        &[import::HOME_LE_FIELD, ONE_PAGE],
+        &format!(
+            "(local $i i32)
+             (local $seen i32)
+             (drop {call})
+             (loop $l
+               (local.set $seen (i32.or (local.get $seen) (i32.load8_u (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $l (i32.lt_u (local.get $i) (i32.const {BUFFER}))))
+             (local.get $seen)"
+        ),
+    );
     assert_eq!(
-        status(&wat, &host),
-        0xff,
-        "but its bytes are already in guest memory"
+        status(&reading, &host),
+        0,
+        "and not one of its bytes is in the guest's buffer"
     );
 }
 

@@ -5,7 +5,7 @@
 mod support;
 
 use support::{Answer, FakeHost, ONE_PAGE, PLENTY_OF_GAS, code, import, module, run, run_with_gas};
-use xrpl_host_functions::{HostError, HostFunctionSpec};
+use xrpl_host_functions::{HASH_LEN, HostError, HostFunctionSpec};
 use xrpl_wasm_vm::{MAX_FIELD_BYTES, RunError, TRANSFER_LIMIT_BYTES};
 
 // ---------------------------------------------------------------------------
@@ -296,8 +296,6 @@ fn until_refused(imports: &str, call: &str, keep_going: &str) -> String {
 
 /// For a call whose success is a positive byte count.
 const WHILE_POSITIVE: &str = "(i32.gt_s (local.get $r) (i32.const 0))";
-/// For a call whose success is a status of 0.
-const WHILE_ZERO: &str = "(i32.eqz (local.get $r))";
 
 /// Bytes written into guest memory are charged against the run's budget, and the
 /// budget is a per-run total: 1 MiB of 1 KiB values exhausts it.
@@ -352,28 +350,89 @@ fn a_modest_run_never_meets_the_budget() {
     assert_eq!(outcome.result, MAX_FIELD_BYTES as i32);
 }
 
-/// **Pins current behaviour, not a decision.** `read_borrowed` hands the host a
-/// slice aliasing guest memory, copying nothing, yet charges the bytes against the
-/// transfer budget. Finding A4 in `docs/claude/redesign_impl.md` says the rule
-/// should be settled.
+/// Reads leave the budget alone: `read_borrowed` hands the host a slice *aliasing*
+/// guest memory, so there are no copied bytes to charge — the rule C++ applied to
+/// `trace`'s msg and data. What bounds how many reads a run can make is gas, which
+/// every host call pays before its body runs.
+///
+/// The observation is the write at the end, not the reads: the module reads four
+/// times the whole budget first, so a rule that charged reads would have nothing
+/// left, and the write would answer `OutOfTransferLimit` instead of a byte count.
 #[test]
-fn reads_currently_spend_the_transfer_budget_too() {
-    let host = FakeHost::new();
-    let wat = until_refused(
-        import::TRACE_NUM,
-        &format!("(call $trace_num (i32.const 0) (i32.const {MAX_FIELD_BYTES}) (i64.const 0))"),
-        WHILE_ZERO,
+fn reads_do_not_spend_the_transfer_budget() {
+    /// 1 KiB reads, four times over the budget.
+    const READS: u64 = 4 * TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64;
+
+    let host = FakeHost::new().answering_field(1, Answer::filler(MAX_FIELD_BYTES));
+    let wat = module(
+        &[import::TRACE_NUM, import::HOME_LE_FIELD, ONE_PAGE],
+        &format!(
+            "(local $i i32)
+             (loop $l
+               (drop (call $trace_num (i32.const 0) (i32.const {MAX_FIELD_BYTES}) (i64.const 0)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $l (i32.lt_u (local.get $i) (i32.const {READS}))))
+             (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES}))"
+        ),
     );
 
     let outcome = run(&wat, &host).expect("the module should run");
     assert_eq!(
-        outcome.result,
-        code(HostError::OutOfTransferLimit),
-        "a read of aliased bytes is charged as though it were copied"
+        host.traces().len() as u64,
+        READS,
+        "every read should have been served"
     );
     assert_eq!(
-        host.traces().len() as u64,
-        TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64,
-        "the budget ran out after 1 MiB of reads that copied nothing"
+        outcome.result, MAX_FIELD_BYTES as i32,
+        "the write after {READS} reads of {MAX_FIELD_BYTES} bytes should still have its budget"
+    );
+}
+
+/// Only the output half of a read-write call spends the budget. `sha512_half`'s
+/// input is a borrowed read like any other — the stack copy `read_write` takes is
+/// host-private scratch, not a value crossing the boundary — so a run may hash far
+/// more bytes than the budget holds as long as the digests it writes fit inside it.
+///
+/// The two totals are asserted, so the arithmetic that makes the case is in the
+/// test rather than in a comment: the inputs alone would overrun the budget, the
+/// digests alone are a small fraction of it.
+#[test]
+fn only_the_output_half_of_a_read_write_spends_the_budget() {
+    /// Enough 1 KiB inputs to overrun the budget twice over.
+    const CALLS: u64 = 2 * TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64;
+
+    assert!(
+        CALLS * MAX_FIELD_BYTES as u64 > TRANSFER_LIMIT_BYTES,
+        "the inputs alone must overrun the budget"
+    );
+    assert!(
+        CALLS * HASH_LEN as u64 <= TRANSFER_LIMIT_BYTES / 2,
+        "the digests alone must stay well inside it"
+    );
+
+    let host = FakeHost::new().answering_digest(Answer::filler(HASH_LEN));
+    let wat = module(
+        &[import::SHA512_HALF, ONE_PAGE],
+        &format!(
+            "(local $i i32)
+             (local $r i32)
+             (loop $l
+               (local.set $r (call $sha512_half (i32.const 0) (i32.const {MAX_FIELD_BYTES})
+                                                (i32.const 0) (i32.const {HASH_LEN})))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $l (i32.lt_u (local.get $i) (i32.const {CALLS}))))
+             (local.get $r)"
+        ),
+    );
+
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(
+        host.digested.borrow().len() as u64,
+        CALLS,
+        "every call should have been served"
+    );
+    assert_eq!(
+        outcome.result, HASH_LEN as i32,
+        "only the digests are charged, and they fit"
     );
 }
