@@ -531,7 +531,7 @@ Payment::doApply()
         view().update(sleDst);
     }
 
-    bool const mpTokensV2 = view().rules().enabled(featureMPTokensV2);
+    bool const mpTokensV2 = view().rules().enabled(featureMPTokensV2);  // gates the MPT path below
 
     // Direct MPT payment is handled by payment engine if MPTokensV2 is enabled
     bool const ripple = (hasPaths || sendMax || !dstAmount.native()) && (!isDstMPT || mpTokensV2);
