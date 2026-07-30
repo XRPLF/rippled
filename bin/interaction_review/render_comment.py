@@ -7,6 +7,14 @@ comment can be regenerated from an artifact without re-running the extractors.
 The comment is advisory. It never says a boundary is untested -- the test locator
 does not exist yet -- only that a boundary is in scope and what its state space
 is, so a reviewer can check the states themselves.
+
+The reader is any rippled engineer opening their own PR, not someone who has read
+DESIGN.md. So none of this tool's vocabulary reaches the page: `resource`,
+`fork`, `mediator`, `consumer`, `node`, `lever`, `boundary`, `in scope` and
+`signal` all get glossed into ordinary words at the point of rendering. The model
+those terms name is still the model -- it just is not the reader's problem. Keep
+new strings in the same register: plain, direct, and specific about what the
+reader is being asked to do.
 """
 
 from __future__ import annotations
@@ -23,18 +31,49 @@ REPO_ROOT = HERE.parent.parent
 MARKER = "<!-- interaction-review -->"
 
 TIER_LABEL = {
-    "review": "🔴 review",
-    "consider": "🟡 consider",
-    "context": "⚪ context",
+    "review": "🔴 worth checking",
+    "consider": "🟡 maybe",
+    "context": "⚪ background",
 }
+# How the two features relate to the code they share. "Changes it" is the
+# mediator role, "uses it" the consumer role -- two rule-writers meeting at one
+# decision is the combination that actually bites, so say so in words.
 KIND_GLOSS = {
-    "mediator×mediator": "both features change what this resource does",
-    "mediator×consumer": "one feature changes the resource, the other rides on it",
-    "consumer×consumer": "both features merely use the resource",
+    "mediator×mediator": "both change how this code behaves",
+    "mediator×consumer": "one changes how it behaves, the other just uses it",
+    "consumer×consumer": "both just use it",
 }
+ROLE_GLOSS = {
+    "mediator": "changes it",
+    "consumer": "uses it",
+    "wrapper": "wraps it",
+}
+# What kind of shared thing the two features met at.
+RESOURCE_GLOSS = {
+    "fork": "a shared decision",
+    "invariant": "a shared invariant check",
+    "shared_sfield": "a shared field",
+}
+# Whether the diff hit the shared code itself, or only something that uses it.
+MATCH_GLOSS = {
+    "span": "you changed it directly",
+    "file": "you changed the file it lives in",
+    None: "you did not change it, but you changed something that uses it",
+}
+# Stated once, at the top: the reason any of this is worth a reader's time.
+PREMISE = (
+    "Two features can each be correct on their own and still break in "
+    "combination, and that can only happen where they touch the same code. "
+    "Here is where this diff does that."
+)
 DOCS = "bin/interaction_review/README.md"
 # GitHub rejects comment bodies over 65536 characters.
 MAX_BODY = 60000
+
+
+def _n(count: int, singular: str, plural: str | None = None) -> str:
+    """`1 file` / `3 files`. "(s)" on every noun reads like a form letter."""
+    return f"{count} {singular if count == 1 else (plural or singular + 's')}"
 
 
 def _short_evidence(evidence: list[dict], limit: int = 3) -> str:
@@ -58,14 +97,13 @@ def _header(report: dict) -> list[str]:
     summary = report["summary"]
     lines = [
         MARKER,
-        "## Feature-interaction review (advisory)",
+        "## Features that meet in this diff",
         "",
     ]
     if not report["groups"]:
         lines += [
-            f"No feature-interaction boundaries are in scope for this diff "
-            f"({summary['changed_files']} changed file(s), "
-            f"{summary['touched_nodes']} graph node(s) touched).",
+            f"Nothing to flag — this diff does not touch any code that separate "
+            f"features share ({_n(summary['changed_files'], 'changed file')}).",
         ]
         return lines
 
@@ -75,103 +113,116 @@ def _header(report: dict) -> list[str]:
         for tier in ("review", "consider", "context")
         if counts.get(tier)
     )
+    # Only worth naming when there is more than one, or it just echoes the
+    # count above it and every group already has its own heading below.
+    spread = (
+        f" across {_n(len(report['groups']), 'shared spot')}"
+        if len(report["groups"]) > 1
+        else ""
+    )
     lines += [
-        f"This diff touches **{summary['touched_nodes']} graph node(s)** across "
-        f"{summary['changed_files']} changed file(s), putting "
-        f"**{summary['selected']} feature interaction(s)** in scope on "
-        f"**{len(report['groups'])} shared resource(s)**: {tiers}.",
+        PREMISE,
+        "",
+        f"You touched **{_n(summary['touched_nodes'], 'piece')} of code that "
+        f"features share**, in {_n(summary['changed_files'], 'changed file')}. "
+        f"That brings **{_n(summary['selected'], 'feature pair')}** into view"
+        f"{spread}: {tiers}.",
     ]
     if summary["new_levers"]:
         levers = ", ".join(f"`{lever}`" for lever in summary["new_levers"])
         lines += [
             "",
-            f"⚠️ **New lever(s) in this diff: {levers}.** The diff adds a branch on "
-            f"a cross-cutting field, flag, or amendment gate that the graph has "
-            f"not seen before, which means it changes the interaction edge set "
-            f"itself — not just one path through it.",
+            f"⚠️ **This diff branches on {levers} somewhere it did not before.** "
+            f"That changes *which* features meet here, not just how they behave "
+            f"once they do — the strongest signal this tool has.",
         ]
     return lines
 
 
-def _group_section(group: dict) -> list[str]:
-    hit = {
-        "span": "changed in this diff",
-        "file": "changed in this diff (whole-file attribution)",
-        None: "not itself changed; reached through a changed feature",
-    }[group["resource_match"]]
+def _group_section(group: dict, show_omitted: bool) -> list[str]:
+    hit = MATCH_GLOSS[group["resource_match"]]
+    kind = RESOURCE_GLOSS.get(group["resource_kind"], group["resource_kind"])
     lines = [
         "",
-        f"### {group['resource_kind']} `{group['resource']}` "
-        f"({group['signal']} signal — {hit})",
+        f"### `{group['resource']}` — {kind} ({hit})",
     ]
     if group["boundary_states"]:
         states = ", ".join(f"`{state}`" for state in group["boundary_states"])
         lines += [
             "",
-            f"Boundary states: {states}. A test that exercises both features but "
-            f"drives only one of these states does not cover the boundary.",
+            f"This code picks between {states}. A test that uses both features "
+            f"but only ever reaches one of those has not really tested the "
+            f"combination.",
         ]
     if group["new_levers"]:
         levers = ", ".join(f"`{lever}`" for lever in group["new_levers"])
-        lines += ["", f"New lever(s) on this resource: {levers}."]
+        lines += ["", f"New here: this code now branches on {levers}."]
 
     lines += [
         "",
-        "| pair | interaction | why in scope | evidence |",
+        "| features | how they meet | why it is here | where |",
         "| --- | --- | --- | --- |",
     ]
     for item in group["interactions"]:
         a, b = item["features"]
         roles = dict(zip(item["features"], item["roles"], strict=True))
-        pair = f"`{a}` ({roles[a]}) × `{b}` ({roles[b]})"
-        kind = f"{TIER_LABEL[item['tier']]}<br>{KIND_GLOSS.get(item['kind'], item['kind'])}"
+        pair = (
+            f"`{a}` ({ROLE_GLOSS.get(roles[a], roles[a])}) × "
+            f"`{b}` ({ROLE_GLOSS.get(roles[b], roles[b])})"
+        )
+        how = f"{TIER_LABEL[item['tier']]}<br>{KIND_GLOSS.get(item['kind'], item['kind'])}"
         why = "<br>".join(item["why"])
         lines.append(
-            f"| {pair} | {kind} | {why} | {_short_evidence(item['evidence'])} |"
+            f"| {pair} | {how} | {why} | {_short_evidence(item['evidence'])} |"
         )
-    if group["omitted"]:
+    if group["omitted"] and show_omitted:
         lines += [
             "",
-            f"_{group['omitted']} further pair(s) on this resource omitted by the "
-            f"per-resource cap._",
+            f"_{_n(group['omitted'], 'more pair')} here, ranked lower and not shown._",
         ]
     return lines
 
 
 def render(report: dict) -> str:
     """The full comment body."""
+    summary = report["summary"]
+    # With one group its per-group count and the overall count are the same
+    # number, and printing both reads like two different omissions.
+    per_group = len(report["groups"]) > 1
     lines = _header(report)
     for group in report["groups"]:
-        lines += _group_section(group)
+        lines += _group_section(group, show_omitted=per_group)
 
-    summary = report["summary"]
     if summary["truncated"]:
         extra = (
-            f", including {summary['omitted_resources']} further shared resource(s)"
+            f", including {_n(summary['omitted_resources'], 'other shared spot')}"
             if summary["omitted_resources"]
             else ""
         )
         lines += [
             "",
-            f"_{summary['truncated']} of {summary['candidates']} candidate "
-            f"interaction(s) omitted by the output caps, lowest-scoring first"
-            f"{extra}._",
+            f"_{summary['truncated']} of {_n(summary['candidates'], 'pair')} are "
+            f"not shown, lowest-ranked first{extra}. Code this widely shared pairs "
+            f"with nearly every transaction type, so most of that tail is "
+            f"combinations rather than findings — what is above is the part with "
+            f"something behind it._",
         ]
     if summary["dropped_low_signal"]:
         lines += [
             "",
-            f"_{summary['dropped_low_signal']} consumer×consumer pair(s) sharing "
-            f"only a low-signal SField were dropped as noise._",
+            f"_{_n(summary['dropped_low_signal'], 'pair')} dropped as noise: they "
+            f"only share a common field, and neither feature changed it._",
         ]
 
-    lines += ["", "<details>", "<summary>What this does not cover</summary>", ""]
+    lines += ["", "<details>", "<summary>What this misses</summary>", ""]
     lines += [f"- {caveat}" for caveat in report["caveats"]]
     lines += [
         "",
         "</details>",
         "",
-        f"<sub>Advisory only — nothing here blocks the PR. Ranking is heuristic. "
-        f"Base `{report['base'][:12]}`. See [`{DOCS}`](../blob/develop/{DOCS}).</sub>",
+        f"<sub>Advisory — this does not block the PR, and the ranking is a "
+        f"heuristic rather than a verdict. Compared against `{report['base'][:12]}`. "
+        f"How it works: [`{DOCS}`](../blob/develop/{DOCS}).</sub>",
     ]
 
     body = "\n".join(lines) + "\n"

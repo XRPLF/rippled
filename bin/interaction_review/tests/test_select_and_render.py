@@ -303,19 +303,44 @@ def test_rendered_comment_names_the_pair_and_the_boundary_states():
     )
     body = render_comment.render(report)
     assert body.startswith(render_comment.MARKER)
-    assert "`PermissionDelegation` (mediator) × `Batch` (mediator)" in body
-    assert "Boundary states: `Account`, `Delegate`" in body
+    assert "`PermissionDelegation` (changes it) × `Batch` (changes it)" in body
+    assert "This code picks between `Account`, `Delegate`" in body
     assert "featureFoo" in body
     assert "f.cpp:10-12" in body
     # The comment must disclaim rather than assert anything about test coverage.
     assert "Test coverage is **not** checked yet" in body
-    assert "What this does not cover" in body
+    assert "What this misses" in body
 
 
 def test_rendered_comment_is_explicit_when_nothing_is_in_scope():
     body = render_comment.render(select())
-    assert "No feature-interaction boundaries are in scope" in body
+    assert "Nothing to flag" in body
     assert render_comment.MARKER in body
+
+
+def test_rendered_comment_uses_no_internal_vocabulary():
+    """The reader is a rippled engineer, not someone who has read DESIGN.md.
+
+    Every one of these is a term of art in this tool's model. They may appear in
+    the code, the schemas, and the docs; they must not reach the comment, or the
+    reader has to learn the model before they can act on the report.
+    """
+    report = select(
+        node(FORK, "fork", "getFeePayer", signal="high", new_levers=["featureFoo"])
+    )
+    body = render_comment.render(report).lower()
+    for term in (
+        "mediator",
+        "consumer",
+        "graph node",
+        "lever",
+        "in scope",
+        "boundary state",
+        "resource",
+        "candidate",
+        "span",
+    ):
+        assert term not in body, f"internal vocabulary leaked into the comment: {term}"
 
 
 def test_rendered_comment_is_truncated_to_fit_a_github_comment():
