@@ -7143,11 +7143,16 @@ private:
     }
 
     void
-    testDepositIntegralOverflowMPT()
+    testDepositIntegralOverflowMPT(FeatureBitset features)
     {
         testcase("Deposit integral overflow (MPT)");
 
         using namespace jtx;
+
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, applyGuts guards it
+        // and fails cleanly with tecAMM_FAILED.
+        auto const err = features[fixCleanup3_4_0] ? Ter(tecAMM_FAILED) : Ter(tefEXCEPTION);
 
         // MPT counterpart of AMM_test::testDepositIntegralOverflow. A two-asset
         // deposit with a huge Amount against a tiny pool leg makes
@@ -7167,7 +7172,9 @@ private:
         {
             // The deposit intentionally overflows, which logs at error.
             // Disable the log threshold to keep the test output clean.
-            Env env(*this, beast::Severity::Disabled);
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            if (!features[fixCleanup3_4_0])
+                env.disableFeature(fixCleanup3_4_0);
             env.fund(XRP(30'000), gw_, alice_);
             env.close();
 
@@ -7188,7 +7195,7 @@ private:
                     .account = alice_,
                     .asset1In = mpt(10'000'000'000'000),  // 1e13
                     .asset2In = XRP(1),
-                    .err = Ter(tecAMM_FAILED)});
+                    .err = err});
         }
 
         // IOU/MPT - the MPT leg is the one that overflows. A classic IOU
@@ -7197,7 +7204,7 @@ private:
         {
             // The deposit intentionally overflows, which logs at error.
             // Disable the log threshold to keep the test output clean.
-            Env env(*this, beast::Severity::Disabled);
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
             env.fund(XRP(30'000), gw_, alice_);
             env(trust(alice_, STAmount{USD, 1, 20}));
             env(pay(gw_, alice_, STAmount{USD, 1, 18}));
@@ -7213,7 +7220,7 @@ private:
                     .account = alice_,
                     .asset1In = STAmount{USD, 1, 16},
                     .asset2In = mpt(1),
-                    .err = Ter(tecAMM_FAILED)});
+                    .err = err});
         }
     }
 
@@ -7324,7 +7331,8 @@ private:
         testAMMDepositWithFrozenAssets();
         testAMMWithVaultShares();
         testAutoDelete();
-        testDepositIntegralOverflowMPT();
+        testDepositIntegralOverflowMPT(all);
+        testDepositIntegralOverflowMPT(all - fixCleanup3_4_0);
         testWithdrawIntegralNoOverflowMPT();
     }
 };

@@ -502,6 +502,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         }
         catch (std::runtime_error const& e)
         {
+            REACHABLE("xrpl::AMMDeposit::applyGuts : deposit amount out of range reached");
             // A deposit whose solved amount exceeds the integral asset's range
             // throws while converting to STAmount: past int64max
             // Number::operator rep() throws std::overflow_error; above the asset
