@@ -191,12 +191,16 @@ otelcol.connector.spanmetrics "xrpld" {
     explicit {
       // Buckets MUST stay strictly ascending (the connector binary-searches
       // them and silently misbuckets otherwise) and MUST match the two
+      // otel-collector-config*.yaml lists. Sub-MILLISECOND boundaries exist
+      // because most xrpld spans sit far below 1ms (tx.preflight means
+      // ~0.012ms): a 1ms floor put >99.99% of samples in bucket one and pinned
+      // every p95/p99 at a constant 0.95ms.
       // otel-collector-config*.yaml lists. Sub-second boundaries cover
       // RPC/tx/ledger spans; 2s-4s resolve second-scale consensus spans
       // (consensus.round ~3.9s, consensus.establish ~1.9s) that used to pile
       // into one 1s-5s bucket; 10s/30s give the ledger.acquire catch-up tail
       // (~17% exceeds 5s) a measurable home so its p95/p99 stop reading +Inf.
-      buckets = ["1ms", "5ms", "10ms", "25ms", "50ms", "100ms", "250ms", "500ms", "1s", "2s", "3s", "4s", "5s", "10s", "30s"]
+      buckets = ["0.01ms", "0.05ms", "0.1ms", "0.25ms", "0.5ms", "1ms", "5ms", "10ms", "25ms", "50ms", "100ms", "250ms", "500ms", "1s", "2s", "3s", "4s", "5s", "10s", "30s"]
     }
   }
 

@@ -129,7 +129,11 @@ connectors:
       unit: ms
       explicit:
         # Buckets MUST stay strictly ascending (the connector binary-searches
-        # them and silently misbuckets otherwise). Sub-second boundaries cover
+        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
+        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
+        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
+        # put >99.99% of samples in the first bucket and pinned every p95/p99
+        # at a constant 0.95ms. Sub-second boundaries cover
         # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
         # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
         # that used to pile into a single 1s-5s bucket; 10s/30s give the
@@ -137,6 +141,11 @@ connectors:
         # home so its p95/p99 stop reading as +Inf.
         buckets:
           [
+            0.01ms,
+            0.05ms,
+            0.1ms,
+            0.25ms,
+            0.5ms,
             1ms,
             5ms,
             10ms,
