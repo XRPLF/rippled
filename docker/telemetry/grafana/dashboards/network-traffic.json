@@ -63,7 +63,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 24
       },
       "options": {
         "tooltip": {
@@ -175,9 +175,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -227,9 +227,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -285,9 +285,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -343,9 +343,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -363,7 +363,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 0
       },
       "options": {
         "tooltip": {
