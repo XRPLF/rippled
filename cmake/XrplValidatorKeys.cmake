@@ -5,6 +5,10 @@ option(
 )
 
 if(validator_keys)
+    # Own the install destination below rather than relying on another module
+    # having pulled this in first.
+    include(GNUInstallDirs)
+
     # Pinned to an exact commit, not a branch: the tool ships inside our
     # packages, so the same xrpld version must always package the same
     # validator-keys. Bump this deliberately.
