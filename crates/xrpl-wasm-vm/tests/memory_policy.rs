@@ -411,29 +411,84 @@ fn a_module_that_exports_no_memory_cannot_call_the_host() {
     assert_no_memory(&wat, &host);
 }
 
-/// The export has to be named `memory`, and it has to *be* a memory — a global
-/// under that name is not a near miss the engine tolerates.
+/// The memory's export *name* is not part of the contract: the engine takes the
+/// module's memory whatever it is called. Nothing in the wasm spec attaches meaning
+/// to `"memory"` — it is a toolchain convention — and C++ read no name either
+/// (`InstanceWrapper::getMem`, `WasmiVM.cpp:224-249` at `b7059deb9f^`, matched
+/// `wasm_extern_kind(e) == WASM_EXTERN_MEMORY`).
 #[test]
-fn the_memory_export_must_be_a_memory_named_memory() {
+fn a_memory_exported_under_any_name_is_the_guests_memory() {
     let host = FakeHost::new();
 
-    // The right kind under the wrong name.
-    let misnamed = module(
-        &[import::LDGR_INDEX, r#"(memory (export "mem") 1)"#],
-        "(call $ldgr_index (i32.const 0) (i32.const 4))",
-    );
-    assert_no_memory(&misnamed, &host);
+    for name in ["mem", "linear", "the memory"] {
+        let wat = module(
+            &[
+                import::LDGR_INDEX,
+                &format!(r#"(memory (export "{name}") 1)"#),
+            ],
+            "(drop (call $ldgr_index (i32.const 64) (i32.const 4)))
+             (i32.load (i32.const 64))",
+        );
+        assert_eq!(
+            status(&wat, &host),
+            7,
+            "the host wrote into the memory exported as '{name}'"
+        );
+    }
+}
 
-    // The right name on the wrong kind, which is the other arm of the match.
+/// One memory exported under several names is one memory. The engine resolves the
+/// first export of kind memory, and with at most one memory per module every such
+/// export is that memory, so the order the exports are walked in cannot change the
+/// answer.
+#[test]
+fn one_memory_exported_under_several_names_is_still_that_memory() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[
+            import::LDGR_INDEX,
+            r#"(memory (export "memory") (export "mem") (export "linear") 1)"#,
+        ],
+        "(drop (call $ldgr_index (i32.const 64) (i32.const 4)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 7);
+}
+
+/// The export has to *be* a memory: a global named `memory` is not one, and it
+/// neither serves as the guest's memory nor hides the memory the module really
+/// exports. The kind decides, so the conventional name carries no weight on
+/// either side.
+#[test]
+fn an_export_named_memory_that_is_not_a_memory_is_not_the_guests_memory() {
+    let host = FakeHost::new();
+
+    let call = "(call $ldgr_index (i32.const 0) (i32.const 4))";
+
     let wrong_kind = module(
         &[
             import::LDGR_INDEX,
             "(memory 1)",
             r#"(global (export "memory") i32 (i32.const 0))"#,
         ],
-        "(call $ldgr_index (i32.const 0) (i32.const 4))",
+        call,
     );
     assert_no_memory(&wrong_kind, &host);
+
+    let shadowed = module(
+        &[
+            import::LDGR_INDEX,
+            r#"(memory (export "mem") 1)"#,
+            r#"(global (export "memory") i32 (i32.const 0))"#,
+        ],
+        call,
+    );
+    assert_eq!(
+        status(&shadowed, &host),
+        4,
+        "the real memory is found past the global that took its name"
+    );
 }
 
 /// Bounds follow the memory the module actually declared, not a fixed page.

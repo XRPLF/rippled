@@ -419,6 +419,39 @@ fn a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure(
     );
 }
 
+/// A start section cannot make a host call that needs guest memory, even in a
+/// module that exports one: the memory is resolved from the *instance's* exports,
+/// and instantiation is what produces the instance, so a call made while it is
+/// still running has no memory to work in and ends the run.
+///
+/// This is the C++ path's behaviour and for the same reason: `wasm_instance_new`
+/// (`WasmiVM.cpp:154` at `b7059deb9f^`) ran the start section, and
+/// `wasm_instance_exports` (line 161) filled the export table only after it
+/// returned — so the scan `InstanceWrapper::getMem` performs found nothing during a
+/// start section either.
+#[test]
+fn a_start_section_cannot_make_a_host_call() {
+    let host = FakeHost::new();
+
+    let wat = format!(
+        r#"(module {ldgr_index} {ONE_PAGE}
+             (func $init (drop (call $ldgr_index (i32.const 0) (i32.const 4))))
+             (start $init)
+             (func (export "finish") (result i32) (i32.const 0)))"#,
+        ldgr_index = import::LDGR_INDEX
+    );
+
+    let failure = assert_stage!(
+        run_with_gas(&wat, PLENTY_OF_GAS, &host)
+            .expect_err("a host call from a start section must not be served"),
+        RunError::NoMemory
+    );
+    assert!(
+        failure.fuel_used > 0,
+        "the start section is metered up to the refused call: {failure}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // The entry point
 // ---------------------------------------------------------------------------

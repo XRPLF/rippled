@@ -2,7 +2,8 @@ use std::cell::Cell;
 use std::fmt;
 use std::sync::LazyLock;
 use wasmi::{
-    Config, Engine, Extern, Linker, Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
+    Config, Engine, Export, Extern, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
+    TrapCode,
 };
 use xrpl_host_functions::{HostError, HostFunctions};
 
@@ -48,6 +49,30 @@ pub(crate) struct VmState<'h> {
     /// (`HostFuncWrapper.cpp:44,390-397`) has no `FieldLocator` host function
     /// here to attach to.
     pub(crate) transfer_budget: Cell<u64>,
+    /// The guest's linear memory, every host call's frame of reference for a
+    /// pointer. Resolved once by [`run`], after instantiation, and read from here on,
+    /// so no call pays for an export lookup.
+    ///
+    /// Holding the handle across calls is sound because a [`Memory`] is an arena
+    /// index into the store rather than a pointer to the bytes: it survives
+    /// `memory.grow`, and `data`/`data_mut` re-derive the slice per call. C++
+    /// memoized the same resolution, as `memIdx_` on the instance wrapper
+    /// (`InstanceWrapper::getMem`, `WasmiVM.cpp:224-249` at `b7059deb9f^`).
+    ///
+    /// `None` before `run` resolves it and for a module that exports no memory,
+    /// which is a legal module right up to its first host call — so the absence is
+    /// `NoMemExported` at that call rather than a refused instantiation.
+    ///
+    /// Not a `Cell`: `run` writes it once through `Store::data_mut` before the
+    /// entry point runs, and every reader afterwards holds only a `&Caller`.
+    ///
+    /// The handle is scoped to one store, so the field assumes **one module, one
+    /// instance, one store per `run`** — which is what `run` builds, and nothing
+    /// lets a guest instantiate a second module. Module linking or nested contract
+    /// execution would have to resolve per instance instead: a cached handle would
+    /// then serve a host call against the wrong instance's memory, which is a wrong
+    /// answer rather than an error anyone sees.
+    pub(crate) memory: Option<Memory>,
 }
 
 /// Outcome of running an escrow contract to completion.
@@ -78,7 +103,9 @@ pub enum RunError {
     OutOfGas,
     /// The host could not serve a call.
     Internal,
-    /// The module exports no linear memory, so no host call can be served.
+    /// A host call had no linear memory to work in: the module exports none, or
+    /// the call came from a start section, which runs before there is an instance
+    /// to resolve the memory from.
     NoMemory,
     /// The guest trapped: `unreachable`, division by zero, an out-of-bounds
     /// access, or `memory.grow` past the page cap.
@@ -272,6 +299,7 @@ pub fn run<'h>(
             host,
             mem_limits,
             transfer_budget: Cell::new(TRANSFER_LIMIT_BYTES),
+            memory: None,
         },
     );
     // A store that will not take fuel, or imports that will not register, are
@@ -298,6 +326,19 @@ pub fn run<'h>(
             return Err(failed(&store, gas, error));
         }
     };
+    // Every host call reads the memory out of the store, so resolve it before the
+    // guest can make one.
+    //
+    // By *kind*, never by name: nothing in the wasm spec attaches meaning to
+    // "memory", so a toolchain that names it otherwise still produces a contract.
+    // C++ matched the same way (`InstanceWrapper::getMem` scanned for
+    // `wasm_extern_kind(e) == WASM_EXTERN_MEMORY`, `WasmiVM.cpp:224-249` at
+    // `b7059deb9f^`). "The first" names one thing because `build_wasm_engine` sets
+    // `wasm_multi_memory(false)`: a module has at most one memory, and exporting it
+    // under several names yields that same handle each time, so the order
+    // `Instance::exports` walks its map in cannot change the answer.
+    store.data_mut().memory = instance.exports(&store).find_map(Export::into_memory);
+
     let finish = match instance.get_typed_func::<(), i32>(&store, function_name) {
         Ok(finish) => finish,
         Err(e) => {

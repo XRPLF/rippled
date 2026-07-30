@@ -309,7 +309,7 @@ internal to `abi.rs`. Both `register.rs` and the trait are untouched by the choi
 (`mem.data_mut(&mut *caller).get_mut(dst..end)`), so the host writes straight into wasm
 memory with no copy. The cost is that this `&mut` borrow cannot coexist with a `&`
 borrow of guest memory for the inputs, which is the only reason `read_write` exists: it
-memcpies the input into a `[0u8; MAX_WASM_DATA_LEN]` stack array first. That does not
+memcpies the input into a `[0u8; MAX_FIELD_BYTES]` stack array first. That does not
 generalize — `credential_keylet`, `check_sig` and `paychan_keylet` each take three byte
 inputs, so each would need its own stack buffer.
 
@@ -325,15 +325,24 @@ Cost is roughly a wash:
 - `get_tx_field` (no byte input, ≤1 KiB output) — today 1024 direct; scratch 1024 +
   1024. **Worse.**
 
-Scratch also fixes a real wart: `write_into` checks `n > cap` *after* `fill` has
-already written, so a rejected call leaves bytes in the guest buffer. Its own doc
-comment accepts this ("the guest must treat a negative status as don't read the
-buffer"); C++ `setData` checked before the memcpy.
+**One argument for scratch has since been spent, and it was the strongest one.** It used
+to be that `write_into` checked `n > cap` *after* `fill` had already written, so a
+refused call left bytes in the guest's buffer, and only a scratch buffer could check
+before the copy the way C++'s `setData` did. **A4 closed most of that without scratch**:
+`fill` receives at most `min(cap, MAX_FIELD_BYTES)`, so an over-cap value cannot reach
+guest memory at all. What remains is narrower — under the cap the clamp is a no-op, so a
+host that cannot fit a value could still leave a prefix behind, and a scratch buffer
+would make that impossible rather than contractual. So the wart is now a **host-contract
+question, not an engine defect**, and it should carry much less weight in the decision
+than the paragraph above once implied. Judge C11 mainly on the cost table and on
+`read_write` not generalizing past one byte input.
 
-### Status: deferred
+### Status: the live decision, after C10
 
-**Not a blocker.** Get the VM compiling and working first; the typed shims, generated
-header and probe-module test are a follow-up refactor once there is working code.
+The VM compiles and works, so the reason this was deferred is spent. It is **C11**, and
+the order is C10 first: caching the `Memory` in `VmState` removes the per-call export
+lookup that both designs otherwise pay, and makes either answer here easier to
+implement. The typed shims, generated header and probe-module test stay deferred.
 
 ## Open ABI questions and interop risks (2026-07-29)
 
@@ -506,6 +515,43 @@ matter. Items marked ✓ are done.
    function of a cargo flag.) The tests assemble text themselves from a dev-dependency,
    so nothing of ours is needed to keep them working — see "Build / test loop".
 
+### A, addendum: the memory export's *name* is a rule the rewrite introduced (2026-07-30)
+
+Found while scoping C10, and it is the same class of item as A3 and A5: a behaviour
+change nobody chose.
+
+`abi.rs` resolves guest memory with `caller.get_export("memory")` — **by name**. The C++
+path did not use the name at all. `InstanceWrapper::getMem`
+(`WasmiVM.cpp:224-249` at `b7059deb9f^`) scanned the instance's exports for the first one
+whose *kind* is `WASM_EXTERN_MEMORY`, whatever it was called:
+
+```cpp
+if (wasm_extern_kind(e) == WASM_EXTERN_MEMORY) { memIdx_ = i; mem = ...; break; }
+```
+
+So a module exporting its memory as `"mem"` or `"linear"` worked under C++ and is refused
+today — and `the_memory_export_must_be_a_memory_named_memory` in `memory_policy.rs` pins
+the stricter rule. With `wasm_multi_memory(false)` the C++ scan was unambiguous: at most
+one memory exists, so "the first memory export" names exactly one thing.
+
+Nothing in the wasm spec attaches meaning to the name `"memory"`, or requires a module to
+export its memory at all; the name is a toolchain convention (LLVM, Rust's
+`wasm32-unknown-unknown`, Emscripten and wasi all emit it), which is why matching on it
+works in practice. **The decision to make**: keep the name as an ABI rule, or restore
+C++'s match-by-kind. Either is defensible — but if the name stays, it is as much part of
+the wire contract as `HOST_MODULE`, and unlike `HOST_MODULE` it is a bare literal inside a
+private helper with no named constant and no mention in the ABI docs. That asymmetry is
+the part to fix regardless of which way the decision goes.
+
+**Decided: match by kind**, restoring C++'s behaviour, which also dissolves the
+asymmetry rather than fixing it — the name is no longer in the code at all. Landed with
+C10; see finding 10 for what that forced about start sections.
+
+Second observation from the same code: **C++ already cached the resolution**, memoizing
+`memIdx_` on first use. So C10 is not an optimization past the C++ path, it is restoring
+something the rewrite dropped. `memIdx_` was a per-`InstanceWrapper` member, which is the
+same one-instance-per-run assumption C10's cache would take on.
+
 ### B. Dead weight — pure simplification, no behaviour change
 
 6. ✓ **`AbiRet` is vestigial.** `type Out` is always `()`, `impl AbiRet for u32` is never
@@ -537,18 +583,77 @@ matter. Items marked ✓ are done.
 
 ### C. Performance
 
-10. **The `"memory"` export is a string hash lookup on every host call.** `memory()`
+10. ✓ **The `"memory"` export is a string hash lookup on every host call.** `memory()`
     (`abi.rs:104`) → `Caller::get_export` → `InstanceEntity::exports: Map<Box<str>,
     Extern>`. Resolve it once after instantiation and keep the `Memory` in `VmState`.
     Two bonuses: `NoMemExported` becomes an instantiation-time error, where it
     belongs, and a per-call failure path disappears. Cheapest real win in the crate,
     and the benchmark can measure it.
+
+    Caching is sound: `wasmi::Memory` is `Stored<MemoryIdx>`, an arena index into the
+    store rather than a pointer (`memory/mod.rs:31`), so the handle survives
+    `memory.grow` — only the data slice is re-derived, per call, by `data`/`data_mut`.
+    It is also worth more than "one lookup per call": `trace` resolves the export twice
+    (two `read_borrowed`s) and `sha512_half` twice (`read_write`, then `write_into`).
+
+    **Decline the first bonus.** Failing instantiation when there is no `"memory"`
+    export is a *behaviour change*, not a tidy-up: a module that exports no memory and
+    makes no host call runs today and would stop. C++ also only discovered this at the
+    call, since it resolved the export per call too. The version with identical
+    observable behaviour is to resolve eagerly into an `Option<Memory>` in `VmState`,
+    leave it `None` when the export is absent, and have the accessor answer
+    `NoMemExported` — every call is then free of the lookup and nothing observable
+    moves. The residual "`None` after `run` set it" case is a defect in this crate, not
+    a guest one, so it belongs on `Internal` rather than `NoMemExported`.
+
+    Consequence for the tests either way: `memory_policy.rs`'s `assert_no_memory`
+    asserts `fuel_used > 0`, which holds because the guest burns fuel reaching the
+    call. That stays true under the `Option` design and would become `== 0` under
+    instantiation-time failure — a useful tell for which design got built.
+
+    **Landed, resolving by kind** (the addendum's decision), so the name is gone from
+    the resolution path: `instance.exports(store).find_map(Export::into_memory)`, once,
+    after `instantiate_and_start`, into a plain `Option<Memory>` on `VmState`. Plain
+    rather than `Cell` because it is written once through `store.data_mut()` before
+    `finish.call` and only read after — unlike `transfer_budget`, whose read path holds
+    a shared borrow.
+
+    **Kind-matching cannot be lazy, and that decides one behaviour.**
+    `Caller::get_export` is name-only and `Caller`'s `instance` field is private
+    (`func/caller.rs:13,32`), so exports cannot be enumerated from inside a host call;
+    and `Module::instantiate` is `pub(crate)`, so instantiation cannot be split from the
+    start section (D17's root cause again). The resolution therefore happens after the
+    start section runs, and **a start section can no longer make a host call needing
+    memory** — it gets `NoMemExported`. That is parity, not a regression: C++ ran
+    `wasm_instance_new` (start included, `WasmiVM.cpp:154`) and filled its export table
+    with `wasm_instance_exports` only afterwards (`:161`), so its scan found nothing
+    during a start section either. `a_start_section_cannot_make_a_host_call` pins it.
+    Today's lazy name-based lookup was the outlier on *both* axes.
+
+    A residual `None` is therefore **not** the `Internal` case sketched above: with
+    resolution after instantiation, `None` is reachable for two legitimate guest-caused
+    reasons — no memory export, and a call from a start section — so `NoMemExported` is
+    the only correct answer.
+
+    Two notes from writing the tests. wasmi's export map is a `BTreeMap` in this feature
+    configuration, so `"finish"` sorts first and a kind-blind "first export" resolution
+    fails 38 tests rather than a subtle few — cheap to catch. And a global exported as
+    `"memory"` **cannot on its own** pin kind-matching: a module with no memory export
+    answers `None` under both the correct and the kind-blind resolution, so that
+    assertion holds either way. The test needed a second half — a real memory exported
+    as `"mem"` *beside* a global named `"memory"`, asserting the call succeeds — which
+    states the rule in both directions: the conventional name neither qualifies a
+    non-memory nor hides the real one.
 11. `read_write` memsets 1 KiB of stack per call and does not generalize past one byte
-    input — that is the scratch-buffer decision already open above. #10 makes either
-    choice easier.
+    input — that is the scratch-buffer decision already open above ("Open: where the
+    output region points"), which is now the live one and needs answering before this is
+    codeable. #10 makes either choice easier. Note A4 spent that section's
+    leaves-bytes-behind argument; read the amendment there before deciding.
 12. `Linker` is rebuilt per `run` (five `func_wrap`s plus string interning) and the
     module is compiled per run with no cache. Lower priority. The blocker worth
-    recording: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run.
+    recording: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run —
+    a design change rather than a tweak, and one the bridge forces anyway, so it is
+    better done with that context than before it.
 
 ### D. Hardening
 
@@ -568,7 +673,14 @@ matter. Items marked ✓ are done.
     slice op; let the compiler enforce the claim. Plus `unreachable_pub` and clippy's
     cast lints.
 
-    All three are on, and the two warning lints each paid for themselves.
+    All three are on, at `deny` — the whole lint block is uniform rather than half
+    advisory, so a violation fails the build rather than scrolling past. Verified:
+    making `wasm_engine` `pub` again fails `cargo build`, not merely `clippy`. The
+    `#[expect]` on the one remaining cast keeps working under `deny`, and being
+    `expect` rather than `allow` it also fires if a restructure makes the cast
+    unnecessary.
+
+    Both of the new lints paid for themselves.
     `unreachable_pub` found `VmState` and `wasm_engine`: `pub` inside a private module
     and never re-exported, so unreachable from outside the crate — now `pub(crate)`,
     with nothing silenced. The cast lints found **8 sites, all in `abi.rs`**. Six were
@@ -676,9 +788,9 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
 `clippy --workspace --all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`
-(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 120 tests: 33
-macro, 12 facade, 1 doctest, and **74 in `xrpl-wasm-vm`** (10 unit; 64 integration — 12
-`host_calls`, 19 `memory_policy`, 13 `budgets`, 20 `vm_limits`).
+(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 123 tests: 33
+macro, 12 facade, 1 doctest, and **77 in `xrpl-wasm-vm`** (10 unit; 67 integration — 12
+`host_calls`, 21 `memory_policy`, 13 `budgets`, 21 `vm_limits`).
 
 **Section A is closed, B6/B7 with it, and the B/D cleanup after that** (2026-07-30) —
 B8, B9, D14 and two thirds of D16. Only C10/C11/C12, D17 and D16's `gas = 0` decision

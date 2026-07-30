@@ -1,5 +1,5 @@
 use crate::vm::{MAX_FIELD_BYTES, VmState};
-use wasmi::{Caller, Extern, Memory};
+use wasmi::{Caller, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
 // ---------------------------------------------------------------------------
@@ -117,12 +117,16 @@ fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     }
 }
 
-/// The guest's exported linear memory.
-fn memory<T>(caller: &Caller<'_, T>) -> Result<Memory, HostError> {
-    match caller.get_export("memory") {
-        Some(Extern::Memory(mem)) => Ok(mem),
-        _ => Err(HostError::NoMemExported),
-    }
+/// The guest's linear memory, as [`crate::vm::run`] resolved it from the
+/// instance's exports.
+///
+/// A field read: the resolution happens once per run, so no call pays to look an
+/// export up, and every call in a run works in the same memory. `NoMemExported`
+/// covers both ways the field is empty — a module that exports no memory, and a
+/// call made from a start section, which runs before there is an instance to
+/// resolve from.
+fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
+    caller.data().memory.ok_or(HostError::NoMemExported)
 }
 
 /// Bounds-check `[ptr, ptr + len)` and return a `&[u8]` aliasing guest linear
@@ -318,6 +322,7 @@ mod tests {
             host: &UncalledHost,
             mem_limits: StoreLimitsBuilder::new().build(),
             transfer_budget: Cell::new(budget),
+            memory: None,
         }
     }
 
