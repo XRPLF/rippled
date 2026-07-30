@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
-#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
