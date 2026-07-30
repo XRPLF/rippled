@@ -102,6 +102,26 @@ def _code_list(names: list[str]) -> str:
     return ", ".join(quoted[:-1]) + f", and {quoted[-1]}"
 
 
+def _interaction_key(item: dict) -> tuple:
+    """Identity of a feature relationship independent of shared location."""
+    endpoints = tuple(sorted(zip(item["features"], item["roles"], strict=True)))
+    return (item["kind"], endpoints)
+
+
+def _recurring_spots(report: dict) -> dict[tuple, list[str]]:
+    """Feature relationships selected at more than one shared location."""
+    spots: dict[tuple, list[str]] = {}
+    for group in report["groups"]:
+        if group["resource_kind"] == "invariant":
+            continue
+        for item in group["interactions"]:
+            key = _interaction_key(item)
+            names = spots.setdefault(key, [])
+            if group["resource"] not in names:
+                names.append(group["resource"])
+    return {key: names for key, names in spots.items() if len(names) > 1}
+
+
 def _header(report: dict) -> list[str]:
     summary = report["summary"]
     lines = [
@@ -119,6 +139,7 @@ def _header(report: dict) -> list[str]:
     counts: dict[str, int] = {}
     display_items = 0
     has_authorization_check = False
+    seen: set[tuple] = set()
     for group in report["groups"]:
         if group["resource_kind"] == "invariant":
             has_authorization_check = True
@@ -128,6 +149,10 @@ def _header(report: dict) -> list[str]:
                 display_items += 1
             continue
         for item in group["interactions"]:
+            key = _interaction_key(item)
+            if key in seen:
+                continue
+            seen.add(key)
             tier = item["tier"]
             counts[tier] = counts.get(tier, 0) + 1
             display_items += 1
@@ -177,9 +202,25 @@ def _header(report: dict) -> list[str]:
     return lines
 
 
-def _group_section(group: dict, show_omitted: bool) -> list[str]:
+def _group_section(
+    group: dict,
+    show_omitted: bool,
+    recurring: dict[tuple, list[str]],
+    rendered: set[tuple],
+) -> list[str]:
     hit = MATCH_GLOSS[group["resource_match"]]
     kind = RESOURCE_GLOSS.get(group["resource_kind"], group["resource_kind"])
+    visible: list[dict] = []
+    if group["resource_kind"] != "invariant":
+        for item in group["interactions"]:
+            key = _interaction_key(item)
+            if key in rendered:
+                continue
+            rendered.add(key)
+            visible.append(item)
+        if not visible and not group["consumer_cohort"]:
+            return []
+
     lines = [
         "",
         f"### `{group['resource']}` — {kind} ({hit})",
@@ -240,7 +281,7 @@ def _group_section(group: dict, show_omitted: bool) -> list[str]:
         "| features | how they meet | why it is here | where |",
         "| --- | --- | --- | --- |",
     ]
-    for item in group["interactions"]:
+    for item in visible:
         a, b = item["features"]
         roles = dict(zip(item["features"], item["roles"], strict=True))
         pair = (
@@ -248,7 +289,17 @@ def _group_section(group: dict, show_omitted: bool) -> list[str]:
             f"`{b}` ({ROLE_GLOSS.get(roles[b], roles[b])})"
         )
         how = f"{TIER_LABEL[item['tier']]}<br>{KIND_GLOSS.get(item['kind'], item['kind'])}"
-        why = "<br>".join(item["why"])
+        why_parts = list(item["why"])
+        other_spots = [
+            spot
+            for spot in recurring.get(_interaction_key(item), ())
+            if spot != group["resource"]
+        ]
+        if other_spots:
+            why_parts.append(
+                f"Same pair also reaches {_code_list(other_spots)}"
+            )
+        why = "<br>".join(why_parts)
         lines.append(
             f"| {pair} | {how} | {why} | {_short_evidence(item['evidence'])} |"
         )
@@ -266,9 +317,16 @@ def render(report: dict) -> str:
     # With one group its per-group count and the overall count are the same
     # number, and printing both reads like two different omissions.
     per_group = len(report["groups"]) > 1
+    recurring = _recurring_spots(report)
+    rendered: set[tuple] = set()
     lines = _header(report)
     for group in report["groups"]:
-        lines += _group_section(group, show_omitted=per_group)
+        lines += _group_section(
+            group,
+            show_omitted=per_group,
+            recurring=recurring,
+            rendered=rendered,
+        )
 
     if summary["truncated"]:
         extra = (

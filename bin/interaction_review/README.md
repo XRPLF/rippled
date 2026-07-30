@@ -165,6 +165,10 @@ then scored, filtered, and capped:
   exact cohort. A touched transaction type still gets its own row. This keeps
   the behavior-changing feature pairs visible without materializing the same
   generic relationship once per transaction type.
+- **Recurring-pair rollup** — when the same feature relationship reaches
+  several shared decisions, the comment prints the pair once and names every
+  other selected decision it reaches. The JSON artifact retains each
+  resource-specific interaction.
 - **Caps** — 25 interactions, 6 per resource, 6 resources, keeping the
   best-scoring resources whole rather than a thin slice of each. Every cap and
   filter reports its count in the summary and in the comment; nothing is dropped

@@ -391,6 +391,62 @@ def test_rendered_comment_summarizes_uniform_transaction_consumers():
     assert "`Batch` (changes it) × `Payment` (uses it)" not in body
 
 
+def test_rendered_comment_rolls_up_a_pair_repeated_across_shared_spots():
+    graph_input = graph()
+    graph_input["resources"].append(
+        {
+            "id": "resource:fork:checkFee",
+            "name": "checkFee",
+            "signal": "high",
+        }
+    )
+    graph_input["edges"] += [
+        {
+            "kind": "wrapper",
+            "src": "feature:transactor:Batch",
+            "dst": "resource:fork:checkFee",
+            "via": "sfRawTransactions",
+        },
+        {
+            "kind": "consumer",
+            "src": "feature:transactor:Payment",
+            "dst": "resource:fork:checkFee",
+            "via": "sfFee",
+        },
+    ]
+    interaction_input = interactions()
+    duplicate = json.loads(
+        json.dumps(
+            next(
+                item
+                for item in interaction_input["interactions"]
+                if item["resource"] == "getFeePayer"
+                and item["roles"].count("consumer") == 1
+            )
+        )
+    )
+    duplicate["resource"] = "checkFee"
+    duplicate["boundary_states"] = []
+    interaction_input["interactions"].append(duplicate)
+    report = sel.select(
+        graph_input,
+        interaction_input,
+        touched(
+            node(
+                "feature:transactor:Payment",
+                "transactor",
+                "Payment",
+                "file",
+            )
+        ),
+    )
+    body = render_comment.render(report)
+    pair = "`Batch` (changes it) × `Payment` (uses it)"
+    assert body.count(pair) == 1
+    assert "Same pair also reaches `checkFee`" in body
+    assert "1 feature pair" in body
+
+
 def test_rendered_invariant_is_an_authorization_boundary_not_a_pair_table():
     body = render_comment.render(
         select(
