@@ -148,6 +148,13 @@ loanOriginationExceedsVaultMaximum(
     return vaultMaximum != 0 && interestDue > vaultMaximum - vaultTotal;
 }
 
+/*
+XLS-66 section 3.2.3.2, defines the default amount as
+
+DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+
+Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
+*/
 Number
 loanVaultExposure(SLE::const_ref loanSle)
 {
@@ -172,6 +179,11 @@ loanOriginationDeltas(Number const& principalRequested)
     return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
 }
 
+/*
+ * Under CashBasis accounting, Loan default amount is:
+ *
+ * DefaultAmount = Loan.PrincipalOutstanding
+ */
 Number
 loanVaultExposure(SLE::const_ref loanSle)
 {
@@ -193,36 +205,33 @@ namespace {
 // VaultVersion::CashBasis). Vaults created before activation keep accrual-basis
 // accounting forever, even after the amendment later turns on.
 bool
-cashBasisEnabled(Rules const& rules, SLE::const_ref vaultSle)
+cashBasisEnabled(SLE::const_ref vaultSle)
 {
-    return rules.enabled(featureLendingProtocolV1_1) &&
-        getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
 }
 
 }  // namespace
 
 AccountingDeltas
 loanOriginationDeltas(
-    Rules const& rules,
     SLE::const_ref vaultSle,
     Number const& principalRequested,
     Number const& interestDue)
 {
-    return cashBasisEnabled(rules, vaultSle)
+    return cashBasisEnabled(vaultSle)
         ? CashBasis::loanOriginationDeltas(principalRequested)
         : Accrual::loanOriginationDeltas(principalRequested, interestDue);
 }
 
 bool
 loanOriginationExceedsVaultMaximum(
-    Rules const& rules,
     SLE::const_ref vaultSle,
     Number const& vaultTotal,
     Number const& interestDue)
 {
     // Cash-basis origination doesn't recognize interest into AssetsTotal, so
     // interest due can never push the vault past AssetsMaximum at origination.
-    if (cashBasisEnabled(rules, vaultSle))
+    if (cashBasisEnabled(vaultSle))
         return false;
 
     auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
@@ -230,17 +239,17 @@ loanOriginationExceedsVaultMaximum(
 }
 
 Number
-loanVaultExposure(Rules const& rules, SLE::const_ref vaultSle, SLE::const_ref loanSle)
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
 {
-    return cashBasisEnabled(rules, vaultSle) ? CashBasis::loanVaultExposure(loanSle)
-                                             : Accrual::loanVaultExposure(loanSle);
+    return cashBasisEnabled(vaultSle) ? CashBasis::loanVaultExposure(loanSle)
+                                      : Accrual::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
-loanPaymentDeltas(Rules const& rules, SLE::const_ref vaultSle, LoanPaymentParts const& parts)
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
 {
-    return cashBasisEnabled(rules, vaultSle) ? CashBasis::loanPaymentDeltas(parts)
-                                             : Accrual::loanPaymentDeltas(parts);
+    return cashBasisEnabled(vaultSle) ? CashBasis::loanPaymentDeltas(parts)
+                                      : Accrual::loanPaymentDeltas(parts);
 }
 
 namespace detail {

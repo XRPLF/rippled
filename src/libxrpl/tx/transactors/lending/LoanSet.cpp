@@ -444,8 +444,7 @@ LoanSet::doApply()
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
 
-    if (loanOriginationExceedsVaultMaximum(
-            ctx_.view().rules(), vaultSle, vaultTotalProxy, state.interestDue))
+    if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;
@@ -492,7 +491,7 @@ LoanSet::doApply()
     auto const loanAssetsToBorrower = principalRequested - originationFee;
 
     auto const [assetsTotalDelta, debtTotalDelta] =
-        loanOriginationDeltas(ctx_.view().rules(), vaultSle, principalRequested, state.interestDue);
+        loanOriginationDeltas(vaultSle, principalRequested, state.interestDue);
     auto const newDebtTotal = brokerSle->at(sfDebtTotal) + debtTotalDelta;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)

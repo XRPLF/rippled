@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -145,18 +146,15 @@ getVaultVersion(SLE::const_ref vault)
     if (!vault->isFieldPresent(sfLEVersion))
         return VaultVersion::Legacy;
 
-    switch (vault->at(sfLEVersion))
+    auto const version = vault->at(sfLEVersion);
+    if (version > std::to_underlying(VaultVersion::CashBasis))
     {
-        case 0:
-            return VaultVersion::Legacy;
-        case 1:
-            return VaultVersion::CashBasis;
-        default:
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
-            return VaultVersion::Legacy;
-            // LCOV_EXCL_STOP
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
+        return VaultVersion::Legacy;
+        // LCOV_EXCL_STOP
     }
+    return static_cast<VaultVersion>(version);
 }
 
 }  // namespace xrpl
