@@ -115,10 +115,16 @@
               { "type": "null" },
               {
                 "type": "object",
-                "required": ["mediators", "consumers", "pair_count"],
+                "required": ["mediators", "wrappers", "consumers", "pair_count"],
                 "additionalProperties": false,
                 "properties": {
                   "mediators": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "wrappers": {
+                    "description": "Members of the mediator side whose provenance is transaction wrapping.",
                     "type": "array",
                     "items": { "type": "string" },
                     "uniqueItems": true

@@ -218,6 +218,7 @@ def select(
                         "new_levers": list(resource.new_levers),
                         "boundary_states": list(interaction["boundary_states"]),
                         "mediators": set(),
+                        "wrappers": set(),
                         "consumers": set(),
                         "pair_count": 0,
                         "score": (
@@ -237,7 +238,10 @@ def select(
                         ),
                     },
                 )
-                cohort["mediators"].add(interaction["features"][mediator_index])
+                mediator = interaction["features"][mediator_index]
+                cohort["mediators"].add(mediator)
+                if "wrapper" in interaction["vias"][mediator_index]:
+                    cohort["wrappers"].add(mediator)
                 cohort["consumers"].add(interaction["features"][consumer_index])
                 cohort["pair_count"] += 1
                 continue
@@ -473,6 +477,7 @@ def _cohort_json(cohort: dict | None) -> dict | None:
         return None
     return {
         "mediators": sorted(cohort["mediators"]),
+        "wrappers": sorted(cohort["wrappers"]),
         "consumers": sorted(cohort["consumers"]),
         "pair_count": cohort["pair_count"],
     }

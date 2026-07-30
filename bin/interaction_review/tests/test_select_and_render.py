@@ -112,7 +112,10 @@ def interactions() -> dict:
             "kind": f"{roles[0]}×{roles[1]}",
             "features": list(features),
             "roles": list(roles),
-            "vias": [["sfDelegate"], ["sfRawTransactions"]],
+            "vias": [
+                ["wrapper"] if name == "Batch" else ["sfDelegate"]
+                for name in features
+            ],
             "boundary_states": list(states),
         }
 
@@ -215,6 +218,7 @@ def test_editing_a_fork_keeps_mediator_pairs_and_summarizes_pass_throughs():
     assert pairs == {("PermissionDelegation", "Batch")}
     assert report["groups"][0]["consumer_cohort"] == {
         "mediators": ["Batch"],
+        "wrappers": ["Batch"],
         "consumers": ["Payment"],
         "pair_count": 1,
     }
@@ -373,7 +377,10 @@ def test_rendered_comment_names_the_pair_and_the_boundary_states():
     )
     body = render_comment.render(report)
     assert body.startswith(render_comment.MARKER)
-    assert "`PermissionDelegation` (changes it) × `Batch` (changes it)" in body
+    assert (
+        "`PermissionDelegation` (changes it) × "
+        "`Batch` (wraps transactions through it)"
+    ) in body
     assert "This code picks between `Account`, `Delegate`" in body
     assert "featureFoo" in body
     assert "f.cpp:10-12" in body
@@ -388,7 +395,7 @@ def test_rendered_comment_summarizes_uniform_transaction_consumers():
     )
     assert "1 transaction type" in body
     assert "1 feature-by-transaction combination" in body
-    assert "`Batch` (changes it) × `Payment` (uses it)" not in body
+    assert "`Batch` (wraps transactions through it) × `Payment` (uses it)" not in body
 
 
 def test_rendered_comment_rolls_up_a_pair_repeated_across_shared_spots():
@@ -441,7 +448,7 @@ def test_rendered_comment_rolls_up_a_pair_repeated_across_shared_spots():
         ),
     )
     body = render_comment.render(report)
-    pair = "`Batch` (changes it) × `Payment` (uses it)"
+    pair = "`Batch` (wraps transactions through it) × `Payment` (uses it)"
     assert body.count(pair) == 1
     assert "Same pair also reaches `checkFee`" in body
     assert "1 feature pair" in body
