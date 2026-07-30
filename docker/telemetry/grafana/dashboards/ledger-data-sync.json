@@ -496,9 +496,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages In",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -543,9 +543,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages In",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -584,9 +584,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages In",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -637,9 +637,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages In",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -985,8 +985,9 @@
         "alignValue": "left",
         "rowHeight": 0.9,
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
         },
         "legend": {
           "displayMode": "list",
@@ -1012,7 +1013,7 @@
             "fillOpacity": 80,
             "lineWidth": 0,
             "insertNulls": false,
-            "spanNulls": false
+            "spanNulls": 1800000
           },
           "mappings": [
             {
@@ -1117,16 +1118,33 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "reqps",
+          "unit": "suffix: ledgers/s",
           "custom": {
-            "axisLabel": "Rate (per second)",
+            "axisLabel": "Ledgers / Sec & Fetches / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Ledger Fetches/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: fetches/s"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
       },
       "id": 19
     },
@@ -1376,16 +1394,49 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "short",
+          "unit": "suffix: reads/s",
           "custom": {
-            "axisLabel": "Reads/s & Depth",
+            "axisLabel": "Reads / Sec & Depth",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Read Queue/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/^Read Threads Running/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
       },
       "id": 24
     },
@@ -1580,7 +1631,7 @@
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "µs",
           "custom": {
-            "axisLabel": "p99 Wait (μs)",
+            "axisLabel": "p99 Wait (µs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1821,9 +1872,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
-            "axisLabel": "Events (Per Second)",
+            "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1877,9 +1928,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: outcomes/s",
           "custom": {
-            "axisLabel": "Outcomes (Per Second)",
+            "axisLabel": "Outcomes / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1926,9 +1977,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: acquisitions/s",
           "custom": {
-            "axisLabel": "Discarded Acquisitions (Per Second)",
+            "axisLabel": "Acquisitions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1975,9 +2026,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
-            "axisLabel": "Ledger Lane Events (Per Second)",
+            "axisLabel": "Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

@@ -3056,7 +3056,8 @@
         "tooltip": {
           "mode": "multi",
           "showColorScale": true,
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "yAxis": {
           "axisLabel": "Round duration (ms)",
