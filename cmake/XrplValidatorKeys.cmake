@@ -18,9 +18,7 @@ if(validator_keys)
     )
     FetchContent_MakeAvailable(validator_keys)
     # The tool's own CMakeLists excludes the target from 'all' when it is built
-    # as a subproject. Undo that: the packages ship validator-keys, so a build
-    # configured with validator_keys=ON must produce it as part of the default
-    # target, next to xrpld.
+    # as a subproject. Undo that, so validator_keys=ON really does build it.
     set_target_properties(
         validator-keys
         PROPERTIES
@@ -28,9 +26,8 @@ if(validator_keys)
             EXCLUDE_FROM_ALL OFF
             EXCLUDE_FROM_DEFAULT_BUILD OFF
     )
-    # Like xrpld, this binary leaves the Nix-based build image (we ship it in
-    # the deb/rpm), so it needs the system ELF loader instead of the one in the
-    # Nix store. Without this it cannot run on the target distro at all.
+    # We ship this binary, so like xrpld it must not keep the Nix store's ELF
+    # loader, or it cannot run on the target distro at all.
     patch_nix_binary(validator-keys)
     install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

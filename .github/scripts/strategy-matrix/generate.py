@@ -136,8 +136,8 @@ class MatrixEntry:
 class PackagingEntry:
     """One entry in the generated packaging strategy matrix."""
 
-    artifact_name: str  # artifact holding the xrpld binary
-    validator_keys_artifact_name: str  # artifact holding the validator-keys binary
+    xrpld_artifact_name: str
+    validator_keys_artifact_name: str
     image: str
     distro: str  # e.g. "debian" or "rhel"; drives package-format-specific steps
 
@@ -212,9 +212,8 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     is taken from the distro's archive rather than from nixpkgs. Each config
     entry carries its own 'image'.
 
-    The binaries that go into a package (xrpld and validator-keys) are uploaded
-    as separate artifacts by the build job, both named after the build config,
-    so each entry names both artifacts.
+    The artifact names must match what the build job uploads: one artifact per
+    binary, each named after the build config.
     """
     entries = []
     for distro, configs in linux.package_configs.items():
@@ -223,7 +222,7 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
                 config_name = f"{distro}-{compiler}-{build_type.lower()}-amd64"
                 entries.append(
                     PackagingEntry(
-                        artifact_name=f"xrpld-{config_name}",
+                        xrpld_artifact_name=f"xrpld-{config_name}",
                         validator_keys_artifact_name=f"validator-keys-{config_name}",
                         image=cfg.image,
                         distro=distro,

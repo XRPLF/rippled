@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    name: "${{ matrix.artifact_name }}"
+    name: "${{ matrix.xrpld_artifact_name }}"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
@@ -59,7 +59,7 @@ jobs:
       - name: Download pre-built xrpld binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.xrpld_artifact_name }}
           path: ${{ env.BUILD_DIR }}
 
       - name: Download pre-built validator-keys binary
@@ -79,7 +79,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ matrix.artifact_name }}-pkg
+          name: ${{ matrix.xrpld_artifact_name }}-pkg
           path: |
             ${{ env.BUILD_DIR }}/debbuild/*.deb
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb

@@ -247,9 +247,8 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      # Only the configurations built with -Dvalidator_keys=ON produce this
-      # binary (see linux.json), so probe for it rather than keying the upload
-      # off a list of configuration names.
+      # Only configurations built with -Dvalidator_keys=ON produce this binary,
+      # so probe for it instead of hardcoding which ones do.
       - name: Check for the validator-keys binary (Linux)
         id: validator_keys
         if: ${{ runner.os == 'Linux' }}
@@ -393,7 +392,7 @@ jobs:
               --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           disable_search: true

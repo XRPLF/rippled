@@ -25,7 +25,6 @@ if(NOT (RPMBUILD_EXECUTABLE OR DPKG_BUILDPACKAGE_EXECUTABLE))
     return()
 endif()
 
-# The packages ship both binaries, so both targets must exist.
 if(NOT TARGET xrpld)
     message(STATUS "xrpld=ON is required; 'package' target not available")
     return()

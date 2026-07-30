@@ -58,7 +58,7 @@ The binaries come from the `debian` and `rhel` build configurations in
 `linux.json`'s `configs` section, which pass `-Dvalidator_keys=ON` so that the
 build job produces `validator-keys` next to `xrpld` and uploads it as the
 `validator-keys-<config name>` artifact. The packaging entry for a distro names
-both artifacts (`artifact_name` and `validator_keys_artifact_name`), so a
+both artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`), so a
 packaged configuration must keep `-Dvalidator_keys=ON`.
 
 `validator-keys` is fetched from an exact commit pinned in

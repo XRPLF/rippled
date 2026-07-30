@@ -84,7 +84,6 @@ if [[ ! -x "${xrpld_binary}" ]]; then
     exit 1
 fi
 
-# The packages ship validator-keys alongside xrpld, so it is required here too.
 validator_keys_binary="${BUILD_DIR}/validator-keys"
 if [[ ! -x "${validator_keys_binary}" ]]; then
     echo "build_pkg.sh: expected executable validator-keys binary at ${validator_keys_binary}." >&2
