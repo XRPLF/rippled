@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -102,11 +103,11 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset];
     auto const asset2 = ctx.tx[sfAsset2];
-    auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
+    auto const sleIssuer = RAccountRootEntry(ctx.tx[sfAccount], ctx.view);
     if (!sleIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
+    if (!RAccountRootEntry(ctx.tx[sfHolder], ctx.view))
         return terNO_ACCOUNT;
 
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));

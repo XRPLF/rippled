@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -186,7 +187,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
     // transaction. Check that and verify that this is allowed:
     if (auto issuer = ctx.tx[~sfIssuer])
     {
-        auto const sle = ctx.view.read(keylet::account(*issuer));
+        auto const sle = RAccountRootEntry(*issuer, ctx.view);
 
         if (!sle)
             return tecNO_ISSUER;
@@ -225,8 +226,8 @@ NFTokenMint::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const tokenSeq = [this, &issuer]() -> std::expected<std::uint32_t, TER> {
-        auto const root = view().peek(keylet::account(issuer));
-        if (root == nullptr)
+        auto root = WAccountRootEntry(issuer, view());
+        if (!root)
         {
             // Should not happen.  Checked in preclaim.
             return std::unexpected(tecNO_ISSUER);
@@ -271,7 +272,7 @@ NFTokenMint::doApply()
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return std::unexpected(tecMAX_SEQUENCE_REACHED);
 
-        ctx_.view().update(root);
+        root.update();
         return tokenSeq;
     }();
 
@@ -279,7 +280,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
+        WAccountRootEntry(accountID_, view())->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -332,7 +333,7 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    auto const sleAccount = view().read(keylet::account(accountID_));
+    auto const sleAccount = WAccountRootEntry(accountID_, view());
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

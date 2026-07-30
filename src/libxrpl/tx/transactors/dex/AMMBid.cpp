@@ -119,7 +119,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
         {
-            if (!ctx.view.read(keylet::account(account[sfAccount])))
+            if (!RAccountRootEntry(account[sfAccount], ctx.view))
             {
                 JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
                 return terNO_ACCOUNT;

@@ -417,10 +417,10 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         // Test basic owner count hook without sponsor
         {
-            auto const aliceSle = sb.peek(keylet::account(alice));
+            auto const aliceSle = WAccountRootEntry(alice, sb);
             BEAST_EXPECT(aliceSle);
 
-            OwnerCounts const initial(aliceSle);
+            OwnerCounts const initial(aliceSle.sle());
             OwnerCounts updated = initial;
             updated.owner = initial.owner + 2;
 
@@ -436,10 +436,10 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         // Test owner count hook with sponsor-related counts
         {
-            auto const sponsorSle = sb.peek(keylet::account(sponsor));
+            auto const sponsorSle = WAccountRootEntry(sponsor, sb);
             BEAST_EXPECT(sponsorSle);
 
-            OwnerCounts const sponsorInitial(sponsorSle);
+            OwnerCounts const sponsorInitial(sponsorSle.sle());
             OwnerCounts sponsorUpdated = sponsorInitial;
             sponsorUpdated.owner = sponsorInitial.owner + 1;
             sponsorUpdated.sponsoring = sponsorInitial.sponsoring + 1;
@@ -469,8 +469,8 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         // Test that max logic works correctly
         {
-            auto const aliceSle = sb.peek(keylet::account(alice));
-            OwnerCounts const current(aliceSle);
+            auto const aliceSle = WAccountRootEntry(alice, sb);
+            OwnerCounts const current(aliceSle.sle());
             OwnerCounts lower = current;
             lower.owner = (current.owner > 0) ? current.owner - 1 : 0;
 

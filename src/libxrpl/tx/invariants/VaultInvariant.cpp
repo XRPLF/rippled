@@ -583,7 +583,7 @@ ValidVault::finalize(
                     return false;
                 }
 
-                if (!isPseudoAccount(sleSharesIssuer))
+                if (!isPseudoAccount(RAccountRootEntry(sleSharesIssuer, view)))
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: shares issuer must be a "

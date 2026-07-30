@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -96,7 +97,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
     {
         AccountID const owner{ctx.tx[sfOwner]};
-        if (!ctx.view.read(keylet::account(owner)))
+        if (!RAccountRootEntry(owner, ctx.view))
             return tecOBJECT_NOT_FOUND;
 
         return tesSUCCESS;

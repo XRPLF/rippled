@@ -24,6 +24,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
@@ -446,7 +447,7 @@ public:
             // here and the end of the test all the effort will be lost.
             env.app().getOpenLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
                 // Get the account root we want to hijack.
-                auto const sle = view.read(keylet::account(gw.id()));
+                auto const sle = RAccountRootEntry(gw.id(), view);
                 if (!sle)
                     return false;  // This would be really surprising!
 

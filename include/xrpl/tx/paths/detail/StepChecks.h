@@ -25,7 +25,7 @@ checkFreeze(
     XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
-    if (auto sle = view.read(keylet::account(dst)))
+    if (auto sle = RAccountRootEntry(dst, view))
     {
         if (sle->isFlag(lsfGlobalFreeze))
         {
@@ -49,7 +49,7 @@ checkFreeze(
 
     if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
-        if (auto const sleDst = view.read(keylet::account(dst));
+        if (auto const sleDst = RAccountRootEntry(dst, view);
             sleDst && sleDst->isFieldPresent(sfAMMID))
         {
             auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));

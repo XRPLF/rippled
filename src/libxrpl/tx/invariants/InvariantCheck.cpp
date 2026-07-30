@@ -729,6 +729,17 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 
 //------------------------------------------------------------------------------
 
+// The isPseudoAccount() helper takes a view-bound wrapper, which is not
+// available while visiting entries.
+static bool
+isPseudoAccountSle(SLE::const_ref sleAcct)
+{
+    auto const& fields = getPseudoAccountFields();
+    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
+        std::ranges::any_of(
+               fields, [&sleAcct](SField const* sf) { return sleAcct->isFieldPresent(*sf); });
+}
+
 void
 ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
@@ -736,7 +747,7 @@ ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref afte
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
-        pseudoAccount_ = isPseudoAccount(after);
+        pseudoAccount_ = isPseudoAccountSle(after);
         flags_ = after->getFlags();
     }
 }
@@ -1013,9 +1024,9 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
         bool const isPseudo = [&]() {
-            // isPseudoAccount checks that any of the pseudo-account fields are
-            // set.
-            if (isPseudoAccount(after))
+            // isPseudoAccountSle checks that any of the pseudo-account fields
+            // are set.
+            if (isPseudoAccountSle(after))
                 return true;
             // Not all pseudo-accounts have a zero sequence, but all accounts
             // with a zero sequence had better be pseudo-accounts.

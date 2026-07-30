@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -47,7 +48,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     // Verify permissions for the issuer
     if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
     {
-        auto const sle = ctx.view.read(keylet::account(issuer));
+        auto const sle = RAccountRootEntry(issuer, ctx.view);
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)

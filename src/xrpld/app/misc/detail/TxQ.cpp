@@ -1663,7 +1663,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
-    auto const sleAccount = view.read(keylet::account(account));
+    auto const sleAccount = RAccountRootEntry(account, view);
 
     // Don't attempt to direct apply if the account is not in the ledger.
     if (!sleAccount)
@@ -1779,10 +1779,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     auto const baseFee = calculateBaseFee(view, *tx);
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
-    auto const sle = view.read(keylet::account(account));
+    auto const sle = RAccountRootEntry(account, view);
 
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
-    std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
+    std::uint32_t const availableSeq = nextQueuableSeqImpl(sle.sle(), lock).value();
     return {
         .fee = mulDiv(fee, baseFee, kBaseLevel)
                    .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),

@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -342,7 +343,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto sleAcc = ctx.view.read(keylet::account(acc_));
+    auto sleAcc = RAccountRootEntry(acc_, ctx.view);
     if (!sleAcc)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "

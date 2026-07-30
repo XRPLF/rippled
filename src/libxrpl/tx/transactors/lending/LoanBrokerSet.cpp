@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -220,7 +221,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        auto owner = view.peek(keylet::account(accountID_));
+        auto owner = WAccountRootEntry(accountID_, view);
         if (!owner)
         {
             // This should be impossible
@@ -238,7 +239,8 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        increaseOwnerCount(view, owner, {}, 2, j_);
+        std::optional<WAccountRootEntry> noSponsor;
+        increaseOwnerCount(view, owner, noSponsor, 2, j_);
         if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 

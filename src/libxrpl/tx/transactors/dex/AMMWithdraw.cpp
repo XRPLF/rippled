@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -656,7 +657,7 @@ AMMWithdraw::withdraw(
         }();
         if (assetNotExists)
         {
-            auto sleAccount = view.peek(keylet::account(account));
+            auto sleAccount = WAccountRootEntry(account, view);
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 

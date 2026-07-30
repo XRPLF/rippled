@@ -24,4 +24,7 @@ public:
     }
 };
 
+using RAccountRootEntry = AccountRootEntry<ReadView>;
+using WAccountRootEntry = AccountRootEntry<ApplyView>;
+
 }  // namespace xrpl

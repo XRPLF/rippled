@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -194,7 +195,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 return tesSUCCESS;
             },
             [&](Issue const&) -> TER {
-                auto const issuerSle = ctx.view.read(keylet::account(account));
+                auto const issuerSle = RAccountRootEntry(account, ctx.view);
                 if (!issuerSle)
                 {
                     // LCOV_EXCL_START

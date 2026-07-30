@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -97,8 +98,8 @@ isVaultPseudoAccountFrozen(
             view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
     }
 
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    auto const mptIssuer = RAccountRootEntry(issuer, view);
+    if (!mptIssuer.exists())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -389,7 +390,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    RAccountRootEntry const& toSle,
     STAmount const& amount,
     bool hasDestinationTag)
 {
@@ -416,7 +417,7 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
-    auto const toSle = view.read(keylet::account(to));
+    auto const toSle = RAccountRootEntry(to, view);
 
     return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
 }
@@ -440,7 +441,7 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
-    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+    auto const dstSle = WAccountRootEntry(dstAcct, ctx.view);
 
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
@@ -451,7 +452,7 @@ doWithdraw(
     }
     else
     {
-        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
+        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle.sle(), j))
             return err;
     }
 
@@ -480,8 +481,15 @@ doWithdraw(
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
+    auto const& sponsor = *sponsorSle;
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
+        ctx.view,
+        sourceAcct,
+        dstAcct,
+        amount,
+        j,
+        sponsor ? sponsor->mutableSle() : SLE::pointer{},
+        WaiveTransferFee::Yes);
 }
 
 TER

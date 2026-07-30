@@ -19,6 +19,30 @@ namespace xrpl {
 template <typename V>
 concept WritableView = std::derived_from<V, ApplyView>;
 
+namespace detail {
+
+/**
+ * Resolves a keylet for a read-only wrapper.
+ *
+ * ReadView::read() on an ApplyView returns the underlying ledger's entry
+ * whenever the view is not already tracking one, while peek() installs the
+ * view's own copy and returns that. A read-only wrapper built with read()
+ * would therefore hold an entry that goes stale the moment anything peeks the
+ * same key and modifies it. Resolve through peek() whenever the view really is
+ * an ApplyView, so every wrapper over that view shares one entry.
+ */
+inline SLE::const_pointer
+resolveEntry(ReadView const& view, Keylet const& key)
+{
+    // Views are never const objects; the read-only wrapper only holds a const
+    // reference because it does not itself modify the view.
+    if (auto const applyView = dynamic_cast<ApplyView*>(const_cast<ReadView*>(&view)))
+        return applyView->peek(key);
+    return view.read(key);
+}
+
+}  // namespace detail
+
 /**
  * View-parameterized base class for all ledger entry wrappers.
  *
@@ -41,7 +65,8 @@ public:
     // SLE pointer type: mutable for writable views, const for read-only
     using sle_ptr_type = std::conditional_t<kIsWritable, std::shared_ptr<SLE>, SLE::const_pointer>;
 
-    // View reference type: ApplyView& for writable, ReadView const& for read-only
+    // View reference type: ApplyView& for writable, ReadView const& for
+    // read-only
     using view_ref_type = std::conditional_t<kIsWritable, ApplyView&, ReadView const&>;
 
     virtual ~SLEBase() = default;
@@ -235,7 +260,7 @@ public:
      */
     explicit SLEBase(
         SLE::const_pointer sle,
-        ReadView const& view,
+        view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
         : view_(view), sle_(std::move(sle)), j_(j)
@@ -247,10 +272,10 @@ public:
      */
     explicit SLEBase(
         Keylet const& key,
-        ReadView const& view,
+        view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
-        : view_(view), sle_(view.read(key)), j_(j)
+        : view_(view), sle_(detail::resolveEntry(view, key)), j_(j)
     {
     }
 
@@ -268,21 +293,6 @@ public:
     }
 
     /**
-     * Constructor for writable context (from existing SLE)
-     */
-    explicit SLEBase(
-        std::shared_ptr<SLE> sle,
-        ApplyView& view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires kIsWritable
-        : view_(view)
-        , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
-        , sle_(std::move(sle))
-        , j_(j)
-    {
-    }
-
-    /**
      * Constructor for writable context (peek from view by keylet)
      */
     explicit SLEBase(
@@ -291,23 +301,6 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires kIsWritable
         : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
-    {
-    }
-
-    /**
-     * Constructor for writable context carrying the applying transaction
-     * (from existing SLE). Providing the ApplyViewContext lets create()
-     * perform reserve-sponsorship-aware accounting.
-     */
-    explicit SLEBase(
-        std::shared_ptr<SLE> sle,
-        ApplyViewContext ctx,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires kIsWritable
-        : view_(ctx.view)
-        , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
-        , sle_(std::move(sle))
-        , j_(j)
     {
     }
 

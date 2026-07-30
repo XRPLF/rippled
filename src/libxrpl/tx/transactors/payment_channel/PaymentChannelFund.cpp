@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -82,7 +83,7 @@ PaymentChannelFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    auto sle = WAccountRootEntry(txAccount, ctx_.view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -104,7 +105,7 @@ PaymentChannelFund::doApply()
     }
 
     // do not allow adding funds if dst does not exist
-    if (AccountID const dst = (*slep)[sfDestination]; !ctx_.view().read(keylet::account(dst)))
+    if (AccountID const dst = (*slep)[sfDestination]; !WAccountRootEntry(dst, ctx_.view()))
     {
         return tecNO_DST;
     }
@@ -113,7 +114,7 @@ PaymentChannelFund::doApply()
     ctx_.view().update(slep);
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

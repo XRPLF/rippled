@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -163,7 +164,7 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = WAccountRootEntry(account, ctx_.view());
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
     // Transfer amount back to the owner
@@ -183,7 +184,7 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle.mutableSle() : slep,
                         preFeeBalance_,
                         amount,
                         issuer,

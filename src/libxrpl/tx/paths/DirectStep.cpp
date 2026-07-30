@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -835,7 +836,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto const sleSrc = ctx.view.read(keylet::account(src_));
+    auto const sleSrc = RAccountRootEntry(src_, ctx.view);
     if (!sleSrc)
     {
         JLOG(j_.warn()) << "DirectStepI: can't receive IOUs from non-existent issuer: " << src_;
@@ -895,7 +896,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         }
     }
 
-    return static_cast<TDerived const*>(this)->check(ctx, sleSrc);
+    return static_cast<TDerived const*>(this)->check(ctx, sleSrc.sle());
 }
 
 //------------------------------------------------------------------------------

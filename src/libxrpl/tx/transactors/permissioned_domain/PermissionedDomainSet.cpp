@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -79,7 +80,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    auto const ownerSle = view().peek(keylet::account(accountID_));
+    auto ownerSle = WAccountRootEntry(accountID_, view());
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -128,7 +129,8 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
+        std::optional<WAccountRootEntry> noSponsor;
+        increaseOwnerCount(view(), ownerSle, noSponsor, 1, ctx_.journal);
         view().insert(slePd);
     }
 
