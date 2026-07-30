@@ -337,21 +337,24 @@ question, not an engine defect**, and it should carry much less weight in the de
 than the paragraph above once implied. Judge C11 mainly on the cost table and on
 `read_write` not generalizing past one byte input.
 
-### Status: the live decision, after C10
+### Status: this is the open decision (2026-07-30)
 
-The VM compiles and works, so the reason this was deferred is spent. It is **C11**, and
-the order is C10 first: caching the `Memory` in `VmState` removes the per-call export
-lookup that both designs otherwise pay, and makes either answer here easier to
-implement. The typed shims, generated header and probe-module test stay deferred.
+The VM compiles and works, so the reason this was deferred is spent, and C10 has landed —
+so the per-call export lookup both designs would otherwise pay is already gone. **This is
+now the next thing on the list and it needs answering before C11 is codeable.** The typed
+shims, generated header and probe-module test stay deferred.
 
 ## Open ABI questions and interop risks (2026-07-29)
 
 Found while auditing the guest SDK (`~/Documents/rust/xrpl-wasm-stdlib`, checkout
-`435a091f`) against this fork. All unresolved.
+`435a091f`) against this fork. As of 2026-07-30, **question 1 is resolved and question 3
+is narrowed**; each says so in place. The rest are open, and all of them are decisions
+rather than code.
 
 1. **Import module name.** The old C++ VM ignored it entirely —
    `wasm_importtype_module()` is commented out at `src/libxrpl/tx/wasm/WasmiVM.cpp:429-431`
-   and only the field name is looked up. `register.rs:8` now enforces `"host"`. The SDK
+   and only the field name is looked up. `register.rs:8` enforced `"host"` when this was
+   audited. The SDK
    and the fork's own fixture (`src/test/app/wasm_fixtures/codecov_tests/src/host_bindings_loose.rs:20`)
    use `"host_lib"`. Plain clang emits `"env"` unless annotated. `"host"` matched
    nothing that exists. **Resolved: `host_lib`** (finding A3).
@@ -757,6 +760,13 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 - Fast: `cd crates && cargo check --workspace --all-targets`, `cargo test --workspace`,
   `cargo clippy --workspace --all-targets`.
+- **`cargo doc -p xrpl-wasm-vm --no-deps` is part of the loop, not a nicety.**
+  `lib.rs` carries `deny(rustdoc::broken_intra_doc_links)`, and neither `cargo test` nor
+  `clippy` checks doc links — so a rename that leaves a `[`link`]` dangling passes both
+  and fails only here. Add `--document-private-items` to check the links on private
+  items too, which is most of this crate. `lib.rs` also carries `forbid(unsafe_code)`,
+  `deny(unreachable_pub)` and `deny` on four clippy cast lints, so a new unreachable
+  `pub` or an unargued cast fails the build rather than warning.
 - `xrpl-wasm-vm`'s tests come in two kinds, and the split is forced rather than
   stylistic. A wasmi `Caller` exists only for the duration of a host call, so
   `read_borrowed` / `write_into` / `read_write` / `memory` **cannot be reached from a
@@ -792,16 +802,23 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 macro, 12 facade, 1 doctest, and **77 in `xrpl-wasm-vm`** (10 unit; 67 integration — 12
 `host_calls`, 21 `memory_policy`, 13 `budgets`, 21 `vm_limits`).
 
-**Section A is closed, B6/B7 with it, and the B/D cleanup after that** (2026-07-30) —
-B8, B9, D14 and two thirds of D16. Only C10/C11/C12, D17 and D16's `gas = 0` decision
-are left of the seventeen. `run` is
-`Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
-instead of answering the guest a code; the import module is `host_lib`; the `i64`
-pipeline and `AbiRet` are gone; the transfer budget counts only bytes actually copied
-host→guest, and no more than the field cap can reach guest memory. See those entries
-for what landed and why. Two decisions were taken to get there and are recorded at
-their findings: **`OutOfTransferLimit` stays soft** (A1) and **the module name is
-`host_lib`** (A3).
+**Thirteen of the seventeen findings are closed** (2026-07-30): all of section A, all of
+B, D13–D15, two thirds of D16, and C10. What is left is **C11**, blocked on the
+scratch-buffer decision; **C12**, which the bridge will force anyway; **D16's `gas = 0`**,
+a TER decision; and **D17**, which is not work.
+
+`run` is `Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
+instead of answering the guest a code; the import module is `host_lib`; the `i64` pipeline
+and `AbiRet` are gone; the transfer budget counts only bytes actually copied host→guest,
+and no more than the field cap can reach guest memory; the guest's linear memory is
+resolved once, by kind rather than by name. See those entries for what landed and why.
+
+**Three decisions were taken along the way**, each recorded at its finding:
+**`OutOfTransferLimit` stays soft** (A1), **the import module name is `host_lib`** (A3),
+and **the memory export is matched by kind, not by name** (section A's addendum). All
+three restore C++ behaviour that the rewrite had changed without meaning to — which is
+the pattern worth carrying into the bridge: on this path, "tidier than C++" is usually
+"different from C++".
 
 Every test that existed only to pin behaviour a finding said should change is gone,
 replaced by a test of the new behaviour: `a_host_call_refused_its_gas_stops_the_run`
@@ -924,14 +941,14 @@ Consequences worth remembering:
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
 
-Next, from the findings above, only section C is left. **The cached `Memory` (C10)**
-first: it is the one item with a measurable payoff, the benchmark can show it, and
-`NoMemExported` being fatal has already made it a move rather than a behaviour change —
-only `assert_no_memory`'s expected stage shifts from a trap to instantiation. Then
-**C11**, which needs the scratch-buffer decision made before it is codeable, and C10
-makes either answer easier. **C12** (per-run `Linker`, no module cache) stays last:
+Next, from the findings above, **C11 and C12 are all that remain**, and neither is
+ordinary work. **C11** is blocked on the scratch-buffer decision — see "Open: where the
+output region points", and read its amendment first, because A4 spent that section's
+strongest argument. **C12** (per-run `Linker`, no module cache) stays last:
 `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run, so it is a design
 change rather than a tweak, and the cxx bridge will force that lifetime question anyway.
+Of the seventeen findings, thirteen are closed; the other two open items are D16's
+`gas = 0`, a TER decision, and D17, which is not work.
 
 The real remaining work is not in the findings list: **the cxx bridge**
 (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) and **real `ApplyContext` wiring**. A1 and A2
@@ -939,6 +956,42 @@ were sequenced first so the bridge has a typed `RunError` and a `fuel_used` to m
 instead of error text to parse. D16's `gas = 0` decision belongs there too, since it is
 a TER choice. Deferred as before: macro-emitted `link_*` shims, the generated C header,
 the probe-module test.
+
+## Once the crate is finished: cut the comments back
+
+**`xrpl-wasm-vm`'s comments are too verbose, and they should be edited down in one pass
+once the crate stops moving.** Do not do it while findings are still landing — several of
+them turned on a rationale that only existed in a comment, and losing those mid-flight
+costs more than the reading time.
+
+Why they got this way is worth knowing, because it tells you what to keep. Each finding
+was argued out in its doc comment as it landed: why a rule exists, which C++ line it
+mirrors, why the obvious simplification is wrong. That was the right thing to write at the
+time — the review found real bugs precisely where the code had asserted something no
+comment justified — but the accumulation now reads as an essay per function. `write_into`
+and `VmState::memory` are the clearest cases.
+
+What the pass should keep, roughly in order of value:
+
+- **The C++ reference points.** `WasmiVM.cpp:224-249`, `HostFuncWrapper.cpp:497`,
+  `Protocol.h`'s names. These are consensus parity evidence and cannot be recovered from
+  the code.
+- **Why an apparent redundancy is not one.** The `n > MAX_FIELD_BYTES` check beside the
+  clamp; `is_fatal` and `host_fatal` being two lists; `MUST_TRAP` restating the fatal set
+  rather than deriving it. Every one of these has been "simplified" wrongly at least once
+  in a mutation test, so each earns its sentence.
+- **Load-bearing invariants**, like `VmState::memory`'s one-instance-per-run assumption.
+
+What it should cut:
+
+- Prose restating what the next line plainly does.
+- The same rationale on a field and on the function that sets it — pick the one a reader
+  reaches first. `WasmiVM.cpp:224-249` is currently cited twice for two different facts.
+- Paragraphs duplicating this document. A pointer here beats a retelling in `abi.rs`.
+- The worked examples that have served their purpose, where a sentence now does.
+
+A rule of thumb that fits what actually paid off: a comment should say something the
+compiler cannot check and the code cannot show. Everything else is a candidate.
 
 One incidental constraint found while checking the guest target: `crates/hello_world`
 cannot be checked for `wasm32-unknown-unknown` — it depends on `cxx` →
