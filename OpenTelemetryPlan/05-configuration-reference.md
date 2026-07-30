@@ -55,7 +55,7 @@ phases. They will be added as the corresponding subsystems are instrumented:
 
 > **TxQ** = Transaction Queue
 
-The parser `setupTelemetry()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.value_or(...)`. It derives `serviceInstanceId` from the node public key when not overridden, selects the exporter endpoint default by exporter type, and leaves the sampling ratio at its fixed 1.0 default (not read from config — see Section 7.4.2).
+The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.value_or(...)`. It derives `serviceInstanceId` from the node public key when not overridden, selects the exporter endpoint default by exporter type, and leaves the sampling ratio at its fixed 1.0 default (not read from config — see Section 7.4.2).
 
 ---
 
@@ -69,7 +69,7 @@ The parser `setupTelemetry()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` rea
 > constructed with an empty `serviceInstanceId` and patched via
 > `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
 
-`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_`. It is built in the member initializer list via `makeTelemetry(setupTelemetry(...))` with an empty `serviceInstanceId`, then patched in `setup()` by calling `setServiceInstanceId()` with the Base58 node public key (unless the user supplied a custom `service_instance_id`). `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
+`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_`. It is built in the member initializer list via `makeTelemetry(makeTelemetrySetup(...))` with an empty `serviceInstanceId`, then patched in `setup()` by calling `setServiceInstanceId()` with the Base58 node public key (unless the user supplied a custom `service_instance_id`). `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
 
 ### 5.3.2 ServiceRegistry Interface Addition
 
@@ -135,7 +135,7 @@ flowchart TB
     end
 
     subgraph init["Initialization"]
-        parse["setupTelemetry()"]
+        parse["makeTelemetrySetup()"]
         factory["makeTelemetry()"]
     end
 
@@ -169,7 +169,7 @@ flowchart TB
 **Reading the diagram:**
 
 - **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, per-component trace toggles) while the CMake flag controls whether telemetry is compiled in at all. Head sampling is fixed at 1.0 and is not a config option; volume reduction happens via tail sampling in the collector.
-- **Initialization**: `setupTelemetry()` parses config values, then `makeTelemetry()` constructs the provider, processor, and exporter objects.
+- **Initialization**: `makeTelemetrySetup()` parses config values, then `makeTelemetry()` constructs the provider, processor, and exporter objects.
 - **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
 - **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP/HTTP and enters the external Collector pipeline. (OTLP/gRPC is future work — see design decisions §2.2.2.)
 - **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).
