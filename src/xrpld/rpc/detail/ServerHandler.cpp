@@ -4,6 +4,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
@@ -105,6 +106,42 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
+}
+
+/**
+ * Resolve the command attribute for a WebSocket message to a bounded value.
+ *
+ * The command/method field is client-supplied and is promoted to a Prometheus
+ * label by the spanmetrics connector, so the raw string must never be emitted:
+ * arbitrary request input would drive unbounded label cardinality. Resolving
+ * against the handler registry keeps per-command attribution for real commands
+ * and collapses everything else to a single "unknown" series.
+ *
+ * A request naming both fields with different values is not a real command
+ * (processSession rejects it below), so it also resolves to "unknown".
+ *
+ * @param jv      The parsed WebSocket request object.
+ * @param config  Node config, for the beta-RPC-API flag used to look up the
+ *                handler for the request's API version.
+ * @return The canonical handler name, or "unknown" for an unrecognized,
+ *         missing, non-string, or self-contradictory command.
+ */
+static std::string_view
+resolveWsCommandSpanName(json::Value const& jv, Config const& config)
+{
+    bool const hasCommand = jv.isMember(jss::command) && jv[jss::command].isString();
+    bool const hasMethod = jv.isMember(jss::method) && jv[jss::method].isString();
+    if (!hasCommand && !hasMethod)
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = hasCommand ? jv[jss::command].asString() : jv[jss::method].asString();
+    if (hasCommand && hasMethod && cmd != jv[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
+    auto const* handler =
+        RPC::getHandler(RPC::getAPIVersionNumber(jv, config.betaRpcApi), config.betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
 }
 
 // VFALCO TODO Rewrite to use boost::beast::http::fields
@@ -434,14 +471,13 @@ ServerHandler::processSession(
     // Fresh root so each WS message is its own trace.
     auto span = ScopedSpanGuard::freshRoot(
         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
-    if (jv.isMember(jss::command) && jv[jss::command].isString())
-    {
-        span.setAttribute(rpc_span::attr::command, jv[jss::command].asString().c_str());
-    }
-    else if (jv.isMember(jss::method) && jv[jss::method].isString())
-    {
-        span.setAttribute(rpc_span::attr::command, jv[jss::method].asString().c_str());
-    }
+    // The command is client-supplied and becomes a Prometheus label via the
+    // spanmetrics connector, so it is resolved against the handler registry
+    // before emission: a recognized command keeps its canonical name, anything
+    // else collapses to "unknown". Emitting the raw string would let request
+    // input drive unbounded label cardinality. Mirrors the HTTP path's
+    // resolveCommandSpanName().
+    span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
 
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))

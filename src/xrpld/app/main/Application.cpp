@@ -1312,6 +1312,39 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
+    nodeIdentity_ = getNodeIdentity(*this, cmdline);
+
+    // Now that the node identity is known, inject it into the telemetry
+    // resource attributes — but only if the user didn't already set a
+    // custom service_instance_id in [telemetry].  The Telemetry object
+    // was constructed with an empty serviceInstanceId because
+    // nodeIdentity_ is not available in the member initializer list.
+    if (!config_->section("telemetry").exists("service_instance_id"))
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+
+    // Create the OTel MetricsRegistry for gap-fill metrics (counters,
+    // histograms, observable gauges). It must exist before startTelemetry(),
+    // which starts the metrics half of the pipeline.
+    metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
+        telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
+
+    // Start telemetry here, not in start(). Spans and metrics are both emitted
+    // during the rest of setup() — the first consensus round in
+    // beginConsensus() below emits spans and records the process's only
+    // operating-mode transition — and both are dropped unless the pipeline is
+    // already live.
+    //
+    // The position is bounded on both sides:
+    //  - After initRelationalDatabase(): the wallet DB must exist for the node
+    //    identity above, and a DB failure aborts setup(), so starting earlier
+    //    would export a partial stream for a run that never comes up.
+    //  - Before beginConsensus(): that call emits the first consensus spans
+    //    and the only mode-transition counter increment.
+    //
+    // Only the observable instruments have to wait for their subsystems; they
+    // are registered separately by startTelemetryGauges() once overlay_ exists.
+    startTelemetry();
+
     if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
@@ -1398,29 +1431,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     }
 
     orderBookDB_->setup(getLedgerMaster().getCurrentLedger());
-
-    nodeIdentity_ = getNodeIdentity(*this, cmdline);
-
-    // Now that the node identity is known, inject it into the telemetry
-    // resource attributes — but only if the user didn't already set a
-    // custom service_instance_id in [telemetry].  The Telemetry object
-    // was constructed with an empty serviceInstanceId because
-    // nodeIdentity_ is not available in the member initializer list.
-    if (!config_->section("telemetry").exists("service_instance_id"))
-        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
-
-    // Create the OTel MetricsRegistry for gap-fill metrics (counters,
-    // histograms, observable gauges).
-    metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
-        telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
-
-    // Start tracing and the metrics provider right away, so the meter exists
-    // before anything records a metric. beginConsensus() below emits a
-    // mode-transition counter, and it is the only mode transition the process
-    // ever makes — a meter created after it would lose that series entirely.
-    // Only the observable gauges have to wait; they are registered by
-    // startTelemetryGauges() once overlay_ exists.
-    startTelemetry();
 
     if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
