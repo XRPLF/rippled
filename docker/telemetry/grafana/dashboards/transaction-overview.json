@@ -36,7 +36,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "thresholds": {
             "steps": [
               {
@@ -137,9 +137,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
-            "axisLabel": "TX / Sec",
+            "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -183,9 +183,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
-            "axisLabel": "Failed TX / Sec",
+            "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -224,7 +224,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -271,7 +271,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
             "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
@@ -418,7 +418,9 @@
         "alignValue": "center",
         "rowHeight": 0.85,
         "tooltip": {
-          "mode": "single"
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "list",
@@ -463,7 +465,8 @@
           },
           "custom": {
             "fillOpacity": 80,
-            "lineWidth": 0
+            "lineWidth": 0,
+            "spanNulls": 1800000
           }
         },
         "overrides": []
@@ -549,9 +552,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: failures/s",
           "custom": {
-            "axisLabel": "Failed Spans / Sec",
+            "axisLabel": "Failures / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -677,7 +680,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: enqueues/s",
           "custom": {
             "axisLabel": "Enqueues / Sec",
             "spanNulls": 1800000,
@@ -800,7 +803,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
-          "unit": "ops",
+          "unit": "suffix: cleanups/s",
           "custom": {
             "axisLabel": "Cleanups / Sec",
             "spanNulls": 1800000,
