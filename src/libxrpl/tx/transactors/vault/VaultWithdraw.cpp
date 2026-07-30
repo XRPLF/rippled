@@ -73,6 +73,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
+            return tecTOO_SOON;
+    }
+
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);

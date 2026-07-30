@@ -9,6 +9,7 @@
 #include <mpt_protocol.h>
 #include <secp256k1_mpt.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 
@@ -326,6 +327,36 @@ enum class VaultVersion : uint8_t {
     Legacy = 0,
     CashBasis,
 };
+
+/**
+ * Vault kind. Distinguishes closed-ended vaults from the default open-ended
+ * kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
+ */
+enum class VaultKind : std::uint8_t {
+    OpenEnded = 0,
+    ClosedEnded = 1,
+};
+
+/**
+ * Lifecycle phase of a vault. Open-ended vaults are always NoPhase; the other
+ * three values are the phases of a closed-ended vault (XLS-103).
+ */
+enum class VaultPhase : std::uint8_t {
+    NoPhase = 0,
+    Subscription,
+    Investment,
+    Redemption,
+};
+
+/**
+ * Bounds on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod (XLS-103 2.4).
+ */
+constexpr std::uint32_t kMinInvestmentPeriod =
+    std::chrono::seconds{std::chrono::minutes{1}}.count();
+constexpr std::uint32_t kMaxInvestmentPeriod =
+    std::chrono::seconds{std::chrono::days{30 * 365}}.count();
 
 /**
  * Maximum recursion depth for vault shares being put as an asset inside

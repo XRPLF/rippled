@@ -2472,6 +2472,57 @@ class Invariants_test : public beast::unit_test::Suite
 
         // TODO: Loan Object
 
+        // XLS-103 3.4: VaultKind, SubscriptionDate and RedemptionDate are
+        // immutable once set at creation. Enforced by
+        // NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
+        Keylet closedEndedVaultKeylet = keylet::amendments();
+        Preclose const createClosedEndedVault = [&, this](
+                                                    Account const& a, Account const&, Env& env) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto const red = sub + kMinInvestmentPeriod + 1'000'000;
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create(
+                {.owner = a,
+                 .asset = xrpIssue(),
+                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
+            env(tx);
+            closedEndedVaultKeylet = keylet;
+            return BEAST_EXPECT(env.le(closedEndedVaultKeylet));
+        };
+
+        {
+            // Each mutation must keep the vault otherwise valid (in
+            // particular the 4.4 gap invariant) so that only the
+            // immutability check fires. Shifting both dates by the same
+            // offset preserves the gap; bumping sfVaultKind stays within
+            // the recognised range.
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfVaultKind) += 1; },
+                [](SLE::pointer& sle) { sle->at(sfSubscriptionDate) += 1; },
+                [](SLE::pointer& sle) { sle->at(sfRedemptionDate) += 1; },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangeable field"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(closedEndedVaultKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createClosedEndedVault);
+            }
+        }
+
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
@@ -4321,6 +4372,211 @@ class Invariants_test : public beast::unit_test::Suite
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseMpt);
+
+        // ─────────────────────────────────────────────────────────────
+        // XLS-103 closed-ended vault invariants added in
+        // ValidVault::finalize: 4.4 (create must supply both dates and
+        // satisfy the redemption-buffer gap), 5.4 (deposit only in
+        // Subscription / NoPhase), 6.4 (withdraw not in Investment),
+        // 7.4 (loan origination only in Investment).
+
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+
+        auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
+
+        // Vault keylet captured by precloseClosedEnded so precheck
+        // does not have to rederive it from ac.view().seq(), which
+        // depends on how many env.close() calls preclose issued.
+        Keylet closedEndedKeylet = keylet::amendments();
+
+        // Preclose that creates a closed-ended vault (in Subscription),
+        // optionally seeds it with three deposits (so a1/a2/a3 hold a
+        // share MPToken that kAdjust can then adjust), and optionally
+        // advances parent close time past SubscriptionDate. A negative
+        // @p advanceBySub leaves the vault in Subscription.
+        auto const precloseClosedEnded = [&](std::int32_t advanceBySub, bool doDeposit) {
+            return [&, advanceBySub, doDeposit](
+                       Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1000), a3, a4);
+                auto const sub = env.now().time_since_epoch().count() + 60;
+                auto const red = sub + kMinInvestmentPeriod + 1'000'000;
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create(
+                    {.owner = a1,
+                     .asset = xrpIssue(),
+                     .vaultKind = closedEnded,
+                     .subscriptionDate = sub,
+                     .redemptionDate = red});
+                env(tx);
+                closedEndedKeylet = keylet;
+                if (doDeposit)
+                {
+                    env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                    env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
+                    env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
+                }
+                if (advanceBySub >= 0)
+                    env.close(tp{d{sub + advanceBySub}});
+                return true;
+            };
+        };
+
+        // Manually insert a bare closed-ended vault (+ pseudo-account
+        // + share MPTokenIssuance) directly into the view, bypassing
+        // the transactor path. Used to synthesise ttVAULT_CREATE
+        // states no legitimate transactor would produce (4.4).
+        auto const insertBareClosedEndedVault =
+            [closedEnded](
+                ApplyContext& ac,
+                Account const& owner,
+                std::optional<std::uint32_t> subscriptionDate,
+                std::optional<std::uint32_t> redemptionDate) -> bool {
+            auto const sequence = ac.view().seq();
+            auto const vaultKeylet = keylet::vault(owner.id(), sequence);
+            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            auto const vaultPage = ac.view().dirInsert(
+                keylet::ownerDir(owner.id()), sleVault->key(), describeOwnerDir(owner.id()));
+            if (!vaultPage)
+                return false;
+            sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+
+            auto const pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
+            auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
+            sleAccount->setAccountID(sfAccount, pseudoId);
+            sleAccount->setFieldAmount(sfBalance, STAmount{});
+            sleAccount->setFieldU32(sfSequence, 0);
+            sleAccount->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+            sleAccount->setFieldH256(sfVaultID, vaultKeylet.key);
+            ac.view().insert(sleAccount);
+
+            auto const sharesMptId = makeMptID(sequence, pseudoId);
+            auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
+            auto sleShares = std::make_shared<SLE>(sharesKeylet);
+            auto const sharesPage = ac.view().dirInsert(
+                keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
+            if (!sharesPage)
+                return false;
+            sleShares->setFieldU64(sfOwnerNode, *sharesPage);
+            sleShares->at(sfFlags) = 0;
+            sleShares->at(sfIssuer) = pseudoId;
+            sleShares->at(sfOutstandingAmount) = 0;
+            sleShares->at(sfSequence) = sequence;
+
+            sleVault->at(sfAccount) = pseudoId;
+            sleVault->at(sfFlags) = 0;
+            sleVault->at(sfSequence) = sequence;
+            sleVault->at(sfOwner) = owner.id();
+            sleVault->at(sfAssetsTotal) = Number(0);
+            sleVault->at(sfAssetsAvailable) = Number(0);
+            sleVault->at(sfLossUnrealized) = Number(0);
+            sleVault->at(sfShareMPTID) = sharesMptId;
+            sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
+            sleVault->at(sfVaultKind) = closedEnded;
+            if (subscriptionDate)
+                sleVault->at(sfSubscriptionDate) = *subscriptionDate;
+            if (redemptionDate)
+                sleVault->at(sfRedemptionDate) = *redemptionDate;
+
+            ac.view().insert(sleVault);
+            ac.view().insert(sleShares);
+            return true;
+        };
+
+        testcase << "Vault create closed-ended";
+
+        // 4.4: a fresh closed-ended vault must carry both
+        // SubscriptionDate and RedemptionDate.
+        doInvariantCheck(
+            {"closed-ended vault must have SubscriptionDate and RedemptionDate"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertBareClosedEndedVault(ac, a1, std::nullopt, std::nullopt);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // 4.4: gap must lie in [MIN_INVESTMENT_PERIOD,
+        // MAX_INVESTMENT_PERIOD); covers the sub-minimum and degenerate
+        // RedemptionDate <= SubscriptionDate cases in one branch of the
+        // invariant.
+        doInvariantCheck(
+            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
+             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                std::uint32_t const sub = 1'000'000'000;
+                std::uint32_t const red = sub + kMinInvestmentPeriod - 1;
+                return insertBareClosedEndedVault(ac, a1, sub, red);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // 4.4: gap exactly MAX_INVESTMENT_PERIOD is out of range (bound
+        // is half-open on the right).
+        doInvariantCheck(
+            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
+             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                std::uint32_t const sub = 1'000'000'000;
+                std::uint32_t const red = sub + kMaxInvestmentPeriod;
+                return insertBareClosedEndedVault(ac, a1, sub, red);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        testcase << "Vault deposit closed-ended";
+
+        // 5.4: a deposit into a closed-ended vault that has advanced
+        // past SubscriptionDate. kArgs simulates an otherwise valid
+        // deposit shape so only the phase invariant fires.
+        doInvariantCheck(
+            {"deposit only allowed in Subscription or NoPhase"},
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                return kAdjust(
+                    ac.view(), closedEndedKeylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
+            TxAccount::A2);
+
+        testcase << "Vault withdrawal closed-ended";
+
+        // 6.4: a withdrawal from a closed-ended vault in the
+        // Investment phase.
+        doInvariantCheck(
+            {"withdrawal not allowed during Investment phase"},
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                return kAdjust(
+                    ac.view(), closedEndedKeylet, kArgs(a2.id(), -10, [](Adjustments&) {}));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
+            TxAccount::A2);
+
+        testcase << "Vault loan set";
+
+        // 7.4: ttLOAN_SET against a closed-ended vault that is not in
+        // Investment. finalizeLoanSet fires on any vault mutation;
+        // touching the vault SLE with no field change is sufficient.
+        doInvariantCheck(
+            {"loan origination only allowed in Investment phase"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sleVault = ac.view().peek(closedEndedKeylet);
+                if (!sleVault)
+                    return false;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
     }
 
     void

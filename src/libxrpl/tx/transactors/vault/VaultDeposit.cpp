@@ -71,6 +71,13 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
+            return tecNO_PERMISSION;
+    }
+
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);

@@ -43,6 +43,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
         return false;
 
+    if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
+         ctx.tx.isFieldPresent(sfRedemptionDate)))
+        return false;
+
     return true;
 }
 
@@ -99,6 +104,25 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    auto const kindField = ctx.tx[~sfVaultKind];
+    auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
+    auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
+    auto const isClosedEnded =
+        kindField && *kindField == std::to_underlying(VaultKind::ClosedEnded);
+    if (kindField && *kindField > std::to_underlying(VaultKind::ClosedEnded))
+        return temMALFORMED;
+    if (!isClosedEnded && (hasSubscription || hasRedemption))
+        return temMALFORMED;
+    if (isClosedEnded && (!hasSubscription || !hasRedemption))
+        return temMALFORMED;
+    if (isClosedEnded)
+    {
+        auto const sub = ctx.tx[sfSubscriptionDate];
+        auto const red = ctx.tx[sfRedemptionDate];
+        if (red <= sub || red - sub < kMinInvestmentPeriod || red - sub >= kMaxInvestmentPeriod)
+            return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -135,6 +159,10 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
+
+    if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
+        hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
+        return tecEXPIRED;
 
     return tesSUCCESS;
 }
@@ -244,6 +272,13 @@ VaultCreate::doApply()
         vault->at(sfScale) = scale;
     if (view().rules().enabled(featureLendingProtocolV1_1))
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    if (auto const kind = tx[~sfVaultKind];
+        kind && *kind == std::to_underlying(VaultKind::ClosedEnded))
+    {
+        vault->at(sfVaultKind) = *kind;
+        vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+        vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner

@@ -54,11 +54,18 @@ enum class SkipEntry : bool { No = false, Yes };
  *
  * @param view The ledger whose parent time is used as the clock.
  * @param exp The optional expiration time we want to check.
+ * @param comparison Whether the boundary is inclusive (`now >= exp`, the
+ *                   default) or exclusive (`now > exp`).
  *
  * @return `true` if `exp` is in the past; `false` otherwise.
  */
+enum class ExpiryComparison { Inclusive, Exclusive };
+
 [[nodiscard]] bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison = ExpiryComparison::Inclusive);
 
 // Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool

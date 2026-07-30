@@ -163,6 +163,27 @@ protected:
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets
+        // sfSubscriptionDate / sfRedemptionDate from env.now() using the
+        // offsets below and advances the ledger clock past SubscriptionDate
+        // so the vault is in the Investment phase by the time the broker is
+        // set up. Requires featureLendingProtocolV1_1.
+        VaultKind vaultKind = VaultKind::OpenEnded;
+        // Seconds past env.now() at which SubscriptionDate lands. Must be
+        // strictly positive (VaultCreate::preclaim rejects
+        // SubscriptionDate <= parentCloseTime).
+        std::uint32_t subscriptionOffset = 60;
+        // Seconds between SubscriptionDate and RedemptionDate. Must be
+        // >= kMinInvestmentPeriod, < kMaxInvestmentPeriod, and generous
+        // enough to fit any loan schedule the test runs (finalPayment must
+        // be strictly before RedemptionDate). Default sized to comfortably
+        // exceed any schedule realistic tests are likely to configure.
+        std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+        // When true, createVaultAndBroker skips its automatic clock advance
+        // past SubscriptionDate. Useful for tests that need to observe the
+        // vault while it is still in the Subscription phase. Ignored for
+        // open-ended vaults.
+        bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -190,15 +211,23 @@ protected:
         uint256 brokerID;
         uint256 vaultID;
         BrokerParameters params;
+        // Absolute dates resolved by createVaultAndBroker when params.vaultKind
+        // is ClosedEnded; std::nullopt for open-ended vaults.
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
         BrokerInfo(
             jtx::PrettyAsset const& asset,
             Keylet const& brokerKeylet,
             Keylet const& vaultKeylet,
-            BrokerParameters p)
+            BrokerParameters p,
+            std::optional<std::uint32_t> subscriptionDate = std::nullopt,
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
             , params(std::move(p))
+            , subscriptionDate(subscriptionDate)
+            , redemptionDate(redemptionDate)
         {
         }
 
@@ -529,7 +558,23 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
+        if (params.vaultKind == VaultKind::ClosedEnded)
+        {
+            auto const nowSec = env.now().time_since_epoch().count();
+            subscriptionDate = nowSec + params.subscriptionOffset;
+            redemptionDate = *subscriptionDate + params.redemptionOffset;
+        }
+
+        auto [tx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = asset,
+             .vaultKind = params.vaultKind == VaultKind::OpenEnded
+                 ? std::optional<std::uint8_t>{}
+                 : std::optional<std::uint8_t>{std::to_underlying(params.vaultKind)},
+             .subscriptionDate = subscriptionDate,
+             .redemptionDate = redemptionDate});
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -541,6 +586,16 @@ protected:
         if (auto const vault = env.le(keylet::vault(vaultKeylet.key)); BEAST_EXPECT(vault))
         {
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
+        }
+
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent
+        // LoanSet operations run in the Investment phase (unless the caller
+        // explicitly asked to stay in Subscription).
+        if (subscriptionDate && !params.skipPhaseAdvance)
+        {
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            env.close(tp{d{*subscriptionDate + 1}});
         }
 
         auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
@@ -558,7 +613,7 @@ protected:
 
         env.close();
 
-        return {asset, keylet, vaultKeylet, params};
+        return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
     }
 
     /**
@@ -3491,6 +3546,135 @@ protected:
             nullptr);
     }
 
+    // Spec 13.5: LoanSet in a closed-ended vault — phase gating and
+    // maturity bound. Covers spec 7.2 failure conditions and the boundary
+    // of the finalPayment < RedemptionDate check.
+    void
+    testLoanSetClosedEnded()
+    {
+        testcase("LoanSet closed-ended: phase and maturity bound");
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // Common loan schedule used by the phase-rejection cases below.
+        constexpr std::uint32_t kInterval = 3600u * 24u;  // 1 day
+        constexpr std::uint32_t kTotal = 2u;
+
+        // featureLendingProtocolV1_1 is excluded from `all_` by
+        // convention (see the comment on `all_`), so callers must opt
+        // in. Closed-ended vaults are gated on this amendment; without
+        // it VaultCreate returns temDISABLED and every follow-on txn
+        // sees tecNO_ENTRY.
+        auto const withEnv = [&, this](auto&& body) {
+            Env env(*this, testableAmendments() | featureLendingProtocolV1_1);
+            env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+            env.close();
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            body(env, asset);
+        };
+
+        auto const setLoan = [&](Env& env, BrokerInfo const& broker, TER expected) {
+            env(set(lender, broker.brokerID, broker.asset(100).value()),
+                kCounterparty(borrower),
+                Sig(sfCounterpartySignature, borrower),
+                Fee(env.current()->fees().base * 5),
+                kPaymentTotal(kTotal),
+                kPaymentInterval(kInterval),
+                Ter(expected));
+            env.close();
+        };
+
+        // 1. Rejected during Subscription: the broker is created in
+        // Subscription (skipPhaseAdvance = true), then LoanSet is attempted
+        // before advancing past SubscriptionDate.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            auto const broker = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                BrokerParameters{.vaultKind = VaultKind::ClosedEnded, .skipPhaseAdvance = true});
+            setLoan(env, broker, tecTOO_SOON);
+        });
+
+        // 2. Rejected during Redemption: broker is set up normally (which
+        // lands the vault in Investment), then advance the clock past
+        // RedemptionDate before attempting LoanSet.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            auto const broker = createVaultAndBroker(
+                env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
+            BEAST_EXPECT(broker.redemptionDate.has_value());
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            env.close(tp{d{*broker.redemptionDate + 1}});
+            setLoan(env, broker, tecEXPIRED);
+        });
+
+        // 3. Accepted during Investment when the schedule comfortably fits
+        // before RedemptionDate.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            auto const broker = createVaultAndBroker(
+                env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
+            setLoan(env, broker, tesSUCCESS);
+        });
+
+        // 4. Rejected during Investment when the loan's final payment would
+        // land on or after RedemptionDate. Use a tight redemptionOffset and
+        // a schedule whose final payment is well past that boundary.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            constexpr std::uint32_t kRedemptionOffset = 3u * 24u * 3600u;
+            auto const broker = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                BrokerParameters{
+                    .vaultKind = VaultKind::ClosedEnded, .redemptionOffset = kRedemptionOffset});
+            env(set(lender, broker.brokerID, broker.asset(100).value()),
+                kCounterparty(borrower),
+                Sig(sfCounterpartySignature, borrower),
+                Fee(env.current()->fees().base * 5),
+                kPaymentTotal(10u),
+                kPaymentInterval(kInterval),
+                Ter(tecNO_PERMISSION));
+            env.close();
+        });
+
+        // 5. Boundary: schedule whose finalPayment lands exactly
+        // (RedemptionDate - 1) is accepted, and one second later
+        // (== RedemptionDate) is rejected. Uses payTotal = 1 so the
+        // arithmetic is simple: finalPayment = startDate + interval.
+        withEnv([&](Env& env, PrettyAsset const& asset) {
+            auto const broker = createVaultAndBroker(
+                env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
+            BEAST_EXPECT(broker.redemptionDate.has_value());
+
+            auto const startDate = env.now().time_since_epoch().count();
+            auto const acceptInterval = *broker.redemptionDate - 1 - startDate;
+            env(set(lender, broker.brokerID, broker.asset(100).value()),
+                kCounterparty(borrower),
+                Sig(sfCounterpartySignature, borrower),
+                Fee(env.current()->fees().base * 5),
+                kPaymentTotal(1u),
+                kPaymentInterval(acceptInterval),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const rejectInterval =
+                *broker.redemptionDate - env.now().time_since_epoch().count();
+            env(set(lender, broker.brokerID, broker.asset(100).value()),
+                kCounterparty(borrower),
+                Sig(sfCounterpartySignature, borrower),
+                Fee(env.current()->fees().base * 5),
+                kPaymentTotal(1u),
+                kPaymentInterval(rejectInterval),
+                Ter(tecNO_PERMISSION));
+            env.close();
+        });
+    }
+
     void
     testLifecycle(FeatureBitset features)
     {
@@ -4441,9 +4625,11 @@ protected:
     }
 
     void
-    testInvalidLoanSet()
+    testInvalidLoanSet(VaultKind vaultKind)
     {
-        testcase("Invalid LoanSet");
+        testcase(
+            std::string("Invalid LoanSet (") +
+            (vaultKind == VaultKind::OpenEnded ? "open-ended" : "closed-ended") + " vault)");
         using namespace jtx;
         using namespace loan;
         Account const lender{"lender"};
@@ -4457,7 +4643,8 @@ protected:
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
-            BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+            BrokerInfo const brokerInfo{
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -9534,7 +9721,9 @@ protected:
     runAmendmentIndependent()
     {
         testDisabled();
-        testInvalidLoanSet();
+        for (auto const kind : {VaultKind::OpenEnded, VaultKind::ClosedEnded})
+            testInvalidLoanSet(kind);
+        testLoanSetClosedEnded();
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();

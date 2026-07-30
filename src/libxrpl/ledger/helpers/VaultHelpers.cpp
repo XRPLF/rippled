@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -155,6 +156,31 @@ getVaultVersion(SLE::const_ref vault)
         // LCOV_EXCL_STOP
     }
     return static_cast<VaultVersion>(version);
+}
+
+[[nodiscard]] VaultKind
+getVaultKind(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
+    if (vault->isFieldPresent(sfVaultKind) &&
+        vault->at(sfVaultKind) == std::to_underlying(VaultKind::ClosedEnded))
+        return VaultKind::ClosedEnded;
+    return VaultKind::OpenEnded;
+}
+
+[[nodiscard]] VaultPhase
+getVaultPhase(ReadView const& view, SLE::const_ref vault)
+{
+    if (getVaultKind(vault) == VaultKind::OpenEnded)
+        return VaultPhase::NoPhase;
+
+    // Subscription includes now == SubscriptionDate; Investment starts
+    // strictly after SubscriptionDate.
+    if (!hasExpired(view, vault->at(sfSubscriptionDate), ExpiryComparison::Exclusive))
+        return VaultPhase::Subscription;
+    if (!hasExpired(view, vault->at(sfRedemptionDate)))
+        return VaultPhase::Investment;
+    return VaultPhase::Redemption;
 }
 
 }  // namespace xrpl

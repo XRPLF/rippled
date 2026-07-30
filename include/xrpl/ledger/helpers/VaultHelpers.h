@@ -123,4 +123,26 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault);
 
+/**
+ * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
+ * sfVaultKind is present and equal to that value; anything else (including an
+ * absent field or an unrecognised value) is treated as VaultKind::OpenEnded.
+ *
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] VaultKind
+getVaultKind(SLE::const_ref vault);
+
+/**
+ * Returns the current lifecycle phase of a vault (XLS-103 2.2). Open-ended
+ * vaults are always NoPhase. For closed-ended vaults the phase is derived
+ * from the parent ledger close time and the vault's immutable
+ * SubscriptionDate and RedemptionDate.
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] VaultPhase
+getVaultPhase(ReadView const& view, SLE::const_ref vault);
+
 }  // namespace xrpl

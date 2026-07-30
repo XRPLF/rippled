@@ -1177,6 +1177,20 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
                 break;
+            case ltVAULT:
+                /*
+                 * The VaultKind, SubscriptionDate and RedemptionDate
+                 * fields are introduced by featureLendingProtocolV1_1
+                 * and are the only vault fields whose immutability is
+                 * enforced here; pre-V1_1 vaults do not carry them.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocolV1_1);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex) ||
+                    kFieldChanged(before, after, sfVaultKind) ||
+                    kFieldChanged(before, after, sfSubscriptionDate) ||
+                    kFieldChanged(before, after, sfRedemptionDate);
+                break;
             default:
                 /*
                  * We check this invariant regardless of lending protocol

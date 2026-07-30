@@ -26,6 +26,12 @@ Vault::create(CreateArgs const& args) const
     jv[jss::Asset] = toJson(args.asset);
     if (args.flags)
         jv[jss::Flags] = *args.flags;
+    if (args.vaultKind)
+        jv[sfVaultKind] = *args.vaultKind;
+    if (args.subscriptionDate)
+        jv[sfSubscriptionDate] = *args.subscriptionDate;
+    if (args.redemptionDate)
+        jv[sfRedemptionDate] = *args.redemptionDate;
     return {jv, keylet};
 }
 

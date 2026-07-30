@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -29,6 +30,19 @@
 
 namespace xrpl {
 
+namespace {
+
+// True iff the recorded sfVaultKind identifies a closed-ended vault.
+// Centralizes the presence + enum-value check used by the phase-gate
+// invariants below.
+[[nodiscard]] bool
+isClosedEnded(std::optional<std::uint8_t> const& vaultKind)
+{
+    return vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded);
+}
+
+}  // namespace
+
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
 {
@@ -44,6 +58,9 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.vaultKind = from[~sfVaultKind];
+    self.subscriptionDate = from[~sfSubscriptionDate];
+    self.redemptionDate = from[~sfRedemptionDate];
     return self;
 }
 
@@ -252,6 +269,31 @@ bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
     return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+}
+
+bool
+ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
+{
+    auto const& afterVault = afterVault_[0];
+
+    // XLS-103 3.5.4: loan origination against a closed-ended vault is only
+    // permitted while the vault is in the Investment phase — strictly past
+    // SubscriptionDate and before RedemptionDate. Open-ended vaults have
+    // NoPhase and are unaffected.
+    if (!isClosedEnded(afterVault.vaultKind))
+        return true;
+
+    bool const inInvestment =
+        hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive) &&
+        !hasExpired(view, afterVault.redemptionDate);
+    if (!inInvestment)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan origination only allowed in Investment phase";
+        return false;
+    }
+
+    return true;
 }
 
 std::int32_t
@@ -514,6 +556,9 @@ ValidVault::finalize(
         result = false;
     }
 
+    // Immutability of VaultKind, SubscriptionDate and RedemptionDate is
+    // enforced by NoModifiedUnmodifiableFields in InvariantCheck.cpp.
+
     auto const beforeShares = [&]() -> std::optional<Shares> {
         if (beforeVault_.empty())
             return std::nullopt;
@@ -600,6 +645,30 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                if (isClosedEnded(afterVault.vaultKind))
+                {
+                    if (!afterVault.subscriptionDate || !afterVault.redemptionDate)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault must have SubscriptionDate "
+                               "and RedemptionDate";
+                        result = false;
+                    }
+                    else if (
+                        *afterVault.redemptionDate <= *afterVault.subscriptionDate ||
+                        *afterVault.redemptionDate - *afterVault.subscriptionDate <
+                            kMinInvestmentPeriod ||
+                        *afterVault.redemptionDate - *afterVault.subscriptionDate >=
+                            kMaxInvestmentPeriod)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault RedemptionDate - "
+                               "SubscriptionDate must be within [MIN_INVESTMENT_PERIOD, "
+                               "MAX_INVESTMENT_PERIOD)";
+                        result = false;
+                    }
+                }
+
                 return result;
             }
             case ttVAULT_SET: {
@@ -659,6 +728,18 @@ ValidVault::finalize(
                 XRPL_ASSERT(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
+
+                // Deposit is only allowed while the vault is in NoPhase or
+                // Subscription; reject if a closed-ended vault is strictly
+                // past SubscriptionDate.
+                if (isClosedEnded(afterVault.vaultKind) &&
+                    hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive))
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: deposit only allowed in "
+                        "Subscription or NoPhase";
+                    result = false;
+                }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -797,6 +878,19 @@ ValidVault::finalize(
                     !beforeVault_.empty(),
                     "xrpl::ValidVault::finalize : withdrawal updated a vault");
                 auto const& beforeVault = beforeVault_[0];
+
+                // Withdrawal from a closed-ended vault is not allowed during
+                // the Investment phase (strictly past SubscriptionDate,
+                // before RedemptionDate).
+                if (isClosedEnded(afterVault.vaultKind) &&
+                    hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive) &&
+                    !hasExpired(view, afterVault.redemptionDate))
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: withdrawal not allowed during "
+                        "Investment phase";
+                    result = false;
+                }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1046,6 +1140,7 @@ ValidVault::finalize(
             }
 
             case ttLOAN_SET:
+                return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 return true;

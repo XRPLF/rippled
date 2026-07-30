@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -307,6 +308,23 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Subscription)
+            return tecTOO_SOON;
+        if (phase == VaultPhase::Redemption)
+            return tecEXPIRED;
+        if (phase == VaultPhase::Investment)
+        {
+            auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
+            auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
+            auto const finalPayment = getStartDate(ctx.view) + (interval * total);
+            if (finalPayment >= vault->at(sfRedemptionDate))
+                return tecNO_PERMISSION;
+        }
     }
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
