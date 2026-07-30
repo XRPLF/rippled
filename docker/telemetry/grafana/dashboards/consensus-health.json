@@ -21,7 +21,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -45,7 +46,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -67,7 +68,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -81,10 +83,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: proposals/s",
           "custom": {
             "axisLabel": "Proposals / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -106,7 +108,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -123,7 +126,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -159,7 +162,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "suffix: validations/s"
         },
         "overrides": []
       }
@@ -190,12 +193,19 @@
           "legendFormat": "P50 Apply Duration [{{service_instance_id}}]"
         }
       ],
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -223,12 +233,19 @@
           "legendFormat": "Close Time Correct={{close_time_correct}} [{{service_instance_id}}]"
         }
       ],
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: rounds/s",
           "custom": {
             "axisLabel": "Rounds / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -250,7 +267,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -264,10 +282,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: closes/s",
           "custom": {
-            "axisLabel": "Events / Sec",
-            "spanNulls": true,
+            "axisLabel": "Closes / Sec",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -289,7 +307,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -310,10 +329,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
             "axisLabel": "Events / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -335,7 +354,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -356,10 +376,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: events/s",
           "custom": {
             "axisLabel": "Events / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -381,7 +401,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "yAxis": {
           "axisLabel": "Duration (ms)",
@@ -400,7 +421,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "ms",
+          "custom": {
+            "spanNulls": 1800000
+          }
         }
       }
     },
@@ -418,6 +442,7 @@
         "defaults": {
           "unit": "dateTimeFromNow",
           "custom": {
+            "spanNulls": 1800000,
             "drawStyle": "points",
             "pointSize": 6,
             "showPoints": "always"
@@ -428,7 +453,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -461,6 +487,7 @@
         "defaults": {
           "unit": "dateTimeFromNow",
           "custom": {
+            "spanNulls": 1800000,
             "drawStyle": "points",
             "pointSize": 6,
             "showPoints": "always"
@@ -471,7 +498,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -503,6 +531,7 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
+            "spanNulls": 1800000,
             "drawStyle": "line",
             "lineInterpolation": "stepAfter",
             "pointSize": 5,
@@ -547,7 +576,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -587,6 +617,7 @@
       "fieldConfig": {
         "defaults": {
           "custom": {
+            "spanNulls": 1800000,
             "drawStyle": "bars",
             "fillOpacity": 40,
             "pointSize": 5,
@@ -598,7 +629,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -631,6 +663,7 @@
         "defaults": {
           "unit": "short",
           "custom": {
+            "spanNulls": 1800000,
             "fillOpacity": 60
           }
         },
@@ -639,7 +672,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -710,7 +744,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -731,10 +766,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: failures/s",
           "custom": {
             "axisLabel": "Failures / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -756,7 +791,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -780,7 +816,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -802,7 +838,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -826,7 +863,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -848,7 +885,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -872,7 +910,7 @@
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -894,7 +932,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -915,10 +954,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: checks/s",
           "custom": {
             "axisLabel": "Checks / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -940,7 +979,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -954,10 +994,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "suffix: changes/s",
           "custom": {
-            "axisLabel": "Mode Changes / Sec",
-            "spanNulls": true,
+            "axisLabel": "Changes / Sec",
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3

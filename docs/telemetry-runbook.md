@@ -667,7 +667,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | ---------------------------------- | -------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Transaction Processing Rate        | timeseries     | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                                     | —                                   |
-| Transaction Path Distribution      | piechart       | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))`                | `local`                             |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))`            | `local`                             |
 | Transaction Receive vs Suppressed  | timeseries     | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                                 | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                                      | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                               | —                                   |
@@ -707,12 +707,12 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
-| Panel                            | Type       | PromQL                         | Labels Used          |
-| -------------------------------- | ---------- | ------------------------------ | -------------------- |
-| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate   | —                    |
-| Validation Receive Rate          | timeseries | `peer.validation.receive` rate | —                    |
-| Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
-| Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
+| Panel                            | Type       | PromQL                                                                    | Labels Used          |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------- | -------------------- |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate                                              | —                    |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate                                            | —                    |
+| Proposals Trusted vs Untrusted   | piechart   | `increase()` counts in the selected window, split by `proposal_trusted`   | `proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | `increase()` counts in the selected window, split by `validation_trusted` | `validation_trusted` |
 
 ### Node Health -- StatsD (`xrpld-statsd-node-health`)
 
