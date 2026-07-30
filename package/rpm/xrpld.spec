@@ -62,6 +62,8 @@ install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/lo
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
 install -Dm0644 %{_sourcedir}/README.md  %{buildroot}%{_docdir}/%{name}/README.md
+# Upstream notice for the bundled validator-keys tool.
+install -Dm0644 %{_sourcedir}/validator-keys-LICENSE %{buildroot}%{_docdir}/%{name}/validator-keys-LICENSE
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
@@ -83,6 +85,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 
 %files
 %license %{_docdir}/%{name}/LICENSE.md
+%license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
 
 %dir %{_sysconfdir}/%{name}

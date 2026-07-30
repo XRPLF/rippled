@@ -33,5 +33,11 @@ if(validator_keys)
     # We ship this binary, so like xrpld it must not keep the Nix store's ELF
     # loader, or it cannot run on the target distro at all.
     patch_nix_binary(validator-keys)
+
+    configure_file(
+        "${validator_keys_SOURCE_DIR}/LICENSE"
+        "${CMAKE_BINARY_DIR}/validator-keys-LICENSE"
+        COPYONLY
+    )
     install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

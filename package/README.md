@@ -202,7 +202,8 @@ service restart.
 ### DEB
 
 1. Creates a staging source tree at `debbuild/source/` inside the build directory.
-2. Stages the binaries, configs, `README.md`, and `LICENSE.md`.
+2. Stages the binaries, configs, `README.md`, `LICENSE.md`, and
+   `validator-keys-LICENSE`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,

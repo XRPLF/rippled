@@ -94,6 +94,16 @@ if [[ ${#missing[@]} -gt 0 ]]; then
     exit 1
 fi
 
+# Shipping validator-keys means shipping its notice, so treat it as required
+# rather than letting a package go out without the attribution.
+validator_keys_license="${BUILD_DIR}/validator-keys-LICENSE"
+if [[ ! -f "${validator_keys_license}" ]]; then
+    echo "build_pkg.sh: missing ${validator_keys_license}." >&2
+    echo "cmake/XrplValidatorKeys.cmake copies it out of the fetched" >&2
+    echo "validator-keys-tool source, so reconfigure with -Dvalidator_keys=ON." >&2
+    exit 1
+fi
+
 # The binary must also *run* here. Packaging happens in a vanilla distro
 # container, so this is what catches a binary still pointing at the Nix store's
 # ELF loader (see patch_nix_binary in cmake/PatchNixBinary.cmake); xrpld is
@@ -174,6 +184,7 @@ stage_common() {
 
     cp "${xrpld_binary}" "${dest}/xrpld"
     cp "${validator_keys_binary}" "${dest}/validator-keys"
+    cp "${validator_keys_license}" "${dest}/validator-keys-LICENSE"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"
