@@ -17,8 +17,10 @@ fee-payer and sequencing forks are read from the same AST. See DESIGN.md.
 
 from __future__ import annotations
 
+import functools
 import json
 import shlex
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -89,6 +91,69 @@ def _resource_dir(dylib: Path) -> str | None:
     return str(versions[-1]) if versions else None
 
 
+# Suffix clang appends to framework entries in its verbose search list. Those
+# need -iframework rather than -isystem, which is how the macOS SDK is reached.
+_FRAMEWORK_SUFFIX = "(framework directory)"
+
+# Verbose-search-list delimiters. Only the angle-bracket section matters: the
+# quoted section above it is per-file and already implied by the DB's -I flags.
+_SEARCH_LIST_START = "#include <...> search starts here:"
+_SEARCH_LIST_END = "End of search list."
+
+
+@functools.lru_cache(maxsize=None)
+def _driver_search_paths(compiler: str, directory: str) -> tuple[tuple[str, str], ...]:
+    """Ask the real compiler which include paths its driver adds implicitly.
+
+    compile_commands.json records only the flags the build system passed. The
+    C++ standard library is not among them: the clang *driver* injects it at
+    invocation time by probing for a GCC installation relative to its own
+    binary, and under nix via a wrapper script that sets NIX_CFLAGS_COMPILE.
+    libclang is driven through ctypes, so it does none of that and cannot
+    resolve <cstdlib> — the parse then fails, or worse, degrades.
+
+    -resource-dir does not cover this. That supplies clang's *builtin* headers
+    (stddef.h and friends); the standard library is a separate search path.
+
+    Replaying the driver's own answer keeps this portable across Homebrew LLVM,
+    nix, and distro clang rather than hardcoding any one layout. Returns
+    (flag, path) pairs. Empty when the probe fails, leaving the caller's
+    parse-error check to report a degraded AST rather than guessing at a cause.
+    """
+    try:
+        proc = subprocess.run(
+            [compiler, "-E", "-x", "c++", "-v", "-"],
+            input="",
+            capture_output=True,
+            text=True,
+            cwd=directory,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ()
+
+    paths: list[tuple[str, str]] = []
+    collecting = False
+    # The search list goes to stderr, interleaved with the driver's banner.
+    for line in proc.stderr.splitlines():
+        if line.startswith(_SEARCH_LIST_START):
+            collecting = True
+            continue
+        if not collecting:
+            continue
+        if line.startswith(_SEARCH_LIST_END):
+            break
+        candidate = line.strip()
+        flag = "-isystem"
+        if candidate.endswith(_FRAMEWORK_SUFFIX):
+            candidate = candidate[: -len(_FRAMEWORK_SUFFIX)].strip()
+            flag = "-iframework"
+        # Clang lists paths that do not exist; passing them through is noise.
+        if candidate and Path(candidate).is_dir():
+            paths.append((flag, candidate))
+    return tuple(paths)
+
+
 def _find_tu_entry(build_dir: Path) -> dict:
     db_path = build_dir / "compile_commands.json"
     if not db_path.exists():
@@ -122,6 +187,11 @@ def _parse_args(entry: dict, resource_dir: str | None) -> list[str]:
     args += ["-working-directory", entry["directory"]]
     if resource_dir:
         args += ["-resource-dir", resource_dir]
+    # Appended last so the DB's own -I paths keep priority: these are the
+    # driver-implicit system paths, which is where the C++ standard library
+    # lives and which the DB never records.
+    for flag, path in _driver_search_paths(tokens[0], entry["directory"]):
+        args += [flag, path]
     return args
 
 
