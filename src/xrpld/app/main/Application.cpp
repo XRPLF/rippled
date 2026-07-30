@@ -1176,27 +1176,55 @@ private:
     startGenesisLedger();
 
     /**
-     * Start the tracing and metrics pipelines.
+     * Start the tracing pipeline and the metrics provider and synchronous
+     * instruments. First of the two telemetry startup phases.
      *
-     * Called once from setup(), just before the [rpc_startup] loop. Starting
-     * here (rather than in start()) guarantees the OTel MeterProvider is live
-     * before any metric-emitting code runs — including startup RPCs, whose
-     * PerfLog instrumentation records a call-site metric. A call-site metric
-     * macro caches its instrument on first use via std::call_once; if that
-     * first use happens while the meter is still empty, the instrument latches
-     * null for the process lifetime and the metric silently never records.
+     * Called once from setup(), immediately after metricsRegistry_ is
+     * constructed. Starting here (rather than in start()) guarantees the OTel
+     * MeterProvider is live before any metric-emitting code runs — including
+     * the first consensus round, which records a mode-transition counter, and
+     * the startup RPCs, whose PerfLog instrumentation records a call-site
+     * metric. A call-site metric macro caches its instrument on first use via
+     * std::call_once; if that first use happens while the meter is still
+     * empty, the instrument latches null for the process lifetime and the
+     * metric silently never records.
      *
-     * The call site sits after overlay_ and the other subsystems are
-     * constructed, because the metrics reader thread starts here and its
-     * observable-gauge callbacks read that state (e.g. getOverlay()); starting
-     * earlier would let the reader observe a half-built application.
+     * Rule for keeping this call site valid: only telemetry work that reads
+     * NO application subsystem may run here. That holds today — this phase
+     * uses the config strings and the node identity, and creates only
+     * push-model counters and histograms, which app code records into once
+     * it is ready. Anything that registers a callback reading a subsystem
+     * must go in startTelemetryGauges() instead, because a callback
+     * registered here can fire on the metrics reader thread while the rest of
+     * the application is still being built.
      *
      * @pre nodeIdentity_ is populated (needed for the service_instance_id
-     * fallback), metricsRegistry_ is constructed, and overlay_ (and the other
-     * subsystems read by observable-gauge callbacks) are constructed.
+     * fallback) and metricsRegistry_ is constructed.
      */
     void
     startTelemetry();
+
+    /**
+     * Register the pull-model observable instruments. Second telemetry phase.
+     *
+     * Called once from setup(), immediately after overlay_ is constructed.
+     * Registering an observable instrument arms the metrics reader thread to
+     * invoke its callback, and those callbacks read application services —
+     * getOverlay() asserts overlay_ is non-null, and an assert is not caught
+     * by the callbacks' own try/catch — so this cannot run as early as
+     * startTelemetry().
+     *
+     * @pre startTelemetry() has run, and every service the callbacks read is
+     * constructed. overlay_ is the binding one: the rest (networkOPs_,
+     * ledgerMaster_, openLedger_, txQ_, nodeStore_, nodeFamily_,
+     * validators_, acceptedLedgerCache_, cachedSLEs_, acquireStats_,
+     * timeKeeper_, relationalDatabase_, inboundLedgers_, feeTrack_) are
+     * already live by the time startTelemetry() is callable, and
+     * overlay_ is the only one built after it. See
+     * MetricsRegistry::startAsyncGauges() for the full list.
+     */
+    void
+    startTelemetryGauges();
 
     std::shared_ptr<Ledger>
     getLastFullLedger();
@@ -1382,10 +1410,17 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
     // Create the OTel MetricsRegistry for gap-fill metrics (counters,
-    // histograms, observable gauges).  It is started later, just before the
-    // [rpc_startup] loop (see startTelemetry()).
+    // histograms, observable gauges).
     metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
         telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
+
+    // Start tracing and the metrics provider right away, so the meter exists
+    // before anything records a metric. beginConsensus() below emits a
+    // mode-transition counter, and it is the only mode transition the process
+    // ever makes — a meter created after it would lose that series entirely.
+    // Only the observable gauges have to wait; they are registered by
+    // startTelemetryGauges() once overlay_ exists.
+    startTelemetry();
 
     if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
@@ -1462,6 +1497,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         collectorManager_->collector());
     add(*overlay_);  // add to PropertyStream
 
+    // Register the observable instruments now that overlay_ exists. This arms
+    // the metrics reader thread to invoke their callbacks, several of which
+    // read getOverlay() — registering earlier would let the reader observe a
+    // half-built application. The reader thread itself already started in
+    // startTelemetry() above; this is as early as the callbacks can safely be
+    // attached, and it is still before beginConsensus() so the gauges cover
+    // the first round.
+    startTelemetryGauges();
+
     // start first consensus round
     if (!networkOPs_->beginConsensus(ledgerMaster_->getClosedLedger()->header().hash, {}))
     {
@@ -1527,16 +1571,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                                  "please migrate to a";
         JLOG(journal_.warn()) << "*** standalone signing solution as soon as possible.";
     }
-
-    // Start telemetry and metrics now — before the [rpc_startup] loop below —
-    // so the OTel meter is live before any metric-emitting code runs. Startup
-    // RPCs invoke PerfLog instrumentation that records a call-site metric; a
-    // metric macro caches its instrument on first use, so a first use before
-    // the meter exists would latch null for the process lifetime. Placed here,
-    // after overlay_ and the other subsystems the observable-gauge callbacks
-    // read are constructed, so the metrics reader thread never observes a
-    // half-built application.
-    startTelemetry();
 
     //
     // Execute start up rpc commands.
@@ -1634,6 +1668,13 @@ ApplicationImp::startTelemetry()
 
         metricsRegistry_->start(endpoint, instanceId);
     }
+}
+
+void
+ApplicationImp::startTelemetryGauges()
+{
+    if (metricsRegistry_)
+        metricsRegistry_->startAsyncGauges();
 }
 
 void
