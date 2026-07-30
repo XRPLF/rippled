@@ -10,7 +10,7 @@
   "links": [],
   "panels": [
     {
-      "title": "Ledger Data — Ledger",
+      "title": "Ledger Data \u2014 Ledger",
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -57,7 +57,7 @@
       "id": 1
     },
     {
-      "title": "Ledger Data — Transaction",
+      "title": "Ledger Data \u2014 Transaction",
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -116,7 +116,7 @@
       "id": 2
     },
     {
-      "title": "Ledger Data — Account State",
+      "title": "Ledger Data \u2014 Account State",
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -163,7 +163,7 @@
       "id": 3
     },
     {
-      "title": "Ledger Traffic — Ledger",
+      "title": "Ledger Traffic \u2014 Ledger",
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -210,7 +210,7 @@
       "id": 4
     },
     {
-      "title": "Ledger Traffic — Transaction",
+      "title": "Ledger Traffic \u2014 Transaction",
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -269,7 +269,7 @@
       "id": 5
     },
     {
-      "title": "Ledger Traffic — Account State",
+      "title": "Ledger Traffic \u2014 Account State",
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -316,7 +316,7 @@
       "id": 6
     },
     {
-      "title": "GetObject — Ledger",
+      "title": "GetObject \u2014 Ledger",
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -363,7 +363,7 @@
       "id": 7
     },
     {
-      "title": "GetObject — Transaction",
+      "title": "GetObject \u2014 Transaction",
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -422,7 +422,7 @@
       "id": 8
     },
     {
-      "title": "GetObject — Account State",
+      "title": "GetObject \u2014 Account State",
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -469,7 +469,7 @@
       "id": 9
     },
     {
-      "title": "GetObject Messages — Ledger",
+      "title": "GetObject Messages \u2014 Ledger",
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -510,7 +510,7 @@
       "id": 10
     },
     {
-      "title": "GetObject Messages — Transaction",
+      "title": "GetObject Messages \u2014 Transaction",
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -557,7 +557,7 @@
       "id": 11
     },
     {
-      "title": "GetObject Messages — Account State",
+      "title": "GetObject Messages \u2014 Account State",
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -598,7 +598,7 @@
       "id": 12
     },
     {
-      "title": "GetObject Messages — Specials",
+      "title": "GetObject Messages \u2014 Specials",
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -651,7 +651,7 @@
       "id": 13
     },
     {
-      "title": "GetObject — Specials",
+      "title": "GetObject \u2014 Specials",
       "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
@@ -1254,9 +1254,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "µs",
+          "unit": "\u00b5s",
           "custom": {
-            "axisLabel": "Latency (µs/read)",
+            "axisLabel": "Latency (\u00b5s/read)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1545,7 +1545,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 115
+        "y": 121
       },
       "collapsed": false,
       "panels": [],
@@ -1553,13 +1553,13 @@
     },
     {
       "title": "Job Queue Backlog and Deferred by Type",
-      "description": "###### What this is:\n*Per-job-type queue depth, two series per type. Waiting is the whole backlog: every job enqueued for that type that has not started yet. Deferred is the subset of that backlog that is blocked specifically because the type is already running at its concurrency limit. Deferred is the leading indicator of backpressure, because JobQueue::addJob never rejects a job for queue pressure -- it returns success and defers instead, so a capped type under pressure produces no error and no dropped work. Without these the only evidence is latency, which appears after the harm is already done.*\n\n###### How it's computed:\n*Two targets, each the top 10 gauges by current value: jobq_<jobtype>_waiting and jobq_<jobtype>_deferred. JobQueue::collect snapshots both counters under the one lock that guards them, so the pair is read at the same instant and is directly comparable, then publishes them on the 10-second export cycle. Gauges exist only for non-special job types, so the 11 special types -- the ones declared with a limit of 0, which bypass the limit logic entirely and therefore never defer -- do not appear on either series.*\n\n###### Reading it:\n*Read the two together; the ratio is the diagnostic, not either value alone. Deferred is always a subset of waiting, because addRefCountedJob increments waiting for every job and deferred only for the ones that arrive while the type is at its limit. Waiting high with deferred at zero means the type has spare slots and the backlog is just arrival burstiness -- it will drain without intervention. Waiting high with deferred also high means the concurrency limit is the binding constraint, not the work. Both near zero is the normal state. These are depths, not rates: the value is how many jobs are queued right now. finishJob drains deferred one per completion, so a deferred line that stays elevated means arrivals are outpacing completions rather than one isolated burst. Only the 10 highest series per state are drawn, which on an idle node is arbitrary among the zeros and under load is exactly the types under pressure.*\n\n###### Healthy range:\n*Deferred zero on all types. Waiting near zero, with brief spikes during ledger close.*\n\n###### Watch for:\n*ledgerrequest deferred above zero: the 3-slot ledgerRequest queue is full, so TMGetLedger service to syncing peers is being delayed. Use LedgerReq Wait by Handler next to see which of its two producers is responsible. ledgerdata or fetchtxndata deferred: inbound ledger data cannot be absorbed fast enough, which is what makes validated ledger age grow. A waiting line that climbs steadily while deferred stays flat points at the worker pool or at slow jobs rather than at the limit. Note both are sampled once per export cycle, so a sub-second spike can be missed; a reading of zero is not proof that nothing was ever queued or deferred.*\n\n###### Keywords:\n- **Deferred job** *(per node)* — a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n- **Concurrency limit** *(per node)* — the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* — xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::addRefCountedJob / JobQueue::collect`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#deferred-job)",
+      "description": "###### What this is:\n*Per-job-type queue depth, two series per type. Waiting is the whole backlog: every job enqueued for that type that has not started yet. Deferred is the subset of that backlog that is blocked specifically because the type is already running at its concurrency limit. Deferred is the leading indicator of backpressure, because JobQueue::addJob never rejects a job for queue pressure -- it returns success and defers instead, so a capped type under pressure produces no error and no dropped work. Without these the only evidence is latency, which appears after the harm is already done.*\n\n###### How it's computed:\n*Two targets, each the top 10 gauges by current value: jobq_<jobtype>_waiting and jobq_<jobtype>_deferred. JobQueue::collect snapshots both counters under the one lock that guards them, so the pair is read at the same instant and is directly comparable, then publishes them on the 10-second export cycle. Gauges exist only for non-special job types, so the 11 special types -- the ones declared with a limit of 0, which bypass the limit logic entirely and therefore never defer -- do not appear on either series.*\n\n###### Reading it:\n*Read the two together; the ratio is the diagnostic, not either value alone. Deferred is always a subset of waiting, because addRefCountedJob increments waiting for every job and deferred only for the ones that arrive while the type is at its limit. Waiting high with deferred at zero means the type has spare slots and the backlog is just arrival burstiness -- it will drain without intervention. Waiting high with deferred also high means the concurrency limit is the binding constraint, not the work. Both near zero is the normal state. These are depths, not rates: the value is how many jobs are queued right now. finishJob drains deferred one per completion, so a deferred line that stays elevated means arrivals are outpacing completions rather than one isolated burst. Only the 10 highest series per state are drawn, which on an idle node is arbitrary among the zeros and under load is exactly the types under pressure.*\n\n###### Healthy range:\n*Deferred zero on all types. Waiting near zero, with brief spikes during ledger close.*\n\n###### Watch for:\n*ledgerrequest deferred above zero: the 3-slot ledgerRequest queue is full, so TMGetLedger service to syncing peers is being delayed. Use LedgerReq Wait by Handler next to see which of its two producers is responsible. ledgerdata or fetchtxndata deferred: inbound ledger data cannot be absorbed fast enough, which is what makes validated ledger age grow. A waiting line that climbs steadily while deferred stays flat points at the worker pool or at slow jobs rather than at the limit. Note both are sampled once per export cycle, so a sub-second spike can be missed; a reading of zero is not proof that nothing was ever queued or deferred.*\n\n###### Keywords:\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n- **Concurrency limit** *(per node)* \u2014 the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::addRefCountedJob / JobQueue::collect`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#deferred-job)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 116
+        "y": 122
       },
       "options": {
         "tooltip": {
@@ -1602,13 +1602,13 @@
     },
     {
       "title": "LedgerReq Wait by Handler",
-      "description": "###### What this is:\n*Queue wait for the ledgerRequest job type, split by which handler enqueued the job. The type has a concurrency limit of 3 and two producers that compete for those slots: RcvGetLedger, which serves TMGetLedger to syncing peers, and RcvGetObjByHash, which serves TMGetObjectByHash. Both report the same job_type, so without the handler split a wait spike cannot be attributed to either.*\n\n###### How it's computed:\n*p99 of job_queued_us for job_type=\"ledgerRequest\", grouped by the handler label. JobQueue::processTask measures the wait, then PerfLog hands it to MetricsRegistry::recordJobStarted, which is where the histogram is recorded. The handler value is the addJob name passed through a sanitizer that keeps letters-only names and folds everything else to \"other\", which bounds the label domain to 43 names plus \"other\". Both producers here are letters-only, so both appear under their own names; \"other\" is a mixed bucket and never means one specific caller.*\n\n###### Reading it:\n*This is the panel that answers which producer is starving the 3-slot queue. Both lines high together means the queue is genuinely oversubscribed and both kinds of peer request are being delayed. One line high while the other is flat means that producer is arriving faster than 3 concurrent slots can absorb, and it is the one delaying the other. Wait is queue time only, so a high line here is contention, not slow work; the work itself is on the GetObject Handler Latency Breakdown panel.*\n\n###### Healthy range:\n*Single-digit to low-tens of milliseconds p99 for both handlers, matching the wider Job Queue Wait p95 By Type panel.*\n\n###### Watch for:\n*RcvGetObjByHash wait climbing: one in-bounds TMGetObjectByHash request can perform thousands of NodeStore lookups, so a few concurrent ones occupy every slot and delay TMGetLedger to peers that are themselves syncing. Cross-check Job Queue Backlog and Deferred by Type for jobq_ledgerrequest_deferred above zero to confirm the limit, not the work, is the binding constraint.*\n\n###### Keywords:\n- **Handler label** *(per node)* — the addJob call-site name attached to job metrics, so producers sharing one job type stay separable.\n- **Concurrency limit** *(per node)* — the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* — xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`MetricsRegistry::recordJobStarted`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handler-label)",
+      "description": "###### What this is:\n*Queue wait for the ledgerRequest job type, split by which handler enqueued the job. The type has a concurrency limit of 3 and two producers that compete for those slots: RcvGetLedger, which serves TMGetLedger to syncing peers, and RcvGetObjByHash, which serves TMGetObjectByHash. Both report the same job_type, so without the handler split a wait spike cannot be attributed to either.*\n\n###### How it's computed:\n*p99 of job_queued_us for job_type=\"ledgerRequest\", grouped by the handler label. JobQueue::processTask measures the wait, then PerfLog hands it to MetricsRegistry::recordJobStarted, which is where the histogram is recorded. The handler value is the addJob name passed through a sanitizer that keeps letters-only names and folds everything else to \"other\", which bounds the label domain to 43 names plus \"other\". Both producers here are letters-only, so both appear under their own names; \"other\" is a mixed bucket and never means one specific caller.*\n\n###### Reading it:\n*This is the panel that answers which producer is starving the 3-slot queue. Both lines high together means the queue is genuinely oversubscribed and both kinds of peer request are being delayed. One line high while the other is flat means that producer is arriving faster than 3 concurrent slots can absorb, and it is the one delaying the other. Wait is queue time only, so a high line here is contention, not slow work; the work itself is on the GetObject Handler Latency Breakdown panel.*\n\n###### Healthy range:\n*Single-digit to low-tens of milliseconds p99 for both handlers, matching the wider Job Queue Wait p95 By Type panel.*\n\n###### Watch for:\n*RcvGetObjByHash wait climbing: one in-bounds TMGetObjectByHash request can perform thousands of NodeStore lookups, so a few concurrent ones occupy every slot and delay TMGetLedger to peers that are themselves syncing. Cross-check Job Queue Backlog and Deferred by Type for jobq_ledgerrequest_deferred above zero to confirm the limit, not the work, is the binding constraint.*\n\n###### Keywords:\n- **Handler label** *(per node)* \u2014 the addJob call-site name attached to job metrics, so producers sharing one job type stay separable.\n- **Concurrency limit** *(per node)* \u2014 the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`MetricsRegistry::recordJobStarted`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handler-label)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 116
+        "y": 122
       },
       "options": {
         "tooltip": {
@@ -1629,9 +1629,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "µs",
+          "unit": "\u00b5s",
           "custom": {
-            "axisLabel": "p99 Wait (µs)",
+            "axisLabel": "p99 Wait (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -1649,7 +1649,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 124
+        "y": 130
       },
       "collapsed": false,
       "panels": [],
@@ -1663,7 +1663,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 125
+        "y": 131
       },
       "options": {
         "tooltip": {
@@ -1735,7 +1735,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 125
+        "y": 131
       },
       "options": {
         "tooltip": {
@@ -1784,7 +1784,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 133
+        "y": 139
       },
       "options": {
         "tooltip": {
@@ -1844,7 +1844,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 133
+        "y": 139
       },
       "options": {
         "tooltip": {
@@ -1893,7 +1893,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 141
+        "y": 147
       },
       "options": {
         "tooltip": {
@@ -1949,7 +1949,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 141
+        "y": 147
       },
       "options": {
         "tooltip": {
@@ -1998,7 +1998,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 149
+        "y": 155
       },
       "options": {
         "tooltip": {
