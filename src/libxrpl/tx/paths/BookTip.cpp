@@ -56,8 +56,8 @@ BookTip::step(beast::Journal j)
             break;
         }
 
-        // There should never be an empty directory but just in case,
-        // we handle that case by advancing to the next directory.
+        // There should never be an empty directory, but if one is somehow
+        // reached, advance past it rather than treating it as the tip.
         book_ = *firstPage;
     }
 
