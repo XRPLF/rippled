@@ -35,6 +35,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/telemetry/Redaction.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
@@ -587,9 +588,13 @@ PathRequest::findPaths(
     // that a single RPC call produces one discover span instead of N (one per
     // candidate source asset). Trade-off: per-asset discovery/ranking timing
     // is no longer split into individual spans — span count and Tempo storage
-    // are bounded per RPC at the cost of per-asset visibility. If per-asset
-    // breakdown is needed in the future, add child spans inside the loop body
-    // (`Pathfinder::findPaths`/`computePathRanks`) parented off this span.
+    // are bounded per RPC at the cost of per-asset visibility.
+    //
+    // This is an unscoped guard: it takes the ambient span as its own parent,
+    // but does not itself become the ambient parent. Adding per-asset child
+    // spans inside the loop body therefore requires either making this a
+    // ScopedSpanGuard or passing its context explicitly via childSpan(); a
+    // child created here today would parent to this span's parent, not to it.
     using namespace telemetry;
     auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
@@ -744,7 +749,20 @@ PathRequest::doUpdate(
     auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
     span.setAttribute(pathfind_span::attr::fast, fast);
-    span.setAttribute(pathfind_span::attr::destCurrency, to_string(saDstAmount_.asset()).c_str());
+    // to_string(Issue) renders a non-XRP asset as "<issuer>/<currency>" with the
+    // issuer as a plaintext Base58 address, so it cannot be emitted as-is: every
+    // account reaching a span is hashed first. Redact just the issuer and keep
+    // the currency, which is what this attribute is for. An MPT asset renders as
+    // its issuance ID and carries no address, so it needs no redaction.
+    span.setAttribute(
+        pathfind_span::attr::destCurrency,
+        saDstAmount_.asset().visit(
+            [](Issue const& issue) {
+                return isXRP(issue.account)
+                    ? to_string(issue.currency)
+                    : redactAccount(toBase58(issue.account)) + "/" + to_string(issue.currency);
+            },
+            [](MPTIssue const& mpt) { return to_string(mpt.getMptID()); }));
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 
