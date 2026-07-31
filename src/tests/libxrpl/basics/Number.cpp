@@ -335,11 +335,11 @@ TEST(NumberTest, add)
                     __LINE__,
                 },
                 {
-                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // Does not round. Mantissas are going to be > kMaxRep, so if
                     // added together as uint64_t's, the result will overflow.
                     // With addition using uint128_t, there's no problem. After
                     // normalizing, the resulting mantissa ends up less than
-                    // maxRep.
+                    // kMaxRep.
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
@@ -1121,14 +1121,6 @@ TEST(NumberTest, root)
                 EXPECT_EQ(result, z) << ss.str();
             }
         };
-        /*
-        auto tests = [&](auto const& cSmall, auto const& cLarge) {
-            test(cSmall);
-            if (scale != MantissaRange::mantissa_scale::small)
-                test(cLarge);
-        };
-        */
-
         auto const cSmall = std::to_array<Case>(
             {{Number{2}, 2, Number{1414213562373095049, -18}},
              {Number{2'000'000}, 2, Number{1414213562373095049, -15}},
@@ -1554,7 +1546,7 @@ TEST(NumberTest, to_string)
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ(maxMantissa, (9'999'999'999'999'999));
+                    EXPECT_EQ(maxMantissa, 9'999'999'999'999'999);
                     test(
                         Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
                         "9999999999999999",
@@ -1593,7 +1585,7 @@ TEST(NumberTest, to_string)
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ((maxMantissa), (9'999'999'999'999'999'999ULL));
+                    EXPECT_EQ(maxMantissa, 9'999'999'999'999'999'999ULL);
                     test(
                         Number{false, maxMantissa, 0, Number::Normalized{}},
                         "9999999999999999990",
