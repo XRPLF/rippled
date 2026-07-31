@@ -27,11 +27,11 @@ namespace {
 std::vector<std::string>
 allBackends()
 {
-    std::vector<std::string> types{"memory", "nudb"};
 #if XRPL_ROCKSDB_AVAILABLE
-    types.emplace_back("rocksdb");
+    return {"memory", "nudb", "rocksdb"};
+#else
+    return {"memory", "nudb"};
 #endif
-    return types;
 }
 
 std::vector<std::string>
