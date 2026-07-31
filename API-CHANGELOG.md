@@ -53,7 +53,7 @@ This section contains changes targeting a future version.
 - `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
-- `log_level`: The `severity` and `partition` fields now return `invalidParams` if the value is not a string, and `partition` also rejects the empty string. Previously, arrays and objects returned an `internal` error, and numbers, booleans, and `null` were silently coerced — for `partition` this permanently created a log partition named after the coerced value. [#7922](https://github.com/XRPLF/rippled/pull/7922)
+- `log_level`: The `severity` and `partition` fields now return `invalidParams` if the value is not a string, and `partition` also rejects the empty string. Previously, arrays and objects returned an `internal` error, and numbers, booleans, and `null` were silently coerced — for `partition` this permanently created a log partition named after the coerced value. [#7923](https://github.com/XRPLF/rippled/pull/7923)
 
 ## XRP Ledger server version 3.1.0
 
