@@ -61,6 +61,7 @@
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
@@ -1131,6 +1132,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     if (s > 100)
         fee_.update(Resource::kFeeModerateBurdenPeer, "oversize");
 
+    // OverlayImpl::onManifests bounds the untrusted work and charges the fee
+    // if the untrusted count exceeds the per-message cap; trusted manifests
+    // are always processed and not counted against it.
     app_.getJobQueue().addJob(JtManifest, "RcvManifests", [this, that = shared_from_this(), m]() {
         overlay_.onManifests(m, that);
     });

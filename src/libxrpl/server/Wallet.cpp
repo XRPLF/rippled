@@ -78,7 +78,7 @@ getManifests(
 
             // Only trusted manifests are persisted (see saveManifests), so
             // anything loaded from the DB bypasses the untrusted cap.
-            cache.applyManifest(std::move(*mo), ManifestRateLimitCap::Uncapped);
+            cache.applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped);
         }
         else
         {

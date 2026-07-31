@@ -279,7 +279,7 @@ private:
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
             manifests.applyManifest(
-                *deserializeManifest(cfgManifest), ManifestRateLimitCap::Capped);
+                *deserializeManifest(cfgManifest), ManifestRateLimitCapPolicy::Capped);
             // NOLINTEND(bugprone-unchecked-optional-access)
             BEAST_EXPECT(
                 trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
@@ -372,7 +372,7 @@ private:
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
             manifests.applyManifest(
-                *deserializeManifest(cfgManifest), ManifestRateLimitCap::Capped);
+                *deserializeManifest(cfgManifest), ManifestRateLimitCapPolicy::Capped);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(trustedKeys->load(localSigningPublicOuter, cfgKeys, emptyCfgPublishers));
@@ -466,7 +466,7 @@ private:
                     pubRevokedSigning.first,
                     pubRevokedSigning.second,
                     std::numeric_limits<std::uint32_t>::max())),
-                ManifestRateLimitCap::Capped);
+                ManifestRateLimitCapPolicy::Capped);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             // these two are not revoked (and not in the manifest cache at all.)
@@ -508,7 +508,7 @@ private:
                     pubRevokedSigning.first,
                     pubRevokedSigning.second,
                     std::numeric_limits<std::uint32_t>::max())),
-                ManifestRateLimitCap::Capped);
+                ManifestRateLimitCapPolicy::Capped);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             // this one is not revoked (and not in the manifest cache at all.)
@@ -1174,7 +1174,7 @@ private:
 
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m1), ManifestRateLimitCap::Capped) ==
+                manifestsOuter.applyManifest(std::move(*m1), ManifestRateLimitCapPolicy::Capped) ==
                 ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
@@ -1189,7 +1189,7 @@ private:
                 masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m2), ManifestRateLimitCap::Capped) ==
+                manifestsOuter.applyManifest(std::move(*m2), ManifestRateLimitCapPolicy::Capped) ==
                 ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
@@ -1207,7 +1207,7 @@ private:
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
             BEAST_EXPECT(max->revoked());
             BEAST_EXPECT(
-                manifestsOuter.applyManifest(std::move(*max), ManifestRateLimitCap::Capped) ==
+                manifestsOuter.applyManifest(std::move(*max), ManifestRateLimitCapPolicy::Capped) ==
                 ManifestDisposition::Accepted);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
@@ -2627,7 +2627,7 @@ private:
             {
                 valManifests.applyManifest(
                     *deserializeManifest(base64Decode(self->manifest)),
-                    ManifestRateLimitCap::Capped);
+                    ManifestRateLimitCapPolicy::Capped);
                 BEAST_EXPECT(
                     result->load(self->signingPublic, emptyCfgKeys, cfgPublishers, threshold));
             }

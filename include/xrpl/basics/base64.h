@@ -54,16 +54,16 @@ encodedSize(std::size_t const nBytes)
 }
 
 /**
- * Returns the maximum number of bytes a base64 string of @p nChars characters
+ * Returns the maximum number of bytes a base64 string of @p numChars characters
  * decodes to.
  *
- * @param nChars Number of base64 characters.
+ * @param numChars Number of base64 characters.
  * @return Upper bound on the number of decoded bytes.
  */
 constexpr std::size_t
-decodedSize(std::size_t const nChars)
+decodedSize(std::size_t const numChars)
 {
-    return ((nChars / 4) * 3) + 2;
+    return ((numChars / 4) * 3) + 2;
 }
 
 }  // namespace base64

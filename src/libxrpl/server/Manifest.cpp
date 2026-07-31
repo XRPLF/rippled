@@ -382,9 +382,9 @@ ManifestCache::revoked(PublicKey const& pk) const
 }
 
 ManifestDisposition
-ManifestCache::applyManifest(Manifest m, ManifestRateLimitCap const cap)
+ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
 {
-    bool const uncapped = cap == ManifestRateLimitCap::Uncapped;
+    bool const uncapped = cap == ManifestRateLimitCapPolicy::Uncapped;
 
     // The signature is checked only on the first `prewriteCheck` run (under the
     // read lock). It is expensive, so `checkSignature` is cleared the first
@@ -634,7 +634,7 @@ ManifestCache::load(
             JLOG(j_.warn()) << "Configured manifest revokes public key";
         }
 
-        if (applyManifest(std::move(*mo), ManifestRateLimitCap::Uncapped) ==
+        if (applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
             ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Manifest in config was rejected";
@@ -658,7 +658,7 @@ ManifestCache::load(
         auto mo = deserializeManifest(base64Decode(revocationStr));
 
         if (!mo || !mo->revoked() ||
-            applyManifest(std::move(*mo), ManifestRateLimitCap::Uncapped) ==
+            applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
                 ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Invalid validator key revocation in config";

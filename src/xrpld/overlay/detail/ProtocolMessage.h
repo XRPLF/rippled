@@ -351,6 +351,16 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
+    // Drop an oversized TMManifests without penalty: consume the bytes and
+    // return no error, so the connection is preserved.
+    if (header->messageType == protocol::mtMANIFESTS &&
+        (header->payloadWireSize > kMaximumManifestsMessageSize ||
+         header->uncompressedSize > kMaximumManifestsMessageSize))
+    {
+        result.first = header->totalWireSize;
+        return result;
+    }
+
     bool success = false;
 
     switch (header->messageType)
