@@ -4,6 +4,8 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/messages.h>
+#include <xrpl/server/Manifest.h>
 
 #include <google/protobuf/message.h>
 
@@ -19,6 +21,13 @@
 namespace xrpl {
 
 constexpr std::size_t kMaximumMessageSize = megabytes(64);
+
+// Upper bound on the wire size of a TMManifests message: kMaxManifestsPerMessage entries
+// of at most kMaxManifestBytes each, plus a small allowance for protobuf
+// framing per entry.
+constexpr std::size_t kManifestFramingBytes = 8;
+constexpr std::size_t kMaximumManifestsMessageSize =
+    kMaxManifestsPerMessage * (kMaxManifestBytes + kManifestFramingBytes);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the

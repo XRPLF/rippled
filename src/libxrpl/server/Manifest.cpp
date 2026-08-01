@@ -62,6 +62,11 @@ deserializeManifest(Slice s, beast::Journal journal)
     if (s.empty())
         return std::nullopt;
 
+    // A valid manifest has a fixed maximum size, so reject anything larger
+    // before parsing it.
+    if (s.size() > kMaxManifestBytes)
+        return std::nullopt;
+
     static SOTemplate const kManifestFormat{
         // A manifest must include:
         // - the master public key
@@ -377,16 +382,20 @@ ManifestCache::revoked(PublicKey const& pk) const
 }
 
 ManifestDisposition
-ManifestCache::applyManifest(Manifest m)
+ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
 {
+    bool const uncapped = cap == ManifestRateLimitCapPolicy::Uncapped;
+
+    // The signature is checked only on the first `prewriteCheck` run (under the
+    // read lock). It is expensive, so `checkSignature` is cleared the first
+    // time it is read; the second run (under the write lock) skips it.
+    bool checkSignature = true;
+
     // Check the manifest against the conditions that do not require a
-    // `unique_lock` (write lock) on the `mutex_`. Since the signature can be
-    // relatively expensive, the `checkSignature` parameter determines if the
-    // signature should be checked. Since `prewriteCheck` is run twice (see
-    // comment below), `checkSignature` only needs to be set to true on the
-    // first run.
-    auto prewriteCheck = [this, &m](auto const& iter, bool checkSignature, auto const& lock)
-        -> std::optional<ManifestDisposition> {
+    // `unique_lock` (write lock) on the `mutex_`.
+    auto prewriteCheck = [this, &m, &checkSignature](
+                             auto const& iter,
+                             auto const& lock) -> std::optional<ManifestDisposition> {
         XRPL_ASSERT(lock.owns_lock(), "xrpl::ManifestCache::applyManifest::prewriteCheck : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
                      // locked when the lambda is called.
@@ -401,11 +410,15 @@ ManifestCache::applyManifest(Manifest m)
             return ManifestDisposition::Stale;
         }
 
-        if (checkSignature && !m.verify())
+        if (checkSignature)
         {
-            if (auto stream = j_.warn())
-                logMftAct(stream, "Invalid", m.masterKey, m.sequence);
-            return ManifestDisposition::Invalid;
+            checkSignature = false;
+            if (!m.verify())
+            {
+                if (auto stream = j_.warn())
+                    logMftAct(stream, "Invalid", m.masterKey, m.sequence);
+                return ManifestDisposition::Invalid;
+            }
         }
 
         // If the master key associated with a manifest is or might be
@@ -465,14 +478,51 @@ ManifestCache::applyManifest(Manifest m)
         return std::nullopt;
     };
 
+    // Reject a brand-new manifest for an unlisted key once the untrusted cap
+    // is full. Updates to a cached key and uncapped manifests always pass.
+    // Called under both the read and write lock, since the cap can be reached
+    // between the two. The lock param enforces that.
+    auto atUntrustedCap = [this, &m, uncapped](auto const& iter, auto const& lock) {
+        XRPL_ASSERT(
+            lock.owns_lock(), "xrpl::ManifestCache::applyManifest::atUntrustedCap : locked");
+        (void)lock;  // not used. parameter is present to ensure the mutex is
+                     // locked when the lambda is called.
+        if (iter == map_.end() && !uncapped && untrustedKeys_.size() >= kMaxUntrustedCount)
+        {
+            // Log each rejection at debug, but warn only once per interval so a
+            // flood does not fill the log.
+            if (auto stream = j_.debug())
+                logMftAct(stream, "UntrustedCapacity", m.masterKey, m.sequence);
+            if (auto const n = untrustedRejectCount_.fetch_add(1) + 1;
+                n % kUntrustedRejectCount == 0)
+            {
+                JLOG(j_.warn()) << "Untrusted manifest cap reached; " << n
+                                << " manifests rejected so far";
+            }
+            return true;
+        }
+        return false;
+    };
+
     {
         std::shared_lock const sl{mutex_};
-        if (auto d = prewriteCheck(map_.find(m.masterKey), /*checkSig*/ true, sl))
+        auto const iter = map_.find(m.masterKey);
+
+        if (atUntrustedCap(iter, sl))
+            return ManifestDisposition::UntrustedCapacity;
+
+        if (auto d = prewriteCheck(iter, sl); d.has_value())
             return *d;
     }
 
     std::unique_lock const sl{mutex_};
     auto const iter = map_.find(m.masterKey);
+
+    // Re-check the cap under the write lock: the cache may have grown while the
+    // read lock above was released.
+    if (atUntrustedCap(iter, sl))
+        return ManifestDisposition::UntrustedCapacity;
+
     // Since we released the previously held read lock, it's possible that the
     // collections have been written to. This means we need to run
     // `prewriteCheck` again. This re-does work, but `prewriteCheck` is
@@ -482,7 +532,7 @@ ManifestCache::applyManifest(Manifest m)
     // doesn't need to happen again (signature checks are somewhat expensive).
     // Note: It's a mistake to use an upgradable lock. This is a recipe for
     // deadlock.
-    if (auto d = prewriteCheck(iter, /*checkSig*/ false, sl))
+    if (auto d = prewriteCheck(iter, sl); d.has_value())
         return *d;
 
     bool const revoked = m.revoked();
@@ -501,6 +551,12 @@ ManifestCache::applyManifest(Manifest m)
         }
 
         auto masterKey = m.masterKey;
+
+        // Count this key against the untrusted cap. Uncapped keys (listed,
+        // configured, or DB-loaded) are not tracked.
+        if (!uncapped)
+            untrustedKeys_.insert(masterKey);
+
         map_.emplace(std::move(masterKey), std::move(m));
 
         // Something has changed. Keep track of it.
@@ -514,6 +570,11 @@ ManifestCache::applyManifest(Manifest m)
     if (auto stream = j_.info())
         logMftAct(stream, "AcceptedUpdate", m.masterKey, m.sequence, iter->second.sequence);
 
+    // If this key was counted against the cap but now arrives uncapped, free
+    // its slot without waiting for promoteToTrusted.
+    if (uncapped)
+        untrustedKeys_.erase(m.masterKey);
+
     signingToMasterKeys_.erase(
         *iter->second.signingKey);  // NOLINT(bugprone-unchecked-optional-access) prewriteCheck
                                     // ensures old manifest is not revoked
@@ -521,8 +582,8 @@ ManifestCache::applyManifest(Manifest m)
     if (!revoked)
     {
         signingToMasterKeys_.emplace(
-            *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access) non-revoked
-                                          // manifest always has signingKey
+            *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access)
+                                          // non-revoked manifest always has signingKey
     }
 
     iter->second = std::move(m);
@@ -531,6 +592,16 @@ ManifestCache::applyManifest(Manifest m)
     seq_++;
 
     return ManifestDisposition::Accepted;
+}
+
+void
+ManifestCache::promoteToTrusted(PublicKey const& pk)
+{
+    // Frees the key's untrusted slot; a no-op (and idempotent) if the key was
+    // never counted. Not re-added on de-listing, so list/de-list cannot grow
+    // the count.
+    std::unique_lock const sl{mutex_};
+    untrustedKeys_.erase(pk);
 }
 
 void
@@ -563,7 +634,8 @@ ManifestCache::load(
             JLOG(j_.warn()) << "Configured manifest revokes public key";
         }
 
-        if (applyManifest(std::move(*mo)) == ManifestDisposition::Invalid)
+        if (applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
+            ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Manifest in config was rejected";
             return false;
@@ -585,7 +657,9 @@ ManifestCache::load(
 
         auto mo = deserializeManifest(base64Decode(revocationStr));
 
-        if (!mo || !mo->revoked() || applyManifest(std::move(*mo)) == ManifestDisposition::Invalid)
+        if (!mo || !mo->revoked() ||
+            applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped) ==
+                ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Invalid validator key revocation in config";
             return false;

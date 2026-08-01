@@ -3,12 +3,14 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -43,12 +45,15 @@ namespace xrpl {
     dynamically generates the signatureless form when it needs to verify
     the signature.
 
-    An instance of ManifestCache stores, for each trusted validator, (a) its
+    An instance of ManifestCache stores, for each known validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
     seen for that validator, if any.  On startup, the [validator_token] config
     entry (which contains the manifest for this validator) is decoded and
     added to the manifest cache.  Other manifests are added as "gossip"
-    received from xrpld peers.
+    received from xrpld peers, including ones for validators this node does not
+    trust. Manifests for untrusted validators are capped (kMaxUntrustedCount)
+    so peer gossip cannot grow the cache without bound; trusted validators are
+    not capped. Entries are never evicted, so a stored revocation is permanent.
 
     When an ephemeral key is compromised, a new signing key pair is created,
     along with a new manifest vouching for it (with a higher sequence number),
@@ -165,6 +170,53 @@ std::string
 to_string(Manifest const& m);
 
 /**
+ *Largest a valid manifest can be, in decoded bytes.
+ *
+ *   A manifest has a fixed set of fields. Each is serialized as a field header
+ *   (1-2 bytes), an optional length prefix (1 byte for these sizes), and the
+ *   field body. Taking every field at its largest gives the maximum below, so
+ *   anything larger cannot be a valid manifest.
+ *
+ *       Field                 header + length + body = bytes
+ *       sfVersion   (U16)        2          0     2     4
+ *       sfSequence  (U32)        1          0     4     5
+ *       sfPublicKey (33)         1          1    33    35
+ *       sfSigningPubKey (33)     1          1    33    35
+ *       sfSignature (72)         1          1    72    74
+ *       sfMasterSignature (72)   2          1    72    75
+ *       sfDomain    (128)        1          1   128   130
+ *                                                    -----
+ *                                                      358
+ */
+constexpr std::size_t kMaxManifestBytes = 358;
+
+/**
+ * Largest a valid manifest can be, in base64 characters.
+ *
+ *   base64 encodes 3 bytes as 4 characters, so this is the encoded form of
+ *   @ref kMaxManifestBytes. Callers that receive a base64 manifest should
+ *   reject anything longer than this before decoding, to avoid allocating
+ *   memory for an oversized input.
+ */
+constexpr std::size_t kMaxManifestBase64 = base64::encodedSize(kMaxManifestBytes);
+
+/**
+ * Maximum number of manifests carried in a single TMManifests message.
+ *
+ * Outbound, the TMManifests message sent to a peer includes every trusted manifest and fills the
+ * rest of this budget with untrusted gossip, so it never exceeds this size. Inbound, trusted
+ * manifests are always processed and untrusted ones are processed up to this many, so a peer
+ * sending its whole cache cannot force unbounded work.
+ *
+ * The trusted set is tiny relative to this bound, so trusted manifests are
+ * not dropped in practice. This is a transitional per-message cap; the cache
+ * already bounds untrusted manifests (see kMaxUntrustedCount), so it is no
+ * longer needed once the network has upgraded past nodes that send their
+ * whole cache in one message.
+ */
+constexpr std::size_t kMaxManifestsPerMessage = 200;
+
+/**
  * Constructs Manifest from serialized string
  *
  * @param s Serialized manifest string
@@ -248,7 +300,12 @@ enum class ManifestDisposition {
     /**
      * Timely, but invalid signature
      */
-    Invalid
+    Invalid,
+
+    /**
+     * Unlisted and limit reached
+     */
+    UntrustedCapacity
 };
 
 inline std::string
@@ -266,10 +323,24 @@ to_string(ManifestDisposition m)
             return "badEphemeralKey";
         case ManifestDisposition::Invalid:
             return "invalid";
+        case ManifestDisposition::UntrustedCapacity:
+            return "untrustedCapacity";
         default:
             return "unknown";
     }
 }
+
+/**
+ * Whether a manifest counts against the 'untrusted' cache cap.
+ *
+ * Passed to `ManifestCache::applyManifest` with no default, so every caller
+ * must choose. `Capped` is the safe, flood-resistant value; only listed or
+ * configured keys should use `Uncapped`.
+ */
+enum class ManifestRateLimitCapPolicy : std::uint8_t {
+    Capped,   ///< Subject to the untrusted cap (unlisted peer gossip)
+    Uncapped  ///< Bypasses the cap (listed/trusted or config manifests)
+};
 
 class DatabaseCon;
 
@@ -293,6 +364,38 @@ private:
     hash_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
+
+    /**
+     * Master keys of cached manifests for validators this node does not list.
+     *
+     * One entry per capped key in `map_`; its size enforces the cap below.
+     * A key is added when first cached under `Capped` and removed when it
+     * becomes listed (see `promoteToTrusted`) or an `Uncapped` update arrives,
+     * never re-added on de-listing. Uncapped keys are not tracked here.
+     */
+    hash_set<PublicKey> untrustedKeys_;
+
+    /**
+     * Maximum number of untrusted master keys kept in the cache.
+     *
+     * Once reached, a manifest for a brand-new unlisted key is rejected.
+     */
+    static constexpr std::size_t kMaxUntrustedCount = 100;
+
+    /**
+     * Running count of manifests rejected because the untrusted cap was full.
+     *
+     * Drives throttled logging (see `kUntrustedRejectCount`). Atomic because
+     * `applyManifest` may run concurrently.
+     */
+    std::atomic<std::uint64_t> untrustedRejectCount_{0};
+
+    /**
+     * Number of cap rejections between summary warnings.
+     *
+     * @see untrustedRejectCount_
+     */
+    static constexpr std::uint64_t kUntrustedRejectCount = 10000;
 
 public:
     explicit ManifestCache(beast::Journal j = beast::Journal(beast::Journal::getNullSink())) : j_(j)
@@ -378,17 +481,42 @@ public:
     /**
      * Add manifest to cache.
      *
+     * A brand-new unlisted key is rejected once the untrusted cap is full; updates to a cached key
+     * and `Uncapped` manifests bypass the cap. The caller decides `cap` before calling so the cache
+     * lock is not held while consulting the validator list, which would risk a lock-ordering
+     * deadlock.
+     *
      * @param m Manifest to add
      *
-     * @return `ManifestDisposition::accepted` if successful, or
-     *         `stale` or `invalid` otherwise
+     * @param cap `Uncapped` skips the untrusted cap; use it for keys that are listed, configured,
+     * or loaded from the DB. Note `Uncapped` does not assert the key is currently trusted (a DB
+     * entry may predate a de-listing). Callers must state this explicitly so a manifest is never
+     * left uncapped by omission.
+     *
+     * @return `Accepted` if stored, `Stale` if superseded, `Invalid`/ `BadEphemeralKey` if
+     * malformed, or `UntrustedCapacity` if the untrusted cap is full.
      *
      * @par Thread Safety
      *
      * May be called concurrently
      */
     ManifestDisposition
-    applyManifest(Manifest m);
+    applyManifest(Manifest m, ManifestRateLimitCapPolicy cap);
+
+    /**
+     * Stop counting a master key against the untrusted cap.
+     *
+     * Called when a cached untrusted key becomes listed, freeing its slot.
+     * Idempotent and a no-op for keys that were never counted.
+     *
+     * @param pk Master public key that is now listed/trusted
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
+    void
+    promoteToTrusted(PublicKey const& pk);
 
     /**
      * Populate manifest cache with manifests in database and config.
