@@ -3,19 +3,23 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 #include <shamap/common.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -344,6 +348,74 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     badPath = goodPath;
     badPath.erase(badPath.begin());
     EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+}
+
+// A legitimate proof path for two keys sharing all 63 leading nibbles is 65 elements: inner nodes
+// at depths 0..63 plus the leaf at depth 64. This pins that the 65 bound is real, so the fix for
+// the forged-path case below must not simply tighten the length limit.
+TEST_F(SHAMapPathProof, legitimate_deep_path_is_sixty_five_elements)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+
+    auto const kA = uint256{std::string_view{std::string(63, 'a') + "1"}};
+    auto const kB = uint256{std::string_view{std::string(63, 'a') + "2"}};
+
+    for (auto const& k : {kA, kB})
+    {
+        Buffer vuc{32};
+        std::fill_n(vuc.data(), vuc.size(), std::uint8_t{1});
+        ASSERT_TRUE(map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, std::move(vuc))));
+    }
+    map.invariants();
+
+    auto const pathA = map.getProofPath(kA);
+    ASSERT_TRUE(pathA.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) has_value() checked above
+    EXPECT_EQ(pathA->size(), 65u);
+    EXPECT_TRUE(SHAMap::verifyProofPath(map.getHash().asUInt256(), kA, *pathA));
+    // NOLINTEND(bugprone-unchecked-optional-access)
+
+    auto const pathB = map.getProofPath(kB);
+    ASSERT_TRUE(pathB.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) has_value() checked above
+    EXPECT_EQ(pathB->size(), 65u);
+    EXPECT_TRUE(SHAMap::verifyProofPath(map.getHash().asUInt256(), kB, *pathB));
+    // NOLINTEND(bugprone-unchecked-optional-access)
+}
+
+// A forged path of 65 hash-chained inner nodes reaches depth kLeafDepth, where only the leaf
+// terminating the path may sit. Such a path must be rejected.
+TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
+{
+    // An arbitrary well-formed key; the test does not care about its specific value.
+    constexpr uint256 kTestKey("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+
+    // Build upwards from the deepest node so each parent's selected branch carries its child's hash
+    // and the hash chain validates at every level.
+    std::vector<Blob> path;
+    SHAMapHash childHash{uint256{1}};
+
+    for (auto depth = SHAMap::kLeafDepth + 1u; depth-- > 0;)
+    {
+        auto const id = SHAMapNodeID::createID(std::min(depth, SHAMap::kLeafDepth - 1u), kTestKey);
+        auto const branch = selectBranch(id, kTestKey);
+
+        Serializer s;
+        for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+            s.addBitString(i == branch ? childHash.asUInt256() : uint256{});
+        s.add8(kWireTypeInner);
+        path.push_back(s.getData());
+
+        auto node = SHAMapTreeNode::makeFromWire(makeSlice(path.back()));
+        ASSERT_TRUE(node);
+        node->updateHash();
+        childHash = node->getHash();
+    }
+
+    ASSERT_EQ(path.size(), 65u);
+    EXPECT_FALSE(SHAMap::verifyProofPath(childHash.asUInt256(), kTestKey, path));
 }
 
 }  // namespace xrpl::tests

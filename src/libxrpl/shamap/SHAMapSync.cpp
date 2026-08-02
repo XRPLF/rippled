@@ -143,6 +143,17 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
+        // Nibbles run out at kLeafDepth, so only a leaf belongs there. An inner node at that depth
+        // means the store holds one, possibly seeded by a peer via an earlier fetch-pack exchange;
+        // skip its children rather than descending into it.
+        if (nodeID.getDepth() >= kLeafDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::SHAMap::visitDifferences : inner node at leaf depth");
+            continue;
+            // LCOV_EXCL_STOP
+        }
+
         // 2) push non-matching child inner nodes
         for (auto i = 0u; i < kBranchFactor; ++i)
         {
@@ -749,11 +760,9 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     do
     {
-        // An inner node is only reachable here at a depth below kLeafDepth in a well-formed map,
-        // where the loop always finds a leaf first. A malformed map could still have an inner
-        // node claiming kLeafDepth, and getChildNodeID below throws in that case: reject rather
-        // than let the throw escape uncaught. Not reachable through any public entry point,
-        // since addKnownNode already marks such a map invalid, so no test can cover this.
+        // Same kLeafDepth hazard as in visitDifferences above. That's the only caller and already
+        // bails out before reaching here; this is a second line of defense since the loop below
+        // descends on its own and doesn't depend on the caller's bound.
         if (nodeID.getDepth() >= kLeafDepth)
         {
             // LCOV_EXCL_START
@@ -830,15 +839,30 @@ SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector
             if (node->getHash() != hash)
                 return false;
 
-            auto const depth = std::distance(path.rbegin(), rit);
+            auto const depth = static_cast<unsigned int>(std::distance(path.rbegin(), rit));
             if (node->isInner())
             {
-                auto nodeId = SHAMapNodeID::createID(static_cast<unsigned int>(depth), key);
+                // Nibbles run out at kLeafDepth, so only the leaf terminating the path may sit
+                // there. These nodes come off the wire, so a peer can still claim an inner one;
+                // reject it rather than passing this depth to selectBranch.
+                SOMETIMES(
+                    depth >= kLeafDepth, "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
+                if (depth >= kLeafDepth)
+                    return false;
+
+                auto nodeId = SHAMapNodeID::createID(depth, key);
                 hash = safeDowncast<SHAMapInnerNode*>(node.get())
                            ->getChildHash(selectBranch(nodeId, key));
             }
             else
             {
+                // The hash chain up to rootHash only proves this leaf sits where the path claims,
+                // not that it is the leaf for `key`: a peer could substitute any other leaf whose
+                // subtree hashes to the same value at every level above it. Checking the terminal
+                // leaf's own key is what ties the proof to `key` specifically.
+                if (leafKey(*node) != key)
+                    return false;
+
                 // should exhaust all the blobs now
                 return depth + 1 == path.size();
             }
