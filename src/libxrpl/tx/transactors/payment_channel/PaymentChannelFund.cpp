@@ -32,38 +32,6 @@
 
 namespace xrpl {
 
-template <ValidIssueType T>
-static NotTEC
-payChanFundPreflightHelper(PreflightContext const& ctx);
-
-template <>
-NotTEC
-payChanFundPreflightHelper<Issue>(PreflightContext const& ctx)
-{
-    STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    if (badCurrency() == amount.get<Issue>().currency)
-        return temBAD_CURRENCY;
-
-    return tesSUCCESS;
-}
-
-template <>
-NotTEC
-payChanFundPreflightHelper<MPTIssue>(PreflightContext const& ctx)
-{
-    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    return tesSUCCESS;
-}
-
 TxConsequences
 PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -86,23 +54,22 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
         return temMALFORMED;
 
-    STAmount const amount{ctx.tx[sfAmount]};
+    auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
         if (!ctx.rules.enabled(featureTokenPaychan))
             return temBAD_AMOUNT;
 
         if (auto const ret = std::visit(
-                [&]<typename T>(T const&) { return payChanFundPreflightHelper<T>(ctx); },
+                [&]<typename T>(T const&) {
+                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
+                },
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
     }
-    else
-    {
-        if (amount <= beast::kZero)
-            return temBAD_AMOUNT;
-    }
+    else if (amount <= beast::kZero)
+        return temBAD_AMOUNT;
 
     return tesSUCCESS;
 }
@@ -112,7 +79,7 @@ PaymentChannelFund::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureTokenPaychan))
     {
-        Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+        Keylet const k{ltPAYCHAN, ctx.tx[sfChannel]};
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_ENTRY;
@@ -177,8 +144,8 @@ PaymentChannelFund::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    STAmount const amount{ctx_.tx[sfAmount]};
-    STAmount const chanAmt{(*slep)[sfAmount]};
+    auto const amount = ctx_.tx[sfAmount];
+    auto const& chanAmt = slep->getFieldAmount(sfAmount);
 
     // Asset consistency between the funded amount and the channel was
     // validated in preclaim.
@@ -237,7 +204,7 @@ PaymentChannelFund::doApply()
     }
     else
     {
-        AccountID const issuer = amount.getIssuer();
+        auto const& issuer = amount.getIssuer();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);

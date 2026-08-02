@@ -117,13 +117,13 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureTokenPaychan))
     {
-        Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+        Keylet const k{ltPAYCHAN, ctx.tx[sfChannel]};
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
 
         AccountID const dest = (*slep)[sfDestination];
-        STAmount const chanFunds = (*slep)[sfAmount];
+        auto const& chanFunds = slep->getFieldAmount(sfAmount);
 
         if (auto const bal = ctx.tx[~sfBalance])
         {
@@ -241,7 +241,7 @@ PaymentChannelClaim::doApply()
             Rate lockedRate = slep->isFieldPresent(sfTransferRate)
                 ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
                 : kParityRate;
-            auto const issuer = reqDelta.getIssuer();
+            auto const& issuer = reqDelta.getIssuer();
             bool const createAsset = dst == accountID_;
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {

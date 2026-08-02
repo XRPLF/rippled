@@ -85,8 +85,8 @@ serializePayChanAuthorization(Serializer& msg, uint256 const& key, STAmount cons
     }
     else if (amt.holds<MPTIssue>())
     {
-        auto const mpt = amt.get<MPTIssue>();
-        auto const mptID = mpt.getMptID();
+        auto const& mpt = amt.get<MPTIssue>();
+        auto const& mptID = mpt.getMptID();
         serializePayChanAuthorization(msg, key, amt.mpt(), mptID, amt.getIssuer());
     }
 }

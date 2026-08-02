@@ -71,7 +71,7 @@ closeChannel(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
 
     auto const reqDelta = (*slep)[sfAmount] - (*slep)[sfBalance];
-    auto const issuer = reqDelta.getIssuer();
+    auto const& issuer = reqDelta.getIssuer();
 
     // Only update the balance if there is a positive delta.
     if (reqDelta > beast::kZero)
@@ -115,7 +115,7 @@ closeChannel(
     }
 
     // Remove PayChan from issuer's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+    if (auto const optPage = (*slep)[~sfIssuerNode])
     {
         if (!view.dirRemove(keylet::ownerDir(issuer), *optPage, key, true))
         {

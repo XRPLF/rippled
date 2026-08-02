@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -60,38 +61,6 @@ namespace xrpl {
 
 //------------------------------------------------------------------------------
 
-template <ValidIssueType T>
-static NotTEC
-payChanCreatePreflightHelper(PreflightContext const& ctx);
-
-template <>
-NotTEC
-payChanCreatePreflightHelper<Issue>(PreflightContext const& ctx)
-{
-    STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    if (badCurrency() == amount.get<Issue>().currency)
-        return temBAD_CURRENCY;
-
-    return tesSUCCESS;
-}
-
-template <>
-NotTEC
-payChanCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
-{
-    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    return tesSUCCESS;
-}
-
 TxConsequences
 PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -111,23 +80,22 @@ PaymentChannelCreate::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    STAmount const amount{ctx.tx[sfAmount]};
+    auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
         if (!ctx.rules.enabled(featureTokenPaychan))
             return temBAD_AMOUNT;
 
         if (auto const ret = std::visit(
-                [&]<typename T>(T const&) { return payChanCreatePreflightHelper<T>(ctx); },
+                [&]<typename T>(T const&) {
+                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
+                },
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
     }
-    else
-    {
-        if (amount <= beast::kZero)
-            return temBAD_AMOUNT;
-    }
+    else if (amount <= beast::kZero)
+        return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         return temDST_IS_SRC;
@@ -146,7 +114,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
-    STAmount const amount{ctx.tx[sfAmount]};
+    auto const amount = ctx.tx[sfAmount];
 
     // Check reserve and funds availability
     if (!ctx.view.rules().enabled(featureSponsor))
@@ -204,7 +172,7 @@ TER
 PaymentChannelCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    STAmount const amount{ctx_.tx[sfAmount]};
+    auto const amount = ctx_.tx[sfAmount];
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -302,7 +270,7 @@ PaymentChannelCreate::doApply()
     }
 
     // Add PayChan to the issuer's owner directory, if applicable
-    AccountID const issuer = amount.getIssuer();
+    auto const& issuer = amount.getIssuer();
     if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
     {
         auto page = ctx_.view().dirInsert(

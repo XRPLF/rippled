@@ -57,7 +57,7 @@ escrowLockPreclaimHelper<Issue>(
     beast::Journal j)
 {
     auto const& issue = amount.get<Issue>();
-    AccountID const& issuer = amount.getIssuer();
+    auto const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -340,12 +340,8 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    auto const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
-    bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
-    bool const lineExisted = ctx.view.exists(trustLineKey);
 
     if (senderIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -353,7 +349,11 @@ escrowUnlockApplyHelper<Issue>(
     if (receiverIssuer)
         return tesSUCCESS;
 
-    if (!lineExisted && createAsset)
+    auto const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
+    bool const recvLow = issuer > receiver;
+
+    if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
         auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
