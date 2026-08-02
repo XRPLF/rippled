@@ -569,10 +569,10 @@ private:
         {
             if (jv.size() == 0)
                 return false;
-            for (json::Value::ArrayIndex i = 0; i < jv.size(); ++i)
-                if (!isValidJson2(jv[i]))
-                    return false;
-            return true;
+            // json::Value is not a std::ranges range, so the iterator form is used.
+            // NOLINTNEXTLINE(modernize-use-ranges)
+            return std::all_of(
+                jv.begin(), jv.end(), [this](auto const& j) { return isValidJson2(j); });
         }
         if (jv.isObject())
         {

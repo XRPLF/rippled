@@ -176,7 +176,7 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
             drops_ += (*after)[sfBalance].xrp().drops();
             break;
         case ltPAYCHAN:
-            if (!isDelete)
+            if (!isDelete && isXRP((*after)[sfAmount]))
                 drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
             break;
         case ltESCROW:
