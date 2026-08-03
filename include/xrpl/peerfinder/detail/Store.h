@@ -1,0 +1,36 @@
+#pragma once
+
+#include <xrpl/beast/net/IPEndpoint.h>
+
+#include <cstddef>
+#include <functional>
+#include <vector>
+
+namespace xrpl::PeerFinder {
+
+/**
+ * Abstract persistence for PeerFinder data.
+ */
+class Store
+{
+public:
+    virtual ~Store() = default;
+
+    // load the bootstrap cache
+    using load_callback = std::function<void(beast::IP::Endpoint, int)>;
+    virtual std::size_t
+    load(load_callback const& cb) = 0;
+
+    // save the bootstrap cache
+    struct Entry
+    {
+        explicit Entry() = default;
+
+        beast::IP::Endpoint endpoint;
+        int valence{};
+    };
+    virtual void
+    save(std::vector<Entry> const& v) = 0;
+};
+
+}  // namespace xrpl::PeerFinder

@@ -56,7 +56,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -72,6 +71,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <map>
 #include <memory>
 #include <optional>
@@ -313,8 +313,8 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // DEFENSIVE: temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
-        // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
+        // An oversized batch (more than kMaxBatchTxCount inners) fails STTx
+        // construction, so the transaction cannot be built.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
@@ -328,7 +328,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 7),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 8),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 9),
-                Ter(telENV_RPC_FAILED));
+                Ter(temMALFORMED));
             env.close();
         }
 
@@ -345,15 +345,15 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // DEFENSIVE: temINVALID: Batch: batch cannot have inner batch txn.
-        // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
+        // A batch may not contain a batch: the nested inner fails STTx
+        // construction, so the transaction cannot be built.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
-                Ter(telENV_RPC_FAILED));
+                Ter(temMALFORMED));
             env.close();
         }
 
@@ -498,7 +498,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
-            env.setParseFailureExpected(true);
+            auto const g = env.getParseFailureGuard(true);
             try
             {
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -510,7 +510,6 @@ class Batch_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(true);
             }
-            env.setParseFailureExpected(false);
         }
 
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
@@ -938,80 +937,41 @@ class Batch_test : public beast::unit_test::Suite
 
         env.fund(XRP(10000), alice, bob);
 
+        // An inner missing a required field can no longer be submitted: the
+        // outer STTx builds and validates each inner at construction, so
+        // building the batch (as signing does) throws. Returns true if the
+        // build fails.
+        auto batchCtorFails = [&](json::StaticString const& field) -> bool {
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const seq = env.seq(alice);
+            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
+            tx1.removeMember(field);
+            try
+            {
+                // Env::st swallows the construction failure and yields a null
+                // stx, so a malformed inner shows up as no transaction built.
+                auto const jt = env.jtnofill(
+                    batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                    tx1,
+                    batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
+                return jt.stx == nullptr;
+            }
+            catch (std::exception const&)
+            {
+                return true;
+            }
+        };
+
         // Invalid: sfTransactionType
-        {
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
-            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
-            tx1.removeMember(jss::TransactionType);
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
-
-            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
-            env.close();
-        }
-
+        BEAST_EXPECT(batchCtorFails(jss::TransactionType));
         // Invalid: sfAccount
-        {
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
-            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
-            tx1.removeMember(jss::Account);
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
-
-            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
-            env.close();
-        }
-
+        BEAST_EXPECT(batchCtorFails(jss::Account));
         // Invalid: sfSequence
-        {
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
-            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
-            tx1.removeMember(jss::Sequence);
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
-
-            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
-            env.close();
-        }
-
+        BEAST_EXPECT(batchCtorFails(jss::Sequence));
         // Invalid: sfFee
-        {
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
-            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
-            tx1.removeMember(jss::Fee);
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
-
-            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
-            env.close();
-        }
-
+        BEAST_EXPECT(batchCtorFails(jss::Fee));
         // Invalid: sfSigningPubKey
-        {
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
-            auto tx1 = batch::Inner(pay(alice, bob, XRP(10)), seq + 1);
-            tx1.removeMember(jss::SigningPubKey);
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
-
-            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
-            env.close();
-        }
+        BEAST_EXPECT(batchCtorFails(jss::SigningPubKey));
 
         // Inner OfferCreate with MPT TakerPays. Valid under featureMPTokensV2.
         {
@@ -1512,11 +1472,13 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
-                Ter(telENV_RPC_FAILED));
+                Ter(temMALFORMED));
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
+        // An oversized batch (more than kMaxBatchTxCount inners) fails STTx
+        // construction, so it never reaches apply or checkValidity - Env::st
+        // swallows the failure and yields a null stx.
         {
             Env env{*this, features};
 
@@ -1539,11 +1501,44 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::Inner(pay(alice, bob, XRP(1)), aliceSeq));
 
-            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, j);
-                BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
-                return result.applied;
-            });
+            BEAST_EXPECT(jt.stx == nullptr);
+        }
+
+        // An oversized batch cannot slip through as validly signed even when it
+        // carries a BatchSigners array: the oversized inner array fails STTx
+        // construction before any signature is checked, so the batch can't be
+        // built at all (building it - as signing does - throws).
+        {
+            Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, kMaxBatchSigners + 1, 9);
+            bool threw = false;
+            try
+            {
+                env.jtnofill(
+                    batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Inner(pay(alice, bob, XRP(1)), aliceSeq),
+                    batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
+            }
+            catch (std::exception const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
         }
 
         // Regression: the relay-boundary local check (isBatchRawTransactionOkay)
@@ -1598,6 +1593,14 @@ class Batch_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
             });
+
+            // Regression (uncapped batch-signer verification): the relay
+            // boundary (checkValidity) rejects the oversized signers array via
+            // the checkBatchSign guard, BEFORE verifying a single signature.
+            auto const [valid, reason] =
+                xrpl::checkValidity(env.app().getHashRouter(), *jt.stx, env.current()->rules());
+            BEAST_EXPECT(valid == xrpl::Validity::SigBad);
+            BEAST_EXPECT(reason == "BatchSigners array exceeds max entries.");
         }
     }
 
@@ -5524,7 +5527,8 @@ class Batch_test : public beast::unit_test::Suite
             return Batch::calculateBaseFee(*env.current(), *jtx.stx);
         };
 
-        // bad: Inner Batch transaction found
+        // bad: a batch may not contain a batch - the nested inner fails STTx
+        // construction, so the transaction cannot be built.
         {
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -5532,11 +5536,11 @@ class Batch_test : public beast::unit_test::Suite
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
-            XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(jtx.stx == nullptr);
         }
 
-        // bad: Raw Transactions array exceeds max entries.
+        // bad: an oversized batch (more than kMaxBatchTxCount inners) fails
+        // STTx construction, so it cannot be built.
         {
             auto const seq = env.seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -5553,8 +5557,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 8),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 9));
 
-            XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(jtx.stx == nullptr);
         }
 
         // bad: Signers array exceeds max entries.
@@ -5567,8 +5570,9 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
+            // Failure paths fall back to the ledger base fee.
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(txBaseFee == env.current()->fees().base);
         }
 
         // good:

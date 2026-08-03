@@ -633,20 +633,6 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
-AccountID
-STObject::getInitiator() const
-{
-    // If sfDelegate is present, the delegate account is the initiator
-    // note: if a delegate is specified, its authorization to act on behalf of the account is
-    // enforced in `Transactor::invokeCheckPermission`
-    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
-    if (isFieldPresent(sfDelegate))
-        return getAccountID(sfDelegate);
-
-    // Default initiator
-    return getAccountID(sfAccount);
-}
-
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -710,7 +696,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void
@@ -913,6 +899,10 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
             "xrpl::STObject::add : valid field type");
+        XRPL_ASSERT(
+            getStyle(field->getFName()) != SoeDefault || !field->isDefault(),
+            "xrpl::STObject::add : non-default value");
+
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)

@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
@@ -51,6 +52,9 @@ CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 NotTEC
 CheckCash::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_3_0) && ctx.tx[sfCheckID] == beast::kZero)
+        return temMALFORMED;
+
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];

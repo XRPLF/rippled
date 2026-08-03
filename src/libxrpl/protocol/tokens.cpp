@@ -160,15 +160,16 @@ digest2(Args const&... args)
     return digest<Hasher>(digest<Hasher>(args...));
 }
 
-/** Calculate a 4-byte checksum of the data
-
-    The checksum is calculated as the first 4 bytes
-    of the SHA256 digest of the message. This is added
-    to the base58 encoding of identifiers to detect
-    user error in data entry.
-
-    @note This checksum algorithm is part of the client API
-*/
+/**
+ * Calculate a 4-byte checksum of the data
+ *
+ * The checksum is calculated as the first 4 bytes
+ * of the SHA256 digest of the message. This is added
+ * to the base58 encoding of identifiers to detect
+ * user error in data entry.
+ *
+ * @note This checksum algorithm is part of the client API
+ */
 static void
 checksum(void* out, void const* message, std::size_t size)
 {
