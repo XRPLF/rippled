@@ -258,10 +258,12 @@ class LedgerRPC_test : public beast::unit_test::Suite
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
     }
 
-    /// @brief ledger RPC requests as a way to drive
-    /// input options to lookupLedger. The point of this test is
-    /// coverage for lookupLedger, not so much the ledger
-    /// RPC request.
+    /**
+     * @brief ledger RPC requests as a way to drive
+     * input options to lookupLedger. The point of this test is
+     * coverage for lookupLedger, not so much the ledger
+     * RPC request.
+     */
     void
     testLookupLedger()
     {

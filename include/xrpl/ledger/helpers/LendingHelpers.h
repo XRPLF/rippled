@@ -1,11 +1,28 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
+#include <cstdint>
 #include <expected>
 #include <string_view>
+#include <utility>
 
 namespace xrpl {
 
@@ -46,7 +63,9 @@ static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
-/// Ensure the periodic payment is always rounded consistently
+/**
+ * Ensure the periodic payment is always rounded consistently
+ */
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
@@ -110,7 +129,8 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure captures the parts of a loan state.
+/**
+ * This structure captures the parts of a loan state.
  *
  *  Whether the values are theoretical (unrounded) or rounded will depend on how
  * it was computed.
@@ -243,10 +263,11 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
-// Constructs a valid LoanState object from a Loan object, which always has
-// rounded values
+// Overload of constructLoanState() that reads the three tracked fields
+// directly from a Loan ledger object, which always holds rounded values,
+// rather than taking them as separate Number arguments.
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructLoanState(SLE::const_ref loan);
 
 Number
 computeManagementFee(
@@ -264,6 +285,77 @@ computeFullPaymentInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
+
+// Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
+// accounting touch point (origination, payment, impair/unimpair/default).
+struct AccountingDeltas
+{
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+};
+
+// Whole-life (pre-LendingProtocolV1_1) recognition model: interest is
+// recognized into AssetsTotal/DebtTotal up front, at origination.
+namespace Accrual {
+
+// LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+
+// LoanSet origination: would recognizing this loan's interest push
+// Vault.AssetsTotal past Vault.AssetsMaximum?
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+// LoanManage impair/unimpair/default: the vault's exposure to this loan
+Number
+loanVaultExposure(SLE::const_ref loanSle);
+
+// LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace Accrual
+
+// Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
+// are principal-only, interest is recognized only as it's actually paid.
+namespace CashBasis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested);
+
+Number
+loanVaultExposure(SLE::const_ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace CashBasis
+
+// Public dispatchers: pick CashBasis:: if featureLendingProtocolV1_1 is
+// enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
+// VaultVersion::CashBasis, else Accrual::. These are the only entry points
+// transactors call.
+AccountingDeltas
+loanOriginationDeltas(
+    SLE::const_ref vaultSle,
+    Number const& principalRequested,
+    Number const& interestDue);
+
+bool
+loanOriginationExceedsVaultMaximum(
+    SLE::const_ref vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+Number
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
@@ -307,12 +399,14 @@ struct PaymentComponents
     // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::None;
 
-    // Calculates the tracked interest portion of this payment.
-    // This is derived from the other components as:
-    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
-    //
-    // @return The amount of tracked interest included in this payment that
-    //         will be paid to the vault.
+    /**
+     * Calculates the tracked interest portion of this payment.
+     * This is derived from the other components as:
+     * trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+     *
+     * @return The amount of tracked interest included in this payment that
+     *         will be paid to the vault.
+     */
     [[nodiscard]] Number
     trackedInterestPart() const;
 };
@@ -384,7 +478,8 @@ struct LoanStateDeltas
     // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
-    /* Calculates the total change across all components.
+    /**
+     * Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
     [[nodiscard]] Number

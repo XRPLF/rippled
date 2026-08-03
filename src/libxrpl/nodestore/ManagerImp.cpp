@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 ManagerImp&
 ManagerImp::instance()
@@ -45,8 +45,10 @@ ManagerImp::missingBackend()
 // the Factory classes is an undefined behaviour.
 void
 registerNuDBFactory(Manager& manager);
+#if XRPL_ROCKSDB_AVAILABLE
 void
 registerRocksDBFactory(Manager& manager);
+#endif
 void
 registerNullFactory(Manager& manager);
 void
@@ -55,7 +57,9 @@ registerMemoryFactory(Manager& manager);
 ManagerImp::ManagerImp()
 {
     registerNuDBFactory(*this);
+#if XRPL_ROCKSDB_AVAILABLE
     registerRocksDBFactory(*this);
+#endif
     registerNullFactory(*this);
     registerMemoryFactory(*this);
 }
@@ -108,7 +112,7 @@ ManagerImp::erase(Factory& factory)
     std::scoped_lock const _(mutex_);
     auto const iter =
         std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
-    XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
+    XRPL_ASSERT(iter != list_.end(), "xrpl::node_store::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
@@ -131,4 +135,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

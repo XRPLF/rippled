@@ -5,6 +5,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl::detail {
@@ -49,14 +50,13 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
     {
-        p_ = t.move(kMaxSize, &d_);
     }
 
-    STVar(STBase const& t)
+    STVar(STBase const& t) : p_(t.copy(kMaxSize, &d_))
     {
-        p_ = t.copy(kMaxSize, &d_);
     }
 
     STVar(DefaultObjectT, SField const& name);
@@ -120,7 +120,8 @@ private:
         }
     }
 
-    /** Construct requested Serializable Type according to id.
+    /**
+     * Construct requested Serializable Type according to id.
      * The variadic args are: (SField), or (SerialIter, SField).
      * depth is ignored in former case.
      */

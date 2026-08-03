@@ -1,16 +1,20 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -40,26 +44,35 @@ enum class SizedItem : std::size_t {
     AccountIdCacheSize,
 };
 
-/** Fee schedule for startup / standalone, and to vote for.
-During voting ledgers, the FeeVote logic will try to move towards
-these values when injecting fee-setting transactions.
-A default-constructed Setup contains recommended values.
-*/
+/**
+ * Fee schedule for startup / standalone, and to vote for.
+ * During voting ledgers, the FeeVote logic will try to move towards
+ * these values when injecting fee-setting transactions.
+ * A default-constructed Setup contains recommended values.
+ */
 struct FeeSetup
 {
-    /** The cost of a reference transaction in drops. */
+    /**
+     * The cost of a reference transaction in drops.
+     */
     XRPAmount referenceFee{10};
 
-    /** The account reserve requirement in drops. */
+    /**
+     * The account reserve requirement in drops.
+     */
     XRPAmount accountReserve{10 * kDropsPerXrp};
 
-    /** The per-owned item reserve requirement in drops. */
+    /**
+     * The per-owned item reserve requirement in drops.
+     */
     XRPAmount ownerReserve{2 * kDropsPerXrp};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
 
-    /** Convert to a Fees object for use with Ledger construction. */
+    /**
+     * Convert to a Fees object for use with Ledger construction.
+     */
     [[nodiscard]] Fees
     toFees() const
     {
@@ -81,7 +94,9 @@ public:
     static char const* const kDatabaseDirName;
     static char const* const kValidatorsFileName;
 
-    /** Returns the full path and filename of the debug log file. */
+    /**
+     * Returns the full path and filename of the debug log file.
+     */
     [[nodiscard]] boost::filesystem::path
     getDebugLogFile() const;
 
@@ -100,25 +115,27 @@ private:
 
     bool quiet_ = false;   // Minimize logging verbosity.
     bool silent_ = false;  // No output to console after startup.
-    /** Operate in stand-alone mode.
-
-        In stand alone mode:
-
-        - Peer connections are not attempted or accepted
-        - The ledger is not advanced automatically.
-        - If no ledger is loaded, the default ledger with the root
-          account is created.
-    */
+    /**
+     * Operate in stand-alone mode.
+     *
+     * In stand alone mode:
+     *
+     * - Peer connections are not attempted or accepted
+     * - The ledger is not advanced automatically.
+     * - If no ledger is loaded, the default ledger with the root
+     *   account is created.
+     */
     bool runStandalone_ = false;
 
     bool useTxTables_ = true;
 
-    /** Determines if the server will sign a tx, given an account's secret seed.
-
-        In the past, this was allowed, but this functionality can have security
-        implications. The new default is to not allow this functionality, but
-        a config option is included to enable this.
-    */
+    /**
+     * Determines if the server will sign a tx, given an account's secret seed.
+     *
+     * In the past, this was allowed, but this functionality can have security
+     * implications. The new default is to not allow this functionality, but
+     * a config option is included to enable this.
+     */
     bool signingEnabled_ = false;
 
     // The amount of RAM, in bytes, that we detected on this system.
@@ -232,12 +249,16 @@ public:
     // Enable base squelching of duplicate validation/proposal messages
     bool vpReduceRelayBaseSquelchEnable = false;
 
-    /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+    /**
+     * //////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+     */
     // Temporary squelching config for the peers selected as a source of  //
     // validator messages. The config must be removed once squelching is  //
     // made the default routing algorithm                                 //
     std::size_t vpReduceRelaySquelchMaxSelectedPeers = 5;
-    /////////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
+    /**
+     * //////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
+     */
 
     // Transaction reduce-relay feature
     bool txReduceRelayEnable = false;
@@ -295,9 +316,9 @@ public:
     setupControl(bool bQuiet, bool bSilent, bool bStandalone);
 
     /**
-     *  Load the config from the contents of the string.
+     * Load the config from the contents of the string.
      *
-     *  @param fileContents String representing the config contents.
+     * @param fileContents String representing the config contents.
      */
     void
     loadFromString(std::string const& fileContents);
@@ -330,23 +351,24 @@ public:
         return signingEnabled_;
     }
 
-    /** Retrieve the default value for the item at the specified node size
-
-        @param item The item for which the default value is needed
-        @param node Optional value, used to adjust the result to match the
-                    size of a node (0: tiny, ..., 4: huge). If unseated,
-                    uses the configured size (NODE_SIZE).
-
-        @throw This method can throw std::out_of_range if you ask for values
-               that it does not recognize or request a non-default node-size.
-
-        @return The value for the requested item.
-
-        @note The defaults are selected so as to be reasonable, but the node
-              size is an imprecise metric that combines multiple aspects of
-              the underlying system; this means that we can't provide optimal
-              defaults in the code for every case.
-    */
+    /**
+     * Retrieve the default value for the item at the specified node size
+     *
+     * @param item The item for which the default value is needed
+     * @param node Optional value, used to adjust the result to match the
+     *             size of a node (0: tiny, ..., 4: huge). If unseated,
+     *             uses the configured size (NODE_SIZE).
+     *
+     * @throws This method can throw std::out_of_range if you ask for values
+     *         that it does not recognize or request a non-default node-size.
+     *
+     * @return The value for the requested item.
+     *
+     * @note The defaults are selected so as to be reasonable, but the node
+     *       size is an imprecise metric that combines multiple aspects of
+     *       the underlying system; this means that we can't provide optimal
+     *       defaults in the code for every case.
+     */
     [[nodiscard]] int
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt) const;
 

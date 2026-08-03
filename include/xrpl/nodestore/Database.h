@@ -1,114 +1,135 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/protocol/SystemParameters.h>
 
+#include <atomic>
 #include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 class Section;
 }  // namespace xrpl
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-/** Persistency layer for NodeObject
-
-    A Node is a ledger object which is uniquely identified by a key, which is
-    the 256-bit hash of the body of the node. The payload is a variable length
-    block of serialized data.
-
-    All ledger data is stored as node objects and as such, needs to be persisted
-    between launches. Furthermore, since the set of node objects will in
-    general be larger than the amount of available memory, purged node objects
-    which are later accessed must be retrieved from the node store.
-
-    @see NodeObject
-*/
+/**
+ * Persistency layer for NodeObject
+ *
+ * A Node is a ledger object which is uniquely identified by a key, which is
+ * the 256-bit hash of the body of the node. The payload is a variable length
+ * block of serialized data.
+ *
+ * All ledger data is stored as node objects and as such, needs to be persisted
+ * between launches. Furthermore, since the set of node objects will in
+ * general be larger than the amount of available memory, purged node objects
+ * which are later accessed must be retrieved from the node store.
+ *
+ * @see NodeObject
+ */
 class Database
 {
 public:
     Database() = delete;
 
-    /** Construct the node store.
-
-        @param scheduler The scheduler to use for performing asynchronous tasks.
-        @param readThreads The number of asynchronous read threads to create.
-        @param config The configuration settings
-        @param journal Destination for logging output.
-    */
+    /**
+     * Construct the node store.
+     *
+     * @param scheduler The scheduler to use for performing asynchronous tasks.
+     * @param readThreads The number of asynchronous read threads to create.
+     * @param config The configuration settings
+     * @param journal Destination for logging output.
+     */
     Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal j);
 
-    /** Destroy the node store.
-        All pending operations are completed, pending writes flushed,
-        and files closed before this returns.
-    */
+    /**
+     * Destroy the node store.
+     * All pending operations are completed, pending writes flushed,
+     * and files closed before this returns.
+     */
     virtual ~Database();
 
-    /** Retrieve the name associated with this backend.
-        This is used for diagnostics and may not reflect the actual path
-        or paths used by the underlying backend.
-    */
+    /**
+     * Retrieve the name associated with this backend.
+     * This is used for diagnostics and may not reflect the actual path
+     * or paths used by the underlying backend.
+     */
     virtual std::string
     getName() const = 0;
 
-    /** Import objects from another database. */
+    /**
+     * Import objects from another database.
+     */
     virtual void
     importDatabase(Database& source) = 0;
 
-    /** Retrieve the estimated number of pending write operations.
-        This is used for diagnostics.
-    */
+    /**
+     * Retrieve the estimated number of pending write operations.
+     * This is used for diagnostics.
+     */
     virtual std::int32_t
     getWriteLoad() const = 0;
 
-    /** Store the object.
-
-        The caller's Blob parameter is overwritten.
-
-        @param type The type of object.
-        @param data The payload of the object. The caller's
-                    variable is overwritten.
-        @param hash The 256-bit hash of the payload data.
-        @param ledgerSeq The sequence of the ledger the object belongs to.
-
-        @return `true` if the object was stored?
-    */
+    /**
+     * Store the object.
+     *
+     * The caller's Blob parameter is overwritten.
+     *
+     * @param type The type of object.
+     * @param data The payload of the object. The caller's
+     *             variable is overwritten.
+     * @param hash The 256-bit hash of the payload data.
+     * @param ledgerSeq The sequence of the ledger the object belongs to.
+     *
+     * @return `true` if the object was stored?
+     */
     virtual void
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t ledgerSeq) = 0;
 
-    /* Check if two ledgers are in the same database
-
-        If these two sequence numbers map to the same database,
-        the result of a fetch with either sequence number would
-        be identical.
-
-        @param s1 The first sequence number
-        @param s2 The second sequence number
-
-        @return 'true' if both ledgers would be in the same DB
-
-    */
+    /**
+     * Check if two ledgers are in the same database
+     *
+     * If these two sequence numbers map to the same database,
+     * the result of a fetch with either sequence number would
+     * be identical.
+     *
+     * @param s1 The first sequence number
+     * @param s2 The second sequence number
+     *
+     * @return 'true' if both ledgers would be in the same DB
+     */
     virtual bool
     isSameDB(std::uint32_t s1, std::uint32_t s2) = 0;
 
     virtual void
     sync() = 0;
 
-    /** Fetch a node object.
-        If the object is known to be not in the database, isn't found in the
-        database during the fetch, or failed to load correctly during the fetch,
-        `nullptr` is returned.
-
-        @note This can be called concurrently.
-        @param hash The key of the object to retrieve.
-        @param ledgerSeq The sequence of the ledger where the object is stored.
-        @param fetchType the type of fetch, synchronous or asynchronous.
-        @return The object, or nullptr if it couldn't be retrieved.
-    */
+    /**
+     * Fetch a node object.
+     * If the object is known to be not in the database, isn't found in the
+     * database during the fetch, or failed to load correctly during the fetch,
+     * `nullptr` is returned.
+     *
+     * @note This can be called concurrently.
+     * @param hash The key of the object to retrieve.
+     * @param ledgerSeq The sequence of the ledger where the object is stored.
+     * @param fetchType the type of fetch, synchronous or asynchronous.
+     * @return The object, or nullptr if it couldn't be retrieved.
+     */
     std::shared_ptr<NodeObject>
     fetchNodeObject(
         uint256 const& hash,
@@ -116,29 +137,33 @@ public:
         FetchType fetchType = FetchType::Synchronous,
         bool duplicate = false);
 
-    /** Fetch an object without waiting.
-        If I/O is required to determine whether or not the object is present,
-        `false` is returned. Otherwise, `true` is returned and `object` is set
-        to refer to the object, or `nullptr` if the object is not present.
-        If I/O is required, the I/O is scheduled and `true` is returned
-
-        @note This can be called concurrently.
-        @param hash The key of the object to retrieve
-        @param ledgerSeq The sequence of the ledger where the
-                object is stored.
-        @param callback Callback function when read completes
-    */
+    /**
+     * Fetch an object without waiting.
+     * If I/O is required to determine whether or not the object is present,
+     * `false` is returned. Otherwise, `true` is returned and `object` is set
+     * to refer to the object, or `nullptr` if the object is not present.
+     * If I/O is required, the I/O is scheduled and `true` is returned
+     *
+     * @note This can be called concurrently.
+     * @param hash The key of the object to retrieve
+     * @param ledgerSeq The sequence of the ledger where the
+     *         object is stored.
+     * @param callback Callback function when read completes
+     */
     virtual void
     asyncFetch(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
 
-    /** Remove expired entries from the positive and negative caches. */
+    /**
+     * Remove expired entries from the positive and negative caches.
+     */
     virtual void
     sweep() = 0;
 
-    /** Gather statistics pertaining to read and write activities.
+    /**
+     * Gather statistics pertaining to read and write activities.
      *
      * @param obj Json object reference into which to place counters.
      */
@@ -175,7 +200,9 @@ public:
     void
     getCountsJson(json::Value& obj);
 
-    /** Returns the number of file descriptors the database expects to need */
+    /**
+     * Returns the number of file descriptors the database expects to need
+     */
     int
     fdRequired() const
     {
@@ -188,7 +215,8 @@ public:
     bool
     isStopping() const;
 
-    /** @return The earliest ledger sequence allowed
+    /**
+     * @return The earliest ledger sequence allowed
      */
     [[nodiscard]] std::uint32_t
     earliestLedgerSeq() const noexcept
@@ -220,7 +248,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");
+        XRPL_ASSERT(count <= sz, "xrpl::node_store::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -265,13 +293,14 @@ private:
         FetchReport& fetchReport,
         bool duplicate) = 0;
 
-    /** Visit every object in the database
-        This is usually called during import.
-
-        @note This routine will not be called concurrently with itself
-                or other methods.
-        @see import
-    */
+    /**
+     * Visit every object in the database
+     * This is usually called during import.
+     *
+     * @note This routine will not be called concurrently with itself
+     *       or other methods.
+     * @see import
+     */
     virtual void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
@@ -279,4 +308,4 @@ private:
     threadEntry();
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

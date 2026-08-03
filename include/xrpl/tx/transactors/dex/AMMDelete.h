@@ -1,10 +1,18 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
-/** AMMDelete implements AMM delete transactor. This is a mechanism to
+/**
+ * AMMDelete implements AMM delete transactor. This is a mechanism to
  * delete AMM in an empty state when the number of LP tokens is 0.
  * AMMDelete deletes the trustlines up to configured maximum. If all
  * trustlines are deleted then AMM ltAMM and root account are deleted.

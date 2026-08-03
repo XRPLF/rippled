@@ -1,24 +1,46 @@
 #!/usr/bin/env python3
-"""Pre-commit hook that runs clang-tidy on changed files using run-clang-tidy."""
+"""Pre-commit hook that runs clang-tidy on staged files using run-clang-tidy.
+
+The script determines the staged files itself (see `pass_filenames: false` in
+.pre-commit-config.yaml) so run-clang-tidy is run once and handles parallelism
+internally: pre-commit would otherwise split the files across parallel hook
+invocations that race when fixes edit a shared header.
+
+Fixes are collected with `-export-fixes` and applied by clang-apply-replacements
+in a separate step rather than with run-clang-tidy's `-fix`. The `add_module`
+build isolates each module's headers behind a per-module symlink directory
+(build/modules/<module>/...), so a header reachable from several translation
+units is referenced through different paths that all resolve to the same source
+file. clang-apply-replacements deduplicates identical replacements by their
+literal path, so those paths must be canonicalised to the real source path
+first; otherwise the same fix is applied once per path and corrupts the header.
+"""
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-from collections import defaultdict
+import tempfile
 from pathlib import Path
 
-HEADER_EXTENSIONS = {".h", ".hpp", ".ipp"}
-SOURCE_EXTENSIONS = {".cpp"}
-INCLUDE_RE = re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")
+CLANG_TIDY_VERSION = 22
+
+# Extensions run-clang-tidy can analyse: `.cpp` translation units and, thanks to
+# the `verify_headers` build option, `.h`/`.hpp` headers (each has its own
+# compile_commands.json entry). `.ipp` fragments have no entry and are skipped.
+TIDY_EXTENSIONS = {".cpp", ".h", ".hpp"}
+
+# A single-quoted `FilePath:` entry in an -export-fixes YAML file, allowing the
+# `- ` marker that precedes it inside a `Replacements:` sequence. clang-tidy
+# emits paths single-quoted and doubles any embedded quote per YAML rules.
+FILEPATH_RE = re.compile(r"^(\s*(?:-\s+)?FilePath:\s*)'((?:[^']|'')*)'\s*$")
 
 
-def find_run_clang_tidy() -> str | None:
-    for candidate in ("run-clang-tidy-21", "run-clang-tidy"):
+def find_tool(name: str) -> str | None:
+    for candidate in (f"{name}-{CLANG_TIDY_VERSION}", name):
         if path := shutil.which(candidate):
             return path
     return None
@@ -32,136 +54,37 @@ def find_build_dir(repo_root: Path) -> Path | None:
     return None
 
 
-def build_include_graph(build_dir: Path, repo_root: Path) -> tuple[dict, set]:
+def staged_files(repo_root: Path) -> list[Path]:
+    """Return absolute paths of staged, lint-able C/C++ files.
+
+    `--diff-filter=d` excludes deletions so we never lint a removed file.
     """
-    Scan all files reachable from compile_commands.json and build an inverted include graph.
-
-    Returns:
-        inverted: header_path -> set of files that include it
-        source_files: set of all TU paths from compile_commands.json
-    """
-    with open(build_dir / "compile_commands.json") as f:
-        db = json.load(f)
-
-    source_files = {Path(e["file"]).resolve() for e in db}
-    include_roots = [repo_root / "include", repo_root / "src"]
-    inverted: dict[Path, set[Path]] = defaultdict(set)
-
-    to_scan: set[Path] = set(source_files)
-    scanned: set[Path] = set()
-
-    while to_scan:
-        file = to_scan.pop()
-        if file in scanned or not file.exists():
-            continue
-        scanned.add(file)
-
-        content = file.read_text()
-
-        for line in content.splitlines():
-            m = INCLUDE_RE.match(line)
-            if not m:
-                continue
-            for root in include_roots:
-                candidate = (root / m.group(1)).resolve()
-                if candidate.exists():
-                    inverted[candidate].add(file)
-                    if candidate not in scanned:
-                        to_scan.add(candidate)
-                    break
-
-    return inverted, source_files
-
-
-def find_tus_for_headers(
-    headers: list[Path],
-    inverted: dict[Path, set[Path]],
-    source_files: set[Path],
-) -> set[Path]:
-    """
-    For each header, pick one TU that transitively includes it.
-    Prefers a TU whose stem matches the header's stem, otherwise picks the first found.
-    """
-    result: set[Path] = set()
-
-    for header in headers:
-        preferred: Path | None = None
-        visited: set[Path] = {header}
-        stack: list[Path] = [header]
-
-        while stack:
-            h = stack.pop()
-            for inc in inverted.get(h, ()):
-                if inc in source_files:
-                    if inc.stem == header.stem:
-                        preferred = inc
-                        break
-                    if preferred is None:
-                        preferred = inc
-                if inc not in visited:
-                    visited.add(inc)
-                    stack.append(inc)
-            if preferred is not None and preferred.stem == header.stem:
-                break
-
-        if preferred is not None:
-            result.add(preferred)
-
-    return result
-
-
-def resolve_files(
-    input_files: list[str], build_dir: Path, repo_root: Path
-) -> list[str]:
-    """
-    Split input into source files and headers. Source files are passed through;
-    headers are resolved to the TUs that transitively include them.
-    """
-    sources: list[Path] = []
-    headers: list[Path] = []
-
-    for f in input_files:
-        p = Path(f).resolve()
-        if p.suffix in SOURCE_EXTENSIONS:
-            sources.append(p)
-        elif p.suffix in HEADER_EXTENSIONS:
-            headers.append(p)
-
-    if not headers:
-        return [str(p) for p in sources]
-
-    print(
-        f"Resolving {len(headers)} header(s) to compilation units...", file=sys.stderr
-    )
-    inverted, source_files = build_include_graph(build_dir, repo_root)
-    tus = find_tus_for_headers(headers, inverted, source_files)
-
-    if not tus:
-        print(
-            "Warning: no compilation units found that include the modified headers; "
-            "skipping clang-tidy for headers.",
-            file=sys.stderr,
-        )
-
-    return sorted({str(p) for p in (*sources, *tus)})
-
-
-def staged_files(repo_root: Path) -> list[str]:
-    result = subprocess.run(
-        ["git", "diff", "--staged", "--name-only", "--diff-filter=d"],
-        capture_output=True,
+    output = subprocess.check_output(
+        ["git", "diff", "--staged", "--name-only", "--diff-filter=d", "--"]
+        + [f"*{ext}" for ext in TIDY_EXTENSIONS],
         text=True,
         cwd=repo_root,
     )
-    if result.returncode != 0:
-        print(
-            "clang-tidy check failed: 'git diff --staged' command failed.",
-            file=sys.stderr,
-        )
-        if result.stderr:
-            print(result.stderr, file=sys.stderr)
-        sys.exit(result.returncode or 1)
-    return [str(repo_root / p) for p in result.stdout.splitlines() if p]
+    return [repo_root / rel for rel in output.splitlines() if rel]
+
+
+def canonicalize_fix_paths(fixes_dir: Path) -> None:
+    """Rewrite every `FilePath` in the exported fixes to its real source path.
+
+    A header included through a module's isolation symlink is recorded under that
+    symlink's path; collapsing all paths to the same real file lets
+    clang-apply-replacements recognise the per-translation-unit duplicates and
+    apply each fix once.
+    """
+    for yaml in fixes_dir.glob("*.yaml"):
+        lines = []
+        for line in yaml.read_text().splitlines():
+            if m := FILEPATH_RE.match(line):
+                path = m.group(2).replace("''", "'")
+                real = os.path.realpath(path).replace("'", "''")
+                line = f"{m.group(1)}'{real}'"
+            lines.append(line)
+        yaml.write_text("\n".join(lines) + "\n")
 
 
 def main():
@@ -175,15 +98,25 @@ def main():
             text=True,
         ).strip()
     )
+
     files = staged_files(repo_root)
     if not files:
         return 0
 
-    run_clang_tidy = find_run_clang_tidy()
-    if not run_clang_tidy:
+    run_clang_tidy = find_tool("run-clang-tidy")
+    clang_apply_replacements = find_tool("clang-apply-replacements")
+    missing = [
+        name
+        for name, path in (
+            ("run-clang-tidy", run_clang_tidy),
+            ("clang-apply-replacements", clang_apply_replacements),
+        )
+        if not path
+    ]
+    if missing:
         print(
-            "clang-tidy check failed: TIDY is enabled but neither "
-            "'run-clang-tidy-21' nor 'run-clang-tidy' was found in PATH.",
+            f"clang-tidy check failed: TIDY is enabled but {' and '.join(missing)} "
+            f"was not found in PATH (tried the '-{CLANG_TIDY_VERSION}' suffix too).",
             file=sys.stderr,
         )
         return 1
@@ -197,15 +130,27 @@ def main():
         )
         return 1
 
-    tidy_files = resolve_files(files, build_dir, repo_root)
-    if not tidy_files:
-        return 0
+    with tempfile.TemporaryDirectory() as fixes_dir:
+        result = subprocess.run(
+            [
+                run_clang_tidy,
+                "-quiet",
+                "-p",
+                build_dir,
+                "-export-fixes",
+                fixes_dir,
+                "-allow-no-checks",
+            ]
+            + files
+        )
+        canonicalize_fix_paths(Path(fixes_dir))
+        # `FormatStyle` in .clang-tidy does not reach this path,
+        # so ask for the repository style here.
+        applied = subprocess.run(
+            [clang_apply_replacements, "--format", "--style=file", fixes_dir]
+        )
 
-    result = subprocess.run(
-        [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix", "-allow-no-checks"]
-        + tidy_files
-    )
-    return result.returncode
+    return result.returncode or applied.returncode
 
 
 if __name__ == "__main__":

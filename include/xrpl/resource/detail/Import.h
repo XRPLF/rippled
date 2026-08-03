@@ -3,9 +3,13 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 
+#include <vector>
+
 namespace xrpl::Resource {
 
-/** A set of imported consumer data from a gossip origin. */
+/**
+ * A set of imported consumer data from a gossip origin.
+ */
 struct Import
 {
     struct Item

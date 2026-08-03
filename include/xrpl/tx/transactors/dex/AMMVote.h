@@ -1,10 +1,18 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
-/** AMMVote implements AMM vote Transactor.
+/**
+ * AMMVote implements AMM vote Transactor.
  * This transactor allows for the TradingFee of the AMM instance be a votable
  * parameter. Any account (LP) that holds the corresponding LPTokens can cast
  * a vote using the new AMMVote transaction. VoteSlots array in ltAMM object

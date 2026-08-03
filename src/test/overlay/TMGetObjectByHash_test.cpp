@@ -8,7 +8,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -16,6 +15,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -100,6 +100,17 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
             return lastSentMessage_;
         }
 
+        // Synchronous test access to the JobQueue-dispatched processor.
+        // The production path runs this on JtLedgerReq; tests need a
+        // synchronous entry point to inspect the reply via send().
+        // PeerImp::processGetObjectByHash is `protected` so the derived
+        // test subclass can call it directly.
+        void
+        runProcessGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
+        {
+            processGetObjectByHash(m);
+        }
+
         static void
         resetId()
         {
@@ -179,6 +190,10 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     /**
      * Test that reply is limited to hardMaxReplyNodes when more objects
      * are requested than the limit allows.
+     *
+     * `onMessage(TMGetObjectByHash)` dispatches the generic-query path
+     * to the JobQueue, so tests invoke the synchronous processor
+     * directly via `runProcessGetObjectByHash`.
      */
     void
     testReplyLimit(size_t const numObjects, int const expectedReplySize)
@@ -191,8 +206,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto peer = createPeer(env);
 
         auto request = createRequest(numObjects, env);
-        // Call the onMessage handler
-        peer->onMessage(request);
+        peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
         auto sentMessage = peer->getLastSentMessage();

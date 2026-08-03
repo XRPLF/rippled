@@ -5,6 +5,7 @@
 #include <xrpl/core/LoadEvent.h>
 
 #include <chrono>
+#include <cstdint>
 #include <mutex>
 
 namespace xrpl {

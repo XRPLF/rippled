@@ -23,6 +23,7 @@ typeName()
     if (auto s = abi::__cxa_demangle(name.c_str(), nullptr, nullptr, nullptr))
     {
         name = s;
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
         std::free(s);
     }
 #endif
