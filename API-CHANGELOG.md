@@ -53,6 +53,7 @@ This section contains changes targeting a future version.
 - `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `validation_create`: The `secret` field now returns `invalidParams` if the value is not a string. Previously, arrays and objects returned an `internal` error, and numbers and booleans were silently coerced into a passphrase, deriving a validator key from the value's printed form. [#NNNN](https://github.com/XRPLF/rippled/pull/NNNN)
 
 ## XRP Ledger server version 3.1.0
 

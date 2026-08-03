@@ -14,6 +14,7 @@
 
 namespace xrpl {
 
+// The caller is responsible for checking that the secret, if present, is a string.
 static std::optional<Seed>
 validationSeed(json::Value const& params)
 {
@@ -33,6 +34,13 @@ json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
     json::Value obj(json::ValueType::Object);
+
+    // Guard the conversion validationSeed makes: json::Value::asString() throws for
+    // arrays and objects, which would surface as a generic internal error instead of
+    // invalid parameters, and silently stringifies scalars, so a number or a bool
+    // would be hashed into a validator key as its printed form.
+    if (context.params.isMember(jss::secret) && !context.params[jss::secret].isString())
+        return rpcError(RpcInvalidParams);
 
     auto seed = validationSeed(context.params);
 
