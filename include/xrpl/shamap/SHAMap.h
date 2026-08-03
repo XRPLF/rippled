@@ -414,6 +414,20 @@ public:
     void
     setUnbacked();
 
+    /**
+     * Drop resident cold subtrees to reclaim memory, keeping child hashes so
+     * they can be re-faulted from the NodeStore on demand.
+     *
+     * Only operates on a backed, immutable map (otherwise returns 0). Walks the
+     * resident tree from the root; inner nodes at depth >= minDepth (root is
+     * depth 0) have their resident children dropped, deepest first. Only clean
+     * (cowid()==0) nodes are shed, since dirty nodes are not yet on disk. The
+     * root itself is never dropped. Returns the number of child pointers
+     * dropped.
+     */
+    std::size_t
+    shedCold(unsigned minDepth);
+
     void
     dump(bool withHashes = false) const;
     void
@@ -557,6 +571,15 @@ private:
         int& maxCount) const;
     int
     walkSubTree(bool doWrite, NodeObjectType t);
+
+    // Recursive helper for shedCold. Holds a strong ref to `node` and to each
+    // child it recurses into so a dropped subtree is never dereferenced.
+    void
+    shedInner(
+        intr_ptr::SharedPtr<SHAMapInnerNode> const& node,
+        unsigned depth,
+        unsigned minDepth,
+        std::size_t& dropped);
 
     // Structure to track information about call to
     // getMissingNodes while it's in progress

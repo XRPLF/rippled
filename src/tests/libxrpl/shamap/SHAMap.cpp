@@ -6,6 +6,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
@@ -345,6 +347,85 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     badPath = goodPath;
     badPath.erase(badPath.begin());
     EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+}
+
+class SHAMapShed : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    static boost::intrusive_ptr<SHAMapItem>
+    makeItem(std::uint32_t n)
+    {
+        Serializer s;
+        s.add32(0xDEADBEEFu);
+        s.add32(n);
+        s.add32(n * 2654435761u);
+        return makeShamapitem(s.getSHA512Half(), s.slice());
+    }
+};
+
+// shedCold drops resident cold subtrees but leaves the map transparent:
+// the same items re-read identically (re-faulted from the NodeStore) and the
+// map hash is unchanged.
+TEST_F(SHAMapShed, shed_cold_is_transparent)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};  // backed by default
+
+    static constexpr std::uint32_t kItemCount = 3000;
+
+    std::vector<boost::intrusive_ptr<SHAMapItem>> items;
+    items.reserve(kItemCount);
+    for (std::uint32_t i = 0; i < kItemCount; ++i)
+    {
+        auto item = makeItem(i);
+        items.push_back(item);
+        ASSERT_TRUE(map.addItem(SHAMapNodeType::TnAccountState, item));
+    }
+
+    // Persist every node to the NodeStore so a dropped child can be re-faulted.
+    // This must happen before any getHash()/invariants() call: getHash() on a
+    // freshly modified map calls unshare(), which marks nodes clean WITHOUT
+    // writing them, and flushDirty only writes dirty (cowid != 0) nodes.
+    int const flushed = map.flushDirty(NodeObjectType::AccountNode);
+    ASSERT_GT(flushed, 0) << "nothing was flushed to the store";
+    map.setImmutable();
+    map.invariants();
+
+    SHAMapHash const beforeHash = map.getHash();
+
+    // Sample a spread of items and capture their values.
+    std::vector<uint256> sampleKeys;
+    std::vector<Blob> sampleVals;
+    for (std::uint32_t i = 0; i < kItemCount; i += 137)
+    {
+        auto const& key = items[i]->key();
+        auto const& found = map.peekItem(key);
+        ASSERT_NE(found, nullptr);
+        auto const sl = found->slice();
+        sampleKeys.push_back(key);
+        sampleVals.emplace_back(sl.data(), sl.data() + sl.size());
+    }
+    ASSERT_FALSE(sampleKeys.empty());
+
+    std::size_t const dropped = map.shedCold(/*minDepth=*/1);
+    EXPECT_GT(dropped, 0u) << "nothing was shed";
+
+    // Clear the tree node cache so re-reads must fault back from the NodeStore.
+    f.reset();
+
+    for (std::size_t i = 0; i < sampleKeys.size(); ++i)
+    {
+        auto const& found = map.peekItem(sampleKeys[i]);
+        ASSERT_NE(found, nullptr) << "item lost after shed";
+        auto const sl = found->slice();
+        Blob const got(sl.data(), sl.data() + sl.size());
+        EXPECT_EQ(got, sampleVals[i]) << "value changed after re-fault";
+    }
+
+    EXPECT_EQ(map.getHash(), beforeHash) << "hash changed after shed";
+    map.invariants();
 }
 
 }  // namespace xrpl::tests

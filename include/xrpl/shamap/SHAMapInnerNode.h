@@ -148,6 +148,17 @@ public:
     SHAMapTreeNodePtr
     canonicalizeChild(int branch, SHAMapTreeNodePtr node);
 
+    /**
+     * Drop the resident child pointer for a branch, keeping its hash.
+     *
+     * Leaves the hash array and `isBranch_` untouched so `SHAMap::descend` can
+     * re-fault the child from the NodeStore on demand. Only meaningful on a
+     * backed map. Returns true if a resident pointer was dropped, false if the
+     * branch is empty or the child was already null (already lazy).
+     */
+    bool
+    dropChild(int branch);
+
     // sync functions
     bool
     isFullBelow(std::uint32_t generation) const;

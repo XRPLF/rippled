@@ -1104,6 +1104,56 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
 }
 
 void
+SHAMap::shedInner(
+    intr_ptr::SharedPtr<SHAMapInnerNode> const& node,
+    unsigned depth,
+    unsigned minDepth,
+    std::size_t& dropped)
+{
+    // A dirty node's subtree may not be on disk yet, so never shed its children.
+    bool const dropHere = (node->cowid() == 0) && (depth >= minDepth);
+
+    for (int branch = 0; branch < kBranchFactor; ++branch)
+    {
+        if (node->isEmptyBranch(branch))
+            continue;
+
+        // getChild does not fault: a null result means the child is already
+        // lazy, so leave it rather than re-fault it just to drop it again.
+        SHAMapTreeNodePtr child = node->getChild(branch);
+        if (!child)
+            continue;
+
+        // Recurse first so the leaf-heavy bottom is shed before this level.
+        if (child->isInner())
+            shedInner(
+                intr_ptr::staticPointerCast<SHAMapInnerNode>(child),
+                depth + 1,
+                minDepth,
+                dropped);
+
+        // The local `child` strong ref keeps the subtree alive across the drop,
+        // so the reset slot never leaves a dangling reference.
+        if (dropHere && node->dropChild(branch))
+            ++dropped;
+    }
+}
+
+std::size_t
+SHAMap::shedCold(unsigned minDepth)
+{
+    if (!backed_ || (state_ != SHAMapState::Immutable))
+        return 0;
+
+    if (!root_ || root_->isLeaf())
+        return 0;
+
+    std::size_t dropped = 0;
+    shedInner(intr_ptr::staticPointerCast<SHAMapInnerNode>(root_), 0, minDepth, dropped);
+    return dropped;
+}
+
+void
 SHAMap::dump(bool hash) const
 {
     int leafCount = 0;
