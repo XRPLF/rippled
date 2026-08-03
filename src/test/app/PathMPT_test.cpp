@@ -87,9 +87,9 @@ class PathMPT_test : public beast::unit_test::Suite
         // with the search parameters that the tests were written for.
         using namespace jtx;
         return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->PATH_SEARCH_OLD = 7;
-            cfg->PATH_SEARCH = 7;
-            cfg->PATH_SEARCH_MAX = 10;
+            cfg->pathSearchOld = 7;
+            cfg->pathSearch = 7;
+            cfg->pathSearchMax = 10;
             return cfg;
         }));
     }

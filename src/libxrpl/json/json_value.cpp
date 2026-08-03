@@ -1,9 +1,11 @@
 #include <xrpl/json/json_value.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>  // IWYU pragma: keep
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
+#include <xrpl/json/json_errors.h>  // IWYU pragma: keep
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_writer.h>
 
@@ -46,6 +48,7 @@ public:
         if (length == kUnknown)
             length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
         char* newString = static_cast<char*>(malloc(length + 1));
         if (value != nullptr)
             memcpy(newString, value, length);
@@ -57,7 +60,10 @@ public:
     releaseStringValue(char* value) override
     {
         if (value != nullptr)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
             free(value);
+        }
     }
 };
 
@@ -88,7 +94,7 @@ static struct DummyValueAllocatorInitializer
 // Notes: index_ indicates if the string was allocated when
 // a string is stored.
 
-Value::CZString::CZString(int index) : cstr_(0), index_(index)
+Value::CZString::CZString(int index) : cstr_(nullptr), index_(index)
 {
 }
 
@@ -101,7 +107,8 @@ Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
 
 Value::CZString::CZString(CZString const& other)
     : cstr_(
-          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) && other.cstr_ != 0
+          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) &&
+                  other.cstr_ != nullptr
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
     , index_([&]() -> int {
@@ -117,7 +124,10 @@ Value::CZString::CZString(CZString const& other)
 Value::CZString::~CZString()
 {
     if ((cstr_ != nullptr) && index_ == static_cast<int>(DuplicationPolicy::Duplicate))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
+    }
 }
 
 bool
@@ -164,7 +174,8 @@ Value::CZString::isStaticString() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-/*! \internal Default constructor initialization must be equivalent to:
+/**
+ * @internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
@@ -185,7 +196,7 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::String:
-            value_.stringVal = 0;
+            value_.stringVal = nullptr;
             break;
 
         case ValueType::Array:
@@ -238,6 +249,7 @@ Value::Value(std::string const& value) : type_(ValueType::String), allocated_(tr
 
 Value::Value(StaticString const& value) : type_(ValueType::String)
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     value_.stringVal = const_cast<char*>(value.cStr());
 }
 
@@ -266,7 +278,7 @@ Value::Value(Value const& other) : type_(other.type_)
             }
             else
             {
-                value_.stringVal = 0;
+                value_.stringVal = nullptr;
             }
 
             break;
@@ -302,8 +314,7 @@ Value::~Value()
 
         case ValueType::Array:
         case ValueType::Object:
-            if (value_.mapVal != nullptr)
-                delete value_.mapVal;
+            delete value_.mapVal;
             break;
 
         // LCOV_EXCL_START
@@ -403,7 +414,7 @@ operator<(Value const& x, Value const& y)
             return static_cast<int>(x.value_.boolVal) < static_cast<int>(y.value_.boolVal);
 
         case ValueType::String:
-            return (x.value_.stringVal == 0 && (y.value_.stringVal != nullptr)) ||
+            return (x.value_.stringVal == nullptr && (y.value_.stringVal != nullptr)) ||
                 ((y.value_.stringVal != nullptr) && (x.value_.stringVal != nullptr) &&
                  strcmp(x.value_.stringVal, y.value_.stringVal) < 0);
 
@@ -783,7 +794,9 @@ Value::isConvertibleTo(ValueType other) const
     return false;  // unreachable;
 }
 
-/// Number of values in array or object
+/**
+ * Number of values in array or object
+ */
 Value::UInt
 Value::size() const
 {
@@ -800,7 +813,7 @@ Value::size() const
         case ValueType::Array:  // size of the array is highest index + 1
             if (!value_.mapVal->empty())
             {
-                ObjectValues::const_iterator itLast = value_.mapVal->end();
+                auto itLast = value_.mapVal->end();
                 --itLast;
                 return (*itLast).first.index() + 1;
             }
@@ -864,7 +877,7 @@ Value::operator[](UInt index)
         *this = Value(ValueType::Array);
 
     CZString const key(index);
-    ObjectValues::iterator it = value_.mapVal->lower_bound(key);
+    auto it = value_.mapVal->lower_bound(key);
 
     if (it != value_.mapVal->end() && (*it).first == key)
         return (*it).second;
@@ -885,7 +898,7 @@ Value::operator[](UInt index) const
         return kNull;
 
     CZString const key(index);
-    ObjectValues::const_iterator const it = value_.mapVal->find(key);
+    auto const it = value_.mapVal->find(key);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -913,7 +926,7 @@ Value::resolveReference(char const* key, bool isStatic)
         key,
         isStatic ? CZString::DuplicationPolicy::NoDuplication
                  : CZString::DuplicationPolicy::DuplicateOnCopy);
-    ObjectValues::iterator it = value_.mapVal->lower_bound(actualKey);
+    auto it = value_.mapVal->lower_bound(actualKey);
 
     if (it != value_.mapVal->end() && (*it).first == actualKey)
         return (*it).second;
@@ -948,7 +961,7 @@ Value::operator[](char const* key) const
         return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
-    ObjectValues::const_iterator const it = value_.mapVal->find(actualKey);
+    auto const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -1016,7 +1029,7 @@ Value::removeMember(char const* key)
         return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
-    ObjectValues::iterator const it = value_.mapVal->find(actualKey);
+    auto const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -1066,8 +1079,8 @@ Value::getMemberNames() const
 
     Members members;
     members.reserve(value_.mapVal->size());
-    ObjectValues::const_iterator it = value_.mapVal->begin();
-    ObjectValues::const_iterator const itEnd = value_.mapVal->end();
+    auto it = value_.mapVal->begin();
+    auto const itEnd = value_.mapVal->end();
 
     for (; it != itEnd; ++it)
         members.emplace_back((*it).first.cStr());

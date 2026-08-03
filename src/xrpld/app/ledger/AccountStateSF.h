@@ -2,8 +2,14 @@
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -12,7 +18,7 @@ namespace xrpl {
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-    AccountStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
+    AccountStateSF(node_store::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
@@ -28,7 +34,7 @@ public:
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:
-    NodeStore::Database& db_;
+    node_store::Database& db_;
     AbstractFetchPackContainer& fp_;
 };
 
