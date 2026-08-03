@@ -1,8 +1,24 @@
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
 
 namespace xrpl {
 
@@ -15,7 +31,10 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+        return temMALFORMED;
+
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -31,13 +50,12 @@ PaymentChannelFund::doApply()
 
     AccountID const src = (*slep)[sfAccount];
     auto const txAccount = ctx_.tx[sfAccount];
-    auto const expiration = (*slep)[~sfExpiration];
+    auto const curExpiration = (*slep)[~sfExpiration];
 
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), curExpiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (src != txAccount)
@@ -46,16 +64,21 @@ PaymentChannelFund::doApply()
         return tecNO_PERMISSION;
     }
 
-    if (auto extend = ctx_.tx[~sfExpiration])
+    if (auto newExpiration = ctx_.tx[~sfExpiration])
     {
-        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() +
-            (*slep)[sfSettleDelay];
-        if (expiration && *expiration < minExpiration)
-            minExpiration = *expiration;
+        auto minExpiration = saturatingAdd(
+            ctx_.view().rules(),
+            ctx_.view().header().parentCloseTime.time_since_epoch().count(),
+            (*slep)[sfSettleDelay]);
+        if (curExpiration && *curExpiration < minExpiration)
+            minExpiration = *curExpiration;
 
-        if (*extend < minExpiration)
-            return temBAD_EXPIRATION;
-        (*slep)[~sfExpiration] = *extend;
+        if (*newExpiration < minExpiration)
+        {
+            return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                : TER{temBAD_EXPIRATION};
+        }
+        (*slep)[~sfExpiration] = *newExpiration;
         ctx_.view().update(slep);
     }
 
@@ -65,13 +88,18 @@ PaymentChannelFund::doApply()
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+        STAmount const balance = (*sle)[sfBalance];
+        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx_.tx[sfAmount])
+        // After locking sfAmount in the channel, the source must still meet
+        // its own reserve floor. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. Funding an existing channel adds no owned object,
+        // so there is no owner-count delta.
+        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 
@@ -90,4 +118,21 @@ PaymentChannelFund::doApply()
     return tesSUCCESS;
 }
 
+void
+PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+PaymentChannelFund::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

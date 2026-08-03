@@ -234,9 +234,11 @@ message TMGetObjectByHash {
     otTRANSACTIONS = 7;
   }
 
+  // Previously used - don't reuse.
+  reserved 3;
+
   required ObjectType type = 1;
   required bool query = 2;               // is this a query or a reply?
-  optional uint32 seq = 3;               // used to match replies to queries
   optional bytes ledgerHash = 4;         // the hash of the ledger these queries are for
   optional bool fat = 5;                 // return related nodes
   repeated TMIndexedObject objects = 6;  // the specific objects requested
@@ -244,7 +246,15 @@ message TMGetObjectByHash {
 
 message TMLedgerNode {
   required bytes nodedata = 1;
-  optional bytes nodeid = 2;  // missing for ledger base data
+
+  // Used when protocol version <2.3. Not set for ledger base data.
+  optional bytes nodeid = 2;
+
+  // Used when protocol version >=2.3. Neither value is set for ledger base data.
+  oneof reference {
+    bytes id = 3;      // Set for inner nodes.
+    uint32 depth = 4;  // Set for leaf nodes.
+  }
 }
 
 enum TMLedgerInfoType {

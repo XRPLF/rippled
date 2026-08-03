@@ -1,25 +1,36 @@
 #pragma once
 
-#include <xrpld/consensus/Validations.h>
-
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
 
 class Application;
 
-enum class BypassAccept : bool { no = false, yes };
+enum class BypassAccept : bool { No = false, Yes };
 
-/** Wrapper over STValidation for generic Validation code
-
-    Wraps an STValidation for compatibility with the generic validation code.
-*/
+/**
+ * Wrapper over STValidation for generic Validation code
+ *
+ * Wraps an STValidation for compatibility with the generic validation code.
+ */
 class RCLValidation
 {
     std::shared_ptr<STValidation> val_;
@@ -28,58 +39,73 @@ public:
     using NodeKey = xrpl::PublicKey;
     using NodeID = xrpl::NodeID;
 
-    /** Constructor
-
-        @param v The validation to wrap.
-    */
-    RCLValidation(std::shared_ptr<STValidation> const& v) : val_{v}
+    /**
+     * Constructor
+     *
+     * @param v The validation to wrap.
+     */
+    RCLValidation(std::shared_ptr<STValidation> v) : val_{std::move(v)}
     {
     }
 
-    /// Validated ledger's hash
-    uint256
+    /**
+     * Validated ledger's hash
+     */
+    [[nodiscard]] uint256
     ledgerID() const
     {
         return val_->getLedgerHash();
     }
 
-    /// Validated ledger's sequence number (0 if none)
-    std::uint32_t
+    /**
+     * Validated ledger's sequence number (0 if none)
+     */
+    [[nodiscard]] std::uint32_t
     seq() const
     {
         return val_->getFieldU32(sfLedgerSequence);
     }
 
-    /// Validation's signing time
-    NetClock::time_point
+    /**
+     * Validation's signing time
+     */
+    [[nodiscard]] NetClock::time_point
     signTime() const
     {
         return val_->getSignTime();
     }
 
-    /// Validated ledger's first seen time
-    NetClock::time_point
+    /**
+     * Validated ledger's first seen time
+     */
+    [[nodiscard]] NetClock::time_point
     seenTime() const
     {
         return val_->getSeenTime();
     }
 
-    /// Public key of validator that published the validation
-    PublicKey
+    /**
+     * Public key of validator that published the validation
+     */
+    [[nodiscard]] PublicKey
     key() const
     {
         return val_->getSignerPublic();
     }
 
-    /// NodeID of validator that published the validation
-    NodeID
+    /**
+     * NodeID of validator that published the validation
+     */
+    [[nodiscard]] NodeID
     nodeID() const
     {
         return val_->getNodeID();
     }
 
-    /// Whether the validation is considered trusted.
-    bool
+    /**
+     * Whether the validation is considered trusted.
+     */
+    [[nodiscard]] bool
     trusted() const
     {
         return val_->isTrusted();
@@ -97,44 +123,53 @@ public:
         val_->setUntrusted();
     }
 
-    /// Whether the validation is full (not-partial)
-    bool
+    /**
+     * Whether the validation is full (not-partial)
+     */
+    [[nodiscard]] bool
     full() const
     {
         return val_->isFull();
     }
 
-    /// Get the load fee of the validation if it exists
-    std::optional<std::uint32_t>
+    /**
+     * Get the load fee of the validation if it exists
+     */
+    [[nodiscard]] std::optional<std::uint32_t>
     loadFee() const
     {
         return ~(*val_)[~sfLoadFee];
     }
 
-    /// Get the cookie specified in the validation (0 if not set)
-    std::uint64_t
+    /**
+     * Get the cookie specified in the validation (0 if not set)
+     */
+    [[nodiscard]] std::uint64_t
     cookie() const
     {
         return (*val_)[sfCookie];
     }
 
-    /// Extract the underlying STValidation being wrapped
-    std::shared_ptr<STValidation>
+    /**
+     * Extract the underlying STValidation being wrapped
+     */
+    [[nodiscard]] std::shared_ptr<STValidation>
     unwrap() const
     {
         return val_;
     }
 };
 
-/** Wraps a ledger instance for use in generic Validations LedgerTrie.
-
-    The LedgerTrie models a ledger's history as a map from Seq -> ID. Any
-    two ledgers that have the same ID for a given Seq have the same ID for
-    all earlier sequences (e.g. shared ancestry). In practice, a ledger only
-    conveniently has the prior 256 ancestor hashes available. For
-    RCLValidatedLedger, we treat any ledgers separated by more than 256 Seq as
-    distinct.
-*/
+/**
+ * Wraps a ledger instance for use in generic Validations LedgerTrie.
+ *
+ * The LedgerTrie models a ledger's history as a map from Seq -> ID. Any
+ * two ledgers that have the same ID for a given Seq have the same ID for
+ * all earlier sequences (e.g. shared ancestry). In practice, a ledger only
+ * conveniently has the prior 256 ancestor hashes available. For
+ * RCLValidatedLedger, we treat any ledgers separated by more than 256 Seq as
+ * distinct.
+ */
 class RCLValidatedLedger
 {
 public:
@@ -149,28 +184,35 @@ public:
 
     RCLValidatedLedger(std::shared_ptr<Ledger const> const& ledger, beast::Journal j);
 
-    /// The sequence (index) of the ledger
-    Seq
+    /**
+     * The sequence (index) of the ledger
+     */
+    [[nodiscard]] Seq
     seq() const;
 
-    /// The ID (hash) of the ledger
-    ID
+    /**
+     * The ID (hash) of the ledger
+     */
+    [[nodiscard]] ID
     id() const;
 
-    /** Lookup the ID of the ancestor ledger
-
-        @param s The sequence (index) of the ancestor
-        @return The ID of this ledger's ancestor with that sequence number or
-                ID{0} if one was not determined
-    */
+    /**
+     * Lookup the ID of the ancestor ledger
+     *
+     * @param s The sequence (index) of the ancestor
+     * @return The ID of this ledger's ancestor with that sequence number or
+     *         ID{0} if one was not determined
+     */
     ID
     operator[](Seq const& s) const;
 
-    /// Find the sequence number of the earliest mismatching ancestor
+    /**
+     * Find the sequence number of the earliest mismatching ancestor
+     */
     friend Seq
     mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b);
 
-    Seq
+    [[nodiscard]] Seq
     minSeq() const;
 
 private:
@@ -180,11 +222,12 @@ private:
     beast::Journal j_;
 };
 
-/** Generic validations adaptor class for RCL
-
-    Manages storing and writing stale RCLValidations to the sqlite DB and
-    acquiring validated ledgers from the network.
-*/
+/**
+ * Generic validations adaptor class for RCL
+ *
+ * Manages storing and writing stale RCLValidations to the sqlite DB and
+ * acquiring validated ledgers from the network.
+ */
 class RCLValidationsAdaptor
 {
 public:
@@ -195,16 +238,19 @@ public:
 
     RCLValidationsAdaptor(Application& app, beast::Journal j);
 
-    /** Current time used to determine if validations are stale.
+    /**
+     * Current time used to determine if validations are stale.
      */
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     now() const;
 
-    /** Attempt to acquire the ledger with given id from the network */
+    /**
+     * Attempt to acquire the ledger with given id from the network
+     */
     std::optional<RCLValidatedLedger>
     acquire(LedgerHash const& id);
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     journal() const
     {
         return j_;
@@ -215,24 +261,27 @@ private:
     beast::Journal j_;
 };
 
-/// Alias for RCL-specific instantiation of generic Validations
+/**
+ * Alias for RCL-specific instantiation of generic Validations
+ */
 using RCLValidations = Validations<RCLValidationsAdaptor>;
 
-/** Handle a new validation
-
-    Also sets the trust status of a validation based on the validating node's
-    public key and this node's current UNL.
-
-    @param app Application object containing validations and ledgerMaster
-    @param val The validation to add
-    @param source Name associated with validation used in logging
-*/
+/**
+ * Handle a new validation
+ *
+ * Also sets the trust status of a validation based on the validating node's
+ * public key and this node's current UNL.
+ *
+ * @param app Application object containing validations and ledgerMaster
+ * @param val The validation to add
+ * @param source Name associated with validation used in logging
+ */
 void
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
     std::string const& source,
-    BypassAccept const bypassAccept = BypassAccept::no,
+    BypassAccept const bypassAccept = BypassAccept::No,
     std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

@@ -59,7 +59,7 @@ struct CombineVisitors : Ts...
 // robust than class template argument deduction (CTAD) via the deduction guide.
 template <typename... Ts>
 constexpr CombineVisitors<std::decay_t<Ts>...>
-make_combine_visitors(Ts&&... ts)
+makeCombineVisitors(Ts&&... ts)
 {
     // std::decay_t<Ts> is used to remove references/constness from the lambda
     // types before they are passed as template arguments to the CombineVisitors
@@ -74,11 +74,11 @@ constexpr auto
 visit(Variant&& v, Visitors&&... visitors) -> decltype(auto)
 {
     // Use the function template helper instead of raw CTAD.
-    auto visitor_set = make_combine_visitors(std::forward<Visitors>(visitors)...);
+    auto visitorSet = makeCombineVisitors(std::forward<Visitors>(visitors)...);
 
     // Delegate to std::visit, perfectly forwarding the variant and the visitor
     // set.
-    return std::visit(visitor_set, std::forward<Variant>(v));
+    return std::visit(visitorSet, std::forward<Variant>(v));
 }
 
 }  // namespace detail

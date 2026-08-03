@@ -1,26 +1,44 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/LoadEvent.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** Calculates payment paths.
-
-    The @ref RippleCalc determines the quality of the found paths.
-
-    @see RippleCalc
-*/
+/**
+ * Calculates payment paths.
+ *
+ * The @ref RippleCalc determines the quality of the found paths.
+ *
+ * @see RippleCalc
+ */
 class Pathfinder : public CountedObject<Pathfinder>
 {
 public:
-    /** Construct a pathfinder without an issuer.*/
+    /**
+     * Construct a pathfinder without an issuer.
+     */
     Pathfinder(
         std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
@@ -42,11 +60,13 @@ public:
     bool
     findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
 
-    /** Compute the rankings of the paths. */
+    /**
+     * Compute the rankings of the paths.
+     */
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
-    /* Get the best paths, up to maxPaths in number, from mCompletePaths.
+    /* Get the best paths, up to maxPaths in number, from completePaths_.
 
        On return, if fullLiquidityPath is not empty, then it contains the best
        additional single path which can consume all the liquidity.
@@ -59,13 +79,13 @@ public:
         AccountID const& srcIssuer,
         std::function<bool(void)> const& continueCallback = {});
 
-    enum NodeType {
-        nt_SOURCE,      // The source account: with an issuer account, if needed.
-        nt_ACCOUNTS,    // Accounts that connect from this source/currency.
-        nt_BOOKS,       // Order books that connect to this currency.
-        nt_XRP_BOOK,    // The order book from this currency to XRP.
-        nt_DEST_BOOK,   // The order book to the destination currency/issuer.
-        nt_DESTINATION  // The destination account only.
+    enum class NodeType {
+        Source,      // The source account: with an issuer account, if needed.
+        Accounts,    // Accounts that connect from this source/currency.
+        Books,       // Order books that connect to this currency.
+        XrpBook,     // The order book from this currency to XRP.
+        DestBook,    // The order book to the destination currency/issuer.
+        Destination  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
@@ -73,12 +93,12 @@ public:
 
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
-    enum PaymentType {
-        pt_XRP_to_XRP,
-        pt_XRP_to_nonXRP,
-        pt_nonXRP_to_XRP,
-        pt_nonXRP_to_same,   // Destination currency is the same as source.
-        pt_nonXRP_to_nonXRP  // Destination currency is NOT the same as source.
+    enum class PaymentType {
+        XrpToXrp,
+        XrpToNonXrp,
+        NonXrpToXrp,
+        NonXrpToSame,   // Destination currency is the same as source.
+        NonXrpToNonXrp  // Destination currency is NOT the same as source.
     };
 
     struct PathRank
@@ -110,7 +130,7 @@ private:
       getBestPaths
      */
 
-    // Add all paths of one type to mCompletePaths.
+    // Add all paths of one type to completePaths_.
     STPathSet&
     addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
@@ -167,47 +187,49 @@ private:
         std::vector<PathRank>& rankedPaths,
         std::function<bool(void)> const& continueCallback);
 
-    AccountID mSrcAccount;
-    AccountID mDstAccount;
-    AccountID mEffectiveDst;  // The account the paths need to end at
-    STAmount mDstAmount;
-    PathAsset mSrcPathAsset;
-    std::optional<AccountID> mSrcIssuer;
-    STAmount mSrcAmount;
-    /** The amount remaining from mSrcAccount after the default liquidity has
-        been removed. */
-    STAmount mRemainingAmount;
-    bool convert_all_;
-    std::optional<uint256> mDomain;
+    AccountID srcAccount_;
+    AccountID dstAccount_;
+    AccountID effectiveDst_;  // The account the paths need to end at
+    STAmount dstAmount_;
+    PathAsset srcPathAsset_;
+    std::optional<AccountID> srcIssuer_;
+    STAmount srcAmount_;
+    /**
+     * The amount remaining from srcAccount_ after the default liquidity has
+     * been removed.
+     */
+    STAmount remainingAmount_;
+    bool convertAll_;
+    std::optional<uint256> domain_;
 
-    std::shared_ptr<ReadView const> mLedger;
-    std::unique_ptr<LoadEvent> m_loadEvent;
-    std::shared_ptr<AssetCache> mAssetCache;
+    std::shared_ptr<ReadView const> ledger_;
+    std::unique_ptr<LoadEvent> loadEvent_;
+    std::shared_ptr<AssetCache> rLCache_;
 
-    STPathElement mSource;
-    STPathSet mCompletePaths;
-    std::vector<PathRank> mPathRanks;
-    std::map<PathType, STPathSet> mPaths;
+    STPathElement source_;
+    STPathSet completePaths_;
+    std::vector<PathRank> pathRanks_;
+    std::map<PathType, STPathSet> paths_;
 
-    hash_map<Asset, int> mPathsOutCountMap;
+    hash_map<Asset, int> pathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;
 
     // Add ripple paths
-    static std::uint32_t const afADD_ACCOUNTS = 0x001;
+    static std::uint32_t const kAfAddAccounts = 0x001;
 
     // Add order books
-    static std::uint32_t const afADD_BOOKS = 0x002;
+    static std::uint32_t const kAfAddBooks = 0x002;
 
     // Add order book to XRP only
-    static std::uint32_t const afOB_XRP = 0x010;
+    static std::uint32_t const kAfObXrp = 0x010;
 
     // Must link to destination currency
-    static std::uint32_t const afOB_LAST = 0x040;
+    static std::uint32_t const kAfObLast = 0x040;
 
     // Destination account only
-    static std::uint32_t const afAC_LAST = 0x080;
+    static std::uint32_t const kAfAcLast = 0x080;
 };
 
 }  // namespace xrpl

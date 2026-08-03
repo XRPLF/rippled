@@ -1,16 +1,37 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
-//
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <cstdint>
 namespace xrpl {
 
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
@@ -22,7 +43,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -90,7 +111,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
+    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -104,23 +125,6 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-static Number
-owedToVault(SLE::ref loanSle)
-{
-    // Spec section 3.2.3.2, defines the default amount as
-    //
-    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
-    //
-    // Loan.InterestOutstanding is not stored directly on ledger.
-    // It is computed as
-    //
-    // Loan.TotalValueOutstanding - Loan.PrincipalOutstanding -
-    //      Loan.ManagementFeeOutstanding
-    //
-    // Add that to the original formula, and you get this:
-    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
 
 TER
@@ -137,14 +141,14 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    Number const totalDefaultAmount = owedToVault(loanSle);
+    Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -183,8 +187,8 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded =
-            roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        auto const vaultDefaultRounded = roundToAsset(
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -271,6 +275,7 @@ LoanManage::defaultLoan(
         vaultSle->at(sfAccount),
         STAmount{vaultAsset, defaultCovered},
         j,
+        {},
         WaiveTransferFee::Yes);
 }
 
@@ -282,7 +287,7 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    Number const lossUnrealized = owedToVault(loanSle);
+    Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
@@ -331,7 +336,7 @@ LoanManage::unimpairLoan(
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    Number const lossReversed = owedToVault(loanSle);
+    Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
@@ -377,7 +382,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -395,13 +400,13 @@ LoanManage::doApply()
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
             return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        // Noop, as described above.
+        // NoOp, as described above.
         return tesSUCCESS;
     }();
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
     // path. Post-amendment, we call associateAsset on all successful paths.
-    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
+    if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);
@@ -409,6 +414,19 @@ LoanManage::doApply()
     }
 
     return result;
+}
+
+void
+LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanManage::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

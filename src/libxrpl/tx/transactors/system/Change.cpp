@@ -1,13 +1,31 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/AmendmentTable.h>
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/transactors/system/Change.h>
 
-#include <string_view>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <memory>
 
 namespace xrpl {
 
@@ -24,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != beast::zero)
+    if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -32,7 +50,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee != beast::zero)
+    if (!fee.native() || fee != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
@@ -136,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::zero, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -156,13 +174,11 @@ Change::applyAmendment()
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find(amendments.begin(), amendments.end(), amendment) != amendments.end())
+    if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags();
-
-    bool const gotMajority = (flags & tfGotMajority) != 0;
-    bool const lostMajority = (flags & tfLostMajority) != 0;
+    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
+    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
 
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
@@ -184,7 +200,7 @@ Change::applyAmendment()
             else
             {
                 // pass through
-                newMajorities.push_back(majority);
+                newMajorities.pushBack(majority);
             }
         }
     }
@@ -195,7 +211,7 @@ Change::applyAmendment()
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back(STObject::makeInnerObject(sfMajority));
+        newMajorities.pushBack(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
@@ -208,7 +224,7 @@ Change::applyAmendment()
     else if (!lostMajority)
     {
         // No flags, enable amendment
-        amendments.push_back(amendment);
+        amendments.pushBack(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
         ctx_.registry.get().getAmendmentTable().enable(amendment);
@@ -238,7 +254,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
+    auto const k = keylet::feeSettings();
 
     SLE::pointer feeObject = view().peek(k);
 
@@ -390,6 +406,19 @@ Change::applyUNLModify()
 
     view().update(negUnlObject);
     return tesSUCCESS;
+}
+
+void
+Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

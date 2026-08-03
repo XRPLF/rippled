@@ -8,18 +8,18 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <iterator>
 #include <string>
 #include <vector>
 
-namespace beast {
-namespace rfc2616 {
+namespace beast::rfc2616 {
 
 namespace detail {
 
-struct ci_equal_pred
+struct CiEqualPred
 {
-    explicit ci_equal_pred() = default;
+    explicit CiEqualPred() = default;
 
     bool
     operator()(char c1, char c2)
@@ -30,19 +30,22 @@ struct ci_equal_pred
     }
 };
 
-/** Returns `true` if `c` is linear white space.
-
-    This excludes the CRLF sequence allowed for line continuations.
-*/
+/**
+ * Returns `true` if `c` is linear white space.
+ *
+ * This excludes the CRLF sequence allowed for line continuations.
+ */
 inline bool
-is_lws(char c)
+isLws(char c)
 {
     return c == ' ' || c == '\t';
 }
 
-/** Returns `true` if `c` is any whitespace character. */
+/**
+ * Returns `true` if `c` is any whitespace character.
+ */
 inline bool
-is_white(char c)
+isWhite(char c)
 {
     switch (c)
     {
@@ -53,20 +56,21 @@ is_white(char c)
         case '\t':
         case '\v':
             return true;
+        default:
+            return false;
     };
-    return false;
 }
 
 template <class FwdIter>
 FwdIter
-trim_right(FwdIter first, FwdIter last)
+trimRight(FwdIter first, FwdIter last)
 {
     if (first == last)
         return last;
     do
     {
         --last;
-        if (!is_white(*last))
+        if (!isWhite(*last))
             return ++last;
     } while (last != first);
     return first;
@@ -74,26 +78,27 @@ trim_right(FwdIter first, FwdIter last)
 
 template <class String>
 String
-trim_right(String const& s)
+trimRight(String const& s)
 {
     using std::begin;
     using std::end;
     auto first(begin(s));
     auto last(end(s));
-    last = trim_right(first, last);
+    last = trimRight(first, last);
     return {first, last};
 }
 
 }  // namespace detail
 
-/** Parse a character sequence of values separated by commas.
-    Double quotes and escape sequences will be converted.  Excess white
-    space, commas, double quotes, and empty elements are not copied.
-    Format:
-       #(token|quoted-string)
-    Reference:
-        http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
-*/
+/**
+ * Parse a character sequence of values separated by commas.
+ * Double quotes and escape sequences will be converted.  Excess white
+ * space, commas, double quotes, and empty elements are not copied.
+ * Format:
+ *    #(token|quoted-string)
+ * Reference:
+ *     http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
+ */
 template <
     class FwdIt,
     class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>,
@@ -102,7 +107,7 @@ Result
 split(FwdIt first, FwdIt last, Char delim)
 {
     using namespace detail;
-    using string = typename Result::value_type;
+    using string = Result::value_type;
 
     Result result;
 
@@ -143,7 +148,7 @@ split(FwdIt first, FwdIt last, Char delim)
         }
         else if (*iter == delim)
         {
-            e = trim_right(e);
+            e = trimRight(e);
             if (!e.empty())
             {
                 result.emplace_back(std::move(e));
@@ -151,7 +156,7 @@ split(FwdIt first, FwdIt last, Char delim)
             }
             ++iter;
         }
-        else if (is_lws(*iter))
+        else if (isLws(*iter))
         {
             ++iter;
         }
@@ -163,7 +168,7 @@ split(FwdIt first, FwdIt last, Char delim)
 
     if (!e.empty())
     {
-        e = trim_right(e);
+        e = trimRight(e);
         if (!e.empty())
             result.emplace_back(std::move(e));
     }
@@ -174,29 +179,30 @@ template <
     class FwdIt,
     class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
 Result
-split_commas(FwdIt first, FwdIt last)
+splitCommas(FwdIt first, FwdIt last)
 {
     return split(first, last, ',');
 }
 
 template <class Result = std::vector<std::string>>
 Result
-split_commas(boost::beast::string_view const& s)
+splitCommas(boost::beast::string_view const& s)
 {
-    return split_commas(s.begin(), s.end());
+    return splitCommas(s.begin(), s.end());
 }
 
 //------------------------------------------------------------------------------
 
-/** Iterates through a comma separated list.
-
-    Meets the requirements of ForwardIterator.
-
-    List defined in rfc2616 2.1.
-
-    @note Values returned may contain backslash escapes.
-*/
-class list_iterator
+/**
+ * Iterates through a comma separated list.
+ *
+ * Meets the requirements of ForwardIterator.
+ *
+ * List defined in rfc2616 2.1.
+ *
+ * @note Values returned may contain backslash escapes.
+ */
+class ListIterator
 {
     using iter_type = boost::string_ref::const_iterator;
 
@@ -211,20 +217,20 @@ public:
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
 
-    list_iterator(iter_type begin, iter_type end) : it_(begin), end_(end)
+    ListIterator(iter_type begin, iter_type end) : it_(begin), end_(end)
     {
         if (it_ != end_)
             increment();
     }
 
     bool
-    operator==(list_iterator const& other) const
+    operator==(ListIterator const& other) const
     {
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
     }
 
     bool
-    operator!=(list_iterator const& other) const
+    operator!=(ListIterator const& other) const
     {
         return !(*this == other);
     }
@@ -241,14 +247,14 @@ public:
         return &*(*this);
     }
 
-    list_iterator&
+    ListIterator&
     operator++()
     {
         increment();
         return *this;
     }
 
-    list_iterator
+    ListIterator
     operator++(int)
     {
         auto temp = *this;
@@ -264,7 +270,7 @@ private:
 
 template <class>
 void
-list_iterator::increment()
+ListIterator::increment()
 {
     using namespace detail;
     value_.clear();
@@ -302,7 +308,7 @@ list_iterator::increment()
             it_++;
             continue;
         }
-        else if (is_lws(*it_))
+        else if (isLws(*it_))
         {
             ++it_;
             continue;
@@ -313,7 +319,7 @@ list_iterator::increment()
             for (;;)
             {
                 ++it_;
-                if (it_ == end_ || *it_ == ',' || is_lws(*it_))
+                if (it_ == end_ || *it_ == ',' || isLws(*it_))
                 {
                     value_ = boost::string_ref(&*start, std::distance(start, it_));
                     return;
@@ -322,48 +328,56 @@ list_iterator::increment()
         }
     }
 }
-/** Returns true if two strings are equal.
-
-    A case-insensitive comparison is used.
-*/
+/**
+ * Returns true if two strings are equal.
+ *
+ * A case-insensitive comparison is used.
+ */
 inline bool
-ci_equal(boost::string_ref s1, boost::string_ref s2)
+ciEqual(boost::string_ref s1, boost::string_ref s2)
 {
-    return boost::range::equal(s1, s2, detail::ci_equal_pred{});
+    return boost::range::equal(s1, s2, detail::CiEqualPred{});
 }
 
-/** Returns a range representing the list. */
-inline boost::iterator_range<list_iterator>
-make_list(boost::string_ref const& field)
+/**
+ * Returns a range representing the list.
+ */
+inline boost::iterator_range<ListIterator>
+makeList(boost::string_ref const& field)
 {
-    return boost::iterator_range<list_iterator>{
-        list_iterator{field.begin(), field.end()}, list_iterator{field.end(), field.end()}};
+    return boost::iterator_range<ListIterator>{
+        ListIterator{field.begin(), field.end()}, ListIterator{field.end(), field.end()}};
 }
 
-/** Returns true if the specified token exists in the list.
-
-    A case-insensitive comparison is used.
-*/
+/**
+ * Returns true if the specified token exists in the list.
+ *
+ * A case-insensitive comparison is used.
+ */
 template <class = void>
 bool
-token_in_list(boost::string_ref const& value, boost::string_ref const& token)
+tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
-    for (auto const& item : make_list(value))
-        if (ci_equal(item, token))
-            return true;
-    return false;
+    auto const list = makeList(value);
+    // ListIterator is not default-constructible, so it does not model a std::ranges
+    // sentinel/range; the classic std::any_of (which only needs an input iterator)
+    // is used instead.
+    // NOLINTNEXTLINE(modernize-use-ranges)
+    return std::any_of(
+        list.begin(), list.end(), [&token](auto const& item) { return ciEqual(item, token); });
 }
 
-template <bool isRequest, class Body, class Fields>
+template <bool IsRequest, class Body, class Fields>
 bool
-is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
+isKeepAlive(boost::beast::http::message<IsRequest, Body, Fields> const& m)
 {
     if (m.version() <= 10)
+    {
         return boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
             "keep-alive");
+    }
     return !boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
         "close");
 }
 
-}  // namespace rfc2616
-}  // namespace beast
+}  // namespace beast::rfc2616

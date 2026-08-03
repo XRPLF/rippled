@@ -1,13 +1,18 @@
+#include <xrpl/rdb/DatabaseCon.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-
+#include <chrono>
+#include <cstdint>
 #include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace xrpl {
 
@@ -25,7 +30,7 @@ public:
     std::shared_ptr<Checkpointer>
     fromId(std::uintptr_t id)
     {
-        std::lock_guard const l{mutex_};
+        std::scoped_lock const l{mutex_};
         auto it = checkpointers_.find(id);
         if (it != checkpointers_.end())
             return it->second;
@@ -35,7 +40,7 @@ public:
     void
     erase(std::uintptr_t id)
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         checkpointers_.erase(id);
     }
 
@@ -45,7 +50,7 @@ public:
         JobQueue& jobQueue,
         ServiceRegistry& registry)
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         auto const id = nextId_++;
         auto const r = makeCheckpointer(id, session, jobQueue, registry);
         checkpointers_[id] = r;
@@ -53,19 +58,19 @@ public:
     }
 };
 
-CheckpointersCollection checkpointers;
+CheckpointersCollection gCheckpointers;
 
 std::shared_ptr<Checkpointer>
 checkpointerFromId(std::uintptr_t id)
 {
-    return checkpointers.fromId(id);
+    return gCheckpointers.fromId(id);
 }
 
 DatabaseCon::~DatabaseCon()
 {
     if (checkpointer_)
     {
-        checkpointers.erase(checkpointer_->id());
+        gCheckpointers.erase(checkpointer_->id());
 
         std::weak_ptr<Checkpointer> const wk(checkpointer_);
         checkpointer_.reset();
@@ -89,7 +94,7 @@ DatabaseCon::setupCheckpointing(JobQueue* q, ServiceRegistry& registry)
 {
     if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
-    checkpointer_ = checkpointers.create(session_, *q, registry);
+    checkpointer_ = gCheckpointers.create(session_, *q, registry);
 }
 
 }  // namespace xrpl

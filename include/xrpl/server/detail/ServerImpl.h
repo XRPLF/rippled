@@ -1,7 +1,8 @@
 #pragma once
 
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/core/List.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/Door.h>
 #include <xrpl/server/detail/io_list.h>
 
@@ -11,47 +12,59 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 using Endpoints = std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
 
-/** A multi-protocol server.
-
-    This server maintains multiple configured listening ports,
-    with each listening port allows for multiple protocols including
-    HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
-*/
+/**
+ * A multi-protocol server.
+ *
+ * This server maintains multiple configured listening ports,
+ * with each listening port allows for multiple protocols including
+ * HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
+ */
 class Server
 {
 public:
-    /** Destroy the server.
-        The server is closed if it is not already closed. This call
-        blocks until the server has stopped.
-    */
+    /**
+     * Destroy the server.
+     * The server is closed if it is not already closed. This call
+     * blocks until the server has stopped.
+     */
     virtual ~Server() = default;
 
-    /** Returns the Journal associated with the server. */
+    /**
+     * Returns the Journal associated with the server.
+     */
     virtual beast::Journal
     journal() = 0;
 
-    /** Set the listening port settings.
-        This may only be called once.
-    */
+    /**
+     * Set the listening port settings.
+     * This may only be called once.
+     */
     virtual Endpoints
     ports(std::vector<Port> const& v) = 0;
 
-    /** Close the server.
-        The close is performed asynchronously. The handler will be notified
-        when the server has stopped. The server is considered stopped when
-        there are no pending I/O completion handlers and all connections
-        have closed.
-        Thread safety:
-            Safe to call concurrently from any thread.
-    */
+    /**
+     * Close the server.
+     * The close is performed asynchronously. The handler will be notified
+     * when the server has stopped. The server is considered stopped when
+     * there are no pending I/O completion handlers and all connections
+     * have closed.
+     * Thread safety:
+     *     Safe to call concurrently from any thread.
+     */
     virtual void
     close() = 0;
 };
@@ -62,11 +75,11 @@ class ServerImpl : public Server
 private:
     using clock_type = std::chrono::system_clock;
 
-    enum { historySize = 100 };
+    static constexpr auto kHistorySize = 100;
 
     Handler& handler_;
     beast::Journal const j_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
 
@@ -76,12 +89,12 @@ private:
     int high_ = 0;
     std::array<std::size_t, 64> hist_{};
 
-    io_list ios_;
+    IOList ios_;
 
 public:
-    ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
+    ServerImpl(Handler& handler, boost::asio::io_context& ioContext, beast::Journal journal);
 
-    ~ServerImpl();
+    ~ServerImpl() override;
 
     beast::Journal
     journal() override
@@ -95,16 +108,16 @@ public:
     void
     close() override;
 
-    io_list&
+    IOList&
     ios()
     {
         return ios_;
     }
 
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
-        return io_context_;
+        return ioContext_;
     }
 
     bool
@@ -112,19 +125,19 @@ public:
 
 private:
     static int
-    ceil_log2(unsigned long long x);
+    ceilLog2(unsigned long long x);
 };
 
 template <class Handler>
 ServerImpl<Handler>::ServerImpl(
     Handler& handler,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     beast::Journal journal)
     : handler_(handler)
     , j_(journal)
-    , io_context_(io_context)
-    , strand_(boost::asio::make_strand(io_context_))
-    , work_(std::in_place, boost::asio::make_work_guard(io_context_))
+    , ioContext_(ioContext)
+    , strand_(boost::asio::make_strand(ioContext_))
+    , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
 {
 }
 
@@ -150,12 +163,12 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
     {
         ports_.push_back(port);
         auto& internalPort = ports_.back();
-        if (auto sp = ios_.emplace<Door<Handler>>(handler_, io_context_, internalPort, j_))
+        if (auto sp = ios_.emplace<Door<Handler>>(handler_, ioContext_, internalPort, j_))
         {
             list_.push_back(sp);
 
-            auto ep = sp->get_endpoint();
-            if (!internalPort.port)
+            auto ep = sp->getEndpoint();
+            if (internalPort.port == 0u)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
 

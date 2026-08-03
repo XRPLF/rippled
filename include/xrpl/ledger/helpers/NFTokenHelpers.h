@@ -1,78 +1,93 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/nft.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <utility>
 
-namespace nft {
+namespace xrpl::nft {
 
-/** Delete up to a specified number of offers from the specified token offer
- * directory. */
+/**
+ * Delete up to a specified number of offers from the specified token offer
+ * directory.
+ */
 std::size_t
 removeTokenOffersWithLimit(
     ApplyView& view,
     Keylet const& directory,
     std::size_t maxDeletableOffers);
 
-/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
-
-/** Finds the specified token in the owner's token directory. */
+/**
+ * Finds the specified token in the owner's token directory.
+ */
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
 
-/** Finds the token in the owner's token directory.  Returns token and page. */
+/**
+ * Finds the token in the owner's token directory.  Returns token and page.
+ */
 struct TokenAndPage
 {
     STObject token;
-    std::shared_ptr<SLE> page;
+    SLE::pointer page;
 
-    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_)
-        : token(token_), page(std::move(page_))
+    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
     {
     }
 };
 std::optional<TokenAndPage>
 findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
-/** Insert the token in the owner's token directory. */
+/**
+ * Insert the token in the owner's token directory.
+ */
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft);
 
-/** Remove the token from the owner's token directory. */
+/**
+ * Remove the token from the owner's token directory.
+ */
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE> const& page);
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref page);
 
-/** Deletes the given token offer.
-
-    An offer is tracked in two separate places:
-        - The token's 'buy' directory, if it's a buy offer; or
-        - The token's 'sell' directory, if it's a sell offer; and
-        - The owner directory of the account that placed the offer.
-
-    The offer also consumes one incremental reserve.
+/**
+ * Deletes the given token offer.
+ *
+ * An offer is tracked in two separate places:
+ *     - The token's 'buy' directory, if it's a buy offer; or
+ *     - The token's 'sell' directory, if it's a sell offer; and
+ *     - The owner directory of the account that placed the offer.
+ *
+ * The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
+deleteTokenOffer(ApplyView& view, SLE::ref offer);
 
-/** Repairs the links in an NFTokenPage directory.
-
-    Returns true if a repair took place, otherwise false.
-*/
+/**
+ * Repairs the links in an NFTokenPage directory.
+ *
+ * Returns true if a repair took place, otherwise false.
+ */
 bool
 repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner);
 
@@ -86,7 +101,9 @@ changeTokenURI(
     uint256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri);
 
-/** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
+/**
+ * Preflight checks shared by NFTokenCreateOffer and NFTokenMint
+ */
 NotTEC
 tokenOfferCreatePreflight(
     AccountID const& acctID,
@@ -98,7 +115,9 @@ tokenOfferCreatePreflight(
     std::optional<AccountID> const& owner = std::nullopt,
     std::uint32_t txFlags = tfSellNFToken);
 
-/** Preclaim checks shared by NFTokenCreateOffer and NFTokenMint */
+/**
+ * Preclaim checks shared by NFTokenCreateOffer and NFTokenMint
+ */
 TER
 tokenOfferCreatePreclaim(
     ReadView const& view,
@@ -112,7 +131,9 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner = std::nullopt,
     std::uint32_t txFlags = tfSellNFToken);
 
-/** doApply implementation shared by NFTokenCreateOffer and NFTokenMint */
+/**
+ * doApply implementation shared by NFTokenCreateOffer and NFTokenMint
+ */
 TER
 tokenOfferCreateApply(
     ApplyView& view,
@@ -140,6 +161,4 @@ checkTrustlineDeepFrozen(
     beast::Journal const j,
     Issue const& issue);
 
-}  // namespace nft
-
-}  // namespace xrpl
+}  // namespace xrpl::nft

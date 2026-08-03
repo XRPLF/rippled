@@ -1,7 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
 namespace xrpl {
 
@@ -19,27 +27,27 @@ public:
     STInteger(SField const& n, Integer v = 0);
     STInteger(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
     STInteger&
     operator=(value_type const& v);
 
-    value_type
+    [[nodiscard]] value_type
     value() const noexcept;
 
     void
@@ -107,7 +115,7 @@ template <typename Integer>
 inline bool
 STInteger<Integer>::isEquivalent(STBase const& t) const
 {
-    STInteger const* v = dynamic_cast<STInteger const*>(&t);
+    auto const* v = dynamic_cast<STInteger const*>(&t);
     return v && (value_ == v->value_);
 }
 
@@ -120,7 +128,7 @@ STInteger<Integer>::operator=(value_type const& v)
 }
 
 template <typename Integer>
-inline typename STInteger<Integer>::value_type
+inline STInteger<Integer>::value_type
 STInteger<Integer>::value() const noexcept
 {
     return value_;

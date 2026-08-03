@@ -1,10 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -339,7 +351,7 @@ public:
     getTransaction(
         uint256 const& id,
         std::optional<ClosedInterval<std::uint32_t>> const& range,
-        error_code_i& ec) override;
+        ErrorCodeI& ec) override;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -469,7 +481,7 @@ private:
 };
 
 /**
- * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
+ * @brief setupRelationalDatabase Creates and returns a SQLiteDatabase
  *        instance based on configuration. It's recommended to use it as
  *        a singleton, but it's not enforced (e.g. if you have more than one
  *        database).
@@ -479,6 +491,6 @@ private:
  * @return SQLiteDatabase instance.
  */
 SQLiteDatabase
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
+setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl

@@ -1,55 +1,81 @@
-include(XrplAddTest)
+include(GoogleTest)
+include(isolate_headers)
+include(verify_headers)
 
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# Custom target for all tests defined in this file
-add_custom_target(xrpl.tests)
-
-# Test helpers
-add_library(xrpl.helpers.test STATIC)
-target_sources(xrpl.helpers.test PRIVATE helpers/TestSink.cpp)
-target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl.helpers.test PRIVATE xrpl.libxrpl)
-
-# Common library dependencies for the rest of the tests.
-add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(
-    xrpl.imports.test
-    INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test
+# Single combined gtest binary built from the shared test helpers and all test
+# modules below.
+add_executable(
+    xrpl_tests
+    main.cpp
+    helpers/Account.cpp
+    helpers/TestSink.cpp
+    helpers/TxTest.cpp
 )
-
-# One test for each module.
-xrpl_add_test(basics)
-target_link_libraries(xrpl.test.basics PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.basics)
-
-xrpl_add_test(crypto)
-target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.crypto)
-
-xrpl_add_test(json)
-target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.json)
-
-# protocol_autogen tests use explicit source list (not GLOB) because sources are generated
-# Mark generated sources so CMake knows they'll be created at build time
-set_source_files_properties(
-    ${PROTOCOL_AUTOGEN_TEST_SOURCES}
-    PROPERTIES GENERATED TRUE
+patch_nix_binary(xrpl_tests)
+set_target_properties(
+    xrpl_tests
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
-add_executable(xrpl.test.protocol_autogen ${PROTOCOL_AUTOGEN_TEST_SOURCES})
-target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.protocol_autogen)
-add_test(NAME xrpl.test.protocol_autogen COMMAND xrpl.test.protocol_autogen)
-# Ensure code generation runs before compiling tests
-if(TARGET protocol_autogen_generate)
-    add_dependencies(xrpl.test.protocol_autogen protocol_autogen_generate)
-endif()
+# Lets test sources include the shared helpers as <helpers/...>.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
-# Network unit tests are currently not supported on Windows
+# One source subdirectory per module. Network unit tests are currently not
+# supported on Windows.
+set(test_modules
+    basics
+    beast
+    consensus
+    crypto
+    json
+    nodestore
+    peerfinder
+    protocol
+    resource
+    shamap
+    tx
+    protocol_autogen
+)
 if(NOT WIN32)
-    xrpl_add_test(net)
-    target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
-    add_dependencies(xrpl.tests xrpl.test.net)
+    list(APPEND test_modules net)
 endif()
+
+foreach(module IN LISTS test_modules)
+    # Append the module's sources (${module}/*.cpp and ${module}.cpp, if any).
+    file(
+        GLOB_RECURSE sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
+    )
+    target_sources(xrpl_tests PRIVATE ${sources})
+
+    # Expose the module's private headers under their canonical include path.
+    isolate_headers(
+        xrpl_tests
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/tests/${module}"
+        PRIVATE
+    )
+endforeach()
+
+# The consensus tests use the CSF (Consensus Simulation Framework) helpers, so
+# compile the CSF sources into the test binary. The consensus engine itself now
+# lives in libxrpl, so no xrpld sources or include paths are needed here.
+file(
+    GLOB_RECURSE csf_sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
+)
+target_sources(xrpl_tests PRIVATE ${csf_sources})
+
+# The test helpers and per-module test headers are not built with add_module,
+# so verify them against the test binary's own compile environment.
+if(verify_headers)
+    verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

@@ -5,24 +5,23 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
-
 namespace xrpl {
 
-/** Delete an offer.
-
-    Requirements:
-        The offer must exist.
-        The caller must have already checked permissions.
-
-    @param view The ApplyView to modify.
-    @param sle The offer to delete.
-    @param j Journal for logging.
-
-    @return tesSUCCESS on success, otherwise an error code.
-*/
+/**
+ * Delete an offer.
+ *
+ * Requirements:
+ *     The offer must exist.
+ *     The caller must have already checked permissions.
+ *
+ * @param view The ApplyView to modify.
+ * @param sle The offer to delete.
+ * @param j Journal for logging.
+ *
+ * @return tesSUCCESS on success, otherwise an error code.
+ */
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
-offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
+offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j);
 
 }  // namespace xrpl

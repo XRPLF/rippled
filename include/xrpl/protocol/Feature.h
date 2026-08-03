@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/container/flat_map.hpp>
 
 #include <bitset>
+#include <cstddef>
 #include <map>
 #include <optional>
 #include <string>
@@ -65,11 +67,11 @@
 namespace xrpl {
 
 // Feature names must not exceed this length (in characters, excluding the null terminator).
-static constexpr std::size_t maxFeatureNameSize = 63;
+static constexpr std::size_t kMaxFeatureNameSize = 63;
 // Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
 // so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
-static constexpr std::size_t reservedFeatureNameSize = 32;
+static constexpr std::size_t kReservedFeatureNameSize = 32;
 
 // Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
 // static_asserts to validate feature names at compile time. They are only used inside
@@ -79,27 +81,27 @@ static constexpr std::size_t reservedFeatureNameSize = 32;
 consteval auto
 validFeatureNameSize(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Note, std::strlen is not constexpr, we need to implement our own here.
-    constexpr std::size_t N = [](auto n) {
+    constexpr std::size_t kLen = [](auto n) {
         std::size_t ret = 0;
         for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
             ;
         return ret;
-    }(n);
-    return N != reservedFeatureNameSize &&  //
-        N <= maxFeatureNameSize;
+    }(kN);
+    return kLen != kReservedFeatureNameSize &&  //
+        kLen <= kMaxFeatureNameSize;
 }
 
 consteval auto
 validFeatureName(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Prevent the use of visually confusable characters and enforce that feature names
     // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
     // Characters below 0x20 are nonprintable control characters, and characters with the 0x80 bit
     // set are non-ASCII (e.g. UTF-8 encoding of Unicode), so both are disallowed.
-    for (auto ptr = n; *ptr != '\0'; ++ptr)
+    for (auto ptr = kN; *ptr != '\0'; ++ptr)
     {
         if (*ptr & 0x80 || *ptr < 0x20)
             return false;
@@ -107,10 +109,12 @@ validFeatureName(auto fn) -> bool
     return true;
 }
 
-enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
-enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes = 1 };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported = 1 };
 
-/** All amendments libxrpl knows about. */
+/**
+ * All amendments libxrpl knows about.
+ */
 std::map<std::string, AmendmentSupport> const&
 allAmendments();
 
@@ -125,16 +129,18 @@ namespace detail {
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE_FEATURE(name) +1
 #define XRPL_RETIRE_FIX(name) +1
+// NOLINTEND(bugprone-macro-parentheses)
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures =
+static constexpr std::size_t kNumFeatures =
     (0 +
 #include <xrpl/protocol/detail/features.macro>
     );
@@ -148,23 +154,27 @@ static constexpr std::size_t numFeatures =
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
 
-/** Amendments that this server supports and the default voting behavior.
-   Whether they are enabled depends on the Rules defined in the validated
-   ledger */
+/**
+ * Amendments that this server supports and the default voting behavior.
+ * Whether they are enabled depends on the Rules defined in the validated
+ * ledger
+ */
 std::map<std::string, VoteBehavior> const&
 supportedAmendments();
 
-/** Amendments that this server won't vote for by default.
-
-    This function is only used in unit tests.
-*/
+/**
+ * Amendments that this server won't vote for by default.
+ *
+ * This function is only used in unit tests.
+ */
 std::size_t
 numDownVotedAmendments();
 
-/** Amendments that this server will vote for by default.
-
-    This function is only used in unit tests.
-*/
+/**
+ * Amendments that this server will vote for by default.
+ *
+ * This function is only used in unit tests.
+ */
 std::size_t
 numUpVotedAmendments();
 
@@ -182,9 +192,9 @@ bitsetIndexToFeature(size_t i);
 std::string
 featureToName(uint256 const& f);
 
-class FeatureBitset : private std::bitset<detail::numFeatures>
+class FeatureBitset : private std::bitset<detail::kNumFeatures>
 {
-    using base = std::bitset<detail::numFeatures>;
+    using base = std::bitset<detail::kNumFeatures>;
 
     template <class... Fs>
     void
@@ -373,8 +383,10 @@ void
 foreachFeature(FeatureBitset bs, F&& f)
 {
     for (size_t i = 0; i < bs.size(); ++i)
+    {
         if (bs[i])
             f(bitsetIndexToFeature(i));
+    }
 }
 
 #pragma push_macro("XRPL_FEATURE")

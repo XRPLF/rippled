@@ -1,0 +1,2 @@
+# Legacy compat symlinks (remove next major release)
+usr/bin/xrpld          usr/local/bin/rippled

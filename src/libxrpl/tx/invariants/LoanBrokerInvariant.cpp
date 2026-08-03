@@ -1,21 +1,26 @@
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
 
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (after)
     {
@@ -124,10 +129,10 @@ ValidLoanBroker::finalize(
         }
     }
 
-    for (auto const& [brokerID, broker] : brokers_)
-    {
+    return std::ranges::all_of(brokers_, [&](auto const& entry) {
+        auto const& [brokerID, broker] = entry;
         auto const& after =
-            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanbroker(brokerID));
+            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanBroker(brokerID));
 
         if (!after)
         {
@@ -179,8 +184,8 @@ ValidLoanBroker::finalize(
             view,
             after->at(sfAccount),
             vaultAsset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j);
         if (after->at(sfCoverAvailable) < pseudoBalance)
         {
@@ -189,7 +194,7 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        if (view.rules().enabled(fixSecurity3_1_3))
+        if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed
@@ -201,8 +206,8 @@ ValidLoanBroker::finalize(
                 return false;
             }
         }
-    }
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

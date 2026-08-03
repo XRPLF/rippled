@@ -1,19 +1,25 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 
+#include <cstddef>
+#include <map>
+#include <memory>
+
 namespace xrpl {
 
-/** Holds transactions which were deferred to the next pass of consensus.
-
-    "Canonical" refers to the order in which transactions are applied.
-
-    - Puts transactions from the same account in SeqProxy order
-
-*/
+/**
+ * Holds transactions which were deferred to the next pass of consensus.
+ *
+ * "Canonical" refers to the order in which transactions are applied.
+ *
+ * - Puts transactions from the same account in SeqProxy order
+ */
 // VFALCO TODO rename to SortedTxSet
 class CanonicalTXSet : public CountedObject<CanonicalTXSet>
 {
@@ -29,43 +35,43 @@ private:
         friend bool
         operator<(Key const& lhs, Key const& rhs);
 
-        inline friend bool
+        friend bool
         operator>(Key const& lhs, Key const& rhs)
         {
             return rhs < lhs;
         }
 
-        inline friend bool
+        friend bool
         operator<=(Key const& lhs, Key const& rhs)
         {
             return !(lhs > rhs);
         }
 
-        inline friend bool
+        friend bool
         operator>=(Key const& lhs, Key const& rhs)
         {
             return !(lhs < rhs);
         }
 
-        inline friend bool
+        friend bool
         operator==(Key const& lhs, Key const& rhs)
         {
             return lhs.txId_ == rhs.txId_;
         }
 
-        inline friend bool
+        friend bool
         operator!=(Key const& lhs, Key const& rhs)
         {
             return !(lhs == rhs);
         }
 
-        uint256 const&
+        [[nodiscard]] uint256 const&
         getAccount() const
         {
             return account_;
         }
 
-        uint256 const&
+        [[nodiscard]] uint256 const&
         getTXID() const
         {
             return txId_;
@@ -93,7 +99,7 @@ public:
     }
 
     void
-    insert(std::shared_ptr<STTx const> const& txn);
+    insert(std::shared_ptr<STTx const> txn);
 
     // Pops the next transaction on account that follows seqProx in the
     // sort order.  Normally called when a transaction is successfully
@@ -118,30 +124,30 @@ public:
         return map_.erase(it);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return map_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return map_.end();
     }
 
-    size_t
+    [[nodiscard]] size_t
     size() const
     {
         return map_.size();
     }
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return map_.empty();
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     key() const
     {
         return salt_;

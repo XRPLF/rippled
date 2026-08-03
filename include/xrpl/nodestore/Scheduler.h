@@ -4,15 +4,16 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::node_store {
 
-enum class FetchType { synchronous, async };
+enum class FetchType { Synchronous, Async };
 
-/** Contains information about a fetch operation. */
+/**
+ * Contains information about a fetch operation.
+ */
 struct FetchReport
 {
-    explicit FetchReport(FetchType fetchType_) : fetchType(fetchType_)
+    explicit FetchReport(FetchType fetchType) : fetchType(fetchType)
     {
     }
 
@@ -21,7 +22,9 @@ struct FetchReport
     bool wasFound = false;
 };
 
-/** Contains information about a batch write operation. */
+/**
+ * Contains information about a batch write operation.
+ */
 struct BatchWriteReport
 {
     explicit BatchWriteReport() = default;
@@ -30,39 +33,42 @@ struct BatchWriteReport
     int writeCount;
 };
 
-/** Scheduling for asynchronous backend activity
-
-    For improved performance, a backend has the option of performing writes
-    in batches. These writes can be scheduled using the provided scheduler
-    object.
-
-    @see BatchWriter
-*/
+/**
+ * Scheduling for asynchronous backend activity
+ *
+ * For improved performance, a backend has the option of performing writes
+ * in batches. These writes can be scheduled using the provided scheduler
+ * object.
+ *
+ * @see BatchWriter
+ */
 class Scheduler
 {
 public:
     virtual ~Scheduler() = default;
 
-    /** Schedules a task.
-        Depending on the implementation, the task may be invoked either on
-        the current thread of execution, or an unspecified
-       implementation-defined foreign thread.
-    */
+    /**
+     * Schedules a task.
+     *  Depending on the implementation, the task may be invoked either on
+     *  the current thread of execution, or an unspecified
+     * implementation-defined foreign thread.
+     */
     virtual void
     scheduleTask(Task& task) = 0;
 
-    /** Reports completion of a fetch
-        Allows the scheduler to monitor the node store's performance
-    */
+    /**
+     * Reports completion of a fetch
+     * Allows the scheduler to monitor the node store's performance
+     */
     virtual void
     onFetch(FetchReport const& report) = 0;
 
-    /** Reports the completion of a batch write
-        Allows the scheduler to monitor the node store's performance
-    */
+    /**
+     * Reports the completion of a batch write
+     * Allows the scheduler to monitor the node store's performance
+     */
     virtual void
     onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::node_store

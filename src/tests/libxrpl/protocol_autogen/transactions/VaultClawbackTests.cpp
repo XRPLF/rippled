@@ -21,7 +21,7 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawback"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawback"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -88,7 +88,7 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawbackFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawbackFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -154,7 +154,7 @@ TEST(TransactionsVaultClawbackTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -168,7 +168,7 @@ TEST(TransactionsVaultClawbackTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -182,7 +182,7 @@ TEST(TransactionsVaultClawbackTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawbackNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawbackNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

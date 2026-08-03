@@ -28,7 +28,7 @@
 #    https://vl.ripple.com
 #    https://unl.xrplf.org
 #    http://127.0.0.1:8000
-#    file:///etc/opt/xrpld/vl.txt
+#    file:///etc/xrpld/vl.txt
 #
 # [validator_list_keys]
 #

@@ -1,8 +1,20 @@
 #pragma once
 
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -16,12 +28,12 @@ public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
     TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet);
-    ~TransactionAcquire() = default;
+    ~TransactionAcquire() override = default;
 
     SHAMapAddNode
     takeNodes(
-        std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
-        std::shared_ptr<Peer> const&);
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
+        std::shared_ptr<Peer> const& peer);
 
     void
     init(int startPeers);
@@ -30,9 +42,9 @@ public:
     stillNeed();
 
 private:
-    std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot{false};
-    std::unique_ptr<PeerSet> mPeerSet;
+    std::shared_ptr<SHAMap> map_;
+    bool haveRoot_{false};
+    std::unique_ptr<PeerSet> peerSet_;
 
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;

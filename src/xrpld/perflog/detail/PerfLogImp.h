@@ -3,23 +3,30 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
 
 #include <boost/asio/ip/host_name.hpp>
 
 #include <condition_variable>
 #include <cstdint>
 #include <fstream>
-#include <memory>
+#include <functional>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace perf {
+namespace xrpl::perf {
 
-/** A box coupling data with a mutex for locking access to it. */
+/**
+ * A box coupling data with a mutex for locking access to it.
+ */
 template <typename T>
 struct Locked
 {
@@ -82,19 +89,19 @@ class PerfLogImp : public PerfLog
             microseconds runningDuration{0};
         };
 
-        // rpc_ and jq_ do not need mutex protection because all
+        // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
-        std::unordered_map<std::string, Locked<Rpc>> rpc_;
-        std::unordered_map<JobType, Locked<Jq>> jq_;
-        std::vector<std::pair<JobType, steady_time_point>> jobs_;
-        mutable std::mutex jobsMutex_;
-        std::unordered_map<std::uint64_t, MethodStart> methods_;
-        mutable std::mutex methodsMutex_;
+        std::unordered_map<std::string, Locked<Rpc>> rpc;
+        std::unordered_map<JobType, Locked<Jq>> jq;
+        std::vector<std::pair<JobType, steady_time_point>> jobs;
+        mutable std::mutex jobsMutex;
+        std::unordered_map<std::uint64_t, MethodStart> methods;
+        mutable std::mutex methodsMutex;
 
         Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
-        Json::Value
+        json::Value
         countersJson() const;
-        Json::Value
+        json::Value
         currentJson() const;
     };
 
@@ -123,7 +130,7 @@ class PerfLogImp : public PerfLog
 
 public:
     PerfLogImp(
-        Setup const& setup,
+        Setup setup,
         Application& app,
         beast::Journal journal,
         std::function<void()>&& signalStop);
@@ -153,13 +160,13 @@ public:
     void
     jobFinish(JobType const type, microseconds dur, int instance) override;
 
-    Json::Value
+    json::Value
     countersJson() const override
     {
         return counters_.countersJson();
     }
 
-    Json::Value
+    json::Value
     currentJson() const override
     {
         return counters_.currentJson();
@@ -177,5 +184,4 @@ public:
     stop() override;
 };
 
-}  // namespace perf
-}  // namespace xrpl
+}  // namespace xrpl::perf

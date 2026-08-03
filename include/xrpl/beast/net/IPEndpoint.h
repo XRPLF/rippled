@@ -3,85 +3,108 @@
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <istream>
 #include <optional>
 #include <string>
 
-namespace beast {
-namespace IP {
+namespace beast::IP {
 
 using Port = std::uint16_t;
 
-/** A version-independent IP address and port combination. */
+/**
+ * A version-independent IP address and port combination.
+ */
 class Endpoint
 {
 public:
-    /** Create an unspecified endpoint. */
+    /**
+     * Create an unspecified endpoint.
+     */
     Endpoint();
 
-    /** Create an endpoint from the address and optional port. */
-    explicit Endpoint(Address const& addr, Port port = 0);
+    /**
+     * Create an endpoint from the address and optional port.
+     */
+    explicit Endpoint(Address addr, Port port = 0);
 
-    /** Create an Endpoint from a string.
-        If the port is omitted, the endpoint will have a zero port.
-        @return An optional endpoint; will be `std::nullopt` on failure
-    */
+    /**
+     * Create an Endpoint from a string.
+     * If the port is omitted, the endpoint will have a zero port.
+     * @return An optional endpoint; will be `std::nullopt` on failure
+     */
     static std::optional<Endpoint>
-    from_string_checked(std::string const& s);
+    fromStringChecked(std::string const& s);
     static Endpoint
-    from_string(std::string const& s);
+    fromString(std::string const& s);
 
-    /** Returns a string representing the endpoint. */
-    std::string
-    to_string() const;
+    /**
+     * Returns a string representing the endpoint.
+     */
+    [[nodiscard]] std::string
+    toString() const;
 
-    /** Returns the port number on the endpoint. */
-    Port
+    /**
+     * Returns the port number on the endpoint.
+     */
+    [[nodiscard]] Port
     port() const
     {
-        return m_port;
+        return port_;
     }
 
-    /** Returns a new Endpoint with a different port. */
-    Endpoint
-    at_port(Port port) const
+    /**
+     * Returns a new Endpoint with a different port.
+     */
+    [[nodiscard]] Endpoint
+    atPort(Port port) const
     {
-        return Endpoint(m_addr, port);
+        return Endpoint(addr_, port);
     }
 
-    /** Returns the address portion of this endpoint. */
-    Address const&
+    /**
+     * Returns the address portion of this endpoint.
+     */
+    [[nodiscard]] Address const&
     address() const
     {
-        return m_addr;
+        return addr_;
     }
 
-    /** Convenience accessors for the address part. */
+    /**
+     * Convenience accessors for the address part.
+     */
     /** @{ */
-    bool
-    is_v4() const
+    [[nodiscard]] bool
+    isV4() const
     {
-        return m_addr.is_v4();
+        return addr_.is_v4();
     }
-    bool
-    is_v6() const
+    [[nodiscard]] bool
+    isV6() const
     {
-        return m_addr.is_v6();
+        return addr_.is_v6();
     }
-    AddressV4 const
-    to_v4() const
+    [[nodiscard]] AddressV4
+    toV4() const
     {
-        return m_addr.to_v4();
+        return addr_.to_v4();
     }
-    AddressV6 const
-    to_v6() const
+    [[nodiscard]] AddressV6
+    toV6() const
     {
-        return m_addr.to_v6();
+        return addr_.to_v6();
     }
     /** @} */
 
-    /** Arithmetic comparison. */
+    /**
+     * Arithmetic comparison.
+     */
     /** @{ */
     friend bool
     operator==(Endpoint const& lhs, Endpoint const& rhs);
@@ -115,63 +138,77 @@ public:
     hash_append(Hasher& h, Endpoint const& endpoint)
     {
         using ::beast::hash_append;
-        hash_append(h, endpoint.m_addr, endpoint.m_port);
+        hash_append(h, endpoint.addr_, endpoint.port_);
     }
 
 private:
-    Address m_addr;
-    Port m_port;
+    Address addr_;
+    Port port_;
 };
 
 //------------------------------------------------------------------------------
 
 // Properties
 
-/** Returns `true` if the endpoint is a loopback address. */
+/**
+ * Returns `true` if the endpoint is a loopback address.
+ */
 inline bool
-is_loopback(Endpoint const& endpoint)
+isLoopback(Endpoint const& endpoint)
 {
-    return is_loopback(endpoint.address());
+    return isLoopback(endpoint.address());
 }
 
-/** Returns `true` if the endpoint is unspecified. */
+/**
+ * Returns `true` if the endpoint is unspecified.
+ */
 inline bool
-is_unspecified(Endpoint const& endpoint)
+isUnspecified(Endpoint const& endpoint)
 {
-    return is_unspecified(endpoint.address());
+    return isUnspecified(endpoint.address());
 }
 
-/** Returns `true` if the endpoint is a multicast address. */
+/**
+ * Returns `true` if the endpoint is a multicast address.
+ */
 inline bool
-is_multicast(Endpoint const& endpoint)
+isMulticast(Endpoint const& endpoint)
 {
-    return is_multicast(endpoint.address());
+    return isMulticast(endpoint.address());
 }
 
-/** Returns `true` if the endpoint is a private unroutable address. */
+/**
+ * Returns `true` if the endpoint is a private unroutable address.
+ */
 inline bool
-is_private(Endpoint const& endpoint)
+isPrivate(Endpoint const& endpoint)
 {
-    return is_private(endpoint.address());
+    return isPrivate(endpoint.address());
 }
 
-/** Returns `true` if the endpoint is a public routable address. */
+/**
+ * Returns `true` if the endpoint is a public routable address.
+ */
 inline bool
-is_public(Endpoint const& endpoint)
+isPublic(Endpoint const& endpoint)
 {
-    return is_public(endpoint.address());
+    return isPublic(endpoint.address());
 }
 
 //------------------------------------------------------------------------------
 
-/** Returns the endpoint represented as a string. */
+/**
+ * Returns the endpoint represented as a string.
+ */
 inline std::string
 to_string(Endpoint const& endpoint)
 {
-    return endpoint.to_string();
+    return endpoint.toString();
 }
 
-/** Output stream conversion. */
+/**
+ * Output stream conversion.
+ */
 template <typename OutputStream>
 OutputStream&
 operator<<(OutputStream& os, Endpoint const& endpoint)
@@ -180,17 +217,20 @@ operator<<(OutputStream& os, Endpoint const& endpoint)
     return os;
 }
 
-/** Input stream conversion. */
+/**
+ * Input stream conversion.
+ */
 std::istream&
 operator>>(std::istream& is, Endpoint& endpoint);
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP
 
 //------------------------------------------------------------------------------
 
 namespace std {
-/** std::hash support. */
+/**
+ * std::hash support.
+ */
 template <>
 struct hash<::beast::IP::Endpoint>
 {
@@ -199,13 +239,15 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace std
 
 namespace boost {
-/** boost::hash support. */
+/**
+ * boost::hash support.
+ */
 template <>
 struct hash<::beast::IP::Endpoint>
 {
@@ -214,7 +256,7 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace boost

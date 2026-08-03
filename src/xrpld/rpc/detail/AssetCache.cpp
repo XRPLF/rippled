@@ -1,13 +1,29 @@
 #include <xrpld/rpc/detail/AssetCache.h>
+
+#include <xrpld/rpc/detail/MPT.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
-AssetCache::AssetCache(std::shared_ptr<ReadView const> const& ledger, beast::Journal j)
-    : ledger_(ledger), journal_(j)
+AssetCache::AssetCache(std::shared_ptr<ReadView const> ledger, beast::Journal j)
+    : ledger_(std::move(ledger)), journal_(j)
 {
     JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
@@ -26,10 +42,10 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     AccountKey key(accountID, direction, hash);
     AccountKey otherkey(
         accountID,
-        direction == LineDirection::outgoing ? LineDirection::incoming : LineDirection::outgoing,
+        direction == LineDirection::Outgoing ? LineDirection::Incoming : LineDirection::Outgoing,
         hash);
 
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     auto [it, inserted] = [&]() {
         if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
@@ -40,14 +56,14 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
             auto const size = otheriter->second ? otheriter->second->size() : 0;
             JLOG(journal_.info())
                 << "Request for "
-                << (direction == LineDirection::outgoing ? "outgoing" : "incoming")
+                << (direction == LineDirection::Outgoing ? "outgoing" : "incoming")
                 << " trust lines for account " << accountID << " found " << size
-                << (direction == LineDirection::outgoing ? " incoming" : " outgoing")
+                << (direction == LineDirection::Outgoing ? " incoming" : " outgoing")
                 << " trust lines. "
-                << (direction == LineDirection::outgoing ? "Deleting the subset of incoming"
+                << (direction == LineDirection::Outgoing ? "Deleting the subset of incoming"
                                                          : "Returning the superset of outgoing")
                 << " trust lines. ";
-            if (direction == LineDirection::outgoing)
+            if (direction == LineDirection::Outgoing)
             {
                 // This request is for the outgoing set, but there is already a
                 // subset of incoming lines in the cache. Erase that subset
@@ -90,8 +106,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "
                            << size
-                           << (key.direction_ == LineDirection::outgoing ? " outgoing"
-                                                                         : " incoming")
+                           << (key.direction == LineDirection::Outgoing ? " outgoing" : " incoming")
                            << " lines for " << (inserted ? "new " : "existing ") << accountID
                            << " out of a total of " << lines_.size() << " accounts and "
                            << totalLineCount_ << " trust lines";
@@ -102,14 +117,14 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 std::shared_ptr<std::vector<PathFindMPT>> const&
 AssetCache::getMPTs(xrpl::AccountID const& account)
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (auto it = mpts_.find(account); it != mpts_.end())
         return it->second;
 
     std::vector<PathFindMPT> mpts;
     // Get issued/authorized tokens
-    forEachItem(*ledger_, account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*ledger_, account, [&](SLE::const_ref sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
             auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);
@@ -121,7 +136,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
             auto const mptID = sle->getFieldH192(sfMPTokenIssuanceID);
             bool const zeroBalance = sle->at(sfMPTAmount) == 0;
             bool const maxedOut = [&] {
-                if (auto const sleIssuance = ledger_->read(keylet::mptIssuance(mptID)))
+                if (auto const sleIssuance = ledger_->read(keylet::mptokenIssuance(mptID)))
                 {
                     return sleIssuance->at(sfOutstandingAmount) == maxMPTAmount(*sleIssuance);
                 }

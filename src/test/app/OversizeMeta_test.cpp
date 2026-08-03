@@ -1,12 +1,21 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 
-namespace xrpl {
-namespace test {
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/TER.h>
+
+#include <cstddef>
+#include <tuple>
+
+namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
-class PlumpBook_test : public beast::unit_test::suite
+class PlumpBook_test : public beast::unit_test::Suite
 {
 public:
     static void
@@ -26,13 +35,13 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
     }
 
     void
@@ -61,7 +70,7 @@ BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 
 //------------------------------------------------------------------------------
 
-class OversizeMeta_test : public beast::unit_test::suite
+class OversizeMeta_test : public beast::unit_test::Suite
 {
 public:
     static void
@@ -82,15 +91,15 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)));
     }
 
     void
@@ -104,7 +113,7 @@ BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, xrpl, 3);
 
 //------------------------------------------------------------------------------
 
-class FindOversizeCross_test : public beast::unit_test::suite
+class FindOversizeCross_test : public beast::unit_test::Suite
 {
 public:
     // Return lowest x in [lo, hi] for which f(x)==true
@@ -147,15 +156,15 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)), ter(std::ignore));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)), Ter(std::ignore));
         return env.ter() == tecOVERSIZE;
     }
 
@@ -169,5 +178,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

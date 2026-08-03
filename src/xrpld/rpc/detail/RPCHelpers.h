@@ -1,16 +1,27 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -33,7 +44,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+getStartHint(SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -47,10 +58,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -61,7 +69,7 @@ isRelatedToAccount(
  * @return A hash_set containing the parsed AccountID objects.
  */
 hash_set<AccountID>
-parseAccountIds(Json::Value const& jvArray);
+parseAccountIds(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -76,7 +84,7 @@ parseAccountIds(Json::Value const& jvArray);
  * @return An optional JSON value containing an error if one occurred, or
  * std::nullopt on success.
  */
-std::optional<Json::Value>
+std::optional<json::Value>
 readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
 
 /**
@@ -91,7 +99,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-getSeedFromRPC(Json::Value const& params, Json::Value& error);
+getSeedFromRPC(json::Value const& params, json::Value& error);
 
 /**
  * @brief Parses a XrplLib seed from RPC parameters.
@@ -103,7 +111,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-parseXrplLibSeed(Json::Value const& params);
+parseXrplLibSeed(json::Value const& params);
 
 /**
  * @brief Chooses the ledger entry type based on RPC parameters.
@@ -116,7 +124,7 @@ parseXrplLibSeed(Json::Value const& params);
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
 std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params);
+chooseLedgerEntryType(json::Value const& params);
 
 /**
  * @brief Checks if the type is a valid filtering type for the account_objects
@@ -150,17 +158,18 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  */
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
-    Json::Value const& params,
-    Json::Value& error,
-    unsigned int apiVersion = apiVersionIfUnspecified);
+    json::Value const& params,
+    json::Value& error,
+    unsigned int apiVersion = kApiVersionIfUnspecified);
 
-/** Parse subscribe/unsubscribe parameters
+/**
+ * Parse subscribe/unsubscribe parameters
  */
-error_code_i
+ErrorCodeI
 parseSubUnsubJson(
     Asset& asset,
-    Json::Value const& jv,
-    Json::StaticString const& name,
+    json::Value const& jv,
+    json::StaticString const& name,
     beast::Journal j);
 
 }  // namespace RPC

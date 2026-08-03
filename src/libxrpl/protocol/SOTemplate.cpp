@@ -1,12 +1,14 @@
+#include <xrpl/protocol/SOTemplate.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/SOTemplate.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -19,11 +21,12 @@ SOTemplate::SOTemplate(
 }
 
 SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
-    : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
+    : elements_(std::move(uniqueFields))
+    , indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
     //
-    elements_ = std::move(uniqueFields);
+
     std::ranges::move(commonFields, std::back_inserter(elements_));
 
     // Validate and index elements_.

@@ -1,7 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 
@@ -24,17 +31,17 @@ public:
     }
 
     template <ValidPathAsset T>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const;
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isXRP() const;
 
     template <ValidPathAsset T>
     T const&
     get() const;
 
-    constexpr std::variant<Currency, MPTID> const&
+    [[nodiscard]] constexpr std::variant<Currency, MPTID> const&
     value() const;
 
     // Custom, generic visit implementation
@@ -52,10 +59,10 @@ public:
 };
 
 template <ValidPathAsset PA>
-constexpr bool is_currency_v = std::is_same_v<PA, Currency>;
+constexpr bool kIsCurrencyV = std::is_same_v<PA, Currency>;
 
 template <ValidPathAsset PA>
-constexpr bool is_mptid_v = std::is_same_v<PA, MPTID>;
+constexpr bool kIsMptidV = std::is_same_v<PA, MPTID>;
 
 inline PathAsset::PathAsset(Asset const& asset)
 {
@@ -72,7 +79,7 @@ PathAsset::holds() const
 }
 
 template <ValidPathAsset T>
-T const&
+[[nodiscard]] [[nodiscard]] T const&
 PathAsset::get() const
 {
     if (!holds<T>())
@@ -98,11 +105,15 @@ constexpr bool
 operator==(PathAsset const& lhs, PathAsset const& rhs)
 {
     return std::visit(
-        []<ValidPathAsset TLhs, ValidPathAsset TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
+        []<ValidPathAsset TLhs, ValidPathAsset TRhs>(TLhs const& lhs, TRhs const& rhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
-                return lhs_ == rhs_;
+            {
+                return lhs == rhs;
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.value(),
         rhs.value());

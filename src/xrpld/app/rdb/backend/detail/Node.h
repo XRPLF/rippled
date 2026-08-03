@@ -2,15 +2,38 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
-namespace xrpl {
-namespace detail {
+#include <soci/session.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+namespace xrpl::detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
 enum class TableType { Ledgers, Transactions, AccountTransactions };
-constexpr int TableTypeCount = 3;
+constexpr int kTableTypeCount = 3;
 
 struct DatabasePairValid
 {
@@ -328,7 +351,7 @@ getNewestAccountTxsB(
  *        match: the account, minimum and maximum ledger numbers to search,
  *        marker of first returned entry, number of transactions to return,
  *        flag if this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @return Vector of tuples of found transactions, their metadata and
  *         account sequences sorted in ascending order by account
  *         sequence and marker for next search if search not finished.
@@ -340,7 +363,7 @@ oldestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length);
+    std::uint32_t pageLength);
 
 /**
  * @brief newestAccountTxPage Searches newest transactions for given
@@ -354,7 +377,7 @@ oldestAccountTxPage(
  *        match: the account, minimum and maximum ledger numbers to search,
  *        marker of first returned entry, number of transactions to return,
  *        flag if this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @return Vector of tuples of found transactions, their metadata and
  *         account sequences sorted in descending order by account
  *         sequence and marker for next search if search not finished.
@@ -366,7 +389,7 @@ newestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length);
+    std::uint32_t pageLength);
 
 /**
  * @brief getTransaction Returns transaction with given hash. If not found
@@ -390,7 +413,7 @@ getTransaction(
     Application& app,
     uint256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec);
+    ErrorCodeI& ec);
 
 /**
  * @brief dbHasSpace Checks if given database has available space.
@@ -402,5 +425,4 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
