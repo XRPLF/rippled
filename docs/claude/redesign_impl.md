@@ -351,7 +351,7 @@ recovered `HostFuncWrapper.h` protos:
 
 | shape | count | helper |
 | --- | --- | --- |
-| ≥1 byte input **and** a byte output | **38** | `scratch_write` |
+| ≥1 byte input **and** a byte output | **38** | `write_buffered` |
 | byte output only | 9 | `write_into`, unchanged |
 | byte inputs only, or scalars | 18 | `read_borrowed` / `region`, unchanged |
 
@@ -682,7 +682,7 @@ same one-instance-per-run assumption C10's cache would take on.
     the *output*" for the census that decided it and for why `MaybeUninit` is not the
     answer.
 
-    `read_write` is gone, replaced by `scratch_write`, and the input primitive split in
+    `read_write` is gone, replaced by `write_buffered`, and the input primitive split in
     two: `region(data, ptr, len)` does the validation and slicing against a plain `&[u8]`,
     and `read_borrowed` is now that over the guest's memory for the calls that read
     without writing. Taking bytes rather than a `Caller` is the whole trick — input
@@ -724,7 +724,7 @@ same one-instance-per-run assumption C10's cache would take on.
     then only borrowed, so a kilobyte in it costs one move where a `Box` costs an
     allocation. **Lazy init is deferred to a benchmark, not rejected.** `Option<[u8; N]>`
     with `get_or_insert_with` is the shape (not `OnceCell`, which is for init behind a
-    shared borrow; `scratch_write` holds `&mut VmState`), and the case against it today is
+    shared borrow; `write_buffered` holds `&mut VmState`), and the case against it today is
     a magnitude argument that a measurement could overturn: it defers one ~1 KiB fill per
     run — invisible beside the `Module::new` that starts every run — and pays for it with a
     discriminant test on every host call, which is the direction C11 was moving cost away
@@ -1038,6 +1038,48 @@ instead of error text to parse. D16's `gas = 0` decision belongs there too, sinc
 a TER choice. Deferred as before: macro-emitted `link_*` shims, the generated C header,
 the probe-module test.
 
+## `Region`: the wire's `(ptr, len)` as one type (2026-08-03)
+
+Every byte parameter in the ABI is a `(ptr, len)` pair, so `crates/xrpl-wasm-vm/src/region.rs`
+makes the pair a type. `abi.rs`'s helpers take one `Region` where they took two loose
+`i32`s, and `register.rs` forms one per wire pair, next to the wasm parameter list where a
+reader can check it against the signature.
+
+**What it does and does not check** is the part worth recording, because the obvious
+expectation is wrong. It cannot catch a swapped pair: `Region::new(len, ptr)` compiles, and
+no type can do better at that boundary — the values arrive as indistinguishable `i32`s in
+positional order, so establishing the mapping is a job for a human reading it or for the
+deferred shim generator emitting it. What it *does* enforce is that the pair cannot be used
+unchecked: `range()` is the only way from a `Region` to indices, and it is where
+`InvalidParams` (the conversion is the negativity check) and the end-overflow guard live.
+Three copies of that conversion in `abi.rs` became one.
+
+**The type is in a module of its own, and that is load-bearing.** Rust privacy is
+module-level, so with `Region` declared in `abi.rs` the helpers there could still read
+`out.ptr` and skip `range()` — the invariant would have held by convention only. Separated,
+an attempted bypass is `error[E0616]: field ptr of struct Region is private`, which is how
+this was verified.
+
+**Construction is infallible on purpose.** Validating in `new` would hoist the output
+region's verdict above the host call, and `write_buffered` deliberately judges the inputs
+first (`a_read_write_checks_its_input_before_its_output` pins it, including the negative-`dst`
+case). Deferring the check to `range()` is what lets the type exist without moving that
+order.
+
+Two orderings did shift, both unobservable: `range()` runs its end-overflow guard before
+the field-cap check, where `region()` had the cap first, and `write_into` can now answer
+`PointerOutOfBounds` before `NoMemExported`. Both need `ptr + len` to overflow `usize`,
+which two `i32`s cannot do on a 64-bit target — the guard is there for a 32-bit one.
+
+`Ptr`/`Len` as separate newtypes were considered and dropped. They catch only ptr↔len
+confusion, not the mispairing that scales with the ABI, and they cannot reach the wire
+either: `wasmi::WasmTy` looks implementable — public, no sealing supertrait — but its bound
+names `UntypedVal`, which wasmi re-exports only through a **private** `mod core`
+(`lib.rs:109-137`), so the impls cannot be written. Probed: `error[E0603]: module core is
+private`. The escape hatch is a direct `wasmi_core` dependency pinned in lockstep with
+wasmi's own, plus a `#[doc(hidden)]` method — not worth it on a consensus path, so host
+function parameters stay `i32` and are paired on the first line of each arm.
+
 ## The comment cut-back (done, 2026-08-03)
 
 **Done over `src/` and `tests/`, after C11 and with C12 deferred to a benchmark** — so no
@@ -1063,8 +1105,10 @@ and `kWasmTransferLimit`, which are where the numbers are defined for the rest o
 system and are named in `the_limits_are_the_protocol_limits` for that reason. The parity
 evidence itself is not lost — it is in this document, and this is where it belongs.
 
-The `scratch` field is now `VmState::out_buffer`. `abi::scratch_write` keeps its name;
-if that reads inconsistently, the rename is a one-liner.
+The buffer is `VmState::out_buffer` and the helper that stages through it is
+`abi::write_buffered`, beside `abi::write_into` — the two ways a call's byte answer reaches
+the guest, verb first in both. "Scratch" survives in this document as the name of the
+design, not of anything in the code.
 
 Two TODOs were made honest rather than deleted, since both read as gaps and neither is
 one: the start-section TODO now says why wasmi 1.1 cannot close it and that the section is
@@ -1099,7 +1143,7 @@ What it cut:
   notes explaining a borrow the compiler already enforces.
 - The same rationale on a field and on the function that reads it: `VmState::memory` keeps
   the arena-index invariant and `abi::memory` keeps only the two ways it is absent.
-- Paragraphs duplicating this document — `scratch_write`'s case for its design went from
+- Paragraphs duplicating this document — `write_buffered`'s case for its design went from
   five paragraphs to three short ones, the ABI-shape argument left here.
 - Every C++ citation, per the rule above.
 

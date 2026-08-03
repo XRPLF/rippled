@@ -294,7 +294,7 @@ fn both_of_traces_regions_are_checked() {
 }
 
 // ---------------------------------------------------------------------------
-// Both at once (`scratch_write`, via `sha512_half`)
+// Both at once (`write_buffered`, via `sha512_half`)
 // ---------------------------------------------------------------------------
 
 /// A call with an input and an output region decides everything about the input
@@ -362,11 +362,11 @@ fn a_read_write_output_obeys_the_write_rules() {
 
 /// A refused value reaches guest memory in no part, however much of it the host
 /// wrote. The host answers with 32 bytes it did write and a length it did not, so
-/// the refusal happens with the value sitting in the run's scratch — and the
+/// the refusal happens with the value sitting in the run's output buffer — and the
 /// guest's buffer has to come back untouched.
 ///
 /// Stronger than the contract asks for: a guest must not read its buffer on a
-/// negative status. It holds because the scratch is copied to the guest only after
+/// negative status. It holds because the buffer is copied to the guest only after
 /// the length, the bounds, the fit and the budget have all passed, so there is no
 /// window in which a refused value is in guest memory.
 #[test]

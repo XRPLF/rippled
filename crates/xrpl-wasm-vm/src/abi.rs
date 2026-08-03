@@ -1,3 +1,4 @@
+use crate::region::Region;
 use crate::vm::{MAX_FIELD_BYTES, VmState};
 use wasmi::{Caller, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
@@ -67,25 +68,14 @@ fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
     caller.data().memory.ok_or(HostError::NoMemExported)
 }
 
-/// Validate `[ptr, ptr + len)` against `data` and return that slice of it.
-pub(crate) fn region(data: &[u8], ptr: i32, len: i32) -> HostResult<&[u8]> {
-    let (Ok(ptr), Ok(len)) = (usize::try_from(ptr), usize::try_from(len)) else {
-        return Err(HostError::InvalidParams);
-    };
-    if len > MAX_FIELD_BYTES {
-        return Err(HostError::DataFieldTooLarge);
-    }
-    let end = ptr.checked_add(len).ok_or(HostError::PointerOutOfBounds)?;
-    data.get(ptr..end).ok_or(HostError::PointerOutOfBounds)
-}
-
+/// [`Region::read`] of the guest's memory, for a call that reads and writes nothing
+/// back (`trace`, `trace_num`).
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
-    ptr: i32,
-    len: i32,
+    input: Region,
 ) -> HostResult<&'a [u8]> {
     let mem = memory(caller)?;
-    region(mem.data(caller), ptr, len)
+    input.read(mem.data(caller))
 }
 
 /// Service a call whose answer is bytes, written straight into the guest's output
@@ -97,27 +87,24 @@ pub(crate) fn read_borrowed<'a>(
 /// cap, and both checks below are reachable.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
-    dst: i32,
-    cap: i32,
+    out: Region,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
-    let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
-        return Err(HostError::InvalidParams);
-    };
+    let range = out.range()?;
+    let cap = range.len();
     let mem = memory(caller)?;
     let host: &dyn HostFunctions = caller.data().host;
-    let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
     // Bounds-checked over the guest's whole declared region, so a buffer running
     // past memory is a wrong pointer rather than a truncated prefix being served…
-    let out = mem
+    let buf = mem
         .data_mut(&mut *caller)
-        .get_mut(dst..end)
+        .get_mut(range)
         .ok_or(HostError::PointerOutOfBounds)?;
     // …of which only the field cap is writable, so no call can exceed it whatever
     // the guest declared.
-    let out = &mut out[..cap.min(MAX_FIELD_BYTES)];
+    let buf = &mut buf[..cap.min(MAX_FIELD_BYTES)];
 
-    let n = fill(host, out)?;
+    let n = fill(host, buf)?;
 
     if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
@@ -140,9 +127,9 @@ pub(crate) fn write_into(
 /// passed.
 ///
 /// `call` gets the guest's whole memory, so it can borrow any number of input
-/// regions with [`region`] — which a `&mut` view of that memory would forbid. That
-/// is why the answer goes through a buffer instead of straight into the guest as
-/// [`write_into`]'s does.
+/// regions with [`Region::read`] — which a `&mut` view of that memory would forbid.
+/// That is why the answer goes through a buffer instead of straight into the guest
+/// as [`write_into`]'s does.
 ///
 /// **The host is never told the guest's capacity**: it is offered the whole buffer
 /// and reports the value's true length, so the fit is decided here, with nothing yet
@@ -151,10 +138,9 @@ pub(crate) fn write_into(
 /// The output is judged after the inputs, so a call with both bad reports the
 /// input's verdict. `NoMemExported` precedes both: there is no memory to validate a
 /// region against.
-pub(crate) fn scratch_write(
+pub(crate) fn write_buffered(
     caller: &mut Caller<'_, VmState<'_>>,
-    dst: i32,
-    cap: i32,
+    out: Region,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
     let mem = memory(caller)?;
@@ -166,21 +152,19 @@ pub(crate) fn scratch_write(
 
     let n = call(host, data, &mut state.out_buffer[..])?;
 
-    let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
-        return Err(HostError::InvalidParams);
-    };
+    // `out` is checked here rather than before the call: the inputs are judged
+    // first, so a call with both malformed reports the input's verdict.
+    let range = out.range()?;
+    let cap = range.len();
     if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
-    let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
-    let out = data
-        .get_mut(dst..end)
-        .ok_or(HostError::PointerOutOfBounds)?;
+    let buf = data.get_mut(range).ok_or(HostError::PointerOutOfBounds)?;
     if n > cap {
         return Err(HostError::BufferTooSmall);
     }
     charge_transfer(state, n)?;
-    out[..n].copy_from_slice(&state.out_buffer[..n]);
+    buf[..n].copy_from_slice(&state.out_buffer[..n]);
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
@@ -189,10 +173,6 @@ pub(crate) fn scratch_write(
     let n = n as i32;
     Ok(n)
 }
-
-// A `Caller` exists only during a host call, so everything above that takes one is
-// unreachable from here; `tests/` covers those by running real modules against a
-// fake host.
 
 #[cfg(test)]
 mod tests {

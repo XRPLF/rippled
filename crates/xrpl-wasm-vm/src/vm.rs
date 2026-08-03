@@ -55,7 +55,7 @@ pub(crate) struct VmState<'h> {
     /// have to resolve per instance: a cached handle would serve a call against the
     /// wrong instance's memory, which is a wrong answer rather than an error.
     pub(crate) memory: Option<Memory>,
-    /// Where a host writes a value before [`crate::abi::scratch_write`] copies it
+    /// Where a host writes a value before [`crate::abi::write_buffered`] copies it
     /// to the guest. One buffer per run, so no call zero-fills one of its own.
     ///
     /// Inline rather than boxed: the store's data is built once and then only

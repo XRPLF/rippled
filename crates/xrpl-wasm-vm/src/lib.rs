@@ -16,6 +16,7 @@
 )]
 
 mod abi;
+mod region;
 mod register;
 mod vm;
 
