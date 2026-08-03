@@ -441,6 +441,12 @@ public:
     static void
     setShedEnabled(bool enabled);
 
+    /**
+     * Report whether sheddable resident subtrees are enabled process-wide.
+     */
+    static bool
+    shedEnabled();
+
     void
     dump(bool withHashes = false) const;
     void

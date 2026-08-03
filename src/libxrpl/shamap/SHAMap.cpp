@@ -52,6 +52,12 @@ SHAMap::setShedEnabled(bool enabled)
     shedEnabled_.store(enabled, std::memory_order_relaxed);
 }
 
+bool
+SHAMap::shedEnabled()
+{
+    return shedEnabled_.load(std::memory_order_relaxed);
+}
+
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
 {

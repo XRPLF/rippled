@@ -113,6 +113,8 @@ doServerInfo(RPC::JsonContext&);  // for humans
 json::Value
 doServerState(RPC::JsonContext&);  // for machines
 json::Value
+doShed(RPC::JsonContext&);
+json::Value
 doSign(RPC::JsonContext&);
 json::Value
 doSignFor(RPC::JsonContext&);
