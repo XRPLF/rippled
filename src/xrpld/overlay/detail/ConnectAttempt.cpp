@@ -7,8 +7,6 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -16,6 +14,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
@@ -35,8 +35,8 @@
 #include <boost/system/system_error.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <exception>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -86,7 +86,7 @@ ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
+        boost::asio::post(strand_, [self = shared_from_this()] { self->stop(); });
         return;
     }
     if (socket_.is_open())
@@ -104,8 +104,7 @@ ConnectAttempt::run()
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
 }
 
 //------------------------------------------------------------------------------
@@ -160,8 +159,7 @@ ConnectAttempt::setTimer()
 
     timer_.async_wait(
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -228,8 +226,7 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
 }
 
 void
@@ -290,7 +287,7 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onWrite(ec); }));
 }
 
 void
@@ -316,7 +313,7 @@ ConnectAttempt::onWrite(error_code ec)
         response_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onRead(ec); }));
 }
 
 void
@@ -339,8 +336,7 @@ ConnectAttempt::onRead(error_code ec)
             stream_.async_shutdown(
                 boost::asio::bind_executor(
                     strand_,
-                    std::bind(
-                        &ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
+                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
             return;
         }
 

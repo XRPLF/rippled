@@ -21,6 +21,7 @@
 
 #include <xrpl.pb.h>
 
+#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <memory>
@@ -50,15 +51,10 @@ public:
     run() override
     {
         testMalformedSerializedForm();
-
-        testcase("secp256k1 signatures");
         testSTTx(KeyType::Secp256k1);
-
-        testcase("ed25519 signatures");
         testSTTx(KeyType::Ed25519);
-
-        testcase("STObject constructor errors");
         testObjectCtorErrors();
+        testBatchInnerCtorErrors();
     }
 
     void
@@ -1328,6 +1324,8 @@ public:
     void
     testSTTx(KeyType keyType)
     {
+        testcase(std::string(to_string(keyType)) + " signatures");
+
         auto const keypair = randomKeyPair(keyType);
 
         STTx j(ttACCOUNT_SET, [&keypair](auto& obj) {
@@ -1366,6 +1364,7 @@ public:
         {
             fail("Unable to build object from json");
         }
+        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         else if (STObject(j) != parsed.object)
         {
             log << "ORIG: " << j.getJson(JsonOptions::Values::None) << '\n'
@@ -1381,6 +1380,8 @@ public:
     void
     testObjectCtorErrors()
     {
+        testcase("STObject constructor errors");
+
         auto const kp1 = randomKeyPair(KeyType::Secp256k1);
         auto const id1 = calcAccountID(kp1.first);
 
@@ -1460,6 +1461,75 @@ public:
                 got = err.what();
             }
             BEAST_EXPECT(got == "Field 'Fee' is required but missing.");
+        }
+    }
+
+    void
+    testBatchInnerCtorErrors()
+    {
+        testcase("Batch inner transaction validation");
+
+        auto const kp1 = randomKeyPair(KeyType::Secp256k1);
+        auto const id1 = calcAccountID(kp1.first);
+
+        auto const kp2 = randomKeyPair(KeyType::Secp256k1);
+        auto const id2 = calcAccountID(kp2.first);
+
+        // A raw inner transaction object of the given transaction type.
+        auto makeInner = [&](std::uint16_t txType) {
+            STObject inner(sfRawTransaction);
+            inner.setFieldU16(sfTransactionType, txType);
+            inner.setAccountID(sfAccount, id1);
+            inner.setAccountID(sfDestination, id2);
+            inner.setFieldAmount(sfAmount, STAmount(10000000000ull));
+            inner.setFieldAmount(sfFee, STAmount(0ull));
+            inner.setFieldU32(sfSequence, 1);
+            inner.setFieldVL(sfSigningPubKey, Slice(kp1.first.data(), kp1.first.size()));
+            return inner;
+        };
+
+        // An outer Batch STObject wrapping the given inner.
+        auto makeBatch = [&](STObject inner) {
+            STArray rawTxns(sfRawTransactions);
+            rawTxns.push_back(std::move(inner));
+
+            STObject batch(sfGeneric);
+            batch.setFieldU16(sfTransactionType, ttBATCH);
+            batch.setAccountID(sfAccount, id1);
+            batch.setFieldAmount(sfFee, STAmount(20ull));
+            batch.setFieldU32(sfSequence, 1);
+            batch.setFieldVL(sfSigningPubKey, Slice(kp1.first.data(), kp1.first.size()));
+            batch.setFieldArray(sfRawTransactions, rawTxns);
+            return batch;
+        };
+
+        {
+            // A batch whose inner is a well-formed transaction constructs.
+            std::string errorMsg;
+            try
+            {
+                STTx{makeBatch(makeInner(ttPAYMENT))};
+            }
+            catch (std::exception const& err)
+            {
+                errorMsg = err.what();
+            }
+            BEAST_EXPECT(errorMsg.empty());
+        }
+        {
+            // A batch whose inner carries an unregistered transaction type is
+            // rejected at construction, rather than surviving as a raw STObject
+            // and throwing later from an unprotected fee-calculation path.
+            std::string errorMsg;
+            try
+            {
+                STTx{makeBatch(makeInner(60000))};
+            }
+            catch (std::exception const& err)
+            {
+                errorMsg = err.what();
+            }
+            BEAST_EXPECT(matches(errorMsg.c_str(), "Invalid transaction type 60000"));
         }
     }
 };

@@ -555,7 +555,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -602,9 +602,7 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    XRPL_ASSERT(
-        !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
-        "xrpl::getTradingFee : auction present");
+    XRPL_ASSERT(ammSle.isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot = safeDowncast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
@@ -647,7 +645,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -822,7 +820,7 @@ initializeFeeAuctionVote(
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));

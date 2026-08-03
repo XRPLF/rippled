@@ -1,11 +1,11 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -119,7 +120,8 @@ public:
         return {};
     }
 
-    /** We received a TMLedgerData from a peer.
+    /**
+     * We received a TMLedgerData from a peer.
      */
     void
     gotData(
@@ -136,34 +138,45 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data");
+            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
             return;
         }
 
-        std::vector<std::pair<SHAMapNodeID, Slice>> data;
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
-        for (auto const& node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            if (!node.has_nodeid() || !node.has_nodedata())
+            auto treeNode = getTreeNode(ledgerNode.nodedata());
+            if (!treeNode)
             {
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_data");
+                JLOG(j_.warn()) << "Got invalid node data for TX set " << hash << " from peer "
+                                << peer->id();
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 return;
             }
 
-            auto const id = deserializeSHAMapNodeID(node.nodeid());
-
-            if (!id)
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
+            if (!nodeID)
             {
-                peer->charge(Resource::kFeeInvalidData, "ledger_data");
+                JLOG(j_.warn()) << "Got invalid node id for TX set " << hash << " from peer "
+                                << peer->id();
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 return;
             }
 
-            data.emplace_back(*id, makeSlice(node.nodedata()));
+            data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        if (!ta->takeNodes(data, peer).isUseful())
-            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
+        auto const san = ta->takeNodes(std::move(data), peer);
+        if (san.isInvalid())
+        {
+            peer->charge(Resource::kFeeInvalidData, "ledger_data invalid");
+        }
+        else if (!san.isUseful())
+        {
+            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
+        }
     }
 
     void

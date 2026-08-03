@@ -1,11 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -14,8 +16,20 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <deque>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <stack>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -23,66 +37,92 @@ namespace xrpl {
 class SHAMapNodeID;
 class SHAMapSyncFilter;
 
-/** Describes the current state of a given SHAMap */
+/**
+ * Describes the current state of a given SHAMap
+ */
 enum class SHAMapState {
-    /** The map is in flux and objects can be added and removed.
-
-        Example: map underlying the open ledger.
+    /**
+     * The map is in flux and objects can be added and removed.
+     *
+     * Example: map underlying the open ledger.
      */
     Modifying = 0,
 
-    /** The map is set in stone and cannot be changed.
-
-        Example: a map underlying a given closed ledger.
+    /**
+     * The map is set in stone and cannot be changed.
+     *
+     * Example: a map underlying a given closed ledger.
      */
     Immutable = 1,
 
-    /** The map's hash is fixed but valid nodes may be missing and can be added.
-
-        Example: a map that's syncing a given peer's closing ledger.
+    /**
+     * The map's hash is fixed but valid nodes may be missing and can be added.
+     *
+     * Example: a map that's syncing a given peer's closing ledger.
      */
     Synching = 2,
 
-    /** The map is known to not be valid.
-
-        Example: usually synching a corrupt ledger.
+    /**
+     * The map is known to not be valid.
+     *
+     * Example: usually synching a corrupt ledger.
      */
     Invalid = 3,
 };
 
-/** A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
-
-    A radix tree is a tree with two properties:
-
-      1. The key for a node is represented by the node's position in the tree
-         (the "prefix property").
-      2. A node with only one child is merged with that child
-         (the "merge property")
-
-    These properties result in a significantly smaller memory footprint for
-    a radix tree.
-
-    A fan-out of 16 means that each node in the tree has at most 16
-    children. See https://en.wikipedia.org/wiki/Radix_tree
-
-    A Merkle tree is a tree where each non-leaf node is labelled with the hash
-    of the combined labels of its children nodes.
-
-    A key property of a Merkle tree is that testing for node inclusion is
-    O(log(N)) where N is the number of nodes in the tree.
-
-    See https://en.wikipedia.org/wiki/Merkle_tree
+/**
+ * A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
+ *
+ * A radix tree is a tree with two properties:
+ *
+ *   1. The key for a node is represented by the node's position in the tree
+ *      (the "prefix property").
+ *   2. A node with only one child is merged with that child
+ *      (the "merge property")
+ *
+ * These properties result in a significantly smaller memory footprint for
+ * a radix tree.
+ *
+ * A fan-out of 16 means that each node in the tree has at most 16
+ * children. See https://en.wikipedia.org/wiki/Radix_tree
+ *
+ * A Merkle tree is a tree where each non-leaf node is labelled with the hash
+ * of the combined labels of its children nodes.
+ *
+ * A key property of a Merkle tree is that testing for node inclusion is
+ * O(log(N)) where N is the number of nodes in the tree.
+ *
+ * See https://en.wikipedia.org/wiki/Merkle_tree
  */
+
+/**
+ * Holds a SHAMap node's identity, leaf status, and serialized data. Used by
+ * getNodeFat to return node data for peer synchronization.
+ */
+struct SHAMapNodeData
+{
+    SHAMapNodeID nodeID;
+    // The `data` field (a Blob, 8-byte aligned) needs 4 bytes of padding after the `nodeID` field
+    // (36 bytes, 4-byte aligned) regardless of what comes between them, so `isLeaf` costs nothing
+    // extra here. Moving it after `data` would add 8 bytes to the size of this struct instead.
+    bool isLeaf;
+    Blob data;
+};
+
 class SHAMap
 {
 private:
     Family& f_;
     beast::Journal journal_;
 
-    /** ID to distinguish this map for all others we're sharing nodes with. */
+    /**
+     * ID to distinguish this map for all others we're sharing nodes with.
+     */
     std::uint32_t cowid_ = 1;
 
-    /** The sequence of the ledger that this map references, if any. */
+    /**
+     * The sequence of the ledger that this map references, if any.
+     */
     std::uint32_t ledgerSeq_ = 0;
 
     SHAMapTreeNodePtr root_;
@@ -92,11 +132,15 @@ private:
     mutable bool full_ = false;  // Map is believed complete in database
 
 public:
-    /** Number of children each non-leaf node has (the 'radix tree' part of the
-     * map) */
+    /**
+     * Number of children each non-leaf node has (the 'radix tree' part of the
+     * map)
+     */
     static constexpr unsigned int kBranchFactor = SHAMapInnerNode::kBranchFactor;
 
-    /** The depth of the hash map: data is only present in the leaves */
+    /**
+     * The depth of the hash map: data is only present in the leaves
+     */
     static constexpr unsigned int kLeafDepth = 64;
 
     using DeltaItem =
@@ -132,10 +176,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Iterator to a SHAMap's leaves
-        This is always a const iterator.
-        Meets the requirements of ForwardRange.
-    */
+    /**
+     * Iterator to a SHAMap's leaves
+     * This is always a const iterator.
+     * Meets the requirements of ForwardRange.
+     */
     class ConstIterator;
 
     ConstIterator
@@ -165,7 +210,9 @@ public:
 
     // normal hash access functions
 
-    /** Does the tree have an item with the given ID? */
+    /**
+     * Does the tree have an item with the given ID?
+     */
     bool
     hasItem(uint256 const& id) const;
 
@@ -193,67 +240,73 @@ public:
     peekItem(uint256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
-    /** Find the first item after the given item.
-
-        @param id the identifier of the item.
-
-        @note The item does not need to exist.
+    /**
+     * Find the first item after the given item.
+     *
+     * @param id the identifier of the item.
+     *
+     * @note The item does not need to exist.
      */
     ConstIterator
     upperBound(uint256 const& id) const;
 
-    /** Find the object with the greatest object id smaller than the input id.
-
-        @param id the identifier of the item.
-
-        @note The item does not need to exist.
+    /**
+     * Find the object with the greatest object id smaller than the input id.
+     *
+     * @param id the identifier of the item.
+     *
+     * @note The item does not need to exist.
      */
     ConstIterator
     lowerBound(uint256 const& id) const;
 
-    /**  Visit every node in this SHAMap
-
-         @param function called with every node visited.
-         If function returns false, visitNodes exits.
-    */
+    /**
+     * Visit every node in this SHAMap
+     *
+     * @param function called with every node visited.
+     * If function returns false, visitNodes exits.
+     */
     void
     visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const;
 
-    /**  Visit every node in this SHAMap that
-         is not present in the specified SHAMap
-
-         @param function called with every node visited.
-         If function returns false, visitDifferences exits.
-    */
+    /**
+     * Visit every node in this SHAMap that
+     * is not present in the specified SHAMap
+     *
+     * @param function called with every node visited.
+     * If function returns false, visitDifferences exits.
+     */
     void
     visitDifferences(SHAMap const* have, std::function<bool(SHAMapTreeNode const&)> const&) const;
 
-    /**  Visit every leaf node in this SHAMap
-
-         @param function called with every non inner node visited.
-    */
+    /**
+     * Visit every leaf node in this SHAMap
+     *
+     * @param function called with every non inner node visited.
+     */
     void
     visitLeaves(std::function<void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions
 
-    /** Check for nodes in the SHAMap not available
-
-        Traverse the SHAMap efficiently, maximizing I/O
-        concurrency, to discover nodes referenced in the
-        SHAMap but not available locally.
-
-        @param maxNodes The maximum number of found nodes to return
-        @param filter The filter to use when retrieving nodes
-        @param return The nodes known to be missing
-    */
+    /**
+     * Check for nodes in the SHAMap not available
+     *
+     * Traverse the SHAMap efficiently, maximizing I/O
+     * concurrency, to discover nodes referenced in the
+     * SHAMap but not available locally.
+     *
+     * @param maxNodes The maximum number of found nodes to return
+     * @param filter The filter to use when retrieving nodes
+     * @param return The nodes known to be missing
+     */
     std::vector<std::pair<SHAMapNodeID, uint256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
-    bool
+    [[nodiscard]] bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<std::pair<SHAMapNodeID, Blob>>& data,
+        std::vector<SHAMapNodeData>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 
@@ -276,14 +329,51 @@ public:
     static bool
     verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path);
 
-    /** Serializes the root in a format appropriate for sending over the wire */
+    /**
+     * Serializes the root in a format appropriate for sending over the wire
+     */
     void
     serializeRoot(Serializer& s) const;
 
+    /**
+     * Add a root node to the SHAMap during synchronization.
+     *
+     * This function is used when receiving the root node of a SHAMap from a peer during ledger
+     * synchronization. The node must already have been deserialized.
+     *
+     * @param hash The expected hash of the root node.
+     * @param rootNode A deserialized root node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the rootNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function.
+     */
     SHAMapAddNode
-    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter);
+    addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
+
+    /**
+     * Add a known node at a specific position in the SHAMap during synchronization.
+     *
+     * This function is used when receiving nodes from peers during ledger synchronization. The node
+     * is inserted at the position specified by nodeID. The node must already have been
+     * deserialized.
+     *
+     * @param nodeID The position in the tree where this node belongs.
+     * @param treeNode A deserialized tree node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function. This also means that the nodeID must be consistent with the node's content.
+     */
     SHAMapAddNode
-    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter const* filter);
+    addKnownNode(
+        SHAMapNodeID const& nodeID,
+        SHAMapTreeNodePtr treeNode,
+        SHAMapSyncFilter const* filter);
 
     // status functions
     void
@@ -302,11 +392,15 @@ public:
     bool
     compare(SHAMap const& otherMap, Delta& differences, int maxCount) const;
 
-    /** Convert any modified nodes to shared. */
+    /**
+     * Convert any modified nodes to shared.
+     */
     int
     unshare();
 
-    /** Flush modified nodes to the nodestore and convert them to shared. */
+    /**
+     * Flush modified nodes to the nodestore and convert them to shared.
+     */
     int
     flushDirty(NodeObjectType t);
 
@@ -349,30 +443,42 @@ private:
     SHAMapTreeNodePtr
     checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const;
 
-    /** Update hashes up to the root */
+    /**
+     * Update hashes up to the root
+     */
     void
     dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
 
-    /** Walk towards the specified id, returning the node.  Caller must check
-        if the return is nullptr, and if not, if the node->peekItem()->key() ==
-       id */
+    /**
+     * Walk towards the specified id, returning the node.  Caller must check
+     *  if the return is nullptr, and if not, if the node->peekItem()->key() ==
+     * id
+     */
     SHAMapLeafNode*
     walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr) const;
-    /** Return nullptr if key not found */
+    /**
+     * Return nullptr if key not found
+     */
     SHAMapLeafNode*
     findKey(uint256 const& id) const;
 
-    /** Unshare the node, allowing it to be modified */
+    /**
+     * Unshare the node, allowing it to be modified
+     */
     template <class Node>
     intr_ptr::SharedPtr<Node>
     unshareNode(intr_ptr::SharedPtr<Node>, SHAMapNodeID const& nodeID);
 
-    /** prepare a node to be modified before flushing */
+    /**
+     * prepare a node to be modified before flushing
+     */
     template <class Node>
     intr_ptr::SharedPtr<Node>
     preFlushNode(intr_ptr::SharedPtr<Node> node) const;
 
-    /** write and canonicalize modified node */
+    /**
+     * write and canonicalize modified node
+     */
     SHAMapTreeNodePtr
     writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const;
 
@@ -427,7 +533,9 @@ private:
     SHAMapTreeNodePtr
     descendNoStore(SHAMapInnerNode&, int branch) const;
 
-    /** If there is only one leaf below this node, get its contents */
+    /**
+     * If there is only one leaf below this node, get its contents
+     */
     boost::intrusive_ptr<SHAMapItem const> const&
     onlyBelow(SHAMapTreeNode*) const;
 
