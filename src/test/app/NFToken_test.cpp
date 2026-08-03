@@ -4668,6 +4668,47 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
     }
 
     void
+    testNftXxxOffersInvalidNftId(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers with invalid nft_id");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        // nft_id must be of type string. if it is not, it must be rejected
+        // with "not string" error and not surface as a genering internal error
+        // https://github.com/XRPLF/rippled/issues/6785
+        // since both buy and sell handlers have the same validation we can
+        // have same test for both of them
+        for (char const* request : {"nft_buy_offers", "nft_sell_offers"})
+        {
+            auto checkNotString = [this, &env, request](json::Value const& nftId, int line) {
+                json::Value params;
+                params[jss::nft_id] = nftId;
+                json::Value const resp = env.rpc("json", request, to_string(params));
+
+                json::Value const& result = resp[jss::result];
+                expect(
+                    result[jss::error].asString() == "invalidParams",
+                    "expected invalidParams error",
+                    __FILE__,
+                    line);
+                expect(
+                    result[jss::error_message].asString() == "Invalid field 'nft_id', not string.",
+                    "expected not-string error message",
+                    __FILE__,
+                    line);
+            };
+
+            checkNotString(json::Value{42}, __LINE__);
+            checkNotString(json::Value{true}, __LINE__);
+            checkNotString(json::Value{json::ValueType::Array}, __LINE__);
+            checkNotString(json::Value{json::ValueType::Object}, __LINE__);
+        }
+    }
+
+    void
     testNFTokenNegOffer(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -7155,6 +7196,7 @@ protected:
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
+        testNftXxxOffersInvalidNftId(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
