@@ -420,10 +420,13 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const [assetsTotalDelta, debtTotalDelta] = loanPaymentDeltas(vaultSle, *paymentParts);
+
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
                      << ", interest paid: " << paymentParts->interestPaid
                      << ", fee paid: " << paymentParts->feePaid
-                     << ", value change: " << paymentParts->valueChange;
+                     << ", assets total delta: " << assetsTotalDelta
+                     << ", debt total delta: " << debtTotalDelta;
 
     //------------------------------------------------------
     // LoanBroker object state changes
@@ -439,13 +442,6 @@ LoanPay::doApply()
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
-    // Account for value changes when reducing the broker's debt:
-    // - Positive value change (from full/late/overpayments): Subtract from the
-    //   amount credited toward debt to avoid over-reducing the debt.
-    // - Negative value change (from full/overpayments): Add to the amount
-    //   credited toward debt,effectively increasing the debt reduction.
-    auto const totalPaidToVaultForDebt = totalPaidToVaultRaw - paymentParts->valueChange;
-
     auto const totalPaidToBroker = paymentParts->feePaid;
 
     XRPL_ASSERT_PARTS(
@@ -455,16 +451,16 @@ LoanPay::doApply()
         "payments add up");
 
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change
-    // (which might be negative). totalPaidToVaultForDebt may be negative,
-    // increasing the debt
+    // (which might be negative). debtTotalDelta may be negative, increasing the
+    // debt
     XRPL_ASSERT_PARTS(
-        isRounded(asset, totalPaidToVaultForDebt, loanScale),
+        isRounded(asset, debtTotalDelta, loanScale),
         "xrpl::LoanPay::doApply",
-        "totalPaidToVaultForDebt rounding good");
+        "debtTotalDelta rounding good");
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total. This is because the broker may have more
     // than one loan with significantly different scales.
-    adjustImpreciseNumber(debtTotalProxy, -totalPaidToVaultForDebt, asset, vaultScale);
+    adjustImpreciseNumber(debtTotalProxy, -debtTotalDelta, asset, vaultScale);
 
     //------------------------------------------------------
     // Vault object state changes
@@ -490,7 +486,7 @@ LoanPay::doApply()
 #endif
 
     assetsAvailableProxy += totalPaidToVaultRounded;
-    assetsTotalProxy += paymentParts->valueChange;
+    assetsTotalProxy += assetsTotalDelta;
 
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,
@@ -543,11 +539,11 @@ LoanPay::doApply()
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange != beast::kZero && assetsTotalAfter == assetsTotalBefore)
+    if (assetsTotalDelta != beast::kZero && assetsTotalAfter == assetsTotalBefore)
     {
-        // Non-zero valueChange with an unchanged assetsTotal indicates that the
-        // actual value change rounded to zero. That should be impossible, but I
-        // can't rule it out for extreme edge cases, so fail gracefully if it
+        // Non-zero assetsTotalDelta with an unchanged assetsTotal indicates that
+        // the actual value change rounded to zero. That should be impossible, but
+        // I can't rule it out for extreme edge cases, so fail gracefully if it
         // happens.
         //
         // LCOV_EXCL_START
@@ -555,20 +551,21 @@ LoanPay::doApply()
             << "LoanPay: Vault assets expected change, but unchanged after rounding: "  //
             << "Before: " << assetsTotalBefore                                          //
             << ", After: " << assetsTotalAfter                                          //
-            << ", ValueChange: " << paymentParts->valueChange;
+            << ", AssetsTotalDelta: " << assetsTotalDelta;
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange == beast::kZero && assetsTotalAfter != assetsTotalBefore)
+    if (assetsTotalDelta == beast::kZero && assetsTotalAfter != assetsTotalBefore)
     {
-        // A change in assetsTotal when there was no valueChange indicates that
-        // something really weird happened. That should be flat out impossible.
+        // A change in assetsTotal when there was no assetsTotalDelta indicates
+        // that something really weird happened. That should be flat out
+        // impossible.
         //
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "LoanPay: Vault assets changed unexpectedly after rounding: "  //
                          << "Before: " << assetsTotalBefore                                //
                          << ", After: " << assetsTotalAfter                                //
-                         << ", ValueChange: " << paymentParts->valueChange;
+                         << ", AssetsTotalDelta: " << assetsTotalDelta;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -625,7 +622,11 @@ LoanPay::doApply()
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
-                    view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
+                    ctx_.getApplyViewContext(),
+                    brokerPayee,
+                    brokerPayeeSle->at(sfBalance).value().xrp(),
+                    asset,
+                    j_);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,

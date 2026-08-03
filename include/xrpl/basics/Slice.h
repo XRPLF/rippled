@@ -11,17 +11,19 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
 namespace xrpl {
 
-/** An immutable linear range of bytes.
-
-    A fully constructed Slice is guaranteed to be in a valid state.
-    A Slice is lightweight and copyable, it retains no ownership
-    of the underlying memory.
-*/
+/**
+ * An immutable linear range of bytes.
+ *
+ * A fully constructed Slice is guaranteed to be in a valid state.
+ * A Slice is lightweight and copyable, it retains no ownership
+ * of the underlying memory.
+ */
 class Slice
 {
 private:
@@ -32,30 +34,37 @@ public:
     using value_type = std::uint8_t;
     using const_iterator = value_type const*;
 
-    /** Default constructed Slice has length 0. */
+    /**
+     * Default constructed Slice has length 0.
+     */
     Slice() noexcept = default;
 
     Slice(Slice const&) noexcept = default;
     Slice&
     operator=(Slice const&) noexcept = default;
 
-    /** Create a slice pointing to existing memory. */
+    /**
+     * Create a slice pointing to existing memory.
+     */
     Slice(void const* data, std::size_t size) noexcept
         : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
     {
     }
 
-    /** Return `true` if the byte range is empty. */
+    /**
+     * Return `true` if the byte range is empty.
+     */
     [[nodiscard]] bool
     empty() const noexcept
     {
         return size_ == 0;
     }
 
-    /** Returns the number of bytes in the storage.
-
-        This may be zero for an empty range.
-    */
+    /**
+     * Returns the number of bytes in the storage.
+     *
+     * This may be zero for an empty range.
+     */
     /** @{ */
     [[nodiscard]] std::size_t
     size() const noexcept
@@ -70,17 +79,20 @@ public:
     }
     /** @} */
 
-    /** Return a pointer to beginning of the storage.
-        @note The return type is guaranteed to be a pointer
-              to a single byte, to facilitate pointer arithmetic.
-    */
+    /**
+     * Return a pointer to beginning of the storage.
+     * @note The return type is guaranteed to be a pointer
+     *       to a single byte, to facilitate pointer arithmetic.
+     */
     [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return data_;
     }
 
-    /** Access raw bytes. */
+    /**
+     * Access raw bytes.
+     */
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
@@ -88,7 +100,9 @@ public:
         return data_[i];
     }
 
-    /** Advance the buffer. */
+    /**
+     * Advance the buffer.
+     */
     /** @{ */
     Slice&
     operator+=(std::size_t n)
@@ -108,7 +122,9 @@ public:
     }
     /** @} */
 
-    /** Shrinks the slice by moving its start forward by n characters. */
+    /**
+     * Shrinks the slice by moving its start forward by n characters.
+     */
     void
     removePrefix(std::size_t n)
     {
@@ -116,7 +132,9 @@ public:
         size_ -= n;
     }
 
-    /** Shrinks the slice by moving its end backward by n characters. */
+    /**
+     * Shrinks the slice by moving its end backward by n characters.
+     */
     void
     removeSuffix(std::size_t n)
     {
@@ -147,16 +165,17 @@ public:
         return data_ + size_;
     }
 
-    /** Return a "sub slice" of given length starting at the given position
-
-        Note that the subslice encompasses the range [pos, pos + rCount),
-        where rCount is the smaller of count and size() - pos.
-
-        @param pos position of the first character
-        @count requested length
-
-        @returns The requested subslice, if the request is valid.
-        @throws std::out_of_range if pos > size()
+    /**
+     * Return a "sub slice" of given length starting at the given position
+     *
+     * Note that the subslice encompasses the range [pos, pos + rCount),
+     * where rCount is the smaller of count and size() - pos.
+     *
+     * @param pos position of the first character
+     * @count requested length
+     *
+     * @return The requested subslice, if the request is valid.
+     * @throws std::out_of_range if pos > size()
      */
     [[nodiscard]] Slice
     substr(std::size_t pos, std::size_t count = std::numeric_limits<std::size_t>::max()) const
@@ -211,15 +230,17 @@ operator<<(Stream& s, Slice const& v)
 }
 
 template <class T, std::size_t N>
-std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>, Slice>
+Slice
 makeSlice(std::array<T, N> const& a)
+    requires(std::is_same_v<T, char> || std::is_same_v<T, unsigned char>)
 {
     return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>
-std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>, Slice>
+Slice
 makeSlice(std::vector<T, Alloc> const& v)
+    requires(std::is_same_v<T, char> || std::is_same_v<T, unsigned char>)
 {
     return Slice(v.data(), v.size());
 }
@@ -227,6 +248,13 @@ makeSlice(std::vector<T, Alloc> const& v)
 template <class Traits, class Alloc>
 Slice
 makeSlice(std::basic_string<char, Traits, Alloc> const& s)
+{
+    return Slice(s.data(), s.size());
+}
+
+template <class Traits>
+Slice
+makeSlice(std::basic_string_view<char, Traits> s)
 {
     return Slice(s.data(), s.size());
 }

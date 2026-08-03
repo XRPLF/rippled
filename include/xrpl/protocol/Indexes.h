@@ -1,90 +1,112 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
 
+#include <array>
 #include <cstdint>
+#include <functional>
 #include <set>
+#include <utility>
 
 namespace xrpl {
 
 class SeqProxy;
-/** Keylet computation functions.
-
-    Entries in the ledger are located using 256-bit locators. The locators are
-    calculated using a wide range of parameters specific to the entry whose
-    locator we are calculating (e.g. an account's locator is derived from the
-    account's address, whereas the locator for an offer is derived from the
-    account and the offer sequence.)
-
-    To enhance type safety during lookup and make the code more robust, we use
-    keylets, which contain not only the locator of the object but also the type
-    of the object being referenced.
-
-    These functions each return a type-specific keylet.
-*/
+/**
+ * Keylet computation functions.
+ *
+ * Entries in the ledger are located using 256-bit locators. The locators are
+ * calculated using a wide range of parameters specific to the entry whose
+ * locator we are calculating (e.g. an account's locator is derived from the
+ * account's address, whereas the locator for an offer is derived from the
+ * account and the offer sequence.)
+ *
+ * To enhance type safety during lookup and make the code more robust, we use
+ * keylets, which contain not only the locator of the object but also the type
+ * of the object being referenced.
+ *
+ * These functions each return a type-specific keylet.
+ */
 namespace keylet {
 
-/** AccountID root */
+/**
+ * AccountID root
+ */
 Keylet
 account(AccountID const& id) noexcept;
 
-/** The index of the amendment table */
+/**
+ * The index of the amendment table
+ */
 Keylet const&
 amendments() noexcept;
 
-/** Any item that can be in an owner dir. */
+/**
+ * Any item that can be in an owner dir.
+ */
 Keylet
 child(uint256 const& key) noexcept;
 
-/** The index of the "short" skip list
-
-    The "short" skip list is a node (at a fixed index) that holds the hashes
-    of ledgers since the last flag ledger. It will contain, at most, 256 hashes.
-*/
+/**
+ * The index of the "short" skip list
+ *
+ * The "short" skip list is a node (at a fixed index) that holds the hashes
+ * of ledgers since the last flag ledger. It will contain, at most, 256 hashes.
+ */
 Keylet const&
 skip() noexcept;
 
-/** The index of the long skip for a particular ledger range.
-
-    The "long" skip list is a node that holds the hashes of (up to) 256 flag
-    ledgers.
-
-    It can be used to efficiently skip back to any ledger using only two hops:
-    the first hop gets the "long" skip list for the ledger it wants to retrieve
-    and uses it to get the hash of the flag ledger whose short skip list will
-    contain the hash of the requested ledger.
-*/
+/**
+ * The index of the long skip for a particular ledger range.
+ *
+ * The "long" skip list is a node that holds the hashes of (up to) 256 flag
+ * ledgers.
+ *
+ * It can be used to efficiently skip back to any ledger using only two hops:
+ * the first hop gets the "long" skip list for the ledger it wants to retrieve
+ * and uses it to get the hash of the flag ledger whose short skip list will
+ * contain the hash of the requested ledger.
+ */
 Keylet
 skip(LedgerIndex ledger) noexcept;
 
-/** The (fixed) index of the object containing the ledger fees. */
+/**
+ * The (fixed) index of the object containing the ledger fees.
+ */
 Keylet const&
 feeSettings() noexcept;
 
-/** The (fixed) index of the object containing the ledger negativeUNL. */
+/**
+ * The (fixed) index of the object containing the ledger negativeUNL.
+ */
 Keylet const&
 negativeUNL() noexcept;
 
-/** The beginning of an order book */
+/**
+ * The beginning of an order book
+ */
 Keylet
 book(Book const& b);
 
-/** The index of a trust line for a given currency
-
-    Note that a trustline is *shared* between two accounts (commonly referred
-    to as the issuer and the holder); if Alice sets up a trust line to Bob for
-    BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
-    between them.
-*/
+/**
+ * The index of a trust line for a given currency
+ *
+ * Note that a trustline is *shared* between two accounts (commonly referred
+ * to as the issuer and the holder); if Alice sets up a trust line to Bob for
+ * BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
+ * between them.
+ */
 /** @{ */
 Keylet
 trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
@@ -96,7 +118,9 @@ trustLine(AccountID const& id, Issue const& issue) noexcept
 }
 /** @} */
 
-/** An offer from an account */
+/**
+ * An offer from an account
+ */
 /** @{ */
 Keylet
 offer(AccountID const& id, std::uint32_t seq) noexcept;
@@ -108,15 +132,21 @@ offer(uint256 const& key) noexcept
 }
 /** @} */
 
-/** The initial directory page for a specific quality */
+/**
+ * The initial directory page for a specific quality
+ */
 Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept;
 
-/** The directory for the next lower quality */
+/**
+ * The directory for the next lower quality
+ */
 Keylet
 next(Keylet const& k);
 
-/** A ticket belonging to an account */
+/**
+ * A ticket belonging to an account
+ */
 /** @{ */
 Keylet
 ticket(AccountID const& id, std::uint32_t ticketSeq);
@@ -131,11 +161,21 @@ ticket(uint256 const& key)
 }
 /** @} */
 
-/** A SignerList */
+/**
+ * A SignerList
+ */
 Keylet
 signerList(AccountID const& account) noexcept;
 
-/** A Check */
+/**
+ * A Sponsorship
+ */
+Keylet
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
+
+/**
+ * A Check
+ */
 /** @{ */
 Keylet
 check(AccountID const& id, std::uint32_t seq) noexcept;
@@ -147,7 +187,9 @@ check(uint256 const& key) noexcept
 }
 /** @} */
 
-/** A DepositPreauth */
+/**
+ * A DepositPreauth
+ */
 /** @{ */
 Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
@@ -166,15 +208,21 @@ depositPreauth(uint256 const& key) noexcept
 
 //------------------------------------------------------------------------------
 
-/** Any ledger entry */
+/**
+ * Any ledger entry
+ */
 Keylet
 unchecked(uint256 const& key) noexcept;
 
-/** The root page of an account's directory */
+/**
+ * The root page of an account's directory
+ */
 Keylet
 ownerDir(AccountID const& id) noexcept;
 
-/** A page in a directory */
+/**
+ * A page in a directory
+ */
 /** @{ */
 Keylet
 page(uint256 const& root, std::uint64_t index = 0) noexcept;
@@ -187,27 +235,36 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 }
 /** @} */
 
-/** An escrow entry */
+/**
+ * An escrow entry
+ */
 Keylet
 escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
-/** A PaymentChannel */
+/**
+ * A PaymentChannel
+ */
 Keylet
 payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
-/** NFT page keylets
-
-    Unlike objects whose ledger identifiers are produced by hashing data,
-    NFT page identifiers are composite identifiers, consisting of the owner's
-    160-bit AccountID, followed by a 96-bit value that determines which NFT
-    tokens are candidates for that page.
+/**
+ * NFT page keylets
+ *
+ * Unlike objects whose ledger identifiers are produced by hashing data,
+ * NFT page identifiers are composite identifiers, consisting of the owner's
+ * 160-bit AccountID, followed by a 96-bit value that determines which NFT
+ * tokens are candidates for that page.
  */
 /** @{ */
-/** A keylet for the owner's first possible NFT page. */
+/**
+ * A keylet for the owner's first possible NFT page.
+ */
 Keylet
 nftokenPageMin(AccountID const& owner);
 
-/** A keylet for the owner's last possible NFT page. */
+/**
+ * A keylet for the owner's last possible NFT page.
+ */
 Keylet
 nftokenPageMax(AccountID const& owner);
 
@@ -215,7 +272,9 @@ Keylet
 nftokenPage(Keylet const& k, uint256 const& token);
 /** @} */
 
-/** An offer from an account to buy or sell an NFT */
+/**
+ * An offer from an account to buy or sell an NFT
+ */
 Keylet
 nftokenOffer(AccountID const& owner, std::uint32_t seq);
 
@@ -225,22 +284,30 @@ nftokenOffer(uint256 const& offer)
     return {ltNFTOKEN_OFFER, offer};
 }
 
-/** The directory of buy offers for the specified NFT */
+/**
+ * The directory of buy offers for the specified NFT
+ */
 Keylet
 nftBuys(uint256 const& id) noexcept;
 
-/** The directory of sell offers for the specified NFT */
+/**
+ * The directory of sell offers for the specified NFT
+ */
 Keylet
 nftSells(uint256 const& id) noexcept;
 
-/** AMM entry */
+/**
+ * AMM entry
+ */
 Keylet
 amm(Asset const& issue1, Asset const& issue2) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
 
-/** A keylet for Delegate object */
+/**
+ * A keylet for Delegate object
+ */
 Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
 
@@ -355,21 +422,8 @@ struct KeyletDesc
     bool includeInTests{};
 };
 
-// This list should include all of the keylet functions that take a single
-// AccountID parameter.
-std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
-    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
-     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
-     // It's normally impossible to create an item at nftpage_min, but
-     // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftokenPageMin,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::nftokenPageMax,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
+// This list should include all of the keylet functions that take a single AccountID parameter.
+extern std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets;
 
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);

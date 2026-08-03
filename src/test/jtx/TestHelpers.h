@@ -1,30 +1,62 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <source_location>
+#include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace xrpl::test::jtx {
 
-/** Generic helper class for helper classes that set a field on a JTx.
-
- Not every helper will be able to use this because of conversions and other
- issues, but for classes where it's straightforward, this can simplify things.
-*/
+/**
+ * Generic helper class for helper classes that set a field on a JTx.
+ *
+ * Not every helper will be able to use this because of conversions and other
+ * issues, but for classes where it's straightforward, this can simplify things.
+ */
 template <
     class SField,
     // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
@@ -275,7 +307,8 @@ using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueTy
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
-/** General field definitions, or fields used in multiple transaction namespaces
+/**
+ * General field definitions, or fields used in multiple transaction namespaces
  */
 auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
@@ -348,6 +381,18 @@ checkArraySize(json::Value const& val, unsigned int size);
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
+// Helper function that returns the sponsored owner count on an account.
+std::uint32_t
+sponsoredOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring owner count on an account.
+std::uint32_t
+sponsoringOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring account count on an account.
+std::uint32_t
+sponsoringAccountCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
 [[nodiscard]]
 inline bool
 checkVL(Slice const& result, std::string const& expected)
@@ -370,8 +415,9 @@ void
 stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible_v<Account, T>>
+void
 stpathAppendOne(STPath& st, T const& t)
+    requires(std::is_constructible_v<Account, T>)
 {
     stpathAppendOne(st, Account{t});
 }
@@ -418,12 +464,8 @@ same(STPathSet const& st1, Args const&... args)
     if (st1.size() != st2.size())
         return false;
 
-    for (auto const& p : st2)
-    {
-        if (std::ranges::find(st1, p) == st1.end())
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(
+        st2, [&st1](auto const& p) { return std::ranges::find(st1, p) != st1.end(); });
 }
 
 json::Value
@@ -709,7 +751,9 @@ equal(Strand const& strand, Args&&... args)
 /***************************************************************/
 namespace check {
 
-/** Create a check. */
+/**
+ * Create a check.
+ */
 template <typename A>
     requires std::is_same_v<A, AccountID>
 json::Value
@@ -929,7 +973,9 @@ pay(AccountID const& account,
 
 }  // namespace loan
 
-/** Set Expiration on a JTx. */
+/**
+ * Set Expiration on a JTx.
+ */
 class Expiration
 {
 private:
@@ -948,7 +994,9 @@ public:
     }
 };
 
-/** Set SourceTag on a JTx. */
+/**
+ * Set SourceTag on a JTx.
+ */
 class SourceTag
 {
 private:
@@ -966,7 +1014,9 @@ public:
     }
 };
 
-/** Set DestinationTag on a JTx. */
+/**
+ * Set DestinationTag on a JTx.
+ */
 class DestTag
 {
 private:

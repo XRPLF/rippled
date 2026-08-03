@@ -1,21 +1,31 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <utility>
 
 namespace xrpl::test::jtx {
 
-/** Check operations. */
+/**
+ * Check operations.
+ */
 namespace check {
 
-/** Cash a check requiring that a specific amount be delivered. */
+/**
+ * Cash a check requiring that a specific amount be delivered.
+ */
 json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
 
-/** Type used to specify DeliverMin for cashing a check. */
+/**
+ * Type used to specify DeliverMin for cashing a check.
+ */
 struct DeliverMin
 {
     STAmount value;
@@ -24,17 +34,23 @@ struct DeliverMin
     }
 };
 
-/** Cash a check requiring that at least a minimum amount be delivered. */
+/**
+ * Cash a check requiring that at least a minimum amount be delivered.
+ */
 json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast);
 
-/** Cancel a check. */
+/**
+ * Cancel a check.
+ */
 json::Value
 cancel(jtx::Account const& dest, uint256 const& checkId);
 
 }  // namespace check
 
-/** Match the number of checks on the account. */
+/**
+ * Match the number of checks on the account.
+ */
 using checks = OwnerCount<ltCHECK>;
 
 }  // namespace xrpl::test::jtx

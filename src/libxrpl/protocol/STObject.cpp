@@ -338,7 +338,7 @@ STObject::getText() const
 bool
 STObject::isEquivalent(STBase const& t) const
 {
-    STObject const* v = dynamic_cast<STObject const*>(&t);
+    auto const* v = dynamic_cast<STObject const*>(&t);
 
     if (v == nullptr)
         return false;
@@ -474,7 +474,7 @@ STObject::peekFieldArray(SField const& field)
 bool
 STObject::setFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
     if (t == nullptr)
         return false;
@@ -486,7 +486,7 @@ STObject::setFlag(std::uint32_t f)
 bool
 STObject::clearFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
     if (t == nullptr)
         return false;
@@ -502,9 +502,9 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags(void) const
+STObject::getFlags() const
 {
-    STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
+    auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
     if (t == nullptr)
         return 0;
@@ -633,25 +633,11 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
-AccountID
-STObject::getFeePayer() const
-{
-    // If sfDelegate is present, the delegate account is the payer
-    // note: if a delegate is specified, its authorization to act on behalf of the account is
-    // enforced in `Transactor::invokeCheckPermission`
-    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
-    if (isFieldPresent(sfDelegate))
-        return getAccountID(sfDelegate);
-
-    // Default payer
-    return getAccountID(sfAccount);
-}
-
 Blob
 STObject::getFieldVL(SField const& field) const
 {
     STBlob const empty;
-    STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
+    auto const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
 
@@ -710,7 +696,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void
@@ -913,6 +899,10 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
             "xrpl::STObject::add : valid field type");
+        XRPL_ASSERT(
+            getStyle(field->getFName()) != SoeDefault || !field->isDefault(),
+            "xrpl::STObject::add : non-default value");
+
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)

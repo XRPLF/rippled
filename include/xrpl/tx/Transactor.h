@@ -1,19 +1,39 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
 namespace xrpl {
 
-/** State information when preflighting a tx. */
+/**
+ * State information when preflighting a tx.
+ */
 struct PreflightContext
 {
 public:
@@ -56,7 +76,9 @@ public:
     operator=(PreflightContext const&) = delete;
 };
 
-/** State information when determining if a tx is likely to claim a fee. */
+/**
+ * State information when determining if a tx is likely to claim a fee.
+ */
 struct PreclaimContext
 {
 public:
@@ -110,6 +132,21 @@ struct PreflightResult;
 // Needed for preflight specialization
 class Change;
 
+enum class FeePayerType {
+    Account,
+    Delegate,
+    SponsorCoSigned,
+    SponsorPreFunded,
+};
+
+struct FeePayer
+{
+    AccountID id;
+    Keylet keylet;
+    SF_AMOUNT const& balanceField;
+    FeePayerType type{FeePayerType::Account};
+};
+
 class Transactor
 {
 protected:
@@ -128,7 +165,9 @@ public:
 
     enum class ConsequencesFactoryType { Normal, Blocker, Custom };
 
-    /** Process the transaction. */
+    /**
+     * Process the transaction.
+     */
     ApplyResult
     operator()();
 
@@ -144,16 +183,17 @@ public:
         return ctx_.view();
     }
 
-    /** Check all invariants for the current transaction.
+    /**
+     * Check all invariants for the current transaction.
      *
-     *  Runs transaction-specific invariants first (visitInvariantEntry +
-     *  finalizeInvariants), then protocol-level invariants.  Both layers
-     *  always run; the worst failure code is returned.
+     * Runs transaction-specific invariants first (visitInvariantEntry +
+     * finalizeInvariants), then protocol-level invariants.  Both layers
+     * always run; the worst failure code is returned.
      *
-     *  @param result  the tentative TER from transaction processing.
-     *  @param fee     the fee consumed by the transaction.
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
      *
-     *  @return the final TER after all invariant checks.
+     * @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
     checkInvariants(TER result, XRPAmount fee);
@@ -282,6 +322,10 @@ public:
 
         return T::checkGranularSemantics(view, tx, heldGranularPermissions);
     }
+
+    static NotTEC
+    checkSponsor(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -304,40 +348,42 @@ protected:
     virtual TER
     doApply() = 0;
 
-    /** Inspect a single ledger entry modified by this transaction.
+    /**
+     * Inspect a single ledger entry modified by this transaction.
      *
-     *  Called once for every SLE created, modified, or deleted by the
-     *  transaction, before finalizeInvariants.  Implementations should
-     *  accumulate whatever state they need to verify transaction-specific
-     *  post-conditions.
+     * Called once for every SLE created, modified, or deleted by the
+     * transaction, before finalizeInvariants.  Implementations should
+     * accumulate whatever state they need to verify transaction-specific
+     * post-conditions.
      *
-     *  @param isDelete  true if the entry was erased from the ledger.
-     *  @param before    the entry's state before the transaction (nullptr
-     *                   for newly created entries).
-     *  @param after     the entry's state as supplied by the apply logic
-     *                   for this transaction. For deletions, this is the
-     *                   SLE being erased and is not guaranteed to be null;
-     *                   callers must use isDelete rather than after == nullptr
-     *                   to detect deletions.
+     * @param isDelete  true if the entry was erased from the ledger.
+     * @param before    the entry's state before the transaction (nullptr
+     *                  for newly created entries).
+     * @param after     the entry's state as supplied by the apply logic
+     *                  for this transaction. For deletions, this is the
+     *                  SLE being erased and is not guaranteed to be null;
+     *                  callers must use isDelete rather than after == nullptr
+     *                  to detect deletions.
      */
     virtual void
     visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
-    /** Check transaction-specific post-conditions after all entries have
-     *  been visited.
+    /**
+     * Check transaction-specific post-conditions after all entries have
+     * been visited.
      *
-     *  Called once after every modified ledger entry has been passed to
-     *  visitInvariantEntry.  Returns true if all transaction-specific
-     *  invariants hold, or false to fail the transaction with
-     *  tecINVARIANT_FAILED.
+     * Called once after every modified ledger entry has been passed to
+     * visitInvariantEntry.  Returns true if all transaction-specific
+     * invariants hold, or false to fail the transaction with
+     * tecINVARIANT_FAILED.
      *
-     *  @param tx    the transaction being applied.
-     *  @param result the tentative TER result so far.
-     *  @param fee   the fee consumed by the transaction.
-     *  @param view  read-only view of the ledger after the transaction.
-     *  @param j     journal for logging invariant failures.
+     * @param tx    the transaction being applied.
+     * @param result the tentative TER result so far.
+     * @param fee   the fee consumed by the transaction.
+     * @param view  read-only view of the ledger after the transaction.
+     * @param j     journal for logging invariant failures.
      *
-     *  @return true if all invariants pass; false otherwise.
+     * @return true if all invariants pass; false otherwise.
      */
     [[nodiscard]] virtual bool
     finalizeInvariants(
@@ -347,14 +393,15 @@ protected:
         ReadView const& view,
         beast::Journal const& j) = 0;
 
-    /** Compute the minimum fee required to process a transaction
-        with a given baseFee based on the current server load.
-
-        @param registry The service registry.
-        @param baseFee The base fee of a candidate transaction
-            @see xrpl::calculateBaseFee
-        @param fees Fee settings from the current ledger
-        @param flags Transaction processing fees
+    /**
+     * Compute the minimum fee required to process a transaction
+     * with a given baseFee based on the current server load.
+     *
+     * @param registry The service registry.
+     * @param baseFee The base fee of a candidate transaction
+     * @see xrpl::calculateBaseFee
+     * @param fees Fee settings from the current ledger
+     * @param flags Transaction processing fees
      */
     static XRPAmount
     minimumFee(ServiceRegistry& registry, XRPAmount baseFee, Fees const& fees, ApplyFlags flags);
@@ -403,12 +450,16 @@ protected:
         unit::ValueUnit<Unit, T> max,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T>
     static bool
     validNumericMinimum(std::optional<T> value, T min = T{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T, class Unit>
     static bool
     validNumericMinimum(
@@ -443,6 +494,9 @@ private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
+
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
     TER
@@ -453,44 +507,48 @@ private:
 
     void trapTransaction(uint256) const;
 
-    /** Performs early sanity checks on the account and fee fields.
-
-        (And passes flagMask to preflight0)
-
-        Do not try to call preflight1 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Performs early sanity checks on the account and fee fields.
+     *
+     * (And passes flagMask to preflight0)
+     *
+     * Do not try to call preflight1 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 
-    /** Checks whether the signature appears valid
-
-        Do not try to call preflight2 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Checks whether the signature appears valid
+     *
+     * Do not try to call preflight2 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
 
-    /** Universal validations
-       - Valid MPTAmount and XRPAmount
-
-        Do not try to call preflightUniversal from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Universal validations
+     * - Valid MPTAmount and XRPAmount
+     *
+     *  Do not try to call preflightUniversal from preflight() in derived classes. See
+     *  the description of invokePreflight for details.
+     */
     static NotTEC
     preflightUniversal(PreflightContext const& ctx);
 
-    /** Check transaction-specific invariants only.
+    /**
+     * Check transaction-specific invariants only.
      *
-     *  Walks every modified ledger entry via visitInvariantEntry, then
-     *  calls finalizeInvariants on the derived transactor.  Returns
-     *  tecINVARIANT_FAILED if any transaction invariant is violated.
+     * Walks every modified ledger entry via visitInvariantEntry, then
+     * calls finalizeInvariants on the derived transactor.  Returns
+     * tecINVARIANT_FAILED if any transaction invariant is violated.
      *
-     *  @param result  the tentative TER from transaction processing.
-     *  @param fee     the fee consumed by the transaction.
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
      *
-     *  @return the original result if all invariants pass, or
-     *          tecINVARIANT_FAILED otherwise.
+     * @return the original result if all invariants pass, or
+     *         tecINVARIANT_FAILED otherwise.
      */
     [[nodiscard]] TER
     checkTransactionInvariants(TER result, XRPAmount fee);
@@ -502,20 +560,24 @@ Transactor::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-/** Performs early sanity checks on the txid and flags */
+/**
+ * Performs early sanity checks on the txid and flags
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/**
+ * Checks the validity of the transactor signing key.
  *
  * Normally called from preflight1 with ctx.tx.
  */
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 
-/** Checks the special signing key state needed for simulation
+/**
+ * Checks the special signing key state needed for simulation
  *
  * Normally called from preflight2 with ctx.tx.
  */

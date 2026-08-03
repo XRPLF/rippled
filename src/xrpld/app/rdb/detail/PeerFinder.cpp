@@ -1,16 +1,16 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/statement.h>
@@ -146,10 +146,10 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             s.reserve(list.size());
             valence.reserve(list.size());
 
-            for (auto iter(list.cbegin()); iter != list.cend(); ++iter)
+            for (auto const& entry : list)
             {
-                s.emplace_back(to_string(iter->endpoint));
-                valence.emplace_back(iter->valence);
+                s.emplace_back(to_string(entry.endpoint));
+                valence.emplace_back(entry.valence);
             }
 
             session << "INSERT INTO PeerFinder_BootstrapCache_Next ( "

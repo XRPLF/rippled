@@ -25,7 +25,7 @@ You can verify that the required tools are installed and runnable with:
 | ----------- | --------------- |
 | GCC         | 15.2            |
 | Clang       | 22              |
-| Apple Clang | 17              |
+| Apple Clang | 21              |
 | MSVC        | 19.44[^windows] |
 
 ## Operating Systems
@@ -317,20 +317,40 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 
 ## Options
 
-| Option     | Default Value | Description                                                    |
-| ---------- | ------------- | -------------------------------------------------------------- |
-| `assert`   | OFF           | Force enabling assertions.                                     |
-| `coverage` | OFF           | Prepare the coverage report.                                   |
-| `tests`    | OFF           | Build tests.                                                   |
-| `unity`    | OFF           | Configure a unity build.                                       |
-| `xrpld`    | OFF           | Build the xrpld application, and not just the libxrpl library. |
-| `werr`     | OFF           | Treat compilation warnings as errors                           |
-| `wextra`   | OFF           | Enable additional compilation warnings                         |
+| Option           | Default Value | Description                                                                   |
+| ---------------- | ------------- | ----------------------------------------------------------------------------- |
+| `assert`         | OFF           | Force enabling assertions.                                                    |
+| `coverage`       | OFF           | Prepare the coverage report.                                                  |
+| `tests`          | OFF           | Build tests.                                                                  |
+| `unity`          | OFF           | Configure a unity build.                                                      |
+| `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
+| `xrpld`          | OFF           | Build the xrpld application, and not just the libxrpl library.                |
+| `werr`           | OFF           | Treat compilation warnings as errors                                          |
+| `wextra`         | OFF           | Enable additional compilation warnings                                        |
 
 [Unity builds][unity-build] may be faster for the first build (at the cost of much more
 memory) since they concatenate sources into fewer translation units. Non-unity
 builds may be faster for incremental builds, and can be helpful for detecting
 `#include` omissions.
+
+### Verifying headers
+
+The regular build only compiles `.cpp` files, so a header is only ever checked
+through whatever translation unit happens to include it. A header that forgets
+an `#include` is not caught as long as every `.cpp` that uses it includes its
+missing dependency first. The `verify_headers` option (ON by default) adds a
+`verify-headers` target that compiles every header on its own, which fails if a
+header is not self-contained:
+
+```bash
+cmake --build . --target verify-headers
+```
+
+The per-header objects are excluded from the `all` target, so a normal build
+never compiles them; they are built only through `verify-headers`. The generated
+translation units do appear in `compile_commands.json`, so clang-tidy (and
+clangd and IDEs) can lint each header on its own. Pass `-Dverify_headers=OFF` to
+omit them entirely.
 
 ## Troubleshooting
 

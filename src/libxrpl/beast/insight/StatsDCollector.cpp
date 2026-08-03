@@ -325,9 +325,9 @@ public:
     postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            ioContext_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&StatsDCollectorImp::doPostBuffer, this, std::move(buffer))));
+            ioContext_, boost::asio::bind_executor(strand_, [this, buffer = std::move(buffer)] {
+                doPostBuffer(buffer);
+            }));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
@@ -392,12 +392,10 @@ public:
                 log(buffers);
                 socket_.async_send(
                     buffers,
-                    std::bind(
-                        &StatsDCollectorImp::onSend,
-                        this,
-                        keepAlive,
-                        std::placeholders::_1,
-                        std::placeholders::_2));
+                    [this, keepAlive](
+                        boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                        onSend(keepAlive, ec, bytesTransferred);
+                    });
                 buffers.clear();
                 size = 0;
             }
@@ -411,12 +409,10 @@ public:
             log(buffers);
             socket_.async_send(
                 buffers,
-                std::bind(
-                    &StatsDCollectorImp::onSend,
-                    this,
-                    keepAlive,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, keepAlive](
+                    boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                    onSend(keepAlive, ec, bytesTransferred);
+                });
         }
     }
 
@@ -425,7 +421,7 @@ public:
     {
         using namespace std::chrono_literals;
         timer_.expires_after(1s);
-        timer_.async_wait(std::bind(&StatsDCollectorImp::onTimer, this, std::placeholders::_1));
+        timer_.async_wait([this](boost::system::error_code const& ec) { onTimer(ec); });
     }
 
     void
@@ -513,10 +509,9 @@ StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDCounterImpl::doIncrement,
-            std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void
@@ -558,10 +553,9 @@ StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDEventImpl::doNotify,
-            std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
-            value));
+        [self = std::static_pointer_cast<StatsDEventImpl>(shared_from_this()), value] {
+            self->doNotify(value);
+        });
 }
 
 void
@@ -591,10 +585,9 @@ StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDGaugeImpl::doSet,
-            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-            value));
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), value] {
+            self->doSet(value);
+        });
 }
 
 void
@@ -602,10 +595,9 @@ StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDGaugeImpl::doIncrement,
-            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void
@@ -640,14 +632,14 @@ StatsDGaugeImpl::doIncrement(GaugeImpl::difference_type amount)
 
     if (amount > 0)
     {
-        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(amount));
+        auto const d = static_cast<GaugeImpl::value_type>(amount);
         value += (d >= std::numeric_limits<GaugeImpl::value_type>::max() - value_)
             ? std::numeric_limits<GaugeImpl::value_type>::max() - value_
             : d;
     }
     else if (amount < 0)
     {
-        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(-amount));
+        auto const d = static_cast<GaugeImpl::value_type>(-amount);
         value = (d >= value) ? 0 : value - d;
     }
 
@@ -678,10 +670,9 @@ StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        std::bind(
-            &StatsDMeterImpl::doIncrement,
-            std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
-            amount));
+        [self = std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
+        });
 }
 
 void

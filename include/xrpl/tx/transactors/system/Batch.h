@@ -1,6 +1,18 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <array>
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -27,6 +39,9 @@ public:
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
@@ -65,6 +80,10 @@ private:
     // only be reached through Batch::checkSign.
     static NotTEC
     checkBatchSign(PreclaimContext const& ctx);
+
+    // nullopt on overflow or oversized signer arrays.
+    static std::optional<XRPAmount>
+    calculateBaseFeeImpl(ReadView const& view, STTx const& tx);
 };
 
 }  // namespace xrpl

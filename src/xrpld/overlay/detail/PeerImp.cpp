@@ -5,10 +5,10 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Peer.h>
@@ -19,8 +19,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -37,12 +35,15 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -61,6 +62,7 @@
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
 
@@ -105,10 +107,14 @@ using namespace std::chrono_literals;
 namespace xrpl {
 
 namespace {
-/** The threshold above which we treat a peer connection as high latency */
+/**
+ * The threshold above which we treat a peer connection as high latency
+ */
 constexpr std::chrono::milliseconds kPeerHighLatency{300};
 
-/** How often we PING the peer to check for latency and sendq probe */
+/**
+ * How often we PING the peer to check for latency and sendq probe
+ */
 constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 }  // namespace
@@ -321,9 +327,9 @@ PeerImp::send(std::shared_ptr<Message> const& m)
             self->stream_,
             boost::asio::buffer(self->sendQueue_.front()->getBuffer(self->compressionEnabled_)),
             bind_executor(
-                self->strand_,
-                std::bind(
-                    &PeerImp::onWriteMessage, self, std::placeholders::_1, std::placeholders::_2)));
+                self->strand_, [self](error_code const& ec, std::size_t bytesTransferred) {
+                    self->onWriteMessage(ec, bytesTransferred);
+                }));
     });
 }
 
@@ -539,6 +545,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
             return protocol_ >= makeProtocol(2, 1);
         case ProtocolFeature::ValidatorList2Propagation:
             return protocol_ >= makeProtocol(2, 2);
+        case ProtocolFeature::LedgerNodeDepth:
+            return protocol_ >= makeProtocol(2, 3);
         case ProtocolFeature::LedgerReplay:
             return ledgerReplayEnabled_;
     }
@@ -650,7 +658,7 @@ PeerImp::gracefulClose()
         return;
     setTimer();
     stream_.async_shutdown(bind_executor(
-        strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
+        strand_, [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
 }
 
 void
@@ -666,7 +674,7 @@ PeerImp::setTimer()
         return;
     }
     timer_.async_wait(bind_executor(
-        strand_, std::bind(&PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
+        strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 // convenience for ignoring the error code
@@ -975,11 +983,9 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
         readBuffer_.prepare(std::max(Tuning::kReadBufferBytes, hint)),
         bind_executor(
             strand_,
-            std::bind(
-                &PeerImp::onReadMessage,
-                shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
+                self->onReadMessage(ec, bytesTransferred);
+            }));
 }
 
 void
@@ -1014,18 +1020,16 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
             boost::asio::buffer(sendQueue_.front()->getBuffer(compressionEnabled_)),
             bind_executor(
                 strand_,
-                std::bind(
-                    &PeerImp::onWriteMessage,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2)));
+                [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
+                    self->onWriteMessage(ec, bytesTransferred);
+                }));
         return;
     }
 
     if (gracefulClose_)
     {
         stream_.async_shutdown(bind_executor(
-            strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
         return;
     }
 }
@@ -1477,23 +1481,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Verify ledger node IDs
-    if (itype != protocol::liBASE)
+    // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
+    // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
+    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
     {
-        if (m->nodeids_size() <= 0)
-        {
-            badData("Invalid ledger node IDs");
-            return;
-        }
-
-        for (auto const& nodeId : m->nodeids())
-        {
-            if (deserializeSHAMapNodeID(nodeId) == std::nullopt)
-            {
-                badData("Invalid SHAMap node ID");
-                return;
-            }
-        }
+        badData("Invalid ledger node IDs");
+        return;
     }
 
     // Verify query type
@@ -1513,11 +1506,57 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Queue a job to process the request
+    // Queue a job to process the request.
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m]() {
-        if (auto peer = weak.lock())
-            peer->processLedgerRequest(m);
+    app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m, itype]() {
+        auto peer = weak.lock();
+        if (!peer)
+            return;
+
+        std::vector<SHAMapNodeID> nodeIDs;
+        bool tooManyNodeIds = false;
+        if (itype != protocol::liBASE)
+        {
+            nodeIDs.reserve(std::min(m->nodeids_size(), Tuning::kSoftMaxReplyNodes));
+            for (auto const& nodeId : m->nodeids())
+            {
+                if (nodeIDs.size() >= Tuning::kSoftMaxReplyNodes)
+                {
+                    // The peer requested too many node IDs. Continue processing the received node
+                    // IDs up to the limit. If the request is legitimate then at least they will get
+                    // a response and won't have to resend these nodes in their next request.
+                    tooManyNodeIds = true;
+                    break;
+                }
+                auto parsed = deserializeSHAMapNodeID(nodeId);
+                if (!parsed)
+                {
+                    peer->charge(Resource::kFeeInvalidData, "TMGetLedger: Invalid node ID");
+                    return;
+                }
+                nodeIDs.push_back(std::move(*parsed));
+            }
+        }
+
+        // These are two distinct infractions and are charged independently: requesting too many
+        // node IDs is charged even for a relay response, while the base "get ledger request" charge
+        // below is skipped for relay responses.
+        if (tooManyNodeIds)
+        {
+            peer->charge(Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
+
+            // Truncate the request to what was actually parsed and charged for, so that if this
+            // request ends up being relayed to another peer, we don't forward the oversized list.
+            m->mutable_nodeids()->DeleteSubrange(
+                static_cast<int>(nodeIDs.size()),
+                m->nodeids_size() - static_cast<int>(nodeIDs.size()));
+        }
+        if (!m->has_requestcookie())
+        {
+            peer->charge(Resource::kFeeModerateBurdenPeer, "TMGetLedger: get ledger request");
+        }
+
+        peer->processLedgerRequest(m, std::move(nodeIDs));
     });
 }
 
@@ -1682,12 +1721,119 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    // If there is a request cookie, attempt to relay the message
+    // If there is a request cookie, attempt to relay the message.
     if (m->has_requestcookie())
     {
         if (auto peer = overlay_.findPeerByShortID(m->requestcookie()))
         {
             m->clear_requestcookie();
+
+            // If the original requester doesn't support the new depth-based format, rewrite any
+            // nodes that use it back to the legacy nodeid format before relaying. Once all nodes
+            // have upgraded, the old protocol version and this code can be removed. Make sure that
+            // the format of the nodes is consistent - either all use the legacy format or the new
+            // format, unless it is liBASE data in which case none of these fields should be set.
+            auto const peerSupportsNodeDepth =
+                peer->supportsFeature(ProtocolFeature::LedgerNodeDepth);
+            enum class MessageType { Unknown, Base, Legacy, Depth };
+            MessageType messageType = MessageType::Unknown;
+            for (int i = 0; i < m->nodes_size(); ++i)
+            {
+                auto* ledgerNode = m->mutable_nodes(i);
+
+                // All nodes should have non-empty data. The field is required so we don't need to
+                // check for presence first.
+                if (ledgerNode->nodedata().empty())
+                {
+                    badData(
+                        "Received node with empty data while relaying ledger data for " +
+                        to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                        std::to_string(peer->id()));
+                    return;
+                }
+
+                MessageType msgType = MessageType::Unknown;
+                if (m->type() == protocol::liBASE)
+                {
+                    if (ledgerNode->has_nodeid() || ledgerNode->has_id() || ledgerNode->has_depth())
+                    {
+                        badData(
+                            "Received liBASE message with node reference while relaying ledger "
+                            "data for " +
+                            to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                            std::to_string(peer->id()));
+                        return;
+                    }
+                    msgType = MessageType::Base;
+                }
+                else
+                {
+                    msgType = ledgerNode->has_nodeid() ? MessageType::Legacy : MessageType::Depth;
+                }
+                if (messageType != MessageType::Unknown && messageType != msgType)
+                {
+                    badData(
+                        "Received mixed mode message while relaying ledger data for " +
+                        to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                        std::to_string(peer->id()));
+                    return;
+                }
+                messageType = msgType;
+
+                if (peerSupportsNodeDepth || msgType != MessageType::Depth)
+                    continue;
+
+                SOMETIMES(
+                    !peerSupportsNodeDepth,
+                    "xrpl::PeerImp : relaying depth-format ledger data to pre-2.3 peer");
+                switch (ledgerNode->reference_case())
+                {
+                    case protocol::TMLedgerNode::kId: {
+                        // We can directly copy the `id` field, because it uses the same wire format
+                        // as the legacy `nodeid` field.
+                        REACHABLE("xrpl::PeerImp : relay downgrade id to nodeid");
+                        ledgerNode->set_nodeid(ledgerNode->id());
+                        ledgerNode->clear_id();
+                        break;
+                    }
+                    case protocol::TMLedgerNode::kDepth: {
+                        // We need to regenerate the node ID from the node data and depth.
+                        auto treeNode = getTreeNode(ledgerNode->nodedata());
+                        if (!treeNode)
+                        {
+                            badData(
+                                "Unable to get tree node while relaying ledger data for " +
+                                to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                                std::to_string(peer->id()));
+                            return;
+                        }
+
+                        auto const nodeID = getSHAMapNodeID(*ledgerNode, *treeNode);
+                        if (!nodeID)
+                        {
+                            badData(
+                                "Unable to get node ID while relaying ledger data for " +
+                                to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                                std::to_string(peer->id()));
+                            return;
+                        }
+
+                        REACHABLE("xrpl::PeerImp : relay downgrade depth to nodeid");
+                        ledgerNode->set_nodeid(nodeID->getRawString());
+                        ledgerNode->clear_depth();
+                        break;
+                    }
+                    default: {
+                        SOMETIMES(true, "xrpl::PeerImp : relay node has empty reference");
+                        badData(
+                            "Empty node reference while relaying ledger data for " +
+                            to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                            std::to_string(peer->id()));
+                        return;
+                    }
+                }
+            }
+
             peer->send(std::make_shared<Message>(*m, protocol::mtLEDGER_DATA));
         }
         else
@@ -2134,6 +2280,7 @@ PeerImp::onValidatorListMessage(
             publisherListSequences_[pubKey] = applyResult.sequence;
         }
         break;
+        // NOLINTNEXTLINE(bugprone-branch-clone): identical to the next branch only in Release
         case ListDisposition::SameSequence:
         case ListDisposition::KnownSequence:
 #ifndef NDEBUG
@@ -3286,12 +3433,10 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 }
 
 void
-PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
+PeerImp::processLedgerRequest(
+    std::shared_ptr<protocol::TMGetLedger> const& m,
+    std::vector<SHAMapNodeID> nodeIDs)
 {
-    // Do not resource charge a peer responding to a relay
-    if (!m->has_requestcookie())
-        charge(Resource::kFeeModerateBurdenPeer, "received a get ledger request");
-
     std::shared_ptr<Ledger const> ledger;
     std::shared_ptr<SHAMap const> sharedMap;
     SHAMap const* map{nullptr};
@@ -3371,26 +3516,25 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Add requested node data to reply
-    if (m->nodeids_size() > 0)
+    if (!nodeIDs.empty())
     {
         std::uint32_t const defaultDepth = isHighLatency() ? 2 : 1;
         auto const queryDepth{m->has_querydepth() ? m->querydepth() : defaultDepth};
 
-        std::vector<std::pair<SHAMapNodeID, Blob>> data;
+        std::vector<SHAMapNodeData> data;
+        data.reserve(Tuning::kSoftMaxReplyNodes);
+        auto const useLedgerNodeDepth = supportsFeature(ProtocolFeature::LedgerNodeDepth);
 
-        for (int i = 0;
-             i < m->nodeids_size() && ledgerData.nodes_size() < Tuning::kSoftMaxReplyNodes;
-             ++i)
+        for (auto const& nodeID : nodeIDs)
         {
-            auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
+            if (ledgerData.nodes_size() >= Tuning::kSoftMaxReplyNodes)
+                break;
 
             data.clear();
-            data.reserve(Tuning::kSoftMaxReplyNodes);
 
             try
             {
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) nodeids checked in onGetLedger
-                if (map->getNodeFat(*shaMapNodeId, data, fatLeaves, queryDepth))
+                if (map->getNodeFat(nodeID, data, fatLeaves, queryDepth))
                 {
                     JLOG(pJournal_.trace())
                         << "processLedgerRequest: getNodeFat got " << data.size() << " nodes";
@@ -3399,9 +3543,27 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                     {
                         if (ledgerData.nodes_size() >= Tuning::kHardMaxReplyNodes)
                             break;
+
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
-                        node->set_nodeid(d.first.getRawString());
-                        node->set_nodedata(d.second.data(), d.second.size());
+                        node->set_nodedata(d.data.data(), d.data.size());
+
+                        // When the LedgerNodeDepth protocol feature is not supported by the peer,
+                        // we always set the `nodeid` field. However, when it is supported then we
+                        // set the `id` field for inner nodes and the `depth` field for leaf nodes.
+                        if (!useLedgerNodeDepth)
+                        {
+                            node->set_nodeid(d.nodeID.getRawString());
+                        }
+                        else if (d.isLeaf)
+                        {
+                            REACHABLE("xrpl::PeerImp : emit leaf depth in reply");
+                            node->set_depth(d.nodeID.getDepth());
+                        }
+                        else
+                        {
+                            REACHABLE("xrpl::PeerImp : emit inner id in reply");
+                            node->set_id(d.nodeID.getRawString());
+                        }
                     }
                 }
                 else
@@ -3440,13 +3602,13 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                     info += ", no hash specified";
 
                 JLOG(pJournal_.warn())
-                    << "processLedgerRequest: getNodeFat with nodeId " << *shaMapNodeId
+                    << "processLedgerRequest: getNodeFat with nodeId " << nodeID
                     << " and ledger info type " << info << " throws exception: " << e.what();
             }
         }
 
         JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                               << " nodes at depth " << queryDepth << ", return "
+                               << " node IDs at depth " << queryDepth << ", return "
                                << ledgerData.nodes_size() << " nodes";
     }
 
