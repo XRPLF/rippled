@@ -1,12 +1,17 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
 #include <xrpl/json/json_value.h>
 
+#include <string>
+
 namespace xrpl::test::jtx {
 
-/** Inject raw JSON. */
+/**
+ * Inject raw JSON.
+ */
 class Json
 {
 private:

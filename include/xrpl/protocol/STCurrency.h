@@ -1,10 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 

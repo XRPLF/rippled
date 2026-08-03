@@ -1,6 +1,14 @@
+%if "%{?pkg_version}" == ""
+%{error:pkg_version must be defined}
+%endif
+
+%if "%{?pkg_release}" == ""
+%{error:pkg_release must be defined}
+%endif
+
 Name:     xrpld
-Version:  %{xrpld_version}
-Release:  %{xrpld_release}%{?dist}
+Version:  %{pkg_version}
+Release:  %{pkg_release}%{?dist}
 Summary:  XRP Ledger daemon
 
 License:  ISC
@@ -11,6 +19,9 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
+# Intentionally trade larger RPM artifacts for faster package validation.
+%global _binary_payload w.ufdio
+%global _find_debuginfo_dwz_opts %{nil}
 
 %build_mtime_policy clamp_to_source_date_epoch
 
@@ -37,7 +48,10 @@ install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 %{_sourcedir}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-xrpld.preset
+install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
+cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
+enable xrpld.service
+EOF
 
 # Logrotate config
 install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
@@ -62,7 +76,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_preun xrpld.service
 
 %postun
-%systemd_postun_with_restart xrpld.service
+%systemd_postun xrpld.service
 
 %files
 %license %{_docdir}/%{name}/LICENSE.md

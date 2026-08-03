@@ -5,12 +5,12 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
@@ -46,8 +46,10 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
+    {
         JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
+    }
 }
 
 auto

@@ -11,6 +11,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/use.h>
@@ -228,63 +229,7 @@ public:
                 fail();
             }
             // There are too many issues when working with soci::row and
-            // boost::tuple. DO NOT USE soci row! I had a set of workarounds to
-            // make soci row less error prone, I'm keeping these tests in case I
-            // try to add soci::row and boost::tuple back into soci.
-#if 0
-            try
-            {
-                std::int32_t ig = 0;
-                std::uint32_t uig = 0;
-                std::int64_t big = 0;
-                std::uint64_t ubig = 0;
-                soci::row r;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
-                ig = r.get<std::int32_t>(0);
-                uig = r.get<std::uint32_t>(1);
-                big = r.get<std::int64_t>(2);
-                ubig = r.get<std::uint64_t>(3);
-                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
-                        ubig == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-            try
-            {
-                std::int32_t ig = 0;
-                std::uint32_t uig = 0;
-                std::int64_t big = 0;
-                std::uint64_t ubig = 0;
-                soci::row r;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
-                ig = r.get<std::int32_t>("I");
-                uig = r.get<std::uint32_t>("UI");
-                big = r.get<std::int64_t>("BI");
-                ubig = r.get<std::uint64_t>("UBI");
-                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
-                        ubig == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-            try
-            {
-                boost::tuple<std::int32_t,
-                             std::uint32_t,
-                             std::int64_t,
-                             std::uint64_t> d;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (d);
-                BEAST_EXPECT(get<0>(d) == id[0] && get<1>(d) == uid[0] &&
-                        get<2>(d) == bid[0] && get<3>(d) == ubid[0]);
-            }
-            catch (std::exception&)
-            {
-                fail ();
-            }
-#endif
+            // boost::tuple. DO NOT USE soci row!
         }
         {
             namespace bfs = boost::filesystem;

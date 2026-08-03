@@ -2,22 +2,36 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <expected>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -39,7 +53,8 @@ enum class IsDeposit : bool { No = false, Yes = true };
 
 inline Number const kAMMInvariantRelativeTolerance{1, -11};
 
-/** Calculate LP Tokens given AMM pool reserves.
+/**
+ * Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve
  * @return LP Tokens as IOU
@@ -47,7 +62,8 @@ inline Number const kAMMInvariantRelativeTolerance{1, -11};
 STAmount
 ammLPTokens(STAmount const& asset1, STAmount const& asset2, Asset const& lptIssue);
 
-/** Calculate LP Tokens given asset's deposit amount.
+/**
+ * Calculate LP Tokens given asset's deposit amount.
  * @param asset1Balance current AMM asset1 balance
  * @param asset1Deposit requested asset1 deposit amount
  * @param lptAMMBalance AMM LPT balance
@@ -61,10 +77,11 @@ lpTokensOut(
     STAmount const& lptAMMBalance,
     std::uint16_t tfee);
 
-/** Calculate asset deposit given LP Tokens.
+/**
+ * Calculate asset deposit given LP Tokens.
  * @param asset1Balance current AMM asset1 balance
- * @param lpTokens LP Tokens
  * @param lptAMMBalance AMM LPT balance
+ * @param lpTokens LP Tokens
  * @param tfee trading fee in basis points
  * @return
  */
@@ -75,7 +92,8 @@ ammAssetIn(
     STAmount const& lpTokens,
     std::uint16_t tfee);
 
-/** Calculate LP Tokens given asset's withdraw amount. Return 0
+/**
+ * Calculate LP Tokens given asset's withdraw amount. Return 0
  * if can't calculate.
  * @param asset1Balance current AMM asset1 balance
  * @param asset1Withdraw requested asset1 withdraw amount
@@ -90,7 +108,8 @@ lpTokensIn(
     STAmount const& lptAMMBalance,
     std::uint16_t tfee);
 
-/** Calculate asset withdrawal by tokens
+/**
+ * Calculate asset withdrawal by tokens
  * @param assetBalance balance of the asset being withdrawn
  * @param lptAMMBalance total AMM Tokens balance
  * @param lpTokens LP Tokens balance
@@ -104,7 +123,8 @@ ammAssetOut(
     STAmount const& lpTokens,
     std::uint16_t tfee);
 
-/** Check if the relative distance between the qualities
+/**
+ * Check if the relative distance between the qualities
  * is within the requested distance.
  * @param calcQuality calculated quality
  * @param reqQuality requested quality
@@ -123,7 +143,8 @@ withinRelativeDistance(Quality const& calcQuality, Quality const& reqQuality, Nu
     return ((min.rate() - max.rate()) / min.rate()) < dist;
 }
 
-/** Check if the relative distance between the amounts
+/**
+ * Check if the relative distance between the amounts
  * is within the requested distance.
  * @param calc calculated amount
  * @param req requested amount
@@ -144,13 +165,15 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
     return ((max - min) / max) < dist;
 }
 
-/** Solve quadratic equation to find takerGets or takerPays. Round
+/**
+ * Solve quadratic equation to find takerGets or takerPays. Round
  * to minimize the amount in order to maximize the quality.
  */
 std::optional<Number>
 solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c);
 
-/** Generate AMM offer starting with takerGets when AMM pool
+/**
+ * Generate AMM offer starting with takerGets when AMM pool
  * from the payment perspective is IOU(in)/XRP(out)
  * Equations:
  * Spot Price Quality after the offer is consumed:
@@ -217,7 +240,8 @@ getAMMOfferStartWithTakerGets(
     return amounts;
 }
 
-/** Generate AMM offer starting with takerPays when AMM pool
+/**
+ * Generate AMM offer starting with takerPays when AMM pool
  * from the payment perspective is XRP(in)/IOU(out) or IOU(in)/IOU(out).
  * Equations:
  * Spot Price Quality after the offer is consumed:
@@ -284,7 +308,8 @@ getAMMOfferStartWithTakerPays(
     return amounts;
 }
 
-/**   Generate AMM offer so that either updated Spot Price Quality (SPQ)
+/**
+ * Generate AMM offer so that either updated Spot Price Quality (SPQ)
  * is equal to LOB quality (in this case AMM offer quality is
  * better than LOB quality) or AMM offer is equal to LOB quality
  * (in this case SPQ is better than LOB quality).
@@ -401,7 +426,8 @@ changeSpotPriceQuality(
     return amounts;
 }
 
-/** AMM pool invariant - the product (A * B) after swap in/out has to remain
+/**
+ * AMM pool invariant - the product (A * B) after swap in/out has to remain
  * at least the same: (A + in) * (B - out) >= A * B
  * XRP round-off may result in a smaller product after swap in/out.
  * To address this:
@@ -413,7 +439,8 @@ changeSpotPriceQuality(
  *     value is increased.
  */
 
-/** Swap assetIn into the pool and swap out a proportional amount
+/**
+ * Swap assetIn into the pool and swap out a proportional amount
  * of the other asset. Implements AMM Swap in.
  * @see [XLS30d:AMM
  * Swap](https://github.com/XRPLF/XRPL-Standards/discussions/78)
@@ -479,7 +506,8 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
         Number::RoundingMode::Downward);
 }
 
-/** Swap assetOut out of the pool and swap in a proportional amount
+/**
+ * Swap assetOut out of the pool and swap in a proportional amount
  * of the other asset. Implements AMM Swap out.
  * @see [XLS30d:AMM
  * Swap](https://github.com/XRPLF/XRPL-Standards/discussions/78)
@@ -545,12 +573,14 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
         Number::RoundingMode::Upward);
 }
 
-/** Return square of n.
+/**
+ * Return square of n.
  */
 Number
 square(Number const& n);
 
-/** Adjust LP tokens to deposit/withdraw.
+/**
+ * Adjust LP tokens to deposit/withdraw.
  * Amount type keeps 16 digits. Maintaining the LP balance by adding
  * deposited tokens or subtracting withdrawn LP tokens from LP balance
  * results in losing precision in LP balance. I.e. the resulting LP balance
@@ -564,7 +594,8 @@ square(Number const& n);
 STAmount
 adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposit isDeposit);
 
-/** Calls adjustLPTokens() and adjusts deposit or withdraw amounts if
+/**
+ * Calls adjustLPTokens() and adjusts deposit or withdraw amounts if
  * the adjusted LP tokens are less than the provided LP tokens.
  * @param amountBalance asset1 pool balance
  * @param amount asset1 to deposit or withdraw
@@ -585,7 +616,8 @@ adjustAmountsByLPTokens(
     std::uint16_t tfee,
     IsDeposit isDeposit);
 
-/** Positive solution for quadratic equation:
+/**
+ * Positive solution for quadratic equation:
  * x = (-b + sqrt(b**2 + 4*a*c))/(2*a)
  */
 Number
@@ -616,7 +648,8 @@ getAssetRounding(IsDeposit isDeposit)
 
 }  // namespace detail
 
-/** Round AMM equal deposit/withdrawal amount. Deposit/withdrawal formulas
+/**
+ * Round AMM equal deposit/withdrawal amount. Deposit/withdrawal formulas
  * calculate the amount as a fractional value of the pool balance. The rounding
  * takes place on the last step of multiplying the balance by the fraction if
  * AMMv1_3 is enabled.
@@ -640,7 +673,8 @@ getRoundedAsset(Rules const& rules, STAmount const& balance, A const& frac, IsDe
     return multiply(balance, frac, rm);
 }
 
-/** Round AMM single deposit/withdrawal amount.
+/**
+ * Round AMM single deposit/withdrawal amount.
  * The lambda's are used to delay evaluation until the function
  * is executed so that the calculation is not done twice. noRoundCb() is
  * called if AMMv1_3 is disabled. Otherwise, the rounding is set and
@@ -657,7 +691,8 @@ getRoundedAsset(
     std::function<Number()> const& productCb,
     IsDeposit isDeposit);
 
-/** Round AMM deposit/withdrawal LPToken amount. Deposit/withdrawal formulas
+/**
+ * Round AMM deposit/withdrawal LPToken amount. Deposit/withdrawal formulas
  * calculate the lptokens as a fractional value of the AMM total lptokens.
  * The rounding takes place on the last step of multiplying the balance by
  * the fraction if AMMv1_3 is enabled. The tokens are then
@@ -671,7 +706,8 @@ getRoundedLPTokens(
     Number const& frac,
     IsDeposit isDeposit);
 
-/** Round AMM single deposit/withdrawal LPToken amount.
+/**
+ * Round AMM single deposit/withdrawal LPToken amount.
  * The lambda's are used to delay evaluation until the function is executed
  * so that the calculations are not done twice.
  * noRoundCb() is called if AMMv1_3 is disabled. Otherwise, the rounding is set
@@ -718,7 +754,8 @@ adjustAssetOutByTokens(
     STAmount const& tokens,
     std::uint16_t tfee);
 
-/** Find a fraction of tokens after the tokens are adjusted. The fraction
+/**
+ * Find a fraction of tokens after the tokens are adjusted. The fraction
  * is used to adjust equal deposit/withdraw amount.
  */
 Number
@@ -728,7 +765,8 @@ adjustFracByTokens(
     STAmount const& tokens,
     Number const& frac);
 
-/** Get AMM pool balances.
+/**
+ * Get AMM pool balances.
  */
 std::pair<STAmount, STAmount>
 ammPoolHolds(
@@ -740,7 +778,8 @@ ammPoolHolds(
     AuthHandling authHandling,
     beast::Journal const j);
 
-/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+/**
+ * Check AMM pool product invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback) from an already calculated pool product mean.
  * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the
  * invariant tolerance,
@@ -749,7 +788,8 @@ ammPoolHolds(
 TER
 checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
 
-/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+/**
+ * Check AMM pool product invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback).
  * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
  * the invariant tolerance,
@@ -764,7 +804,8 @@ checkAMMPrecisionLoss(
     STAmount const& newLPTokenBalance,
     beast::Journal const j);
 
-/** Get AMM pool and LP token balances. If both optIssue are
+/**
+ * Get AMM pool and LP token balances. If both optIssue are
  * provided then they are used as the AMM token pair issues.
  * Otherwise the missing issues are fetched from ammSle.
  */
@@ -778,7 +819,8 @@ ammHolds(
     AuthHandling authHandling,
     beast::Journal const j);
 
-/** Get the balance of LP tokens.
+/**
+ * Get the balance of LP tokens.
  */
 STAmount
 ammLPHolds(
@@ -796,25 +838,29 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j);
 
-/** Get AMM trading fee for the given account. The fee is discounted
+/**
+ * Get AMM trading fee for the given account. The fee is discounted
  * if the account is the auction slot owner or one of the slot's authorized
  * accounts.
  */
 std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account);
 
-/** Returns total amount held by AMM for the given token.
+/**
+ * Returns total amount held by AMM for the given token.
  */
 STAmount
 ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const& asset);
 
-/** Delete trustlines to AMM. If all trustlines are deleted then
+/**
+ * Delete trustlines to AMM. If all trustlines are deleted then
  * AMM object and account are deleted. Otherwise tecINCOMPLETE is returned.
  */
 TER
 deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
 
-/** Initialize Auction and Voting slots and set the trading/discounted fee.
+/**
+ * Initialize Auction and Voting slots and set the trading/discounted fee.
  */
 void
 initializeFeeAuctionVote(
@@ -824,14 +870,16 @@ initializeFeeAuctionVote(
     Asset const& lptAsset,
     std::uint16_t tfee);
 
-/** Return true if the Liquidity Provider is the only AMM provider, false
+/**
+ * Return true if the Liquidity Provider is the only AMM provider, false
  * otherwise. Return tecINTERNAL if encountered an unexpected condition,
  * for instance Liquidity Provider has more than one LPToken trustline.
  */
 std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount);
 
-/** Due to rounding, the LPTokenBalance of the last LP might
+/**
+ * Due to rounding, the LPTokenBalance of the last LP might
  * not match the LP's trustline balance. If it's within the tolerance,
  * update LPTokenBalance to match the LP's trustline balance.
  */
