@@ -2,205 +2,327 @@
 
 ## What this branch is doing
 
-We are on `Wasm-vm-redesign`: replacing the C++ wasmi **C-API** integration with a
-Rust wasmi wrapper, written as **refined, production-ready code** built on the ideas
-of the PoC — not a cleanup pass over the PoC itself.
+`Wasm-vm-redesign`: replacing the C++ wasmi **C-API** integration with a Rust wasmi
+wrapper, written as production code built on the PoC's ideas — not a cleanup pass over the
+PoC.
 
-`Rust_wasm_PoC` (and `Rust_wasm_PoC_benchmark`) are **reference branches**: the PoC
-lives there, read-only, to be consulted for approach and prior art. Code copied
-across from it is a starting point, not a baseline to preserve — the PoC's shapes,
-comments and trade-offs are all open for redesign here. Its crates are named
-differently: `host_functions`, `host_functions_macros`, `wasm_vm` (with `imports.rs`
-where we have `register.rs`, plus `ffi.rs`), `stdlib`, `example_contract`. Read them
-with `git show Rust_wasm_PoC:crates/<path>`.
+`Rust_wasm_PoC` (and `Rust_wasm_PoC_benchmark`) are read-only reference branches. Their
+crates are named differently — `host_functions`, `host_functions_macros`, `wasm_vm` (with
+`imports.rs` where we have `register.rs`, plus `ffi.rs`), `stdlib`, `example_contract` —
+read with `git show Rust_wasm_PoC:crates/<path>`.
 
-**Read this before `register.rs` confuses you.** `abi.rs`/`register.rs`/`vm.rs` were
-brought over from the PoC in `d8d1ec46` ("WIP"), and the PoC's macro was doing far more
-than ours: `host_abi!` inserted `&self`, wrapped the declared return in `HostResult<_>`,
-and — for a `Vec<u8>` or `[u8; N]` return — **appended `out: &mut [u8]` and replaced the
-return with `HostResult<usize>`** (`crates/host_functions_macros/src/lib.rs` on that
-branch). So a declaration reading `-> [u8; 4]` produced a trait method taking an output
-region, which is why the copied VM code expects one. It also generated the whole wasm32
-guest side. This branch does none of that: the declaration *is* the signature. Those
-transformations are what "no magic" refers to throughout this document.
+**One PoC difference explains a lot of this crate.** The PoC's `host_abi!` inserted
+`&self`, wrapped returns in `HostResult<_>`, and for a `Vec<u8>`/`[u8; N]` return
+**appended `out: &mut [u8]` and changed the return to `HostResult<usize>`**. Here the
+declaration *is* the signature — nothing is appended behind the reader's back. That is what
+"no magic" means throughout this document, and it is why byte outputs are written as
+explicit out-params.
 
-The C-API path is already gone: commit `b7059deb9f` ("Remove wasmi dependency")
-deleted `WasmVM.{h,cpp}`, `WasmiVM.h`, `HostFuncWrapper.cpp` and dropped the conan
-`wasmi` package; `src/libxrpl/tx/wasm/WasmiVM.cpp` is now one big comment block kept
-only for reference. Anything we need about the old semantics is recoverable with
-`git show b7059deb9f^:<path>` — do that rather than guessing.
+The C-API path is gone: `b7059deb9f` ("Remove wasmi dependency") deleted
+`WasmVM.{h,cpp}`, `WasmiVM.h`, `HostFuncWrapper.cpp` and dropped the conan `wasmi`
+package. Old semantics are recoverable with `git show b7059deb9f^:<path>` — do that rather
+than guessing.
 
 ## Where the code lives
 
-- `crates/` — cargo workspace (edition 2024, resolver 3), built into the C++ build
-  via corrosion (`crates/CMakeLists.txt`).
-  - `crates/xrpl-host-functions/` — `no_std` crate holding the ABI declaration:
-    `host_functions! { ... }` generates the `HostFunctions` trait + the
-    `HostFunctionSpec` enum (wasm import name + gas per function). Also `HostError`.
-    **This crate is the single source of truth for the ABI.**
-    Each declaration spells its receiver — always `&self`, checked by the macro, so
-    a declaration reads exactly as the trait method it becomes. `&self` is what lets
-    the VM hold the host as one shared `&dyn HostFunctions` in the wasmi `Store`; a
-    host that needs to mutate uses interior mutability.
-  - `crates/xrpl-host-functions-macros/` — the `host_functions!` proc macro. An
-    implementation detail of the crate above: the dependency arrow runs facade →
-    macro, and the macro depends on nothing but syn/quote. It is deliberately *not*
-    re-exported — the ABI has one declaration site, so nothing outside
-    `xrpl-host-functions` should be invoking it.
+- `crates/` — cargo workspace (edition 2024, resolver 3), built into the C++ build via
+  corrosion (`crates/CMakeLists.txt`, which already registers the cxxbridge target).
+  - `xrpl-host-functions/` — `no_std` ABI declaration: `host_functions! { … }` generates the
+    `HostFunctions` trait and the `HostFunctionSpec` enum (import name + gas per function).
+    Also `HostError`. **The single source of truth for the ABI.**
+  - `xrpl-host-functions-macros/` — the proc macro. An implementation detail of the crate
+    above, deliberately not re-exported: the ABI has one declaration site.
+  - `xrpl-wasm-vm/` — the wasmi wrapper. `vm.rs` (engine, store, `run`), `abi.rs` (gas,
+    transfer budget, guest-memory marshaling), `region.rs` (the `(ptr, len)` type),
+    `register.rs` (one `func_wrap` per host function).
+  - `xrpl-wasm-vm-ffi/` — the cxx bridge, both crossings. `RunStatus`/`RunResult`,
+    `run_escrow`, `CxxHost`, the panic guard.
+  - `xrpl-wasm-testkit/` — **test-only**: `compile_wat`, so the C++ tests write their modules
+    as WebAssembly text. A crate of its own so `wat` cannot reach the shipped node; see
+    "How the C++ tests are built" below.
+- `include/xrpl/tx/wasm/`, `src/libxrpl/tx/wasm/` — C++ side: `HostFunc.h` (the ~60-method
+  `HostFunctions` interface), `HostFuncImpl*.cpp` (its implementations, over
+  `ApplyContext&`), `WasmCommon.h` (`HostFunctionError`, `Wmem`, `WasmTER`, `FieldLocator`).
+  The bridge's C++ half is `HostContext.{h,cpp}` (the ABI-shaped view of `HostFunctions`)
+  and `WasmVM.{h,cpp}` (`runEscrowWasm`, gas validation, the TER map).
+- `include/xrpl/tx/wasm/README.md` is **stale**: it uses the long name `get_ledger_sqn`
+  where the code registers `ldgr_index`, and references `detail/WasmVM.cpp`,
+  `detail/HostFuncWrapper.cpp`, `HostFuncWrapper.h` and `ParamsHelper.h`, none of which
+  exist.
 
-    **Convention: the expansion is closed.** Every name in it is either generated
-    or written in the declarations — `Self::Variant` is the only path it builds, and
-    a test (`names_no_crate_of_its_own`) enforces that. So the macro owns
-    `HostFunctions`, `HostFunctionSpec`, `ALL`, `wasm_name()`, `gas()`, and the
-    private `HostFnSpec` row type that keeps both accessors fed from one `match`.
-    The facade hand-writes only the *vocabulary the declarations are written in* —
-    `HostError` (23 codes plus `from_code`, which wants to stay greppable and
-    testable), `HostResult`, `HASH_LEN`. Those resolve at the call site because the
-    declarations name them, exactly like `Vec<u8>` and `&[u8]`; the macro never
-    emits them.
+## Current state (2026-08-03)
 
-    Corollary: `HostFnSpec` and `spec()` are **private** to the ABI crate. Read the
-    table through `HostFunctionSpec::wasm_name()` / `::gas()`.
+**The whole workspace is green**: `cargo test --workspace`, `clippy --workspace
+--all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **137 tests** — 33 macro,
+12 facade, 1 doctest, **79 in `xrpl-wasm-vm`** (10 unit; 69 integration — 13 `budgets`,
+12 `host_calls`, 23 `memory_policy`, 21 `vm_limits`), 10 in `xrpl-wasm-vm-ffi`, 2 in
+`xrpl-wasm-testkit`. On the C++ side, **27 tests over the whole loop** in six fixtures:
+`./xrpl_tests --gtest_filter='WasmVMTest.*:*Call.*'`.
 
-    The macro crate dev-depends on the facade so its doctest — whose declarations
-    name `HostResult` — compiles; cargo allows that cycle because dev-dependencies
-    sit outside the library build graph.
-  - `crates/xrpl-wasm-vm/` — the wasmi wrapper: `vm.rs` (engine/store/run),
-    `abi.rs` (gas + transfer-limit + guest-memory marshaling), `register.rs`
-    (hand-written `Linker::func_wrap` per host function).
-  - `crates/xrpl-wasm-vm-ffi/` — cxx bridge to C++. **Still empty** (`mod ffi {}`);
-    nothing is wired to C++ yet.
-- `include/xrpl/tx/wasm/`, `src/libxrpl/tx/wasm/` — C++ side: `HostFunc.h` (the
-  ~60-method `HostFunctions` interface the ledger implements), `HostFuncImpl*.cpp`
-  (its implementations), `WasmCommon.h` (`HostFunctionError`, `Wmem`, `WasmTER`,
-  `FieldLocator`), `README.md` (ABI docs, worth reading — but stale in places, see below).
+**Both crossings are wired and a real contract runs through them**: C++ calls
+`runEscrowWasm`, the engine services `ldgr_index` by calling back into
+`xrpl::HostFunctions`, and the guest reads the answer out of its own memory. Five host
+functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
+`trace_num`) out of the ~65 the full ABI will carry.
 
-## The ABI crate is a library both sides link (2026-07-29)
+**Seventeen of the eighteen review findings are closed**, C12 the only one left (see the
+appendix). What is left overall: preflight and a caller (below), two performance items gated
+on a benchmark (below), and the open ABI questions.
 
-`xrpl-host-functions` is the single source of truth, and the way that is realised is:
-**it is consumed as an ordinary dependency**, by `xrpl-wasm-vm` today and by the guest
-stdlib next. Neither invokes `host_functions!` — the macro has exactly one call site,
-inside the ABI crate itself, which is why it is deliberately not re-exported. Consumers
-get the *generated code*, not the generator.
+## The bridge, as built
 
-That makes four properties load-bearing rather than incidental:
+`crates/xrpl-wasm-vm-ffi/src/lib.rs` is the whole of it. Two decisions carry the design.
 
-| Property | Why | Status |
-|---|---|---|
-| `#![no_std]`, **no allocator** | the guest stdlib is strictly `no_std` | ✓ `Vec` left the ABI when byte outputs became `out: &mut [u8]`; `extern crate alloc` went with it |
-| **zero runtime dependencies** | anything else must also build for the guest | ✓ `cargo tree` is the proc-macro crate alone (build-time, host-side) |
-| builds for **`wasm32-unknown-unknown`** | it links into the guest | ✓ verified 2026-07-29 |
-| the trait is implementable by **both** sides | one declaration, two implementors | ✓ see below |
+**The result is total, not `Result<T>`.** cxx's `Result` sugar throws a `rust::Error` into
+C++; a status is the better interface for a condition the caller has to turn into a TER
+anyway. `RunResult { status, result, gas_used, detail }` flattens the engine's
+`Result<RunOutcome, RunFailure>` because a cxx enum carries no payload, and `RunStatus` is
+1:1 with `RunError` plus `Ok` and `Panic`. Both directions of that map are compile-enforced:
+`status_of`'s `match` is exhaustive over `RunError`, and C++'s `switch` over the generated
+enum has no `default`, so an outcome added to the engine fails to build until it has been
+given a status *and* a TER.
 
-The last one is what the out-param shape buys. A host impl writes into `out` and returns
-the length; a guest impl forwards to the import, passing `out.as_mut_ptr()` / `out.len()`
-and decoding the returned `i32` through `HostError::from_code`. One trait serves both
-*because it is now the wire shape* — with value-returning signatures the guest side
-would need the macro to transform them again, which is exactly the PoC magic we removed
-(see "The lowering table" below).
+**Neither side may unwind into the other, and the two halves are not symmetric.**
 
-A side effect worth having: the guest inherits `HostError::from_code`, which range-checks
-the wire code. The SDK today transmutes it unchecked — open question 3.
+- A **C++ exception** is stopped in C++. Every `HostContext` method is `noexcept` and every
+  body goes through one `guarded()` that catches `std::exception` and `...`, journals, and
+  returns -1. Nothing relies on cxx's own `trycatch`, which only catches `std::exception`
+  and only for `Result` returns.
+- A **Rust panic** is caught in Rust, by `guarded()` in the bridge. `[profile.release]`
+  turns overflow checks on, so this is a live path; `#[cfg(panic = "abort")]
+  compile_error!` keeps a profile change from silently defeating it.
+- The asymmetry is what makes each half sufficient: because the C++ shims never unwind,
+  every frame between a panic and `catch_unwind` is Rust.
 
-**Known gap.** The `#[link(wasm_import_module = "…")] unsafe extern "C" { … }`
-declarations are *not* generated; the PoC's `host_abi!` did generate them, along with a
-`GuestHost` impl, behind `#[cfg(target_arch = "wasm32")]`. If stdlib hand-writes that
-extern block, it is precisely the drift the single source of truth exists to prevent, so
-generating it is the natural follow-up. One wrinkle to decide first: the generated guest
-impl needs `HostError::from_code`, a name no declaration mentions, so it would be the
-first thing to put a vocabulary dependency back into the expansion (which is otherwise
-closed — see the convention note above).
+`HostContext` holds a `HostFunctions&` and lowers its typed `std::expected` onto the wire.
+The `&self`-vs-non-const worry was a non-issue: a `const` member function holding a
+non-const reference can still call `cacheLedgerObj`/`updateData`. `cxx_name` on each method
+keeps ABI names on the Rust side and rippled's camelBack on the C++ side.
 
-## Agreed direction (2026-07-28)
+The five current functions needed **no change to `HostFunctions`** — the shim absorbs the
+`uint32 → bytes` (via `adjustWasmEndianess`, which is where the wasm boundary's byte order
+is decided for the whole system), `i32 → SField` and `Hash → 32 bytes` lowerings. Where that
+will stop being true: `float_to_mant_exp` (two output regions), the `FieldLocator` entries,
+and `updateData`.
 
-- **Nothing has been released yet.** We follow XLS-0102 for the *shape* of the ABI
-  (import names, signatures, error-code-as-negative-i32 convention, limits), but we
-  are free to fix behaviour that is simply wrong — we are not bound to reproduce the
-  deleted C++ implementation bug-for-bug.
-- What XLS-0102 actually pins down is thinner than the C++ code implies: there is
-  **no error-code table in the spec** (only "negative return = error code"), so the
-  binding authority for the numeric codes is the guest SDK, not `HostFunctionError`.
-  The spec *does* say gas exhaustion "triggers immediate execution halting" — so
-  out-of-gas must **trap**, never return a code. It states a "1 MiB limit, per host
-  function call, on total data transfer across the WASM boundary" and a "1 KiB limit
-  … in a single host function call"; the C++ implementation made the 1 MiB a
-  per-invocation budget, which is stricter than a literal reading (unresolved).
-- **Host-function registration stays hand-written** in `xrpl-wasm-vm/src/register.rs`
-  for now — generating it from `host_functions!` was tried and the macro got too
-  complicated. Reduce the per-function boilerplate with a small set of generic
-  adapters in `abi.rs` instead of codegen. (Revisited 2026-07-29 — see below. The
-  target is macro-emitted *typed shims* rather than full codegen, but it is a later
-  refactor, not a prerequisite.)
+### The one copy left on the byte path, and why it needs `HostFunctions` to change
 
-## C-level ABI compatibility (2026-07-29)
-
-### The requirement
-
-Guests must not be limited to Rust. C — and any language targeting wasm32 — must be
-able to call host functions.
-
-### This is already satisfied at the wire, by construction
-
-WASM imports can only carry `i32`/`i64`/`f32`/`f64`. There is no way to expose a
-non-C-expressible host function. Proof already in-tree, a plain C guest with no Rust
-anywhere:
-
-```c
-// src/test/app/wasm_fixtures/ledgerSqn.c:3
-int32_t ldgr_index(uint8_t *, int32_t);
-```
-
-`register.rs` is what defines the C signature: wasmi derives the `FuncType` from the
-closure's **parameter and result Rust types** (each must implement `WasmTy`);
-`Caller<'_, VmState<'_>>` is special-cased and excluded. Parameter *names* are not
-part of the ABI. The full contract a C author binds against is:
-
-1. import module name,
-2. import (field) name,
-3. ordered param `ValType`s,
-4. result `ValType`,
-5. the return-value semantics (negative = error code; non-negative meaning varies —
-   see "Return conventions are not uniform" below).
-
-### What the C++ path had that the Rust redesign lost
-
-The deleted C++ code declared each host function as a **literal C function type**:
+The engine's side of the byte path is copy-free by construction — `write_into` hands the host
+guest memory directly, `write_buffered` copies once after every rule has passed. **The C++
+side then puts a copy back**, because `HostFunctions` returns its answer *by value*:
 
 ```cpp
-// include/xrpl/tx/wasm/HostFuncWrapper.h
-using getLedgerSqn_proto = int32_t(uint8_t*, int32_t);
-using trace_proto        = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
-using traceNum_proto     = int32_t(uint8_t const*, int32_t, int64_t);
+std::expected<Bytes, HostFunctionError> getCurrentLedgerObjField(SField const&) const;
 ```
 
-`WasmImpArgs`/`WasmImpRet` (`include/xrpl/tx/wasm/WasmImportsHelper.h:41-84`) mapped
-pointer/`int32_t` → `WtI32`, `int64_t` → `WtI64`, and `static_assert`-ed on anything
-else. **C-expressibility was compile-enforced — you could not declare a host function
-that wasn't C-callable.**
+`Bytes` is a `std::vector<std::uint8_t>`, so serving one field allocates, fills, gets copied
+into `out` by `HostContext::answer`, and is freed — a heap round trip per host call, on a
+consensus path, for a value the caller already has a buffer for. **49 of the 66 virtuals
+return `Bytes` this way**; only the two `Hash` ones are inline.
 
-Caveat worth remembering: `_proto` was a *second, hand-maintained* declaration
-alongside the virtual method in `HostFunc.h`. `WasmImpArgs` asserted `_proto` was
-C-shaped; nothing checked that `_proto` matched the method it wrapped. That pairing
-was hand-synced in `HostFuncWrapper.cpp`.
+The fix is an out-param form on `HostFunctions` itself — `(…, std::span<std::uint8_t> out)
+-> std::expected<std::size_t, HostFunctionError>`, returning the value's true length on the
+same "write only if it all fits" contract the ABI already uses end to end. That makes the
+convention identical on both sides of the bridge and leaves `HostContext` with no copy to
+make. Note the two shapes are not equivalent for every function: one that cannot know its
+length without building the value still allocates internally, so the win is real for field
+and keylet reads and smaller for the float ops.
 
-In the Rust redesign the wasm signature exists only as an emergent property of how
-someone hand-typed a closure in `register.rs`. Nothing prevents a future arm from
-omitting an out-pair, and nothing tells a C author what the signature is.
+Deliberately **not** done with the bridge: it touches 49 signatures plus
+`WasmHostFunctionsImpl`, `HostFuncImpl*.cpp` and the test hosts, which is a mechanical sweep
+that would bury the bridge in review. Sequence it after a caller exists, so the sweep can be
+measured against something that runs.
 
-### Decision: the source of truth does not move
+## How the C++ tests are built
 
-`crates/xrpl-host-functions/` stays the one declaration. C compatibility adds a
-**third output** next to the trait and the spec enum — not a second input. The C
-header becomes a *generated, checked-in artifact* with a CI diff. One generated
-declaration that cannot drift is strictly stronger than two explicit ones that can.
+`src/tests/libxrpl/tx/wasm/`, in the `xrpl_tests` gtest binary. Four decisions, each of which
+had an obvious cheaper alternative that was worse.
 
-"Explicit vs hidden" is the wrong axis; **"derivable and emitted"** is the right one.
-C authors read a header — they do not read the macro.
+**Modules are WebAssembly text, assembled at run time.** Checked-in hex blobs do not scale
+past one module — every host function needs its own, with its own import signature — and they
+are unreviewable. So `compile_wat` comes over cxx from **`crates/xrpl-wasm-testkit`**, a crate
+of its own that nothing in `libxrpl` or `xrpld` links.
 
-### The lowering table (the missing rule)
+That separation is the whole point and is worth not undoing. The engine pins
+`wasmi = { default-features = false }` because wasmi's `wat` feature makes `Module::new`
+accept text as readily as binary, which would make a transaction's validity a build flag
+(finding A5). Putting `compile_wat` on the production bridge would link an assembler into the
+shipped node even though nothing called it; a cargo feature would make the test and production
+binaries differ. A separate crate makes "no assembler in the node" a property of the link
+graph. `WasmVMTest.ATextFormatModuleIsNotAModule` then feeds the engine the very text the rest
+of the suite assembles, so the guest-side half of A5 is pinned too.
 
-The existing DSL vocabulary already implies this; it was simply never written down.
-That is the entire gap.
+*Two Rust staticlibs in one binary is fine* — `xrpld` already links `rs_hello_world` and
+`xrpl_wasm_vm_ffi`. The `_rust_eh_personality` collision earlier in this document came from
+conan's *separately compiled* `std`, not from two crates in this workspace.
+
+**The host is a `StrictMock`.** `MockHostFunctions` mocks only the methods the ABI declares;
+the ~60 others keep `HostFunctions`' `Unimplemented` default, so a contract reaching past the
+ABI fails the way production would. What this buys over a hand-written fake is assertions on
+*what the host was asked* — that a guest `i32` became the right `SField`, that two borrowed
+regions and a flag all arrived, that an `i64` survived as `INT64_MIN`.
+
+Strict rather than nice, because these modules import exactly what they mean to exercise: a
+host call no test asked for means the engine reached for something on its own, which is worth
+a failure rather than a warning. The cost is one line in the fixture —
+`EXPECT_CALL(host_, checkSelf()).WillRepeatedly(Return(true))`, since `runEscrowWasm` asks
+every run whether the host is clean. Verified by mutation: giving `escrow_finish` an
+unstubbed host call fails the test under Strict and passes silently under `NiceMock`.
+
+*One trap worth knowing even so*: gmock's default action for `std::expected<T, E>` is a
+**successful** `T{}`, so a method with an `EXPECT_CALL` but no action would answer `0` and a
+test could pass on an answer nobody chose. The mock's constructor therefore `ON_CALL`s every
+method to the base class's `std::unexpected(Unimplemented)`.
+
+**Two levels of fixture.** `WasmTest` holds the mock, a capturing journal sink and `run(wat,
+gas, entryPoint)`. `HostCallTest` adds a `wat()` the derived fixture supplies and `hostAnswer()`,
+so a per-function test says only what the host was asked and what came back. Then one fixture
+per host function — `LedgerSqnCall`, `CurrentLedgerObjFieldCall`, `Sha512HalfCall`, `TraceCall`,
+`TraceNumCall` — because the module *is* that function's shared setup. `WasmVMTest` keeps what
+belongs to the engine rather than to any function.
+
+**The journal is captured, not sent to a null sink.** `AThrowingHostFunctionIsCaughtAndBecomes-
+Internal` asserts the exception text *and* that the log names `getLedgerSqn`; without that, an
+exception silently swallowed with no log would pass, and `HostContext::guarded`'s
+`source_location` would be untested.
+
+Two properties are pinned from the guest's side rather than asserted about internals:
+`ABufferTooSmallIsRefusedWholeRatherThanTruncated` has the contract report whether *anything*
+reached its memory, which is "a refused value reaches it in no part" as a contract can observe
+it; and `EverySoftHostErrorCodeCrossesToTheContractUnchanged` walks all 18 soft
+`HostFunctionError` codes, because the C++ and Rust error enums are two hand-maintained lists
+of the same numbers that **have already drifted once** (-11 is `OutOfTransferLimit` in C++ and
+`Decoding` in the Rust ABI — open question 3).
+
+*Mutation-checked*: making a too-large value write a truncated prefix, and pointing the
+sha512 input matcher at bytes the guest does not send, each fail exactly one test and nothing
+else.
+
+## Next: preflight, then a caller
+
+1. **`preflightEscrowWasm`.** The gap the TER map is currently papering over: a module that
+   will not compile, instantiate, or expose the entry point maps to `tecINTERNAL` with no
+   cost, which is only defensible because preflight is *meant* to have refused it with
+   `temBAD_WASM` first. Nothing does that yet. It needs a second bridge entry that compiles
+   and looks up the export without executing.
+2. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` is
+   reached only from `src/tests/libxrpl/tx/WasmVM.cpp`. Wiring it up is what makes
+   `WasmHostFunctionsImpl` (over a real `ApplyContext`) the host in production rather than
+   in principle.
+3. **A gas parity oracle.** `Wasm_test.cpp` asserts exact gas numbers (e.g. 29'502) and is
+   the best oracle we have, but it is commented out and its fixtures cannot run on this
+   engine (see below).
+4. **The `Bytes`-by-value copy in `HostFunctions`** — see "The one copy left on the byte
+   path" below. A 49-signature sweep, so it wants a caller to measure against first.
+
+**Two findings from wiring the bridge, both worth knowing before the parity work:**
+
+- **The C fixtures under `src/test/app/wasm_fixtures/` import from module `env`**, not
+  `host_lib` (`kLedgerSqnWasmHex` decodes to `... 03 656e76 0a 6c6467725f696e646578 ...`),
+  and their `target_features` include `sign-ext`, `multivalue` and `reference-types`, which
+  this engine disables. The deleted C++ engine ignored the import module name entirely —
+  `wasm_importtype_module` is commented out at its `WasmiVM.cpp:428`. So those fixtures are
+  not usable as a parity oracle without recompiling them with
+  `-Wl,--import-module=host_lib` and the engine's feature set. The gtest carries its own
+  WAT-derived fixtures for that reason.
+- **`OutOfGas` does not always report the whole limit.** A contract that loops until the
+  meter empties reports the full budget, but a budget too small to reach the first charge
+  reports `0`: wasmi leaves the remaining fuel in place on its own `OutOfFuel` trap, and
+  only `abi::charge` forces it to zero. The deleted C++ path did this deliberately
+  (`iw.setGas(0)` on out-of-gas, so the cost was always the full limit). Closing the gap is
+  a one-line change in `vm::run`, but it is consensus-visible metadata, so it is called out
+  rather than slipped in.
+
+## Performance, gated on a benchmark
+
+**Two optimisations are deferred pending measurement, not rejected.** Neither is worth
+guessing at, and one benchmarking pass with the google-benchmark harness on a
+host-call-heavy module settles both.
+
+1. **Lazy output buffer.** `VmState::out_buffer` is an inline `[u8; MAX_FIELD_BYTES]`,
+   zero-filled once per run whether or not the contract makes a call that uses it. The lazy
+   form is `Option<[u8; N]>` with `get_or_insert_with` (not `OnceCell` — that is for init
+   behind a shared borrow; `write_buffered` holds `&mut VmState`). The case against it today
+   is a magnitude argument a measurement could overturn: it defers one ~1 KiB fill per run,
+   invisible beside the `Module::new` that starts every run, and pays for it with a
+   discriminant test on **every host call** — the direction C11 moved cost away from. Also
+   note `Option<[u8; N]>` does not shrink `VmState` (no niche in a byte array), and
+   `Option<Box<[u8; N]>>` does but then charges a malloc to the 38 functions that use this
+   path in order to save the ones that do not.
+2. **C12: cached `Linker`, cached module.** Two independent halves.
+   - *Module compile cache* is the bigger win — a whole wasm translation per run versus
+     building a five-entry linker — and it is **not** blocked by the lifetime problem, since
+     a `Module` is engine-scoped. But it carries a question that is not the engine's to
+     answer: **who owns a compiled contract's lifetime?** An unbounded static cache inside a
+     library on a consensus path brings an eviction policy nobody asked for; the alternative
+     is handing `run` a pre-compiled module, which changes the signature the bridge is about
+     to consume. Either way the answer comes from the caller side.
+   - *Per-run `Linker`* is blocked: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to
+     be per-run, so hoisting it means making the store data `'static` — not holding
+     `&'h dyn HostFunctions`. This was expected to fall out of the bridge; **it did not.**
+     `CxxHost<'a>` borrows the C++ `HostContext` for one run and coerces to
+     `&'h dyn HostFunctions` unchanged, so hoisting the linker is still its own piece of
+     work with no other reason to do it.
+
+So: **measure first**, and treat the linker and the lazy buffer as whatever the numbers say.
+The module cache's open question is unchanged by the bridge — `run(wasm, gas, host, name)`
+is now a signature the C++ side consumes, so handing it a pre-compiled module is a change to
+a live interface rather than a hypothetical one, and **who owns a compiled contract's
+lifetime** is still the caller's question to answer.
+
+## Open decisions
+
+**`gas = 0` — resolved: refused in C++ as `temBAD_AMOUNT`.** The old code already decided
+this and the doc had it garbled: `WasmiEngine::run` rejected `gas <= 0` for *every* value
+including `-1`, and `-1 = unlimited` applied only to preflight's `check`. `runEscrowWasm`
+restores exactly that, which is why the engine's own budget stays a `u64` with no invalid
+value to represent.
+
+**ABI / guest-SDK interop.** Found auditing the guest SDK (`~/Documents/rust/xrpl-wasm-stdlib`,
+checkout `435a091f`) against this fork. All are decisions rather than code.
+
+1. ~~Import module name~~ — **resolved: `host_lib`**, matching the SDK and this fork's
+   fixtures. `the_import_module_name_must_match` rejects `host`, `env` and the empty name.
+2. **Import name lineage.** The fixtures pin the SDK at `branch = renames` and use **short**
+   wire names (`parent_ldgr_hash`, `cache_le`, `tx_inner_arr_len`, `accountroot_id`,
+   `trustline_id`), matching `ldgr_index` / `home_le_field` / `sha512_half`. The standalone
+   SDK checkout is the **long**-name lineage (`get_parent_ledger_hash`, `cache_ledger_obj`,
+   `compute_sha512_half`). Which is authoritative is undecided.
+3. **New error codes are UB in the guest.** The SDK decodes with a bare transmute and no
+   range check (`xrpl-common-stdlib/src/host/mod.rs:325`), valid only for `-1..=-20`. Making
+   host-fatal errors trap (A1) removed `OutOfGas` from the guest's view, and the
+   soft/fatal question is settled — **`OutOfTransferLimit` stays soft**. The *encoding*
+   question is not: `OutOfTransferLimit = -23` still reaches a transmuting guest, and
+   `NoRuntime = -21` would if anything returned it. Closing it needs either a range check in
+   the SDK or a remap into `-1..=-20`.
+4. **`-1` collides semantically** — host `Unimplemented` vs Rust `Internal`. **Now a
+   decision rather than an accident**: the bridge treats them as one condition, "the host
+   could not serve this call, and the contract has no business interpreting why". Both are
+   host-fatal, so both stop the run and report `tecINTERNAL`, which is also what a C++
+   exception caught in `HostContext::guarded` becomes. The guest-side half of the collision
+   (its own `InternalError`) is untouched.
+5. **`float_to_mant_exp` byte count.** The host returns **12** (8 mantissa + 4 exponent);
+   the guest doc says 8, and the guest's `match_result_code_with_expected_bytes` **panics**
+   on a non-negative mismatch. Note this function writes *two* output regions, a shape no
+   current helper serves.
+6. **Return conventions are not uniform** — six of them: bytes-written; value-in-return
+   (`*_arr_len`, `nft_flags`); boolean 0/1 (`amendment_enabled`, `check_sig`); 1-based handle
+   (`cache_le`, always ≥ 1); status-0 (`trace*`, `set_data`); tri-state (`float_cmp` — `0`
+   equal, `1` first >, `2` second >).
+7. **The SDK's drift checker is silently broken.** `tools/compareHostFunctions.js`
+   regex-parses `WasmVM.cpp` and `HostFuncWrapper.h`, both deleted. A generated C header
+   would give it a stable target again.
+
+## The ABI: one declaration, three outputs
+
+`crates/xrpl-host-functions/` is the one declaration. C compatibility adds a **third
+output** beside the trait and the spec enum — a *generated, checked-in* C header with a CI
+diff — not a second input. "Explicit vs hidden" is the wrong axis; "derivable and emitted"
+is the right one, because C authors read a header, not a macro.
+
+### The lowering table
+
+The DSL already implied this; it was never written down, and that was the whole gap.
 
 ```
 params, in declared order:
@@ -210,52 +332,43 @@ params, in declared order:
   &[u8], &str        -> i32 ptr, i32 len          const uint8_t*, int32_t
   &mut [u8]          -> i32 ptr, i32 len          uint8_t*, int32_t   (an output region)
 
-returns, always `HostResult<T>`; `Err(e)` -> negative code, or a trap when host-fatal:
-  HostResult<usize>       -> result i32 = bytes written into the output region
-  HostResult<i32>, <bool> -> result i32 = the value
-  HostResult<()>          -> result i32 = 0
+returns, always HostResult<T>; Err(e) -> negative code, or a trap when host-fatal:
+  HostResult<usize>       -> i32 = bytes written into the output region
+  HostResult<i32>, <bool> -> i32 = the value
+  HostResult<()>          -> i32 = 0
 ```
 
-Total, unambiguous, and **positional**: every wasm parameter is a declared parameter,
-in order, so the C prototype is a direct reading of the declaration rather than
-something the macro appends to it. **The macro must reject any type not in this
-table** — that is `WasmImpArgs`' `static_assert`, restored, and it is what guarantees
-the C API is always surfaceable.
+Total, unambiguous and **positional**: every wasm parameter is a declared parameter in
+order, so the C prototype is a direct reading of the declaration. **The macro must reject
+any type not in this table** — that is C++'s `WasmImpArgs` `static_assert` restored, and it
+is what keeps the C API always surfaceable.
 
-**Validation** — all five current declarations (the `host_functions!` block at the
-bottom of `xrpl-host-functions/src/lib.rs`) lower to exactly the deleted C++ `_proto`
-aliases. Abbreviated below by dropping `&self`, which contributes no C parameter.
+All five current declarations lower to exactly the deleted C++ `_proto` aliases (verified
+2026-07-29; `&self` dropped below since it contributes no C parameter):
 
-| Declaration | Derived C | C++ `_proto` |
-|---|---|---|
-| `fn get_ledger_sqn(out: &mut [u8]) -> HostResult<usize>` | `int32_t(uint8_t*, int32_t)` | `getLedgerSqn_proto` ✓ |
-| `fn get_current_ledger_obj_field(field: i32, out: &mut [u8]) -> HostResult<usize>` | `int32_t(int32_t, uint8_t*, int32_t)` | `getTxField_proto` ✓ |
-| `fn sha512_half(data: &[u8], out: &mut [u8]) -> HostResult<usize>` | `int32_t(const uint8_t*, int32_t, uint8_t*, int32_t)` | ✓ |
-| `fn trace(msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t)` | `trace_proto` ✓ |
-| `fn trace_num(msg: &str, number: i64) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, int64_t)` | `traceNum_proto` ✓ |
+| Declaration | Derived C |
+|---|---|
+| `get_ledger_sqn(out: &mut [u8]) -> HostResult<usize>` | `int32_t(uint8_t*, int32_t)` |
+| `get_current_ledger_obj_field(field: i32, out: &mut [u8]) -> HostResult<usize>` | `int32_t(int32_t, uint8_t*, int32_t)` |
+| `sha512_half(data: &[u8], out: &mut [u8]) -> HostResult<usize>` | `int32_t(const uint8_t*, int32_t, uint8_t*, int32_t)` |
+| `trace(msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t)` |
+| `trace_num(msg: &str, number: i64) -> HostResult<()>` | `int32_t(const uint8_t*, int32_t, int64_t)` |
 
-**Discipline the table requires**: a byte output is an explicit `out: &mut [u8]`
-parameter plus `HostResult<usize>`, never a returned value. `get_ledger_sqn` writes 4
-LE bytes and returns 4 — it does *not* return the sequence number, and by the same
-rule `float_to_int` takes an out region rather than returning `i64`. A scalar
-`HostResult<T>` means value-in-the-return-register (`get_tx_array_len(field: i32) ->
-HostResult<i32>`, `nft_flags`, `float_cmp`, `cache_le`, `check_sig`,
-`amendment_enabled`).
+**Discipline the table requires**: a byte output is an explicit `out: &mut [u8]` plus
+`HostResult<usize>`, never a returned value. `get_ledger_sqn` writes 4 LE bytes and returns
+4 — it does not return the sequence number; by the same rule `float_to_int` takes an out
+region rather than returning `i64`. A scalar `HostResult<T>` means value-in-the-return.
 
-The contract on an out region, which the engine relies on: **write only if the value
-fits, and return its true length either way.** The host therefore never needs to know
-the guest's buffer size — the engine turns `n > cap` into `BufferTooSmall`.
+**The out-region contract, which the engine relies on: write only if the whole value fits,
+and return its true length either way.** So a host never needs to know the guest's buffer
+size — the engine turns `n > cap` into `BufferTooSmall`.
 
-### Closing the drift gap between `register.rs` and the generated header
+### Closing the drift gap to `register.rs`
 
-**wasmi 1.1 cannot introspect a registered host function's signature.**
-`Linker::get` returns `None` for `func_wrap`'d functions — they land in
-`Definition::HostFunc` (`wasmi-1.1.0/src/linker.rs:147`), not `Definition::Extern`
-(doc comment at `:335`). `Definition::ty()` exists at `:171` and would give the
-`FuncType`, but `Definition` and `get_definition` are private. So "assert
-`Func::ty()` equals the spec" is **not available**.
-
-Guarantee ladder:
+**wasmi 1.1 cannot introspect a registered host function's signature.** `Linker::get`
+returns `None` for `func_wrap`'d functions — they land in `Definition::HostFunc`
+(`wasmi-1.1.0/src/linker.rs:147`), and `Definition::ty()` exists at `:171` but `Definition`
+and `get_definition` are private. So "assert `Func::ty()` equals the spec" is unavailable.
 
 | Approach | `register.rs` | Guarantee |
 |---|---|---|
@@ -263,929 +376,308 @@ Guarantee ladder:
 | **Generate `link_*` shims, hand-write bodies** | **stays, readable** | **compile-time** |
 | Hand-write everything + probe-module test | stays | test-time |
 
-**Preferred: the middle row.** The macro emits the *type* without emitting the *body*:
+**Preferred: the middle row** — the macro emits the *type* without the *body*:
 
 ```rust
-// generated by host_functions!
 pub type Sha512HalfFn =
     fn(Caller<'_, VmState<'_>>, i32, i32, i32, i32) -> Result<i32, wasmi::Error>;
 
 pub fn link_sha512_half(l: &mut Linker<VmState<'_>>, f: Sha512HalfFn)
-    -> Result<(), LinkerError>
-{
-    l.func_wrap(MODULE, HostFunctionSpec::Sha512Half.wasm_name(), f)
-}
+    -> Result<(), LinkerError> { l.func_wrap(MODULE, HostFunctionSpec::Sha512Half.wasm_name(), f) }
 ```
 
-`register.rs` keeps its hand-written bodies but becomes constrained:
-
-```rust
-HostFunctionSpec::Sha512Half => link_sha512_half(linker,
-    |mut caller, data_ptr, data_len, out_ptr, out_len| { /* logic, unchanged */ }),
-```
-
-Wrong arity, wrong scalar type or wrong return is now a **compile error**. The same
-lowering table emits both `Sha512HalfFn` and
-`int32_t sha512_half(const uint8_t*, int32_t, uint8_t*, int32_t);`, so they cannot
-drift. That type alias is the regenerated `_proto` — the artifact C++ had, now derived
-from the single source of truth instead of maintained beside it.
-
-*Constraint*: `fn` pointers only accept non-capturing closures. Every arm in
-`register.rs` today is non-capturing. If one ever needs to capture, that shim can take
-`impl Fn(...) + Send + Sync + 'static` instead — weaker inference, same guarantee.
-
-**Belt-and-braces (cheap, worth having anyway)**: a probe-module test. Synthesize a
-WAT module from the spec table that imports every host function with its declared
-type, then `linker.instantiate()` it. A signature mismatch fails instantiation. This
-is the only check that also catches module-name and missing-import mistakes, and it
-tests the *guest's* view end-to-end.
-
-### Open: where the output region points (2026-07-29)
-
-Nothing above depends on this — the declaration is the same either way, and it is
-internal to `abi.rs`. Both `register.rs` and the trait are untouched by the choice.
-
-`write_into` today hands the host a slice **of guest linear memory**
-(`mem.data_mut(&mut *caller).get_mut(dst..end)`), so the host writes straight into wasm
-memory with no copy. The cost is that this `&mut` borrow cannot coexist with a `&`
-borrow of guest memory for the inputs, which is the only reason `read_write` exists: it
-memcpies the input into a `[0u8; MAX_FIELD_BYTES]` stack array first. That does not
-generalize — `credential_keylet`, `check_sig` and `paychan_keylet` each take three byte
-inputs, so each would need its own stack buffer.
-
-The alternative is a **host-side scratch buffer** the adapter owns, with one copy into
-guest memory after the call. Then inputs stay borrowed from guest memory (any number of
-them, zero copies), `read_write` disappears, and the fit check precedes the guest write.
-This is what C++ did (`std::expected<Bytes, …>` + `setData`), so gas/behaviour parity
-is preserved.
-
-Cost is roughly a wash:
-- `sha512_half` — today ≤1 KiB input copied to stack + 32 bytes written ≈ 1056 bytes
-  moved. Scratch: input borrowed zero-copy, 32 bytes copied out. **Better.**
-- `get_tx_field` (no byte input, ≤1 KiB output) — today 1024 direct; scratch 1024 +
-  1024. **Worse.**
-
-**One argument for scratch has since been spent, and it was the strongest one.** It used
-to be that `write_into` checked `n > cap` *after* `fill` had already written, so a
-refused call left bytes in the guest's buffer, and only a scratch buffer could check
-before the copy the way C++'s `setData` did. **A4 closed most of that without scratch**:
-`fill` receives at most `min(cap, MAX_FIELD_BYTES)`, so an over-cap value cannot reach
-guest memory at all. What remains is narrower — under the cap the clamp is a no-op, so a
-host that cannot fit a value could still leave a prefix behind, and a scratch buffer
-would make that impossible rather than contractual. So the wart is now a **host-contract
-question, not an engine defect**, and it should carry much less weight in the decision
-than the paragraph above once implied. Judge C11 mainly on the cost table and on
-`read_write` not generalizing past one byte input.
-
-### Resolved: the scratch owns the *output*, and only where there is an input (2026-08-03)
-
-**Decided and landed with C11: the buffer moves to the output side, and `write_into`'s
-direct path stays for the calls that have no byte input.** The cost table above framed
-this as one-or-the-other, and that framing is what made it look like a wash — it is not,
-because the row scratch makes worse is exactly the row that does not need scratch. A
-function with no byte input has no borrow conflict to resolve.
-
-What settled it is a census of the real ABI rather than the two example rows. Classifying
-all 65 registrations in `setCommonHostFunctions` (plus `set_data`) by shape, from the
-recovered `HostFuncWrapper.h` protos:
-
-| shape | count | helper |
-| --- | --- | --- |
-| ≥1 byte input **and** a byte output | **38** | `write_buffered` |
-| byte output only | 9 | `write_into`, unchanged |
-| byte inputs only, or scalars | 18 | `read_borrowed` / `region`, unchanged |
-
-The 38 are 16 one-in/one-out, 18 two-in/one-out, 3 three-in/one-out (`credential_id`,
-`trustline_id`, `paychan_id`), and one **one-in/two-out**: `float_to_mant_exp`, which
-writes mantissa and exponent into separate guest regions and is the function behind
-interop question 5. So **22 of the 38 cannot be expressed by a one-input helper at all**,
-and they are the bulk of the ABI's substance — every two-argument keylet, `nft_uri`, and
-all four float arithmetic ops. Under the old shape they need `read2_write`, `read3_write`
-and `read_write2`; under this one they are all the same call. That, not the memset, is
-what the finding was really about.
-
-`MaybeUninit` was considered and rejected, and the reason is not squeamishness about
-`unsafe`: it does not reach the memset from either side. `Memory::read` wants an
-initialized `&mut [u8]` and wasmi 1.1 has no `read_uninit`, and the `HostFunctions`
-trait's out-param is `&mut [u8]`, so an uninit output region would push `unsafe` into
-every host impl including the C++ adapter. A **per-run** buffer gets the same win with no
-`unsafe` at all — one 1 KiB fill per run instead of one per call, so there is nothing
-left for `MaybeUninit` to remove. `#![forbid(unsafe_code)]` (D14) stays.
-
-The typed shims, generated header and probe-module test stay deferred.
-
-## Open ABI questions and interop risks (2026-07-29)
-
-Found while auditing the guest SDK (`~/Documents/rust/xrpl-wasm-stdlib`, checkout
-`435a091f`) against this fork. As of 2026-07-30, **question 1 is resolved and question 3
-is narrowed**; each says so in place. The rest are open, and all of them are decisions
-rather than code.
-
-1. **Import module name.** The old C++ VM ignored it entirely —
-   `wasm_importtype_module()` is commented out at `src/libxrpl/tx/wasm/WasmiVM.cpp:429-431`
-   and only the field name is looked up. `register.rs:8` enforced `"host"` when this was
-   audited. The SDK
-   and the fork's own fixture (`src/test/app/wasm_fixtures/codecov_tests/src/host_bindings_loose.rs:20`)
-   use `"host_lib"`. Plain clang emits `"env"` unless annotated. `"host"` matched
-   nothing that exists. **Resolved: `host_lib`** (finding A3).
-2. **Import name lineage.** The fixtures pin the SDK at `branch = renames` and use
-   **short** wire names (`parent_ldgr_hash`, `cache_le`, `tx_inner_arr_len`,
-   `accountroot_id`, `trustline_id`), matching rippled's `ldgr_index` / `home_le_field`
-   / `sha512_half`. The standalone SDK checkout is the **long**-name lineage
-   (`get_parent_ledger_hash`, `cache_ledger_obj`, `compute_sha512_half`). Which is
-   authoritative is undecided.
-3. **New error codes are UB in the guest.** The SDK decodes with a bare transmute and
-   no range check — `xrpl-common-stdlib/src/host/mod.rs:325`,
-   `unsafe { core::mem::transmute(code) }` — valid only for `-1..=-20`. Our `HostError`
-   adds `NoRuntime = -21`, `OutOfGas = -22`, `OutOfTransferLimit = -23`, and
-   `to_wasm_i32` returns all of them as codes.
-   *Fix that solves this and the XLS-0102 halting requirement together*: make
-   host-fatal errors **traps**. The closure returns `Result<i32, wasmi::Error>`; the
-   wasm signature is unchanged (still `(…) -> i32`), and the guest-visible table
-   collapses back to exactly `-1..-20`. This also restores the C++ two-channel design
-   (`"HfOutOfGas"` / `"HfInternal"` trap strings vs negative returns).
-   *Still open*: is `OutOfTransferLimit` soft or fatal? The guest has no code for it —
-   `-11` is `InvalidDecoding` there but `OutOfTransferLimit` in `WasmCommon.h:47`.
-   Fatal is the only resolution that needs no SDK change.
-
-   **Partly resolved by A1**, and the remainder is sharper for it. The trap channel
-   exists, and `OutOfGas = -22` no longer reaches the guest at all. But the decision
-   was **`OutOfTransferLimit` stays soft** (C++ parity — it was the one soft failure
-   there), so `-23` still reaches a guest that transmutes it, and `NoRuntime = -21`
-   still would if anything returned it. So the guest-visible table is `-1..-20` plus
-   those two, not `-1..-20`: closing this needs either a range check in the SDK or
-   `OutOfTransferLimit` remapped onto an in-range code. The soft/fatal question is
-   settled; the encoding question is not.
-4. **`-1` collides semantically**: host `Unimplemented` vs guest `InternalError`.
-5. **`float_to_mant_exp` byte count.** Host returns **12** (8 mantissa + 4 exponent,
-   `HostFuncWrapper.cpp:497` at `b7059deb9f^`); the guest doc says 8. The guest's
-   `match_result_code_with_expected_bytes` **panics** on a non-negative mismatch.
-6. **Return conventions are not uniform** — six of them, today documented only in
-   comments: bytes-written; value-in-return (`*_arr_len`, `nft_flags`); boolean 0/1
-   (`amendment_enabled`, `check_sig`); 1-based handle (`cache_le`, always ≥ 1);
-   status-0 (`trace*`, `set_data`); tri-state (`float_cmp` — `0` equal, `1` first >
-   second, `2` first < second).
-7. **The SDK's drift checker is silently broken.** `tools/compareHostFunctions.js`
-   regex-parses `WasmVM.cpp` and `HostFuncWrapper.h`, both deleted at HEAD. A
-   generated header would give it a stable target again.
-
-Also noted: `include/xrpl/tx/wasm/README.md` is stale — its worked example uses the
-long name `get_ledger_sqn` where the code registered `ldgr_index`, and it references
-`detail/WasmVM.cpp`, `detail/HostFuncWrapper.cpp` and `ParamsHelper.h`, none of which
-exist (the helper is `WasmImportsHelper.h`).
-
-## `xrpl-wasm-vm` review findings (2026-07-29)
-
-A read of all three files (`vm.rs`, `abi.rs`, `register.rs`) against the vendored
-wasmi 1.1.0 source. Grouped by kind and ordered within each group by how much they
-matter. Items marked ✓ are done.
-
-### A. Correctness — behaviour changes, land before the cxx bridge
-
-1. ✓ **Out-of-gas is not a trap, and how much guest code runs after exhaustion is
-   wasmi's business.** `charge` (`abi.rs:77`) returned `HostError::OutOfGas`, which
-   `to_wasm_i32` hands the guest as `-22` with fuel already at 0. wasmi meters by
-   emitting `ConsumeFuel` instructions at *block boundaries*
-   (`engine/translator/func/instrs.rs`), so the guest keeps executing to the end of
-   the current basic block before it traps. The stopping point is a function of
-   wasmi's block layout — implementation-defined behaviour on a consensus path.
-   XLS-0102 requires immediate halting and C++ trapped (`hfErrOutOfGas`); `-22` is
-   also outside the range the SDK's `transmute` accepts (open question 3). Fix is the
-   two-channel design: host-fatal errors (`OutOfGas`, `Internal`, `NoMemExported`)
-   return `Err(wasmi::Error)` from the closure and trap. The wasm signature is
-   unchanged. This reshapes `abi.rs`'s return type, so it precedes any cosmetic work
-   there.
-
-   Landed with A2 and A3. The fatal set is carried out of a closure as
-   `abi::FatalHostError(HostError)`, a payload `wasmi::Error::host` accepts and
-   `run` names again with `downcast_ref` — so the condition survives the crossing
-   as a value rather than as message text, which is what the C++ path had to
-   string-compare (`"HfOutOfGas"`). `is_fatal` spells the set variant by variant,
-   so which channel a new `HostError` takes is a choice someone makes rather than
-   one its number makes for it. **`OutOfTransferLimit` stays soft** — the decision
-   below, and C++'s behaviour.
-2. ✓ **`run` discards gas accounting on every failure path.** `Result<RunOutcome,
-   String>` (`vm.rs:96`) meant a trap yielded `Err(String)` with no `fuel_used` — but a
-   contract that traps or exhausts gas still has to be charged (C++: full limit →
-   `tecOUT_OF_GAS`; internal → `tecINTERNAL`). `String` also cannot be matched on, so
-   the cxx bridge would end up string-comparing error text, which is exactly what the
-   deleted C++ did with its `"HfOutOfGas"` trap strings. `fuel_used` belongs on both
-   paths, and the error wants to be a typed enum C++ can map to a TER.
-
-   Now `Result<RunOutcome, RunFailure>`, where `RunFailure` is `{ error: RunError,
-   fuel_used }` — so the gas is on both paths by construction rather than by
-   remembering. `RunError` is `Compile`/`Instantiate`/`EntryPoint`/`Trap`, each
-   carrying wasmi's diagnostic, plus `OutOfGas`/`Internal`/`NoMemory`, which carry
-   nothing because the variant *is* the information C++ needs. Gas exhaustion
-   reaches `run` by two routes — wasmi's own `OutOfFuel` for guest instructions,
-   our trap payload for a refused host charge — and both land on `OutOfGas`.
-   `guest_halted` asks that question at **every** stage from instantiation on, so a
-   start section that burns the limit is `OutOfGas` and not `Instantiate`: the stage
-   a run stopped at is not what the caller maps.
-3. ✓ **`HOST_MODULE = "host"` (`register.rs:8`) matches no guest that exists** — the SDK
-   and this fork's own fixtures use `host_lib`, plain clang emits `env`. A decision,
-   not a code fix, but nothing real instantiates until it is made (open question 1).
-   **Decided: `host_lib`**, matching the SDK and the fixtures. `the_import_module_name_must_match`
-   now rejects `host`, `env` and the empty name, so the choice is pinned rather than
-   incidental.
-4. ✓ **The transfer budget is charged for bytes that are never copied, and charged
-   before validation.** `read_borrowed` *aliases* guest memory — zero copies — yet
-   called `charge_transfer` (`abi.rs:135`); C++ deliberately did not charge plain
-   slice/string reads (`trace` msg/data, `sha512_half` input — see "Reference points"
-   below). The charge also precedes the bounds check, so a guest can drain the 1 MiB
-   budget with out-of-bounds pointers. Related, in `write_into`: `fill` gets a slice
-   of the guest's full `cap`, uncapped by `MAX_WASM_DATA_LEN`, so an over-cap value
-   lands in guest memory before `n > MAX_WASM_DATA_LEN` rejects it — clamping `out` to
-   `min(cap, MAX_WASM_DATA_LEN)` makes that post-check unreachable by construction.
-
-   Landed, with **one claim in the paragraph above corrected**: the clamp does *not*
-   make the post-check unreachable, and the check is load-bearing. `fill` reports the
-   value's *true* length, which can exceed the region it was handed, so `n >
-   MAX_FIELD_BYTES` is what turns an over-cap value into `DataFieldTooLarge` instead
-   of a silently-accepted 1025-byte count. Deleting it fails three tests. The clamp
-   and the check bound different things: the clamp bounds the **bytes** that can reach
-   guest memory, the check bounds the **status** the guest is given.
-
-   Both read charges are gone — `read_borrowed`'s and `read_write`'s input — so
-   `charge_transfer` has exactly one call site, in `write_into`, and the budget means
-   what C++ meant by it: bytes actually copied host→guest. Removing the read charge
-   also dissolves the out-of-bounds drain rather than reordering around it. Nothing
-   replaces those charges: gas already bounds how many reads a run can make, since
-   every host call pays its spec's gas before its body runs, which is the property
-   C++ relied on. The bounds check still spans the guest's **whole declared `cap`**,
-   not the clamped length, so a buffer running past memory is `PointerOutOfBounds`
-   even when its first `MAX_FIELD_BYTES` bytes would have been valid.
-
-   *Partly a host contract, not an engine guarantee.* The engine guarantees at most
-   `min(cap, MAX_FIELD_BYTES)` bytes are **writable**. That a refused over-cap value
-   leaves *nothing* behind additionally relies on the host writing only when the whole
-   value fits `out` — what `setData` did and what `Answer::bytes` does. A host impl
-   that scribbled the clamped prefix and then reported a larger `n` would still leave
-   bytes behind. Worth stating in the `HostFunctions` declaration's doc comment; the
-   ABI crate was not touched here.
-5. ✓ **`Module::new` accepted WAT text — a behaviour the rewrite introduced by
-   accident.** wasmi's default features include `wat`, and `Module::new` runs
-   `wat::parse_bytes` over its input (`module/mod.rs:228`), so the VM compiled
-   text-format modules straight from a transaction blob and `wat`/`wast`/`bumpalo` sat
-   in the release build.
-
-   **The C++ path did not do this**, and the reason is worth recording, because it is
-   the whole finding. `ModuleWrapper::init` called `wasm_module_new` with the raw
-   transaction bytes (`WasmiVM.cpp:314-318` at `b7059deb9f^`), which wraps
-   `Module::new` (`crates/c_api/src/module.rs:54` of the `wasmi/1.0.9` conan package).
-   wasmi 1.0.9 carries the *same* `#[cfg(feature = "wat")]` parse and the same
-   `default = ["std", "wat"]` — but the C-API crate takes wasmi with
-   `default-features = false` (wasmi workspace `Cargo.toml:34`) and never re-enables
-   `wat` (`wasmi_c_api_impl` has only `std`, `prefix-symbols`, `simd`). So that line was
-   compiled out of the C++ build, and the C-API exposes no wat2wasm entry point either —
-   unlike wasmtime's, `wasmi.h` has nothing of the kind. Binary only, and no mention of
-   WAT anywhere in the deleted C++ wasm sources.
-
-   Linking the wasmi *Rust* crate directly is what picked the default up: the feature
-   the C-API had already turned off upstream came back silently. `default-features =
-   false, features = ["std"]` restores parity — it is not a new policy. (The secondary
-   argument still holds: it also keeps a module's validity a protocol rule rather than a
-   function of a cargo flag.) The tests assemble text themselves from a dev-dependency,
-   so nothing of ours is needed to keep them working — see "Build / test loop".
-
-### A, addendum: the memory export's *name* is a rule the rewrite introduced (2026-07-30)
-
-Found while scoping C10, and it is the same class of item as A3 and A5: a behaviour
-change nobody chose.
-
-`abi.rs` resolves guest memory with `caller.get_export("memory")` — **by name**. The C++
-path did not use the name at all. `InstanceWrapper::getMem`
-(`WasmiVM.cpp:224-249` at `b7059deb9f^`) scanned the instance's exports for the first one
-whose *kind* is `WASM_EXTERN_MEMORY`, whatever it was called:
-
-```cpp
-if (wasm_extern_kind(e) == WASM_EXTERN_MEMORY) { memIdx_ = i; mem = ...; break; }
-```
-
-So a module exporting its memory as `"mem"` or `"linear"` worked under C++ and is refused
-today — and `the_memory_export_must_be_a_memory_named_memory` in `memory_policy.rs` pins
-the stricter rule. With `wasm_multi_memory(false)` the C++ scan was unambiguous: at most
-one memory exists, so "the first memory export" names exactly one thing.
-
-Nothing in the wasm spec attaches meaning to the name `"memory"`, or requires a module to
-export its memory at all; the name is a toolchain convention (LLVM, Rust's
-`wasm32-unknown-unknown`, Emscripten and wasi all emit it), which is why matching on it
-works in practice. **The decision to make**: keep the name as an ABI rule, or restore
-C++'s match-by-kind. Either is defensible — but if the name stays, it is as much part of
-the wire contract as `HOST_MODULE`, and unlike `HOST_MODULE` it is a bare literal inside a
-private helper with no named constant and no mention in the ABI docs. That asymmetry is
-the part to fix regardless of which way the decision goes.
-
-**Decided: match by kind**, restoring C++'s behaviour, which also dissolves the
-asymmetry rather than fixing it — the name is no longer in the code at all. Landed with
-C10; see finding 10 for what that forced about start sections.
-
-Second observation from the same code: **C++ already cached the resolution**, memoizing
-`memIdx_` on first use. So C10 is not an optimization past the C++ path, it is restoring
-something the rewrite dropped. `memIdx_` was a per-`InstanceWrapper` member, which is the
-same one-instance-per-run assumption C10's cache would take on.
-
-### B. Dead weight — pure simplification, no behaviour change
-
-6. ✓ **`AbiRet` is vestigial.** `type Out` is always `()`, `impl AbiRet for u32` is never
-   used, and the trait's only call site is `<() as AbiRet>::write((), c, ())` — nine
-   tokens for `Ok(0)`. Delete the trait and both impls. Done with A1, which rewrote
-   those call sites anyway.
-7. ✓ **The `i64` pipeline is pointless and lossy.** Every host function returns `i32` on
-   the wire, but the internals threaded `HostResult<i64>` and `to_wasm_i32` then did
-   `v as i32` — a silent truncating cast on a consensus path. `to_wasm_i64` was dead
-   code behind `#[allow]`. `HostResult<i32>` end to end removed both. Done with A1
-   for the same reason as B6: A1 rewrites exactly these signatures, and the `n as
-   i32` in `write_into` now sits after the `MAX_FIELD_BYTES` check, where it cannot
-   lose bits.
-8. ✓ **`cxx` is an unused dependency** of this crate — the bridge lives in the ffi crate.
-9. ✓ **Stale docs.** Seven broken intra-doc links name types that no longer exist:
-   `AbiArg` (`register.rs:20`, `abi.rs:7`), `HostFn` (`register.rs:14,16`),
-   `run_escrow` (`vm.rs:19,64`). And `abi.rs:147-150` / `vm.rs:71` are historical
-   comments ("used to pay", "The `CxxHost` path additionally used to marshal … that
-   too is gone", "Unchanged from the original skeleton"), against the
-   no-historical-comments convention. `#![deny(rustdoc::broken_intra_doc_links)]`
-   stops the links from rotting again.
-
-   The links are fixed and the `deny` is in. **The historical comments were already
-   gone** — the A1–A4 slices rewrote those lines. A sweep for `used to` / `no longer` /
-   `formerly` / `originally` / `unchanged from` / `previously` across `crates/` found
-   nothing but present-tense prose and C++ reference points, which the convention
-   allows. The one stale comment left was in `vm_limits.rs`, citing D16 as an open bug;
-   it went with D16.
-
-### C. Performance
-
-10. ✓ **The `"memory"` export is a string hash lookup on every host call.** `memory()`
-    (`abi.rs:104`) → `Caller::get_export` → `InstanceEntity::exports: Map<Box<str>,
-    Extern>`. Resolve it once after instantiation and keep the `Memory` in `VmState`.
-    Two bonuses: `NoMemExported` becomes an instantiation-time error, where it
-    belongs, and a per-call failure path disappears. Cheapest real win in the crate,
-    and the benchmark can measure it.
-
-    Caching is sound: `wasmi::Memory` is `Stored<MemoryIdx>`, an arena index into the
-    store rather than a pointer (`memory/mod.rs:31`), so the handle survives
-    `memory.grow` — only the data slice is re-derived, per call, by `data`/`data_mut`.
-    It is also worth more than "one lookup per call": `trace` resolves the export twice
-    (two `read_borrowed`s) and `sha512_half` twice (`read_write`, then `write_into`).
-
-    **Decline the first bonus.** Failing instantiation when there is no `"memory"`
-    export is a *behaviour change*, not a tidy-up: a module that exports no memory and
-    makes no host call runs today and would stop. C++ also only discovered this at the
-    call, since it resolved the export per call too. The version with identical
-    observable behaviour is to resolve eagerly into an `Option<Memory>` in `VmState`,
-    leave it `None` when the export is absent, and have the accessor answer
-    `NoMemExported` — every call is then free of the lookup and nothing observable
-    moves. The residual "`None` after `run` set it" case is a defect in this crate, not
-    a guest one, so it belongs on `Internal` rather than `NoMemExported`.
-
-    Consequence for the tests either way: `memory_policy.rs`'s `assert_no_memory`
-    asserts `fuel_used > 0`, which holds because the guest burns fuel reaching the
-    call. That stays true under the `Option` design and would become `== 0` under
-    instantiation-time failure — a useful tell for which design got built.
-
-    **Landed, resolving by kind** (the addendum's decision), so the name is gone from
-    the resolution path: `instance.exports(store).find_map(Export::into_memory)`, once,
-    after `instantiate_and_start`, into a plain `Option<Memory>` on `VmState`. Plain
-    rather than `Cell` because it is written once through `store.data_mut()` before
-    `finish.call` and only read after — unlike `transfer_budget`, whose read path holds
-    a shared borrow.
-
-    **Kind-matching cannot be lazy, and that decides one behaviour.**
-    `Caller::get_export` is name-only and `Caller`'s `instance` field is private
-    (`func/caller.rs:13,32`), so exports cannot be enumerated from inside a host call;
-    and `Module::instantiate` is `pub(crate)`, so instantiation cannot be split from the
-    start section (D17's root cause again). The resolution therefore happens after the
-    start section runs, and **a start section can no longer make a host call needing
-    memory** — it gets `NoMemExported`. That is parity, not a regression: C++ ran
-    `wasm_instance_new` (start included, `WasmiVM.cpp:154`) and filled its export table
-    with `wasm_instance_exports` only afterwards (`:161`), so its scan found nothing
-    during a start section either. `a_start_section_cannot_make_a_host_call` pins it.
-    Today's lazy name-based lookup was the outlier on *both* axes.
-
-    A residual `None` is therefore **not** the `Internal` case sketched above: with
-    resolution after instantiation, `None` is reachable for two legitimate guest-caused
-    reasons — no memory export, and a call from a start section — so `NoMemExported` is
-    the only correct answer.
-
-    Two notes from writing the tests. wasmi's export map is a `BTreeMap` in this feature
-    configuration, so `"finish"` sorts first and a kind-blind "first export" resolution
-    fails 38 tests rather than a subtle few — cheap to catch. And a global exported as
-    `"memory"` **cannot on its own** pin kind-matching: a module with no memory export
-    answers `None` under both the correct and the kind-blind resolution, so that
-    assertion holds either way. The test needed a second half — a real memory exported
-    as `"mem"` *beside* a global named `"memory"`, asserting the call succeeds — which
-    states the rule in both directions: the conventional name neither qualifies a
-    non-memory nor hides the real one.
-11. ✓ **`read_write` memsets 1 KiB of stack per call and does not generalize past one byte
-    input.** That was the scratch-buffer decision above; see "Resolved: the scratch owns
-    the *output*" for the census that decided it and for why `MaybeUninit` is not the
-    answer.
-
-    `read_write` is gone, replaced by `write_buffered`, and the input primitive split in
-    two: `region(data, ptr, len)` does the validation and slicing against a plain `&[u8]`,
-    and `read_borrowed` is now that over the guest's memory for the calls that read
-    without writing. Taking bytes rather than a `Caller` is the whole trick — input
-    regions become shared borrows of one slice, so a call takes as many as its signature
-    has.
-
-    **The borrow conflict dissolves rather than being worked around, and that is what
-    made this cheap.** `Memory::data_and_store_mut` (`memory/mod.rs:165`) returns
-    `(&mut [u8], &mut T)` — the guest's bytes and the store data in one split borrow. So
-    the inputs are borrowed from guest memory *while* the host writes the scratch that
-    lives in the store data, with no take-and-put-back, no `Cell`, and no `unsafe`. It
-    compiled unchanged on the first attempt.
-
-    Three things fell out that are worth more than the memset:
-    - **A4's residual is closed structurally.** The host is never told the guest's
-      capacity — it gets the whole `MAX_FIELD_BYTES` scratch and reports the value's true
-      length — so nothing reaches guest memory until the length, bounds, fit and budget
-      have all passed. `a_refused_value_leaves_nothing_in_guest_memory` pins it, and a
-      mutation that copies eagerly fails exactly that test and no other. It is the
-      *under-the-cap* case that bites, the one the clamp could not reach.
-    - **The check order is now C++'s `setData` order** — params, cap, bounds, fit,
-      transfer, copy (`HostFuncWrapper.cpp:115-148` at `b7059deb9f^`) — *after* the value
-      exists. C++ could use that order because it had a scratch (`std::expected<Bytes>`
-      then `setData`); `write_into` cannot, since it must bounds-check before handing over
-      a slice. Input validation still precedes all of it, as
-      `getDataSlice`-then-`setData` did.
-    - **One accepted behaviour change**: `NoMemExported` now precedes a call's argument
-      validation, because the memory has to be resolved before there are bytes to validate
-      a region against. C++ checked the input's cap first. It costs a guest nothing — a
-      module with no memory export cannot serve any host call — and
-      `no_memory_is_answered_before_a_calls_arguments_are` makes it a decision rather than
-      an accident.
-
-    The memset half, for the record, was probably never the cost it looked like: the
-    scratch is one per-run buffer, so no call fills one, but `sha512_half` is 2000 gas and
-    a 1 KiB fill is tens of nanoseconds. The generalization was the finding.
-
-    **The scratch field is inline, not boxed** — the store's data is built once per run and
-    then only borrowed, so a kilobyte in it costs one move where a `Box` costs an
-    allocation. **Lazy init is deferred to a benchmark, not rejected.** `Option<[u8; N]>`
-    with `get_or_insert_with` is the shape (not `OnceCell`, which is for init behind a
-    shared borrow; `write_buffered` holds `&mut VmState`), and the case against it today is
-    a magnitude argument that a measurement could overturn: it defers one ~1 KiB fill per
-    run — invisible beside the `Module::new` that starts every run — and pays for it with a
-    discriminant test on every host call, which is the direction C11 was moving cost away
-    from. `Option<[u8; N]>` also does not shrink `VmState` (no niche in a byte array, so
-    1025 bytes), and `Option<Box<[u8; N]>>` does but then charges a malloc to the 38
-    functions that use this path in order to save the ones that do not. Revisit with the
-    google-benchmark harness, where a host-call-heavy module can price the per-call branch
-    against the per-run fill.
-12. `Linker` is rebuilt per `run` (five `func_wrap`s plus string interning) and the
-    module is compiled per run with no cache. Lower priority. The blocker worth
-    recording: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run —
-    a design change rather than a tweak, and one the bridge forces anyway, so it is
-    better done with that context than before it.
-
-### D. Hardening
-
-13. ✓ **The public surface was accidental.** `lib.rs` was `pub use vm::run` alone, so
-    `RunOutcome` was `pub` inside a private module and unreachable: a caller could
-    invoke `run` but not name its return type, and `MAX_MEMORY_PAGES` /
-    `TRANSFER_LIMIT_BYTES` / `MAX_MEMORY_BYTES` were likewise unreachable. Exported
-    with the test work, since the tests need to name them.
-
-    The 1 KiB per-field cap was a further case, and the odd one out: three of the four
-    protocol limits lived in `vm.rs` and were `pub`, while this one sat private in
-    `abi.rs` as `MAX_WASM_DATA_LEN`. Being unreachable is why the tests had restated
-    `1024`/`1025` as literals twenty-one times. Now `vm::MAX_FIELD_BYTES`, beside the
-    others — **renamed**, so a search for the old name (or for C++'s
-    `kMaxWasmDataLength`, which its doc comment still cites) lands here.
-14. ✓ `#![forbid(unsafe_code)]` — `abi.rs:64` *claims* every access is a checked wasmi
-    slice op; let the compiler enforce the claim. Plus `unreachable_pub` and clippy's
-    cast lints.
-
-    All three are on, at `deny` — the whole lint block is uniform rather than half
-    advisory, so a violation fails the build rather than scrolling past. Verified:
-    making `wasm_engine` `pub` again fails `cargo build`, not merely `clippy`. The
-    `#[expect]` on the one remaining cast keeps working under `deny`, and being
-    `expect` rather than `allow` it also fires if a restructure makes the cast
-    unnecessary.
-
-    Both of the new lints paid for themselves.
-    `unreachable_pub` found `VmState` and `wasm_engine`: `pub` inside a private module
-    and never re-exported, so unreachable from outside the crate — now `pub(crate)`,
-    with nothing silenced. The cast lints found **8 sites, all in `abi.rs`**. Six were
-    `cast_sign_loss` on the guest's `i32` pointers and lengths, and the fix removed
-    code rather than adding it: `let (Ok(ptr), Ok(len)) = (usize::try_from(ptr),
-    usize::try_from(len)) else { … }` — **the conversion is the negativity check**, so
-    the separate `ptr < 0 || len < 0` guards are gone rather than duplicated. The
-    remaining two are the one `n as i32` in `write_into`, bounded by the
-    `MAX_FIELD_BYTES` return directly above it, under a scoped `#[expect]` — `expect`
-    rather than `allow`, so it fires if a later restructure makes it unnecessary.
-15. ✓ **Zero tests.** Nothing checked the bounds/cap/transfer/gas policy, and every
-    item above edits exactly that policy. Closed first, for that reason.
-16. Minor: `gas = 0` is accepted silently (C++ rejected it as `temBAD_AMOUNT`);
-    `store.get_fuel().unwrap_or(0)` (`vm.rs:137`) swallows an error into a
-    plausible-looking number; `get_typed_func` failure reports "no entry point" when
-    the export exists with the wrong signature.
-
-    **Two of the three are done.** `fuel_used` returns `Result<u64, RunError>`, folded
-    through a `failed(store, gas, error)` helper so all four report sites read the
-    meter in one place. Worth recording *why* it is not a document-and-assert: the
-    `unwrap_or(0)` did not merely swallow an error, it reported `gas - 0`, **the whole
-    limit** — an untouched contract charged for everything. No fallback is defensible
-    (`0` forgives the run, `gas` overcharges), so a cost that cannot be read replaces
-    the outcome with `Internal` rather than being invented. No panic on a consensus
-    path. And the entry-point diagnostic is now three cases, told apart by
-    `Instance::get_export`: no such export, an export of the wrong signature, and an
-    export that is not a function at all — the last two used to claim "no entry point"
-    about an export that was right there. `RunError::EntryPoint`'s `Display` carries the
-    detail bare for that reason, the one variant without a `stage:` prefix.
-
-    **Still open, and now a decision rather than a bug:** `gas = 0` no longer passes
-    silently — it fails with a typed `OutOfGas`. Whether the caller should instead
-    reject it up front as C++'s `temBAD_AMOUNT` is a TER question, so it belongs with
-    the cxx bridge, where the mapping gets written. (`gas` is `u64`, so C++'s negative
-    case cannot arise.)
-17. The start-section TODO (`vm.rs:90`) **cannot** be closed with wasmi 1.1's public
-    API: there is no `InstancePre`/`ensure_no_start`, and `ModuleHeader::start` is
-    private, so only a byte-level section scan would do it. But `set_fuel` and
-    `limiter` are both installed *before* `instantiate_and_start`, so start-section
-    work is already metered and memory-capped. Recorded because the TODO reads like an
-    open hole and is closer to a preference.
-
-## Reference points from the deleted C++ path
-
-Import names and gas costs are ABI; the rest below is *evidence of prior behaviour*,
-useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gospel.
-
-- Import names + per-call gas: `git show b7059deb9f^:src/libxrpl/tx/wasm/WasmVM.cpp`
-  (`setCommonHostFunctions`, 64 entries + `set_data` registered only in
-  `createWasmImport`; e.g. `ldgr_index` 60, `sha512_half` 2000, `set_data` 1000,
-  `float_pow` 5'500).
-- Guest-visible error codes: `HostFunctionError` in `include/xrpl/tx/wasm/WasmCommon.h`
-  (-1 `Unimplemented` … -20 `FloatComputationError`; note **-11 is
-  `OutOfTransferLimit`**).
-- Host-fatal conditions are **traps**, not return codes: out-of-gas and internal
-  errors threw `hfErrOutOfGas` / `hfErrInternal` → trap → `tecOUT_OF_GAS` /
-  `tecINTERNAL`. Only the transfer limit is a soft, guest-visible failure.
-- Limits: `maxPages = 128` (8 MiB), `kMaxWasmDataLength = 1024`,
-  `kWasmTransferLimit = 1 << 20` (both in `include/xrpl/protocol/Protocol.h`).
-- Transfer limit is charged for bytes *actually copied*: host→guest writes
-  (`setData`) and typed reads that materialize a host object (uint256, AccountID,
-  Currency, Asset) plus unaligned `FieldLocator` copies (+`unalignedGas = 50`).
-  Plain slice/string reads (`trace` msg/data, `sha512_half` input) are **not** charged.
-- Entry point is `escrow_finish` (`escrowFunctionName`); gas `-1` meant unlimited,
-  gas `<= 0` meant `temBAD_AMOUNT`; on out-of-gas the reported cost is the full limit.
-  Positive return = conditions met; `0` or negative = reject.
-- Engine config (fuel on, floats off, all post-MVP proposals off) is in the commented
-  `WasmiVM.cpp` `WasmiEngine::init()`; `crates/xrpl-wasm-vm/src/vm.rs` mirrors it.
-- wasmi's fuel table is consensus input — pin the wasmi version deliberately
-  (currently `wasmi = "1.1.0"`). `src/test/app/Wasm_test.cpp` asserts exact gas numbers
-  (e.g. 29'502) and is the best parity oracle we have.
+Wrong arity, scalar type or return then becomes a compile error, and the same lowering
+table emits both the alias and the C prototype so they cannot drift. *Constraint*: `fn`
+pointers accept only non-capturing closures; every arm today is non-capturing, and one that
+needs to capture can take `impl Fn(..) + Send + Sync + 'static` instead. Cheap extra worth
+having: a **probe-module test** that synthesises a WAT module importing every function with
+its declared type and instantiates it — the only check that also catches module-name and
+missing-import mistakes, from the guest's side.
+
+Deferred together: the shims, the generated header, the probe test.
+
+### The ABI crate is a library both sides link
+
+It is consumed as an ordinary dependency — by `xrpl-wasm-vm` today, the guest stdlib next.
+Neither invokes `host_functions!`; consumers get the generated code, not the generator.
+That makes four properties load-bearing:
+
+| Property | Why | Status |
+|---|---|---|
+| `#![no_std]`, no allocator | the guest stdlib is strictly `no_std` | ✓ `Vec` left when byte outputs became `out: &mut [u8]` |
+| zero runtime dependencies | anything else must also build for the guest | ✓ `cargo tree` is the proc-macro crate alone |
+| builds for `wasm32-unknown-unknown` | it links into the guest | ✓ verified |
+| implementable by **both** sides | one declaration, two implementors | ✓ the out-param shape is what buys this |
+
+A host impl writes into `out` and returns the length; a guest impl forwards to the import
+and decodes the `i32` through `HostError::from_code`, which range-checks (unlike the SDK's
+transmute — question 3). One trait serves both *because the declaration is now the wire
+shape*.
+
+**Known gap.** The `#[link(wasm_import_module = "…")] unsafe extern "C" { … }` block is not
+generated; the PoC's macro did generate it plus a `GuestHost` impl. If the stdlib
+hand-writes it, that is precisely the drift a single source of truth exists to prevent. One
+wrinkle to decide first: a generated guest impl needs `HostError::from_code`, a name no
+declaration mentions, so it would be the first vocabulary dependency inside an otherwise
+closed expansion.
+
+**Convention: the expansion is closed.** Every name in it is generated or written in the
+declarations; `names_no_crate_of_its_own` enforces it. The macro owns `HostFunctions`,
+`HostFunctionSpec`, `ALL`, `wasm_name()`, `gas()` and the private `HostFnSpec` row type.
+The facade hand-writes only the vocabulary declarations are written in — `HostError`,
+`HostResult`, `HASH_LEN` — which resolve at the call site like `&[u8]` does. `HostFnSpec`
+and `spec()` are private; read the table through `wasm_name()` / `gas()`.
+
+## How the engine works
+
+Contracts worth knowing before changing anything, and the reasons that are not visible in
+the code.
+
+**Two channels for a result.** A value or a guest-actionable error is the `i32` the wasm
+function returns (`>= 0` value, `< 0` a `HostError` code). A **host-fatal** error —
+`OutOfGas`, `Internal`, `NoMemExported` — traps instead, carrying `FatalHostError(HostError)`
+as the payload so `run` can name the condition with `downcast_ref` rather than
+string-comparing a message. XLS-0102 requires immediate halting on gas exhaustion, and a
+guest handed `OutOfGas` as a code would run to the end of its current basic block — a
+stopping point wasmi's `ConsumeFuel` placement decides rather than the protocol.
+`is_fatal` spells the set variant by variant so a new `HostError`'s channel is chosen, not
+inherited from its number. **`OutOfTransferLimit` is soft**: the one budget a contract can
+be expected to handle.
+
+`is_fatal` and `vm::host_fatal` are two lists that must agree. One direction is
+compiler-enforced (`host_fatal` is exhaustive, so a new variant fails to build);
+`every_fatal_error_has_an_outcome_of_its_own` covers the other. `HostError::ALL` and
+`HostFunctionSpec::ALL` exist because an exhaustive `match` forces you to *write an arm* but
+cannot *enumerate* variants, and every const-assertion scheme over `ALL` is beaten by "add
+the variant, give its arm a value, leave `ALL` alone". The airtight mechanism is a single
+declaration site: a `host_errors!` macro emits the enum, `ALL` and `from_code` from one list.
+
+**Every failure carries its cost.** `run` returns `Result<RunOutcome, RunFailure>` where
+`RunFailure` is `{ error: RunError, fuel_used }`, so gas is on both paths by construction. A
+cost that cannot be read becomes `RunError::Internal` rather than a number — `0` would
+forgive a run its whole cost and `gas` would charge an untouched one for everything.
+`guest_halted` asks "did the guest halt?" at *every* stage from instantiation on, so a start
+section that burns the limit is `OutOfGas`, not `Instantiate`: the stage a run stopped at is
+not what the caller maps.
+
+**Two ways a byte answer reaches the guest**, both taking a `Region`:
+
+- `write_into` — the host writes straight into the guest's output region. Used by calls with
+  no byte input. Zero copy.
+- `write_buffered` — the host fills `VmState::out_buffer` and the engine copies it to the
+  guest once every rule has passed. Used by calls that also *read* guest memory, because a
+  `&mut` view of that memory admits no simultaneous `&` view. `Memory::data_and_store_mut`
+  (`memory/mod.rs:165`) returns `(&mut [u8], &mut T)` — guest bytes and store data in one
+  split borrow — which is what lets any number of inputs stay borrowed while the answer is
+  written. No copying inputs out, no `unsafe`.
+
+`write_buffered` never tells the host the guest's capacity: it offers the whole buffer and
+takes the value's true length, so nothing reaches guest memory until the length, bounds, fit
+and budget have all passed — **a refused value reaches it in no part**, which `write_into`
+can only bound rather than prevent. The output is judged *after* the inputs, so a call with
+both malformed reports the input's verdict; `NoMemExported` precedes both, because there is
+no memory to validate a region against. `MAX_FIELD_BYTES` is checked beside the clamp on
+purpose: the clamp bounds the **bytes**, the check bounds the **status**, since a host
+reports a true length that can exceed the region it was offered.
+
+Why this shape: of the ~65 ABI entries, **38 have a byte input *and* a byte output**, 9 are
+output-only, 18 are input-only or scalar. Of the 38, **22 have more than one region** — every
+two-argument keylet, `nft_uri`, all four float arithmetic ops — which a one-input helper
+cannot express at all. The 9 output-only ones are exactly the row a buffer makes worse, and
+they keep `write_into`.
+
+**`Region`** (`region.rs`) is the wire's `(ptr, len)` as one type. It cannot catch a swapped
+pair — `Region::new(len, ptr)` compiles, and no type can do better where the values arrive
+as indistinguishable `i32`s in positional order; that is a job for a reader or for the shim
+generator. What it enforces is that the pair cannot be *used* unchecked: `range()` is the
+only way to indices, and it is where `InvalidParams` (the conversion to `usize` is the
+negativity check) and the end-overflow guard live. It sits in its own module because Rust
+privacy is module-level — inside `abi.rs` the helpers could still read `.ptr` and skip the
+check. Verified: an attempted bypass is `error[E0616]: field ptr of struct Region is
+private`. Construction is **infallible on purpose**; validating in `new` would hoist the
+output region's verdict above the host call and break the input-first order that
+`a_read_write_checks_its_input_before_its_output` pins.
+
+`Region::read` is then ordinary safe slicing, because a guest pointer is an *index*: wasm
+linear memory is a byte array in the store, `mem.data(caller)` is a `&[u8]` over it, and
+`data.get(start..end)` does the bounds check and returns a slice **aliasing** guest memory.
+`get` rather than `[..]` because indexing panics, and a panic on a consensus path is a node
+crash. Elision ties the returned slice's lifetime to `data`, so a host cannot stash an input
+past the call.
+
+**Two budgets.** Gas is charged per host call from the spec table, before the body runs
+(`charged` is the one path, so it cannot be forgotten); exhaustion spends what is left, which
+is what makes the reported cost the whole limit. The transfer budget counts only bytes
+*copied* across — `charge_transfer` has one call site per write path. A borrowed read copies
+nothing and is not charged; what bounds how many reads a run makes is gas. Typed reads that
+materialise a host object will charge; this ABI has none yet, and the alignment-copy charge
+for unaligned field reads has nothing to attach to until a `FieldLocator` function exists.
+
+**Guest memory is resolved once per run, by kind.** `run` takes
+`instance.exports(&store).find_map(Export::into_memory)` after `instantiate_and_start` and
+keeps the handle in `VmState::memory`, so no call pays for an export lookup. By *kind*, never
+by name: nothing in the wasm spec attaches meaning to `"memory"`. Caching is sound because a
+`Memory` is an arena index, not a pointer — it survives `memory.grow`. Two consequences:
+the field assumes **one module, one instance, one store per `run`** (module linking would
+have to resolve per instance, or serve a call against the wrong memory), and **a start
+section cannot make a host call needing memory** — `Module::instantiate` is `pub(crate)`, so
+instantiation cannot be split from the start section. `a_start_section_cannot_make_a_host_call`
+pins it.
+
+**Engine config is consensus-fixed**: fuel on, floats off, every post-MVP proposal off, one
+process-wide `Engine` behind a `LazyLock` (an `Engine` is internally `Arc`ed and `Send +
+Sync`). Notably `wasmi = { default-features = false, features = ["std"] }` — wasmi's `wat`
+feature is **on by default** and makes `Module::new` accept text as readily as binary, which
+would put a text assembler in the consensus path and make a transaction's validity a build
+flag. `the_vm_refuses_a_text_format_module` catches that coming back.
+
+**A start section cannot be rejected outright.** wasmi 1.1 exposes no
+`InstancePre`/`ensure_no_start` and `ModuleHeader::start` is private, so only a byte-level
+section scan would do it. It is metered and memory-capped regardless, since `run` installs
+the fuel and the limiter before `instantiate_and_start`.
+
+**A dead end, recorded so nobody retries it.** Host-function parameters cannot be newtypes.
+`wasmi::WasmTy` looks implementable — public, no sealing supertrait — but its bound names
+`UntypedVal`, which wasmi re-exports only through a **private** `mod core`
+(`wasmi-1.1.0/src/lib.rs:109-137`). Probed: `error[E0603]: module core is private`. The
+escape hatch is a direct `wasmi_core` dependency pinned in lockstep with wasmi's own, plus a
+`#[doc(hidden)]` method — not worth it on a consensus path. So the wire stays `i32` and pairs
+are formed on the first line of each arm.
 
 ## Build / test loop
 
 - Fast: `cd crates && cargo check --workspace --all-targets`, `cargo test --workspace`,
   `cargo clippy --workspace --all-targets`.
-- **`cargo doc -p xrpl-wasm-vm --no-deps` is part of the loop, not a nicety.**
-  `lib.rs` carries `deny(rustdoc::broken_intra_doc_links)`, and neither `cargo test` nor
-  `clippy` checks doc links — so a rename that leaves a `[`link`]` dangling passes both
-  and fails only here. Add `--document-private-items` to check the links on private
-  items too, which is most of this crate. `lib.rs` also carries `forbid(unsafe_code)`,
-  `deny(unreachable_pub)` and `deny` on four clippy cast lints, so a new unreachable
-  `pub` or an unargued cast fails the build rather than warning.
-- `xrpl-wasm-vm`'s tests come in two kinds, and the split is forced rather than
-  stylistic. A wasmi `Caller` exists only for the duration of a host call, so
-  `read_borrowed` / `write_into` / `read_write` / `memory` **cannot be reached from a
-  unit test**. The unit tests in `src/` therefore cover only what needs no live
-  instance (the wire conversions, the transfer-budget arithmetic, the limits), and the
-  guest-memory policy is covered by integration tests in `tests/`, which run real
-  modules against a configurable fake host.
-- Those integration tests write their modules as **WAT text** and assemble it
-  themselves — `wat` is a plain `[dev-dependencies]` entry and `support::assemble` is the
-  only caller, so the assembler never enters the library. `run` takes binaries; there is
-  no `run_wat` and no cargo feature for one. What makes that hold is `wasmi = {
-  default-features = false, features = ["std"] }`: wasmi's `wat` feature is **on by
-  default** and makes `Module::new` accept text as readily as binary (finding A5), which
-  would put the text assembler in the consensus path and make a transaction's validity a
-  build flag. `the_vm_refuses_a_text_format_module` in `vm_limits.rs` is what catches
-  that feature coming back.
-- `tests/support/mod.rs` holds the fake host and the import declarations. `Answer`
-  separates *what the host writes* from *what length it reports*, which is what makes
-  the over-cap and buffer-fit rules testable without values that large existing.
-- Guest-linkability of the ABI crate (needs `rustup target add wasm32-unknown-unknown`):
-  `cargo check -p xrpl-host-functions --target wasm32-unknown-unknown`. Worth keeping
-  green — the guest stdlib links this crate, so a `std`/`alloc`/dependency creep here
-  breaks it there. Only the ABI crate: `xrpl-wasm-vm` is host-side and pulls in wasmi.
-- Full C++↔Rust: normal CMake build, then `xrpl_tests` (`src/test/app/Wasm_test.cpp`,
-  `HostFuncImpl_test.cpp`).
+- **`cargo doc -p xrpl-wasm-vm --no-deps` is part of the loop, not a nicety.** `lib.rs`
+  carries `deny(rustdoc::broken_intra_doc_links)`, and neither `cargo test` nor `clippy`
+  checks doc links. **Caveat: it does not cover private modules**, which are not documented
+  by default — a dead link inside `abi.rs` passes silently (this is how a `VmState::scratch`
+  link survived the `out_buffer` rename). Add `--document-private-items` to check those, and
+  grep after renaming a field. `lib.rs` also carries `forbid(unsafe_code)`,
+  `deny(unreachable_pub)` and `deny` on four clippy cast lints, so an unargued cast fails the
+  build rather than warning.
+- **Tests come in two kinds, and the split is forced.** A wasmi `Caller` exists only during
+  a host call, so everything in `abi.rs` that takes one cannot be reached from a unit test.
+  Unit tests in `src/` cover what needs no live instance (wire conversions, budget
+  arithmetic, the limits); guest-memory policy lives in `tests/`, running real modules
+  against a configurable fake host.
+- Those integration tests write modules as **WAT text** and assemble it themselves — `wat` is
+  a `[dev-dependencies]` entry and `support::assemble` its only caller, so the assembler
+  never enters the library. `run` takes binaries; there is no `run_wat`.
+- `tests/support/mod.rs` holds the fake host and the import declarations. `Answer` separates
+  *what the host writes* from *what length it reports*, which is what makes the over-cap and
+  buffer-fit rules testable without values that large existing.
+- Guest-linkability (needs `rustup target add wasm32-unknown-unknown`):
+  `cargo check -p xrpl-host-functions --target wasm32-unknown-unknown`. Only the ABI crate —
+  `xrpl-wasm-vm` is host-side and pulls in wasmi, and `crates/hello_world` cannot be checked
+  for that target at all because it depends on `cxx` → `link-cplusplus`, which wants a C++
+  toolchain for the target.
+- **The bridge crate's unit tests link only because nothing in them reaches a C++ shim.**
+  The `extern "C++"` symbols exist only in the CMake build, and the test binary links
+  because `-dead_strip` drops what no test path reaches. Verified: forcing a reference
+  (`let f: fn(&ffi::HostContext) -> _ = ...`) fails with `Undefined symbols:
+  _rs$wasm_vm$cxxbridge1$…`. So keep those tests on the pure logic — the status map, the
+  panic guard, the wire conversions — and put anything that needs a host in the gtest.
+- Full C++↔Rust: normal CMake build, then
+  `./xrpl_tests --gtest_filter='WasmVMTest.*:*Call.*'`. See "How the C++ tests are built".
+- `src/test/app/Wasm_test.cpp` and `HostFuncImpl_test.cpp` are **entirely inside `/* */`**
+  and compile to nothing, as is `src/libxrpl/tx/wasm/WasmiVM.cpp`.
+- **A stale build directory will fail to link with `duplicate symbol
+  '_rust_eh_personality'`.** The conan `wasmi` package ships a Rust `std`, and so does our
+  staticlib. `b7059deb9f` dropped the conan requirement but left `find_package(wasmi
+  REQUIRED)` and `wasmi::wasmi` in the CMake, both now removed; a build folder generated
+  before that still has `build/generators/wasmi-*.cmake`, so re-run `conan install .. 
+  --output-folder . --build missing --settings build_type=Debug` and delete them.
 - VCS is **jj** (`jj st`, `jj log`), not raw git, for local work.
 
-## Current state (2026-07-30)
+## Conventions
 
-**`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
-`clippy --workspace --all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`
-(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 125 tests: 33
-macro, 12 facade, 1 doctest, and **79 in `xrpl-wasm-vm`** (10 unit; 69 integration — 12
-`host_calls`, 23 `memory_policy`, 13 `budgets`, 21 `vm_limits`).
+**Comments.** Terse. A comment should say something the compiler cannot check and the code
+cannot show; everything else is a candidate for deletion. Keep: why an apparent redundancy is
+not one (the `MAX_FIELD_BYTES` check beside the clamp; `is_fatal`/`host_fatal` as two lists;
+`MUST_TRAP` not deriving from `is_fatal` — each of these has been "simplified" wrongly in a
+mutation test at least once); load-bearing invariants; hidden contracts a signature cannot
+state; wasmi facts that decide a design. Cut: prose restating the next line; the same
+rationale on a field and on its reader; retellings of this document.
 
-**Fourteen of the seventeen findings are closed** (2026-08-03): all of section A, all of
-B, D13–D15, two thirds of D16, C10 and C11. What is left is **C12**, which the bridge will
-force anyway; **D16's `gas = 0`**, a TER decision; and **D17**, which is not work.
+**No references to C++ that will not survive the merge.** They read as evidence but point at
+deleted files. The crate has none, in `src/` or `tests/`. Two live exceptions stand:
+`Protocol.h`'s `kMaxWasmDataLength` and `kWasmTransferLimit`, which are where those numbers
+are defined for the rest of the system. The parity evidence itself lives here instead — see
+the appendix, which is commit-pinned and therefore stays resolvable.
 
-`run` is `Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
-instead of answering the guest a code; the import module is `host_lib`; the `i64` pipeline
-and `AbiRet` are gone; the transfer budget counts only bytes actually copied host→guest,
-and no more than the field cap can reach guest memory; the guest's linear memory is
-resolved once, by kind rather than by name; a call that reads guest memory and writes it
-borrows any number of inputs and answers through a per-run scratch, so a refused value
-reaches guest memory in no part. See those entries for what landed and why.
+**No historical comments** in code — describe the present, not how it differs from a previous
+state.
 
-**Four decisions were taken along the way**, each recorded at its finding:
-**`OutOfTransferLimit` stays soft** (A1), **the import module name is `host_lib`** (A3),
-**the memory export is matched by kind, not by name** (section A's addendum), and **the
-scratch buffer owns the output, only where there is an input** (C11). All four restore or
-extend C++ behaviour that the rewrite had changed without meaning to — which is the
-pattern worth carrying into the bridge: on this path, "tidier than C++" is usually
-"different from C++".
+## Appendix: review findings (2026-07-29)
 
-Every test that existed only to pin behaviour a finding said should change is gone,
-replaced by a test of the new behaviour: `a_host_call_refused_its_gas_stops_the_run`
-and `an_endless_loop_is_stopped_by_gas` for A1, `reads_do_not_spend_the_transfer_budget`
-and `an_over_cap_value_is_refused_without_reaching_guest_memory` for A4.
-`the_wire_conversion_truncates` went with the cast it pinned. What the work turned up
-that reading the code did not:
+A read of `vm.rs`, `abi.rs` and `register.rs` against the vendored wasmi 1.1.0. **Seventeen
+of the eighteen are closed, C12 the only one left** — earlier revisions of this document said
+"fourteen of seventeen", which never matched the table. The rationale that is still
+load-bearing has moved into "How the engine works" above.
 
-- **An endless guest loop and a refused host charge are the same outcome**, and both
-  report the whole limit as spent — the loop because wasmi's meter reaches zero, the
-  refused charge because `charge` spends what is left before it fails, which is what
-  makes C++'s "reported cost is the full limit" fall out rather than be arranged.
-- **A start section is guest code, so the stage is not the reason.** Gas exhausted
-  during `instantiate_and_start` first reported `Instantiate`, hiding a
-  `tecOUT_OF_GAS`, because every error from that call was named after the stage.
-  `guest_halted` runs at both stages now, and
-  `a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure`
-  pins it. `as_trap_code()` is what makes this work at all: it reports
-  `TrapCode::OutOfFuel` for whichever of wasmi's several error kinds carried the
-  exhaustion (`error.rs:236-252`).
-- **The compile-time guarantee on the fatal set is narrower than it looks.**
-  `vm::host_fatal` is exhaustive over `HostError`, so a variant *added to the ABI*
-  cannot compile until it is placed. But moving an *existing* variant into
-  `abi::is_fatal`'s set is not caught: it falls into the grouped soft arm and
-  reports `Internal`. The two lists are read together, and the doc comment says so.
-- `NoMemExported` being fatal makes C10 (resolve the `"memory"` export once at
-  instantiation) a move rather than a behaviour change — its failure is already a
-  run-ender, so hoisting it to an instantiation-time `RunError::NoMemory` only
-  changes which stage reports it.
-- **A clamp and a check that look redundant are not.** See A4: the clamp bounds the
-  bytes, the `MAX_FIELD_BYTES` check bounds the status. The finding's own text claimed
-  the clamp made the check unreachable; a mutation proved otherwise, which is the
-  argument for mutating rather than reasoning about a test's value.
-- **Nothing in the suite reached the budget through `sha512_half`.** Removing
-  `read_write`'s input charge would have been invisible, so
-  `only_the_output_half_of_a_read_write_spends_the_budget` was written to catch it —
-  2048 calls hashing twice the budget while writing a sixteenth of it. A finding whose
-  fix no test can notice is a finding with no net under it.
+| # | Finding | Outcome |
+|---|---|---|
+| A1 | Out-of-gas returned a code instead of trapping, so how much guest code ran after exhaustion was wasmi's business | ✓ two-channel design, `FatalHostError` payload |
+| A2 | `run` discarded gas accounting on every failure path, and its error was a `String` | ✓ `RunFailure { error, fuel_used }` over a typed `RunError` |
+| A3 | `HOST_MODULE = "host"` matched no guest that exists | ✓ `host_lib`, pinned by test |
+| A4 | Transfer budget charged for bytes never copied, and charged before validation | ✓ one call site per write path; reads are free |
+| A5 | `Module::new` accepted WAT text — a behaviour the rewrite introduced by accident | ✓ `default-features = false` |
+| A6 | The memory export's *name* was a rule the rewrite introduced | ✓ resolved by kind, as C++ did |
+| B6 | `AbiRet` was vestigial | ✓ deleted |
+| B7 | The `i64` pipeline was pointless and lossy (silent truncating cast) | ✓ `HostResult<i32>` end to end |
+| B8 | `cxx` was an unused dependency of this crate | ✓ removed |
+| B9 | Seven broken intra-doc links, plus historical comments | ✓ fixed, `deny` added |
+| C10 | The `"memory"` export was a string hash lookup on every host call | ✓ resolved once per run, by kind |
+| C11 | `read_write` memset 1 KiB of stack per call and did not generalize past one byte input | ✓ replaced by `write_buffered` + `Region` |
+| C12 | `Linker` rebuilt per run; module compiled per run with no cache | **open — see "Performance"** |
+| D13 | The public surface was accidental (`RunOutcome` unnameable, limits unreachable) | ✓ exported; `MAX_FIELD_BYTES` renamed out of `abi.rs` |
+| D14 | `abi.rs` *claimed* every access was a checked slice op | ✓ `forbid(unsafe_code)` + cast lints enforce it |
+| D15 | Zero tests | ✓ 79 |
+| D16 | `gas = 0` accepted silently; `get_fuel().unwrap_or(0)` reported the whole limit; entry-point diagnostic wrong for a wrong-signature export | ✓ closed — `gas <= 0` is `temBAD_AMOUNT` in `runEscrowWasm` |
+| D17 | The start-section TODO reads like a hole | ✓ documented as not closeable with wasmi 1.1 |
 
-**How the suite was checked.** A code review of the diff mutation-tested it, and the
-result is worth recording because it found a test that pinned nothing: the multi-value
-row of the old `the_disabled_proposals_do_not_compile` left a stray value on the wasm
-stack, so the module was refused as a *type error* rather than for the proposal, and
-`config.wasm_multi_value(false)` could be deleted with the whole suite still green. The
-general lesson — a stage-only `assert_stage(…, "compile")` cannot tell "refused for the
-reason under test" from "my wasm was malformed" — is now the design of
-`every_disabled_feature_is_refused_by_name`: one row per disabled feature, each
-asserting the *fragment of wasmi's message that names the feature*. Verified by deleting
-each knob in turn: ten of twelve rows fail when their knob goes. The two that don't are
-`wasm_custom_page_sizes` and `wasm_wide_arithmetic`, which wasmi 1.1 already defaults to
-off (`engine/config.rs:72,74`), so those calls are redundant and no test can notice them
-going — their rows guard against wasmi changing that default instead.
+Three of the closed findings were **behaviour changes nobody had chosen** — A3, A5, A6 — and
+all three restored C++ behaviour the rewrite had altered by accident. That is the pattern
+worth carrying into the bridge: on this path, "tidier than C++" is usually "different from
+C++". A fourth decision, C11's buffer, extends it rather than restoring it.
 
-Three knobs have no module of their own, and `the_knobs_without_a_module_of_their_own`
-records why rather than leaving it to a comment: `wasm_saturating_float_to_int` is masked
-by `floats(false)` (every saturating conversion takes a float operand, and the test
-asserts the message proves which knob answered); `ignore_custom_sections` is not
-observable through accept/reject at all, since a module carrying a custom section
-compiles either way; `consume_fuel` is covered by construction, because with it off
-`Store::set_fuel` fails and every test in the suite breaks.
+## Appendix: reference points from the deleted C++ path
 
-The other findings acted on: `MAX_MEMORY_PAGES` had **no** golden pin (it could be halved
-with nothing failing), so `the_limits_are_the_protocol_limits` in `vm.rs` now pins all
-four limits against their `Protocol.h` names, and the misnamed
-`the_field_cap_is_far_below_the_run_budget` became the inequality its name promised.
-`generated_abi.rs`'s "one place for literals" claim was false twice in its own file — the
-subsumed name list and a restated `500` are gone. And `Answer::claiming` writes nothing,
-which hid finding A4's actual hazard: `an_over_cap_value_is_written_before_it_is_refused`
-now uses a real over-cap value and shows the bytes reaching guest memory before the
-refusal. Verified by applying the `min(cap, MAX_FIELD_BYTES)` clamp — the test flips, as
-its comment says it should.
+Import names and gas costs are ABI. The rest is *evidence of prior behaviour* — useful for
+comparison and for the gas assertions in `Wasm_test.cpp`, not gospel. All recoverable with
+`git show b7059deb9f^:<path>` — note that `WasmVM.{h,cpp}` exist again at that path with
+entirely different contents, so the revision in that command is doing real work.
 
-Those 65 are review finding 15, closed: the bounds / field-cap / buffer-fit / gas /
-transfer policy now has a net under it, which is what the rest of the findings need
-before they can be acted on. Writing them turned up things reading the code did not:
+Deleted later, with the dead `wasmi::wasmi` link that was the only thing supplying their
+`<wasm.h>`: `include/xrpl/tx/wasm/HostFuncWrapper.h` (the `*_proto` aliases and `*_wrap`
+declarations, whose `.cpp` went in `b7059deb9f`) and `WasmImportsHelper.h` (`ImportVec`,
+`WasmImpArgs`'s `static_assert`). Every remaining reference to either was inside a
+commented-out file. The `_proto` aliases are the C lowering the table above reproduces, so
+they are worth reading before extending it.
 
-- **wasmi parses WAT by default** (finding A5), so the VM compiled text-format modules
-  straight from a transaction blob. The C++ path did not — its C-API took wasmi with
-  `default-features = false` — so this was an accidental behaviour change, not a choice.
-  Fixed, and back at parity.
-- `wasm_mutable_global(false)` does **not** forbid a guest's own mutable globals — the
-  proposal is about mutable globals crossing the module boundary. An internal one is
-  core wasm and still compiles.
-- A declared memory *maximum* above the 128-page cap instantiates fine; only the size
-  actually reached is capped. And growth past the cap **traps** rather than answering
-  `-1`, because the limiter is built with `trap_on_grow_failure(true)`.
-- The two directions check in opposite orders, observably: an over-long *input* reports
-  `DataFieldTooLarge` (the cap precedes the bounds check) while an over-long *output*
-  reports `PointerOutOfBounds` (bounds precede the cap).
-- wasmi's guest-side fuel for a host call is exactly `14 × operands + 1` (29/43/57/71
-  for 2/3/4/5 operands, across all five functions; operand *type* is irrelevant — an
-  `i64` costs what an `i32` does). With that and the 30-fuel empty-module floor known, a
-  one-call run's total is known to the unit, so `a_host_call_costs_its_gas_every_time_it_is_called`
-  asserts each function's charge directly rather than by differencing.
-
-**Where the gas numbers live.** `the_spec_table_matches_the_declarations` in the ABI
-crate's `generated_abi.rs` is the **one** place wire names and gas costs appear as
-literals, as a whole-table comparison — a deliberate change-detector on consensus input,
-which also pins `ALL`'s order and membership. Everything else reads
-`HostFunctionSpec::gas()`. That split matters because the two properties are different:
-*what the table says* is the ABI crate's business, while *whether the engine charges the
-row the table holds* is the VM's. Verified by mutating `#[gas = 70]` to `71` — exactly
-one test fails, the table one, and the VM's fuel tests follow the new value. Before the
-split the VM restated all five values, so a legitimate gas change meant editing three
-files. (Corollary: `every_variant_appears_in_all_exactly_once` is now subsumed by the
-table comparison and could go.)
-
-No test now **pins behaviour a finding says should change**. The two that did were
-rewritten when their findings landed, which is what they were for.
-
-The trait is settled, and every part of it is written in the declaration rather than
-synthesized: `&self`, `HostResult<T>`, and byte outputs as explicit
-`out: &mut [u8]` parameters. The macro checks the first two. Nothing is appended to a
-signature behind the reader's back, which is what the PoC's `host_abi!` did — see the
-lowering table above and "Open: where the output region points".
-
-Consequences worth remembering:
-- Declaring the out-params is what made the VM compile *unchanged* — `write_into` and
-  `read_write` already took `FnOnce(&dyn HostFunctions, …, &mut [u8]) -> HostResult<usize>`.
-- The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
-  for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
-
-Next, from the findings above, **C12 is all that remains**, and it is not ordinary work:
-per-run `Linker`, no module cache, and `VmState<'h>`'s lifetime forces
-`Linker<VmState<'h>>` to be per-run, so it is a design change rather than a tweak — one
-the cxx bridge will force the lifetime question on anyway. Of the seventeen findings,
-fourteen are closed; the other two open items are D16's `gas = 0`, a TER decision, and
-D17, which is not work.
-
-The real remaining work is not in the findings list: **the cxx bridge**
-(`xrpl-wasm-vm-ffi` is still `mod ffi {}`) and **real `ApplyContext` wiring**. A1 and A2
-were sequenced first so the bridge has a typed `RunError` and a `fuel_used` to marshal
-instead of error text to parse. D16's `gas = 0` decision belongs there too, since it is
-a TER choice. Deferred as before: macro-emitted `link_*` shims, the generated C header,
-the probe-module test.
-
-## `Region`: the wire's `(ptr, len)` as one type (2026-08-03)
-
-Every byte parameter in the ABI is a `(ptr, len)` pair, so `crates/xrpl-wasm-vm/src/region.rs`
-makes the pair a type. `abi.rs`'s helpers take one `Region` where they took two loose
-`i32`s, and `register.rs` forms one per wire pair, next to the wasm parameter list where a
-reader can check it against the signature.
-
-**What it does and does not check** is the part worth recording, because the obvious
-expectation is wrong. It cannot catch a swapped pair: `Region::new(len, ptr)` compiles, and
-no type can do better at that boundary — the values arrive as indistinguishable `i32`s in
-positional order, so establishing the mapping is a job for a human reading it or for the
-deferred shim generator emitting it. What it *does* enforce is that the pair cannot be used
-unchecked: `range()` is the only way from a `Region` to indices, and it is where
-`InvalidParams` (the conversion is the negativity check) and the end-overflow guard live.
-Three copies of that conversion in `abi.rs` became one.
-
-**The type is in a module of its own, and that is load-bearing.** Rust privacy is
-module-level, so with `Region` declared in `abi.rs` the helpers there could still read
-`out.ptr` and skip `range()` — the invariant would have held by convention only. Separated,
-an attempted bypass is `error[E0616]: field ptr of struct Region is private`, which is how
-this was verified.
-
-**Construction is infallible on purpose.** Validating in `new` would hoist the output
-region's verdict above the host call, and `write_buffered` deliberately judges the inputs
-first (`a_read_write_checks_its_input_before_its_output` pins it, including the negative-`dst`
-case). Deferring the check to `range()` is what lets the type exist without moving that
-order.
-
-Two orderings did shift, both unobservable: `range()` runs its end-overflow guard before
-the field-cap check, where `region()` had the cap first, and `write_into` can now answer
-`PointerOutOfBounds` before `NoMemExported`. Both need `ptr + len` to overflow `usize`,
-which two `i32`s cannot do on a 64-bit target — the guard is there for a 32-bit one.
-
-`Ptr`/`Len` as separate newtypes were considered and dropped. They catch only ptr↔len
-confusion, not the mispairing that scales with the ABI, and they cannot reach the wire
-either: `wasmi::WasmTy` looks implementable — public, no sealing supertrait — but its bound
-names `UntypedVal`, which wasmi re-exports only through a **private** `mod core`
-(`lib.rs:109-137`), so the impls cannot be written. Probed: `error[E0603]: module core is
-private`. The escape hatch is a direct `wasmi_core` dependency pinned in lockstep with
-wasmi's own, plus a `#[doc(hidden)]` method — not worth it on a consensus path, so host
-function parameters stay `i32` and are paired on the first line of each arm.
-
-## The comment cut-back (done, 2026-08-03)
-
-**Done over `src/` and `tests/`, after C11 and with C12 deferred to a benchmark** — so no
-behaviour finding was still in flight, which was the gate. Density in `abi.rs` went from
-42% comment lines to 16%, `vm.rs` from 40% to 28%, `register.rs` from 23% to 9% (its
-per-arm comments only restated the helper each arm calls).
-
-Two things made it safe to do in bulk. Nothing but comments changed — verified by
-stripping comment and blank lines from before and after and diffing, per file, to
-byte-identical code. And the 79 tests, `clippy --all-targets`, `fmt` and
-`cargo doc --no-deps` all stayed green, the last of these load-bearing because
-`deny(rustdoc::broken_intra_doc_links)` catches a link broken by a deleted paragraph.
-One caveat learned the hard way: that lint does **not** cover private modules, which are
-not documented by default, so the dead `VmState::scratch` link left by the
-`scratch` → `out_buffer` rename passed `cargo doc` silently. Grep for renamed fields; do
-not rely on the lint inside `abi.rs`.
-
-**The rule that overrode this document: no references to C++ that will not survive the
-merge.** They read as evidence but will point at deleted files — `WasmiVM.cpp`,
-`HostFuncWrapper.cpp`, anything pinned at `b7059deb9f^` — so the crate now has none, in
-`src/` or `tests/`. Two exceptions stand, both live: `Protocol.h`'s `kMaxWasmDataLength`
-and `kWasmTransferLimit`, which are where the numbers are defined for the rest of the
-system and are named in `the_limits_are_the_protocol_limits` for that reason. The parity
-evidence itself is not lost — it is in this document, and this is where it belongs.
-
-The buffer is `VmState::out_buffer` and the helper that stages through it is
-`abi::write_buffered`, beside `abi::write_into` — the two ways a call's byte answer reaches
-the guest, verb first in both. "Scratch" survives in this document as the name of the
-design, not of anything in the code.
-
-Two TODOs were made honest rather than deleted, since both read as gaps and neither is
-one: the start-section TODO now says why wasmi 1.1 cannot close it and that the section is
-metered regardless (D17), and `register.rs`'s "think on how to make it better" now says the
-repetition is the deferred `link_*`-shim decision. `transfer_budget`'s `unalignedGas` TODO
-stays a TODO — it is a real obligation, now stated as blocked on the ABI gaining a
-`FieldLocator` function.
-
-Why the comments got that way is worth knowing, because it tells you what to keep. Each
-finding was argued out in its doc comment as it landed: why a rule exists, which C++ line
-it mirrored, why the obvious simplification is wrong. That was right at the time — the
-review found real bugs precisely where the code asserted something no comment justified —
-but it accumulated into an essay per function, `write_into` and `VmState::memory` worst.
-
-What the pass kept:
-
-- **Why an apparent redundancy is not one.** The `n > MAX_FIELD_BYTES` check beside the
-  clamp; `is_fatal` and `host_fatal` being two lists; `MUST_TRAP` restating the fatal set
-  rather than deriving it. Every one of these has been "simplified" wrongly at least once
-  in a mutation test, so each earns its sentence.
-- **Load-bearing invariants**, like `VmState::memory`'s one-instance-per-run assumption.
-- **Hidden contracts a signature cannot state**, chiefly that a byte-output host function
-  returns the value's *true length* rather than what it wrote.
-- **wasmi facts that decide a design**, like a `Memory` being an arena index (so caching
-  the handle survives `memory.grow`) and `Module::instantiate` being `pub(crate)` (so
-  instantiation cannot be split from the start section).
-
-What it cut:
-
-- Prose restating what the next line plainly does — every per-arm comment in
-  `register.rs`, `write_into`'s "the engine owns the policy" paragraph, and the several
-  notes explaining a borrow the compiler already enforces.
-- The same rationale on a field and on the function that reads it: `VmState::memory` keeps
-  the arena-index invariant and `abi::memory` keeps only the two ways it is absent.
-- Paragraphs duplicating this document — `write_buffered`'s case for its design went from
-  five paragraphs to three short ones, the ABI-shape argument left here.
-- Every C++ citation, per the rule above.
-
-The rule of thumb that fits what paid off: a comment should say something the compiler
-cannot check and the code cannot show. Everything else was a candidate.
-
-One incidental constraint found while checking the guest target: `crates/hello_world`
-cannot be checked for `wasm32-unknown-unknown` — it depends on `cxx` →
-`link-cplusplus`, which wants a C++ toolchain for the target. Pre-existing, but it means
-the guest-linkability check has to name the ABI crate rather than being a blanket
-workspace command.
-
-Four things the slices turned up rather than the original read went into that pass, and
-one of them is worth more than its size:
-
-- `register_host_functions` now returns `Result<(), wasmi::errors::LinkerError>`; its
-  `format!` was dead once `run` began discarding the string.
-- **`HostError::ALL` exists, and how it had to be built is the interesting part.**
-  `only_the_host_fatal_errors_trap` checked a hand-listed sample, so a variant added to
-  the ABI was not covered. The obvious fix — a wildcard-free `match`, the trick
-  `vm::host_fatal` uses — **cannot close this**, and the reason generalizes: an
-  exhaustive `match` forces you to *write an arm*, but checking "every variant is in
-  `ALL`" requires *enumerating* variants, and Rust has no stable way to do that
-  (`mem::variant_count` is unstable). Every const-assertion scheme over `ALL` is beaten
-  by "add the variant, give its arm a value, leave `ALL`
-  alone", because the assertion only ever iterates `ALL` — the very thing missing the
-  variant. So the airtight mechanism is a **single declaration site**: a `host_errors!`
-  macro emits the enum, `ALL` and `from_code` from one list of codes.
-  `HostFunctionSpec::ALL` is complete for exactly the same reason. It also retired a
-  hand-duplicated 23-arm `from_code` table that nothing tested; `tests/host_errors.rs`
-  now pins the 23 wire codes as literals, which is where a consensus-visible number
-  belongs.
-- With `ALL` in hand, `every_fatal_error_has_an_outcome_of_its_own` closes the
-  `is_fatal`/`host_fatal` coupling gap the other direction — an existing variant moved
-  into `is_fatal` without `host_fatal` gaining an arm now fails a test instead of
-  silently reporting `Internal`. (Its wrinkle: `RunError::Internal` is both the soft
-  arm's answer and `HostError::Internal`'s own, so the test asks about that one by
-  name.)
-- The generated `HostFunctions` trait now carries an output contract: a host writes into
-  `out` only when the whole value fits, and returns the value's true length either way.
-  That is what makes A4's "a refused value leaves nothing behind" hold end to end,
-  since `write_into` can only bound what is *writable*.
-
-Deferred to a later refactor, once there is working code: macro-emitted `link_*`
-shims, the generated C header, and the probe-module conformance test.
+- **Import names + per-call gas**: `src/libxrpl/tx/wasm/WasmVM.cpp`
+  (`setCommonHostFunctions`, 64 entries plus `set_data` registered only in
+  `createWasmImport`; e.g. `ldgr_index` 60, `sha512_half` 2000, `set_data` 1000, `float_pow`
+  5'500).
+- **Guest-visible error codes**: `HostFunctionError` in `include/xrpl/tx/wasm/WasmCommon.h`
+  (-1 `Unimplemented` … -20 `FloatComputationError`; note **-11 is `OutOfTransferLimit`**
+  there, `InvalidDecoding` in the SDK — question 3).
+- **Host-fatal conditions were traps**: out-of-gas and internal errors threw
+  `hfErrOutOfGas` / `hfErrInternal` → trap → `tecOUT_OF_GAS` / `tecINTERNAL`. Only the
+  transfer limit was a soft, guest-visible failure.
+- **Limits**: `maxPages = 128` (8 MiB), `kMaxWasmDataLength = 1024`, `kWasmTransferLimit =
+  1 << 20`. The last two are still live in `include/xrpl/protocol/Protocol.h:328,333`.
+- **Transfer limit** was charged for bytes actually copied: host→guest writes (`setData`) and
+  typed reads materialising a host object (uint256, AccountID, Currency, Asset), plus
+  unaligned `FieldLocator` copies (+`unalignedGas = 50`). Plain slice/string reads were not
+  charged.
+- **Check order after a value existed** (`setData`): params → data-too-large → no-memory →
+  out-of-bounds → buffer-too-small → transfer → copy. Inputs (`getDataSlice`) were validated
+  before the call. `write_buffered` follows this; `write_into` cannot, since it must
+  bounds-check before handing over a slice.
+- **Entry point** was `escrow_finish` (`escrowFunctionName`); gas `-1` meant unlimited,
+  `<= 0` meant `temBAD_AMOUNT`; on out-of-gas the reported cost was the full limit. Positive
+  return = conditions met; `0` or negative = reject.
+- **wasmi's fuel table is consensus input** — pin the version deliberately (currently
+  `wasmi = "1.1.0"`).

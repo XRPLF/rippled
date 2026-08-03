@@ -478,6 +478,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "xrpl-wasm-testkit"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "wat",
+]
+
+[[package]]
 name = "xrpl-wasm-vm"
 version = "0.1.0"
 dependencies = [
@@ -491,4 +499,6 @@ name = "xrpl-wasm-vm-ffi"
 version = "0.1.0"
 dependencies = [
  "cxx",
+ "xrpl-host-functions",
+ "xrpl-wasm-vm",
 ]

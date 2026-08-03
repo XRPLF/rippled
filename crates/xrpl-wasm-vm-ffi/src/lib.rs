@@ -1,2 +1,397 @@
-#[cxx::bridge]
-mod ffi {}
+//! The cxx bridge between the escrow wasm engine and xrpld.
+//!
+//! Two crossings. C++ calls `run_escrow` once per escrow finish; the engine's host
+//! calls come back out through the C++ `HostContext`, which `CxxHost` presents to the
+//! engine as an ordinary [`HostFunctions`] implementor. The ABI those calls speak is
+//! declared once, in `xrpl-host-functions`, so neither side of this file gets to
+//! restate a signature.
+//!
+//! **Neither direction may unwind into the other**, and the two halves of that are
+//! not symmetric:
+//!
+//! - A **Rust panic** is caught here, by `guarded`. Letting one reach C++ is
+//!   undefined behaviour; `[profile.release]` turns overflow checks on, so this is a
+//!   live path and not a formality.
+//! - A **C++ exception** is stopped on the C++ side: every `HostContext` method is
+//!   `noexcept` and reports failure as a negative `HostError` code. That is what
+//!   makes `guarded` sufficient — see its documentation.
+//!
+//! Everything hand-written here is private, so the names above are code spans rather
+//! than links, and `cargo doc` needs `--document-private-items` to show any of it.
+//! That is also why this crate, unlike `xrpl-wasm-vm`, does not
+//! `deny(unreachable_pub)`: cxx's expansion is `pub` throughout by necessity, leaving
+//! the lint nothing but generated code to fire on.
+#![deny(rustdoc::broken_intra_doc_links)]
+
+use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use xrpl_host_functions::{HostError, HostFunctions, HostResult};
+use xrpl_wasm_vm::{RunError, RunFailure, RunOutcome, run};
+
+/// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
+/// and every arithmetic overflow in the engine becomes a node crash instead of a
+/// `tecINTERNAL`.
+#[cfg(panic = "abort")]
+compile_error!(
+    "xrpl-wasm-vm-ffi requires panic=unwind: run_escrow catches panics rather than \
+     letting them cross into C++"
+);
+
+#[cxx::bridge(namespace = "rs::wasm_vm")]
+mod ffi {
+    /// Which outcome a run had — one variant per way [`run`] can end, so the caller
+    /// maps a status to a TER rather than reading a message.
+    #[derive(Debug, Hash)]
+    #[repr(i32)]
+    enum RunStatus {
+        /// The entry point returned.
+        Ok,
+        /// `wasm` is not a valid module under this engine's configuration.
+        Compile,
+        /// The module would not instantiate.
+        Instantiate,
+        /// No export of that name with signature `() -> i32`.
+        EntryPoint,
+        /// Gas exhausted, by the guest's instructions or a host call's charge.
+        OutOfGas,
+        /// The host could not serve a call, including any exception it caught.
+        Internal,
+        /// A host call had no linear memory to work in.
+        NoMemory,
+        /// The guest trapped.
+        Trap,
+        /// The engine panicked. A defect in this crate or the one below it.
+        Panic,
+    }
+
+    /// A run's outcome, flattened: cxx enums carry no payload, so the status, the
+    /// cost and the description travel side by side.
+    struct RunResult {
+        status: RunStatus,
+        /// What the entry point returned. Meaningful only when `status` is `Ok`.
+        result: i32,
+        /// Gas consumed. The whole limit when gas ran out; `0` when the module never
+        /// ran, or when the cost could not be trusted (`Internal`, `Panic`).
+        gas_used: u64,
+        /// The engine's own description of the outcome, for the log. Empty on `Ok`.
+        detail: String,
+    }
+
+    extern "Rust" {
+        /// Run `wasm`'s `function_name` export with `gas` fuel, servicing host calls
+        /// through `host`.
+        ///
+        /// Reports every outcome as a [`RunStatus`] and **never throws**: an
+        /// exception is a poor interface for a condition the caller has to turn into
+        /// a TER anyway, and a panic reaching C++ would be undefined behaviour.
+        ///
+        /// `gas` is the run's whole budget. `0` is a run that cannot execute an
+        /// instruction; the C++ front refuses it as `temBAD_AMOUNT` before calling
+        /// here, so it is not given a status of its own.
+        fn run_escrow(host: &HostContext, wasm: &[u8], gas: u64, function_name: &str) -> RunResult;
+    }
+
+    unsafe extern "C++" {
+        include!("xrpl/tx/wasm/HostContext.h");
+
+        /// The C++ side of the ABI: one method per host function, forwarding to
+        /// `xrpl::HostFunctions`.
+        ///
+        /// Every method is `noexcept` and answers with a code, so a host call cannot
+        /// unwind into the engine.
+        ///
+        /// `cxx_name` on each method below is not cosmetic: the declarations keep the
+        /// ABI's names here and rippled's camelBack over there, so neither side has
+        /// to spell the other's convention.
+        #[namespace = "xrpl"]
+        type HostContext;
+
+        /// A byte-producing call is handed `out` and returns the value's **true
+        /// length**, writing it only if the whole value fits. Returning a length past
+        /// `out` is how a guest learns the size to ask for; the engine turns it into
+        /// `BufferTooSmall`, so C++ never needs to know the guest's capacity.
+        ///
+        /// A negative return is a `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerSqn"]
+        fn get_ledger_sqn(self: &HostContext, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getCurrentLedgerObjField"]
+        fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "sha512Half"]
+        fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
+
+        /// A call with no value to report answers `0`, or a negative `HostError`
+        /// code.
+        #[namespace = "xrpl"]
+        fn trace(self: &HostContext, msg: &str, data: &[u8], as_hex: bool) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "traceNum"]
+        fn trace_num(self: &HostContext, msg: &str, number: i64) -> i32;
+    }
+}
+
+/// Sized carrier for the [`HostFunctions`] implementation.
+///
+/// [`ffi::HostContext`] is an opaque C++ type and therefore `!Sized`, so it cannot
+/// be coerced to `&dyn HostFunctions` itself.
+struct CxxHost<'a> {
+    ctx: &'a ffi::HostContext,
+}
+
+/// A byte-producing call's answer: the value's true length, or its error code.
+///
+/// The conversion *is* the sign test — it fails on exactly the negative values — so
+/// there is no cast to argue about.
+fn bytes_written(n: i32) -> HostResult<usize> {
+    usize::try_from(n).map_err(|_| HostError::from_code(n))
+}
+
+/// A call with nothing to report: any non-negative answer is success.
+fn reported(n: i32) -> HostResult<()> {
+    if n < 0 {
+        return Err(HostError::from_code(n));
+    }
+    Ok(())
+}
+
+impl HostFunctions for CxxHost<'_> {
+    fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_ledger_sqn(out))
+    }
+
+    fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_current_ledger_obj_field(field, out))
+    }
+
+    fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.sha512_half(data, out))
+    }
+
+    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()> {
+        reported(self.ctx.trace(msg, data, as_hex))
+    }
+
+    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
+        reported(self.ctx.trace_num(msg, number))
+    }
+}
+
+fn run_escrow(
+    host: &ffi::HostContext,
+    wasm: &[u8],
+    gas: u64,
+    function_name: &str,
+) -> ffi::RunResult {
+    guarded(|| {
+        let host = CxxHost { ctx: host };
+        flatten(run(wasm, gas, &host, function_name))
+    })
+}
+
+/// Run `body`, turning a panic into [`ffi::RunStatus::Panic`] rather than letting it
+/// unwind into C++.
+///
+/// **Why catching here is enough.** An unwind can only be caught where every frame
+/// between the panic and the catch is Rust, and every frame here is: the engine and
+/// wasmi are Rust, and a host call cannot start a C++ unwind because each
+/// `HostContext` method is `noexcept` and answers with a code. So the only unwind
+/// that can reach this frame started in Rust, and this stops it.
+///
+/// [`AssertUnwindSafe`] is sound because nothing survives to be observed in a torn
+/// state: the store, the linker and the host wrapper are all dropped on the way out,
+/// and the one thing that outlives the call — the C++ `HostContext` — is only ever
+/// touched through those `noexcept` methods, which either complete or report.
+///
+/// The cost is not reported. A panicking run's meter is not evidence of anything, and
+/// `0` says "unknown" where a number would say "this is what it owed".
+fn guarded(body: impl FnOnce() -> ffi::RunResult) -> ffi::RunResult {
+    catch_unwind(AssertUnwindSafe(body)).unwrap_or_else(|payload| ffi::RunResult {
+        status: ffi::RunStatus::Panic,
+        result: 0,
+        gas_used: 0,
+        detail: panic_detail(&*payload),
+    })
+}
+
+/// The panic's message, for the log.
+///
+/// A `panic!` payload is a `&str` or a `String`; anything else is a `panic_any` that
+/// nothing below this crate makes, and it still has to produce a line.
+fn panic_detail(payload: &(dyn Any + Send)) -> String {
+    let message = payload
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("payload is not a string");
+    format!("panicked: {message}")
+}
+
+/// Flatten the engine's two-channel result onto the one struct cxx can carry.
+fn flatten(result: Result<RunOutcome, RunFailure>) -> ffi::RunResult {
+    match result {
+        Ok(RunOutcome { result, fuel_used }) => ffi::RunResult {
+            status: ffi::RunStatus::Ok,
+            result,
+            gas_used: fuel_used,
+            detail: String::new(),
+        },
+        // `fuel_used` is carried on both channels by construction, so a failed run
+        // reports its cost here without this having to decide what one is.
+        Err(RunFailure { error, fuel_used }) => ffi::RunResult {
+            status: status_of(&error),
+            result: 0,
+            gas_used: fuel_used,
+            detail: error.to_string(),
+        },
+    }
+}
+
+/// The status a [`RunError`] crosses as.
+///
+/// Exhaustive rather than closed with a wildcard: an outcome added to the engine has
+/// to be given a status — and therefore a TER on the far side — before this compiles.
+fn status_of(error: &RunError) -> ffi::RunStatus {
+    match error {
+        RunError::Compile(_) => ffi::RunStatus::Compile,
+        RunError::Instantiate(_) => ffi::RunStatus::Instantiate,
+        RunError::EntryPoint(_) => ffi::RunStatus::EntryPoint,
+        RunError::OutOfGas => ffi::RunStatus::OutOfGas,
+        RunError::Internal => ffi::RunStatus::Internal,
+        RunError::NoMemory => ffi::RunStatus::NoMemory,
+        RunError::Trap(_) => ffi::RunStatus::Trap,
+    }
+}
+
+/// These tests reach none of the `extern "C++"` methods, which is what lets the test
+/// binary link at all: the C++ side of the bridge exists only in the CMake build, so
+/// a test that called one would fail to link rather than fail.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ok(result: i32, fuel_used: u64) -> ffi::RunResult {
+        flatten(Ok(RunOutcome { result, fuel_used }))
+    }
+
+    fn failed(error: RunError, fuel_used: u64) -> ffi::RunResult {
+        flatten(Err(RunFailure { error, fuel_used }))
+    }
+
+    #[test]
+    fn a_completed_run_carries_its_value_and_its_cost() {
+        let crossed = ok(5, 1234);
+
+        assert_eq!(crossed.status, ffi::RunStatus::Ok);
+        assert_eq!(crossed.result, 5);
+        assert_eq!(crossed.gas_used, 1234);
+        assert_eq!(crossed.detail, "", "a completed run has nothing to explain");
+    }
+
+    /// The cost is the point: a contract that burns its gas and traps is charged.
+    #[test]
+    fn a_failed_run_carries_its_cost_and_the_engines_own_words() {
+        let crossed = failed(RunError::Trap("unreachable".to_string()), 900);
+
+        assert_eq!(crossed.status, ffi::RunStatus::Trap);
+        assert_eq!(crossed.gas_used, 900);
+        assert_eq!(crossed.detail, "trap: unreachable");
+        assert_eq!(crossed.result, 0, "a failed run returned no value");
+    }
+
+    /// The `RunError` set as the test *expects* it, not as `status_of` reports it:
+    /// deriving it from the function under test would make the assertion vacuous.
+    fn every_run_error() -> Vec<RunError> {
+        vec![
+            RunError::Compile(String::new()),
+            RunError::Instantiate(String::new()),
+            RunError::EntryPoint(String::new()),
+            RunError::OutOfGas,
+            RunError::Internal,
+            RunError::NoMemory,
+            RunError::Trap(String::new()),
+        ]
+    }
+
+    /// Distinct statuses, because the TER map on the far side reads nothing else. Two
+    /// outcomes sharing one status would silently collapse two TERs into one.
+    #[test]
+    fn every_run_error_crosses_as_a_status_of_its_own() {
+        let mut seen = Vec::new();
+        for error in every_run_error() {
+            let status = status_of(&error);
+            assert!(
+                !seen.contains(&status),
+                "{error:?} shares {status:?} with an earlier outcome"
+            );
+            seen.push(status);
+        }
+    }
+
+    /// `Ok` is the one status no failure may take: the far side reads it as "the
+    /// contract returned", and would then read `result` off a run that produced none.
+    #[test]
+    fn no_failure_crosses_as_success() {
+        for error in every_run_error() {
+            assert_ne!(status_of(&error), ffi::RunStatus::Ok, "{error:?}");
+        }
+    }
+
+    #[test]
+    fn a_panic_becomes_a_status_instead_of_an_unwind() {
+        let crossed = guarded(|| panic!("the engine came apart"));
+
+        assert_eq!(crossed.status, ffi::RunStatus::Panic);
+        assert_eq!(crossed.detail, "panicked: the engine came apart");
+        assert_eq!(crossed.gas_used, 0, "a panicking run reports no cost");
+    }
+
+    /// A formatted `panic!` payload is a `String` rather than a `&str`, so both
+    /// downcasts are load-bearing.
+    #[test]
+    fn a_formatted_panic_keeps_its_message() {
+        let overflowed = 3;
+        let crossed = guarded(|| panic!("gas underflowed by {overflowed}"));
+
+        assert_eq!(crossed.detail, "panicked: gas underflowed by 3");
+    }
+
+    #[test]
+    fn a_panic_with_no_message_still_reports_one() {
+        let crossed = guarded(|| std::panic::panic_any(7u32));
+
+        assert_eq!(crossed.status, ffi::RunStatus::Panic);
+        assert_eq!(crossed.detail, "panicked: payload is not a string");
+    }
+
+    #[test]
+    fn a_run_that_does_not_panic_is_untouched() {
+        let crossed = guarded(|| ok(1, 2));
+
+        assert_eq!(crossed.status, ffi::RunStatus::Ok);
+        assert_eq!(crossed.result, 1);
+        assert_eq!(crossed.gas_used, 2);
+    }
+
+    #[test]
+    fn a_negative_answer_is_an_error_code_and_a_length_is_a_length() {
+        assert_eq!(bytes_written(32), Ok(32));
+        assert_eq!(bytes_written(0), Ok(0));
+        assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
+        assert_eq!(reported(0), Ok(()));
+        assert_eq!(reported(-14), Err(HostError::NoMemExported));
+    }
+
+    /// An exception caught on the C++ side arrives as `-1`, which has to reach the
+    /// engine as a *fatal* error so the run stops and the transaction is
+    /// `tecINTERNAL` — not as a code handed to the contract to interpret.
+    #[test]
+    fn a_caught_cxx_exception_arrives_as_internal() {
+        assert_eq!(bytes_written(-1), Err(HostError::Internal));
+        assert_eq!(reported(-1), Err(HostError::Internal));
+    }
+}

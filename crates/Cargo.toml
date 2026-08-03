@@ -1,5 +1,5 @@
 [workspace]
-members = ["hello_world", "xrpl-wasm-vm-ffi", "xrpl-wasm-vm", "xrpl-host-functions", "xrpl-host-functions-macros"]
+members = ["hello_world", "xrpl-wasm-vm-ffi", "xrpl-wasm-vm", "xrpl-wasm-testkit", "xrpl-host-functions", "xrpl-host-functions-macros"]
 resolver = "3"
 
 [workspace.dependencies]

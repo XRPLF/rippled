@@ -1,5 +1,5 @@
 [package]
-name = "xrpl-wasm-vm-ffi"
+name = "xrpl-wasm-testkit"
 version = "0.1.0"
 edition.workspace = true
 
@@ -8,5 +8,4 @@ crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 cxx.workspace = true
-xrpl-host-functions = { path = "../xrpl-host-functions" }
-xrpl-wasm-vm = { path = "../xrpl-wasm-vm" }
+wat = "1"
