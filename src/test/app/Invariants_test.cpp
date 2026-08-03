@@ -3374,6 +3374,41 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp,
             TxAccount::A2);
 
+        // A negative loss unrealized must trip the invariant. ttLOAN_MANAGE is
+        // allowed to change loss unrealized, so it isolates this check from the
+        // "must not change loss unrealized" invariant. Gated behind
+        // fixCleanup3_4_0 (see below).
+        doInvariantCheck(
+            {"loss unrealized must not be negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Without fixCleanup3_4_0 the same state must NOT trip the invariant,
+        // preserving pre-amendment behavior (no fork risk).
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - fixCleanup3_4_0),
+            {},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            precloseXrp,
+            TxAccount::A2);
+
         doInvariantCheck(
             {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
