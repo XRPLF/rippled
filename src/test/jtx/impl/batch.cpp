@@ -99,7 +99,13 @@ Sig::operator()(Env& env, JTx& jt) const
         jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        serializeBatch(
+            msg,
+            stx.getAccountID(sfAccount),
+            stx.getSeqValue(),
+            stx.getFlags(),
+            stx.getBatchTransactionIDs());
+        finishMultiSigningData(e.acct.id(), msg);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
@@ -137,7 +143,13 @@ Msig::operator()(Env& env, JTx& jt) const
         iso[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        serializeBatch(
+            msg,
+            stx.getAccountID(sfAccount),
+            stx.getSeqValue(),
+            stx.getFlags(),
+            stx.getBatchTransactionIDs());
+        msg.addBitString(master.id());
         finishMultiSigningData(e.acct.id(), msg);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());

@@ -2,13 +2,15 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <limits>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl {
@@ -58,7 +60,9 @@ public:
     bool
     operator<(MPTAmount const& other) const;
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit constexpr
     operator bool() const noexcept;
 
@@ -67,14 +71,17 @@ public:
         return value();
     }
 
-    /** Return the sign of the amount */
+    /**
+     * Return the sign of the amount
+     */
     [[nodiscard]] constexpr int
     signum() const noexcept;
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
     [[nodiscard]] constexpr value_type
     value() const;
 
@@ -98,14 +105,18 @@ MPTAmount::operator=(beast::Zero)
     return *this;
 }
 
-/** Returns true if the amount is not zero */
+/**
+ * Returns true if the amount is not zero
+ */
 constexpr MPTAmount::
 operator bool() const noexcept
 {
     return value_ != 0;
 }
 
-/** Return the sign of the amount */
+/**
+ * Return the sign of the amount
+ */
 constexpr int
 MPTAmount::signum() const noexcept
 {
@@ -114,10 +125,11 @@ MPTAmount::signum() const noexcept
     return (value_ != 0) ? 1 : 0;
 }
 
-/** Returns the underlying value. Code SHOULD NOT call this
-    function unless the type has been abstracted away,
-    e.g. in a templated function.
-*/
+/**
+ * Returns the underlying value. Code SHOULD NOT call this
+ * function unless the type has been abstracted away,
+ * e.g. in a templated function.
+ */
 constexpr MPTAmount::value_type
 MPTAmount::value() const
 {

@@ -1,17 +1,33 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {
@@ -65,9 +81,9 @@ private:
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
-    NodeStore::Scheduler& scheduler_;
+    node_store::Scheduler& scheduler_;
     beast::Journal const journal_;
-    NodeStore::DatabaseRotating* dbRotating_ = nullptr;
+    node_store::DatabaseRotating* dbRotating_ = nullptr;
     SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
@@ -85,10 +101,12 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If  the node is out of sync during an online_delete healthWait()
-    /// call, sleep the thread for this time, and continue checking until
-    /// recovery.
-    /// See also: "recovery_wait_seconds" in xrpld-example.cfg
+    /**
+     * If  the node is out of sync during an online_delete healthWait()
+     * call, sleep the thread for this time, and continue checking until
+     * recovery.
+     * See also: "recovery_wait_seconds" in xrpld-example.cfg
+     */
     std::chrono::seconds recoveryWaitTime_{5};
 
     // these do not exist upon SHAMapStore creation, but do exist
@@ -101,7 +119,7 @@ private:
     static constexpr auto kNodeStoreName = "NodeStore";
 
 public:
-    SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+    SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
@@ -109,7 +127,7 @@ public:
         return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
-    std::unique_ptr<NodeStore::Database>
+    std::unique_ptr<node_store::Database>
     makeNodeStore(int readThreads) override;
 
     LedgerIndex
@@ -162,7 +180,7 @@ private:
     void
     dbPaths();
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
     template <class CacheInstance>
@@ -173,7 +191,7 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
+            dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
                 return true;
         }
@@ -181,7 +199,8 @@ private:
         return false;
     }
 
-    /** delete from sqlite table in batches to not lock the db excessively.
+    /**
+     * delete from sqlite table in batches to not lock the db excessively.
      *  Pause briefly to extend access time to other users.
      *  Call with mutex object unlocked.
      */

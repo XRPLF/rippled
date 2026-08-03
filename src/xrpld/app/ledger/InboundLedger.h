@@ -2,14 +2,30 @@
 
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <set>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -42,14 +58,18 @@ public:
     void
     update(std::uint32_t seq);
 
-    /** Returns true if we got all the data. */
+    /**
+     * Returns true if we got all the data.
+     */
     bool
     isComplete() const
     {
         return complete_;
     }
 
-    /** Returns false if we failed to get the data. */
+    /**
+     * Returns false if we failed to get the data.
+     */
     bool
     isFailed() const
     {
@@ -78,7 +98,9 @@ public:
 
     using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    /** Return a json::ValueType::Object. */
+    /**
+     * Return a json::ValueType::Object.
+     */
     json::Value
     getJson(int);
 
@@ -113,7 +135,7 @@ private:
     addPeers();
 
     void
-    tryDB(NodeStore::Database& srcDB);
+    tryDB(node_store::Database& srcDB);
 
     void
     done();
@@ -131,16 +153,19 @@ private:
     processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& data);
 
     bool
-    takeHeader(std::string const& data);
+    takeHeader(std::string_view data);
 
     void
-    receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode&);
+    receiveNode(
+        std::shared_ptr<Peer> const& peer,
+        protocol::TMLedgerData const& packet,
+        SHAMapAddNode& san);
 
     bool
-    takeTxRootNode(Slice const& data, SHAMapAddNode&);
+    takeTxRootNode(std::string_view data, SHAMapAddNode& san);
 
     bool
-    takeAsRootNode(Slice const& data, SHAMapAddNode&);
+    takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
     std::vector<uint256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;

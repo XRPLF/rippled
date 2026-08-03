@@ -7,8 +7,10 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -27,6 +29,12 @@ VaultDelete::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
     }
+
+    if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))
+        return temDISABLED;
+
+    if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -88,13 +96,15 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -122,7 +132,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
@@ -143,7 +154,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
 
     view().erase(mpt);
 
@@ -202,7 +213,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), owner, -2, j_);
+    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
 
     // Destroy the vault.
     view().erase(vault);

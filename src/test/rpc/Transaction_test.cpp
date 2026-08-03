@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
@@ -31,7 +32,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -881,15 +881,136 @@ class Transaction_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testSignForNetworkIDValidation()
+    {
+        testcase("SignFor NetworkID validation");
+        using namespace test::jtx;
+
+        Account const owner{"owner"};
+        Account const signer{"signer"};
+
+        auto makeConfig = [](std::uint32_t networkID) {
+            return envconfig([networkID](std::unique_ptr<Config> cfg) {
+                cfg->networkId = networkID;
+                return cfg;
+            });
+        };
+
+        auto setupEnv = [&](Env& env) {
+            env.fund(XRP(10'000), owner, signer);
+            env.close();
+            env(signers(owner, 1, {{signer, 1}}));
+            env.close();
+        };
+
+        auto makeTx = [&](Env& env) {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[jss::Account] = owner.human();
+            tx[jss::Sequence] = env.seq(owner);
+            tx[jss::Fee] = "100";
+            tx[jss::SigningPubKey] = "";
+            return tx;
+        };
+
+        auto signFor = [&](Env& env, json::Value const& tx) {
+            json::Value signReq;
+            signReq[jss::tx_json] = tx;
+            signReq[jss::account] = signer.human();
+            signReq[jss::secret] = signer.name();
+            return env.rpc("json", "sign_for", to_string(signReq))[jss::result];
+        };
+
+        // Test case: NetworkID < 1024 - field is not required
+        {
+            Env env{*this, makeConfig(500)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(!result[jss::tx_json].isMember(jss::NetworkID));
+        }
+
+        // Test case: NetworkID > 1024 - missing NetworkID field
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Missing field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is not a number
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = "not_a_number";
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is not integral
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 2040.1;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is different from
+        // actual NetworkID
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 9999;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is correct
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 2040;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::tx_json][jss::NetworkID].asUInt() == 2040);
+        }
+    }
+
 public:
     void
     run() override
     {
         using namespace test::jtx;
-        forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBinaryRequest(apiVersion); });
 
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
+
+        testSignForNetworkIDValidation();
     }
 
     void
@@ -899,7 +1020,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testRPCsForCTID(features);
-        forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            [this, features](unsigned apiVersion) { testRequest(features, apiVersion); });
     }
 };
 

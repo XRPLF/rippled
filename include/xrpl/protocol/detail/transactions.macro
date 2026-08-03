@@ -889,6 +889,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     MustDeleteAcct | DestroyMptIssuance | MustModifyVault,
     ({
     {sfVaultID, SoeRequired},
+    {sfMemoData, SoeOptional},
 }))
 
 /** This transaction trades assets for shares with a vault. */
@@ -939,7 +940,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 #endif
 TRANSACTION(ttBATCH, 71, Batch,
     Delegation::NotDelegable,
-    featureBatch,
+    featureBatchV1_1,
     NoPriv,
     ({
     {sfRawTransactions, SoeRequired},
@@ -1162,6 +1163,35 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfHolder, SoeRequired},
     {sfMPTAmount, SoeRequired},
     {sfZKProof, SoeRequired},
+}))
+
+/** This transaction transfers sponsorship on an object/account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
+    Delegation::NotDelegable,
+    featureSponsor,
+    NoPriv,
+    ({
+    {sfObjectID, SoeOptional},
+    {sfSponsee, SoeOptional},
+}))
+
+/** This transaction creates a Sponsorship object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
+    Delegation::Delegable,
+    featureSponsor,
+    NoPriv,
+    ({
+    {sfCounterpartySponsor, SoeOptional},
+    {sfSponsee, SoeOptional},
+    {sfFeeAmount, SoeOptional},
+    {sfMaxFee, SoeOptional},
+    {sfRemainingOwnerCount, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

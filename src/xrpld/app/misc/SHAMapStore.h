@@ -2,9 +2,14 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -20,7 +25,9 @@ class SHAMapStore
 public:
     virtual ~SHAMapStore() = default;
 
-    /** Called by LedgerMaster every time a ledger validates. */
+    /**
+     * Called by LedgerMaster every time a ledger validates.
+     */
     virtual void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
@@ -36,47 +43,57 @@ public:
     [[nodiscard]] virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const = 0;
 
-    virtual std::unique_ptr<NodeStore::Database>
+    virtual std::unique_ptr<node_store::Database>
     makeNodeStore(int readThreads) = 0;
 
-    /** Highest ledger that may be deleted. */
+    /**
+     * Highest ledger that may be deleted.
+     */
     virtual LedgerIndex
     setCanDelete(LedgerIndex canDelete) = 0;
 
-    /** Whether advisory delete is enabled. */
+    /**
+     * Whether advisory delete is enabled.
+     */
     [[nodiscard]] virtual bool
     advisoryDelete() const = 0;
 
-    /** Maximum ledger that has been deleted, or will be deleted if
+    /**
+     * Maximum ledger that has been deleted, or will be deleted if
      *  currently in the act of online deletion.
      */
     virtual LedgerIndex
     getLastRotated() = 0;
 
-    /** Highest ledger that may be deleted. */
+    /**
+     * Highest ledger that may be deleted.
+     */
     virtual LedgerIndex
     getCanDelete() = 0;
 
-    /** Returns the number of file descriptors that are needed. */
+    /**
+     * Returns the number of file descriptors that are needed.
+     */
     [[nodiscard]] virtual int
     fdRequired() const = 0;
 
-    /** The minimum ledger to try and maintain in our database.
-
-        This defines the lower bound for attempting to acquire historical
-        ledgers over the peer to peer network.
-
-        If online_delete is enabled, then each time online_delete executes
-        and just prior to clearing SQL databases of historical ledgers,
-        move the value forward to one past the greatest ledger being deleted.
-        This minimizes fetching of ledgers that are in the process of being
-        deleted. Without online_delete or before online_delete is
-        executed, this value is always the minimum value persisted in the
-        ledger database, if any.
-
-        @return The minimum ledger sequence to keep online based on the
-            description above. If not set, then an unseated optional.
-    */
+    /**
+     * The minimum ledger to try and maintain in our database.
+     *
+     * This defines the lower bound for attempting to acquire historical
+     * ledgers over the peer to peer network.
+     *
+     * If online_delete is enabled, then each time online_delete executes
+     * and just prior to clearing SQL databases of historical ledgers,
+     * move the value forward to one past the greatest ledger being deleted.
+     * This minimizes fetching of ledgers that are in the process of being
+     * deleted. Without online_delete or before online_delete is
+     * executed, this value is always the minimum value persisted in the
+     * ledger database, if any.
+     *
+     * @return The minimum ledger sequence to keep online based on the
+     *     description above. If not set, then an unseated optional.
+     */
     [[nodiscard]] virtual std::optional<LedgerIndex>
     minimumOnline() const = 0;
 };
@@ -84,5 +101,5 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl

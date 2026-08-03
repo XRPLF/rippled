@@ -2,9 +2,13 @@
 
 #include <xrpld/rpc/Context.h>
 
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_diff.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
 
-#include <grpcpp/grpcpp.h>
+#include <utility>
 
 namespace xrpl {
 

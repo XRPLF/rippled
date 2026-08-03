@@ -5470,6 +5470,429 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     }
 
     void
+    testSendOverdraftBulletproof(FeatureBitset features)
+    {
+        uint64_t const balance = 100;
+        testSendOverdraftBulletproofImpl(features, balance, balance);      // SUCCEED
+        testSendOverdraftBulletproofImpl(features, balance, balance + 1);  // FAIL
+    }
+
+    void
+    testSendOverdraftBulletproofImpl(FeatureBitset features, unsigned balance, unsigned amt)
+    {
+        testcase("Send: overdraft prevention via bulletproof");
+        using namespace test::jtx;
+
+        // Attack scenario: Alice has 100 tokens, tries to send 101 to Bob.
+        // The client-side check in mpt-crypto:mpt_utility.cpp:743 prevents honest
+        // clients from creating this proof. We bypass it by manually
+        // constructing a forged proof to demonstrate that the ledger's
+        // range proof verification catches the overdraft.
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob"), issuer("issuer");
+
+        uint64_t const aliceBalance = balance;
+        uint64_t const aliceAmount = amt;
+        uint64_t const aliceRemaining = aliceBalance - aliceAmount;
+
+        // Setup: Alice has 100 tokens converted to confidential
+        ConfidentialEnv confEnv{
+            env,
+            issuer,
+            {{.account = alice, .payAmount = 1000, .convertAmount = aliceBalance},
+             {.account = bob, .payAmount = 1000, .convertAmount = 30}}};
+        auto& mptIssuer = confEnv.mpt;
+
+        std::pair<int, TER> errors = aliceAmount > aliceBalance
+            ? std::make_pair(-1, TER(tecBAD_PROOF))
+            : std::make_pair(0, TER(tesSUCCESS));
+
+        unsigned const numParticipants = 3;
+
+        // Verify Alice's actual balance before attack
+        {
+            auto const balance = requireOptional(
+                mptIssuer.getDecryptedBalance(alice, MPTTester::holderEncryptedSpending),
+                "Missing Alice's balance");
+            BEAST_EXPECT(balance == aliceBalance);
+        }
+
+        // We cannot use ConfidentialSendSetup directly because it would
+        // call mpt_get_confidential_send_proof which has a client-side
+        // check (amount > balance) at line 743 in mpt_utility.cpp.
+        // Instead, we manually construct the transaction components.
+
+        Buffer const randomElgamal = generateBlindingFactor();
+        Buffer const randomBalance = generateBlindingFactor();
+
+        // Create encrypted amounts (using the OVERDRAFT amount)
+        Buffer const aliceEncAmt = mptIssuer.encryptAmount(alice, aliceAmount, randomElgamal);
+        Buffer const bobEncAmt = mptIssuer.encryptAmount(bob, aliceAmount, randomElgamal);
+        Buffer const issuerEncAmt = mptIssuer.encryptAmount(issuer, aliceAmount, randomElgamal);
+
+        // Create commitments
+        // IMPORTANT: Amount commitment uses same randomness as ElGamal encryption!
+        Buffer const amtCommit = mptIssuer.getPedersenCommitment(aliceAmount, randomElgamal);
+        Buffer const balanceCommit = mptIssuer.getPedersenCommitment(aliceBalance, randomBalance);
+
+        // Get Alice's current encrypted spending balance
+        Buffer const aliceEncBalance = requireOptional(
+            mptIssuer.getEncryptedBalance(alice, MPTTester::holderEncryptedSpending),
+            "Missing Alice's encrypted spending balance");
+
+        uint32_t const version = mptIssuer.getMPTokenVersion(alice);
+        auto const ctxHash = getSendContextHash(
+            alice.id(), mptIssuer.issuanceID(), env.seq(alice), bob.id(), version);
+
+        // Now we need to manually generate the sigma proof part.
+        // The sigma proof verifies ciphertext consistency and commitments,
+        // but doesn't check the range. We'll construct it with the overdraft
+        // amount to bypass the client-side check.
+
+        // Generate the sigma proof manually using the lower-level secp256k1 API
+        auto* ctx = mpt_secp256k1_context();
+        Buffer sigmaProof(SECP256K1_COMPACT_STANDARD_PROOF_SIZE);
+
+        // Parse all public keys and ciphertexts
+        secp256k1_pubkey c1, c2Alice, c2Bob, c2Issuer;
+        // Parse sender's ciphertext C1 (first 33(kCompressedEcPointLength) bytes)
+        auto x = secp256k1_ec_pubkey_parse(ctx, &c1, aliceEncAmt.data(), kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1, "Failed to parse C1"))
+            return;
+        // Parse C2 components for all recipients
+        x = secp256k1_ec_pubkey_parse(
+            ctx, &c2Alice, aliceEncAmt.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        auto y = secp256k1_ec_pubkey_parse(
+            ctx, &c2Bob, bobEncAmt.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        auto z = secp256k1_ec_pubkey_parse(
+            ctx,
+            &c2Issuer,
+            issuerEncAmt.data() + kCompressedEcPointLength,
+            kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1 && y == 1 && z == 1, "Failed to parse C2 components"))
+            return;
+        secp256k1_pubkey c2Vec[] = {c2Alice, c2Bob, c2Issuer};
+
+        // Parse public keys
+        secp256k1_pubkey pkAlice, pkBob, pkIssuer;
+        auto alicePubKey = requireOptional(mptIssuer.getPubKey(alice), "Missing alice pubkey");
+        auto bobPubKey = requireOptional(mptIssuer.getPubKey(bob), "Missing bob pubkey");
+        auto issuerPubKey = requireOptional(mptIssuer.getPubKey(issuer), "Missing issuer pubkey");
+        x = secp256k1_ec_pubkey_parse(ctx, &pkAlice, alicePubKey.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength);
+        z = secp256k1_ec_pubkey_parse(
+            ctx, &pkIssuer, issuerPubKey.data(), kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1 && y == 1 && z == 1, "Failed to parse public keys"))
+            return;
+        secp256k1_pubkey pkVec[] = {pkAlice, pkBob, pkIssuer};
+
+        // Parse commitments
+        secp256k1_pubkey pcAmount, pcBalance, b1, b2;
+        x = secp256k1_ec_pubkey_parse(ctx, &pcAmount, amtCommit.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, balanceCommit.data(), kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse commitments"))
+            return;
+        // Parse balance ciphertext
+        x = secp256k1_ec_pubkey_parse(ctx, &b1, aliceEncBalance.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(
+            ctx, &b2, aliceEncBalance.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse balance ciphertext"))
+            return;
+
+        // Get Alice's private key
+        auto alicePrivKey = requireOptional(mptIssuer.getPrivKey(alice), "Missing alice privkey");
+
+        // Generate the compact sigma proof (part of mpt_get_confidential_send_proof)
+        // This will succeed because sigma proof doesn't check amount vs balance
+        x = secp256k1_compact_standard_prove(
+            ctx,
+            sigmaProof.data(),
+            aliceAmount,
+            aliceBalance,
+            randomElgamal.data(),
+            alicePrivKey.data(),
+            randomBalance.data(),
+            numParticipants,
+            &c1,
+            c2Vec,
+            pkVec,
+            &pcAmount,
+            &pkAlice,
+            &pcBalance,
+            &b1,
+            &b2,
+            ctxHash.data());
+        if (!BEAST_EXPECTS(x == 1, "Failed to generate sigma proof"))
+            return;
+
+        // Direct verification
+        x = secp256k1_compact_standard_verify(
+            ctx,
+            sigmaProof.data(),
+            numParticipants,
+            &c1,
+            c2Vec,
+            pkVec,
+            &pcAmount,
+            &pkAlice,
+            &pcBalance,
+            &b1,
+            &b2,
+            ctxHash.data());
+        if (!BEAST_EXPECTS(x == 1, "Sigma verification failed"))
+            return;
+
+        // Compute the remaining blinding factor: r_remaining = r_balance - r_amount
+        // This is required because the ledger homomorphically computes:
+        // C_remaining = C_balance - C_amount = Commit(remaining, r_balance - r_amount)
+        Buffer randomRemaining(kEcBlindingFactorLength);
+        Buffer negRandomElgamal(kEcBlindingFactorLength);
+        secp256k1_mpt_scalar_negate(negRandomElgamal.data(), randomElgamal.data());
+        secp256k1_mpt_scalar_add(
+            randomRemaining.data(), randomBalance.data(), negRandomElgamal.data());
+
+        // Now forge the bulletproof claiming
+        auto const forgedBulletproof = getForgedBulletproof(
+            {aliceAmount, aliceRemaining}, {randomElgamal, randomRemaining}, ctxHash);
+
+        // Combine sigma proof + forged bulletproof
+        Buffer combinedProof(SECP256K1_COMPACT_STANDARD_PROOF_SIZE + kEcDoubleBulletproofLength);
+        std::memcpy(combinedProof.data(), sigmaProof.data(), SECP256K1_COMPACT_STANDARD_PROOF_SIZE);
+        std::memcpy(
+            combinedProof.data() + SECP256K1_COMPACT_STANDARD_PROOF_SIZE,
+            forgedBulletproof.data(),
+            kEcDoubleBulletproofLength);
+
+        // Direct verification
+        x = mpt_verify_send_range_proof(
+            combinedProof.data() + SECP256K1_COMPACT_STANDARD_PROOF_SIZE,
+            amtCommit.data(),
+            balanceCommit.data(),
+            ctxHash.data());
+        if (!BEAST_EXPECTS(x == errors.first, "Forged proof passed validation"))
+            return;
+
+        // Attempt the transaction with forged proof
+        // Expected to FAIL with tecBAD_PROOF
+        mptIssuer.send({
+            .account = alice,
+            .dest = bob,
+            .amt = aliceAmount,
+            .proof = strHex(combinedProof),
+            .senderEncryptedAmt = aliceEncAmt,
+            .destEncryptedAmt = bobEncAmt,
+            .issuerEncryptedAmt = issuerEncAmt,
+            .amountCommitment = amtCommit,
+            .balanceCommitment = balanceCommit,
+            .err = errors.second,
+        });
+
+        // Verify Alice's balance unchanged (attack prevented!)
+        {
+            auto const balance = requireOptional(
+                mptIssuer.getDecryptedBalance(alice, MPTTester::holderEncryptedSpending),
+                "Missing post-attack balance");
+            if (aliceAmount > aliceBalance)
+            {
+                BEAST_EXPECT(balance == aliceBalance);
+            }
+            else
+            {
+                BEAST_EXPECT(balance < aliceBalance);
+            }
+        }
+    }
+
+    void
+    testConvertBackOverdraftBulletproof(FeatureBitset features)
+    {
+        uint64_t const balance = 100;
+        testConvertBackOverdraftBulletproofImpl(features, balance, balance);      // SUCCEED
+        testConvertBackOverdraftBulletproofImpl(features, balance, balance + 1);  // FAIL
+    }
+
+    void
+    testConvertBackOverdraftBulletproofImpl(FeatureBitset features, uint64_t balance, uint64_t amt)
+    {
+        testcase("Convert back: overdraft prevention via bulletproof");
+        using namespace test::jtx;
+
+        // Attack scenario: Bob has 100 confidential tokens, tries to convert back 101.
+        // The client-side check in mpt_get_convert_back_proof would prevent honest
+        // clients from creating this proof. We bypass it by manually constructing
+        // a forged proof to demonstrate that the ledger's bulletproof verification
+        // catches the overdraft.
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob"), carol("carol");
+
+        uint64_t const bobBalance = balance;
+        uint64_t const convertAmount = amt;
+        uint64_t const bobRemaining = bobBalance - convertAmount;
+
+        // Setup: Bob and Carol both have confidential balance
+        // Carol ensures outstanding amount >= convertAmount (bypass preclaim check)
+        // This allows us to test the bulletproof specifically
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {
+                {.account = bob, .payAmount = 1000, .convertAmount = bobBalance},
+                {.account = carol,
+                 .payAmount = 1000,
+                 .convertAmount = std::max(convertAmount, bobBalance + 1)},
+            }};
+        auto& mptAlice = confEnv.mpt;
+
+        std::pair<int, TER> errors = convertAmount > bobBalance
+            ? std::make_pair(-1, TER(tecBAD_PROOF))
+            : std::make_pair(0, TER(tesSUCCESS));
+
+        // Verify Bob's actual balance before attack
+        {
+            auto const balance = requireOptional(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+                "Missing Bob's balance");
+            BEAST_EXPECT(balance == bobBalance);
+        }
+
+        // We cannot use the standard getConvertBackProof because it calls
+        // mpt_get_convert_back_proof which has client-side validation.
+        // Instead, we manually construct the sigma proof and forge the bulletproof.
+
+        Buffer const blindingFactor = generateBlindingFactor();
+        Buffer const pcBlindingFactor = generateBlindingFactor();
+
+        // Create encrypted amounts for the conversion
+        Buffer const bobEncAmt = mptAlice.encryptAmount(bob, convertAmount, blindingFactor);
+        Buffer const issuerEncAmt = mptAlice.encryptAmount(alice, convertAmount, blindingFactor);
+
+        // Create Pedersen commitment to the current balance
+        Buffer const balanceCommit = mptAlice.getPedersenCommitment(bobBalance, pcBlindingFactor);
+
+        // Get Bob's current encrypted spending balance
+        Buffer const bobEncBalance = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing Bob's encrypted spending balance");
+
+        uint32_t const version = mptAlice.getMPTokenVersion(bob);
+        auto const ctxHash =
+            getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
+
+        // Now manually generate the compact sigma proof for ConvertBack
+        auto* ctx = mpt_secp256k1_context();
+        Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+
+        // Parse the holder's public key
+        secp256k1_pubkey pkBob;
+        auto bobPubKey = requireOptional(mptAlice.getPubKey(bob), "Missing bob pubkey");
+        auto x = secp256k1_ec_pubkey_parse(ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1, "Failed to parse Bob's public key"))
+            return;
+
+        // Parse balance commitment
+        secp256k1_pubkey pcBalance;
+        x = secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, balanceCommit.data(), kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1, "Failed to parse balance commitment"))
+            return;
+
+        // Parse balance ciphertext (B1, B2)
+        secp256k1_pubkey b1, b2;
+        x = secp256k1_ec_pubkey_parse(ctx, &b1, bobEncBalance.data(), kCompressedEcPointLength);
+        auto y = secp256k1_ec_pubkey_parse(
+            ctx, &b2, bobEncBalance.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse balance ciphertext"))
+            return;
+
+        // Get Bob's private key
+        auto bobPrivKey = requireOptional(mptAlice.getPrivKey(bob), "Missing bob privkey");
+
+        // Generate the compact sigma proof for ConvertBack
+        // This verifies balance ownership and commitment linkage
+        x = secp256k1_compact_convertback_prove(
+            ctx,
+            sigmaProof.data(),
+            bobBalance,
+            bobPrivKey.data(),
+            pcBlindingFactor.data(),
+            &pkBob,
+            &b1,
+            &b2,
+            &pcBalance,
+            ctxHash.data());
+        if (!BEAST_EXPECTS(x == 1, "Failed to generate convertback sigma proof"))
+            return;
+
+        // Verify the sigma proof passes (it doesn't check range)
+        x = secp256k1_compact_convertback_verify(
+            ctx, sigmaProof.data(), &pkBob, &b1, &b2, &pcBalance, ctxHash.data());
+        if (!BEAST_EXPECTS(x == 1, "Sigma verification failed"))
+            return;
+
+        // Now forge the single bulletproof claiming the remaining balance is valid
+        // For ConvertBack, we need to prove: (balance - convertAmount) >= 0
+        // We create a commitment to the remainder and generate a bulletproof for it
+
+        // The bulletproof needs the blinding factor for the remainder commitment
+        // The ledger computes: C_remainder = C_balance - convertAmount*G
+        // So the blinding factor is just pcBlindingFactor (no randomness in convertAmount*G)
+
+        auto const forgedBulletproof =
+            getForgedSingleBulletproof(bobRemaining, pcBlindingFactor, ctxHash);
+
+        // Combine sigma proof + forged bulletproof
+        Buffer combinedProof(kEcConvertBackProofLength);
+        std::memcpy(
+            combinedProof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+        std::memcpy(
+            combinedProof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
+            forgedBulletproof.data(),
+            kEcSingleBulletproofLength);
+
+        // Direct verification of the full proof
+        x = mpt_verify_convert_back_proof(
+            combinedProof.data(),
+            bobPubKey.data(),
+            bobEncBalance.data(),
+            balanceCommit.data(),
+            convertAmount,
+            ctxHash.data());
+        if (!BEAST_EXPECTS(x == errors.first, "Forged proof verification mismatch"))
+            return;
+
+        // Attempt the transaction with forged proof
+        // Expected to FAIL with tecBAD_PROOF when convertAmount > bobBalance
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = convertAmount,
+            .proof = combinedProof,
+            .holderEncryptedAmt = bobEncAmt,
+            .issuerEncryptedAmt = issuerEncAmt,
+            .blindingFactor = blindingFactor,
+            .pedersenCommitment = balanceCommit,
+            .err = errors.second,
+        });
+
+        // Verify Bob's balance unchanged (attack prevented!)
+        {
+            auto const postBalance = requireOptional(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+                "Missing post-attack balance");
+            if (convertAmount > bobBalance)
+            {
+                BEAST_EXPECT(postBalance == bobBalance);
+            }
+            else
+            {
+                BEAST_EXPECT(postBalance < bobBalance);
+            }
+        }
+    }
+
+    void
     testConvertBackBulletproof(FeatureBitset features)
     {
         testcase("Convert back bulletproof");
@@ -6920,7 +7343,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
-        uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
+        auto const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
         ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
@@ -8143,6 +8566,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testConvertBackWithAuditor(features);
         testConvertBackPedersenProof(features);
         testConvertBackBulletproof(features);
+        testConvertBackOverdraftBulletproof(features);
 
         // Homomorphic operation tests
         testSendHomomorphicOverflow(features);
@@ -8177,6 +8601,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testSendInvalidProofContextBinding(features);
         testSendForgedEqualityProof(features);
         testSendForgedRangeProof(features);
+        testSendOverdraftBulletproof(features);
         testSendNegativeValueMalleability(features);
         testSendFiatShamirBinding(features);
         testSendProofComponentReuse(features);

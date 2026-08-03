@@ -1945,7 +1945,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             // jv1: proof against spending balance 100
             auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 60}, bobSeq + 1);
@@ -1957,6 +1957,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, bobSeq + 1),
                 batch::Inner(jv2, bobSeq + 2),
+                batch::Sig(dave),
                 Ter(tesSUCCESS));
             env.close();
 
@@ -1981,7 +1982,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             // jv1: proof against spending balance 100.
             auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq + 1);
@@ -1994,6 +1995,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, bobSeq + 1),
                 batch::Inner(jv2, bobSeq + 2),
+                batch::Sig(dave),
                 Ter(tesSUCCESS));
             env.close();
 
@@ -2029,7 +2031,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 2, 2);
 
             // jv1: direct send from carol (valid proof).
             auto const jv1 = mpt.sendJV({.account = carol, .dest = dave, .amt = 30}, carolSeq);
@@ -2040,7 +2042,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, carolSeq),
                 batch::Inner(jv2, bobSeq + 1),
-                batch::Sig(carol),
+                batch::Sig(carol, dave),
                 Ter(tesSUCCESS));
             env.close();
 
@@ -2066,7 +2068,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             // Bob does not grant dave any permissions.
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 2, 2);
 
             auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
             jv1[jss::Delegate] = dave.human();
@@ -2075,7 +2077,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
                 batch::Inner(jv1, bobSeq + 1),
                 batch::Inner(jv2, carolSeq),
-                batch::Sig(carol),
+                batch::Sig(carol, dave),
                 Ter(tesSUCCESS));
             env.close();
 
@@ -2093,8 +2095,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         testcase("Test batch delegated send with delegate as outer account");
         using namespace test::jtx;
 
-        // Dave has delegation permission, but the inner Account is bob.
-        // Without bob's BatchSigner, the batch is rejected.
+        // Dave holds bob's ConfidentialMPTSend delegation and is the outer batch
+        // signer, so dave's outer signature consents to the delegated inner.
+        // The batch applies.
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -2119,11 +2122,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env(batch::outer(dave, daveSeq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, bobSeq),
                 batch::Inner(jv2, daveSeq + 1),
-                Ter(temBAD_SIGNER));
+                Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 40);
         }
 
         // Dave submits a mixed batch: bob signs inner tx1, and
@@ -2163,8 +2166,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 70);
         }
 
-        // Verify the delegator Bob's BatchSigner does not bypass the missing delegation permission.
-        // The delegated inner send fails.
+        // The delegated inner's required signer is the delegate (dave), not bob.
+        // Bob signs but is not a required signer, so the batch is rejected as an
+        // extra signer. The delegator's signature cannot stand in for the
+        // delegate's.
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -2189,7 +2194,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 batch::Inner(jv1, bobSeq),
                 batch::Inner(jv2, carolSeq),
                 batch::Sig(bob, carol),
-                Ter(tesSUCCESS));
+                Ter(temBAD_SIGNER));
             env.close();
 
             // jv1 fails before jv2 is attempted.
@@ -2257,7 +2262,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             batch::Inner(jv4, frankSeq),
             batch::Inner(jv5, frankSeq + 1),
             batch::Inner(jv6, bobSeq + 2),
-            batch::Sig(bob, carol, frank),
+            batch::Sig(erin, frank),
             Ter(tesSUCCESS));
         env.close();
 

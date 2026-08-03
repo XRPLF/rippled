@@ -1,5 +1,6 @@
 include(GoogleTest)
 include(isolate_headers)
+include(verify_headers)
 
 # Test requirements.
 find_package(GTest REQUIRED)
@@ -20,14 +21,21 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl_tests PRIVATE GTest::gtest xrpl.libxrpl)
+target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not
 # supported on Windows.
 set(test_modules
     basics
+    beast
+    consensus
     crypto
     json
+    nodestore
+    peerfinder
+    protocol
+    resource
+    shamap
     tx
     protocol_autogen
 )
@@ -53,5 +61,21 @@ foreach(module IN LISTS test_modules)
         PRIVATE
     )
 endforeach()
+
+# The consensus tests use the CSF (Consensus Simulation Framework) helpers, so
+# compile the CSF sources into the test binary. The consensus engine itself now
+# lives in libxrpl, so no xrpld sources or include paths are needed here.
+file(
+    GLOB_RECURSE csf_sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
+)
+target_sources(xrpl_tests PRIVATE ${csf_sources})
+
+# The test helpers and per-module test headers are not built with add_module,
+# so verify them against the test binary's own compile environment.
+if(verify_headers)
+    verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

@@ -73,16 +73,17 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
@@ -231,7 +232,7 @@ public:
 
     std::unique_ptr<Resource::Manager> resourceManager_;
 
-    std::unique_ptr<NodeStore::Database> nodeStore_;
+    std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> orderBookDB_;
     std::unique_ptr<PathRequestManager> pathRequestManager_;
@@ -654,7 +655,7 @@ public:
         return tempNodeCache_;
     }
 
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         return *nodeStore_;
@@ -859,9 +860,9 @@ public:
         if (config_->doImport)
         {
             auto j = logs_->journal("NodeObject");
-            NodeStore::DummyScheduler dummyScheduler;
-            std::unique_ptr<NodeStore::Database> source =
-                NodeStore::Manager::instance().makeDatabase(
+            node_store::DummyScheduler dummyScheduler;
+            std::unique_ptr<node_store::Database> source =
+                node_store::Manager::instance().makeDatabase(
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
@@ -2177,7 +2178,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         auto const optPort = section.get(Keys::kPort);
         if (optPort)
         {
-            std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
+            auto const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
                 section.set(Keys::kPort, std::to_string(ep.port()));
         }

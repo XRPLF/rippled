@@ -3,34 +3,38 @@
 // NOLINTBEGIN(readability-identifier-naming)
 
 #include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SOTemplate.h>
 
+#include <cstdint>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
-/** Identifiers for on-ledger objects.
-
-    Each ledger object requires a unique type identifier, which is stored within the object itself;
-   this makes it possible to iterate the entire ledger and determine each object's type and verify
-   that the object you retrieved from a given hash matches the expected type.
-
-    @warning Since these values are stored inside objects stored on the ledger they are part of the
-   protocol.
-   **Changing them should be avoided because without special handling, this will result in a hard
-   fork.**
-
-    @note Values outside this range may be used internally by the code for various purposes, but
-   attempting to use such values to identify on-ledger objects will result in an invariant failure.
-
-    @note When retiring types, the specific values should not be removed but should be marked as
-   [[deprecated]]. This is to avoid accidental reuse of identifiers.
-
-    @todo The C++ language does not enable checking for duplicate values here.
-          If it becomes possible then we should do this.
-
-    @ingroup protocol
-*/
+/**
+ * Identifiers for on-ledger objects.
+ *
+ * Each ledger object requires a unique type identifier, which is stored within the object itself;
+ * this makes it possible to iterate the entire ledger and determine each object's type and verify
+ * that the object you retrieved from a given hash matches the expected type.
+ *
+ * @warning Since these values are stored inside objects stored on the ledger they are part of the
+ * protocol.
+ * **Changing them should be avoided because without special handling, this will result in a hard
+ * fork.**
+ *
+ * @note Values outside this range may be used internally by the code for various purposes, but
+ * attempting to use such values to identify on-ledger objects will result in an invariant failure.
+ *
+ * @note When retiring types, the specific values should not be removed but should be marked as
+ * [[deprecated]]. This is to avoid accidental reuse of identifiers.
+ *
+ * @todo The C++ language does not enable checking for duplicate values here.
+ *       If it becomes possible then we should do this.
+ *
+ * @ingroup protocol
+ */
 // Protocol-critical, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LedgerEntryType : std::uint16_t {
@@ -46,66 +50,72 @@ enum LedgerEntryType : std::uint16_t {
 #pragma pop_macro("LEDGER_ENTRY")
 
     //---------------------------------------------------------------------------
-    /** A special type, matching any ledger entry type.
-
-        The value does not represent a concrete type, but rather is used in contexts where the
-       specific type of a ledger object is unimportant, unknown or unavailable.
-
-        Objects with this special type cannot be created or stored on the ledger.
-
-        \sa keylet::unchecked
-    */
+    /**
+     * A special type, matching any ledger entry type.
+     *
+     * The value does not represent a concrete type, but rather is used in contexts where the
+     * specific type of a ledger object is unimportant, unknown or unavailable.
+     *
+     * Objects with this special type cannot be created or stored on the ledger.
+     *
+     * @see keylet::unchecked
+     */
     ltANY = 0,
 
-    /** A special type, matching any ledger type except directory nodes.
-
-        The value does not represent a concrete type, but rather is used in contexts where the
-       ledger object must not be a directory node but its specific type is otherwise unimportant,
-       unknown or unavailable.
-
-        Objects with this special type cannot be created or stored on the ledger.
-
-        \sa keylet::child
+    /**
+     * A special type, matching any ledger type except directory nodes.
+     *
+     * The value does not represent a concrete type, but rather is used in contexts where the
+     * ledger object must not be a directory node but its specific type is otherwise unimportant,
+     * unknown or unavailable.
+     *
+     * Objects with this special type cannot be created or stored on the ledger.
+     *
+     * @see keylet::child
      */
     ltCHILD = 0x1CD2,
 
     //---------------------------------------------------------------------------
-    /** A legacy, deprecated type.
-
-        \deprecated **This object type is not supported and should not be used.**
-                    Support for this type of object was never implemented.
-                    No objects of this type were ever created.
+    /**
+     * A legacy, deprecated type.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             Support for this type of object was never implemented.
+     *             No objects of this type were ever created.
      */
     ltNICKNAME [[deprecated("This object type is not supported and should not be used.")]] = 0x006e,
 
-    /** A legacy, deprecated type.
-
-        \deprecated **This object type is not supported and should not be used.**
-                    Support for this type of object was never implemented.
-                    No objects of this type were ever created.
+    /**
+     * A legacy, deprecated type.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             Support for this type of object was never implemented.
+     *             No objects of this type were ever created.
      */
     ltCONTRACT [[deprecated("This object type is not supported and should not be used.")]] = 0x0063,
 
-    /** A legacy, deprecated type.
-
-        \deprecated **This object type is not supported and should not be used.**
-                    Support for this type of object was never implemented.
-                    No objects of this type were ever created.
+    /**
+     * A legacy, deprecated type.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             Support for this type of object was never implemented.
+     *             No objects of this type were ever created.
      */
     ltGENERATOR_MAP [[deprecated("This object type is not supported and should not be used.")]] =
         0x0067,
 };
 
-/** Ledger object flags.
-
-    These flags are specified in ledger objects and modify their behavior.
-
-    @warning Ledger object flags form part of the protocol.
-    **Changing them should be avoided because without special handling, this will result in a hard
-   fork.**
-
-    @ingroup protocol
-*/
+/**
+ * Ledger object flags.
+ *
+ * These flags are specified in ledger objects and modify their behavior.
+ *
+ * @warning Ledger object flags form part of the protocol.
+ * **Changing them should be avoided because without special handling, this will result in a hard
+ * fork.**
+ *
+ * @ingroup protocol
+ */
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")
 #pragma push_macro("VALUE_TO_MAP")
@@ -205,7 +215,11 @@ enum LedgerEntryType : std::uint16_t {
     LEDGER_OBJECT(Loan,                                                                                                            \
         LSF_FLAG(lsfLoanDefault, 0x00010000)                                                                                       \
         LSF_FLAG(lsfLoanImpaired, 0x00020000)                                                                                      \
-        LSF_FLAG(lsfLoanOverpayment, 0x00040000))               /* True, loan allows overpayments */
+        LSF_FLAG(lsfLoanOverpayment, 0x00040000))               /* True, loan allows overpayments */                               \
+                                                                                                                                   \
+    LEDGER_OBJECT(Sponsorship,                                                                                                     \
+        LSF_FLAG(lsfSponsorshipRequireSignForFee, 0x00010000)                                                                      \
+        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))
 
 // clang-format on
 
@@ -282,14 +296,16 @@ getAllLedgerFlags()
 
 //------------------------------------------------------------------------------
 
-/** Holds the list of known ledger entry formats.
+/**
+ * Holds the list of known ledger entry formats.
  */
 class LedgerFormats : public KnownFormats<LedgerEntryType, LedgerFormats>
 {
 private:
-    /** Create the object.
-        This will load the object with all the known ledger formats.
-    */
+    /**
+     * Create the object.
+     * This will load the object with all the known ledger formats.
+     */
     LedgerFormats();
 
 public:

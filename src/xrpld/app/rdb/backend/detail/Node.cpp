@@ -11,6 +11,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -43,7 +45,9 @@
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
 #include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/soci-backend.h>
 #include <soci/statement.h>
@@ -989,6 +993,57 @@ getNewestAccountTxsB(
 }
 
 /**
+ * @brief Determines whether a transaction should be included in account_tx
+ *        results based on a delegation filter.
+ * @param rawData Serialized transaction blob.
+ * @param filter The delegate filter specifying the role of the queried account
+ *        (Actor or Authorizer) and an optional counterparty to match against.
+ * @param contextAccount The account passed to account_tx (the queried account).
+ * @return True if the transaction passes the filter and should be included,
+ *         false if it should be skipped.
+ */
+static bool
+passesDelegateFilter(
+    Blob const& rawData,
+    DelegateFilter const& filter,
+    AccountID const& contextAccount)
+{
+    SerialIter sit{makeSlice(rawData)};
+    STTx const tx{sit};
+
+    AccountID const txOwner = tx.getAccountID(sfAccount);
+
+    if (!tx.isFieldPresent(sfDelegate))
+        return false;
+
+    AccountID const txSigner = tx.getAccountID(sfDelegate);
+
+    switch (filter.type)
+    {
+        case DelegateType::Actor: {
+            // Keep txns where the queried account (A) is the owner but
+            // another account (C) was the delegatee that signed.
+            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+            if (!isDelegated)
+                return false;
+            return !filter.counterparty || (txSigner == *filter.counterparty);
+        }
+
+        case DelegateType::Authorizer: {
+            // Keep txns where the queried account (C) is the signer acting
+            // on behalf of another account (A, the delegator/owner).
+            bool const isActingAsDelegate =
+                (txSigner == contextAccount) && (txOwner != contextAccount);
+            if (!isActingAsDelegate)
+                return false;
+            return !filter.counterparty || (txOwner == *filter.counterparty);
+        }
+    }
+
+    return false;  // LCOV_EXCL_LINE
+}
+
+/**
  * @brief accountTxPage Searches for the oldest or newest transactions for the
  *        account that matches the given criteria starting from the provided
  *        marker and invokes the callback parameter for each found transaction.
@@ -1018,6 +1073,7 @@ accountTxPage(
 {
     int total = 0;
 
+    bool const hasDelegateFilter = options.delegate.has_value();
     bool lookingForMarker = options.marker.has_value();
 
     std::uint32_t numberOfResults = 0;
@@ -1105,6 +1161,11 @@ accountTxPage(
     {
         Blob rawData;
         Blob rawMeta;
+        // Delegate filtering happens after SQL, so skipped rows need their own
+        // continuation marker accounting.
+        std::uint32_t fetchedRows = 0;
+        std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
+        std::optional<RelationalDatabase::AccountTxMarker> lastScanned;
 
         // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
@@ -1126,18 +1187,31 @@ accountTxPage(
 
         while (st.fetch())
         {
+            if (hasDelegateFilter)
+            {
+                ++fetchedRows;
+                lastScanned = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
+
             if (lookingForMarker)
             {
                 if (findLedger == ledgerSeq.value_or(0) && findSeq == txnSeq.value_or(0))
                 {
                     lookingForMarker = false;
+                    // Delegate markers are continuation cursors for the last
+                    // scanned row, so resume after the marker row.
+                    if (hasDelegateFilter)
+                        continue;
                 }
                 else
                 {
                     continue;
                 }
             }
-            else if (numberOfResults == 0)
+
+            if (!hasDelegateFilter && numberOfResults == 0)
             {
                 newmarker = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
@@ -1163,6 +1237,23 @@ accountTxPage(
                 rawMeta.clear();
             }
 
+            if (hasDelegateFilter)
+            {
+                if (rawData.empty() ||
+                    !passesDelegateFilter(rawData, options.delegate.value(), options.account))
+                {
+                    rawData.clear();
+                    rawMeta.clear();
+                    continue;
+                }
+
+                if (numberOfResults == 0)
+                {
+                    newmarker = lastEmitted;
+                    break;
+                }
+            }
+
             // Work around a bug that could leave the metadata missing
             if (rawMeta.empty())
                 onUnsavedLedger(ledgerSeq.value_or(0));
@@ -1184,7 +1275,18 @@ accountTxPage(
 
             --numberOfResults;
             total++;
+            if (hasDelegateFilter)
+            {
+                lastEmitted = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
         }
+
+        // If this filtered page did not fill the requested number of results,
+        // still return a marker so the caller can continue scanning later rows.
+        if (hasDelegateFilter && !newmarker && !lookingForMarker && fetchedRows == queryLimit)
+            newmarker = lastScanned;
     }
 
     return {newmarker, total};
@@ -1271,7 +1373,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 

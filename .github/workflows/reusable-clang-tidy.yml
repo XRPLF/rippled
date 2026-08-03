@@ -34,16 +34,16 @@ jobs:
     needs: [determine-files]
     if: ${{ needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.need_full_run == 'true' }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-fecfc0c"
     permissions:
       contents: read
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@9355d190fd7d4de80fadfd161e6edddc9702cd9f
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: false
 
@@ -79,6 +79,7 @@ jobs:
               -Dtests=ON \
               -Dwerr=ON \
               -Dxrpld=ON \
+              -Dverify_headers=ON \
               ..
 
       # clang-tidy needs headers generated from proto files
@@ -91,10 +92,10 @@ jobs:
         id: run_clang_tidy
         continue-on-error: true
         env:
-          TARGETS: ${{ needs.determine-files.outputs.need_full_run != 'true' && needs.determine-files.outputs.cpp_changed_files || 'src tests' }}
+          TARGETS: ${{ needs.determine-files.outputs.need_full_run != 'true' && needs.determine-files.outputs.cpp_changed_files || 'include src tests' }}
         run: |
           set -o pipefail
-          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -format -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
 
       - name: Print filtered clang-tidy errors
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}

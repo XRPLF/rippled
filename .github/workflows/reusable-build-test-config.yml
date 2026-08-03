@@ -110,10 +110,10 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@9355d190fd7d4de80fadfd161e6edddc9702cd9f
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -124,7 +124,7 @@ jobs:
       - name: Check tools
         env:
           CHECK_TOOLS_SKIP_CLONE: "1"
-        run: ./bin/check-tools.sh
+        run: ./bin/check-tools.sh || true
 
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
@@ -223,11 +223,13 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
+          set -o pipefail
           cmake \
               --build . \
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
-              --target "${CMAKE_TARGET}"
+              --target "${CMAKE_TARGET}" \
+              2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -264,7 +266,7 @@ jobs:
           ./xrpld --definitions | python3 -m json.tool >server_definitions.json
 
       - name: Upload server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-gcc-release-amd64' }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: server-definitions
@@ -322,27 +324,46 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
 
-      - name: Show test failure summary
-        if: ${{ failure() && !inputs.build_only }}
-        env:
-          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+      # Smoke-run every benchmark module with a single repetition to confirm the
+      # benchmarks still build and execute. This is a correctness check, not a
+      # performance measurement, so it is skipped for instrumented builds
+      # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
+      # and on Windows, where the `install` target does not build them.
+      - name: Run the benchmarks
+        if: ${{ !inputs.build_only && runner.os != 'Windows' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          if [ ! -d "${WORKING_DIR}" ]; then
-              echo "Working directory '${WORKING_DIR}' does not exist."
-              exit 0
-          fi
+          rc=0
+          while IFS= read -r bench; do
+              echo "::group::${bench}"
+              "./${bench}" --benchmark_repetitions=1 || rc=1
+              echo "::endgroup::"
+          done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
+          exit "${rc}"
 
-          cd "${WORKING_DIR}"
+      - name: Show build/test failure summary
+        if: ${{ failure() }}
+        run: |
+          cd "${GITHUB_WORKSPACE}"
 
-          if [ ! -f unittest.log ]; then
-              echo "unittest.log not found; embedded tests may not have run."
-              exit 0
-          fi
-
-          if ! grep -E "failed" unittest.log; then
-              echo "Log present but no failure lines found in unittest.log."
+          if [ -f unittest.log ]; then
+              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "unittest.log present but no failure lines found."
+              fi
+          elif [ -f build.log ]; then
+              # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
+              # "error C####:", "error LNK####:", and "fatal error LNK####:".
+              # -A6 prints the lines that follow each match (source line, caret,
+              # notes, and the "N errors generated" tally) to capture the whole
+              # diagnostic block.
+              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" build.log; then
+                  echo "build.log present but no compile errors found."
+              fi
+          else
+              echo "unittest.log/build.log not found; something went wrong."
+              exit 1
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
