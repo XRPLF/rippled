@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -ne 3 || "$1" == "--help" || "$1" = "-h" ]]; then
-    name=$( basename $0 )
-    cat <<- USAGE
+    name=$(basename $0)
+    cat <<-USAGE
     Usage: $name workbranch base/branch version
 
     * workbranch will be created locally from base/branch. If it exists,
@@ -16,7 +16,7 @@ fi
 work="$1"
 shift
 
-base=$( echo "$1" | sed "s/:/\//" )
+base=$(echo "$1" | sed "s/:/\//")
 shift
 
 version=$1
@@ -28,16 +28,16 @@ git fetch upstreams
 
 git checkout -B "${work}" --no-track "${base}"
 
-push=$( git rev-parse --abbrev-ref --symbolic-full-name '@{push}' \
-    2>/dev/null ) || true
+push=$(git rev-parse --abbrev-ref --symbolic-full-name '@{push}' \
+    2>/dev/null) || true
 if [[ "${push}" != "" ]]; then
     echo "Warning: ${push} may already exist."
 fi
 
-build=$( find -name BuildInfo.cpp )
-sed 's/\(^.*versionString =\).*$/\1 "'${version}'"/' ${build} > version.cpp && \
-diff "${build}" version.cpp && exit 1 || \
-mv -vi version.cpp ${build}
+build=$(find -name BuildInfo.cpp)
+sed 's/\(^.*versionString =\).*$/\1 "'${version}'"/' ${build} >version.cpp &&
+    diff "${build}" version.cpp && exit 1 ||
+    mv -vi version.cpp ${build}
 
 git diff
 
@@ -47,7 +47,7 @@ git commit -S -m "Set version to ${version}"
 
 git log --oneline --first-parent ${base}^..
 
-cat << PUSH
+cat <<PUSH
 
 -------------------------------------------------------------------
 This script will not push. Verify everything is correct, then push

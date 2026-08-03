@@ -305,6 +305,15 @@ public:
         BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "fd00::1", to_string(ep));
 
+        // unspecified IPv6 (::)
+        ep = Endpoint(AddressV6{});
+        BEAST_EXPECT(isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(!isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
+        BEAST_EXPECTS(to_string(ep) == "::", to_string(ep));
+
         {
             ep = Endpoint::fromString("192.0.2.112");
             BEAST_EXPECT(!isUnspecified(ep));

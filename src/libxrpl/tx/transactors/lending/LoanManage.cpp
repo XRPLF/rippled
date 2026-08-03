@@ -26,8 +26,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -113,7 +111,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
+    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -127,23 +125,6 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-static Number
-owedToVault(SLE::ref loanSle)
-{
-    // Spec section 3.2.3.2, defines the default amount as
-    //
-    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
-    //
-    // Loan.InterestOutstanding is not stored directly on ledger.
-    // It is computed as
-    //
-    // Loan.TotalValueOutstanding - Loan.PrincipalOutstanding -
-    //      Loan.ManagementFeeOutstanding
-    //
-    // Add that to the original formula, and you get this:
-    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
 
 TER
@@ -160,7 +141,7 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    Number const totalDefaultAmount = owedToVault(loanSle);
+    Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -294,6 +275,7 @@ LoanManage::defaultLoan(
         vaultSle->at(sfAccount),
         STAmount{vaultAsset, defaultCovered},
         j,
+        {},
         WaiveTransferFee::Yes);
 }
 
@@ -305,7 +287,7 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    Number const lossUnrealized = owedToVault(loanSle);
+    Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
@@ -354,7 +336,7 @@ LoanManage::unimpairLoan(
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    Number const lossReversed = owedToVault(loanSle);
+    Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
@@ -400,7 +382,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -435,10 +417,7 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

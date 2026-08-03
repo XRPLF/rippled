@@ -118,20 +118,21 @@ makeFeaturesResponseHeader(
     return str.str();
 }
 
-/** Hashes the latest finished message from an SSL stream.
-
-    @param ssl the session to get the message from.
-    @param get a pointer to the function to call to retrieve the finished
-               message. This can be either:
-               - `SSL_get_finished` or
-               - `SSL_get_peer_finished`.
-    @return `true` if successful, `false` otherwise.
-
-    @note This construct is non-standard. There are potential "standard"
-          alternatives that should be considered. For a discussion, on
-          this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/XRPLF/rippled/issues/2413.
-*/
+/**
+ * Hashes the latest finished message from an SSL stream.
+ *
+ * @param ssl the session to get the message from.
+ * @param get a pointer to the function to call to retrieve the finished
+ *            message. This can be either:
+ *            - `SSL_get_finished` or
+ *            - `SSL_get_peer_finished`.
+ * @return `true` if successful, `false` otherwise.
+ *
+ * @note This construct is non-standard. There are potential "standard"
+ *       alternatives that should be considered. For a discussion, on
+ *       this topic, see https://github.com/openssl/openssl/issues/5509 and
+ *       https://github.com/XRPLF/rippled/issues/2413.
+ */
 static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
@@ -209,8 +210,8 @@ buildHandshake(
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
 
-    if (!app.config().SERVER_DOMAIN.empty())
-        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+    if (!app.config().serverDomain.empty())
+        h.insert("Server-Domain", app.config().serverDomain);
 
     if (beast::IP::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
@@ -408,10 +409,10 @@ makeResponse(
         "X-Protocol-Ctl",
         makeFeaturesResponseHeader(
             req,
-            app.config().COMPRESSION,
-            app.config().LEDGER_REPLAY,
-            app.config().TX_REDUCE_RELAY_ENABLE,
-            app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
+            app.config().compression,
+            app.config().ledgerReplay,
+            app.config().txReduceRelayEnable,
+            app.config().vpReduceRelayBaseSquelchEnable));
 
     buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 
