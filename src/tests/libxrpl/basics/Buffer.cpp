@@ -179,7 +179,7 @@ TEST_F(BufferTest, move_construct_from_empty)
     Buffer source;
     Buffer const moved{std::move(source)};
 
-    checkEmptyAfterMove(source);
+    checkEmptyAfterMove(source);  // NOLINT(bugprone-use-after-move)
     EXPECT_TRUE(sane(moved));
     EXPECT_TRUE(moved.empty());
 }
@@ -189,7 +189,7 @@ TEST_F(BufferTest, move_construct_from_non_empty)
     Buffer source{firstHalf};
     Buffer const moved{std::move(source)};
 
-    checkEmptyAfterMove(source);
+    checkEmptyAfterMove(source);  // NOLINT(bugprone-use-after-move)
     EXPECT_TRUE(sane(moved));
     EXPECT_EQ(moved, firstHalf);
 }
@@ -203,7 +203,7 @@ TEST_F(BufferTest, move_assign_empty_to_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_TRUE(target.empty());
-    checkEmptyAfterMove(source);
+    checkEmptyAfterMove(source);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST_F(BufferTest, move_assign_non_empty_to_empty)
@@ -215,7 +215,7 @@ TEST_F(BufferTest, move_assign_non_empty_to_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, firstHalf);
-    checkEmptyAfterMove(source);
+    checkEmptyAfterMove(source);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST_F(BufferTest, move_assign_empty_to_non_empty)
@@ -227,7 +227,7 @@ TEST_F(BufferTest, move_assign_empty_to_non_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_TRUE(target.empty());
-    checkEmptyAfterMove(source);
+    checkEmptyAfterMove(source);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST_F(BufferTest, move_assign_non_empty_to_non_empty)
@@ -239,12 +239,12 @@ TEST_F(BufferTest, move_assign_non_empty_to_non_empty)
     target = std::move(sameSize);
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, secondHalf);
-    checkEmptyAfterMove(sameSize);
+    checkEmptyAfterMove(sameSize);  // NOLINT(bugprone-use-after-move)
 
     target = std::move(largerSize);
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, whole);
-    checkEmptyAfterMove(largerSize);
+    checkEmptyAfterMove(largerSize);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST_F(BufferTest, construction_from_slice)
