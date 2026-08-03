@@ -202,6 +202,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
+BEAST_DEFINE_TESTSUITE(fillJson, rpc, xrpl);
 
 }  // namespace xrpl::rpc

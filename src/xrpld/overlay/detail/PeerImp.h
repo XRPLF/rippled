@@ -339,8 +339,9 @@ public:
     void
     sendEndpoints(FwdIt first, FwdIt last)
         requires(
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, peer_finder::Endpoint>)
-    ;
+            std::is_same_v< //
+                typename std::iterator_traits<FwdIt>::value_type,
+                peer_finder::Endpoint>);
 
     beast::ip::Endpoint
     getRemoteAddress() const override
