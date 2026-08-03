@@ -2412,7 +2412,7 @@ class Invariants_test : public beast::unit_test::Suite
         vaultID = vKeylet.key;
 
         // Create Loan Broker
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
@@ -2721,7 +2721,7 @@ class Invariants_test : public beast::unit_test::Suite
                         brokerKeylet = this->createLoanBroker(alice, env, asset);
                         if (!BEAST_EXPECT(env.le(brokerKeylet)))
                             return false;
-                        env(loanBroker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env(loan_broker::coverDeposit(alice, brokerKeylet.key, asset(10)));
                         env.close();
                         return BEAST_EXPECT(env.le(brokerKeylet));
                     };

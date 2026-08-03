@@ -545,7 +545,7 @@ protected:
 
         auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
 
-        using namespace loanBroker;
+        using namespace loan_broker;
         env(set(lender, vaultKeylet.key, params.flags),
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
@@ -1533,7 +1533,7 @@ protected:
         auto const borrowerStartingBalance = env.balance(borrower, broker.asset);
 
         // Try to delete the loan broker with an active loan
-        env(loanBroker::del(lender, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
+        env(loan_broker::del(lender, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
         // Ensure the above tx doesn't get ordered after the LoanDelete and
         // delete our broker!
         env.close();
@@ -2072,7 +2072,7 @@ protected:
                                   Number const& startingCoverAvailable,
                                   Number const& amountToBeCovered) {
             coverAvailable(broker.brokerID, startingCoverAvailable - amountToBeCovered);
-            env(loanBroker::coverDeposit(
+            env(loan_broker::coverDeposit(
                 brokerAcct, broker.brokerID, STAmount{broker.asset, amountToBeCovered}));
             coverAvailable(broker.brokerID, startingCoverAvailable);
             env.close();
@@ -3572,7 +3572,7 @@ protected:
                 BEAST_EXPECT(brokerSle->at(sfDebtTotal) == 0);
 
                 auto const coverAvailable = brokerSle->at(sfCoverAvailable);
-                env(loanBroker::coverWithdraw(
+                env(loan_broker::coverWithdraw(
                     lender, broker.brokerID, STAmount(broker.asset, coverAvailable)));
                 env.close();
 
@@ -3580,7 +3580,7 @@ protected:
                 BEAST_EXPECT(brokerSle && brokerSle->at(sfCoverAvailable) == 0);
             }
             // Verify we can delete the loan broker
-            env(loanBroker::del(lender, broker.brokerID));
+            env(loan_broker::del(lender, broker.brokerID));
             env.close();
         }
     }
@@ -5084,7 +5084,7 @@ protected:
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
         {
             auto const coverDepositValue = broker.asset(broker.params.coverDeposit * 10).value();
-            env(loanBroker::coverDeposit(lender, broker.brokerID, coverDepositValue));
+            env(loan_broker::coverDeposit(lender, broker.brokerID, coverDepositValue));
             env.close();
         }
 
@@ -5450,7 +5450,7 @@ protected:
         testcase("Lending: CanTrade disabled has no impact");
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env(*this, all_);
 
@@ -5671,7 +5671,7 @@ protected:
 
             using namespace jtx;
             using namespace loan;
-            using namespace loanBroker;
+            using namespace loan_broker;
 
             Env env(*this, features);
 
@@ -6283,7 +6283,7 @@ protected:
 
         auto const brokerKeyLet = keylet::loanBroker(lender.id(), env.seq(lender));
 
-        env(loanBroker::set(lender, vaultKeyLet.key), txFee);
+        env(loan_broker::set(lender, vaultKeyLet.key), txFee);
         env.close();
 
         // BrokerInfo brokerInfo{xrpIssue(), keylet, vaultKeyLet, {}};
@@ -6317,7 +6317,7 @@ protected:
         testcase("Minimum cover rounding allows undercoverage (XRP)");
 
         using namespace jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env{*this, features};
 
@@ -6488,7 +6488,7 @@ protected:
 
             auto const brokerKeylet = keylet::loanBroker(broker.id(), env.seq(broker));
 
-            env(loanBroker::set(broker, vaultKeylet.key), txFee);
+            env(loan_broker::set(broker, vaultKeylet.key), txFee);
             env.close();
 
             auto const serviceFee = 101;
@@ -6767,7 +6767,7 @@ protected:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = iou(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
         env.close();
         // Verify broker owner has a trustline
         auto const brokerTrustline = keylet::trustLine(broker, iou);
@@ -6847,7 +6847,7 @@ protected:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = mpt(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
@@ -6947,7 +6947,7 @@ protected:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = mpt(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
@@ -7062,7 +7062,7 @@ protected:
 
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env{*this, features};
 
@@ -7923,8 +7923,8 @@ protected:
         env.close();
 
         auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
-        env(loanBroker::set(lender, vaultKeylet.key),
-            loanBroker::kDebtMaximum(Number{100}),
+        env(loan_broker::set(lender, vaultKeylet.key),
+            loan_broker::kDebtMaximum(Number{100}),
             Fee(env.current()->fees().base * 2));
         env.close();
 
@@ -8168,7 +8168,7 @@ protected:
     {
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         bool const withAmendment = features[fixCleanup3_2_0];
 
@@ -8726,9 +8726,9 @@ protected:
 
             BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            env(loanBroker::set(lender, broker.vaultID),
-                loanBroker::kLoanBrokerId(broker.brokerID),
-                loanBroker::kDebtMaximum(debtMaximum),
+            env(loan_broker::set(lender, broker.vaultID),
+                loan_broker::kLoanBrokerId(broker.brokerID),
+                loan_broker::kDebtMaximum(debtMaximum),
                 Fee(env.current()->fees().base * 2));
             env.close();
 
