@@ -1038,41 +1038,73 @@ instead of error text to parse. D16's `gas = 0` decision belongs there too, sinc
 a TER choice. Deferred as before: macro-emitted `link_*` shims, the generated C header,
 the probe-module test.
 
-## Once the crate is finished: cut the comments back
+## The comment cut-back (done, 2026-08-03)
 
-**`xrpl-wasm-vm`'s comments are too verbose, and they should be edited down in one pass
-once the crate stops moving.** Do not do it while findings are still landing — several of
-them turned on a rationale that only existed in a comment, and losing those mid-flight
-costs more than the reading time.
+**Done over `src/` and `tests/`, after C11 and with C12 deferred to a benchmark** — so no
+behaviour finding was still in flight, which was the gate. Density in `abi.rs` went from
+42% comment lines to 16%, `vm.rs` from 40% to 28%, `register.rs` from 23% to 9% (its
+per-arm comments only restated the helper each arm calls).
 
-Why they got this way is worth knowing, because it tells you what to keep. Each finding
-was argued out in its doc comment as it landed: why a rule exists, which C++ line it
-mirrors, why the obvious simplification is wrong. That was the right thing to write at the
-time — the review found real bugs precisely where the code had asserted something no
-comment justified — but the accumulation now reads as an essay per function. `write_into`
-and `VmState::memory` are the clearest cases.
+Two things made it safe to do in bulk. Nothing but comments changed — verified by
+stripping comment and blank lines from before and after and diffing, per file, to
+byte-identical code. And the 79 tests, `clippy --all-targets`, `fmt` and
+`cargo doc --no-deps` all stayed green, the last of these load-bearing because
+`deny(rustdoc::broken_intra_doc_links)` catches a link broken by a deleted paragraph.
+One caveat learned the hard way: that lint does **not** cover private modules, which are
+not documented by default, so the dead `VmState::scratch` link left by the
+`scratch` → `out_buffer` rename passed `cargo doc` silently. Grep for renamed fields; do
+not rely on the lint inside `abi.rs`.
 
-What the pass should keep, roughly in order of value:
+**The rule that overrode this document: no references to C++ that will not survive the
+merge.** They read as evidence but will point at deleted files — `WasmiVM.cpp`,
+`HostFuncWrapper.cpp`, anything pinned at `b7059deb9f^` — so the crate now has none, in
+`src/` or `tests/`. Two exceptions stand, both live: `Protocol.h`'s `kMaxWasmDataLength`
+and `kWasmTransferLimit`, which are where the numbers are defined for the rest of the
+system and are named in `the_limits_are_the_protocol_limits` for that reason. The parity
+evidence itself is not lost — it is in this document, and this is where it belongs.
 
-- **The C++ reference points.** `WasmiVM.cpp:224-249`, `HostFuncWrapper.cpp:497`,
-  `Protocol.h`'s names. These are consensus parity evidence and cannot be recovered from
-  the code.
+The `scratch` field is now `VmState::out_buffer`. `abi::scratch_write` keeps its name;
+if that reads inconsistently, the rename is a one-liner.
+
+Two TODOs were made honest rather than deleted, since both read as gaps and neither is
+one: the start-section TODO now says why wasmi 1.1 cannot close it and that the section is
+metered regardless (D17), and `register.rs`'s "think on how to make it better" now says the
+repetition is the deferred `link_*`-shim decision. `transfer_budget`'s `unalignedGas` TODO
+stays a TODO — it is a real obligation, now stated as blocked on the ABI gaining a
+`FieldLocator` function.
+
+Why the comments got that way is worth knowing, because it tells you what to keep. Each
+finding was argued out in its doc comment as it landed: why a rule exists, which C++ line
+it mirrored, why the obvious simplification is wrong. That was right at the time — the
+review found real bugs precisely where the code asserted something no comment justified —
+but it accumulated into an essay per function, `write_into` and `VmState::memory` worst.
+
+What the pass kept:
+
 - **Why an apparent redundancy is not one.** The `n > MAX_FIELD_BYTES` check beside the
   clamp; `is_fatal` and `host_fatal` being two lists; `MUST_TRAP` restating the fatal set
   rather than deriving it. Every one of these has been "simplified" wrongly at least once
   in a mutation test, so each earns its sentence.
 - **Load-bearing invariants**, like `VmState::memory`'s one-instance-per-run assumption.
+- **Hidden contracts a signature cannot state**, chiefly that a byte-output host function
+  returns the value's *true length* rather than what it wrote.
+- **wasmi facts that decide a design**, like a `Memory` being an arena index (so caching
+  the handle survives `memory.grow`) and `Module::instantiate` being `pub(crate)` (so
+  instantiation cannot be split from the start section).
 
-What it should cut:
+What it cut:
 
-- Prose restating what the next line plainly does.
-- The same rationale on a field and on the function that sets it — pick the one a reader
-  reaches first. `WasmiVM.cpp:224-249` is currently cited twice for two different facts.
-- Paragraphs duplicating this document. A pointer here beats a retelling in `abi.rs`.
-- The worked examples that have served their purpose, where a sentence now does.
+- Prose restating what the next line plainly does — every per-arm comment in
+  `register.rs`, `write_into`'s "the engine owns the policy" paragraph, and the several
+  notes explaining a borrow the compiler already enforces.
+- The same rationale on a field and on the function that reads it: `VmState::memory` keeps
+  the arena-index invariant and `abi::memory` keeps only the two ways it is absent.
+- Paragraphs duplicating this document — `scratch_write`'s case for its design went from
+  five paragraphs to three short ones, the ABI-shape argument left here.
+- Every C++ citation, per the rule above.
 
-A rule of thumb that fits what actually paid off: a comment should say something the
-compiler cannot check and the code cannot show. Everything else is a candidate.
+The rule of thumb that fits what paid off: a comment should say something the compiler
+cannot check and the code cannot show. Everything else was a candidate.
 
 One incidental constraint found while checking the guest target: `crates/hello_world`
 cannot be checked for `wasm32-unknown-unknown` — it depends on `cxx` →

@@ -16,79 +16,53 @@ const WASM_PAGE_BYTES: u32 = 64 * 1024;
 /// Linear-memory page cap.
 pub const MAX_MEMORY_PAGES: u32 = 128;
 
-/// Byte form of [`MAX_MEMORY_PAGES`]: `128 * 65536 = 8_388_608` (8 MiB).
+/// [`MAX_MEMORY_PAGES`] in bytes: 8 MiB.
 pub const MAX_MEMORY_BYTES: usize = (MAX_MEMORY_PAGES * WASM_PAGE_BYTES) as usize;
 
-/// Per-run transfer-limit budget: total bytes that may cross the host/guest
-/// boundary during one [`run`] invocation. Separate from gas.
+/// Total bytes that may cross the host/guest boundary in one [`run`], separate
+/// from gas.
 pub const TRANSFER_LIMIT_BYTES: u64 = 1 << 20;
 
-/// Size cap on any single value crossing the host/guest boundary, in either
-/// direction. A value over it is refused with `DataFieldTooLarge`.
+/// Size cap on any single value crossing the boundary, in either direction; over
+/// it is `DataFieldTooLarge`.
 ///
-/// Mirrors `kMaxWasmDataLength = 1 * 1024` in
-/// `include/xrpl/protocol/Protocol.h:261`, enforced there by `getDataSlice` /
-/// `setData` (`src/libxrpl/tx/wasm/HostFuncWrapper.cpp`).
+/// A protocol limit: `kMaxWasmDataLength` in `include/xrpl/protocol/Protocol.h`.
 pub const MAX_FIELD_BYTES: usize = 1024;
 
 /// State threaded through every host call, stored in the wasmi [`Store`].
 pub(crate) struct VmState<'h> {
     pub(crate) host: &'h dyn HostFunctions,
-    /// Enforces [`MAX_MEMORY_BYTES`] via `Store::limiter`. It lives here because
-    /// the limiter callback wasmi holds has to produce a `&mut` into it from
-    /// `&mut VmState`.
+    /// Enforces [`MAX_MEMORY_BYTES`] via `Store::limiter`, which needs a `&mut`
+    /// into it from `&mut VmState` — hence a field rather than a local.
     pub(crate) mem_limits: StoreLimits,
-    /// Remaining transfer-limit budget for this run ([`TRANSFER_LIMIT_BYTES`]),
-    /// decremented in `abi.rs` by the bytes actually moved.
+    /// Remaining transfer budget for this run ([`TRANSFER_LIMIT_BYTES`]).
     ///
-    /// A `Cell` because the read path holds only a shared `&Caller` while the
-    /// write path holds `&mut Caller`, and both decrement it. One thread per
-    /// invocation touches the store, so `Cell`'s lack of `Sync` is no issue.
+    /// A `Cell` because it is decremented from a shared `&Caller`. One thread per
+    /// invocation touches the store, so the lack of `Sync` costs nothing.
     ///
-    /// TODO: the C++ `unalignedGas` alignment-copy charge
-    /// (`HostFuncWrapper.cpp:44,390-397`) has no `FieldLocator` host function
-    /// here to attach to.
+    /// TODO: the extra charge for an unaligned field copy has nothing to attach to
+    /// until this ABI gains a `FieldLocator` host function.
     pub(crate) transfer_budget: Cell<u64>,
-    /// The guest's linear memory, every host call's frame of reference for a
-    /// pointer. Resolved once by [`run`], after instantiation, and read from here on,
-    /// so no call pays for an export lookup.
+    /// The guest's linear memory, resolved once by [`run`] after instantiation so
+    /// no host call pays for an export lookup.
     ///
-    /// Holding the handle across calls is sound because a [`Memory`] is an arena
-    /// index into the store rather than a pointer to the bytes: it survives
-    /// `memory.grow`, and `data`/`data_mut` re-derive the slice per call. C++
-    /// memoized the same resolution, as `memIdx_` on the instance wrapper
-    /// (`InstanceWrapper::getMem`, `WasmiVM.cpp:224-249` at `b7059deb9f^`).
+    /// Caching the handle is sound because a [`Memory`] is an arena index, not a
+    /// pointer to the bytes: it survives `memory.grow`, and `data`/`data_mut`
+    /// re-derive the slice per call.
     ///
-    /// `None` before `run` resolves it and for a module that exports no memory,
-    /// which is a legal module right up to its first host call — so the absence is
-    /// `NoMemExported` at that call rather than a refused instantiation.
-    ///
-    /// Not a `Cell`: `run` writes it once through `Store::data_mut` before the
-    /// entry point runs, and every reader afterwards holds only a `&Caller`.
-    ///
-    /// The handle is scoped to one store, so the field assumes **one module, one
-    /// instance, one store per `run`** — which is what `run` builds, and nothing
-    /// lets a guest instantiate a second module. Module linking or nested contract
-    /// execution would have to resolve per instance instead: a cached handle would
-    /// then serve a host call against the wrong instance's memory, which is a wrong
-    /// answer rather than an error anyone sees.
+    /// The handle is scoped to one store, so this assumes **one module, one
+    /// instance, one store per `run`**. Module linking or nested execution would
+    /// have to resolve per instance: a cached handle would serve a call against the
+    /// wrong instance's memory, which is a wrong answer rather than an error.
     pub(crate) memory: Option<Memory>,
-    /// Where a host writes a value before the engine copies it to the guest, for
-    /// the calls that read guest memory and write it in the same breath
-    /// ([`crate::abi::scratch_write`]).
+    /// Where a host writes a value before [`crate::abi::scratch_write`] copies it
+    /// to the guest. One buffer per run, so no call zero-fills one of its own.
     ///
-    /// One buffer per run, reused by every call, so no call zero-fills one of its
-    /// own. Sized to [`MAX_FIELD_BYTES`], which is what lets a host be offered the
-    /// whole cap and report the value's true length while the fit against the
-    /// guest's buffer is decided afterwards — with nothing yet in guest memory.
-    ///
-    /// Inline rather than boxed: the store's data is built once per run and then
-    /// only borrowed, so a kilobyte in it costs one move at construction, where a
-    /// `Box` would cost an allocation. A local in
-    /// [`scratch_write`](crate::abi::scratch_write) would cost neither, but
-    /// `forbid(unsafe_code)` means a stack buffer is zero-filled, and that lands
-    /// back on every call — which is the cost this field exists to remove.
-    pub(crate) scratch: [u8; MAX_FIELD_BYTES],
+    /// Inline rather than boxed: the store's data is built once and then only
+    /// borrowed, so a kilobyte in it costs a move where a `Box` costs an
+    /// allocation. A local would cost neither, but `forbid(unsafe_code)` means a
+    /// stack buffer is zero-filled — per call, which is the cost this removes.
+    pub(crate) out_buffer: [u8; MAX_FIELD_BYTES],
 }
 
 /// Outcome of running an escrow contract to completion.
@@ -161,9 +135,8 @@ impl fmt::Display for RunFailure {
 }
 
 impl RunFailure {
-    /// A failure that costs nothing: it stopped the run at or before the point the
-    /// guest first gets to execute, or it stopped it under a store with no meter to
-    /// read, which comes to the same thing — no fuel was accounted either way.
+    /// A failure with no fuel accounted: it stopped the run at or before the guest's
+    /// first instruction, or under a store with no meter to read.
     fn owing_nothing(error: RunError) -> RunFailure {
         RunFailure {
             error,
@@ -175,15 +148,11 @@ impl RunFailure {
 /// Fuel spent out of `gas`: the one place a run's cost is measured, so success,
 /// trap and refusal all report it the same way.
 ///
-/// `Store::get_fuel` fails on exactly one condition — a store whose engine was
-/// built without fuel metering — and that is a property of
-/// [`build_wasm_engine`], which turns metering on, and one `run` has already
-/// established for this store by the time anything is measured: its `set_fuel`
-/// fails under the same condition and returns first. So a failure here is a defect
-/// in this crate, and the one thing it must not become is a number: `0` would
-/// forgive a run its whole cost and `gas` would charge an untouched one for
-/// everything. It leaves as [`RunError::Internal`] instead, which is what the
-/// caller maps a defect to.
+/// `Store::get_fuel` fails only on a store without fuel metering, which
+/// [`build_wasm_engine`] rules out and `run`'s `set_fuel` would already have
+/// caught — so a failure here is a defect in this crate. It must not become a
+/// number: `0` forgives a run its whole cost, `gas` charges an untouched one for
+/// everything. [`RunError::Internal`] instead.
 fn fuel_used(store: &Store<VmState<'_>>, gas: u64) -> Result<u64, RunError> {
     store
         .get_fuel()
@@ -191,10 +160,8 @@ fn fuel_used(store: &Store<VmState<'_>>, gas: u64) -> Result<u64, RunError> {
         .map_err(|_| RunError::Internal)
 }
 
-/// Report `error` with the run's cost attached, from the one point that reads it.
-///
-/// A cost that cannot be read replaces the outcome rather than being invented,
-/// because the cost is what the caller charges for — see [`fuel_used`].
+/// Report `error` with the run's cost attached. A cost that cannot be read replaces
+/// the outcome rather than being invented — see [`fuel_used`].
 fn failed(store: &Store<VmState<'_>>, gas: u64, error: RunError) -> RunFailure {
     match fuel_used(store, gas) {
         Ok(fuel_used) => RunFailure { error, fuel_used },
@@ -202,18 +169,16 @@ fn failed(store: &Store<VmState<'_>>, gas: u64, error: RunError) -> RunFailure {
     }
 }
 
-/// The outcome a `wasmi::Error` names for itself, if it names one, rather than
-/// leaving it to the stage that raised it.
+/// The outcome a `wasmi::Error` names for itself, if any, rather than leaving it to
+/// the stage that raised it.
 ///
-/// A host call the host could not serve traps with a [`FatalHostError`] payload,
-/// which says which condition it was, so check for that before treating the error
-/// as the guest's own doing. wasmi raises `OutOfFuel` when the guest's
-/// *instructions* exhaust the meter — the same outcome by a different route, and
-/// `as_trap_code` reports it whichever error kind carried it.
+/// Two ways a run halts mid-flight: a host call that could not be served, which
+/// carries a [`FatalHostError`] saying which condition it was, and the guest's own
+/// instructions exhausting the meter, which wasmi raises as `OutOfFuel`.
 ///
-/// Both arise anywhere the guest executes, and a start section is guest code
-/// running during instantiation, so every stage from there on asks this before
-/// naming a failure after itself.
+/// Both can happen anywhere the guest executes — including a start section, which
+/// is guest code running during instantiation — so every stage from there on asks
+/// this before naming a failure after itself.
 fn guest_halted(error: &wasmi::Error) -> Option<RunError> {
     if let Some(fatal) = error.downcast_ref::<FatalHostError>() {
         return Some(host_fatal(fatal.0));
@@ -223,12 +188,11 @@ fn guest_halted(error: &wasmi::Error) -> Option<RunError> {
 
 /// The outcome a host-fatal `HostError` is.
 ///
-/// Exhaustive over `HostError` rather than closed with a wildcard, so a variant
-/// added to the ABI has to be placed here before this compiles. That covers one
-/// direction of the agreement with [`crate::abi::is_fatal`], which decides the
-/// channel; the other — an existing variant moved into `is_fatal`'s set, which
-/// would land in the soft arm here and report `Internal` instead of the condition
-/// it was — is covered by `tests::every_fatal_error_has_an_outcome_of_its_own`.
+/// Exhaustive rather than closed with a wildcard, so a variant added to the ABI
+/// must be placed here before this compiles. That is one direction of the agreement
+/// with [`crate::abi::is_fatal`], which picks the channel; the other — an existing
+/// variant moved into `is_fatal`'s set, landing in the soft arm and reported as
+/// `Internal` — is `tests::every_fatal_error_has_an_outcome_of_its_own`.
 ///
 /// The soft arm is otherwise unreachable: a guest-visible error is a return code
 /// and never becomes a trap for [`guest_halted`] to unwrap.
@@ -262,9 +226,9 @@ fn host_fatal(error: HostError) -> RunError {
 
 /// The process-wide wasmi engine, built once on first use.
 ///
-/// The configuration is consensus-fixed and identical for every invocation, and
-/// an [`Engine`] is an internally `Arc`ed `Send + Sync` handle, so one shared
-/// engine serves concurrent [`run`] calls.
+/// The configuration is consensus-fixed and identical for every invocation, and an
+/// [`Engine`] is an internally `Arc`ed `Send + Sync` handle, so one shared engine
+/// serves concurrent [`run`] calls.
 pub(crate) fn wasm_engine() -> &'static Engine {
     static ENGINE: LazyLock<Engine> = LazyLock::new(build_wasm_engine);
     &ENGINE
@@ -289,7 +253,7 @@ fn build_wasm_engine() -> Engine {
     config.wasm_custom_page_sizes(false);
     config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
-    // TODO: enable option to reject wasm code containing start section after next wasmi release
+    // TODO: enable option to reject wasm code containing start section after wasmi 2.0 release
     Engine::new(&config)
 }
 
@@ -316,26 +280,19 @@ pub fn run<'h>(
             mem_limits,
             transfer_budget: Cell::new(TRANSFER_LIMIT_BYTES),
             memory: None,
-            scratch: [0u8; MAX_FIELD_BYTES],
+            out_buffer: [0u8; MAX_FIELD_BYTES],
         },
     );
-    // A store that will not take fuel, or imports that will not register, are
-    // defects in the engine configuration or in this crate, not in the module:
-    // nothing the contract did could have caused either.
+
     store
         .set_fuel(gas)
         .map_err(|_| RunFailure::owing_nothing(RunError::Internal))?;
-    // The memory-page cap applies at instantiation too: an initial memory
-    // declared past it fails to instantiate, as a `memory.grow` past it traps.
     store.limiter(|state| &mut state.mem_limits);
 
     let mut linker = Linker::<VmState<'h>>::new(engine);
     register_host_functions(&mut linker)
         .map_err(|_| RunFailure::owing_nothing(RunError::Internal))?;
 
-    // Instantiation is the first point the guest can execute, through a start
-    // section, so from here on the cost comes off the store rather than being
-    // known to be nothing.
     let instance = match linker.instantiate_and_start(&mut store, &module) {
         Ok(instance) => instance,
         Err(e) => {
@@ -343,21 +300,10 @@ pub fn run<'h>(
             return Err(failed(&store, gas, error));
         }
     };
-    // Every host call reads the memory out of the store, so resolve it before the
-    // guest can make one.
-    //
-    // By *kind*, never by name: nothing in the wasm spec attaches meaning to
-    // "memory", so a toolchain that names it otherwise still produces a contract.
-    // C++ matched the same way (`InstanceWrapper::getMem` scanned for
-    // `wasm_extern_kind(e) == WASM_EXTERN_MEMORY`, `WasmiVM.cpp:224-249` at
-    // `b7059deb9f^`). "The first" names one thing because `build_wasm_engine` sets
-    // `wasm_multi_memory(false)`: a module has at most one memory, and exporting it
-    // under several names yields that same handle each time, so the order
-    // `Instance::exports` walks its map in cannot change the answer.
     store.data_mut().memory = instance.exports(&store).find_map(Export::into_memory);
 
-    let finish = match instance.get_typed_func::<(), i32>(&store, function_name) {
-        Ok(finish) => finish,
+    let function = match instance.get_typed_func::<(), i32>(&store, function_name) {
+        Ok(function) => function,
         Err(e) => {
             let error = RunError::EntryPoint(entry_point_detail(
                 instance.get_export(&store, function_name),
@@ -368,7 +314,7 @@ pub fn run<'h>(
         }
     };
 
-    let result = match finish.call(&mut store, ()) {
+    let result = match function.call(&mut store, ()) {
         Ok(result) => result,
         Err(e) => {
             let error = guest_halted(&e).unwrap_or_else(|| RunError::Trap(e.to_string()));
@@ -380,13 +326,6 @@ pub fn run<'h>(
     Ok(RunOutcome { result, fuel_used })
 }
 
-/// Why `get_typed_func` would not hand over the entry point, told apart by what
-/// the module exports under that name.
-///
-/// wasmi answers all three cases with one error, so the message would otherwise
-/// read "no entry point" for a contract that exports the name with the wrong
-/// signature — a diagnostic that sends the author looking for a missing export
-/// they already have. `export` is what [`wasmi::Instance::get_export`] found.
 fn entry_point_detail(export: Option<Extern>, name: &str, error: &wasmi::Error) -> String {
     match export {
         Some(Extern::Func(_)) => {
@@ -402,23 +341,11 @@ mod tests {
     use super::*;
     use crate::abi::is_fatal;
 
-    /// The engine is built once and shared, so two invocations must not compile
-    /// their modules against different engines.
     #[test]
     fn the_engine_is_one_engine() {
         assert!(Engine::same(wasm_engine(), wasm_engine()));
     }
 
-    /// The two lists that decide a host error's fate must name the same set.
-    /// [`is_fatal`] picks the channel; [`host_fatal`] names the outcome of the
-    /// fatal one. Only one direction of that agreement is compiler-enforced — a
-    /// *new* variant fails to compile until `host_fatal` places it — so a variant
-    /// moved into `is_fatal`'s set would trap and then be reported as `Internal`,
-    /// losing the condition it was. This is the other direction.
-    ///
-    /// The soft arm's answer is `Internal`, which `HostError::Internal` also
-    /// answers, so "named in its own right" is the outcome being anything else,
-    /// with `Internal` itself asked about by name.
     #[test]
     fn every_fatal_error_has_an_outcome_of_its_own() {
         for &error in HostError::ALL {
@@ -442,14 +369,12 @@ mod tests {
         }
     }
 
-    /// The four protocol limits against the C++ values they mirror: a deliberate
-    /// change-detector, and the only place these numbers appear as literals —
-    /// every other test derives from the constants. The C++ names make the parity
-    /// greppable against `include/xrpl/protocol/Protocol.h`.
+    /// The only place these numbers appear as literals; every other test derives
+    /// them from the constants.
     #[test]
     fn the_limits_are_the_protocol_limits() {
-        assert_eq!(MAX_MEMORY_PAGES, 128, "maxPages");
-        assert_eq!(MAX_MEMORY_BYTES, 8 * 1024 * 1024, "maxPages, in bytes");
+        assert_eq!(MAX_MEMORY_PAGES, 128, "linear-memory page cap");
+        assert_eq!(MAX_MEMORY_BYTES, 8 * 1024 * 1024, "page cap in bytes");
         assert_eq!(MAX_FIELD_BYTES, 1024, "kMaxWasmDataLength");
         assert_eq!(TRANSFER_LIMIT_BYTES, 1 << 20, "kWasmTransferLimit");
     }

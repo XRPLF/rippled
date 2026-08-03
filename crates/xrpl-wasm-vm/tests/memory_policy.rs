@@ -301,11 +301,10 @@ fn both_of_traces_regions_are_checked() {
 /// before anything about the output, so a bad input is reported however the output
 /// region is wrong — out of bounds, or a pointer that is not one at all.
 ///
-/// The whole output region, params included, is judged after the host has answered,
-/// which is `getDataSlice`-then-`setData` (`HostFuncWrapper.cpp:115-176` at
-/// `b7059deb9f^`). Hoisting any part of it above the call would put the output's
-/// verdict first for these cases, and there is no half of it that can be hoisted on
-/// a principle the other half shares.
+/// The whole output region, params included, is judged after the host has answered.
+/// Hoisting any part of that above the call would put the output's verdict first for
+/// these cases, and there is no half of it that can be hoisted on a principle the
+/// other half shares.
 #[test]
 fn a_read_write_checks_its_input_before_its_output() {
     let host = FakeHost::new();
@@ -495,9 +494,7 @@ fn no_memory_is_answered_before_a_calls_arguments_are() {
 
 /// The memory's export *name* is not part of the contract: the engine takes the
 /// module's memory whatever it is called. Nothing in the wasm spec attaches meaning
-/// to `"memory"` — it is a toolchain convention — and C++ read no name either
-/// (`InstanceWrapper::getMem`, `WasmiVM.cpp:224-249` at `b7059deb9f^`, matched
-/// `wasm_extern_kind(e) == WASM_EXTERN_MEMORY`).
+/// to `"memory"` — it is a toolchain convention, so the kind decides.
 #[test]
 fn a_memory_exported_under_any_name_is_the_guests_memory() {
     let host = FakeHost::new();

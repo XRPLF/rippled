@@ -168,9 +168,8 @@ fn fuel_used_is_what_was_spent_not_what_was_supplied() {
         assert_eq!(outcome.fuel_used, cost, "gas {gas}");
     }
 
-    // One fuel short: the run ends at the call it cannot pay for, and still owes
-    // the gas — the whole limit, because `charge` spends what is left, which is
-    // what makes the reported cost the full budget as in C++.
+    // One fuel short: the run ends at the call it cannot pay for and still owes the
+    // whole limit, because `charge` spends what is left.
     let short = run_with_gas(&wat, cost - 1, &host).expect_err("one fuel short must not complete");
     assert!(
         matches!(short.error, RunError::OutOfGas),
@@ -351,9 +350,8 @@ fn a_modest_run_never_meets_the_budget() {
 }
 
 /// Reads leave the budget alone: `read_borrowed` hands the host a slice *aliasing*
-/// guest memory, so there are no copied bytes to charge — the rule C++ applied to
-/// `trace`'s msg and data. What bounds how many reads a run can make is gas, which
-/// every host call pays before its body runs.
+/// guest memory, so there are no copied bytes to charge. What bounds how many reads
+/// a run can make is gas, which every host call pays before its body runs.
 ///
 /// The observation is the write at the end, not the reads: the module reads four
 /// times the whole budget first, so a rule that charged reads would have nothing

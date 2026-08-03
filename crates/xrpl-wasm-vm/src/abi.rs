@@ -2,42 +2,18 @@ use crate::vm::{MAX_FIELD_BYTES, VmState};
 use wasmi::{Caller, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
-// ---------------------------------------------------------------------------
-// ABI marshaling: charge a call's gas at one point (`charged`) so every
-// registered closure pays for itself exactly once, and hand the result to the
-// engine on one of the two channels a host call answers on — a return code the
-// guest reads, or a trap it cannot observe.
-// ---------------------------------------------------------------------------
-
-/// A host-fatal [`HostError`] on its way out of a host call as a wasmi trap.
-///
-/// wasmi takes an arbitrary payload out of a host function as long as it
-/// implements `wasmi::errors::HostError`, a trait with no methods and no blanket
-/// impl. Carrying the `HostError` itself is what lets [`crate::vm::run`] name the
-/// condition with `downcast_ref` rather than string-comparing a message, as the
-/// C++ path did with its `hfErrOutOfGas` trap strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct FatalHostError(pub(crate) HostError);
 
 impl wasmi::errors::HostError for FatalHostError {}
 
 impl core::fmt::Display for FatalHostError {
-    /// A fixed prefix and the variant's name. wasmi folds this text into its own
-    /// `Error`'s `Display`, which is the only place it surfaces, so keep it
-    /// stable and greppable.
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "host call refused: {:?}", self.0)
     }
 }
 
-/// Whether a [`HostError`] is host-fatal: the host could not serve the call at
-/// all, so the guest is stopped where it stands rather than handed a code it may
-/// ignore. Everything else is guest-visible — `OutOfTransferLimit` included,
-/// which was the one soft failure in C++ too.
-///
-/// Spelled variant by variant rather than as a range over `code()`, so which
-/// channel a `HostError` added to the ABI later takes is a choice someone makes
-/// here rather than one its number makes for it.
+/// Whether a [`HostError`] stops the run instead of reaching the guest as a code.
 pub(crate) fn is_fatal(error: HostError) -> bool {
     matches!(
         error,
@@ -45,9 +21,8 @@ pub(crate) fn is_fatal(error: HostError) -> bool {
     )
 }
 
-/// Charge a host call's gas from its spec, run its body, and hand the result to
-/// the engine. Every registered closure goes through here, so gas cannot be
-/// forgotten.
+/// Charge the call's gas, run its body, put the result on the wire. The one path
+/// every registered closure takes, so gas cannot be forgotten.
 pub(crate) fn charged(
     caller: &mut Caller<'_, VmState<'_>>,
     op: HostFunctionSpec,
@@ -56,14 +31,6 @@ pub(crate) fn charged(
     to_wire(charge(caller, op.gas()).and_then(|()| body(caller)))
 }
 
-/// Put a host-function result on one of the two channels a host call answers on.
-///
-/// A value, or an error the guest is meant to act on, is the `i32` the wasm
-/// function returns: `>= 0` a value, `< 0` a [`HostError`] code. A host-fatal
-/// error ([`is_fatal`]) leaves as a `wasmi::Error` instead, unwinding the guest
-/// at the call — C++ threw for exactly these, and a guest handed `OutOfGas` as a
-/// code runs on to the end of its current basic block, a stopping point wasmi's
-/// `ConsumeFuel` placement decides rather than the protocol.
 fn to_wire(result: HostResult<i32>) -> Result<i32, wasmi::Error> {
     match result {
         Ok(value) => Ok(value),
@@ -72,39 +39,18 @@ fn to_wire(result: HostResult<i32>) -> Result<i32, wasmi::Error> {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Gas + memory helpers. Every guest access is a checked wasmi slice op.
-// ---------------------------------------------------------------------------
-
-/// Deduct `cost` fuel for a host call; `OutOfGas` if it would go negative.
+/// Deduct `cost` fuel; `OutOfGas` if it would go negative.
 fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
     let remaining = caller.get_fuel().map_err(|_| HostError::Internal)?;
     match remaining.checked_sub(cost) {
         Some(left) => caller.set_fuel(left).map_err(|_| HostError::Internal),
         None => {
-            // Spending what is left makes the run's reported cost the whole gas
-            // limit, as C++ reports it on out-of-gas. The store outlives the
-            // trap `OutOfGas` becomes, and `run` reads the cost off it.
             let _ = caller.set_fuel(0);
             Err(HostError::OutOfGas)
         }
     }
 }
 
-/// Deduct `n` bytes from the per-run transfer-limit budget
-/// ([`crate::vm::TRANSFER_LIMIT_BYTES`], separate from gas);
-/// `OutOfTransferLimit` if it would go negative.
-///
-/// The budget counts bytes that **cross the boundary as copies**: host→guest
-/// writes (C++'s `setData`, here [`write_into`], this function's one call site)
-/// and typed reads that materialize a host object out of guest bytes (C++ charged
-/// uint256, AccountID, Currency, Asset). Plain borrowed reads are not charged,
-/// because nothing is copied — the host is handed a slice aliasing guest memory.
-/// This ABI has no typed reads yet; the rule is here for the ones that arrive,
-/// which will charge the object they materialize.
-///
-/// What bounds how many reads a run can make is gas, charged per host call before
-/// its body runs ([`charged`]) — the same property C++ relied on.
 fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     let n = n as u64;
     let remaining = state.transfer_budget.get();
@@ -117,34 +63,12 @@ fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     }
 }
 
-/// The guest's linear memory, as [`crate::vm::run`] resolved it from the
-/// instance's exports.
-///
-/// A field read: the resolution happens once per run, so no call pays to look an
-/// export up, and every call in a run works in the same memory. `NoMemExported`
-/// covers both ways the field is empty — a module that exports no memory, and a
-/// call made from a start section, which runs before there is an instance to
-/// resolve from.
 fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
     caller.data().memory.ok_or(HostError::NoMemExported)
 }
 
-/// Bounds-check `[ptr, ptr + len)` against `data` and return that slice of it —
-/// no allocation, no copy.
-///
-/// Checks the params, then the [`MAX_FIELD_BYTES`] cap (`DataFieldTooLarge`),
-/// then the bounds, before the slice is formed — C++'s `getDataSlice` order
-/// (`HostFuncWrapper.cpp:150-176` at `b7059deb9f^`). The transfer budget is not
-/// among them: there are no copied bytes to charge, which is why C++ left plain
-/// slice/string reads (`trace`'s msg/data, `sha512_half`'s input) free of it — see
-/// [`charge_transfer`].
-///
-/// Takes the memory's bytes rather than a [`Caller`], so a call can borrow as many
-/// input regions as its signature has: they are shared borrows of one slice.
-/// [`scratch_write`] is what supplies that slice.
+/// Validate `[ptr, ptr + len)` against `data` and return that slice of it.
 pub(crate) fn region(data: &[u8], ptr: i32, len: i32) -> HostResult<&[u8]> {
-    // A guest's pointer and length are `i32` on the wire and indices here, so the
-    // conversion is the validity check: it fails on exactly the negative values.
     let (Ok(ptr), Ok(len)) = (usize::try_from(ptr), usize::try_from(len)) else {
         return Err(HostError::InvalidParams);
     };
@@ -155,11 +79,6 @@ pub(crate) fn region(data: &[u8], ptr: i32, len: i32) -> HostResult<&[u8]> {
     data.get(ptr..end).ok_or(HostError::PointerOutOfBounds)
 }
 
-/// [`region`] of the guest's linear memory, for a call that reads it and writes
-/// nothing back (`trace`, `trace_num`).
-///
-/// The slice borrows `caller`, so it lives only as long as the host call it feeds;
-/// host functions never re-enter the guest and move its memory.
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
     ptr: i32,
@@ -169,65 +88,37 @@ pub(crate) fn read_borrowed<'a>(
     region(mem.data(caller), ptr, len)
 }
 
-/// Service a "fill-the-caller's-buffer" host call: bounds-check the guest output
-/// region `[dst, dst + cap)` and hand the host a `&mut [u8]` aliasing it, so the
-/// host writes straight into guest linear memory. Returns the byte count.
+/// Service a call whose answer is bytes, written straight into the guest's output
+/// region.
 ///
-/// **`fill`'s `usize` is the value's true length, not the number of bytes it
-/// wrote.** A host holding a 64-byte value, handed a 4-byte region, writes nothing
-/// and answers `64` — which is how the guest learns the size to ask for next time.
-/// The count is therefore bounded by neither the region nor the cap, and that is
-/// what makes both checks below reachable.
-///
-/// The engine owns the policy the guest observes: the [`MAX_FIELD_BYTES`] cap
-/// (`DataFieldTooLarge`), the buffer fit (`BufferTooSmall`), then the transfer
-/// budget — the order the C++ `setData` path uses. Those checks follow `fill`,
-/// since the length is unknown before it runs, which is why the region `fill`
-/// receives is clamped to the cap: the checks decide the *status*, and the clamp
-/// is what keeps an over-cap value's bytes out of guest memory regardless.
-///
-/// A refusal says nothing about what is in the guest's buffer, and the guest must
-/// not read it on a negative status. Over the cap, the clamp does bound what could
-/// have landed. Under it the clamp is a no-op — `fill` holds exactly the region the
-/// guest asked for — so whether a host that cannot fit a value leaves a prefix
-/// behind is that host's choice, not something the engine can enforce.
-///
-/// The bounds check covers the guest's whole declared `cap`, not the clamped
-/// length, so a buffer running past memory is `PointerOutOfBounds` even when its
-/// first [`MAX_FIELD_BYTES`] bytes would have been in bounds — the guest is told
-/// its pointer is wrong rather than being served a truncated prefix of it.
+/// **`fill` returns the value's true length, not what it wrote**: a host holding 64
+/// bytes and offered room for 4 writes nothing and answers `64`, which is how the
+/// guest learns the size to ask for. So `n` is bounded by neither the region nor the
+/// cap, and both checks below are reachable.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
     dst: i32,
     cap: i32,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
-    // As in `read_borrowed`: the conversion to an index is the validity check.
     let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
         return Err(HostError::InvalidParams);
     };
     let mem = memory(caller)?;
-    // Copy the shared `&dyn HostFunctions` out of the store data (references are
-    // Copy) so the data borrow ends before we borrow guest memory mutably.
     let host: &dyn HostFunctions = caller.data().host;
     let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
-    // The guest's whole declared region, so the bounds rule is about what it asked
-    // for…
+    // Bounds-checked over the guest's whole declared region, so a buffer running
+    // past memory is a wrong pointer rather than a truncated prefix being served…
     let out = mem
         .data_mut(&mut *caller)
         .get_mut(dst..end)
         .ok_or(HostError::PointerOutOfBounds)?;
-    // …of which at most the field cap is writable. Narrowed here rather than at the
-    // call below, so no call can put more than MAX_FIELD_BYTES into guest memory
-    // whatever the guest declared, and the wider slice cannot be reached again.
+    // …of which only the field cap is writable, so no call can exceed it whatever
+    // the guest declared.
     let out = &mut out[..cap.min(MAX_FIELD_BYTES)];
 
     let n = fill(host, out)?;
 
-    // Not subsumed by the clamp: `fill` reports the value's *true* length, which
-    // can exceed the region it was offered, and this is how the guest learns the
-    // value was too large rather than merely unwritten. The clamp bounds the
-    // bytes; this bounds the status.
     if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
@@ -235,8 +126,6 @@ pub(crate) fn write_into(
         return Err(HostError::BufferTooSmall);
     }
     charge_transfer(caller.data(), n)?;
-    // The cap check above bounds `n`, so the count reaches the wire whole: an
-    // `i32` the guest reads as a byte count, never a truncation of a larger one.
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
@@ -246,35 +135,22 @@ pub(crate) fn write_into(
     Ok(n)
 }
 
-/// Service a host call that reads guest memory and writes a value back into it
-/// (`sha512_half`): the host fills the run's scratch buffer
-/// ([`VmState::scratch`](crate::vm::VmState::scratch)), and the engine copies the
-/// result into the guest's output region once every rule has passed.
+/// Service a call that reads guest memory and writes bytes back to it: the host
+/// fills the run's output buffer, which is copied to the guest once every rule has
+/// passed.
 ///
-/// `call` is handed the guest's whole linear memory, so it borrows **as many**
-/// input regions as it needs with [`region`]. That is the difference from
-/// [`write_into`]: a `&mut` view of guest memory admits no simultaneous `&` view,
-/// so a host writing straight into the guest can only be given inputs that were
-/// copied out first, one buffer per input. Reading many and writing one is the
-/// common shape in this ABI — the two-argument keylets, the float arithmetic ops —
-/// and it is this helper that generalizes to it.
+/// `call` gets the guest's whole memory, so it can borrow any number of input
+/// regions with [`region`] — which a `&mut` view of that memory would forbid. That
+/// is why the answer goes through a buffer instead of straight into the guest as
+/// [`write_into`]'s does.
 ///
-/// **The host is never told the guest's capacity.** It is offered the whole
-/// [`MAX_FIELD_BYTES`] scratch, and reports the value's true length; the fit is
-/// decided here. Two consequences worth the indirection:
+/// **The host is never told the guest's capacity**: it is offered the whole buffer
+/// and reports the value's true length, so the fit is decided here, with nothing yet
+/// in guest memory. A refused value therefore reaches it in no part.
 ///
-/// - Nothing reaches guest memory until the length, the bounds, the fit and the
-///   budget have all passed, so a refused call cannot leave part of a value in the
-///   guest's buffer. [`write_into`] can only bound what is *writable*.
-/// - The checks then run in C++'s `setData` order — params, cap, bounds, fit,
-///   transfer, copy (`HostFuncWrapper.cpp:115-148` at `b7059deb9f^`) — *after* the
-///   value exists, which is the order C++ could use for exactly this reason.
-///
-/// So the output region is validated after the inputs, and a call with both bad
-/// reports the input's verdict, as C++'s `getDataSlice`-then-`setData` sequence
-/// did. `NoMemExported` is the one verdict that precedes both: it is a fact about
-/// the instance rather than about this call's arguments, and there is no memory to
-/// validate a region against.
+/// The output is judged after the inputs, so a call with both bad reports the
+/// input's verdict. `NoMemExported` precedes both: there is no memory to validate a
+/// region against.
 pub(crate) fn scratch_write(
     caller: &mut Caller<'_, VmState<'_>>,
     dst: i32,
@@ -282,28 +158,20 @@ pub(crate) fn scratch_write(
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
     let mem = memory(caller)?;
-    // One borrow, split in two: the guest's bytes, which the inputs are slices of,
-    // and the store data holding the scratch the output goes to. Taking them
-    // together is what keeps the inputs borrowed instead of copied.
+    // One borrow split in two: the guest's bytes for the inputs, the store data for
+    // the output buffer. Taking them together is what keeps the inputs borrowed
+    // rather than copied out.
     let (data, state) = mem.data_and_store_mut(&mut *caller);
-    // `&dyn HostFunctions` is `Copy` and outlives the store data, so taking it here
-    // does not hold a borrow of `state` across the call below.
     let host: &dyn HostFunctions = state.host;
 
-    let n = call(host, data, &mut state.scratch[..])?;
+    let n = call(host, data, &mut state.out_buffer[..])?;
 
-    // As in `region`: the conversion to an index is the validity check.
     let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
         return Err(HostError::InvalidParams);
     };
-    // `n` is the value's true length, which `call` reports whether or not it wrote
-    // it, so it is bounded by neither the scratch nor the guest's buffer. This is
-    // how the guest learns a value was too large rather than merely unwritten.
     if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
-    // The guest's whole declared region, so a buffer running past memory is its
-    // pointer being wrong rather than a truncated prefix of it being served.
     let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
     let out = data
         .get_mut(dst..end)
@@ -312,9 +180,7 @@ pub(crate) fn scratch_write(
         return Err(HostError::BufferTooSmall);
     }
     charge_transfer(state, n)?;
-    out[..n].copy_from_slice(&state.scratch[..n]);
-    // The cap check above bounds `n`, so the count reaches the wire whole: an
-    // `i32` the guest reads as a byte count, never a truncation of a larger one.
+    out[..n].copy_from_slice(&state.out_buffer[..n]);
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
@@ -324,15 +190,9 @@ pub(crate) fn scratch_write(
     Ok(n)
 }
 
-// ---------------------------------------------------------------------------
-// Unit tests
-//
-// A `Caller` exists only for the duration of a host call, so `read_borrowed`,
-// `write_into`, `scratch_write` and `memory` are unreachable from here; `tests/`
-// covers them by running real modules against a fake host. `region` is the
-// exception, taking bytes rather than a `Caller`, but the same tests reach it
-// through every call that borrows an input.
-// ---------------------------------------------------------------------------
+// A `Caller` exists only during a host call, so everything above that takes one is
+// unreachable from here; `tests/` covers those by running real modules against a
+// fake host.
 
 #[cfg(test)]
 mod tests {
@@ -341,8 +201,7 @@ mod tests {
     use std::cell::Cell;
     use wasmi::StoreLimitsBuilder;
 
-    /// A host no test here calls; `charge_transfer` takes the store data, which
-    /// has to hold one.
+    /// `charge_transfer` takes the store data, which has to hold a host.
     struct UncalledHost;
 
     impl HostFunctions for UncalledHost {
@@ -363,27 +222,23 @@ mod tests {
         }
     }
 
-    /// A `VmState` whose transfer budget starts at `budget`.
     fn state(budget: u64) -> VmState<'static> {
         VmState {
             host: &UncalledHost,
             mem_limits: StoreLimitsBuilder::new().build(),
             transfer_budget: Cell::new(budget),
             memory: None,
-            scratch: [0u8; MAX_FIELD_BYTES],
+            out_buffer: [0u8; MAX_FIELD_BYTES],
         }
     }
 
-    /// The status a result reaches the guest as. `wasmi::Error` is not `PartialEq`,
-    /// so a test that expects the guest-visible channel says so here.
+    /// `wasmi::Error` is not `PartialEq`, so a test expecting the guest-visible
+    /// channel says so by going through here.
     fn wire(result: HostResult<i32>) -> i32 {
         to_wire(result)
             .unwrap_or_else(|trap| panic!("expected a guest-visible status, got a trap: {trap}"))
     }
 
-    /// The guest-visible channel: a value passes through, and a soft error
-    /// arrives as its negative wire code — a call the engine served either way,
-    /// because the guest is the one who decides what to do about it.
     #[test]
     fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
         assert_eq!(wire(Ok(0)), 0);
@@ -391,19 +246,17 @@ mod tests {
         assert_eq!(wire(Err(HostError::BufferTooSmall)), -3);
     }
 
-    /// The three conditions the host cannot serve a call under, as the tests
-    /// *expect* them rather than as [`is_fatal`] reports them — deriving this from
-    /// `is_fatal` would make both tests below vacuous, since a condition wrongly
-    /// classified as soft would simply be skipped. Named once, so the two are one
-    /// statement about the same set.
+    /// The fatal set as the tests *expect* it, not as [`is_fatal`] reports it:
+    /// deriving it from `is_fatal` would make both tests below vacuous, since a
+    /// condition wrongly classified as soft would simply be skipped.
     const MUST_TRAP: [HostError; 3] = [
         HostError::OutOfGas,
         HostError::Internal,
         HostError::NoMemExported,
     ];
 
-    /// The fatal channel: a trap, carrying the condition so `run` can name the
-    /// outcome without parsing a message.
+    /// The trap carries the condition, so `run` can name the outcome without
+    /// parsing a message.
     #[test]
     fn a_host_fatal_error_becomes_a_trap_carrying_it() {
         for error in MUST_TRAP {
@@ -416,17 +269,12 @@ mod tests {
         }
     }
 
-    /// Which errors take which channel, as a deliberate change-detector: the
-    /// three in [`MUST_TRAP`] trap, and everything else is a code the guest acts on.
+    /// Over `HostError::ALL`, so it is the whole ABI and not a sample: a code added
+    /// to the ABI arrives already asserted to be guest-visible, and making it fatal
+    /// is then a change someone has to come and make.
     ///
-    /// Over `HostError::ALL`, so it is the whole ABI and not a sample: a code
-    /// added to the ABI arrives here already asserted to be guest-visible, and
-    /// making it fatal is then a change someone has to come and make.
-    ///
-    /// `OutOfTransferLimit` is the row worth reading twice. It is the one budget
-    /// a contract can be expected to handle — C++ made it the single soft failure
-    /// among these, and this fork keeps that — so a guest asking for more than
-    /// the run's remaining 1 MiB is told no, not killed.
+    /// `OutOfTransferLimit` is the row worth reading twice: the one budget a
+    /// contract can be expected to handle, so it is told no rather than killed.
     #[test]
     fn only_the_host_fatal_errors_trap() {
         for &error in HostError::ALL {
@@ -449,8 +297,8 @@ mod tests {
         assert_eq!(state.transfer_budget.get(), 0);
     }
 
-    /// The budget bounds the total, so the last transfer that fits is allowed and
-    /// the one that would overrun is refused whole — never partially charged.
+    /// The budget bounds the total, so the transfer that would overrun it is
+    /// refused whole rather than partially charged.
     #[test]
     fn a_transfer_past_the_budget_is_refused_and_charges_nothing() {
         let state = state(100);
@@ -479,9 +327,9 @@ mod tests {
         assert_eq!(state.transfer_budget.get(), 0);
     }
 
-    /// The field cap holds any one call to a small share of the run's budget, so
-    /// the budget bounds a run rather than a call. An inequality, not the two
-    /// values: those are pinned in `vm.rs`.
+    /// The field cap holds one call to a small share of the run's budget, so the
+    /// budget bounds a run rather than a call. An inequality, not the two values:
+    /// those are pinned in `vm.rs`.
     #[test]
     fn no_single_value_can_exhaust_the_run_budget() {
         assert!(

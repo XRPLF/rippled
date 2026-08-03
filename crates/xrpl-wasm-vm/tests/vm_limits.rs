@@ -424,11 +424,8 @@ fn a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure(
 /// and instantiation is what produces the instance, so a call made while it is
 /// still running has no memory to work in and ends the run.
 ///
-/// This is the C++ path's behaviour and for the same reason: `wasm_instance_new`
-/// (`WasmiVM.cpp:154` at `b7059deb9f^`) ran the start section, and
-/// `wasm_instance_exports` (line 161) filled the export table only after it
-/// returned — so the scan `InstanceWrapper::getMem` performs found nothing during a
-/// start section either.
+/// Not a choice: `Module::instantiate` is `pub(crate)` in wasmi, so instantiation
+/// cannot be split from the start section to resolve the memory in between.
 #[test]
 fn a_start_section_cannot_make_a_host_call() {
     let host = FakeHost::new();
