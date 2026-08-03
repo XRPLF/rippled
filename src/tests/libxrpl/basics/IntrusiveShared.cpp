@@ -245,7 +245,9 @@ TEST(IntrusiveSharedTest, basics)
         while (!weak.empty())
         {
             if (weak.resize(weak.size() - 1); !weak.empty())
+            {
                 EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
+            }
         }
         EXPECT_EQ(TIBase::getState(id), Deleted);
     }
