@@ -18,12 +18,12 @@ static_assert(std::is_nothrow_move_assignable_v<Buffer>);
 
 struct BufferTest : public ::testing::Test
 {
-    static constexpr auto kData = std::to_array<std::uint8_t>(
+    static constexpr auto kRandomData = std::to_array<std::uint8_t>(
         {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
          0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
          0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3});
 
-    static constexpr std::size_t kHalf = kData.size() / 2;
+    static constexpr std::size_t kHalf = kRandomData.size() / 2;
 
     static bool
     sane(Buffer const& b)
@@ -54,9 +54,9 @@ struct BufferTest : public ::testing::Test
     }
 
     Buffer const emptyBuffer;
-    Buffer const firstHalf{kData.data(), kHalf};
-    Buffer const secondHalf{kData.data() + kHalf, kHalf};
-    Buffer const whole{kData.data(), kData.size()};
+    Buffer const firstHalf{kRandomData.data(), kHalf};
+    Buffer const secondHalf{kRandomData.data() + kHalf, kHalf};
+    Buffer const whole{kRandomData.data(), kRandomData.size()};
 };
 
 TEST_F(BufferTest, default_constructed_is_empty)
@@ -79,7 +79,7 @@ TEST_F(BufferTest, zero_sized_construction_is_empty)
 TEST_F(BufferTest, alloc_grows_an_empty_buffer)
 {
     Buffer b{0};
-    std::memcpy(b.alloc(kHalf), kData.data(), kHalf);
+    std::memcpy(b.alloc(kHalf), kRandomData.data(), kHalf);
 
     EXPECT_TRUE(sane(b));
     EXPECT_FALSE(b.empty());
@@ -95,18 +95,18 @@ TEST_F(BufferTest, sized_construction_reserves_without_filling)
     EXPECT_FALSE(b.empty());
     EXPECT_EQ(b.size(), kHalf);
 
-    std::memcpy(b.data(), kData.data() + kHalf, kHalf);
+    std::memcpy(b.data(), kRandomData.data() + kHalf, kHalf);
     EXPECT_EQ(b, secondHalf);
 }
 
 TEST_F(BufferTest, construction_copies_raw_memory)
 {
-    Buffer const b{kData.data(), kData.size()};
+    Buffer const b{kRandomData.data(), kRandomData.size()};
 
     EXPECT_TRUE(sane(b));
     EXPECT_FALSE(b.empty());
-    EXPECT_EQ(b.size(), kData.size());
-    EXPECT_EQ(std::memcmp(b.data(), kData.data(), b.size()), 0);
+    EXPECT_EQ(b.size(), kRandomData.size());
+    EXPECT_EQ(std::memcmp(b.data(), kRandomData.data(), b.size()), 0);
 }
 
 TEST_F(BufferTest, equality_compares_contents)
