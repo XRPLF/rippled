@@ -192,6 +192,7 @@ unsigned-integer-overflow:rpc/handlers/orderbook/GetAggregatePrice.cpp
 # Test-only intentional overflow/underflow in fixture and unit-test arithmetic.
 unsigned-integer-overflow:tests/libxrpl/basics/RangeSet.cpp
 unsigned-integer-overflow:test/app/Batch_test.cpp
+unsigned-integer-overflow:test/app/ConfidentialTransfer_test.cpp
 unsigned-integer-overflow:test/app/Invariants_test.cpp
 unsigned-integer-overflow:test/app/Loan_test.cpp
 unsigned-integer-overflow:test/app/NFToken_test.cpp

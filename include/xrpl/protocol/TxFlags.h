@@ -12,29 +12,30 @@
 
 namespace xrpl {
 
-/** Transaction flags.
-
-    These flags are specified in a transaction's 'Flags' field and modify
-    the behavior of that transaction.
-
-    There are two types of flags:
-
-        (1) Universal flags: these are flags which apply to, and are interpreted the same way by,
-            all transactions, except, perhaps, to special pseudo-transactions.
-
-        (2) Tx-Specific flags: these are flags which are interpreted according to the type of the
-            transaction being executed. That is, the same numerical flag value may have different
-            effects, depending on the transaction being executed.
-
-    @note The universal transaction flags occupy the high-order 8 bits.
-          The tx-specific flags occupy the remaining 24 bits.
-
-    @warning Transaction flags form part of the protocol.
-             **Changing them should be avoided because without special handling, this will result in
-             a hard fork.**
-
-    @ingroup protocol
-*/
+/**
+ * Transaction flags.
+ *
+ * These flags are specified in a transaction's 'Flags' field and modify
+ * the behavior of that transaction.
+ *
+ * There are two types of flags:
+ *
+ *     (1) Universal flags: these are flags which apply to, and are interpreted the same way by,
+ *         all transactions, except, perhaps, to special pseudo-transactions.
+ *
+ *     (2) Tx-Specific flags: these are flags which are interpreted according to the type of the
+ *         transaction being executed. That is, the same numerical flag value may have different
+ *         effects, depending on the transaction being executed.
+ *
+ * @note The universal transaction flags occupy the high-order 8 bits.
+ *       The tx-specific flags occupy the remaining 24 bits.
+ *
+ * @warning Transaction flags form part of the protocol.
+ *          **Changing them should be avoided because without special handling, this will result in
+ *          a hard fork.**
+ *
+ * @ingroup protocol
+ */
 
 using FlagValue = std::uint32_t;
 
@@ -102,7 +103,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
     TRANSACTION(Payment,                                                                                                                                       \
         TF_FLAG(tfNoRippleDirect, 0x00010000)                                                                                                                  \
         TF_FLAG(tfPartialPayment, 0x00020000)                                                                                                                  \
-        TF_FLAG(tfLimitQuality, 0x00040000),                                                                                                                   \
+        TF_FLAG(tfLimitQuality, 0x00040000)                                                                                                                    \
+        TF_FLAG(tfSponsorCreatedAccount, 0x00080000),                                                                                                          \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(TrustSet,                                                                                                                                      \
@@ -140,7 +142,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanEscrow, lsfMPTCanEscrow)                                                                                                               \
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
-        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback),                                                                                                          \
+        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback)                                                                                                           \
+        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
@@ -214,6 +217,20 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
         TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SponsorshipSet,                                                                                                                                \
+        TF_FLAG(tfSponsorshipSetRequireSignForFee, 0x00010000)                                                                                                 \
+        TF_FLAG(tfSponsorshipClearRequireSignForFee, 0x00020000)                                                                                               \
+        TF_FLAG(tfSponsorshipSetRequireSignForReserve, 0x00040000)                                                                                             \
+        TF_FLAG(tfSponsorshipClearRequireSignForReserve, 0x00080000)                                                                                           \
+        TF_FLAG(tfDeleteObject, 0x00100000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SponsorshipTransfer,                                                                                                                           \
+        TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
+        TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
+        TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
         MASK_ADJ(0))
 
 // clang-format on
@@ -349,10 +366,13 @@ inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTrans
 inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+inline constexpr FlagValue tmfMPTCannotEnableCanHoldConfidentialBalance =
+    lsmfMPTCannotEnableCanHoldConfidentialBalance;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
     ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
       tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
-      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
+      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee |
+      tmfMPTCannotEnableCanHoldConfidentialBalance);
 
 // MPTokenIssuanceSet MutableFlags:
 // Enable mutable capability flags. These flags are one-way: once enabled,
@@ -364,9 +384,10 @@ inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000004;
 inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
 inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
 inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
+inline constexpr FlagValue tmfMPTSetCanHoldConfidentialBalance = 0x00000040;
 inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
     ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
-      tmfMPTSetCanTransfer | tmfMPTSetCanClawback);
+      tmfMPTSetCanTransfer | tmfMPTSetCanClawback | tmfMPTSetCanHoldConfidentialBalance);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
@@ -438,6 +459,12 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
 #pragma pop_macro("ACCOUNTSET_FLAGS")
+
+// Sponsor flags (spf)
+
+inline constexpr FlagValue spfSponsorFee = 1;
+inline constexpr FlagValue spfSponsorReserve = 2;
+inline constexpr FlagValue spfSponsorFlagMask = ~(spfSponsorFee | spfSponsorReserve);
 
 }  // namespace xrpl
 

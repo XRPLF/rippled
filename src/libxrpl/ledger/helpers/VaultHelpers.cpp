@@ -5,7 +5,8 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -13,6 +14,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -135,6 +137,24 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
         return false;  // LCOV_EXCL_LINE
 
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
+}
+
+[[nodiscard]] VaultVersion
+getVaultVersion(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
+    if (!vault->isFieldPresent(sfLEVersion))
+        return VaultVersion::Legacy;
+
+    auto const version = vault->at(sfLEVersion);
+    if (version > std::to_underlying(VaultVersion::CashBasis))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
+        return VaultVersion::Legacy;
+        // LCOV_EXCL_STOP
+    }
+    return static_cast<VaultVersion>(version);
 }
 
 }  // namespace xrpl

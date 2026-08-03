@@ -1,20 +1,25 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/tags.h>
+
+#include <xrpl/protocol/STAmount.h>
 
 #include <utility>
 
 namespace xrpl::test::jtx {
 
-/** A balance matches.
-
-    This allows "none" which means either the account
-    doesn't exist (no XRP) or the trust line does not
-    exist. If an amount is specified, the SLE must
-    exist even if the amount is 0, or else the test
-    fails.
-*/
+/**
+ * A balance matches.
+ *
+ * This allows "none" which means either the account
+ * doesn't exist (no XRP) or the trust line does not
+ * exist. If an amount is specified, the SLE must
+ * exist even if the amount is 0, or else the test
+ * fails.
+ */
 class Balance
 {
 private:

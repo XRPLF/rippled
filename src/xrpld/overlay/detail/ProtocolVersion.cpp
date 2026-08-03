@@ -19,15 +19,17 @@
 
 namespace xrpl {
 
-/** The list of protocol versions we speak and we prefer to use.
-
-    @note The list must be sorted in strictly ascending order (and so
-          it may not contain any duplicates!)
-*/
+/**
+ * The list of protocol versions we speak and we prefer to use.
+ *
+ * @note The list must be sorted in strictly ascending order (and so
+ *       it may not contain any duplicates!)
+ */
 
 constexpr ProtocolVersion const kSupportedProtocolList[]{
     {2, 1},
     {2, 2},
+    {2, 3},
 };
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly

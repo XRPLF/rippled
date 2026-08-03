@@ -15,6 +15,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -488,7 +489,7 @@ public:
         lastRotated = ledgerSeq - 1;
     }
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
         Section section{env.app().config().section(Sections::kNodeDatabase)};
@@ -499,7 +500,7 @@ public:
         newPath = path;
         section.set(Keys::kPath, newPath.string());
 
-        auto backend{NodeStore::Manager::instance().makeBackend(
+        auto backend{node_store::Manager::instance().makeBackend(
             section,
             megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler,
@@ -548,7 +549,7 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         static constexpr int kReadThreads = 4;
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler,
             kReadThreads,
             std::move(writableBackend),

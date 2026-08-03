@@ -4,24 +4,41 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/LoadEvent.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** Calculates payment paths.
-
-    The @ref RippleCalc determines the quality of the found paths.
-
-    @see RippleCalc
-*/
+/**
+ * Calculates payment paths.
+ *
+ * The @ref RippleCalc determines the quality of the found paths.
+ *
+ * @see RippleCalc
+ */
 class Pathfinder : public CountedObject<Pathfinder>
 {
 public:
-    /** Construct a pathfinder without an issuer.*/
+    /**
+     * Construct a pathfinder without an issuer.
+     */
     Pathfinder(
         std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
@@ -43,7 +60,9 @@ public:
     bool
     findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
 
-    /** Compute the rankings of the paths. */
+    /**
+     * Compute the rankings of the paths.
+     */
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
@@ -175,8 +194,10 @@ private:
     PathAsset srcPathAsset_;
     std::optional<AccountID> srcIssuer_;
     STAmount srcAmount_;
-    /** The amount remaining from srcAccount_ after the default liquidity has
-        been removed. */
+    /**
+     * The amount remaining from srcAccount_ after the default liquidity has
+     * been removed.
+     */
     STAmount remainingAmount_;
     bool convertAll_;
     std::optional<uint256> domain_;

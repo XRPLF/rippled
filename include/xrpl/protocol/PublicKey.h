@@ -1,8 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/json_get_or_throw.h>
@@ -11,33 +18,37 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <ostream>
+#include <sstream>
+#include <string>
 
 namespace xrpl {
 
-/** A public key.
-
-    Public keys are used in the public-key cryptography
-    system used to verify signatures attached to messages.
-
-    The format of the public key is XRPL specific,
-    information needed to determine the cryptosystem
-    parameters used is stored inside the key.
-
-    As of this writing two systems are supported:
-
-        secp256k1
-        ed25519
-
-    secp256k1 public keys consist of a 33 byte
-    compressed public key, with the lead byte equal
-    to 0x02 or 0x03.
-
-    The ed25519 public keys consist of a 1 byte
-    prefix constant 0xED, followed by 32 bytes of
-    public key data.
-*/
+/**
+ * A public key.
+ *
+ * Public keys are used in the public-key cryptography
+ * system used to verify signatures attached to messages.
+ *
+ * The format of the public key is XRPL specific,
+ * information needed to determine the cryptosystem
+ * parameters used is stored inside the key.
+ *
+ * As of this writing two systems are supported:
+ *
+ *     secp256k1
+ *     ed25519
+ *
+ * secp256k1 public keys consist of a 33 byte
+ * compressed public key, with the lead byte equal
+ * to 0x02 or 0x03.
+ *
+ * The ed25519 public keys consist of a 1 byte
+ * prefix constant 0xED, followed by 32 bytes of
+ * public key data.
+ */
 class PublicKey
 {
 protected:
@@ -56,11 +67,12 @@ public:
     PublicKey&
     operator=(PublicKey const& other);
 
-    /** Create a public key.
-
-        Preconditions:
-            publicKeyType(slice) != std::nullopt
-    */
+    /**
+     * Create a public key.
+     *
+     * Preconditions:
+     *     publicKeyType(slice) != std::nullopt
+     */
     explicit PublicKey(Slice const& slice);
 
     [[nodiscard]] std::uint8_t const*
@@ -111,7 +123,8 @@ public:
     }
 };
 
-/** Print the public key to a stream.
+/**
+ * Print the public key to a stream.
  */
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk);
@@ -170,39 +183,41 @@ parseBase58(TokenType type, std::string const& s);
 
 enum class ECDSACanonicality { Canonical, FullyCanonical };
 
-/** Determines the canonicality of a signature.
-
-    A canonical signature is in its most reduced form.
-    For example the R and S components do not contain
-    additional leading zeroes. However, even in
-    canonical form, (R,S) and (R,G-S) are both
-    valid signatures for message M.
-
-    Therefore, to prevent malleability attacks we
-    define a fully canonical signature as one where:
-
-        R < G - S
-
-    where G is the curve order.
-
-    This routine returns std::nullopt if the format
-    of the signature is invalid (for example, the
-    points are encoded incorrectly).
-
-    @return std::nullopt if the signature fails
-            validity checks.
-
-    @note Only the format of the signature is checked,
-          no verification cryptography is performed.
-*/
+/**
+ * Determines the canonicality of a signature.
+ *
+ * A canonical signature is in its most reduced form.
+ * For example the R and S components do not contain
+ * additional leading zeroes. However, even in
+ * canonical form, (R,S) and (R,G-S) are both
+ * valid signatures for message M.
+ *
+ * Therefore, to prevent malleability attacks we
+ * define a fully canonical signature as one where:
+ *
+ *     R < G - S
+ *
+ * where G is the curve order.
+ *
+ * This routine returns std::nullopt if the format
+ * of the signature is invalid (for example, the
+ * points are encoded incorrectly).
+ *
+ * @return std::nullopt if the signature fails
+ *         validity checks.
+ *
+ * @note Only the format of the signature is checked,
+ *       no verification cryptography is performed.
+ */
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig);
 
-/** Returns the type of public key.
-
-    @return std::nullopt If the public key does not
-            represent a known type.
-*/
+/**
+ * Returns the type of public key.
+ *
+ * @return std::nullopt If the public key does not
+ *         represent a known type.
+ */
 /** @{ */
 [[nodiscard]] std::optional<KeyType>
 publicKeyType(Slice const& slice);
@@ -214,7 +229,9 @@ publicKeyType(PublicKey const& publicKey)
 }
 /** @} */
 
-/** Verify a secp256k1 signature on the digest of a message. */
+/**
+ * Verify a secp256k1 signature on the digest of a message.
+ */
 [[nodiscard]] bool
 verifyDigest(
     PublicKey const& publicKey,
@@ -222,14 +239,17 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical = true) noexcept;
 
-/** Verify a signature on a message.
-    With secp256k1 signatures, the data is first hashed with
-    SHA512-Half, and the resulting digest is signed.
-*/
+/**
+ * Verify a signature on a message.
+ * With secp256k1 signatures, the data is first hashed with
+ * SHA512-Half, and the resulting digest is signed.
+ */
 [[nodiscard]] bool
 verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
 
-/** Calculate the 160-bit node ID from a node public key. */
+/**
+ * Calculate the 160-bit node ID from a node public key.
+ */
 NodeID
 calcNodeID(PublicKey const&);
 

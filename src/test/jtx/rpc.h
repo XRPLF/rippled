@@ -1,15 +1,21 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-#include <tuple>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace xrpl::test::jtx {
 
-/** Set the expected result code for a JTx
-    The test will fail if the code doesn't match.
-*/
+/**
+ * Set the expected result code for a JTx
+ * The test will fail if the code doesn't match.
+ */
 class Rpc
 {
 private:
@@ -19,13 +25,17 @@ private:
     std::optional<std::string> errorException_;
 
 public:
-    /// If there's an error code, we expect an error message
+    /**
+     * If there's an error code, we expect an error message
+     */
     explicit Rpc(ErrorCodeI code, std::optional<std::string> m = {})
         : code_(code), errorMessage_(std::move(m))
     {
     }
 
-    ///  If there is not a code, we expect an exception message
+    /**
+     * If there is not a code, we expect an exception message
+     */
     explicit Rpc(std::string error, std::optional<std::string> exceptionMessage = {})
         : error_(error), errorException_(std::move(exceptionMessage))
     {
