@@ -41,12 +41,10 @@ struct RunState
     release()
     {
         harness.reset();
-        // swap-with-empty rather than assignment: only swapping is guaranteed to
-        // hand the capacity back, and these pools are large.
-        Batch{}.swap(present);
-        Batch{}.swap(recent);
-        std::vector<uint256>{}.swap(missing);
-        std::vector<std::size_t>{}.swap(shuffle);
+        present = Batch{};
+        recent = Batch{};
+        missing = std::vector<uint256>{};
+        shuffle = std::vector<std::size_t>{};
         avgPayload = 0;
     }
 };

@@ -34,6 +34,25 @@ struct BufferTest : public ::testing::Test
         return b.data() != nullptr;
     }
 
+    /**
+     * Check the state Buffer documents for a moved-from buffer: "the other buffer is reset", i.e.
+     * empty and sane.
+     *
+     * Zeroing the size is not incidental tidiness. Moving the member unique_ptr nulls the data
+     * pointer whether Buffer wants it or not, so a moved-from buffer that kept its old size would
+     * lie about itself everywhere: alloc() would take its `n == size_` early-out and hand back a
+     * null pointer while still reporting the old size, fill() would run std::fill_n over a null
+     * pointer, and the Slice conversion would publish {nullptr, oldSize} to callers. A moved-from
+     * Buffer has to be a usable empty Buffer rather than a landmine, which is why the tests below
+     * assert this state instead of treating a moved-from buffer as untouchable.
+     */
+    static void
+    checkEmptyAfterMove(Buffer const& buf)
+    {
+        EXPECT_TRUE(sane(buf));
+        EXPECT_TRUE(buf.empty());
+    }
+
     Buffer const emptyBuffer;
     Buffer const firstHalf{kData.data(), kHalf};
     Buffer const secondHalf{kData.data() + kHalf, kHalf};
@@ -89,6 +108,7 @@ TEST_F(BufferTest, construction_copies_raw_memory)
     EXPECT_EQ(b.size(), kData.size());
     EXPECT_EQ(std::memcmp(b.data(), kData.data(), b.size()), 0);
 }
+
 TEST_F(BufferTest, equality_compares_contents)
 {
     // Uses EXPECT_TRUE rather than EXPECT_EQ/EXPECT_NE because the operators are what is under test
@@ -159,8 +179,7 @@ TEST_F(BufferTest, move_construct_from_empty)
     Buffer source;
     Buffer const moved{std::move(source)};
 
-    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(source);
     EXPECT_TRUE(sane(moved));
     EXPECT_TRUE(moved.empty());
 }
@@ -170,8 +189,7 @@ TEST_F(BufferTest, move_construct_from_non_empty)
     Buffer source{firstHalf};
     Buffer const moved{std::move(source)};
 
-    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(source);
     EXPECT_TRUE(sane(moved));
     EXPECT_EQ(moved, firstHalf);
 }
@@ -185,8 +203,7 @@ TEST_F(BufferTest, move_assign_empty_to_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_TRUE(target.empty());
-    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(source);
 }
 
 TEST_F(BufferTest, move_assign_non_empty_to_empty)
@@ -198,8 +215,7 @@ TEST_F(BufferTest, move_assign_non_empty_to_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, firstHalf);
-    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(source);
 }
 
 TEST_F(BufferTest, move_assign_empty_to_non_empty)
@@ -211,8 +227,7 @@ TEST_F(BufferTest, move_assign_empty_to_non_empty)
 
     EXPECT_TRUE(sane(target));
     EXPECT_TRUE(target.empty());
-    EXPECT_TRUE(sane(source));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(source.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(source);
 }
 
 TEST_F(BufferTest, move_assign_non_empty_to_non_empty)
@@ -224,14 +239,12 @@ TEST_F(BufferTest, move_assign_non_empty_to_non_empty)
     target = std::move(sameSize);
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, secondHalf);
-    EXPECT_TRUE(sane(sameSize));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(sameSize.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(sameSize);
 
     target = std::move(largerSize);
     EXPECT_TRUE(sane(target));
     EXPECT_EQ(target, whole);
-    EXPECT_TRUE(sane(largerSize));    // NOLINT(bugprone-use-after-move)
-    EXPECT_TRUE(largerSize.empty());  // NOLINT(bugprone-use-after-move)
+    checkEmptyAfterMove(largerSize);
 }
 
 TEST_F(BufferTest, construction_from_slice)
