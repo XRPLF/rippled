@@ -1090,7 +1090,10 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        if (config_->shedColdSubtrees)
+        // Follow the runtime gate, not the config flag: [shed_cold_subtrees]
+        // seeds the gate at startup, and the admin `shed` RPC can flip it live —
+        // sweep-driven shedding must track the toggle.
+        if (SHAMap::shedEnabled())
         {
             // Reclaim resident cold subtrees of the most-recent fully-validated
             // ledger's state map. Dropped nodes keep their child hashes and are
