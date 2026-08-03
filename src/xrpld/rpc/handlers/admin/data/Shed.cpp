@@ -14,13 +14,21 @@ namespace xrpl {
 // shed {enable: bool?, run: bool = true, min_depth: uint?}
 //
 // Admin-only live control of sheddable resident subtrees. `enable` flips the
-// process-wide runtime gate that drives the sweep hook. When `run` is true a
-// single shed pass is executed immediately on the most-recent fully-validated
-// ledger's state map, so the response carries an instant before/after.
+// process-wide runtime gate that drives the sweep hook. When `run` is true and
+// the gate was already up before this request, a single shed pass is executed
+// immediately on the most-recent fully-validated ledger's state map, so the
+// response carries an instant before/after.
 json::Value
 doShed(RPC::JsonContext& context)
 {
     bool const run = context.params.isMember("run") ? context.params["run"].asBool() : true;
+
+    // Readers only take the shed guard when the gate is on, so a shed pass is
+    // only safe against readers that started AFTER the gate went up. Require
+    // the gate to have been enabled before this request (and still be enabled)
+    // to run the immediate pass; a flip-and-run in one call could free nodes
+    // under a pre-flip unguarded descent.
+    bool const wasEnabled = SHAMap::shedEnabled();
 
     if (context.params.isMember("enable"))
         SHAMap::setShedEnabled(context.params["enable"].asBool());
@@ -30,7 +38,8 @@ doShed(RPC::JsonContext& context)
     int const trackBefore = treeNodeCache->getTrackSize();
 
     std::size_t dropped = 0;
-    if (run)
+    bool const ranPass = run && wasEnabled && SHAMap::shedEnabled();
+    if (ranPass)
     {
         if (auto const validated = context.ledgerMaster.getValidatedLedger())
         {
@@ -48,6 +57,11 @@ doShed(RPC::JsonContext& context)
 
     json::Value ret(json::ValueType::Object);
     ret[jss::enabled] = SHAMap::shedEnabled();
+    ret["ran_pass"] = ranPass;
+    if (run && !ranPass)
+        ret["warning"] =
+            "shed pass skipped: gate must already be enabled before "
+            "a pass can run safely; call again to run one";
     ret["dropped"] = static_cast<json::UInt>(dropped);
     ret["treenode_cache_before"] = cacheBefore;
     ret["treenode_track_before"] = trackBefore;

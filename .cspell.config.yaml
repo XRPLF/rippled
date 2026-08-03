@@ -278,6 +278,7 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - sheddable
   - shfmt
   - shlibs
   - sidechain
