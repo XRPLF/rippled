@@ -36,6 +36,7 @@ resolveEntry(ReadView const& view, Keylet const& key)
 {
     // Views are never const objects; the read-only wrapper only holds a const
     // reference because it does not itself modify the view.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     if (auto const applyView = dynamic_cast<ApplyView*>(const_cast<ReadView*>(&view)))
         return applyView->peek(key);
     return view.read(key);
