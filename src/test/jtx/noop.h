@@ -7,7 +7,9 @@
 
 namespace xrpl::test::jtx {
 
-/** The null transaction. */
+/**
+ * The null transaction.
+ */
 inline json::Value
 noop(Account const& account)
 {

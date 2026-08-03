@@ -3,12 +3,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/resource/Consumer.h>
 
 #include <chrono>
@@ -19,7 +19,9 @@
 
 namespace xrpl {
 
-/** Manages an outbound connection attempt. */
+/**
+ * Manages an outbound connection attempt.
+ */
 class ConnectAttempt : public OverlayImpl::Child,
                        public std::enable_shared_from_this<ConnectAttempt>
 {

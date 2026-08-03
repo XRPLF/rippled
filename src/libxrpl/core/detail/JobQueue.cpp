@@ -13,7 +13,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -36,7 +35,7 @@ JobQueue::JobQueue(
 {
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
-    hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
+    hook_ = collector_->makeHook([this] { collect(); });
     jobCount_ = collector_->makeGauge("job_count");
 
     {

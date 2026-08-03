@@ -39,22 +39,30 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
 
-    // If any new conditions with new amendments are added, those amendments must also be added to
-    // useRulesGuards.
-    bool const enableVaultNumbers =
-        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-    bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
-    XRPL_ASSERT(
-        !r || useRulesGuards(*r) == (enableCuspRoundingFix || enableVaultNumbers),
-        "setCurrentTransactionRules : rule decisions match");
-
     // Declare the range this way to keep clang-tidy from complaining
-    auto const range = [enableCuspRoundingFix, enableVaultNumbers]() {
-        if (enableVaultNumbers)
+    auto const range = [&r]() {
+        // If any new conditions with new amendments are added to "enableLargeNumbers", those
+        // amendments must also be added to useRulesGuards.
+        bool const enableLargeNumbers =
+            !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        // If enableLargeNumbers is true, then useRulesGuards must also return true.
+        // However, the reverse is not true. Other amendments can cause the rules guard to be used,
+        // even though large numbers are _not_ used.
+        XRPL_ASSERT(
+            !r || !enableLargeNumbers || useRulesGuards(*r),
+            "setCurrentTransactionRules : rule decisions match");
+
+        if (enableLargeNumbers)
         {
-            if (enableCuspRoundingFix)
+            static_assert(
+                MantissaRange::MantissaScale::Large == MantissaRange::MantissaScale::Large330);
+            if (!r || r->enabled(fixCleanup3_3_0))
             {
-                return MantissaRange::MantissaScale::Large;
+                return MantissaRange::MantissaScale::Large330;
+            }
+            if (r->enabled(fixCleanup3_2_0))
+            {
+                return MantissaRange::MantissaScale::Large320;
             }
             return MantissaRange::MantissaScale::LargeLegacy;
         }
@@ -69,14 +77,14 @@ bool
 useRulesGuards(Rules const& rules)
 {
     // The list of amendments used here - to decide whether to create a RulesGuard - must be a
-    // superset of the list used to figure out which mantissa scale to use in
-    // setCurrentTransactionRules. Additional amendments can be added if desired.
+    // superset of the list used to determine "enableLargeNumbers" in setCurrentTransactionRules.
+    // Additional amendments can be added if desired.
     //
     // As soon as any one of these amendments is retired, this whole function can be removed, along
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
-    return rules.enabled(fixCleanup3_2_0) || rules.enabled(featureSingleAssetVault) ||
-        rules.enabled(featureLendingProtocol);
+    return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
 }
 
 void
@@ -87,7 +95,8 @@ createGuards(
 {
     if (useRulesGuards(rules))
     {
-        // raii classes for the current ledger rules.
+        // raii classes for the current ledger rules. If the rules are set, the MantissaRange will
+        // be updated, too.
         rulesGuard.emplace(rules);
     }
     else

@@ -332,17 +332,30 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     return err;
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
+                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
+                    !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
+                    sb,
+                    account,
+                    accountId,
+                    amount,
+                    ctx.journal,
+                    {},  // don't sponsor for AMM Trustline
+                    WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
+                        sb,
+                        account,
+                        accountId,
+                        amount,
+                        ctx.journal,
+                        {},  // don't sponsor for AMM Trustline
+                        WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))

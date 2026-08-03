@@ -29,6 +29,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -52,6 +53,7 @@
 
 #include <array>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -1078,7 +1080,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             auto const amt =
-                env.balance(alice) - env.current()->fees().accountReserve(env.ownerCount(alice));
+                env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal);
             env(pay(alice, issuer, amt));
 
             // preclaim:: tecINSUFFICIENT_RESERVE
@@ -1436,18 +1438,77 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(tx2, Ter(temINVALID));
         }
 
+        env.setParseFailureExpected(true);
+        try
         {
-            auto const dm = power(2, 63) - 1;
-            BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
-            tx2[sfDebtMaximum] = dm;
+            tx2[sfDebtMaximum] = "9223372036854775808";
             env(tx2, Ter(temINVALID));
+            // should throw in parser
+            fail();
         }
-
+        catch (std::exception const& e)
         {
-            auto const dm = power(2, 63) - 3;
-            BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
-            tx2[sfDebtMaximum] = dm;
-            env(tx2, Ter(tesSUCCESS));
+            BEAST_EXPECT(
+                std::string(e.what()) ==
+                "invalidParamsField 'tx_json.DebtMaximum' has invalid data.");
+        }
+        env.setParseFailureExpected(false);
+
+        if (Number::getMantissaScale() >= MantissaRange::MantissaScale::Large330)
+        {
+            // For the Large330 scale, 2^63 rounds _down_ to Number::kMaxRep
+            {
+                auto const dm = power(2, 63);
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) + Number{1, -1};
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) - 1;
+                BEAST_EXPECTS(dm < kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) - 3;
+                BEAST_EXPECTS(dm < kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) + 3;
+                BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(temINVALID));
+            }
+        }
+        else
+        {
+            // For other scales, 2^63 rounds _up_ to Number::kMaxRepUp. Subtracting 1 rounds up
+            // again.
+            {
+                auto const dm = power(2, 63) - 1;
+                BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(temINVALID));
+            }
+
+            {
+                auto const dm = power(2, 63) - 3;
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
         }
 
         {
