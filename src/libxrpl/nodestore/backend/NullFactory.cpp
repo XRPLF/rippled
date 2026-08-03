@@ -1,6 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -12,10 +12,8 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class NullBackend : public Backend
 {
@@ -52,12 +50,6 @@ public:
         return Status::NotFound;
     }
 
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        return {};
-    }
-
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
@@ -89,7 +81,9 @@ public:
     {
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {
@@ -131,4 +125,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

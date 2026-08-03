@@ -3,13 +3,14 @@
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
-#include <functional>
+#include <memory>
+#include <string>
 
 namespace xrpl::detail {
 

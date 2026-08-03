@@ -1,16 +1,27 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -33,7 +44,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+getStartHint(SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -47,10 +58,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -154,7 +162,8 @@ keypairForSignature(
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
 
-/** Parse subscribe/unsubscribe parameters
+/**
+ * Parse subscribe/unsubscribe parameters
  */
 ErrorCodeI
 parseSubUnsubJson(

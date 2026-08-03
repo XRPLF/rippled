@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -13,13 +15,17 @@
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-/** Logs implementation that creates TestSink instances. */
+/**
+ * Logs implementation that creates TestSink instances.
+ */
 class TestLogs : public Logs
 {
 public:
@@ -34,7 +40,9 @@ public:
     }
 };
 
-/** Simple NetworkIDService implementation for tests. */
+/**
+ * Simple NetworkIDService implementation for tests.
+ */
 class TestNetworkIDService final : public NetworkIDService
 {
 public:
@@ -52,18 +60,19 @@ private:
     std::uint32_t networkID_;
 };
 
-/** Test implementation of ServiceRegistry for unit tests.
-
-    This class provides real implementations for services that can be
-    instantiated from libxrpl (such as Logs, io_context, caches), and
-    throws std::logic_error for services that require the full Application.
-
-    Tests can subclass this to provide additional services they need.
-*/
+/**
+ * Test implementation of ServiceRegistry for unit tests.
+ *
+ * This class provides real implementations for services that can be
+ * instantiated from libxrpl (such as Logs, io_context, caches), and
+ * throws std::logic_error for services that require the full Application.
+ *
+ * Tests can subclass this to provide additional services they need.
+ */
 class TestServiceRegistry : public ServiceRegistry
 {
     TestLogs logs_{beast::Severity::Warning};
-    boost::asio::io_context io_context_;
+    boost::asio::io_context ioContext_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
@@ -211,7 +220,7 @@ public:
     }
 
     // Storage services
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");
@@ -344,7 +353,7 @@ public:
     boost::asio::io_context&
     getIOContext() override
     {
-        return io_context_;
+        return ioContext_;
     }
 
     Logs&
@@ -374,5 +383,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -2,12 +2,22 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <vector>
 
 namespace xrpl {
 class InboundLedgers;

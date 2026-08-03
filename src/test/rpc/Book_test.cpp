@@ -1614,7 +1614,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 
@@ -1739,7 +1739,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 

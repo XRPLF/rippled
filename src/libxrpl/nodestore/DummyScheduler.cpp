@@ -3,7 +3,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 void
 DummyScheduler::scheduleTask(Task& task)
@@ -22,4 +22,4 @@ DummyScheduler::onBatchWrite(BatchWriteReport const& report)
 {
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

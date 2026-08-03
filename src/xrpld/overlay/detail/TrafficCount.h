@@ -1,31 +1,37 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl {
 
 /**
-    TrafficCount is used to count ingress and egress wire bytes and number of
-   messages. The general intended usage is as follows:
-        1. Determine the message category by callin TrafficCount::categorize
-        2. Increment the counters for incoming or outgoing traffic by calling
-   TrafficCount::addCount
-        3. Optionally, TrafficCount::addCount can be called at any time to
-   increment additional traffic categories, not captured by
-   TrafficCount::categorize.
-
-   There are two special categories:
-        1. category::total - this category is used to report the total traffic
-   amount. It should be incremented once just after receiving a new message, and
-   once just before sending a message to a peer. Messages whose category is not
-   in TrafficCount::categorize are not included in the total.
-        2. category::unknown - this category is used to report traffic for
-   messages of unknown type.
-*/
+ * TrafficCount is used to count ingress and egress wire bytes and number of
+ * messages. The general intended usage is as follows:
+ *     1. Determine the message category by callin TrafficCount::categorize
+ *     2. Increment the counters for incoming or outgoing traffic by calling
+ * TrafficCount::addCount
+ *     3. Optionally, TrafficCount::addCount can be called at any time to
+ * increment additional traffic categories, not captured by
+ * TrafficCount::categorize.
+ *
+ * There are two special categories:
+ *     1. category::total - this category is used to report the total traffic
+ * amount. It should be incremented once just after receiving a new message, and
+ * once just before sending a message to a peer. Messages whose category is not
+ * in TrafficCount::categorize are not included in the total.
+ *     2. category::unknown - this category is used to report traffic for
+ * messages of unknown type.
+ */
 class TrafficCount
 {
 public:
@@ -180,7 +186,8 @@ public:
 
     TrafficCount() = default;
 
-    /** Given a protocol message, determine which traffic category it belongs to
+    /**
+     * Given a protocol message, determine which traffic category it belongs to
      */
     static Category
     categorize(
@@ -188,7 +195,9 @@ public:
         protocol::MessageType type,
         bool inbound);
 
-    /** Account for traffic associated with the given category */
+    /**
+     * Account for traffic associated with the given category
+     */
     void
     addCount(Category cat, bool inbound, int bytes)
     {
@@ -213,9 +222,10 @@ public:
         }
     }
 
-    /** An up-to-date copy of all the counters
-
-        @return an object which satisfies the requirements of Container
+    /**
+     * An up-to-date copy of all the counters
+     *
+     * @return an object which satisfies the requirements of Container
      */
     [[nodiscard]] auto const&
     getCounts() const
