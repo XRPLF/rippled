@@ -9,8 +9,6 @@
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -24,6 +22,8 @@
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>
@@ -32,6 +32,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -679,7 +680,9 @@ private:
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
     void
-    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+    processLedgerRequest(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        std::vector<SHAMapNodeID> nodeIDs);
 
 protected:
     // Kept `protected` so test subclasses (see

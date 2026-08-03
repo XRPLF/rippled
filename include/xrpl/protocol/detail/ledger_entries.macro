@@ -507,6 +507,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfShareMPTID,           SoeRequired},
     {sfWithdrawalPolicy,     SoeRequired},
     {sfScale,                SoeDefault},
+    {sfLEVersion,            SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))

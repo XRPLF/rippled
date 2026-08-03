@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class ManagerImp : public Manager
 {
@@ -57,4 +57,4 @@ public:
         beast::Journal journal) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
