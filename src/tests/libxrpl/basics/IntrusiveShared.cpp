@@ -379,43 +379,57 @@ TEST(IntrusiveSharedTest, partial_delete)
     std::atomic<bool> destructorRan{false};
     std::atomic<bool> partialDeleteRan{false};
     std::latch partialDeleteStartedSyncPoint{2};
+
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
-        if (next == DeletedStarted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            // strong goes out of scope while weak is still in scope
-            // This checks that partialDelete has run to completion
-            // before the destructor is called. A sleep is inserted
-            // inside the partial delete to make sure the destructor is
-            // given an opportunity to run during partial delete.
-            EXPECT_EQ(cur, PartiallyDeleted);
-        }
-        else if (next == PartiallyDeletedStarted)
-        {
-            partialDeleteStartedSyncPoint.arrive_and_wait();
-            using namespace std::chrono_literals;
-            // Sleep and let the weak pointer go out of scope,
-            // potentially triggering a destructor while partial delete
-            // is running. The test is to make sure that doesn't happen.
-            std::this_thread::sleep_for(800ms);
-        }
-        else if (next == PartiallyDeleted)
-        {
-            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan.exchange(true));
+            case DeletedStarted:
+                // strong goes out of scope while weak is still in scope
+                // This checks that partialDelete has run to completion
+                // before the destructor is called. A sleep is inserted
+                // inside the partial delete to make sure the destructor is
+                // given an opportunity to run during partial delete.
+                EXPECT_EQ(cur, PartiallyDeleted);
+                break;
+
+            case PartiallyDeletedStarted: {
+                partialDeleteStartedSyncPoint.arrive_and_wait();
+                using namespace std::chrono_literals;
+                // Sleep and let the weak pointer go out of scope,
+                // potentially triggering a destructor while partial delete
+                // is running. The test is to make sure that doesn't happen.
+                std::this_thread::sleep_for(800ms);
+                break;
+            }
+
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+                break;
         }
     };
+
     std::thread t1{[&] {
         partialDeleteStartedSyncPoint.arrive_and_wait();
         weak.reset();  // Trigger a full delete as soon as the partial
                        // delete starts
     }};
+
     std::thread t2{[&] {
         strong.reset();  // Trigger a partial delete
     }};
+
     t1.join();
     t2.join();
 
@@ -443,13 +457,24 @@ TEST(IntrusiveSharedTest, destructor)
     std::latch weakResetSyncPoint{2};
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan.exchange(true));
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     std::thread t1{[&] {
@@ -491,15 +516,26 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers = [&](auto const& toClone, std::default_random_engine& eng)
@@ -582,9 +618,13 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads.emplace_back(cloneAndDestroy, i);
+    }
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads[i].join();
+    }
 }
 
 TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
@@ -618,15 +658,26 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers =
@@ -721,9 +772,13 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads.emplace_back(cloneAndDestroy, i);
+    }
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads[i].join();
+    }
 }
 
 TEST(IntrusiveSharedTest, multithreaded_locking_weak)
@@ -752,15 +807,26 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        else if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
 
@@ -823,9 +889,13 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads.emplace_back(lockAndDestroy, i);
+    }
     for (auto i = 0uz; i < kNumThreads; ++i)
+    {
         threads[i].join();
+    }
 }
 
 }  // namespace xrpl::tests

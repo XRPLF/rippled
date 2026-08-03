@@ -1,4 +1,3 @@
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -119,14 +118,16 @@ TEST_F(SHAMapSyncTest, sync)
     destination.setSynching();
 
     {
-        std::vector<std::pair<SHAMapNodeID, Blob>> a;
+        std::vector<SHAMapNodeData> a;
 
         ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
 
         ASSERT_FALSE(a.empty()) << "NodeSize";
 
-        ASSERT_TRUE(
-            destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr).isGood());
+        auto node = SHAMapTreeNode::makeFromWire(makeSlice(a[0].data));
+        if (!node)
+            FAIL() << "Could not create node";
+        ASSERT_TRUE(destination.addRootNode(source.getHash(), std::move(node), nullptr).isGood());
     }
 
     do
@@ -140,7 +141,7 @@ TEST_F(SHAMapSyncTest, sync)
             break;
 
         // get as many nodes as possible based on this information
-        std::vector<std::pair<SHAMapNodeID, Blob>> b;
+        std::vector<SHAMapNodeData> b;
 
         for (auto& it : nodesMissing)
         {
@@ -162,7 +163,12 @@ TEST_F(SHAMapSyncTest, sync)
             // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
             // should be deterministic
-            if (!destination.addKnownNode(i.first, makeSlice(i.second), nullptr).isUseful())
+            auto node = SHAMapTreeNode::makeFromWire(makeSlice(i.data));
+            if (!node)
+                FAIL() << "Could not create node";
+            if (i.isLeaf != node->isLeaf())
+                FAIL() << "Node is not a leaf";
+            if (!destination.addKnownNode(i.nodeID, std::move(node), nullptr).isUseful())
                 FAIL() << "Known node was not useful";
         }
     } while (true);

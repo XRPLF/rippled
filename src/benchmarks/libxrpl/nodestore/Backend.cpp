@@ -297,7 +297,7 @@ registerStoreBatch(BackendConfig const& bc)
                 rs->harness = std::make_unique<BackendHarness>(cfg);
                 rs->present = makePool(1, poolSize);
                 rs->avgPayload = averagePayload(rs->present);
-                std::vector<Batch> const batches = slicePreciseBatches(rs->present, kBatchSize);
+                std::vector<Batch> const batches = sliceFixedBatches(rs->present, kBatchSize);
                 if (batches.empty())
                 {
                     state.SkipWithError("pool smaller than one batch");
