@@ -97,7 +97,7 @@ public:
     [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
-        XRPL_ASSERT(type_ == Type::ErrorCodeI, "xrpl::rpc::Status::toTER : type is error code");
+        XRPL_ASSERT(type_ == Type::ErrorCodeI, "xrpl::rpc::Status::toErrorCode : type is error code");
         return ErrorCodeI(code_);
     }
 
