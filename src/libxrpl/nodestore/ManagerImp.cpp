@@ -1,9 +1,10 @@
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
@@ -21,7 +22,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 ManagerImp&
 ManagerImp::instance()
@@ -44,8 +45,10 @@ ManagerImp::missingBackend()
 // the Factory classes is an undefined behaviour.
 void
 registerNuDBFactory(Manager& manager);
+#if XRPL_ROCKSDB_AVAILABLE
 void
 registerRocksDBFactory(Manager& manager);
+#endif
 void
 registerNullFactory(Manager& manager);
 void
@@ -54,7 +57,9 @@ registerMemoryFactory(Manager& manager);
 ManagerImp::ManagerImp()
 {
     registerNuDBFactory(*this);
+#if XRPL_ROCKSDB_AVAILABLE
     registerRocksDBFactory(*this);
+#endif
     registerNullFactory(*this);
     registerMemoryFactory(*this);
 }
@@ -66,7 +71,7 @@ ManagerImp::makeBackend(
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    std::string const type{get(parameters, "type")};
+    std::string const type{get(parameters, Keys::kType)};
     if (type.empty())
         missingBackend();
 
@@ -107,7 +112,7 @@ ManagerImp::erase(Factory& factory)
     std::scoped_lock const _(mutex_);
     auto const iter =
         std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
-    XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
+    XRPL_ASSERT(iter != list_.end(), "xrpl::node_store::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
@@ -130,4 +135,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

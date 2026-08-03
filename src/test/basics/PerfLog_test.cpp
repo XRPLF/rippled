@@ -619,7 +619,7 @@ public:
 
                 // Total queued duration is triangle number of (i + 1).
                 BEAST_EXPECT(
-                    jsonToUInt64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
+                    jsonToUInt64(total[jss::queued_duration_us]) == (((i * i) + (3 * i) + 2) / 2));
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 

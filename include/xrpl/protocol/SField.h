@@ -2,10 +2,11 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <map>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl {
 
@@ -116,16 +117,17 @@ fieldCode(int id, int index)
     return (id << 16) | index;
 }
 
-/** Identifies fields.
-
-    Fields are necessary to tag data in signed transactions so that
-    the binary format of the transaction can be canonicalized.  All
-    SFields are created at compile time.
-
-    Each SField, once constructed, lives until program termination, and there
-    is only one instance per fieldType/fieldValue pair which serves the
-    entire application.
-*/
+/**
+ * Identifies fields.
+ *
+ * Fields are necessary to tag data in signed transactions so that
+ * the binary format of the transaction can be canonicalized.  All
+ * SFields are created at compile time.
+ *
+ * Each SField, once constructed, lives until program termination, and there
+ * is only one instance per fieldType/fieldValue pair which serves the
+ * entire application.
+ */
 class SField
 {
 public:
@@ -298,7 +300,9 @@ private:
     static std::unordered_map<std::string, SField const*> knownNameToField;
 };
 
-/** A field with a type known at compile time. */
+/**
+ * A field with a type known at compile time.
+ */
 template <class T>
 struct TypedField : SField
 {
@@ -308,7 +312,9 @@ struct TypedField : SField
     explicit TypedField(PrivateAccessTagT pat, Args&&... args);
 };
 
-/** Indicate std::optional field semantics. */
+/**
+ * Indicate std::optional field semantics.
+ */
 template <class T>
 struct OptionaledField
 {
@@ -365,8 +371,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const kSfInvalid;
-extern SField const kSfGeneric;
+extern SField const sfInvalid;  // NOLINT(readability-identifier-naming)
+extern SField const sfGeneric;  // NOLINT(readability-identifier-naming)
 
 #include <xrpl/protocol/detail/sfields.macro>
 

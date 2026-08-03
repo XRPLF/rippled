@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -93,6 +94,12 @@ OfferCreate::preflight(PreflightContext const& ctx)
 
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
+
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
 
     bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
     bool const bFillOrKill(tx.isFlag(tfFillOrKill));
@@ -181,11 +188,15 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.registry.get().getJournal("View");
 
-    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
-        isGlobalFrozen(ctx.view, saTakerGets.asset()))
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
+    }
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
     }
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
@@ -272,10 +283,23 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
+            auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
+
+            // Check if the issuer has lsfDisallowIncomingTrustline set.
+            // If so, the account must already have a trustline to receive tokens.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                issuerAccount->isFlag(lsfDisallowIncomingTrustline))
+            {
+                if (!trustLine)
+                {
+                    JLOG(j.debug()) << "delay: can't receive IOUs from issuer with "
+                                       "DisallowIncomingTrustline set";
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                }
+            }
+
             if (issuerAccount->isFlag(lsfRequireAuth))
             {
-                auto const trustLine = view.read(keylet::line(id, issuer, issue.currency));
-
                 if (!trustLine)
                 {
                     return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
@@ -298,8 +322,6 @@ OfferCreate::checkAcceptAsset(
                 }
             }
 
-            auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
-
             if (!trustLine)
             {
                 return tesSUCCESS;
@@ -320,7 +342,13 @@ OfferCreate::checkAcceptAsset(
         [&](MPTIssue const& issue) -> TER {
             // WeakAuth - don't check if MPToken exists since it's created
             // if needed.
-            return requireAuth(view, issue, id, AuthType::WeakAuth);
+            if (auto const ter = requireAuth(view, issue, id, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+            {
+                return ter;
+            }
+
+            return checkFrozen(view, id, issue);
         });
 }
 
@@ -543,10 +571,11 @@ OfferCreate::formatAmount(STAmount const& amount)
 TER
 OfferCreate::applyHybrid(
     Sandbox& sb,
-    std::shared_ptr<STLedgerEntry> sleOffer,
+    STLedgerEntry::pointer sleOffer,
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
+    std::uint64_t openRate,
     std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
@@ -558,7 +587,7 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::kBook(book), getRate(saTakerGets, saTakerPays));
+    auto dir = keylet::quality(keylet::book(book), openRate);
     bool const bookExists = sb.exists(dir);
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
@@ -815,9 +844,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
+        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
@@ -851,7 +878,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
@@ -870,7 +897,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Hybrid domain offer - BookDirectory points to domain directory,
     // and AdditionalBooks field stores one entry that points to the open
     // directory
-    auto dir = keylet::quality(keylet::kBook(book), uRate);
+    auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
     auto setBookDir = [&](SLE::ref sle, std::optional<uint256> const& maybeDomain) {
@@ -924,8 +951,16 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
+        // Pre-fixCleanup3_2_0: the open-book directory quality was computed
+        // from post-crossing amounts, which may differ from the original rate
+        // due to rounding in rate preservation. Post-fixCleanup3_2_0: use the
+        // original placement rate so the open-book directory quality matches
+        // the domain-book directory.
+        auto const openRate = ctx_.view().rules().enabled(fixCleanup3_2_0)
+            ? uRate
+            : getRate(saTakerGets, saTakerPays);
         auto const res =
-            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, setBookDir);
+            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, openRate, setBookDir);
         if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }
@@ -965,10 +1000,7 @@ OfferCreate::doApply()
 }
 
 void
-OfferCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+OfferCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

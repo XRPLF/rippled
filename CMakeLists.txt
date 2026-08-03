@@ -15,7 +15,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(xrpl)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -57,6 +57,8 @@ if(target)
     )
 endif()
 
+include(PatchNixBinary)
+
 include(XrplSanity)
 include(XrplVersion)
 include(XrplSettings)
@@ -88,6 +90,7 @@ find_package(ed25519 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(lz4 REQUIRED)
+find_package(mpt-crypto REQUIRED)
 find_package(nudb REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
@@ -100,6 +103,7 @@ target_link_libraries(
     INTERFACE
         ed25519::ed25519
         lz4::lz4
+        mpt-crypto::mpt-crypto
         OpenSSL::Crypto
         OpenSSL::SSL
         secp256k1::secp256k1
@@ -127,6 +131,10 @@ else()
 endif()
 target_link_libraries(xrpl_libs INTERFACE ${nudb})
 
+if(benchmark)
+    find_package(benchmark REQUIRED)
+endif()
+
 if(coverage)
     include(XrplCov)
 endif()
@@ -140,4 +148,8 @@ include(XrplValidatorKeys)
 if(tests)
     include(CTest)
     add_subdirectory(src/tests/libxrpl)
+endif()
+
+if(benchmark)
+    add_subdirectory(src/benchmarks/libxrpl)
 endif()
