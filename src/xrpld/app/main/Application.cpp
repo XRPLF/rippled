@@ -1090,6 +1090,33 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
+        if (config_->shedColdSubtrees)
+        {
+            // Reclaim resident cold subtrees of the most-recent fully-validated
+            // ledger's state map. Dropped nodes keep their child hashes and are
+            // re-faulted from the NodeStore on demand, so this is a memory/cache
+            // operation that leaves the map logically unchanged (like lazy
+            // descend) -- hence the const_cast off the const stateMap ref.
+            // getValidatedLedger never returns the open/current ledger, so a
+            // null check is the only guard needed.
+            try
+            {
+                if (auto const validated = getLedgerMaster().getValidatedLedger())
+                {
+                    auto& stateMap = const_cast<SHAMap&>(validated->stateMap());
+                    std::size_t const dropped =
+                        stateMap.shedCold(static_cast<unsigned>(config_->shedMinDepth));
+                    JLOG(journal_.debug())
+                        << "SHAMap shedCold on ledger " << validated->header().seq << ": dropped "
+                        << dropped << " resident subtrees";
+                }
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.warn()) << "SHAMap shedCold failed: " << e.what();
+            }
+        }
+
         mallocTrim("doSweep", journal_);
 
         // Set timer to do another sweep later.
@@ -1198,6 +1225,10 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
+
+    // One-time: gate SHAMap cold-subtree shedding from config (default off).
+    // When off, SHAMap traversals add no locking, only a relaxed atomic load.
+    SHAMap::setShedEnabled(config_->shedColdSubtrees);
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;

@@ -24,6 +24,7 @@
 #include <iterator>
 #include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <stack>
 #include <tuple>
 #include <utility>
@@ -112,6 +113,13 @@ SHAMap::visitDifferences(
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
+
+    // Shed guard: the inner-node walk below descends with BARE pointers
+    // (descendThrow(node, i) into a raw-pointer stack) on an immutable, backed
+    // map. A concurrent shedCold() could free a node mid-walk. Hold the shed
+    // lock (shared) for the traversal. No lock when shedding is disabled.
+    auto const shedLock = shedReadGuard();
+
     if (!root_)
         return;
 
@@ -308,6 +316,13 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
 
+    // Shed guard: this walk stores and follows BARE SHAMapInnerNode* pointers
+    // (MissingNodes::StackEntry, descendAsync) across the whole traversal,
+    // including deferred reads. A concurrent shedCold() could free one of those
+    // nodes. Hold the shed lock (shared) for the entire call. No lock when
+    // shedding is disabled.
+    auto const shedLock = shedReadGuard();
+
     MissingNodes mn(
         max,
         filter,
@@ -417,6 +432,12 @@ SHAMap::getNodeFat(
 {
     // Gets a node and some of its children
     // to a specified depth
+
+    // Shed guard: peer-serving descent over BARE pointers (descendThrow(inner,
+    // i) plus a raw-pointer stack) on an immutable, backed map. A concurrent
+    // shedCold() could free a node we are about to serialize. Hold the shed
+    // lock (shared) for the whole walk. No lock when shedding is disabled.
+    auto const shedLock = shedReadGuard();
 
     auto node = root_.get();
     SHAMapNodeID nodeID;

@@ -26,10 +26,12 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
+#include <shared_mutex>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -39,6 +41,16 @@
 #include <vector>
 
 namespace xrpl {
+
+// Default OFF: no shedding, and every reader guard is a single relaxed load.
+std::atomic<bool> SHAMap::shedEnabled_{false};
+std::shared_mutex SHAMap::shedMutex_;
+
+void
+SHAMap::setShedEnabled(bool enabled)
+{
+    shedEnabled_.store(enabled, std::memory_order_relaxed);
+}
 
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
@@ -436,6 +448,13 @@ SHAMap::belowHelper(
     int branch,
     std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams) const
 {
+    // Shed guard: this descent adopts BARE child pointers returned by
+    // descendThrow(inner.get(), i). A concurrent shedCold() on another snapshot
+    // of the same tree could free such a child between descendThrow returning
+    // it and node.adopt() taking a strong ref. Hold the shed lock (shared) for
+    // the whole descent. No-op / relaxed load only when shedding is disabled.
+    auto const shedLock = shedReadGuard();
+
     auto& [init, cmp, incr] = loopParams;
     if (node->isLeaf())
     {
@@ -1147,6 +1166,13 @@ SHAMap::shedCold(unsigned minDepth)
 
     if (!root_ || root_->isLeaf())
         return 0;
+
+    // Exclude every guarded bare-pointer reader of the shared physical tree for
+    // the duration of the shed walk. Guarded readers take shedMutex_ shared;
+    // this pass takes it exclusive. Only meaningful when shedEnabled_ is set
+    // (which is the only time shedCold is driven from the sweep), but taking it
+    // unconditionally here is harmless and keeps direct/test callers safe.
+    std::unique_lock<std::shared_mutex> const shedLock(shedMutex_);
 
     std::size_t dropped = 0;
     shedInner(intr_ptr::staticPointerCast<SHAMapInnerNode>(root_), 0, minDepth, dropped);

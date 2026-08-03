@@ -14,6 +14,7 @@
 
 #include <array>
 #include <mutex>
+#include <shared_mutex>
 #include <sstream>
 #include <stack>
 #include <thread>
@@ -139,6 +140,13 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
     if (getHash() == otherMap.getHash())
         return true;
+
+    // Shed guard: both this map and otherMap are immutable and are walked with
+    // BARE pointers (descendThrow(inner, i) / walkBranch's raw nodeStack). A
+    // concurrent shedCold() on either tree could free a node mid-walk. Hold the
+    // shed lock (shared) across the whole comparison; covers walkBranch too,
+    // which is only reached from here. No lock taken when shedding is disabled.
+    auto const shedLock = shedReadGuard();
 
     using StackEntry = std::pair<SHAMapTreeNode*, SHAMapTreeNode*>;
     std::stack<StackEntry, std::vector<StackEntry>> nodeStack;  // track nodes we've pushed

@@ -209,6 +209,14 @@ public:
     std::uint32_t ledgerHistory = 256;
     std::uint32_t fetchDepth = 1000000000;
 
+    // Drop resident cold SHAMap subtrees during the sweep to reclaim memory
+    // (re-faulted from the NodeStore on demand). Default OFF; when off there is
+    // zero added locking on SHAMap traversals.
+    bool shedColdSubtrees = false;
+    // Only shed inner nodes at or below this depth, keeping the hot upper
+    // levels resident. Root is depth 0.
+    int shedMinDepth = 3;
+
     // Tunable that adjusts various parameters, typically associated
     // with hardware parameters (RAM size and CPU cores). The default
     // is 'tiny'.

@@ -54,6 +54,8 @@ struct Sections
     static constexpr auto kRpcStartup = "rpc_startup";
     static constexpr auto kServer = "server";
     static constexpr auto kServerDomain = "server_domain";
+    static constexpr auto kShedColdSubtrees = "shed_cold_subtrees";
+    static constexpr auto kShedMinDepth = "shed_min_depth";
     static constexpr auto kSigningSupport = "signing_support";
     static constexpr auto kSntp = "sntp_servers";
     static constexpr auto kSqdb = "sqdb";

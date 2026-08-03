@@ -16,6 +16,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +28,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <shared_mutex>
 #include <stack>
 #include <tuple>
 #include <utility>
@@ -428,6 +430,17 @@ public:
     std::size_t
     shedCold(unsigned minDepth);
 
+    /**
+     * Enable or disable sheddable resident subtrees process-wide.
+     *
+     * Default is off. While off, the reader guards on bare-pointer traversals
+     * cost only a single relaxed atomic load and take no lock, and shedCold()
+     * is never driven by the sweep. Intended to be set once at startup from
+     * config, before any traversal or sweep runs.
+     */
+    static void
+    setShedEnabled(bool enabled);
+
     void
     dump(bool withHashes = false) const;
     void
@@ -580,6 +593,35 @@ private:
         unsigned depth,
         unsigned minDepth,
         std::size_t& dropped);
+
+    // Sheddable-subtree gate (shedEnabled_) and reader/writer lock
+    // (shedMutex_) guarding the shared physical tree against a concurrent
+    // shedCold() that frees nodes a bare-pointer traversal may be holding.
+    //
+    // Both are static (process-wide) on purpose. Immutable snapshots are
+    // distinct SHAMap objects that SHARE the same physical inner/leaf nodes:
+    // SHAMap(SHAMap const&) copies root_ and only unshare()s when a map is
+    // mutable, so two immutable snapshots of the same ledger alias the same
+    // nodes. A shedCold() runs on one snapshot's SHAMap object while a reader
+    // traverses another; a per-object mutex would not serialize them. A single
+    // process-wide RW lock guards every shared node regardless of which
+    // snapshot object reaches it. It is only ever taken when shedEnabled_ is
+    // true, so the default-off path adds no locking (readers do one relaxed
+    // load and construct an unlocked std::shared_lock).
+    static std::atomic<bool> shedEnabled_;
+    static std::shared_mutex shedMutex_;
+
+    // Returns an engaged shared lock on shedMutex_ when shedding is enabled,
+    // otherwise an empty (unlocked) shared_lock. Held for the duration of a
+    // bare-pointer descent to keep a concurrent shedCold() from freeing a node
+    // the descent still references.
+    [[nodiscard]] std::shared_lock<std::shared_mutex>
+    shedReadGuard() const
+    {
+        if (shedEnabled_.load(std::memory_order_relaxed))
+            return std::shared_lock<std::shared_mutex>(shedMutex_);
+        return std::shared_lock<std::shared_mutex>();
+    }
 
     // Structure to track information about call to
     // getMissingNodes while it's in progress
