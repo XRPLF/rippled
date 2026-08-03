@@ -51,8 +51,8 @@ namespace xrpl {
     entry (which contains the manifest for this validator) is decoded and
     added to the manifest cache.  Other manifests are added as "gossip"
     received from xrpld peers, including ones for validators this node does not
-    list. Manifests for unlisted validators are capped (kMaxUntrustedCount)
-    so peer gossip cannot grow the cache without bound; listed validators are
+    trust. Manifests for untrusted validators are capped (kMaxUntrustedCount)
+    so peer gossip cannot grow the cache without bound; trusted validators are
     not capped. Entries are never evicted, so a stored revocation is permanent.
 
     When an ephemeral key is compromised, a new signing key pair is created,
@@ -170,14 +170,14 @@ std::string
 to_string(Manifest const& m);
 
 /**
- *Largest a valid manifest can be, in decoded bytes.
+ * Largest a valid manifest can be, in decoded bytes.
  *
  *   A manifest has a fixed set of fields. Each is serialized as a field header
  *   (1-2 bytes), an optional length prefix (1 byte for these sizes), and the
  *   field body. Taking every field at its largest gives the maximum below, so
  *   anything larger cannot be a valid manifest.
  *
- *       Field               header + length + body = bytes
+ *       Field                 header + length + body = bytes
  *       sfVersion   (U16)        2          0     2     4
  *       sfSequence  (U32)        1          0     4     5
  *       sfPublicKey (33)         1          1    33    35
@@ -201,6 +201,23 @@ constexpr std::size_t kMaxManifestBytes = 358;
 constexpr std::size_t kMaxManifestBase64 = base64::encodedSize(kMaxManifestBytes);
 
 /**
+ * Maximum number of manifests carried in a single TMManifests message.
+ *
+ * Outbound, the TMManifests message sent to a peer includes every trusted
+ * manifest and fills the rest of this budget with untrusted gossip, so it
+ * never exceeds this size. Inbound, trusted manifests are always processed
+ * and untrusted ones are processed up to this many, so a peer sending its
+ * whole cache cannot force unbounded work.
+ *
+ * The trusted set is tiny relative to this bound, so trusted manifests are
+ * not dropped in practice. This is a transitional per-message cap; the cache
+ * already bounds untrusted manifests (see kMaxUntrustedCount), so it is no
+ * longer needed once the network has upgraded past nodes that send their
+ * whole cache in one message.
+ */
+constexpr std::size_t kMaxManifestsPerMessage = 200;
+
+/**
  * Constructs Manifest from serialized string
  *
  * @param s Serialized manifest string
@@ -208,7 +225,7 @@ constexpr std::size_t kMaxManifestBase64 = base64::encodedSize(kMaxManifestBytes
  * @return `std::nullopt` if string is invalid
  *
  * @note This does not verify manifest signatures.
- *       `Manifest::verify` should be called after constructing manifest.
+ * `Manifest::verify` should be called after constructing manifest.
  */
 /** @{ */
 std::optional<Manifest>
@@ -303,7 +320,7 @@ to_string(ManifestDisposition m)
  * must choose. `Capped` is the safe, flood-resistant value; only listed or
  * configured keys should use `Uncapped`.
  */
-enum class ManifestRateLimitCap : std::uint8_t {
+enum class ManifestRateLimitCapPolicy : std::uint8_t {
     Capped,   ///< Subject to the untrusted cap (unlisted peer gossip)
     Uncapped  ///< Bypasses the cap (listed/trusted or config manifests)
 };
@@ -469,7 +486,7 @@ public:
      * May be called concurrently
      */
     ManifestDisposition
-    applyManifest(Manifest m, ManifestRateLimitCap cap);
+    applyManifest(Manifest m, ManifestRateLimitCapPolicy cap);
 
     /**
      * Stop counting a master key against the untrusted cap.

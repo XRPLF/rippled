@@ -1105,8 +1105,8 @@ ValidatorList::updatePublisherList(
             continue;
         }
 
-        if (auto const r =
-                validatorManifests_.applyManifest(std::move(*m), ManifestRateLimitCap::Uncapped);
+        if (auto const r = validatorManifests_.applyManifest(
+                std::move(*m), ManifestRateLimitCapPolicy::Uncapped);
             r == ManifestDisposition::Invalid)
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
@@ -1362,8 +1362,8 @@ ValidatorList::verify(
 
     // Publisher keys are configured/trusted (checked above), so bypass the
     // untrusted cap.
-    auto const result =
-        publisherManifests_.applyManifest(std::move(manifest), ManifestRateLimitCap::Uncapped);
+    auto const result = publisherManifests_.applyManifest(
+        std::move(manifest), ManifestRateLimitCapPolicy::Uncapped);
 
     if (revoked && result == ManifestDisposition::Accepted)
     {
