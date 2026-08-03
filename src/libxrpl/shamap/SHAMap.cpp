@@ -27,6 +27,7 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -1152,10 +1153,7 @@ SHAMap::shedInner(
         // Recurse first so the leaf-heavy bottom is shed before this level.
         if (child->isInner())
             shedInner(
-                intr_ptr::staticPointerCast<SHAMapInnerNode>(child),
-                depth + 1,
-                minDepth,
-                dropped);
+                intr_ptr::staticPointerCast<SHAMapInnerNode>(child), depth + 1, minDepth, dropped);
 
         // The local `child` strong ref keeps the subtree alive across the drop,
         // so the reset slot never leaves a dangling reference.
@@ -1168,10 +1166,17 @@ std::size_t
 SHAMap::shedCold(unsigned minDepth)
 {
     if (!backed_ || (state_ != SHAMapState::Immutable))
+    {
+        JLOG(journal_.debug()) << "shedCold: skipped (backed=" << backed_
+                               << ", state=" << static_cast<int>(state_) << ")";
         return 0;
+    }
 
     if (!root_ || root_->isLeaf())
+    {
+        JLOG(journal_.debug()) << "shedCold: skipped (no shed-eligible root)";
         return 0;
+    }
 
     // Exclude every guarded bare-pointer reader of the shared physical tree for
     // the duration of the shed walk. Guarded readers take shedMutex_ shared;
@@ -1180,8 +1185,17 @@ SHAMap::shedCold(unsigned minDepth)
     // unconditionally here is harmless and keeps direct/test callers safe.
     std::unique_lock<std::shared_mutex> const shedLock(shedMutex_);
 
+    auto const started = std::chrono::steady_clock::now();
     std::size_t dropped = 0;
     shedInner(intr_ptr::staticPointerCast<SHAMapInnerNode>(root_), 0, minDepth, dropped);
+    auto const elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - started)
+                               .count();
+
+    // Warn-level so shed activity lands in default (warning-level) logs: each
+    // pass reports reclaim volume and how long readers were excluded.
+    JLOG(journal_.warn()) << "shedCold: dropped " << dropped << " resident subtrees (minDepth "
+                          << minDepth << ") in " << elapsedMs << "ms (writer-locked)";
     return dropped;
 }
 

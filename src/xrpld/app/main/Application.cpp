@@ -1232,6 +1232,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // One-time: gate SHAMap cold-subtree shedding from config (default off).
     // When off, SHAMap traversals add no locking, only a relaxed atomic load.
     SHAMap::setShedEnabled(config_->shedColdSubtrees);
+    JLOG(journal_.warn()) << "sheddable-subtrees gate at startup: "
+                          << (config_->shedColdSubtrees ? "ENABLED" : "disabled")
+                          << " ([shed_cold_subtrees]; admin `shed` RPC can flip it live)";
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;

@@ -31,7 +31,12 @@ doShed(RPC::JsonContext& context)
     bool const wasEnabled = SHAMap::shedEnabled();
 
     if (context.params.isMember("enable"))
-        SHAMap::setShedEnabled(context.params["enable"].asBool());
+    {
+        bool const enable = context.params["enable"].asBool();
+        SHAMap::setShedEnabled(enable);
+        JLOG(context.j.warn()) << "shed RPC: gate " << (enable ? "ENABLED" : "DISABLED") << " (was "
+                               << (wasEnabled ? "enabled" : "disabled") << ")";
+    }
 
     auto const treeNodeCache = context.app.getNodeFamily().getTreeNodeCache();
     int const cacheBefore = treeNodeCache->getCacheSize();
@@ -52,7 +57,19 @@ doShed(RPC::JsonContext& context)
             // unchanged, dropped nodes re-fault from the NodeStore on demand).
             auto& stateMap = const_cast<SHAMap&>(validated->stateMap());
             dropped = stateMap.shedCold(minDepth);
+            JLOG(context.j.warn())
+                << "shed RPC: immediate pass on ledger " << validated->header().seq << " dropped "
+                << dropped << " (min_depth " << minDepth << ")";
         }
+        else
+        {
+            JLOG(context.j.warn()) << "shed RPC: no validated ledger; pass skipped";
+        }
+    }
+    else if (run)
+    {
+        JLOG(context.j.warn()) << "shed RPC: pass requested but skipped (gate was "
+                               << (wasEnabled ? "enabled" : "disabled") << " before this call)";
     }
 
     json::Value ret(json::ValueType::Object);
