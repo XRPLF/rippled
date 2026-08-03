@@ -1,6 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -59,5 +62,17 @@ public:
     std::string
     getString(SHAMapNodeID const&) const final;
 };
+
+/**
+ * Return the key of the item held by a SHAMap leaf node.
+ *
+ * @param node a node known to be a leaf (see SHAMapTreeNode::isLeaf).
+ */
+inline uint256 const&
+leafKey(SHAMapTreeNode const& node)
+{
+    XRPL_ASSERT(node.isLeaf(), "xrpl::leafKey : node is a leaf");
+    return safeDowncast<SHAMapLeafNode const&>(node).peekItem()->key();
+}
 
 }  // namespace xrpl
