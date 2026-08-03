@@ -205,9 +205,13 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            static constexpr auto kOptionsJson =
+            static constexpr auto kOptionsJsonV2 =
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
+            static constexpr auto kOptionsJsonV3 =
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2) |
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV3);
+            auto const kOptionsJson = context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);
@@ -229,7 +233,11 @@ populateJsonResponse(
             {
                 response[jss::ledger_index] = result.txn->getLedger();
                 if (result.closeTime)
+                {
                     response[jss::close_time_iso] = toStringIso(*result.closeTime);
+                    if (context.apiVersion >= 3)
+                        response[jss::date] = result.closeTime->time_since_epoch().count();
+                }
             }
         }
         else

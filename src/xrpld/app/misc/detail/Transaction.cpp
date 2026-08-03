@@ -163,28 +163,30 @@ Transaction::getJson(JsonOptions options, bool binary) const
             ret[jss::inLedger] = ledgerIndex_;
         }
 
-        // TODO: disable_API_prior_V3 to disable output of both `date` and
-        // `ledger_index` elements (taking precedence over include_date)
-        ret[jss::ledger_index] = ledgerIndex_;
-
-        if (options & JsonOptions::Values::IncludeDate)
+        if (!(options & JsonOptions::Values::DisableApiPriorV3))
         {
-            auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
-            if (ct)
-                ret[jss::date] = ct->time_since_epoch().count();
-        }
+            ret[jss::ledger_index] = ledgerIndex_;
 
-        // compute outgoing CTID
-        // override local network id if it's explicitly in the txn
-        std::optional netID = networkID_;
-        if (transaction_->isFieldPresent(sfNetworkID))
-            netID = transaction_->getFieldU32(sfNetworkID);
+            if (options & JsonOptions::Values::IncludeDate)
+            {
+                auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
+                if (ct)
+                    ret[jss::date] = ct->time_since_epoch().count();
+            }
 
-        if (txnSeq_ && netID)
-        {
-            std::optional<std::string> const ctid = RPC::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
-            if (ctid)
-                ret[jss::ctid] = *ctid;
+            // compute outgoing CTID
+            // override local network id if it's explicitly in the txn
+            std::optional netID = networkID_;
+            if (transaction_->isFieldPresent(sfNetworkID))
+                netID = transaction_->getFieldU32(sfNetworkID);
+
+            if (txnSeq_ && netID)
+            {
+                std::optional<std::string> const ctid =
+                    RPC::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
+                if (ctid)
+                    ret[jss::ctid] = *ctid;
+            }
         }
     }
 

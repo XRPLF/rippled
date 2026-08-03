@@ -3,6 +3,7 @@
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
@@ -17,6 +18,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -353,12 +355,18 @@ populateJsonResponse(
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
-                        jvObj[jsonTx] = txn->getJson(
+                        static constexpr auto kOptionsJsonV2 =
                             static_cast<JsonOptions::underlying_t>(
                                 JsonOptions::Values::IncludeDate) |
-                                static_cast<JsonOptions::underlying_t>(
-                                    JsonOptions::Values::DisableApiPriorV2),
-                            false);
+                            static_cast<JsonOptions::underlying_t>(
+                                JsonOptions::Values::DisableApiPriorV2);
+                        static constexpr auto kOptionsJsonV3 =
+                            static_cast<JsonOptions::underlying_t>(
+                                JsonOptions::Values::DisableApiPriorV2) |
+                            static_cast<JsonOptions::underlying_t>(
+                                JsonOptions::Values::DisableApiPriorV3);
+                        auto const opts = context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
+                        jvObj[jsonTx] = txn->getJson(opts, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
@@ -366,7 +374,20 @@ populateJsonResponse(
 
                         if (auto closeTime =
                                 context.ledgerMaster.getCloseTimeBySeq(txn->getLedger()))
+                        {
                             jvObj[jss::close_time_iso] = toStringIso(*closeTime);
+                            if (context.apiVersion >= 3)
+                                jvObj[jss::date] = closeTime->time_since_epoch().count();
+                        }
+
+                        if (context.apiVersion >= 3 && txnMeta)
+                        {
+                            uint32_t const lgrSeq = txn->getLedger();
+                            uint32_t const txnIdx = txnMeta->getIndex();
+                            uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
+                            if (auto const ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID))
+                                jvObj[jss::ctid] = *ctid;
+                        }
                     }
                     else
                     {

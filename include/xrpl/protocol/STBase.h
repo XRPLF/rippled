@@ -27,9 +27,10 @@ struct JsonOptions
         None = 0b0000'0000,
         IncludeDate = 0b0000'0001,
         DisableApiPriorV2 = 0b0000'0010,
+        DisableApiPriorV3 = 0b0000'0100,
 
         // IMPORTANT `All` must be union of all of the above; see also operator~
-        All = IncludeDate | DisableApiPriorV2  // 0b0000'0011
+        All = IncludeDate | DisableApiPriorV2 | DisableApiPriorV3  // 0b0000'0111
     };
 
     constexpr JsonOptions(underlying_t v) noexcept : value(v)
