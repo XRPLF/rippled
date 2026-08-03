@@ -294,11 +294,18 @@ fn both_of_traces_regions_are_checked() {
 }
 
 // ---------------------------------------------------------------------------
-// Both at once (`read_write`, via `sha512_half`)
+// Both at once (`scratch_write`, via `sha512_half`)
 // ---------------------------------------------------------------------------
 
-/// A call with an input and an output region checks the input first, so a bad
-/// input is reported even when the output region is also bad.
+/// A call with an input and an output region decides everything about the input
+/// before anything about the output, so a bad input is reported however the output
+/// region is wrong — out of bounds, or a pointer that is not one at all.
+///
+/// The whole output region, params included, is judged after the host has answered,
+/// which is `getDataSlice`-then-`setData` (`HostFuncWrapper.cpp:115-176` at
+/// `b7059deb9f^`). Hoisting any part of it above the call would put the output's
+/// verdict first for these cases, and there is no half of it that can be hoisted on
+/// a principle the other half shares.
 #[test]
 fn a_read_write_checks_its_input_before_its_output() {
     let host = FakeHost::new();
@@ -321,9 +328,16 @@ fn a_read_write_checks_its_input_before_its_output() {
         code(HostError::PointerOutOfBounds)
     );
 
-    // A bad input and a bad output: the input's verdict is the one reported.
-    let both_bad = digest(0, OVER_CAP, PAGE);
-    assert_eq!(status(&both_bad, &host), code(HostError::DataFieldTooLarge));
+    // A bad input against each way the output can be wrong: the input's verdict is
+    // the one reported, and the host is never asked for a value nobody can take.
+    for dst in [PAGE, -1] {
+        let both_bad = digest(0, OVER_CAP, dst);
+        assert_eq!(
+            status(&both_bad, &host),
+            code(HostError::DataFieldTooLarge),
+            "dst {dst}"
+        );
+    }
     assert!(host.digested.borrow().is_empty(), "the host is not reached");
 }
 
@@ -347,10 +361,57 @@ fn a_read_write_output_obeys_the_write_rules() {
     assert_eq!(status(&wat, &host), code(HostError::PointerOutOfBounds));
 }
 
-/// An input region may overlap the output region: the engine copies the input out
-/// of guest memory before the host writes back into it. The marker is any byte
-/// distinct from the input's first (`a`), so `finish` returning it proves the write
-/// landed.
+/// A refused value reaches guest memory in no part, however much of it the host
+/// wrote. The host answers with 32 bytes it did write and a length it did not, so
+/// the refusal happens with the value sitting in the run's scratch — and the
+/// guest's buffer has to come back untouched.
+///
+/// Stronger than the contract asks for: a guest must not read its buffer on a
+/// negative status. It holds because the scratch is copied to the guest only after
+/// the length, the bounds, the fit and the budget have all passed, so there is no
+/// window in which a refused value is in guest memory.
+#[test]
+fn a_refused_value_leaves_nothing_in_guest_memory() {
+    const MARKER: u8 = 77;
+
+    // The two refusals a value can meet after the host has produced it: longer
+    // than the field cap, and longer than the buffer the guest offered.
+    let refusals = [
+        (MAX_FIELD_BYTES + 1, HASH_LEN, HostError::DataFieldTooLarge),
+        (HASH_LEN, HASH_LEN - 1, HostError::BufferTooSmall),
+    ];
+
+    for (claimed, cap, expected) in refusals {
+        let host =
+            FakeHost::new().answering_digest(Answer::writing_but_claiming([MARKER; 32], claimed));
+        let call = format!(
+            "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 64) (i32.const {cap}))"
+        );
+
+        let refused = module(&[import::SHA512_HALF, ONE_PAGE], &call);
+        assert_eq!(
+            status(&refused, &host),
+            code(expected),
+            "claiming {claimed}"
+        );
+
+        // The same call, reporting what is at the output region afterwards.
+        let inspect = module(
+            &[import::SHA512_HALF, ONE_PAGE],
+            &format!("(drop {call}) (i32.load8_u (i32.const 64))"),
+        );
+        assert_eq!(
+            status(&inspect, &host),
+            0,
+            "claiming {claimed}: the refused value must not have been written"
+        );
+    }
+}
+
+/// An input region may overlap the output region: the host is served the input as
+/// it stands and its answer lands afterwards, so the two cannot interfere. The
+/// marker is any byte distinct from the input's first (`a`), so `finish` returning
+/// it proves the write landed.
 #[test]
 fn an_input_may_overlap_the_output() {
     const MARKER: u8 = 99;
@@ -407,6 +468,27 @@ fn a_module_that_exports_no_memory_cannot_call_the_host() {
     let wat = module(
         &[import::LDGR_INDEX, "(memory 1)"],
         "(call $ldgr_index (i32.const 0) (i32.const 4))",
+    );
+    assert_no_memory(&wat, &host);
+}
+
+/// Having no memory is answered before anything about a call's arguments, so a
+/// module without one ends the run even when its arguments would have earned a
+/// guest-visible code of their own (here an input over the field cap).
+///
+/// The order is deliberate: no memory is a fact about the instance, not about this
+/// call, and a region cannot be validated against a memory that is not there. It
+/// costs the guest nothing — every call such a module makes ends the run anyway.
+#[test]
+fn no_memory_is_answered_before_a_calls_arguments_are() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[import::SHA512_HALF, "(memory 1)"],
+        &format!(
+            "(call $sha512_half (i32.const 0) (i32.const {OVER_CAP})
+                                (i32.const 0) (i32.const {HASH_LEN}))"
+        ),
     );
     assert_no_memory(&wat, &host);
 }

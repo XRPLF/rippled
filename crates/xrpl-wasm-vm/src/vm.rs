@@ -73,6 +73,22 @@ pub(crate) struct VmState<'h> {
     /// then serve a host call against the wrong instance's memory, which is a wrong
     /// answer rather than an error anyone sees.
     pub(crate) memory: Option<Memory>,
+    /// Where a host writes a value before the engine copies it to the guest, for
+    /// the calls that read guest memory and write it in the same breath
+    /// ([`crate::abi::scratch_write`]).
+    ///
+    /// One buffer per run, reused by every call, so no call zero-fills one of its
+    /// own. Sized to [`MAX_FIELD_BYTES`], which is what lets a host be offered the
+    /// whole cap and report the value's true length while the fit against the
+    /// guest's buffer is decided afterwards — with nothing yet in guest memory.
+    ///
+    /// Inline rather than boxed: the store's data is built once per run and then
+    /// only borrowed, so a kilobyte in it costs one move at construction, where a
+    /// `Box` would cost an allocation. A local in
+    /// [`scratch_write`](crate::abi::scratch_write) would cost neither, but
+    /// `forbid(unsafe_code)` means a stack buffer is zero-filled, and that lands
+    /// back on every call — which is the cost this field exists to remove.
+    pub(crate) scratch: [u8; MAX_FIELD_BYTES],
 }
 
 /// Outcome of running an escrow contract to completion.
@@ -300,6 +316,7 @@ pub fn run<'h>(
             mem_limits,
             transfer_budget: Cell::new(TRANSFER_LIMIT_BYTES),
             memory: None,
+            scratch: [0u8; MAX_FIELD_BYTES],
         },
     );
     // A store that will not take fuel, or imports that will not register, are

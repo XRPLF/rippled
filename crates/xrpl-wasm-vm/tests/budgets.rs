@@ -389,9 +389,9 @@ fn reads_do_not_spend_the_transfer_budget() {
 }
 
 /// Only the output half of a read-write call spends the budget. `sha512_half`'s
-/// input is a borrowed read like any other — the stack copy `read_write` takes is
-/// host-private scratch, not a value crossing the boundary — so a run may hash far
-/// more bytes than the budget holds as long as the digests it writes fit inside it.
+/// input is a borrowed read like any other, aliasing guest memory rather than
+/// crossing the boundary, so a run may hash far more bytes than the budget holds as
+/// long as the digests it writes fit inside it.
 ///
 /// The two totals are asserted, so the arithmetic that makes the case is in the
 /// test rather than in a comment: the inputs alone would overrun the budget, the

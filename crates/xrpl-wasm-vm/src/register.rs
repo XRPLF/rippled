@@ -1,4 +1,4 @@
-use crate::abi::{charged, read_borrowed, read_write, write_into};
+use crate::abi::{charged, read_borrowed, region, scratch_write, write_into};
 use crate::vm::VmState;
 use wasmi::{Caller, Linker};
 use xrpl_host_functions::{HostError, HostFunctionSpec};
@@ -75,17 +75,14 @@ pub(crate) fn register_host_functions(
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::Sha512Half, |c| {
-                        // Input copied into a stack buffer (no heap), output
-                        // written straight into guest memory; `read_write`
-                        // owns the read/write bounds/cap/transfer policy.
-                        read_write(
-                            c,
-                            data_ptr,
-                            data_len,
-                            out_ptr,
-                            out_len,
-                            |host, data, out| host.sha512_half(data, out),
-                        )
+                        // The input is borrowed straight out of guest memory and
+                        // the digest is written to the run's scratch, which
+                        // `scratch_write` copies to the guest after its
+                        // bounds/cap/buffer/transfer policy passes.
+                        scratch_write(c, out_ptr, out_len, |host, data, out| {
+                            let input = region(data, data_ptr, data_len)?;
+                            host.sha512_half(input, out)
+                        })
                     })
                 },
             ),

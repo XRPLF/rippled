@@ -337,12 +337,42 @@ question, not an engine defect**, and it should carry much less weight in the de
 than the paragraph above once implied. Judge C11 mainly on the cost table and on
 `read_write` not generalizing past one byte input.
 
-### Status: this is the open decision (2026-07-30)
+### Resolved: the scratch owns the *output*, and only where there is an input (2026-08-03)
 
-The VM compiles and works, so the reason this was deferred is spent, and C10 has landed —
-so the per-call export lookup both designs would otherwise pay is already gone. **This is
-now the next thing on the list and it needs answering before C11 is codeable.** The typed
-shims, generated header and probe-module test stay deferred.
+**Decided and landed with C11: the buffer moves to the output side, and `write_into`'s
+direct path stays for the calls that have no byte input.** The cost table above framed
+this as one-or-the-other, and that framing is what made it look like a wash — it is not,
+because the row scratch makes worse is exactly the row that does not need scratch. A
+function with no byte input has no borrow conflict to resolve.
+
+What settled it is a census of the real ABI rather than the two example rows. Classifying
+all 65 registrations in `setCommonHostFunctions` (plus `set_data`) by shape, from the
+recovered `HostFuncWrapper.h` protos:
+
+| shape | count | helper |
+| --- | --- | --- |
+| ≥1 byte input **and** a byte output | **38** | `scratch_write` |
+| byte output only | 9 | `write_into`, unchanged |
+| byte inputs only, or scalars | 18 | `read_borrowed` / `region`, unchanged |
+
+The 38 are 16 one-in/one-out, 18 two-in/one-out, 3 three-in/one-out (`credential_id`,
+`trustline_id`, `paychan_id`), and one **one-in/two-out**: `float_to_mant_exp`, which
+writes mantissa and exponent into separate guest regions and is the function behind
+interop question 5. So **22 of the 38 cannot be expressed by a one-input helper at all**,
+and they are the bulk of the ABI's substance — every two-argument keylet, `nft_uri`, and
+all four float arithmetic ops. Under the old shape they need `read2_write`, `read3_write`
+and `read_write2`; under this one they are all the same call. That, not the memset, is
+what the finding was really about.
+
+`MaybeUninit` was considered and rejected, and the reason is not squeamishness about
+`unsafe`: it does not reach the memset from either side. `Memory::read` wants an
+initialized `&mut [u8]` and wasmi 1.1 has no `read_uninit`, and the `HostFunctions`
+trait's out-param is `&mut [u8]`, so an uninit output region would push `unsafe` into
+every host impl including the C++ adapter. A **per-run** buffer gets the same win with no
+`unsafe` at all — one 1 KiB fill per run instead of one per call, so there is nothing
+left for `MaybeUninit` to remove. `#![forbid(unsafe_code)]` (D14) stays.
+
+The typed shims, generated header and probe-module test stay deferred.
 
 ## Open ABI questions and interop risks (2026-07-29)
 
@@ -647,11 +677,62 @@ same one-instance-per-run assumption C10's cache would take on.
     as `"mem"` *beside* a global named `"memory"`, asserting the call succeeds — which
     states the rule in both directions: the conventional name neither qualifies a
     non-memory nor hides the real one.
-11. `read_write` memsets 1 KiB of stack per call and does not generalize past one byte
-    input — that is the scratch-buffer decision already open above ("Open: where the
-    output region points"), which is now the live one and needs answering before this is
-    codeable. #10 makes either choice easier. Note A4 spent that section's
-    leaves-bytes-behind argument; read the amendment there before deciding.
+11. ✓ **`read_write` memsets 1 KiB of stack per call and does not generalize past one byte
+    input.** That was the scratch-buffer decision above; see "Resolved: the scratch owns
+    the *output*" for the census that decided it and for why `MaybeUninit` is not the
+    answer.
+
+    `read_write` is gone, replaced by `scratch_write`, and the input primitive split in
+    two: `region(data, ptr, len)` does the validation and slicing against a plain `&[u8]`,
+    and `read_borrowed` is now that over the guest's memory for the calls that read
+    without writing. Taking bytes rather than a `Caller` is the whole trick — input
+    regions become shared borrows of one slice, so a call takes as many as its signature
+    has.
+
+    **The borrow conflict dissolves rather than being worked around, and that is what
+    made this cheap.** `Memory::data_and_store_mut` (`memory/mod.rs:165`) returns
+    `(&mut [u8], &mut T)` — the guest's bytes and the store data in one split borrow. So
+    the inputs are borrowed from guest memory *while* the host writes the scratch that
+    lives in the store data, with no take-and-put-back, no `Cell`, and no `unsafe`. It
+    compiled unchanged on the first attempt.
+
+    Three things fell out that are worth more than the memset:
+    - **A4's residual is closed structurally.** The host is never told the guest's
+      capacity — it gets the whole `MAX_FIELD_BYTES` scratch and reports the value's true
+      length — so nothing reaches guest memory until the length, bounds, fit and budget
+      have all passed. `a_refused_value_leaves_nothing_in_guest_memory` pins it, and a
+      mutation that copies eagerly fails exactly that test and no other. It is the
+      *under-the-cap* case that bites, the one the clamp could not reach.
+    - **The check order is now C++'s `setData` order** — params, cap, bounds, fit,
+      transfer, copy (`HostFuncWrapper.cpp:115-148` at `b7059deb9f^`) — *after* the value
+      exists. C++ could use that order because it had a scratch (`std::expected<Bytes>`
+      then `setData`); `write_into` cannot, since it must bounds-check before handing over
+      a slice. Input validation still precedes all of it, as
+      `getDataSlice`-then-`setData` did.
+    - **One accepted behaviour change**: `NoMemExported` now precedes a call's argument
+      validation, because the memory has to be resolved before there are bytes to validate
+      a region against. C++ checked the input's cap first. It costs a guest nothing — a
+      module with no memory export cannot serve any host call — and
+      `no_memory_is_answered_before_a_calls_arguments_are` makes it a decision rather than
+      an accident.
+
+    The memset half, for the record, was probably never the cost it looked like: the
+    scratch is one per-run buffer, so no call fills one, but `sha512_half` is 2000 gas and
+    a 1 KiB fill is tens of nanoseconds. The generalization was the finding.
+
+    **The scratch field is inline, not boxed** — the store's data is built once per run and
+    then only borrowed, so a kilobyte in it costs one move where a `Box` costs an
+    allocation. **Lazy init is deferred to a benchmark, not rejected.** `Option<[u8; N]>`
+    with `get_or_insert_with` is the shape (not `OnceCell`, which is for init behind a
+    shared borrow; `scratch_write` holds `&mut VmState`), and the case against it today is
+    a magnitude argument that a measurement could overturn: it defers one ~1 KiB fill per
+    run — invisible beside the `Module::new` that starts every run — and pays for it with a
+    discriminant test on every host call, which is the direction C11 was moving cost away
+    from. `Option<[u8; N]>` also does not shrink `VmState` (no niche in a byte array, so
+    1025 bytes), and `Option<Box<[u8; N]>>` does but then charges a malloc to the 38
+    functions that use this path in order to save the ones that do not. Revisit with the
+    google-benchmark harness, where a host-call-heavy module can price the per-call branch
+    against the per-run fill.
 12. `Linker` is rebuilt per `run` (five `func_wrap`s plus string interning) and the
     module is compiled per run with no cache. Lower priority. The blocker worth
     recording: `VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run —
@@ -798,26 +879,28 @@ useful for comparison and for the gas assertions in `Wasm_test.cpp` — not gosp
 
 **`crates/` compiles**, and the whole workspace is green — `cargo test --workspace`,
 `clippy --workspace --all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`
-(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 123 tests: 33
-macro, 12 facade, 1 doctest, and **77 in `xrpl-wasm-vm`** (10 unit; 67 integration — 12
-`host_calls`, 21 `memory_policy`, 13 `budgets`, 21 `vm_limits`).
+(which `deny(rustdoc::broken_intra_doc_links)` now makes load-bearing). 125 tests: 33
+macro, 12 facade, 1 doctest, and **79 in `xrpl-wasm-vm`** (10 unit; 69 integration — 12
+`host_calls`, 23 `memory_policy`, 13 `budgets`, 21 `vm_limits`).
 
-**Thirteen of the seventeen findings are closed** (2026-07-30): all of section A, all of
-B, D13–D15, two thirds of D16, and C10. What is left is **C11**, blocked on the
-scratch-buffer decision; **C12**, which the bridge will force anyway; **D16's `gas = 0`**,
-a TER decision; and **D17**, which is not work.
+**Fourteen of the seventeen findings are closed** (2026-08-03): all of section A, all of
+B, D13–D15, two thirds of D16, C10 and C11. What is left is **C12**, which the bridge will
+force anyway; **D16's `gas = 0`**, a TER decision; and **D17**, which is not work.
 
 `run` is `Result<RunOutcome, RunFailure>` over a typed `RunError`; host-fatal errors trap
 instead of answering the guest a code; the import module is `host_lib`; the `i64` pipeline
 and `AbiRet` are gone; the transfer budget counts only bytes actually copied host→guest,
 and no more than the field cap can reach guest memory; the guest's linear memory is
-resolved once, by kind rather than by name. See those entries for what landed and why.
+resolved once, by kind rather than by name; a call that reads guest memory and writes it
+borrows any number of inputs and answers through a per-run scratch, so a refused value
+reaches guest memory in no part. See those entries for what landed and why.
 
-**Three decisions were taken along the way**, each recorded at its finding:
+**Four decisions were taken along the way**, each recorded at its finding:
 **`OutOfTransferLimit` stays soft** (A1), **the import module name is `host_lib`** (A3),
-and **the memory export is matched by kind, not by name** (section A's addendum). All
-three restore C++ behaviour that the rewrite had changed without meaning to — which is
-the pattern worth carrying into the bridge: on this path, "tidier than C++" is usually
+**the memory export is matched by kind, not by name** (section A's addendum), and **the
+scratch buffer owns the output, only where there is an input** (C11). All four restore or
+extend C++ behaviour that the rewrite had changed without meaning to — which is the
+pattern worth carrying into the bridge: on this path, "tidier than C++" is usually
 "different from C++".
 
 Every test that existed only to pin behaviour a finding said should change is gone,
@@ -941,14 +1024,12 @@ Consequences worth remembering:
 - The ABI crate is now guest-linkable (`no_std`, no allocator, no runtime deps, checks
   for `wasm32-unknown-unknown`) — see "The ABI crate is a library both sides link".
 
-Next, from the findings above, **C11 and C12 are all that remain**, and neither is
-ordinary work. **C11** is blocked on the scratch-buffer decision — see "Open: where the
-output region points", and read its amendment first, because A4 spent that section's
-strongest argument. **C12** (per-run `Linker`, no module cache) stays last:
-`VmState<'h>`'s lifetime forces `Linker<VmState<'h>>` to be per-run, so it is a design
-change rather than a tweak, and the cxx bridge will force that lifetime question anyway.
-Of the seventeen findings, thirteen are closed; the other two open items are D16's
-`gas = 0`, a TER decision, and D17, which is not work.
+Next, from the findings above, **C12 is all that remains**, and it is not ordinary work:
+per-run `Linker`, no module cache, and `VmState<'h>`'s lifetime forces
+`Linker<VmState<'h>>` to be per-run, so it is a design change rather than a tweak — one
+the cxx bridge will force the lifetime question on anyway. Of the seventeen findings,
+fourteen are closed; the other two open items are D16's `gas = 0`, a TER decision, and
+D17, which is not work.
 
 The real remaining work is not in the findings list: **the cxx bridge**
 (`xrpl-wasm-vm-ffi` is still `mod ffi {}`) and **real `ApplyContext` wiring**. A1 and A2

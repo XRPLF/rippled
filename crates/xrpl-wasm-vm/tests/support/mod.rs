@@ -55,6 +55,16 @@ impl Answer {
         }
     }
 
+    /// Writes `bytes` and reports `len` regardless — a host whose value is longer
+    /// than what it put in the buffer, which the engine has to refuse without
+    /// letting those bytes reach the guest.
+    pub fn writing_but_claiming(bytes: impl Into<Vec<u8>>, len: usize) -> Answer {
+        Answer::Value {
+            bytes: bytes.into(),
+            len,
+        }
+    }
+
     /// `len` bytes counting up from 0, written and reported.
     pub fn filler(len: usize) -> Answer {
         Answer::bytes((0..len).map(|i| i as u8).collect::<Vec<u8>>())

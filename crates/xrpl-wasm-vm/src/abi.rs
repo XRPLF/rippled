@@ -129,21 +129,20 @@ fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
     caller.data().memory.ok_or(HostError::NoMemExported)
 }
 
-/// Bounds-check `[ptr, ptr + len)` and return a `&[u8]` aliasing guest linear
-/// memory — no allocation, no copy. The slice borrows `caller`, so it lives only
-/// as long as the host call it feeds; host functions never re-enter the guest and
-/// move its memory.
+/// Bounds-check `[ptr, ptr + len)` against `data` and return that slice of it —
+/// no allocation, no copy.
 ///
-/// Checks params validity then the [`MAX_FIELD_BYTES`] cap
-/// (`DataFieldTooLarge`), in that order, before the slice is formed. The transfer
-/// budget is not among them: there are no copied bytes to charge, which is why
-/// C++ left plain slice/string reads (`trace`'s msg/data, `sha512_half`'s input)
-/// free of it — see [`charge_transfer`].
-pub(crate) fn read_borrowed<'a>(
-    caller: &'a Caller<'_, VmState<'_>>,
-    ptr: i32,
-    len: i32,
-) -> HostResult<&'a [u8]> {
+/// Checks the params, then the [`MAX_FIELD_BYTES`] cap (`DataFieldTooLarge`),
+/// then the bounds, before the slice is formed — C++'s `getDataSlice` order
+/// (`HostFuncWrapper.cpp:150-176` at `b7059deb9f^`). The transfer budget is not
+/// among them: there are no copied bytes to charge, which is why C++ left plain
+/// slice/string reads (`trace`'s msg/data, `sha512_half`'s input) free of it — see
+/// [`charge_transfer`].
+///
+/// Takes the memory's bytes rather than a [`Caller`], so a call can borrow as many
+/// input regions as its signature has: they are shared borrows of one slice.
+/// [`scratch_write`] is what supplies that slice.
+pub(crate) fn region(data: &[u8], ptr: i32, len: i32) -> HostResult<&[u8]> {
     // A guest's pointer and length are `i32` on the wire and indices here, so the
     // conversion is the validity check: it fails on exactly the negative values.
     let (Ok(ptr), Ok(len)) = (usize::try_from(ptr), usize::try_from(len)) else {
@@ -153,10 +152,21 @@ pub(crate) fn read_borrowed<'a>(
         return Err(HostError::DataFieldTooLarge);
     }
     let end = ptr.checked_add(len).ok_or(HostError::PointerOutOfBounds)?;
-    memory(caller)?
-        .data(caller)
-        .get(ptr..end)
-        .ok_or(HostError::PointerOutOfBounds)
+    data.get(ptr..end).ok_or(HostError::PointerOutOfBounds)
+}
+
+/// [`region`] of the guest's linear memory, for a call that reads it and writes
+/// nothing back (`trace`, `trace_num`).
+///
+/// The slice borrows `caller`, so it lives only as long as the host call it feeds;
+/// host functions never re-enter the guest and move its memory.
+pub(crate) fn read_borrowed<'a>(
+    caller: &'a Caller<'_, VmState<'_>>,
+    ptr: i32,
+    len: i32,
+) -> HostResult<&'a [u8]> {
+    let mem = memory(caller)?;
+    region(mem.data(caller), ptr, len)
 }
 
 /// Service a "fill-the-caller's-buffer" host call: bounds-check the guest output
@@ -236,55 +246,92 @@ pub(crate) fn write_into(
     Ok(n)
 }
 
-// The input buffer in `read_write` lives on the stack, sized to the field cap.
-// Guard the assumption that the cap stays small enough for that to be fine.
-const _: () = assert!(
-    MAX_FIELD_BYTES <= 8 * 1024,
-    "read_write's input buffer is a stack array; keep MAX_FIELD_BYTES small"
-);
-
-/// Service a host call that reads one region of guest memory and writes another
-/// (e.g. `sha512_half`).
+/// Service a host call that reads guest memory and writes a value back into it
+/// (`sha512_half`): the host fills the run's scratch buffer
+/// ([`VmState::scratch`](crate::vm::VmState::scratch)), and the engine copies the
+/// result into the guest's output region once every rule has passed.
 ///
-/// The input is copied into a stack buffer bounded by [`MAX_FIELD_BYTES`], so it
-/// stays valid while [`write_into`] borrows guest memory mutably for the output —
-/// no aliasing reasoning, at the price of zero-filling the buffer each call. The
-/// copy is host-private scratch rather than a value crossing the boundary, so it
-/// costs no transfer budget, as C++'s `sha512_half` input did not
-/// ([`charge_transfer`]). The output half is [`write_into`], so it obeys the same
-/// policy as a plain write — including the charge.
-pub(crate) fn read_write(
+/// `call` is handed the guest's whole linear memory, so it borrows **as many**
+/// input regions as it needs with [`region`]. That is the difference from
+/// [`write_into`]: a `&mut` view of guest memory admits no simultaneous `&` view,
+/// so a host writing straight into the guest can only be given inputs that were
+/// copied out first, one buffer per input. Reading many and writing one is the
+/// common shape in this ABI — the two-argument keylets, the float arithmetic ops —
+/// and it is this helper that generalizes to it.
+///
+/// **The host is never told the guest's capacity.** It is offered the whole
+/// [`MAX_FIELD_BYTES`] scratch, and reports the value's true length; the fit is
+/// decided here. Two consequences worth the indirection:
+///
+/// - Nothing reaches guest memory until the length, the bounds, the fit and the
+///   budget have all passed, so a refused call cannot leave part of a value in the
+///   guest's buffer. [`write_into`] can only bound what is *writable*.
+/// - The checks then run in C++'s `setData` order — params, cap, bounds, fit,
+///   transfer, copy (`HostFuncWrapper.cpp:115-148` at `b7059deb9f^`) — *after* the
+///   value exists, which is the order C++ could use for exactly this reason.
+///
+/// So the output region is validated after the inputs, and a call with both bad
+/// reports the input's verdict, as C++'s `getDataSlice`-then-`setData` sequence
+/// did. `NoMemExported` is the one verdict that precedes both: it is a fact about
+/// the instance rather than about this call's arguments, and there is no memory to
+/// validate a region against.
+pub(crate) fn scratch_write(
     caller: &mut Caller<'_, VmState<'_>>,
-    src: i32,
-    src_len: i32,
     dst: i32,
     cap: i32,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
 ) -> HostResult<i32> {
-    // As in `read_borrowed`: the conversion to an index is the validity check.
-    let (Ok(src), Ok(len)) = (usize::try_from(src), usize::try_from(src_len)) else {
+    let mem = memory(caller)?;
+    // One borrow, split in two: the guest's bytes, which the inputs are slices of,
+    // and the store data holding the scratch the output goes to. Taking them
+    // together is what keeps the inputs borrowed instead of copied.
+    let (data, state) = mem.data_and_store_mut(&mut *caller);
+    // `&dyn HostFunctions` is `Copy` and outlives the store data, so taking it here
+    // does not hold a borrow of `state` across the call below.
+    let host: &dyn HostFunctions = state.host;
+
+    let n = call(host, data, &mut state.scratch[..])?;
+
+    // As in `region`: the conversion to an index is the validity check.
+    let (Ok(dst), Ok(cap)) = (usize::try_from(dst), usize::try_from(cap)) else {
         return Err(HostError::InvalidParams);
     };
-    if len > MAX_FIELD_BYTES {
+    // `n` is the value's true length, which `call` reports whether or not it wrote
+    // it, so it is bounded by neither the scratch nor the guest's buffer. This is
+    // how the guest learns a value was too large rather than merely unwritten.
+    if n > MAX_FIELD_BYTES {
         return Err(HostError::DataFieldTooLarge);
     }
-
-    // Copy the input out before `write_into` borrows guest memory mutably.
-    let mut buf = [0u8; MAX_FIELD_BYTES];
-    memory(caller)?
-        .read(&*caller, src, &mut buf[..len])
-        .map_err(|_| HostError::PointerOutOfBounds)?;
-    let input = &buf[..len];
-
-    write_into(caller, dst, cap, |host, out| call(host, input, out))
+    // The guest's whole declared region, so a buffer running past memory is its
+    // pointer being wrong rather than a truncated prefix of it being served.
+    let end = dst.checked_add(cap).ok_or(HostError::PointerOutOfBounds)?;
+    let out = data
+        .get_mut(dst..end)
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if n > cap {
+        return Err(HostError::BufferTooSmall);
+    }
+    charge_transfer(state, n)?;
+    out[..n].copy_from_slice(&state.scratch[..n]);
+    // The cap check above bounds `n`, so the count reaches the wire whole: an
+    // `i32` the guest reads as a byte count, never a truncation of a larger one.
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        reason = "`n > MAX_FIELD_BYTES` returned above, and the cap is far inside i32"
+    )]
+    let n = n as i32;
+    Ok(n)
 }
 
 // ---------------------------------------------------------------------------
 // Unit tests
 //
 // A `Caller` exists only for the duration of a host call, so `read_borrowed`,
-// `write_into`, `read_write` and `memory` are unreachable from here; `tests/`
-// covers them by running real modules against a fake host.
+// `write_into`, `scratch_write` and `memory` are unreachable from here; `tests/`
+// covers them by running real modules against a fake host. `region` is the
+// exception, taking bytes rather than a `Caller`, but the same tests reach it
+// through every call that borrows an input.
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -323,6 +370,7 @@ mod tests {
             mem_limits: StoreLimitsBuilder::new().build(),
             transfer_budget: Cell::new(budget),
             memory: None,
+            scratch: [0u8; MAX_FIELD_BYTES],
         }
     }
 
