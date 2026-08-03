@@ -1225,7 +1225,20 @@ OverlayImpl::getManifestsMessage()
         manifestMessage_.reset();
 
         if (tm.list_size() != 0)
-            manifestMessage_ = std::make_shared<Message>(tm, protocol::mtMANIFESTS);
+        {
+            auto const messageSize = Message::totalSize(tm);
+            if (messageSize <= kMaximumMessageSize)
+            {
+                manifestMessage_ = std::make_shared<Message>(tm, protocol::mtMANIFESTS);
+            }
+            else
+            {
+                JLOG(journal_.warn())
+                    << "Skipping oversized TMManifests broadcast: manifests=" << tm.list_size()
+                    << " bytes=" << messageSize
+                    << " max_bytes=" << kMaximumMessageSize;
+            }
+        }
 
         manifestListSeq_ = seq;
     }
