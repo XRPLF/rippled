@@ -646,7 +646,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             using namespace loanBroker;
-            using namespace xrpl::Lending;
+            using namespace xrpl::lending;
 
             TenthBips32 const tenthBipsZero{0};
 
