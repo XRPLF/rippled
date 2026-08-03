@@ -152,4 +152,17 @@ rate(Env& env, Account const& account, Account const& dest, std::uint32_t const&
     return Rate{0};
 }
 
+json::Value
+clawback(AccountID const& account, uint256 const& channel, std::optional<STAmount> const& amount)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::PaymentChannelClawback;
+    jv[jss::Flags] = tfFullyCanonicalSig;
+    jv[jss::Account] = to_string(account);
+    jv["Channel"] = to_string(channel);
+    if (amount)
+        jv[jss::Amount] = amount->getJson(JsonOptions::Values::None);
+    return jv;
+}
+
 }  // namespace xrpl::test::jtx::paychan

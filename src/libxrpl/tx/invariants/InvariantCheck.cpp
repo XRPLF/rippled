@@ -419,6 +419,60 @@ NoZeroEscrow::finalize(
 //------------------------------------------------------------------------------
 
 void
+ValidPaymentChannel::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // Only token channels are constrained here; XRP channels are covered by the
+    // XRP conservation invariants. A deleted channel has nothing to check.
+    if (isDelete || !after || after->getType() != ltPAYCHAN)
+        return;
+
+    auto const& amount = (*after)[sfAmount];
+    if (isXRP(amount))
+        return;
+
+    auto const& balance = (*after)[sfBalance];
+
+    // Amount and balance must name the same asset, both non-negative, and the
+    // paid-out balance must never exceed the locked amount.
+    if (amount.asset() != balance.asset() || amount < beast::kZero || balance < beast::kZero ||
+        amount < balance)
+    {
+        bad_ = true;
+        return;
+    }
+
+    // The paid-out balance must never decrease.
+    if (before && before->getType() == ltPAYCHAN && !isXRP((*before)[sfAmount]) &&
+        (*before)[sfBalance].asset() == balance.asset() && balance < (*before)[sfBalance])
+    {
+        bad_ = true;
+    }
+}
+
+bool
+ValidPaymentChannel::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    // Token channels only exist once the amendment is active.
+    if (!view.rules().enabled(featureTokenPaychan))
+        return true;
+
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel amount/balance inconsistent";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
