@@ -19,9 +19,9 @@ class BatchBuilder;
  * @brief Transaction: Batch
  *
  * Type: ttBATCH (71)
- * Delegable: Delegation::notDelegable
- * Amendment: featureBatch
- * Privileges: noPriv
+ * Delegable: Delegation::NotDelegable
+ * Amendment: featureBatchV1_1
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use BatchBuilder to construct new transactions.
@@ -47,7 +47,7 @@ public:
 
     // Transaction-specific field getters
     /**
-     * @brief Get sfRawTransactions (soeREQUIRED)
+     * @brief Get sfRawTransactions (SoeRequired)
      * @note This is an untyped field.
      * @return The field value.
      */
@@ -58,7 +58,7 @@ public:
         return this->tx_->getFieldArray(sfRawTransactions);
     }
     /**
-     * @brief Get sfBatchSigners (soeOPTIONAL)
+     * @brief Get sfBatchSigners (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -87,7 +87,7 @@ public:
  * @brief Builder for Batch transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class BatchBuilder : public TransactionBuilderBase<BatchBuilder>
@@ -123,10 +123,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfRawTransactions (soeREQUIRED)
+     * @brief Set sfRawTransactions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&
@@ -137,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfBatchSigners (soeOPTIONAL)
+     * @brief Set sfBatchSigners (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&

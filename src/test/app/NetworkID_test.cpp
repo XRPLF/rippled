@@ -21,10 +21,9 @@
 #include <cstdint>
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class NetworkID_test : public beast::unit_test::suite
+class NetworkID_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -38,7 +37,7 @@ public:
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -53,21 +52,21 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env, Json::Value const& jv, TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
             // fund alice
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = env.master.human();
                 jv[jss::Destination] = alice.human();
                 jv[jss::TransactionType] = "Payment";
                 jv[jss::Amount] = "10000000000";
-                env(jv, fee(1000), sig(env.master));
+                env(jv, Fee(1000), Sig(env.master));
             }
 
-            env(jv, fee(1000), ter(expectedOutcome));
+            env(jv, Fee(1000), Ter(expectedOutcome));
             env.close();
         };
 
@@ -77,7 +76,7 @@ public:
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 0);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -100,7 +99,7 @@ public:
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1024);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -121,7 +120,7 @@ public:
             {
                 env.fund(XRP(200), alice);
                 // try to submit a txn without network id, this should not work
-                Json::Value jvn;
+                json::Value jvn;
                 jvn[jss::Account] = alice.human();
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
@@ -136,7 +135,7 @@ public:
                 env.close();
             }
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
 
@@ -156,5 +155,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

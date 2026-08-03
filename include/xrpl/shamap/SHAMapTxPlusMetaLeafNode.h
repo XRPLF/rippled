@@ -1,14 +1,23 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <utility>
 
 namespace xrpl {
 
-/** A leaf node for a transaction and its associated metadata. */
+/**
+ * A leaf node for a transaction and its associated metadata.
+ */
 class SHAMapTxPlusMetaLeafNode final : public SHAMapLeafNode,
                                        public CountedObject<SHAMapTxPlusMetaLeafNode>
 {
@@ -27,36 +36,36 @@ public:
     {
     }
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const override
     {
-        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(item_, cowid, hash_);
+        return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
     getType() const override
     {
-        return SHAMapNodeType::tnTRANSACTION_MD;
+        return SHAMapNodeType::TnTransactionMd;
     }
 
     void
-    updateHash() final override
+    updateHash() final
     {
-        hash_ = SHAMapHash{sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::TxNode, item_->slice(), item_->key())};
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
-        s.add8(wireTypeTransactionWithMeta);
+        s.add8(kWireTypeTransactionWithMeta);
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(Serializer& s) const final
     {
-        s.add32(HashPrefix::txNode);
+        s.add32(HashPrefix::TxNode);
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
     }

@@ -15,10 +15,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class BookChanges_test : public beast::unit_test::suite
+class BookChanges_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -26,7 +25,7 @@ public:
     {
         testcase("Specify well-known strings as ledger input");
         jtx::Env env(*this);
-        Json::Value params, resp;
+        json::Value params, resp;
 
         // As per convention in XRPL, ledgers can be specified with strings
         // "closed", "validated" or "current"
@@ -69,7 +68,7 @@ public:
 
         // As per convention in XRPL, ledgers can be specified with strings
         // "closed", "validated" or "current"
-        Json::Value const resp = env.rpc("json", "book_changes", to_string(Json::Value{}));
+        json::Value const resp = env.rpc("json", "book_changes", to_string(json::Value{}));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
 
@@ -85,7 +84,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
         Env env(*this, all);
@@ -94,18 +93,19 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), domain(domainID));
+        env(offer(alice, XRP(10), USD(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), path(~USD), sendmax(XRP(10)), domain(domainID));
+        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
-        std::string const txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
-        Json::Value const txResult = env.rpc("tx", txHash)[jss::result];
+        json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();
 
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = ledgerIndex;
 
         auto jv = wsc->invoke("book_changes", jvParams);
@@ -129,5 +129,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(BookChanges, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,12 +1,13 @@
 #include <xrpl/server/State.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/use.h>

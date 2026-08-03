@@ -2,9 +2,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
 #include <vector>
 
 namespace xrpl {
@@ -23,16 +26,16 @@ class ValidPermissionedDomain
 {
     struct SleStatus
     {
-        std::size_t credentialsSize_{0};
-        bool isSorted_ = false;
-        bool isUnique_ = false;
-        bool isDelete_ = false;
+        std::size_t credentialsSize{0};
+        bool isSorted = false;
+        bool isUnique = false;
+        bool isDelete = false;
     };
     std::vector<SleStatus> sleStatus_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);

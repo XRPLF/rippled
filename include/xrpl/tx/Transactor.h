@@ -1,15 +1,39 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+
 namespace xrpl {
 
-/** State information when preflighting a tx. */
+/**
+ * State information when preflighting a tx.
+ */
 struct PreflightContext
 {
 public:
@@ -21,38 +45,40 @@ public:
     beast::Journal const j;
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        uint256 parentBatchId_,
-        Rules const& rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , tx(tx_)
-        , rules(rules_)
-        , flags(flags_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        uint256 parentBatchId,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , tx(tx)
+        , rules(std::move(rules))
+        , flags(flags)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+        XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
     }
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        Rules const& rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreflightContext&
     operator=(PreflightContext const&) = delete;
 };
 
-/** State information when determining if a tx is likely to claim a fee. */
+/**
+ * State information when determining if a tx is likely to claim a fee.
+ */
 struct PreclaimContext
 {
 public:
@@ -65,36 +91,36 @@ public:
     beast::Journal const j;
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        std::optional<uint256> parentBatchId_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , view(view_)
-        , preflightResult(preflightResult_)
-        , flags(flags_)
-        , tx(tx_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        std::optional<uint256> parentBatchId,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , view(view)
+        , preflightResult(preflightResult)
+        , flags(flags)
+        , tx(tx)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+            parentBatchId.has_value() == ((flags & TapBatch) == TapBatch),
             "Parent Batch ID should be set if batch apply flag is set");
     }
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : PreclaimContext(registry_, view_, preflightResult_, tx_, flags_, std::nullopt, j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : PreclaimContext(registry, view, preflightResult, tx, flags, std::nullopt, j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&
@@ -106,6 +132,21 @@ struct PreflightResult;
 // Needed for preflight specialization
 class Change;
 
+enum class FeePayerType {
+    Account,
+    Delegate,
+    SponsorCoSigned,
+    SponsorPreFunded,
+};
+
+struct FeePayer
+{
+    AccountID id;
+    Keylet keylet;
+    SF_AMOUNT const& balanceField;
+    FeePayerType type{FeePayerType::Account};
+};
+
 class Transactor
 {
 protected:
@@ -113,18 +154,20 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    AccountID const account_;
+    AccountID const accountID_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
+public:
+    virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
 
-public:
-    virtual ~Transactor() = default;
+    enum class ConsequencesFactoryType { Normal, Blocker, Custom };
 
-    enum ConsequencesFactoryType { Normal, Blocker, Custom };
-    /** Process the transaction. */
+    /**
+     * Process the transaction.
+     */
     ApplyResult
     operator()();
 
@@ -134,11 +177,26 @@ public:
         return ctx_.view();
     }
 
-    ApplyView const&
+    [[nodiscard]] ApplyView const&
     view() const
     {
         return ctx_.view();
     }
+
+    /**
+     * Check all invariants for the current transaction.
+     *
+     * Runs transaction-specific invariants first (visitInvariantEntry +
+     * finalizeInvariants), then protocol-level invariants.  Both layers
+     * always run; the worst failure code is returned.
+     *
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
+     *
+     * @return the final TER after all invariant checks.
+     */
+    [[nodiscard]] TER
+    checkInvariants(TER result, XRPAmount fee);
 
     /////////////////////////////////////////////////////
     /*
@@ -162,12 +220,13 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
-
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    // Returns the base fee plus extra base fee units, not scaled for load.
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx, std::uint32_t extraBaseFeeMultiplier);
 
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:
@@ -206,8 +265,67 @@ public:
         return tesSUCCESS;
     }
 
+    /**
+     * This function can be overridden to introduce additional semantic constraints beyond the
+     * granular template validation for granular permissions. It is called by the base
+     * invokeCheckPermission method only after the transaction has successfully passed
+     * checkGranularSandbox.
+     */
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
+    {
+        return tesSUCCESS;
+    }
+
+    /**
+     * Checks whether the transaction is authorized to be executed by the delegated account.
+     * This function enforces the strict permission check hierarchy. It is explicitly
+     * designed NOT to be overridden. Derived transactors must instead implement
+     * checkGranularSemantics to add custom validation logic for granular permissions.
+     *
+     * The evaluation proceeds as follows:
+     * - If transaction-level permission is granted, the function immediately returns tesSUCCESS.
+     * - If transaction-level permission is not granted, the function checks whether the transaction
+     * matches the granular permission template defined in permissions.macro. If it does, it then
+     * calls checkGranularSemantics to perform any additional, fine-grained validation.
+     *
+     */
+    template <class T>
+    static NotTEC
+    invokeCheckPermission(ReadView const& view, STTx const& tx)
+    {
+        // heldGranularPermissions is passed by reference into checkPermission.
+        // It is populated with the sender’s granular permissions only when the sender
+        // lacks tx-level permission but has granular permissions that satisfy the
+        // granular permission template.
+        //
+        // - result is terNO_DELEGATE_PERMISSION: return immediately.
+        // - result is tesSUCCESS and heldGranularPermissions is empty: tx-level permission was
+        // granted, so we returned success before populating it.
+        // - result is tesSUCCESS and heldGranularPermissions is not empty: tx-level permission was
+        // not granted, but the held granular permissions passed checkGranularSandbox, so we proceed
+        // to checkGranularSemantics.
+        //
+        // WARNING: Do not simplify checkPermission to return only
+        // heldGranularPermissions or the ter code. Both the result and the
+        // populated set are required to enforce the strict permission hierarchy
+        // described above.
+        std::unordered_set<GranularPermissionType> heldGranularPermissions;
+        if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
+            !isTesSuccess(result) || heldGranularPermissions.empty())
+        {
+            return result;
+        }
+
+        return T::checkGranularSemantics(view, tx, heldGranularPermissions);
+    }
+
+    static NotTEC
+    checkSponsor(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -230,14 +348,60 @@ protected:
     virtual TER
     doApply() = 0;
 
-    /** Compute the minimum fee required to process a transaction
-        with a given baseFee based on the current server load.
+    /**
+     * Inspect a single ledger entry modified by this transaction.
+     *
+     * Called once for every SLE created, modified, or deleted by the
+     * transaction, before finalizeInvariants.  Implementations should
+     * accumulate whatever state they need to verify transaction-specific
+     * post-conditions.
+     *
+     * @param isDelete  true if the entry was erased from the ledger.
+     * @param before    the entry's state before the transaction (nullptr
+     *                  for newly created entries).
+     * @param after     the entry's state as supplied by the apply logic
+     *                  for this transaction. For deletions, this is the
+     *                  SLE being erased and is not guaranteed to be null;
+     *                  callers must use isDelete rather than after == nullptr
+     *                  to detect deletions.
+     */
+    virtual void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
-        @param registry The service registry.
-        @param baseFee The base fee of a candidate transaction
-            @see xrpl::calculateBaseFee
-        @param fees Fee settings from the current ledger
-        @param flags Transaction processing fees
+    /**
+     * Check transaction-specific post-conditions after all entries have
+     * been visited.
+     *
+     * Called once after every modified ledger entry has been passed to
+     * visitInvariantEntry.  Returns true if all transaction-specific
+     * invariants hold, or false to fail the transaction with
+     * tecINVARIANT_FAILED.
+     *
+     * @param tx    the transaction being applied.
+     * @param result the tentative TER result so far.
+     * @param fee   the fee consumed by the transaction.
+     * @param view  read-only view of the ledger after the transaction.
+     * @param j     journal for logging invariant failures.
+     *
+     * @return true if all invariants pass; false otherwise.
+     */
+    [[nodiscard]] virtual bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) = 0;
+
+    /**
+     * Compute the minimum fee required to process a transaction
+     * with a given baseFee based on the current server load.
+     *
+     * @param registry The service registry.
+     * @param baseFee The base fee of a candidate transaction
+     * @see xrpl::calculateBaseFee
+     * @param fees Fee settings from the current ledger
+     * @param flags Transaction processing fees
      */
     static XRPAmount
     minimumFee(ServiceRegistry& registry, XRPAmount baseFee, Fees const& fees, ApplyFlags flags);
@@ -253,7 +417,12 @@ protected:
         std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
-        beast::Journal const j);
+        beast::Journal const j,
+        // A batch may carry an inner from an account that an earlier inner
+        // creates, so the signer account need not exist yet; when it does not,
+        // only its own master key may authorize it. Normal transactions require
+        // the account to already exist.
+        bool permitUncreatedAccount = false);
 
     // Base class always returns true
     static bool
@@ -281,33 +450,32 @@ protected:
         unit::ValueUnit<Unit, T> max,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T>
     static bool
     validNumericMinimum(std::optional<T> value, T min = T{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T, class Unit>
     static bool
     validNumericMinimum(
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-    TER
-    payFee();
+    // Signature-authorization helpers. protected so the Batch transactor can
+    // reuse them when validating each BatchSigner in Batch::checkBatchSign.
     static NotTEC
     checkSingleSign(
         ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount,
+        SLE::const_pointer sleAccount,
         beast::Journal const j);
+
     static NotTEC
     checkMultiSign(
         ReadView const& view,
@@ -316,25 +484,74 @@ private:
         STObject const& sigObject,
         beast::Journal const j);
 
+private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
+
     void trapTransaction(uint256) const;
 
-    /** Performs early sanity checks on the account and fee fields.
-
-        (And passes flagMask to preflight0)
-
-        Do not try to call preflight1 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Performs early sanity checks on the account and fee fields.
+     *
+     * (And passes flagMask to preflight0)
+     *
+     * Do not try to call preflight1 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 
-    /** Checks whether the signature appears valid
-
-        Do not try to call preflight2 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Checks whether the signature appears valid
+     *
+     * Do not try to call preflight2 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
+
+    /**
+     * Universal validations
+     * - Valid MPTAmount and XRPAmount
+     *
+     *  Do not try to call preflightUniversal from preflight() in derived classes. See
+     *  the description of invokePreflight for details.
+     */
+    static NotTEC
+    preflightUniversal(PreflightContext const& ctx);
+
+    /**
+     * Check transaction-specific invariants only.
+     *
+     * Walks every modified ledger entry via visitInvariantEntry, then
+     * calls finalizeInvariants on the derived transactor.  Returns
+     * tecINVARIANT_FAILED if any transaction invariant is violated.
+     *
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
+     *
+     * @return the original result if all invariants pass, or
+     *         tecINVARIANT_FAILED otherwise.
+     */
+    [[nodiscard]] TER
+    checkTransactionInvariants(TER result, XRPAmount fee);
 };
 
 inline bool
@@ -343,20 +560,24 @@ Transactor::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-/** Performs early sanity checks on the txid and flags */
+/**
+ * Performs early sanity checks on the txid and flags
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/**
+ * Checks the validity of the transactor signing key.
  *
  * Normally called from preflight1 with ctx.tx.
  */
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 
-/** Checks the special signing key state needed for simulation
+/**
+ * Checks the special signing key state needed for simulation
  *
  * Normally called from preflight2 with ctx.tx.
  */
@@ -384,6 +605,9 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
     if (auto const ret = T::preflight(ctx))

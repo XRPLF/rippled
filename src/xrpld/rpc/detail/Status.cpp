@@ -9,8 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 std::string
 Status::codeString() const
@@ -18,7 +17,7 @@ Status::codeString() const
     if (!*this)
         return "";
 
-    if (type_ == Type::none)
+    if (type_ == Type::None)
         return std::to_string(code_);
 
     if (type_ == Status::Type::TER)
@@ -31,11 +30,11 @@ Status::codeString() const
         return s1 + ": " + s2;
     }
 
-    if (type_ == Status::Type::error_code_i)
+    if (type_ == Status::Type::ErrorCodeI)
     {
-        auto info = get_error_info(toErrorCode());
+        auto info = getErrorInfo(toErrorCode());
         std::ostringstream sStr;
-        sStr << info.token.c_str() << ": " << info.message.c_str();
+        sStr << info.token.cStr() << ": " << info.message.cStr();
         return sStr.str();
     }
 
@@ -46,7 +45,7 @@ Status::codeString() const
 }
 
 void
-Status::fillJson(Json::Value& value)
+Status::fillJson(json::Value& value)
 {
     if (!*this)
         return;
@@ -86,5 +85,4 @@ Status::toString() const
     return "";
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

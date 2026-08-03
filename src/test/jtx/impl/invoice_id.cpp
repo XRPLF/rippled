@@ -5,17 +5,13 @@
 
 #include <xrpl/basics/strHex.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
-invoice_id::operator()(Env&, JTx& jt) const
+InvoiceId::operator()(Env&, JTx& jt) const
 {
     if (!hash_.isZero())
         jt["InvoiceID"] = strHex(hash_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

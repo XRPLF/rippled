@@ -3,13 +3,18 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
-/** Information about the notional ledger backing the view. */
+/**
+ * Information about the notional ledger backing the view.
+ */
 struct LedgerHeader
 {
     explicit LedgerHeader() = default;
@@ -26,12 +31,12 @@ struct LedgerHeader
     //
 
     // Closed means "tx set already determined"
-    uint256 hash = beast::zero;
-    uint256 txHash = beast::zero;
-    uint256 accountHash = beast::zero;
-    uint256 parentHash = beast::zero;
+    uint256 hash = beast::kZero;
+    uint256 txHash = beast::kZero;
+    uint256 accountHash = beast::kZero;
+    uint256 parentHash = beast::kZero;
 
-    XRPAmount drops = beast::zero;
+    XRPAmount drops = beast::kZero;
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.
@@ -53,26 +58,32 @@ struct LedgerHeader
 };
 
 // ledger close flags
-static std::uint32_t const sLCF_NoConsensusTime = 0x01;
+static std::uint32_t const kSLcfNoConsensusTime = 0x01;
 
 inline bool
 getCloseAgree(LedgerHeader const& info)
 {
-    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
+    return (info.closeFlags & kSLcfNoConsensusTime) == 0;
 }
 
 void
 addRaw(LedgerHeader const&, Serializer&, bool includeHash = false);
 
-/** Deserialize a ledger header from a byte array. */
+/**
+ * Deserialize a ledger header from a byte array.
+ */
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash = false);
 
-/** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
+/**
+ * Deserialize a ledger header (prefixed with 4 bytes) from a byte array.
+ */
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-/** Calculate the hash of a ledger header. */
+/**
+ * Calculate the hash of a ledger header.
+ */
 uint256
 calculateLedgerHash(LedgerHeader const& info);
 

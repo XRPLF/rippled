@@ -15,48 +15,104 @@ repos:
     hooks:
       - id: check-added-large-files
         args: [--maxkb=400, --enforce-all]
+      - id: check-executables-have-shebangs
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        # .ipp fragments are included by their owning header rather than compiled
+        # as standalone translation units, so they have no compile_commands.json
+        # entry to lint (verify_headers checks them transitively).
+        exclude: '^include/xrpl/protocol_autogen|\.ipp$'
+        # run-clang-tidy --fix may edit headers included by files it is not run on,
+        # so pre-commit must not split the files across parallel hook invocations.
+        # The script determines the staged files itself and lets run-clang-tidy
+        # handle parallelism internally.
+        pass_filenames: false
+      - id: fix-include-style
+        name: fix include style
+        entry: ./bin/pre-commit/fix_include_style.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+      - id: fix-pragma-once
+        name: fix missing '#pragma once' declarations in header files
+        language: python
+        entry: ./bin/pre-commit/fix_pragma_once.py
+        files: \.(h|hpp)$
+      - id: check-doxygen-style
+        name: check Doxygen comment style
+        entry: ./bin/pre-commit/check_doxygen_style.py
+        language: python
+        types_or: [c++, c]
+
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
+    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
     hooks:
       - id: clang-format
         args: [--style=file]
-        "types_or": [c++, c, proto]
+        types_or: [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
-  - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.26.0
+  - repo: https://github.com/BlankSpruce/gersemi-pre-commit
+    rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
     hooks:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
+    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0
+    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
     hooks:
       - id: black
 
-  - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
     hooks:
-      - id: cspell # Spell check changed files
-        exclude: (.config/cspell.config.yaml|^include/xrpl/protocol_autogen/(transactions|ledger_entries)/)
-      - id: cspell # Spell check the commit message
+      - id: shfmt
+        args: [--write, --indent=4, --case-indent=true]
+
+  - repo: local
+    hooks:
+      - id: format-inline-bash-workflows
+        name: "format `run:` blocks in workflows/actions"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: ^\.github/(workflows|actions)/.*\.ya?ml$
+      - id: format-inline-bash-markdown
+        name: "format ```bash blocks in markdown"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: \.md$
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
+    hooks:
+      - id: cspell
+        name: check changed files spelling
+        exclude: |
+          (?x)^(
+              \.cspell\.config\.yaml|
+              include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
+          )$
+      - id: cspell
         name: check commit message spelling
         args:
           - --no-must-find-files
           - --no-progress
           - --no-summary
-          - --files
-          - .git/COMMIT_EDITMSG
         stages: [commit-msg]
 
   - repo: local

@@ -8,20 +8,20 @@
 #include <test/jtx/pay.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class RPCOverload_test : public beast::unit_test::suite
+class RPCOverload_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -30,8 +30,8 @@ public:
         testcase << "Overload " << (useWS ? "WS" : "HTTP") << " RPC client";
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    return no_admin(std::move(cfg));
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    return noAdmin(std::move(cfg));
                 })};
 
         Account const alice{"alice"};
@@ -41,7 +41,7 @@ public:
         std::unique_ptr<AbstractClient> client =
             useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
-        Json::Value tx = Json::objectValue;
+        json::Value tx = json::ValueType::Object;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 
@@ -83,5 +83,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

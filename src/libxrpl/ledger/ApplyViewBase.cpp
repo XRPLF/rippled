@@ -13,8 +13,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
@@ -59,38 +58,38 @@ ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) co
     return items_.succ(*base_, key, last);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 ApplyViewBase::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
 }
 
 auto
-ApplyViewBase::slesBegin() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesBegin();
 }
 
 auto
-ApplyViewBase::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesEnd();
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesUpperBound(key);
 }
 
 auto
-ApplyViewBase::txsBegin() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsBegin();
 }
 
 auto
-ApplyViewBase::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsEnd();
 }
@@ -115,26 +114,26 @@ ApplyViewBase::flags() const
     return flags_;
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 ApplyViewBase::peek(Keylet const& k)
 {
     return items_.peek(*base_, k);
 }
 
 void
-ApplyViewBase::erase(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::erase(SLE::ref sle)
 {
     items_.erase(*base_, sle);
 }
 
 void
-ApplyViewBase::insert(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::insert(SLE::ref sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::update(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::update(SLE::ref sle)
 {
     items_.update(*base_, sle);
 }
@@ -142,19 +141,19 @@ ApplyViewBase::update(std::shared_ptr<SLE> const& sle)
 //---
 
 void
-ApplyViewBase::rawErase(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::rawErase(SLE::ref sle)
 {
     items_.rawErase(*base_, sle);
 }
 
 void
-ApplyViewBase::rawInsert(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::rawInsert(SLE::ref sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::rawReplace(std::shared_ptr<SLE> const& sle)
+ApplyViewBase::rawReplace(SLE::ref sle)
 {
     items_.replace(*base_, sle);
 }
@@ -165,5 +164,4 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
     items_.destroyXRP(fee);
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

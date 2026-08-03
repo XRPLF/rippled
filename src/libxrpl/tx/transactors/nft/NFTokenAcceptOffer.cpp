@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -13,12 +14,14 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -41,7 +44,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
         if (!bo || !so)
             return temMALFORMED;
 
-        if (*bf <= beast::zero)
+        if (*bf <= beast::kZero)
             return temMALFORMED;
     }
 
@@ -52,28 +55,25 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
+        [&ctx](std::optional<uint256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
         {
             if (id->isZero())
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
-            auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
+            auto offerSLE = ctx.view.read(keylet::nftokenOffer(*id));
 
             if (!offerSLE)
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixExpiredNFTokenOfferRemoval amendment, expired
-                // offers caused tecEXPIRED in preclaim, leaving them on ledger
-                // forever. After the amendment, we allow expired offers to
-                // reach doApply() where they get deleted and tecEXPIRED is
-                // returned.
-                if (!ctx.view.rules().enabled(fixExpiredNFTokenOfferRemoval))
+                // Before fixCleanup3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
+                // leaving them on ledger forever. After the amendment, we allow expired offers to
+                // reach doApply() where they get deleted and tecEXPIRED is returned.
+                if (!ctx.view.rules().enabled(fixCleanup3_1_3))
                     return {nullptr, tecEXPIRED};
-                // Amendment enabled: return the expired offer to be handled in
-                // doApply
+                // Amendment enabled: return the expired offer to be handled in doApply.
             }
 
             if ((*offerSLE)[sfAmount].negative())
@@ -159,7 +159,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (bo)
     {
-        if (((*bo)[sfFlags] & lsfSellNFToken) == lsfSellNFToken)
+        if (bo->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
@@ -186,7 +186,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
+            needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -217,7 +218,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (so)
     {
-        if (((*so)[sfFlags] & lsfSellNFToken) != lsfSellNFToken)
+        if (!so->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
@@ -254,7 +255,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
-            if (accountFunds(ctx.view, ctx.tx[sfAccount], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+            if (accountFunds(
+                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
+                needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
@@ -303,9 +306,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // give the NFToken issuer an undesired trust line.
         // Issuer doesn't need a trust line to accept their own currency.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
-            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
+            (nft::getFlags(tokenID) & nft::kFlagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
-            !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
+            !ctx.view.read(keylet::trustLine(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
@@ -330,7 +333,7 @@ TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
     // This should never happen, but it's easy and quick to check.
-    if (amount < beast::zero)
+    if (amount < beast::kZero)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
@@ -342,9 +345,9 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), from, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
@@ -372,44 +375,37 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
-    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
-    // reserve to own a new object, if their OwnerCount changed.
-    //
     // There was an issue where the buyer accepts a sell offer, the ledger
     // didn't check if the buyer has enough reserve, meaning that buyer can get
     // NFTs free of reserve.
-    if (view().rules().enabled(fixNFTokenReserve))
-    {
-        // To check if there is sufficient reserve, we cannot use preFeeBalance_
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+    // To check if there is sufficient reserve, we cannot use preFeeBalance_
+    // because NFT is sold for a price. So we must use the balance after
+    // the deduction of the potential offer price. A small caveat here is
+    // that the balance has already deducted the transaction fee, meaning
+    // that the reserve requirement is a few drops higher.
+    auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
-        {
-            if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
-                buyerBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
+    auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+    if (buyerOwnerCountAfter > buyerOwnerCountBefore)
+    {
+        if (buyerBalance < accountReserve(view(), sleBuyer, j_))
+            return tecINSUFFICIENT_RESERVE;
     }
 
     return insertRet;
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
+NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
-    AccountID const& seller = isSell ? owner : account_;
-    AccountID const& buyer = isSell ? account_ : owner;
+    AccountID const& seller = isSell ? owner : accountID_;
+    AccountID const& buyer = isSell ? accountID_ : owner;
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
-    if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::zero)
+    if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::kZero)
     {
         // Calculate the issuer's cut from this sale, if any:
         if (auto const fee = nft::getTransferFee(nftokenID); fee != 0)
@@ -417,7 +413,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
             auto const cut = multiply(amount, nft::transferFeeAsRate(fee));
 
             if (auto const issuer = nft::getIssuer(nftokenID);
-                cut != beast::zero && seller != issuer && buyer != issuer)
+                cut != beast::kZero && seller != issuer && buyer != issuer)
             {
                 if (auto const r = pay(buyer, issuer, cut); !isTesSuccess(r))
                     return r;
@@ -438,24 +434,22 @@ TER
 NFTokenAcceptOffer::doApply()
 {
     auto const loadToken = [this](std::optional<uint256> const& id) {
-        std::shared_ptr<SLE> sle;
+        SLE::pointer sle;
         if (id)
-            sle = view().peek(keylet::nftoffer(*id));
+            sle = view().peek(keylet::nftokenOffer(*id));
         return sle;
     };
 
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers
-    // and delete them, returning tecEXPIRED. This ensures expired offers
-    // are properly cleaned up from the ledger.
-    if (view().rules().enabled(fixExpiredNFTokenOfferRemoval))
+    // With fixCleanup3_1_3 amendment, check for expired offers and delete them, returning
+    // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
+    if (view().rules().enabled(fixCleanup3_1_3))
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired =
-            [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
@@ -524,16 +518,16 @@ NFTokenAcceptOffer::doApply()
         // being paid out than the seller authorized.  That would be bad!
 
         // Send the broker the amount they requested.
-        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::zero)
+        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::kZero)
         {
-            if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
+            if (auto const r = pay(buyer, accountID_, cut.value()); !isTesSuccess(r))
                 return r;
 
             amount -= cut.value();
         }
 
         // Calculate the issuer's cut, if any.
-        if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::zero && fee != 0)
+        if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::kZero && fee != 0)
         {
             auto cut = multiply(amount, nft::transferFeeAsRate(fee));
 
@@ -547,7 +541,7 @@ NFTokenAcceptOffer::doApply()
         }
 
         // And send whatever remains to the seller.
-        if (amount > beast::zero)
+        if (amount > beast::kZero)
         {
             if (auto const r = pay(buyer, seller, amount); !isTesSuccess(r))
                 return r;
@@ -564,6 +558,24 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
+}
+
+void
+NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+NFTokenAcceptOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

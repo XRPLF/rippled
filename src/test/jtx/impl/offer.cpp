@@ -8,37 +8,33 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-Json::Value
+json::Value
 offer(
     Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets,
     std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
-    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
+    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::Values::None);
+    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::Values::None);
     if (flags != 0u)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;
     return jv;
 }
 
-Json::Value
-offer_cancel(Account const& account, std::uint32_t offerSeq)
+json::Value
+offerCancel(Account const& account, std::uint32_t offerSeq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::OfferSequence] = offerSeq;
     jv[jss::TransactionType] = jss::OfferCancel;
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

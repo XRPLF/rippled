@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -25,17 +26,17 @@ struct LocalValues
     template <class T>
     struct Value : BasicValue
     {
-        T t_;
+        T t;
 
         Value() = default;
-        explicit Value(T const& t) : t_(t)
+        explicit Value(T t) : t(std::move(t))
         {
         }
 
         void*
         get() override
         {
-            return &t_;
+            return &t;
         }
     };
 
@@ -54,8 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> tsp(&detail::LocalValues::cleanup);
-    return tsp;
+    static boost::thread_specific_ptr<detail::LocalValues> kTsp(&detail::LocalValues::cleanup);
+    return kTsp;
 }
 
 }  // namespace detail
@@ -69,11 +70,15 @@ public:
     {
     }
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T&
     operator*();
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T*
     operator->()
     {

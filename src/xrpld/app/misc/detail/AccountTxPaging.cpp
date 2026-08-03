@@ -23,7 +23,7 @@ namespace xrpl {
 void
 convertBlobsToTxResult(
     RelationalDatabase::AccountTxs& to,
-    std::uint32_t ledger_index,
+    std::uint32_t ledgerIndex,
     std::string const& status,
     Blob const& rawTxn,
     Blob const& rawMeta,
@@ -35,20 +35,20 @@ convertBlobsToTxResult(
 
     auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    auto metaset = std::make_shared<TxMeta>(tr->getID(), ledger_index, rawMeta);
+    auto metaset = std::make_shared<TxMeta>(tr->getID(), ledgerIndex, rawMeta);
 
     // if properly formed meta is available we can use it to generate ctid
     if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
     {
         tr->setStatus(
             Transaction::sqlTransactionStatus(status),
-            ledger_index,
+            ledgerIndex,
             metaset->getAsObject().getFieldU32(sfTransactionIndex),
             app.getNetworkIDService().getNetworkID());
     }
     else
     {
-        tr->setStatus(Transaction::sqlTransactionStatus(status), ledger_index);
+        tr->setStatus(Transaction::sqlTransactionStatus(status), ledgerIndex);
     }
 
     to.emplace_back(std::move(tr), metaset);

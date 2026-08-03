@@ -28,7 +28,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
     auto const currencyOrAccount = sit.get160();
 
-    if (isXRP(static_cast<Currency>(currencyOrAccount)))
+    if (isXRP(Currency::fromRaw(currencyOrAccount)))
     {
         asset_ = xrpIssue();
     }
@@ -39,7 +39,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         // - 160 bits MPT issuer account
         // - 160 bits black hole account
         // - 32 bits sequence
-        AccountID const account = static_cast<AccountID>(sit.get160());
+        AccountID const account = AccountID::fromRaw(sit.get160());
         // MPT
         if (noAccount() == account)
         {
@@ -78,10 +78,10 @@ STIssue::getText() const
     return asset_.getText();
 }
 
-Json::Value
+json::Value
 STIssue::getJson(JsonOptions) const
 {
-    Json::Value jv;
+    json::Value jv;
     asset_.setJson(jv);
     return jv;
 }
@@ -107,7 +107,7 @@ STIssue::add(Serializer& s) const
 bool
 STIssue::isEquivalent(STBase const& t) const
 {
-    STIssue const* v = dynamic_cast<STIssue const*>(&t);
+    auto const* v = dynamic_cast<STIssue const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
 
@@ -132,7 +132,7 @@ STIssue::move(std::size_t n, void* buf)
 }
 
 STIssue
-issueFromJson(SField const& name, Json::Value const& v)
+issueFromJson(SField const& name, json::Value const& v)
 {
     return STIssue{name, assetFromJson(v)};
 }

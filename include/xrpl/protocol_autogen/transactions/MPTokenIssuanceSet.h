@@ -19,9 +19,9 @@ class MPTokenIssuanceSetBuilder;
  * @brief Transaction: MPTokenIssuanceSet
  *
  * Type: ttMPTOKEN_ISSUANCE_SET (56)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +137,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferFee (soeOPTIONAL)
+     * @brief Get sfTransferFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (soeOPTIONAL)
+     * @brief Get sfMutableFlags (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -187,13 +187,65 @@ public:
     {
         return this->tx_->isFieldPresent(sfMutableFlags);
     }
+
+    /**
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getIssuerEncryptionKey() const
+    {
+        if (hasIssuerEncryptionKey())
+        {
+            return this->tx_->at(sfIssuerEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfIssuerEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getAuditorEncryptionKey() const
+    {
+        if (hasAuditorEncryptionKey())
+        {
+            return this->tx_->at(sfAuditorEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfAuditorEncryptionKey);
+    }
 };
 
 /**
  * @brief Builder for MPTokenIssuanceSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class MPTokenIssuanceSetBuilder : public TransactionBuilderBase<MPTokenIssuanceSetBuilder>
@@ -229,10 +281,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -243,7 +297,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -254,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -265,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -276,7 +330,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferFee (soeOPTIONAL)
+     * @brief Set sfTransferFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -287,13 +341,35 @@ public:
     }
 
     /**
-     * @brief Set sfMutableFlags (soeOPTIONAL)
+     * @brief Set sfMutableFlags (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
     setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfMutableFlags] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfIssuerEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfAuditorEncryptionKey] = value;
         return *this;
     }
 

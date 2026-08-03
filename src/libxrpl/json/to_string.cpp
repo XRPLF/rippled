@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace Json {
+namespace json {
 
 std::string
 to_string(Value const& value)
@@ -18,4 +18,4 @@ pretty(Value const& value)
     return StyledWriter().write(value);
 }
 
-}  // namespace Json
+}  // namespace json

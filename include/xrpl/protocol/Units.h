@@ -3,31 +3,43 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
+#include <cstdint>
 #include <iosfwd>
 #include <limits>
 #include <optional>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
 namespace unit {
 
-/** "drops" are the smallest divisible amount of XRP. This is what most
-    of the code uses. */
+/**
+ * "drops" are the smallest divisible amount of XRP. This is what most
+ * of the code uses.
+ */
 struct dropTag;
-/** "fee levels" are used by the transaction queue to compare the relative
-    cost of transactions that require different levels of effort to process.
-    See also: src/xrpld/app/misc/FeeEscalation.md#fee-level */
+/**
+ * "fee levels" are used by the transaction queue to compare the relative
+ * cost of transactions that require different levels of effort to process.
+ * See also: src/xrpld/app/misc/FeeEscalation.md#fee-level
+ */
 struct feelevelTag;
-/** unitless values are plain scalars wrapped in a ValueUnit. They are
-    used for calculations in this header. */
+/**
+ * unitless values are plain scalars wrapped in a ValueUnit. They are
+ * used for calculations in this header.
+ */
 struct unitlessTag;
 
-/** Units to represent basis points (bips) and 1/10 basis points */
+/**
+ * Units to represent basis points (bips) and 1/10 basis points
+ */
 class BipsTag;
 class TenthBipsTag;
 
@@ -38,13 +50,14 @@ template <class T>
 concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
     std::is_object_v<typename T::value_type>;
 
-/** `Usable` is checked to ensure that only values with
-    known valid type tags can be used (sometimes transparently) in
-    non-unit contexts. At the time of implementation, this includes
-    all known tags, but more may be added in the future, and they
-    should not be added automatically unless determined to be
-    appropriate.
-*/
+/**
+ * `Usable` is checked to ensure that only values with
+ * known valid type tags can be used (sometimes transparently) in
+ * non-unit contexts. At the time of implementation, this includes
+ * all known tags, but more may be added in the future, and they
+ * should not be added automatically unless determined to be
+ * appropriate.
+ */
 template <class T>
 concept Usable = Valid<T> &&
     (std::is_same_v<typename T::unit_type, feelevelTag> ||
@@ -111,13 +124,15 @@ public:
         return *this;
     }
 
-    /** Instances with the same unit, and a type that is
-        "safe" to convert to this one can be converted
-        implicitly */
+    /**
+     * Instances with the same unit, and a type that is
+     * "safe" to convert to this one can be converted
+     * implicitly
+     */
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
         requires SafeToCast<Other, value_type>
-        : ValueUnit(safe_cast<value_type>(value.value()))
+        : ValueUnit(safeCast<value_type>(value.value()))
     {
     }
 
@@ -209,7 +224,7 @@ public:
         return *this;
     }
 
-    template <Integral transparent = value_type>
+    template <Integral Transparent = value_type>
     ValueUnit&
     operator%=(value_type const& rhs)
     {
@@ -256,15 +271,19 @@ public:
         return value_ < other.value_;
     }
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit constexpr
     operator bool() const noexcept
     {
         return value_ != 0;
     }
 
-    /** Return the sign of the amount */
-    constexpr int
+    /**
+     * Return the sign of the amount
+     */
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
         if (value_ < 0)
@@ -272,16 +291,18 @@ public:
         return value_ ? 1 : 0;
     }
 
-    /** Returns the number of drops */
+    /**
+     * Returns the number of drops
+     */
     // TODO: Move this to a new class, maybe with the old "TaggedFee" name
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     fee() const
     {
         return value_;
     }
 
     template <class Other>
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalFromReference(ValueUnit<unit_type, Other> reference) const
     {
         return static_cast<double>(value_) / reference.value();
@@ -291,22 +312,22 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
             using jsontype =
-                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
+                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto min = std::numeric_limits<jsontype>::min();
-            constexpr auto max = std::numeric_limits<jsontype>::max();
+            constexpr auto kMin = std::numeric_limits<jsontype>::min();
+            constexpr auto kMax = std::numeric_limits<jsontype>::max();
 
-            if (value_ < min)
-                return min;
-            if (value_ > max)
-                return max;
+            if (value_ < kMin)
+                return kMin;
+            if (value_ > kMax)
+                return kMax;
             return static_cast<jsontype>(value_);
         }
         else
@@ -315,11 +336,12 @@ public:
         }
     }
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
-    constexpr value_type
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return value_;
@@ -391,15 +413,15 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         return std::nullopt;
     }
 
-    using desttype = typename Dest::value_type;
-    constexpr auto max = std::numeric_limits<desttype>::max();
+    using desttype = Dest::value_type;
+    constexpr auto kMax = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
         return mul;
     if (mul.value() == div.value())
     {
-        if (value.value() > max)
+        if (value.value() > kMax)
             return std::nullopt;
         return Dest{static_cast<desttype>(value.value())};
     }
@@ -414,7 +436,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     auto quotient = product / div.value();
 
-    if (quotient > max)
+    if (quotient > kMax)
         return std::nullopt;
 
     return Dest{static_cast<desttype>(quotient)};
@@ -494,34 +516,34 @@ mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s.value())};
+    return Dest{safeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s)};
+    return Dest{safeCast<typename Dest::value_type>(s)};
 }
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
+    return Dest{unsafeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s)};
+    return Dest{unsafeCast<typename Dest::value_type>(s)};
 }
 
 }  // namespace xrpl

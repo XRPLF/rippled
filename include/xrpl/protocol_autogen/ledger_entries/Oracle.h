@@ -33,7 +33,7 @@ public:
      * @brief Construct a Oracle ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Oracle(std::shared_ptr<SLE const> sle)
+    explicit Oracle(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfOracleDocumentID (soeOPTIONAL)
+     * @brief Get sfOracleDocumentID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfProvider (soeREQUIRED)
+     * @brief Get sfProvider (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfPriceDataSeries (soeREQUIRED)
+     * @brief Get sfPriceDataSeries (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -104,7 +104,7 @@ public:
     }
 
     /**
-     * @brief Get sfAssetClass (soeREQUIRED)
+     * @brief Get sfAssetClass (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
     }
 
     /**
-     * @brief Get sfLastUpdateTime (soeREQUIRED)
+     * @brief Get sfLastUpdateTime (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -150,7 +150,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -161,7 +161,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -172,7 +172,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -187,7 +187,7 @@ public:
  * @brief Builder for Oracle ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class OracleBuilder : public LedgerEntryBuilderBase<OracleBuilder>
@@ -222,7 +222,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    OracleBuilder(std::shared_ptr<SLE const> sle)
+    OracleBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltORACLE)
         {
@@ -231,10 +231,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -245,7 +247,7 @@ public:
     }
 
     /**
-     * @brief Set sfOracleDocumentID (soeOPTIONAL)
+     * @brief Set sfOracleDocumentID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -256,7 +258,7 @@ public:
     }
 
     /**
-     * @brief Set sfProvider (soeREQUIRED)
+     * @brief Set sfProvider (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -267,7 +269,7 @@ public:
     }
 
     /**
-     * @brief Set sfPriceDataSeries (soeREQUIRED)
+     * @brief Set sfPriceDataSeries (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -278,7 +280,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetClass (soeREQUIRED)
+     * @brief Set sfAssetClass (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -289,7 +291,7 @@ public:
     }
 
     /**
-     * @brief Set sfLastUpdateTime (soeREQUIRED)
+     * @brief Set sfLastUpdateTime (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -300,7 +302,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -311,7 +313,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -322,7 +324,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -333,7 +335,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&

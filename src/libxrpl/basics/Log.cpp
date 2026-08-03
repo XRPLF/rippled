@@ -14,19 +14,20 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-Logs::Sink::Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs)
-    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
+Logs::Sink::Sink(std::string partition, beast::Severity thresh, Logs& logs)
+    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
 {
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string const& text)
+Logs::Sink::write(beast::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -35,21 +36,21 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
+Logs::Sink::writeAlways(beast::Severity level, std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
 
 //------------------------------------------------------------------------------
 
-Logs::File::File() : m_stream(nullptr)
+Logs::File::File() : stream_(nullptr)
 {
 }
 
 bool
 Logs::File::isOpen() const noexcept
 {
-    return m_stream != nullptr;
+    return stream_ != nullptr;
 }
 
 bool
@@ -60,13 +61,14 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream =
+        std::make_unique<std::ofstream>(path.c_str(), std::fstream::app);
 
     if (stream->good())
     {
-        m_path = path;
+        path_ = path;
 
-        m_stream = std::move(stream);
+        stream_ = std::move(stream);
 
         wasOpened = true;
     }
@@ -79,35 +81,35 @@ Logs::File::closeAndReopen()
 {
     close();
 
-    return open(m_path);
+    return open(path_);
 }
 
 void
 Logs::File::close()
 {
-    m_stream = nullptr;
+    stream_ = nullptr;
 }
 
 void
 Logs::File::write(char const* text)
 {
-    if (m_stream != nullptr)
-        (*m_stream) << text;
+    if (stream_ != nullptr)
+        (*stream_) << text;
 }
 
 void
 Logs::File::writeln(char const* text)
 {
-    if (m_stream != nullptr)
+    if (stream_ != nullptr)
     {
-        (*m_stream) << text;
-        (*m_stream) << std::endl;
+        (*stream_) << text;
+        (*stream_) << std::endl;
     }
 }
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default severity
+Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 {
 }
 
@@ -120,7 +122,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -137,42 +139,42 @@ Logs::journal(std::string const& name)
     return beast::Journal(get(name));
 }
 
-beast::severities::Severity
+beast::Severity
 Logs::threshold() const
 {
     return thresh_;
 }
 
 void
-Logs::threshold(beast::severities::Severity thresh)
+Logs::threshold(beast::Severity thresh)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
 }
 
 std::vector<std::pair<std::string, std::string>>
-Logs::partition_severities() const
+Logs::partitionSeverities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
-        list.emplace_back(name, toString(fromSeverity(sink->threshold())));
+        list.emplace_back(name, toString(sink->threshold()));
     return list;
 }
 
 void
 Logs::write(
-    beast::severities::Severity level,
+    beast::Severity level,
     std::string const& partition,
     std::string const& text,
     bool console)
 {
     std::string s;
     format(s, text, level, partition);
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -184,7 +186,7 @@ Logs::write(
 std::string
 Logs::rotate()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -192,84 +194,27 @@ Logs::rotate()
 }
 
 std::unique_ptr<beast::Journal::Sink>
-Logs::makeSink(std::string const& name, beast::severities::Severity threshold)
+Logs::makeSink(std::string const& name, beast::Severity threshold)
 {
     return std::make_unique<Sink>(name, threshold, *this);
 }
 
-LogSeverity
-Logs::fromSeverity(beast::severities::Severity level)
-{
-    using namespace beast::severities;
-    switch (level)
-    {
-        case kTrace:
-            return lsTRACE;
-        case kDebug:
-            return lsDEBUG;
-        case kInfo:
-            return lsINFO;
-        case kWarning:
-            return lsWARNING;
-        case kError:
-            return lsERROR;
-
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case kFatal:
-            break;
-    }
-
-    return lsFATAL;
-}
-
-beast::severities::Severity
-Logs::toSeverity(LogSeverity level)
-{
-    using namespace beast::severities;
-    switch (level)
-    {
-        case lsTRACE:
-            return kTrace;
-        case lsDEBUG:
-            return kDebug;
-        case lsINFO:
-            return kInfo;
-        case lsWARNING:
-            return kWarning;
-        case lsERROR:
-            return kError;
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case lsFATAL:
-            break;
-    }
-
-    return kFatal;
-}
-
 std::string
-Logs::toString(LogSeverity s)
+Logs::toString(beast::Severity s)
 {
     switch (s)
     {
-        case lsTRACE:
+        case beast::Severity::Trace:
             return "Trace";
-        case lsDEBUG:
+        case beast::Severity::Debug:
             return "Debug";
-        case lsINFO:
+        case beast::Severity::Info:
             return "Info";
-        case lsWARNING:
+        case beast::Severity::Warning:
             return "Warning";
-        case lsERROR:
+        case beast::Severity::Error:
             return "Error";
-        case lsFATAL:
+        case beast::Severity::Fatal:
             return "Fatal";
         // LCOV_EXCL_START
         default:
@@ -279,61 +224,61 @@ Logs::toString(LogSeverity s)
     }
 }
 
-LogSeverity
+std::optional<beast::Severity>
 Logs::fromString(std::string const& s)
 {
     if (boost::iequals(s, "trace"))
-        return lsTRACE;
+        return beast::Severity::Trace;
 
     if (boost::iequals(s, "debug"))
-        return lsDEBUG;
+        return beast::Severity::Debug;
 
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
-        return lsINFO;
+        return beast::Severity::Info;
 
     if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
-        return lsWARNING;
+        return beast::Severity::Warning;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
-        return lsERROR;
+        return beast::Severity::Error;
 
     if (boost::iequals(s, "fatal") || boost::iequals(s, "fatals"))
-        return lsFATAL;
+        return beast::Severity::Fatal;
 
-    return lsINVALID;
+    return std::nullopt;
 }
 
 void
 Logs::format(
     std::string& output,
     std::string const& message,
-    beast::severities::Severity severity,
+    beast::Severity severity,
     std::string const& partition)
 {
     output.reserve(message.size() + partition.size() + 100);
 
-    output = to_string(std::chrono::system_clock::now());
+    output = xrpl::to_string(std::chrono::system_clock::now());
 
     output += " ";
     if (!partition.empty())
         output += partition + ":";
 
-    using namespace beast::severities;
+    using beast::Severity;
     switch (severity)
     {
-        case kTrace:
+        case Severity::Trace:
             output += "TRC ";
             break;
-        case kDebug:
+        case Severity::Debug:
             output += "DBG ";
             break;
-        case kInfo:
+        case Severity::Info:
             output += "NFO ";
             break;
-        case kWarning:
+        case Severity::Warning:
             output += "WRN ";
             break;
-        case kError:
+        case Severity::Error:
             output += "ERR ";
             break;
         // LCOV_EXCL_START
@@ -341,7 +286,7 @@ Logs::format(
             UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
-        case kFatal:
+        case Severity::Fatal:
             output += "FTL ";
             break;
     }
@@ -349,9 +294,9 @@ Logs::format(
     output += message;
 
     // Limit the maximum length of the output
-    if (output.size() > maximumMessageCharacters)
+    if (output.size() > kMaximumMessageCharacters)
     {
-        output.resize(maximumMessageCharacters - 3);
+        output.resize(kMaximumMessageCharacters - 3);
         output += "...";
     }
 
@@ -394,7 +339,7 @@ class DebugSink
 private:
     std::reference_wrapper<beast::Journal::Sink> sink_;
     std::unique_ptr<beast::Journal::Sink> holder_;
-    std::mutex m_;
+    std::mutex mtx_;
 
 public:
     DebugSink() : sink_(beast::Journal::getNullSink())
@@ -412,7 +357,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard const _(m_);
+        std::scoped_lock const _(mtx_);
 
         using std::swap;
         swap(holder_, sink);
@@ -432,7 +377,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard const _(m_);
+        std::scoped_lock const _(mtx_);
         return sink_.get();
     }
 };
@@ -440,8 +385,8 @@ public:
 static DebugSink&
 debugSink()
 {
-    static DebugSink _;
-    return _;
+    static DebugSink kInst;
+    return kInst;
 }
 
 std::unique_ptr<beast::Journal::Sink>

@@ -8,7 +8,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
@@ -58,13 +60,13 @@ public:
         addVote(current_);
     }
 
-    value_type
+    [[nodiscard]] value_type
     current() const
     {
         return current_;
     }
 
-    std::pair<value_type, bool>
+    [[nodiscard]] std::pair<value_type, bool>
     getVotes() const;
 };
 
@@ -134,13 +136,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                     v[sfield] = target;
                 }
             };
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
+        vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
+        vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
         vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            "reserve increment",
-            sfReserveIncrementDrops);
+            lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
     }
     else
     {
@@ -161,11 +160,11 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        vote(lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
+        vote(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
+        vote(lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
         vote(
             lastFees.increment,
-            target_.owner_reserve,
+            target_.ownerReserve,
             to32,
             "reserve increment",
             sfReserveIncrement);
@@ -183,11 +182,11 @@ FeeVoteImpl::doVoting(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
         "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
-    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.referenceFee);
 
-    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.account_reserve);
+    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.accountReserve);
 
-    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
@@ -232,9 +231,9 @@ FeeVoteImpl::doVoting(
                 using XRPType = XRPAmount::value_type;
                 auto const vote = *field;
                 if (vote <= std::numeric_limits<XRPType>::max() &&
-                    isLegalAmountSigned(XRPAmount{unsafe_cast<XRPType>(vote)}))
+                    isLegalAmountSigned(XRPAmount{unsafeCast<XRPType>(vote)}))
                 {
-                    value.addVote(XRPAmount{unsafe_cast<XRPType>(vote)});
+                    value.addVote(XRPAmount{unsafeCast<XRPType>(vote)});
                 }
                 else
                 {
@@ -294,7 +293,7 @@ FeeVoteImpl::doVoting(
                     baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
                     incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = FEE_UNITS_DEPRECATED;
+                obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
             }
         });
 
@@ -306,7 +305,7 @@ FeeVoteImpl::doVoting(
         feeTx.add(s);
 
         if (!initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(txID, s.slice())))
+                SHAMapNodeType::TnTransactionNm, makeShamapitem(txID, s.slice())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }
@@ -316,7 +315,7 @@ FeeVoteImpl::doVoting(
 //------------------------------------------------------------------------------
 
 std::unique_ptr<FeeVote>
-make_FeeVote(FeeSetup const& setup, beast::Journal journal)
+makeFeeVote(FeeSetup const& setup, beast::Journal journal)
 {
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }

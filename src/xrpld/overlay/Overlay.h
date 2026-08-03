@@ -2,8 +2,12 @@
 
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Handoff.h>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -11,20 +15,25 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
-#include <functional>
-#include <optional>
+#include <xrpl.pb.h>
 
-namespace boost {
-namespace asio {
-namespace ssl {
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <set>
+#include <vector>
+
+namespace boost::asio::ssl {
 class context;
-}  // namespace ssl
-}  // namespace asio
-}  // namespace boost
+}  // namespace boost::asio::ssl
 
 namespace xrpl {
 
-/** Manages the set of connected peers. */
+/**
+ * Manages the set of connected peers.
+ */
 class Overlay : public beast::PropertyStream::Source
 {
 protected:
@@ -39,23 +48,24 @@ protected:
     }
 
 public:
-    enum class Promote { automatic, never, always };
+    enum class Promote { Automatic, Never, Always };
 
     struct Setup
     {
         explicit Setup() = default;
 
         std::shared_ptr<boost::asio::ssl::context> context;
-        beast::IP::Address public_ip;
+        beast::IP::Address publicIp;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
+        bool verifyEndpoints = true;
     };
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
 
-    virtual ~Overlay() = default;
+    ~Overlay() override = default;
 
     virtual void
     start()
@@ -67,84 +77,104 @@ public:
     {
     }
 
-    /** Conditionally accept an incoming HTTP request. */
+    /**
+     * Conditionally accept an incoming HTTP request.
+     */
     virtual Handoff
     onHandoff(
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        boost::asio::ip::tcp::endpoint remote_address) = 0;
+        boost::asio::ip::tcp::endpoint remoteAddress) = 0;
 
-    /** Establish a peer connection to the specified endpoint.
-        The call returns immediately, the connection attempt is
-        performed asynchronously.
-    */
+    /**
+     * Establish a peer connection to the specified endpoint.
+     * The call returns immediately, the connection attempt is
+     * performed asynchronously.
+     */
     virtual void
     connect(beast::IP::Endpoint const& address) = 0;
 
-    /** Returns the maximum number of peers we are configured to allow. */
+    /**
+     * Returns the maximum number of peers we are configured to allow.
+     */
     virtual int
     limit() = 0;
 
-    /** Returns the number of active peers.
-        Active peers are only those peers that have completed the
-        handshake and are using the peer protocol.
-    */
-    virtual std::size_t
+    /**
+     * Returns the number of active peers.
+     * Active peers are only those peers that have completed the
+     * handshake and are using the peer protocol.
+     */
+    [[nodiscard]] virtual std::size_t
     size() const = 0;
 
-    /** Return diagnostics on the status of all peers.
-        @deprecated This is superseded by PropertyStream
-    */
-    virtual Json::Value
+    /**
+     * Return diagnostics on the status of all peers.
+     * @deprecated This is superseded by PropertyStream
+     */
+    virtual json::Value
     json() = 0;
 
-    /** Returns a sequence representing the current list of peers.
-        The snapshot is made at the time of the call.
-    */
-    virtual PeerSequence
+    /**
+     * Returns a sequence representing the current list of peers.
+     * The snapshot is made at the time of the call.
+     */
+    [[nodiscard]] virtual PeerSequence
     getActivePeers() const = 0;
 
-    /** Calls the checkTracking function on each peer
-        @param index the value to pass to the peer's checkTracking function
-    */
+    /**
+     * Calls the checkTracking function on each peer
+     * @param index the value to pass to the peer's checkTracking function
+     */
     virtual void
     checkTracking(std::uint32_t index) = 0;
 
-    /** Returns the peer with the matching short id, or null. */
-    virtual std::shared_ptr<Peer>
+    /**
+     * Returns the peer with the matching short id, or null.
+     */
+    [[nodiscard]] virtual std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const = 0;
 
-    /** Returns the peer with the matching public key, or null. */
+    /**
+     * Returns the peer with the matching public key, or null.
+     */
     virtual std::shared_ptr<Peer>
     findPeerByPublicKey(PublicKey const& pubKey) = 0;
 
-    /** Broadcast a proposal. */
+    /**
+     * Broadcast a proposal.
+     */
     virtual void
-    broadcast(protocol::TMProposeSet& m) = 0;
+    broadcast(protocol::TMProposeSet const& m) = 0;
 
-    /** Broadcast a validation. */
+    /**
+     * Broadcast a validation.
+     */
     virtual void
-    broadcast(protocol::TMValidation& m) = 0;
+    broadcast(protocol::TMValidation const& m) = 0;
 
-    /** Relay a proposal.
+    /**
+     * Relay a proposal.
      * @param m the serialized proposal
      * @param uid the id used to identify this proposal
      * @param validator The pubkey of the validator that issued this proposal
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
-    /** Relay a validation.
+    /**
+     * Relay a validation.
      * @param m the serialized validation
      * @param uid the id used to identify this validation
      * @param validator The pubkey of the validator that issued this validation
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
-    /** Relay a transaction. If the tx reduce-relay feature is enabled then
+    /**
+     * Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash
      * for the rest of the peers.
      * @param hash transaction's hash
@@ -157,7 +187,8 @@ public:
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
         std::set<Peer::id_t> const& toSkip) = 0;
 
-    /** Visit every active peer.
+    /**
+     * Visit every active peer.
      *
      * The visitor must be invocable as:
      *     Function(std::shared_ptr<Peer> const& peer);
@@ -172,39 +203,44 @@ public:
             f(p);
     }
 
-    /** Increment and retrieve counter for transaction job queue overflows. */
+    /**
+     * Increment and retrieve counter for transaction job queue overflows.
+     */
     virtual void
     incJqTransOverflow() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getJqTransOverflow() const = 0;
 
-    /** Increment and retrieve counters for total peer disconnects, and
+    /**
+     * Increment and retrieve counters for total peer disconnects, and
      * disconnects we initiate for excessive resource consumption.
      */
     virtual void
     incPeerDisconnect() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getPeerDisconnect() const = 0;
     virtual void
     incPeerDisconnectCharges() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getPeerDisconnectCharges() const = 0;
 
-    /** Returns the ID of the network this server is configured for, if any.
-
-        The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
-        identify the mainnet, the testnet and the devnet respectively.
-
-        @return The numerical identifier configured by the administrator of the
-                server. An unseated optional, otherwise.
-    */
-    virtual std::optional<std::uint32_t>
+    /**
+     * Returns the ID of the network this server is configured for, if any.
+     *
+     * The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
+     * identify the mainnet, the testnet and the devnet respectively.
+     *
+     * @return The numerical identifier configured by the administrator of the
+     *         server. An unseated optional, otherwise.
+     */
+    [[nodiscard]] virtual std::optional<std::uint32_t>
     networkID() const = 0;
 
-    /** Returns tx reduce-relay metrics
-        @return json value of tx reduce-relay metrics
+    /**
+     * Returns tx reduce-relay metrics
+     * @return json value of tx reduce-relay metrics
      */
-    virtual Json::Value
+    [[nodiscard]] virtual json::Value
     txMetrics() const = 0;
 };
 

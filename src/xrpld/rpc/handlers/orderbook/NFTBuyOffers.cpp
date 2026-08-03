@@ -9,18 +9,18 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doNFTBuyOffers(RPC::JsonContext& context)
 {
     if (!context.params.isMember(jss::nft_id))
-        return RPC::missing_field_error(jss::nft_id);
+        return RPC::missingFieldError(jss::nft_id);
 
     uint256 nftId;
 
     if (!nftId.parseHex(context.params[jss::nft_id].asString()))
-        return RPC::invalid_field_error(jss::nft_id);
+        return RPC::invalidFieldError(jss::nft_id);
 
-    return enumerateNFTOffers(context, nftId, keylet::nft_buys(nftId));
+    return enumerateNFTOffers(context, nftId, keylet::nftBuys(nftId));
 }
 
 }  // namespace xrpl

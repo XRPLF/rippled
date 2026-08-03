@@ -1,6 +1,7 @@
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
@@ -30,13 +31,13 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
               stopwatch(),
               app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
-              fullBelowTargetSize,
-              fullBelowExpiration))
+              kFullBelowTargetSize,
+              kFullBelowExpiration))
     , tnCache_(
           std::make_shared<TreeNodeCache>(
               "Node family tree node cache",
-              app.config().getValueFor(SizedItem::treeCacheSize),
-              std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
+              app.config().getValueFor(SizedItem::TreeCacheSize),
+              std::chrono::seconds(app.config().getValueFor(SizedItem::TreeCacheAge)),
               stopwatch(),
               j_))
 {
@@ -53,12 +54,12 @@ void
 NodeFamily::reset()
 {
     {
-        std::lock_guard const lock(maxSeqMutex_);
+        std::scoped_lock const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 
-    fbCache_->reset();
-    tnCache_->reset();
+    (*fbCache_).reset();
+    (*tnCache_).reset();
 }
 
 void

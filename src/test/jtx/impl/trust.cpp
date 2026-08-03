@@ -12,18 +12,16 @@
 #include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-Json::Value
+json::Value
 trust(Account const& account, STAmount const& amount, std::uint32_t flags)
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
+    jv[jss::LimitAmount] = amount.getJson(JsonOptions::Values::None);
     jv[jss::TransactionType] = jss::TrustSet;
     jv[jss::Flags] = flags;
     return jv;
@@ -33,15 +31,15 @@ trust(Account const& account, STAmount const& amount, std::uint32_t flags)
 // lines. account (first function parameter) is the issuing authority, it
 // authorises peer (third function parameter) to hold a certain currency
 // (amount, the second function parameter)
-Json::Value
+json::Value
 trust(Account const& account, STAmount const& amount, Account const& peer, std::uint32_t flags)
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     {
-        auto& ja = jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
+        auto& ja = jv[jss::LimitAmount] = amount.getJson(JsonOptions::Values::None);
         ja[jss::issuer] = peer.human();
     }
     jv[jss::TransactionType] = jss::TrustSet;
@@ -49,12 +47,12 @@ trust(Account const& account, STAmount const& amount, Account const& peer, std::
     return jv;
 }
 
-Json::Value
+json::Value
 claw(Account const& account, STAmount const& amount, std::optional<Account> const& mptHolder)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     jv[jss::TransactionType] = jss::Clawback;
 
     if (mptHolder)
@@ -63,6 +61,4 @@ claw(Account const& account, STAmount const& amount, std::optional<Account> cons
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

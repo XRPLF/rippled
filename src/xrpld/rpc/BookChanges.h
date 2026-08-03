@@ -1,17 +1,29 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <tuple>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl {
 
@@ -23,7 +35,7 @@ class STTx;
 namespace RPC {
 
 template <class L>
-Json::Value
+json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
     std::map<
@@ -108,15 +120,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount second = noswap ? deltaPays : deltaGets;
 
             // defensively programmed, should (probably) never happen
-            if (second == beast::zero)
+            if (second == beast::kZero)
                 continue;
 
             STAmount const rate = divide(first, second, noIssue());
 
-            if (first < beast::zero)
+            if (first < beast::kZero)
                 first = -first;
 
-            if (second < beast::zero)
+            if (second < beast::kZero)
                 second = -second;
 
             std::stringstream ss;
@@ -164,7 +176,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    Json::Value jvObj(Json::objectValue);
+    json::Value jvObj(json::ValueType::Object);
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
@@ -172,9 +184,9 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
     jvObj[jss::ledger_time] =
-        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+        json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = Json::arrayValue;
+    jvObj[jss::changes] = json::ValueType::Array;
 
     auto volToStr = [](STAmount const& vol) {
         return vol.asset().visit(
@@ -188,7 +200,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     for (auto const& entry : tally)
     {
-        Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
+        json::Value& inner = jvObj[jss::changes].append(json::ValueType::Object);
 
         STAmount const volA = std::get<0>(entry.second);
         STAmount const volB = std::get<1>(entry.second);

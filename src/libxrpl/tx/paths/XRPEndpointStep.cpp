@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -45,7 +44,7 @@ private:
     // for cachedIn and cachedOut and only one will ever be used
     std::optional<XRPAmount> cache_;
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
         if (!cache_)
@@ -59,13 +58,13 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     acc() const
     {
         return acc_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         if (isLast_)
@@ -73,25 +72,25 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
-        return DebtDirection::issues;
+        return DebtDirection::Issues;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
@@ -112,7 +111,7 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
 protected:
@@ -142,7 +141,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<XRPEndpointStep const*>(&rhs))
@@ -179,7 +178,7 @@ public:
         ;
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointPaymentStep");
@@ -204,7 +203,7 @@ private:
         {
             return ctx.strandDeliver.visit(
                 [&](Issue const& issue) {
-                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                    if (!ctx.view.exists(keylet::trustLine(acc, issue)))
                         return -1;
                     return 0;
                 },
@@ -230,7 +229,7 @@ public:
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointOfferCrossingStep");
@@ -253,7 +252,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {Quality{STAmount::uRateOne}, this->debtDirection(v, StrandDirection::forward)};
+    return {Quality{STAmount::kURateOne}, this->debtDirection(v, StrandDirection::Forward)};
 }
 
 template <class TDerived>
@@ -272,7 +271,7 @@ XRPEndpointStep<TDerived>::revImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -295,7 +294,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -308,7 +307,7 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!cache_)
     {
         JLOG(j_.error()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(XRPAmount(beast::zero))};
+        return {false, EitherAmount(XRPAmount(beast::kZero))};
     }
 
     XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");
@@ -392,11 +391,11 @@ xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 //------------------------------------------------------------------------------
 
 std::pair<TER, std::unique_ptr<Step>>
-make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
+makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != 0u)
+    if (ctx.offerCrossing != OfferCrossing::No)
     {
         auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);

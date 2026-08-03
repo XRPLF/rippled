@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -34,8 +33,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <expected>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -46,7 +45,8 @@ STAmount
 ammLPTokens(STAmount const& asset1, STAmount const& asset2, Asset const& lptIssue)
 {
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
-    auto const rounding = isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
+    auto const rounding =
+        isFeatureEnabled(fixAMMv1_3) ? Number::RoundingMode::Downward : Number::getround();
     NumberRoundModeGuard const g(rounding);
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
@@ -77,7 +77,7 @@ lpTokensOut(
 
     // minimize tokens out
     auto const frac = (r - c) / (1 + c);
-    return multiply(lptAMMBalance, frac, Number::downward);
+    return multiply(lptAMMBalance, frac, Number::RoundingMode::Downward);
 }
 
 /* Equation 4 solves equation 3 for b:
@@ -113,7 +113,7 @@ ammAssetIn(
 
     // maximize deposit
     auto const frac = solveQuadraticEq(a, b, c);
-    return multiply(asset1Balance, frac, Number::upward);
+    return multiply(asset1Balance, frac, Number::RoundingMode::Upward);
 }
 
 /* Equation 7:
@@ -138,7 +138,7 @@ lpTokensIn(
 
     // maximize tokens in
     auto const frac = (c - root2(c * c - 4 * fr)) / 2;
-    return multiply(lptAMMBalance, frac, Number::upward);
+    return multiply(lptAMMBalance, frac, Number::RoundingMode::Upward);
 }
 
 /* Equation 8 solves equation 7 for b:
@@ -168,7 +168,7 @@ ammAssetOut(
 
     // minimize withdraw
     auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
-    return multiply(assetBalance, frac, Number::downward);
+    return multiply(assetBalance, frac, Number::RoundingMode::Downward);
 }
 
 Number
@@ -182,7 +182,7 @@ adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposi
 {
     // Force rounding downward to ensure adjusted tokens are less or equal
     // to requested tokens.
-    saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::downward));
+    SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Downward));
     if (isDeposit == IsDeposit::Yes)
         return (lptAMMBalance + lpTokens) - lptAMMBalance;
     return (lpTokens - lptAMMBalance) + lptAMMBalance;
@@ -204,7 +204,7 @@ adjustAmountsByLPTokens(
 
     auto const lpTokensActual = adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
 
-    if (lpTokensActual == beast::zero)
+    if (lpTokensActual == beast::kZero)
     {
         auto const amount2Opt = amount2 ? std::make_optional(STAmount{}) : std::nullopt;
         return std::make_tuple(STAmount{}, amount2Opt, lpTokensActual);
@@ -289,7 +289,7 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 }
 
 STAmount
-multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm)
+multiply(STAmount const& amount, Number const& frac, Number::RoundingMode rm)
 {
     NumberRoundModeGuard const g(rm);
     auto const t = amount * frac;
@@ -433,7 +433,44 @@ ammPoolHolds(
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
-Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance)
+{
+    if (newLPTokenBalance <= beast::kZero)
+        return tesSUCCESS;
+    if (poolProductMean >= newLPTokenBalance)
+        return tesSUCCESS;
+    // Strong check failed. Allow the same relative tolerance as the invariant
+    // checker's weak check. Only return tecPRECISION_LOSS when both fail.
+    if (withinRelativeDistance(
+            poolProductMean, Number{newLPTokenBalance}, kAMMInvariantRelativeTolerance))
+        return tesSUCCESS;
+    return tecPRECISION_LOSS;
+}
+
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
+    beast::Journal const j)
+{
+    if (newLPTokenBalance <= beast::kZero)
+        return tesSUCCESS;
+    auto const [amount, amount2] = ammPoolHolds(
+        view,
+        ammAccountID,
+        asset1,
+        asset2,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
+    return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
+}
+
+std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
@@ -489,7 +526,7 @@ ammHolds(
         return std::make_optional(std::make_pair(asset1, asset2));
     }();
     if (!assets)
-        return Unexpected(tecAMM_INVALID_TOKENS);
+        return std::unexpected(tecAMM_INVALID_TOKENS);
     auto const [amount1, amount2] = ammPoolHolds(
         view,
         ammSle.getAccountID(sfAccount),
@@ -518,7 +555,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -565,12 +602,10 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    XRPL_ASSERT(
-        !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
-        "xrpl::getTradingFee : auction present");
+    XRPL_ASSERT(ammSle.isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = safe_downcast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = safeDowncast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <
@@ -610,7 +645,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -635,7 +670,7 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -643,7 +678,7 @@ deleteAMMTrustLines(
             if (nodeType == ltRIPPLE_STATE)
             {
                 // Trustlines must have zero balance
-                if (sleItem->getFieldAmount(sfBalance) != beast::zero)
+                if (sleItem->getFieldAmount(sfBalance) != beast::kZero)
                 {
                     // LCOV_EXCL_START
                     JLOG(j.error()) << "deleteAMMObjects: deleting trustline with "
@@ -671,7 +706,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -680,7 +715,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
             {
                 // MPT must have zero balance
                 if (sleItem->getFieldU64(sfMPTAmount) != 0 ||
-                    (*sleItem)[~sfLockedAmount].value_or(0) != 0)
+                    (*sleItem)[~sfLockedAmount].valueOr(0) != 0)
                 {
                     // LCOV_EXCL_START
                     JLOG(j.error()) << "deleteAMMObjects: deleting MPT with "
@@ -731,7 +766,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMaxDeletableAmmTrustLines, j);
         !isTesSuccess(ter))
         return ter;
 
@@ -767,7 +802,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -778,14 +813,14 @@ initializeFeeAuctionVote(
     STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
-    voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
+    voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
     voteEntry.setAccountID(sfAccount, account);
-    voteSlots.push_back(voteEntry);
+    voteSlots.pushBack(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));
@@ -796,7 +831,7 @@ initializeFeeAuctionVote(
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
                                 view.header().parentCloseTime.time_since_epoch())
                                 .count() +
-        TOTAL_TIME_SLOT_SECS;
+        kTotalTimeSlotSecs;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
     // Set the fee
@@ -808,7 +843,7 @@ initializeFeeAuctionVote(
     {
         ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
     }
-    if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+    if (auto const dfee = tfee / kAuctionSlotDiscountedFeeFraction)
     {
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     }
@@ -816,9 +851,12 @@ initializeFeeAuctionVote(
     {
         auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
     }
+    // Clear stale auth accounts from any previous auction slot holder.
+    if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
+        auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
     // Liquidity Provider (LP) must have one LPToken trustline
@@ -849,18 +887,18 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     {
         auto const ownerDir = view.read(currentIndex);
         if (!ownerDir)
-            return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
         for (auto const& key : ownerDir->getFieldV256(sfIndexes))
         {
             auto const sle = view.read(keylet::child(key));
             if (!sle)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const entryType = sle->getFieldU16(sfLedgerEntryType);
             // Only one AMM object
             if (entryType == ltAMM)
             {
                 if (hasAMM)
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 hasAMM = true;
                 continue;
             }
@@ -870,7 +908,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 continue;
             }
             if (entryType != ltRIPPLE_STATE)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);
             auto const highLimit = sle->getFieldAmount(sfHighLimit);
             auto const isLPTrustline =
@@ -886,12 +924,12 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 {
                     // LP has exactly one LPToken trustline
                     if (++nLPTokenTrustLines > 1)
-                        return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                        return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
                 // AMM account has at most two IOU trustlines
                 else if (++nIOUTrustLines > 2)
                 {
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
             }
             // Another Liquidity Provider LPToken trustline
@@ -902,7 +940,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
             // AMM account has at most two IOU trustlines
             else if (++nIOUTrustLines > 2)
             {
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             }
         }
         auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
@@ -910,25 +948,25 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
         {
             if (nLPTokenTrustLines != 1 || (nIOUTrustLines == 0 && nMPT == 0) ||
                 (nIOUTrustLines > 2 || nMPT > 2) || (nIOUTrustLines + nMPT) > 2)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             return true;
         }
         currentIndex = keylet::page(root, uNodeNext);
     }
-    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
     if (!res.has_value())
     {
-        return Unexpected<TER>(res.error());
+        return std::unexpected<TER>(res.error());
     }
 
     if (res.value())
@@ -941,7 +979,7 @@ verifyAndAdjustLPTokenBalance(
         }
         else
         {
-            return Unexpected<TER>(tecAMM_INVALID_TOKENS);
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
         }
     }
     return true;

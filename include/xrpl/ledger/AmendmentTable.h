@@ -1,30 +1,55 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <optional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 class ServiceRegistry;
 
-/** The amendment table stores the list of enabled and potential amendments.
-    Individuals amendments are voted on by validators during the consensus
-    process.
-*/
+/**
+ * The amendment table stores the list of enabled and potential amendments.
+ * Individuals amendments are voted on by validators during the consensus
+ * process.
+ */
 class AmendmentTable
 {
 public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
-            : name(n), feature(f), vote(v)
+        FeatureInfo(std::string n, uint256 const& f, VoteBehavior v)
+            : name(std::move(n)), feature(f), vote(v)
         {
         }
 
@@ -35,7 +60,7 @@ public:
 
     virtual ~AmendmentTable() = default;
 
-    virtual uint256
+    [[nodiscard]] virtual uint256
     find(std::string const& name) const = 0;
 
     virtual bool
@@ -46,9 +71,9 @@ public:
     virtual bool
     enable(uint256 const& amendment) = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isEnabled(uint256 const& amendment) const = 0;
-    virtual bool
+    [[nodiscard]] virtual bool
     isSupported(uint256 const& amendment) const = 0;
 
     /**
@@ -57,20 +82,24 @@ public:
      *
      * @return true if an unsupported feature is enabled on the network
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     hasUnsupportedEnabled() const = 0;
 
-    virtual std::optional<NetClock::time_point>
+    [[nodiscard]] virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
-    virtual Json::Value
+    [[nodiscard]] virtual json::Value
     getJson(bool isAdmin) const = 0;
 
-    /** Returns a Json::objectValue. */
-    virtual Json::Value
+    /**
+     * Returns a json::ValueType::Object.
+     */
+    [[nodiscard]] virtual json::Value
     getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
-    /** Called when a new fully-validated ledger is accepted. */
+    /**
+     * Called when a new fully-validated ledger is accepted.
+     */
     void
     doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
@@ -83,10 +112,11 @@ public:
         }
     }
 
-    /** Called to determine whether the amendment logic needs to process
-        a new validated ledger. (If it could have changed things.)
-    */
-    virtual bool
+    /**
+     * Called to determine whether the amendment logic needs to process
+     * a new validated ledger. (If it could have changed things.)
+     */
+    [[nodiscard]] virtual bool
     needValidatedLedger(LedgerIndex seq) const = 0;
 
     virtual void
@@ -111,14 +141,14 @@ public:
 
     // Called by the consensus code when we need to
     // add feature entries to a validation
-    virtual std::vector<uint256>
+    [[nodiscard]] virtual std::vector<uint256>
     doValidation(std::set<uint256> const& enabled) const = 0;
 
     // The set of amendments to enable in the genesis ledger
     // This will return all known, non-vetoed amendments.
     // If we ever have two amendments that should not both be
     // enabled at the same time, we should ensure one is vetoed.
-    virtual std::vector<uint256>
+    [[nodiscard]] virtual std::vector<uint256>
     getDesired() const = 0;
 
     // The function below adapts the API callers expect to the
@@ -162,14 +192,14 @@ public:
                             << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::TnTransactionNm,
+                makeShamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
 
 std::unique_ptr<AmendmentTable>
-make_AmendmentTable(
+makeAmendmentTable(
     ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,

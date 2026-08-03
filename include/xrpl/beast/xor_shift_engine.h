@@ -9,16 +9,16 @@ namespace beast {
 namespace detail {
 
 template <class = void>
-class xor_shift_engine
+class XorShiftEngine
 {
 public:
     using result_type = std::uint64_t;
 
-    xor_shift_engine(xor_shift_engine const&) = default;
-    xor_shift_engine&
-    operator=(xor_shift_engine const&) = default;
+    XorShiftEngine(XorShiftEngine const&) = default;
+    XorShiftEngine&
+    operator=(XorShiftEngine const&) = default;
 
-    explicit xor_shift_engine(result_type val = 1977u);
+    explicit XorShiftEngine(result_type val = 1977u);
 
     void
     seed(result_type seed);
@@ -26,12 +26,14 @@ public:
     result_type
     operator()();
 
-    static result_type constexpr min()
+    static constexpr result_type
+    min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
-    static result_type constexpr max()
+    static constexpr result_type
+    max()
     {
         return std::numeric_limits<result_type>::max();
     }
@@ -44,14 +46,14 @@ private:
 };
 
 template <class Unused>
-xor_shift_engine<Unused>::xor_shift_engine(result_type val)
+XorShiftEngine<Unused>::XorShiftEngine(result_type val)
 {
     seed(val);
 }
 
 template <class Unused>
 void
-xor_shift_engine<Unused>::seed(result_type seed)
+XorShiftEngine<Unused>::seed(result_type seed)
 {
     if (seed == 0)
         throw std::domain_error("invalid seed");
@@ -61,7 +63,7 @@ xor_shift_engine<Unused>::seed(result_type seed)
 
 template <class Unused>
 auto
-xor_shift_engine<Unused>::operator()() -> result_type
+XorShiftEngine<Unused>::operator()() -> result_type
 {
     result_type s1 = s_[0];
     result_type const s0 = s_[1];
@@ -72,7 +74,7 @@ xor_shift_engine<Unused>::operator()() -> result_type
 
 template <class Unused>
 auto
-xor_shift_engine<Unused>::murmurhash3(result_type x) -> result_type
+XorShiftEngine<Unused>::murmurhash3(result_type x) -> result_type
 {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
@@ -83,14 +85,15 @@ xor_shift_engine<Unused>::murmurhash3(result_type x) -> result_type
 
 }  // namespace detail
 
-/** XOR-shift Generator.
-
-    Meets the requirements of UniformRandomNumberGenerator.
-
-    Simple and fast RNG based on:
-    http://xorshift.di.unimi.it/xorshift128plus.c
-    does not accept seed==0
-*/
-using xor_shift_engine = detail::xor_shift_engine<>;
+/**
+ * XOR-shift Generator.
+ *
+ * Meets the requirements of UniformRandomNumberGenerator.
+ *
+ * Simple and fast RNG based on:
+ * http://xorshift.di.unimi.it/xorshift128plus.c
+ * does not accept seed==0
+ */
+using xor_shift_engine = detail::XorShiftEngine<>;
 
 }  // namespace beast

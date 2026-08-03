@@ -1,8 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <string>
 
 namespace xrpl {
 
@@ -16,10 +23,10 @@ class STBitString final : public STBase, public CountedObject<STBitString<Bits>>
     static_assert(Bits > 0, "Number of bits must be positive");
 
 public:
-    using value_type = base_uint<Bits>;
+    using value_type = BaseUInt<Bits>;
 
 private:
-    value_type value_;
+    value_type value_{};
 
 public:
     STBitString() = default;
@@ -29,26 +36,26 @@ public:
     STBitString(SField const& n, value_type const& v);
     STBitString(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     template <typename Tag>
     void
-    setValue(base_uint<Bits, Tag> const& v);
+    setValue(BaseUInt<Bits, Tag> const& v);
 
-    value_type const&
+    [[nodiscard]] value_type const&
     value() const;
 
     operator value_type() const;
@@ -141,7 +148,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isEquivalent(STBase const& t) const
 {
-    STBitString const* v = dynamic_cast<STBitString const*>(&t);
+    auto const* v = dynamic_cast<STBitString const*>(&t);
     return v && (value_ == v->value_);
 }
 
@@ -157,13 +164,13 @@ STBitString<Bits>::add(Serializer& s) const
 template <int Bits>
 template <typename Tag>
 void
-STBitString<Bits>::setValue(base_uint<Bits, Tag> const& v)
+STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 {
     value_ = v;
 }
 
 template <int Bits>
-typename STBitString<Bits>::value_type const&
+STBitString<Bits>::value_type const&
 STBitString<Bits>::value() const
 {
     return value_;
@@ -180,7 +187,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isDefault() const
 {
-    return value_ == beast::zero;
+    return value_ == beast::kZero;
 }
 
 }  // namespace xrpl

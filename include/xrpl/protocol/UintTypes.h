@@ -1,9 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/AccountID.h>
+
+#include <functional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 namespace detail {
@@ -28,65 +30,85 @@ public:
 
 }  // namespace detail
 
-/** Directory is an index into the directory of offer books.
-    The last 64 bits of this are the quality. */
-using Directory = base_uint<256, detail::DirectoryTag>;
+/**
+ * Directory is an index into the directory of offer books.
+ * The last 64 bits of this are the quality.
+ */
+using Directory = BaseUInt<256, detail::DirectoryTag>;
 
-/** Currency is a hash representing a specific currency. */
-using Currency = base_uint<160, detail::CurrencyTag>;
+/**
+ * Currency is a hash representing a specific currency.
+ */
+using Currency = BaseUInt<160, detail::CurrencyTag>;
 
-/** NodeID is a 160-bit hash representing one node. */
-using NodeID = base_uint<160, detail::NodeIDTag>;
+/**
+ * NodeID is a 160-bit hash representing one node.
+ */
+using NodeID = BaseUInt<160, detail::NodeIDTag>;
 
-/** MPTID is a 192-bit value representing MPT Issuance ID,
+/**
+ * MPTID is a 192-bit value representing MPT Issuance ID,
  * which is a concatenation of a 32-bit sequence (big endian)
- * and a 160-bit account */
-using MPTID = base_uint<192>;
+ * and a 160-bit account
+ */
+using MPTID = BaseUInt<192>;
 
-/** Domain is a 256-bit hash representing a specific domain. */
-using Domain = base_uint<256>;
+/**
+ * Domain is a 256-bit hash representing a specific domain.
+ */
+using Domain = BaseUInt<256>;
 
-/** XRP currency. */
+/**
+ * XRP currency.
+ */
 Currency const&
 xrpCurrency();
 
-/** A placeholder for empty currencies. */
+/**
+ * A placeholder for empty currencies.
+ */
 Currency const&
 noCurrency();
 
-/** We deliberately disallow the currency that looks like "XRP" because too
-    many people were using it instead of the correct XRP currency. */
+/**
+ * We deliberately disallow the currency that looks like "XRP" because too
+ * many people were using it instead of the correct XRP currency.
+ */
 Currency const&
 badCurrency();
 
 inline bool
 isXRP(Currency const& c)
 {
-    return c == beast::zero;
+    return c == beast::kZero;
 }
 
-/** Returns "", "XRP", or three letter ISO code. */
+/**
+ * Returns "", "XRP", or three letter ISO code.
+ */
 std::string
 to_string(Currency const& c);
 
-/** Tries to convert a string to a Currency, returns true on success.
-
-    @note This function will return success if the resulting currency is
-          badCurrency(). This legacy behavior is unfortunate; changing this
-          will require very careful checking everywhere and may mean having
-          to rewrite some unit test code.
-*/
+/**
+ * Tries to convert a string to a Currency, returns true on success.
+ *
+ * @note This function will return success if the resulting currency is
+ *       badCurrency(). This legacy behavior is unfortunate; changing this
+ *       will require very careful checking everywhere and may mean having
+ *       to rewrite some unit test code.
+ */
 bool
-to_currency(Currency&, std::string const&);
+toCurrency(Currency&, std::string const&);
 
-/** Tries to convert a string to a Currency, returns noCurrency() on failure.
-
-    @note This function can return badCurrency(). This legacy behavior is
-          unfortunate; changing this will require very careful checking
-          everywhere and may mean having to rewrite some unit test code.
-*/
+/**
+ * Tries to convert a string to a Currency, returns noCurrency() on failure.
+ *
+ * @note This function can return badCurrency(). This legacy behavior is
+ *       unfortunate; changing this will require very careful checking
+ *       everywhere and may mean having to rewrite some unit test code.
+ */
 Currency
-to_currency(std::string const&);
+toCurrency(std::string const&);
 
 inline std::ostream&
 operator<<(std::ostream& os, Currency const& x)

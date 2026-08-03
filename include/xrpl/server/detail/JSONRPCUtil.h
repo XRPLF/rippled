@@ -2,11 +2,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/json/json_value.h>
+
+#include <string>
 
 namespace xrpl {
 
 void
-HTTPReply(int nStatus, std::string const& strMsg, Json::Output const&, beast::Journal j);
+httpReply(int nStatus, std::string const& strMsg, json::Output const&, beast::Journal j);
 
 }  // namespace xrpl

@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doLedgerCleaner(RPC::JsonContext& context)
 {
     context.app.getLedgerCleaner().clean(context.params);

@@ -6,18 +6,21 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
+#include <exception>
 #include <functional>
+#include <string>
 #include <thread>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
-/** Replacement for std::thread that handles exceptions in unit tests. */
+/**
+ * Replacement for std::thread that handles exceptions in unit tests.
+ */
 class Thread
 {
 private:
-    suite* s_ = nullptr;
+    Suite* s_ = nullptr;
     std::thread t_;
 
 public:
@@ -42,26 +45,29 @@ public:
     }
 
     template <class F, class... Args>
-    explicit Thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
-        std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+        std::function<void(void)> b = [f = std::forward<F>(f),
+                                       ... args = std::forward<Args>(args)]() mutable {
+            std::invoke(f, args...);
+        };
         t_ = std::thread(&Thread::run, this, std::move(b));
     }
 
-    bool
+    [[nodiscard]] bool
     joinable() const
     {
         return t_.joinable();
     }
 
-    std::thread::id
-    get_id() const
+    [[nodiscard]] std::thread::id
+    getId() const
     {
         return t_.get_id();
     }
 
     static unsigned
-    hardware_concurrency() noexcept
+    hardwareConcurrency() noexcept
     {
         return std::thread::hardware_concurrency();
     }
@@ -70,7 +76,7 @@ public:
     join()
     {
         t_.join();
-        s_->propagate_abort();
+        s_->propagateAbort();
     }
 
     void
@@ -94,7 +100,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)  // NOLINT(bugprone-empty-catch)
+        catch (Suite::AbortException const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)
@@ -108,5 +114,4 @@ private:
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

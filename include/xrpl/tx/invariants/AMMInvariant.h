@@ -2,9 +2,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <optional>
 
@@ -15,37 +18,42 @@ class ValidAMM
     std::optional<AccountID> ammAccount_;
     std::optional<STAmount> lptAMMBalanceAfter_;
     std::optional<STAmount> lptAMMBalanceBefore_;
+    std::optional<STAmount> lptAMMBalanceBeforeDeletion_;
     bool ammPoolChanged_{false};
+    bool ammDeleted_{false};
 
 public:
     enum class ZeroAllowed : bool { No = false, Yes = true };
 
-    ValidAMM()
-    {
-    }
+    ValidAMM() = default;
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
-    bool
+    [[nodiscard]] bool
     finalizeBid(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeVote(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeCreate(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
-    bool
-    finalizeDelete(bool enforce, TER res, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
+    finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Journal const&) const;
+    [[nodiscard]] bool
     finalizeDeposit(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     // Includes clawback
-    bool
-    finalizeWithdraw(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
+    finalizeWithdraw(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        bool enforceAMMDelete,
+        beast::Journal const&) const;
+    [[nodiscard]] bool
     finalizeDEX(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     generalInvariant(STTx const&, ReadView const&, ZeroAllowed zeroAllowed, beast::Journal const&)
         const;
 };

@@ -27,8 +27,10 @@
 
 #include <chrono>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -42,57 +44,89 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
+
+    auto getBool = [&](json::StaticString const& field) -> std::expected<bool, Status> {
+        if (!params.isMember(field))
+        {
+            return false;
+        }
+        if (!params[field].isBool())
+        {
+            return std::unexpected(RpcInvalidParams);
+        }
+
+        return params[field].asBool();
+    };
+
+    auto const full = getBool(jss::full);
+    auto const transactions = getBool(jss::transactions);
+    auto const accounts = getBool(jss::accounts);
+    auto const expand = getBool(jss::expand);
+    auto const binary = getBool(jss::binary);
+    auto const ownerFunds = getBool(jss::owner_funds);
+    auto const queue = getBool(jss::queue);
+
+    if (!full.has_value())
+        return full.error();
+    if (!transactions.has_value())
+        return transactions.error();
+    if (!accounts.has_value())
+        return accounts.error();
+    if (!expand.has_value())
+        return expand.error();
+    if (!binary.has_value())
+        return binary.error();
+    if (!ownerFunds.has_value())
+        return ownerFunds.error();
+    if (!queue.has_value())
+        return queue.error();
+
+    options_ = (*full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
+        (*expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
+        (*transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
+        (*accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
+        (*binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
+        (*ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
+        (*queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
+
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
     if (!needsLedger)
-        return Status::OK;
-
+        return Status::kOK;
     if (auto s = lookupLedger(ledger_, context_, result_))
         return s;
 
-    bool const full = params[jss::full].asBool();
-    bool const transactions = params[jss::transactions].asBool();
-    bool const accounts = params[jss::accounts].asBool();
-    bool const expand = params[jss::expand].asBool();
-    bool const binary = params[jss::binary].asBool();
-    bool const owner_funds = params[jss::owner_funds].asBool();
-    bool const queue = params[jss::queue].asBool();
-
-    options_ = (full ? LedgerFill::full : 0) | (expand ? LedgerFill::expand : 0) |
-        (transactions ? LedgerFill::dumpTxrp : 0) | (accounts ? LedgerFill::dumpState : 0) |
-        (binary ? LedgerFill::binary : 0) | (owner_funds ? LedgerFill::ownerFunds : 0) |
-        (queue ? LedgerFill::dumpQueue : 0);
-
-    if (full || accounts)
+    if (*full || *accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
         if (!isUnlimited(context_.role))
-            return rpcNO_PERMISSION;
+            return RpcNoPermission;
 
         if (context_.app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.role))
         {
-            return rpcTOO_BUSY;
+            return RpcTooBusy;
         }
-        context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
+        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
     }
-    if (queue)
+
+    if (*queue)
     {
         if (!ledger_ || !ledger_->open())
         {
             // It doesn't make sense to request the queue
             // with a non-existent or closed/validated ledger.
-            return rpcINVALID_PARAMS;
+            return RpcInvalidParams;
         }
 
         queueTxs_ = context_.app.getTxQ().getTxs();
     }
 
-    return Status::OK;
+    return Status::kOK;
 }
 
 void
-LedgerHandler::writeResult(Json::Value& value)
+LedgerHandler::writeResult(json::Value& value)
 {
     if (ledger_)
     {
@@ -103,20 +137,20 @@ LedgerHandler::writeResult(Json::Value& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto& closed = value[jss::closed] = Json::objectValue;
+            auto& closed = value[jss::closed] = json::ValueType::Object;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto& open = value[jss::open] = Json::objectValue;
+            auto& open = value[jss::open] = json::ValueType::Object;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
 
-    Json::Value warnings{Json::arrayValue};
+    json::Value warnings{json::ValueType::Array};
     if (context_.params.isMember(jss::type))
     {
-        Json::Value& w = warnings.append(Json::objectValue);
-        w[jss::id] = warnRPC_FIELDS_DEPRECATED;
+        json::Value& w = warnings.append(json::ValueType::Object);
+        w[jss::id] = WarnRpcFieldsDeprecated;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "
             "documentation at "
@@ -142,7 +176,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
@@ -256,8 +290,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             {
                 if (!(inBase && inDesired))
                 {
-                    auto lb = desired->stateMap().lower_bound(k);
-                    auto ub = desired->stateMap().upper_bound(k);
+                    auto lb = desired->stateMap().lowerBound(k);
+                    auto ub = desired->stateMap().upperBound(k);
                     if (lb != desired->stateMap().end())
                         obj->set_predecessor(lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
@@ -270,7 +304,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
                             if (!inBase && inDesired)
                             {
-                                auto firstBook = desired->stateMap().upper_bound(bookBase.key);
+                                auto firstBook = desired->stateMap().upperBound(bookBase.key);
                                 if (firstBook != desired->stateMap().end() &&
                                     firstBook->key() < getQualityNext(bookBase.key) &&
                                     firstBook->key() == k)
@@ -283,7 +317,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             }
                             if (inBase && !inDesired)
                             {
-                                auto oldFirstBook = base->stateMap().upper_bound(bookBase.key);
+                                auto oldFirstBook = base->stateMap().upperBound(bookBase.key);
                                 if (oldFirstBook != base->stateMap().end() &&
                                     oldFirstBook->key() < getQualityNext(bookBase.key) &&
                                     oldFirstBook->key() == k)
@@ -291,7 +325,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(bookBase.key.data(), bookBase.key.size());
                                     auto newFirstBook =
-                                        desired->stateMap().upper_bound(bookBase.key);
+                                        desired->stateMap().upperBound(bookBase.key);
 
                                     if (newFirstBook != desired->stateMap().end() &&
                                         newFirstBook->key() < getQualityNext(bookBase.key))
@@ -316,13 +350,15 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     auto end = std::chrono::system_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    // Guard the per-item rates: an empty ledger has zero objects and/or zero
+    // transactions, and dividing by zero is undefined for these doubles.
+    auto const numObjects = response.ledger_objects().objects_size();
+    auto const numTxns = response.transactions_list().transactions_size();
+    std::string const msPerObj = numObjects > 0 ? std::to_string(duration / numObjects) : "n/a";
+    std::string const msPerTxn = numTxns > 0 ? std::to_string(duration / numTxns) : "n/a";
     JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
-                           << " - num objects = " << response.ledger_objects().objects_size()
-                           << " - num txns = " << response.transactions_list().transactions_size()
-                           << " - ms per obj "
-                           << duration / response.ledger_objects().objects_size()
-                           << " - ms per txn "
-                           << duration / response.transactions_list().transactions_size();
+                           << " - num objects = " << numObjects << " - num txns = " << numTxns
+                           << " - ms per obj " << msPerObj << " - ms per txn " << msPerTxn;
 
     return {response, status};
 }

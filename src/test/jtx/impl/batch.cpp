@@ -11,6 +11,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -28,11 +29,7 @@
 #include <ostream>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 XRPAmount
 calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
@@ -41,14 +38,24 @@ calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t con
     return ((numSigners + 2) * feeDrops) + feeDrops * txns;
 }
 
+XRPAmount
+calcConfidentialBatchFee(
+    test::jtx::Env const& env,
+    uint32_t const& numSigners,
+    uint32_t const& txns)
+{
+    XRPAmount const feeDrops = env.current()->fees().base;
+    return ((numSigners + 2) * feeDrops) + feeDrops * (kConfidentialFeeMultiplier + 1) * txns;
+}
+
 // Batch.
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ValueType::Array};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -56,18 +63,18 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
 }
 
 void
-inner::operator()(Env& env, JTx& jt) const
+Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
+    json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
 
     // Initialize the batch transaction
-    batchTransaction = Json::Value{};
+    batchTransaction = json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
 }
 
 void
-sig::operator()(Env& env, JTx& jt) const
+Sig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -77,10 +84,10 @@ sig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& js = jt[sfBatchSigners.getJsonName()];
@@ -92,7 +99,13 @@ sig::operator()(Env& env, JTx& jt) const
         jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        serializeBatch(
+            msg,
+            stx.getAccountID(sfAccount),
+            stx.getSeqValue(),
+            stx.getFlags(),
+            stx.getBatchTransactionIDs());
+        finishMultiSigningData(e.acct.id(), msg);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
@@ -100,7 +113,7 @@ sig::operator()(Env& env, JTx& jt) const
 }
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -110,10 +123,10 @@ msig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& bs = jt[sfBatchSigners.getJsonName()];
@@ -130,7 +143,13 @@ msig::operator()(Env& env, JTx& jt) const
         iso[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        serializeBatch(
+            msg,
+            stx.getAccountID(sfAccount),
+            stx.getSeqValue(),
+            stx.getFlags(),
+            stx.getBatchTransactionIDs());
+        msg.addBitString(master.id());
         finishMultiSigningData(e.acct.id(), msg);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
@@ -138,8 +157,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace batch
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch

@@ -13,6 +13,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -24,62 +25,75 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 STObject
-parse(Json::Value const& jv)
+parse(json::Value const& jv)
 {
     STParsedJSONObject p("tx_json", jv);
     if (!p.object)
-        Throw<parse_error>(rpcErrorString(p.error));
+        Throw<ParseError>(rpcErrorString(p.error));
     return std::move(*p.object);
 }
 
 void
-sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
+sign(json::Value& jv, Account const& account, json::Value& sigObject)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
-    ss.add32(HashPrefix::txSign);
+    ss.add32(HashPrefix::TxSign);
     parse(jv).addWithoutSigningFields(ss);
     auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }
 
 void
-sign(Json::Value& jv, Account const& account)
+sign(json::Value& jv, Account const& account)
 {
     sign(jv, account, jv);
 }
 
 void
-fill_fee(Json::Value& jv, ReadView const& view)
+fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = to_string(view.fees().base);
+
+    auto const base = view.fees().base;
+
+    // For confidential transactions, the fee is higher because confidential
+    // transaction processing is more expensive.
+    auto const txType = jv[jss::TransactionType].asString();
+    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
+        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
+        txType == jss::ConfidentialMPTClawback)
+    {
+        jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
+    }
+    else
+    {
+        jv[jss::Fee] = to_string(base);
+    }
 }
 
 void
-fill_seq(Json::Value& jv, ReadView const& view)
+fillSeq(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Sequence))
         return;
     auto const account = parseBase58<AccountID>(jv[jss::Account].asString());
     if (!account)
-        Throw<parse_error>("unexpected invalid Account");
+        Throw<ParseError>("unexpected invalid Account");
     auto const ar = view.read(keylet::account(*account));
     if (!ar)
-        Throw<parse_error>("unexpected missing account root");
+        Throw<ParseError>("unexpected missing account root");
     jv[jss::Sequence] = ar->getFieldU32(sfSequence);
 }
 
-Json::Value
+json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
-    Json::Value jv = Json::Value(Json::objectValue);
+    json::Value jv = json::Value(json::ValueType::Object);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
@@ -91,7 +105,7 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = jv[jss::params] = Json::arrayValue;
+        auto& paramsArray = jv[jss::params] = json::ValueType::Array;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))
@@ -102,7 +116,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
         jv[jss::id] = paramsObj[jss::id];
     return jv;
 }
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

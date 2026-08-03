@@ -10,10 +10,9 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
-class PreimageSha256_test : public beast::unit_test::suite
+class PreimageSha256_test : public beast::unit_test::Suite
 {
     Buffer
     hexblob(std::string const& s)
@@ -74,7 +73,7 @@ class PreimageSha256_test : public beast::unit_test::suite
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].first)));
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].second)));
 
-        // Shouldn't validate if the fulfillment & condition don't match
+        // Shouldn't validate if the kFulfillment & condition don't match
         // regardless of the message.
         BEAST_EXPECT(!validate(*f2, *c1));
         BEAST_EXPECT(!validate(*f2, *c1, makeSlice(known[0].first)));
@@ -166,6 +165,4 @@ class PreimageSha256_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
-}  // namespace cryptoconditions
-
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

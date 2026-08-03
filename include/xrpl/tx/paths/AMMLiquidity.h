@@ -1,19 +1,24 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
 template <StepAmount TIn, StepAmount TOut>
 class AMMOffer;
 
-/** AMMLiquidity class provides AMM offers to BookStep class.
+/**
+ * AMMLiquidity class provides AMM offers to BookStep class.
  * The offers are generated in two ways. If there are multiple
  * paths specified to the payment transaction then the offers
  * are generated based on the Fibonacci sequence with
@@ -31,7 +36,7 @@ template <typename TIn, typename TOut>
 class AMMLiquidity
 {
 private:
-    inline static Number const InitialFibSeqPct = Number(5) / 20000;
+    inline static Number const kInitialFibSeqPct = Number(5) / 20000;
     AMMContext& ammContext_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;
@@ -55,67 +60,71 @@ public:
     AMMLiquidity&
     operator=(AMMLiquidity const&) = delete;
 
-    /** Generate AMM offer. Returns nullopt if clobQuality is provided
+    /**
+     * Generate AMM offer. Returns nullopt if clobQuality is provided
      * and it is better than AMM offer quality. Otherwise returns AMM offer.
      * If clobQuality is provided then AMM offer size is set based on the
      * quality.
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     getOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     ammAccount() const
     {
         return ammAccountID_;
     }
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return ammContext_.multiPath();
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     tradingFee() const
     {
         return tradingFee_;
     }
 
-    AMMContext&
+    [[nodiscard]] AMMContext&
     context() const
     {
         return ammContext_;
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetIn() const
     {
         return assetIn_;
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetOut() const
     {
         return assetOut_;
     }
 
 private:
-    /** Fetches current AMM balances.
+    /**
+     * Fetches current AMM balances.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
-    /** Generate AMM offers with the offer size based on Fibonacci sequence.
+    /**
+     * Generate AMM offers with the offer size based on Fibonacci sequence.
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.
      * The number of iterations with AMM offers is limited.
      * If the generated offer exceeds the pool balance then the function
      * throws overflow exception.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
-    /** Generate max offer.
+    /**
+     * Generate max offer.
      * If `fixAMMOverflowOffer` is active, the offer is generated as:
      * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
@@ -124,7 +133,7 @@ private:
      * takerPays = max input amount;
      * takerGets = swapIn(takerPays).
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 

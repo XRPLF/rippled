@@ -1,19 +1,17 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 
+#include <cstdint>
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
@@ -29,8 +27,10 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
-    /** Return a VaultCreate transaction and the Vault's expected keylet. */
-    std::tuple<Json::Value, Keylet>
+    /**
+     * Return a VaultCreate transaction and the Vault's expected keylet.
+     */
+    [[nodiscard]] std::tuple<json::Value, Keylet>
     create(CreateArgs const& args) const;
 
     struct SetArgs
@@ -39,7 +39,7 @@ struct Vault
         uint256 id;
     };
 
-    static Json::Value
+    static json::Value
     set(SetArgs const& args);
 
     struct DeleteArgs
@@ -48,7 +48,7 @@ struct Vault
         uint256 id;
     };
 
-    static Json::Value
+    static json::Value
     del(DeleteArgs const& args);
 
     struct DepositArgs
@@ -58,7 +58,7 @@ struct Vault
         STAmount amount;
     };
 
-    static Json::Value
+    static json::Value
     deposit(DepositArgs const& args);
 
     struct WithdrawArgs
@@ -68,7 +68,7 @@ struct Vault
         STAmount amount;
     };
 
-    static Json::Value
+    static json::Value
     withdraw(WithdrawArgs const& args);
 
     struct ClawbackArgs
@@ -79,10 +79,8 @@ struct Vault
         std::optional<STAmount> amount = std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
-    static Json::Value
+    static json::Value
     clawback(ClawbackArgs const& args);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

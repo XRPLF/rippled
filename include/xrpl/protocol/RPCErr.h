@@ -7,8 +7,8 @@ namespace xrpl {
 
 // VFALCO NOTE these are deprecated
 bool
-isRpcError(Json::Value jvResult);
-Json::Value
-rpcError(error_code_i iError);
+isRpcError(json::Value jvResult);
+json::Value
+rpcError(ErrorCodeI iError);
 
 }  // namespace xrpl

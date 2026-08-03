@@ -18,19 +18,18 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class LedgerMaster_test : public beast::unit_test::suite
+class LedgerMaster_test : public beast::unit_test::Suite
 {
     static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             // This test relies on ledger hash so must lock it to fee 10.
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         });
     }
@@ -117,7 +116,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
     }
 
@@ -130,5 +129,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerMaster, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

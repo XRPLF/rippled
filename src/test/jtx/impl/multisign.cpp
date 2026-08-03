@@ -25,14 +25,12 @@
 #include <ostream>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-Json::Value
-signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v)
+json::Value
+signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
@@ -49,10 +47,10 @@ signers(Account const& account, std::uint32_t quorum, std::vector<signer> const&
     return jv;
 }
 
-Json::Value
-signers(Account const& account, none_t)
+json::Value
+signers(Account const& account, NoneT)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = 0;
@@ -62,11 +60,12 @@ signers(Account const& account, none_t)
 //------------------------------------------------------------------------------
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
-        // Where to put the signature. Supports sfCounterPartySignature.
+        // Where to put the signature. Supports sfCounterPartySignature and
+        // sfSponsorSignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
         // The signing pub key is only required at the top level.
@@ -76,17 +75,17 @@ msig::operator()(Env& env, JTx& jt) const
         }
         else if (sigObject.isNull())
         {
-            sigObject = Json::Value(Json::objectValue);
+            sigObject = json::Value(json::ValueType::Object);
         }
         std::optional<STObject> st;
         try
         {
             st = parse(jtx.jv);
         }
-        catch (parse_error const&)
+        catch (ParseError const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
-            Rethrow();
+            rethrow();
         }
         auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
@@ -111,6 +110,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

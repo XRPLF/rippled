@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 
 #if BOOST_OS_LINUX
@@ -32,46 +33,46 @@ class SlabAllocator
 
     static_assert(alignof(Type) == 8 || alignof(Type) == 4);
 
-    /** A block of memory that is owned by a slab allocator */
+    /**
+     * A block of memory that is owned by a slab allocator
+     */
     struct SlabBlock
     {
         // A mutex to protect the freelist for this block:
-        std::mutex m_;
+        std::mutex m;
 
         // A linked list of appropriately sized free buffers:
-        std::uint8_t* l_ = nullptr;
+        std::uint8_t* l = nullptr;
 
         // The next memory block
-        SlabBlock* next_;
+        SlabBlock* next;
 
         // The underlying memory block:
-        std::uint8_t const* const p_ = nullptr;
+        std::uint8_t const* const p = nullptr;
 
         // The extent of the underlying memory block:
-        std::size_t const size_;
+        std::size_t const size;
 
         SlabBlock(SlabBlock* next, std::uint8_t* data, std::size_t size, std::size_t item)
-            : next_(next), p_(data), size_(size)
+            : next(next), p(data), size(size)
         {
             // We don't need to grab the mutex here, since we're the only
             // ones with access at this moment.
 
-            while (data + item <= p_ + size_)
+            while (data + item <= p + size)
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
-                l_ = data;
+                std::memcpy(data, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+                l = data;
                 data += item;
             }
         }
 
-        ~SlabBlock()
-        {
-            // Calling this destructor will release the allocated memory but
-            // will not properly destroy any objects that are constructed in
-            // the block itself.
-        }
+        // Calling this destructor will release the allocated memory but
+        // will not properly destroy any objects that are constructed in
+        // the block itself.
+        ~SlabBlock() = default;
 
         SlabBlock(SlabBlock const& other) = delete;
         SlabBlock&
@@ -81,11 +82,13 @@ class SlabAllocator
         SlabBlock&
         operator=(SlabBlock&& other) = delete;
 
-        /** Determines whether the given pointer belongs to this allocator */
+        /**
+         * Determines whether the given pointer belongs to this allocator
+         */
         bool
-        own(std::uint8_t const* p) const noexcept
+        own(std::uint8_t const* pIn) const noexcept
         {
-            return (p >= p_) && (p < p_ + size_);
+            return (pIn >= p) && (pIn < p + size);
         }
 
         std::uint8_t*
@@ -94,41 +97,41 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard const l(m_);
-
-                ret = l_;
+                std::scoped_lock const lock(m);
+                ret = l;
 
                 if (ret != nullptr)
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(static_cast<void*>(&l_), ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l), ret, sizeof(std::uint8_t*));
                 }
             }
 
             return ret;
         }
 
-        /** Return an item to this allocator's freelist.
-
-            @param ptr The pointer to the chunk of memory being deallocated.
-
-            @note This is a dangerous, private interface; the item being
-                  returned should belong to this allocator. Debug builds
-                  will check and assert if this is not the case. Release
-                  builds will not.
+        /**
+         * Return an item to this allocator's freelist.
+         *
+         * @param ptr The pointer to the chunk of memory being deallocated.
+         *
+         * @note This is a dangerous, private interface; the item being
+         *       returned should belong to this allocator. Debug builds
+         *       will check and assert if this is not the case. Release
+         *       builds will not.
          */
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard const l(m_);
+            std::scoped_lock const lock(m);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
-            l_ = ptr;
+            std::memcpy(ptr, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+            l = ptr;
         }
     };
 
@@ -147,13 +150,14 @@ private:
     std::size_t const slabSize_;
 
 public:
-    /** Constructs a slab allocator able to allocate objects of a fixed size
-
-        @param count the number of items the slab allocator can allocate; note
-                     that a count of 0 is valid and means that the allocator
-                     is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when minimal memory usage is needed) and
-                     allows for graceful failure.
+    /**
+     * Constructs a slab allocator able to allocate objects of a fixed size
+     *
+     * @param count the number of items the slab allocator can allocate; note
+     *              that a count of 0 is valid and means that the allocator
+     *              is, effectively, disabled. This can be very useful in some
+     *              contexts (e.g. when minimal memory usage is needed) and
+     *              allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
         std::size_t extra,
@@ -176,24 +180,25 @@ public:
     SlabAllocator&
     operator=(SlabAllocator&& other) = delete;
 
-    ~SlabAllocator()
-    {
-        // FIXME: We can't destroy the memory blocks we've allocated, because
-        //        we can't be sure that they are not being used. Cleaning the
-        //        shutdown process up could make this possible.
-    }
+    // FIXME: We can't destroy the memory blocks we've allocated, because
+    //        we can't be sure that they are not being used. Cleaning the
+    //        shutdown process up could make this possible.
+    ~SlabAllocator() = default;
 
-    /** Returns the size of the memory block this allocator returns. */
-    constexpr std::size_t
+    /**
+     * Returns the size of the memory block this allocator returns.
+     */
+    [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;
     }
 
-    /** Returns a suitably aligned pointer, if one is available.
-
-        @return a pointer to a block of memory from the allocator, or
-                nullptr if the allocator can't satisfy this request.
+    /**
+     * Returns a suitably aligned pointer, if one is available.
+     *
+     * @return a pointer to a block of memory from the allocator, or
+     *         nullptr if the allocator can't satisfy this request.
      */
     std::uint8_t*
     allocate() noexcept
@@ -205,7 +210,7 @@ public:
             if (auto ret = slab->allocate())
                 return ret;
 
-            slab = slab->next_;
+            slab = slab->next;
         }
 
         // No slab can satisfy our request, so we attempt to allocate a new
@@ -246,7 +251,7 @@ public:
 
         // Link the new slab
         while (!slabs_.compare_exchange_weak(
-            slab->next_, slab, std::memory_order_release, std::memory_order_relaxed))
+            slab->next, slab, std::memory_order_release, std::memory_order_relaxed))
         {
             ;  // Nothing to do
         }
@@ -254,12 +259,13 @@ public:
         return slab->allocate();
     }
 
-    /** Returns the memory block to the allocator.
-
-        @param ptr A pointer to a memory block.
-        @param size If non-zero, a hint as to the size of the block.
-        @return true if this memory block belonged to the allocator and has
-                     been released; false otherwise.
+    /**
+     * Returns the memory block to the allocator.
+     *
+     * @param ptr A pointer to a memory block.
+     * @param size If non-zero, a hint as to the size of the block.
+     * @return true if this memory block belonged to the allocator and has
+     *              been released; false otherwise.
      */
     bool
     deallocate(std::uint8_t* ptr) noexcept
@@ -269,7 +275,7 @@ public:
             "xrpl::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 
-        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
+        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next)
         {
             if (slab->own(ptr))
             {
@@ -282,13 +288,15 @@ public:
     }
 };
 
-/** A collection of slab allocators of various sizes for a given type. */
+/**
+ * A collection of slab allocators of various sizes for a given type.
+ */
 template <typename Type>
 class SlabAllocatorSet
 {
 private:
     // The list of allocators that belong to this set
-    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_;
+    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_{};
 
     std::size_t maxSize_ = 0;
 
@@ -298,16 +306,16 @@ public:
         friend class SlabAllocatorSet;
 
     private:
-        std::size_t extra;
-        std::size_t alloc;
-        std::size_t align;
+        std::size_t extra_;
+        std::size_t alloc_;
+        std::size_t align_;
 
     public:
         constexpr SlabConfig(
-            std::size_t extra_,
-            std::size_t alloc_ = 0,
-            std::size_t align_ = alignof(Type))
-            : extra(extra_), alloc(alloc_), align(align_)
+            std::size_t extra,
+            std::size_t alloc = 0,
+            std::size_t align = alignof(Type))
+            : extra_(extra), alloc_(alloc), align_(align)
         {
         }
     };
@@ -317,22 +325,22 @@ public:
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
         std::sort(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
-            return a.extra < b.extra;
+            return a.extra_ < b.extra_;
         });
 
         // We should never have two slabs of the same size
         if (std::adjacent_find(
                 std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
-                    return a.extra == b.extra;
+                    return a.extra_ == b.extra_;
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
+                "SlabAllocatorSet<" + beast::typeName<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)
         {
-            auto& a = allocators_.emplace_back(c.extra, c.alloc, c.align);
+            auto& a = allocators_.emplace_back(c.extra_, c.alloc_, c.align_);
 
             if (a.size() > maxSize_)
                 maxSize_ = a.size();
@@ -347,17 +355,16 @@ public:
     SlabAllocatorSet&
     operator=(SlabAllocatorSet&& other) = delete;
 
-    ~SlabAllocatorSet()
-    {
-    }
+    ~SlabAllocatorSet() = default;
 
-    /** Returns a suitably aligned pointer, if one is available.
-
-        @param extra The number of extra bytes, above and beyond the size of
-                     the object, that should be returned by the allocator.
-
-        @return a pointer to a block of memory, or nullptr if the allocator
-                can't satisfy this request.
+    /**
+     * Returns a suitably aligned pointer, if one is available.
+     *
+     * @param extra The number of extra bytes, above and beyond the size of
+     *              the object, that should be returned by the allocator.
+     *
+     * @return a pointer to a block of memory, or nullptr if the allocator
+     *         can't satisfy this request.
      */
     std::uint8_t*
     allocate(std::size_t extra) noexcept
@@ -374,12 +381,13 @@ public:
         return nullptr;
     }
 
-    /** Returns the memory block to the allocator.
-
-        @param ptr A pointer to a memory block.
-
-        @return true if this memory block belonged to one of the allocators
-                     in this set and has been released; false otherwise.
+    /**
+     * Returns the memory block to the allocator.
+     *
+     * @param ptr A pointer to a memory block.
+     *
+     * @return true if this memory block belonged to one of the allocators
+     *              in this set and has been released; false otherwise.
      */
     bool
     deallocate(std::uint8_t* ptr) noexcept

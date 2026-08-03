@@ -17,8 +17,7 @@
 #include <exception>
 #include <optional>
 
-namespace xrpl {
-namespace path {
+namespace xrpl::path {
 
 RippleCalc::Output
 RippleCalc::rippleCalculate(
@@ -60,13 +59,13 @@ RippleCalc::rippleCalculate(
         bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
-            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
+            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::kZero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::zero ||
+            if (saMaxAmountReq >= beast::kZero ||
                 !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
@@ -86,7 +85,7 @@ RippleCalc::rippleCalculate(
                 defaultPaths,
                 partialPayment,
                 false,
-                OfferCrossing::no,
+                OfferCrossing::No,
                 limitQuality,
                 sendMax,
                 domainID,
@@ -113,5 +112,4 @@ RippleCalc::rippleCalculate(
     return flowOut;
 }
 
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path

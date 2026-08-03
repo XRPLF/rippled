@@ -9,12 +9,12 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -43,11 +43,9 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
+namespace xrpl::test {
 
-namespace test {
-
-class tx_reduce_relay_test : public beast::unit_test::suite
+class tx_reduce_relay_test : public beast::unit_test::Suite
 {
 public:
     using socket_type = boost::asio::ip::tcp::socket;
@@ -83,10 +81,10 @@ private:
                 {
                     c.loadFromString(str.str());
 
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_ENABLE == enable);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_METRICS == metrics);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_MIN_PEERS == min);
-                    BEAST_EXPECT(c.TX_RELAY_PERCENTAGE == pct);
+                    BEAST_EXPECT(c.txReduceRelayEnable == enable);
+                    BEAST_EXPECT(c.txReduceRelayMetrics == metrics);
+                    BEAST_EXPECT(c.txReduceRelayMinPeers == min);
+                    BEAST_EXPECT(c.txRelayPercentage == pct);
                     if (success)
                     {
                         pass();
@@ -128,22 +126,22 @@ private:
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<tx_reduce_relay_test::stream_type>&& stream_ptr,
+            std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  sid_,
+                  sid,
                   slot,
                   std::move(request),
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr),
+                  std::move(streamPtr),
                   overlay)
         {
-            sid_++;
+            sid++;
         }
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -152,33 +150,33 @@ private:
         void
         send(std::shared_ptr<Message> const&) override
         {
-            sendTx_++;
+            sendTx++;
         }
         void
         addTxQueue(uint256 const& hash) override
         {
-            queueTx_++;
+            queueTx++;
         }
         static void
         init()
         {
-            queueTx_ = 0;
-            sendTx_ = 0;
-            sid_ = 0;
+            queueTx = 0;
+            sendTx = 0;
+            sid = 0;
         }
-        inline static std::size_t sid_ = 0;
-        inline static std::uint16_t queueTx_ = 0;
-        inline static std::uint16_t sendTx_ = 0;
+        inline static std::size_t sid = 0;
+        inline static std::uint16_t queueTx = 0;
+        inline static std::uint16_t sendTx = 0;
     };
 
     std::uint16_t lid_{0};
     std::uint16_t rid_{1};
     shared_context context_;
     ProtocolVersion protocolVersion_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
 
 public:
-    tx_reduce_relay_test() : context_(make_SSLContext("")), protocolVersion_{1, 7}
+    tx_reduce_relay_test() : context_(makeSslContext("")), protocolVersion_{1, 7}
     {
     }
 
@@ -191,16 +189,16 @@ private:
         (nDisabled == 0)
             ? request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
-        auto stream_ptr = std::make_unique<stream_type>(
+        auto streamPtr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint const local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
             env.app(),
             slot,
@@ -208,10 +206,10 @@ private:
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr),
+            std::move(streamPtr),
             overlay);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;
@@ -234,9 +232,9 @@ private:
         testcase(test);
         jtx::Env env(*this);
         std::vector<std::shared_ptr<PeerTest>> peers;
-        env.app().config().TX_REDUCE_RELAY_ENABLE = txRREnabled;
-        env.app().config().TX_REDUCE_RELAY_MIN_PEERS = minPeers;
-        env.app().config().TX_RELAY_PERCENTAGE = relayPercentage;
+        env.app().config().txReduceRelayEnable = txRREnabled;
+        env.app().config().txReduceRelayMinPeers = minPeers;
+        env.app().config().txRelayPercentage = relayPercentage;
         PeerTest::init();
         lid_ = 0;
         rid_ = 0;
@@ -253,7 +251,7 @@ private:
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
             env.app().getOverlay().relay(uint256{0}, m, toSkip);
-            BEAST_EXPECT(PeerTest::sendTx_ == expectRelay && PeerTest::queueTx_ == expectQueue);
+            BEAST_EXPECT(PeerTest::sendTx == expectRelay && PeerTest::queueTx == expectQueue);
         }
     }
 
@@ -299,5 +297,4 @@ private:
 };
 
 BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -3,6 +3,7 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 
 #include <chrono>
@@ -12,10 +13,9 @@
 #include <set>
 #include <type_traits>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class HashRouter_test : public beast::unit_test::suite
+class HashRouter_test : public beast::unit_test::Suite
 {
     static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
@@ -268,39 +268,39 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config const cfg;
             // default
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
         }
         {
             Config cfg;
             // non-default
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "600");
-            h.set("relay_time", "15");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "600");
+            h.set(Keys::kRelayTime, "15");
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 600s);
             BEAST_EXPECT(setup.relayTime == 15s);
         }
         {
             Config cfg;
             // equal
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "400");
-            h.set("relay_time", "400");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "400");
+            h.set(Keys::kRelayTime, "400");
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 400s);
             BEAST_EXPECT(setup.relayTime == 400s);
         }
         {
             Config cfg;
             // wrong order
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "60");
-            h.set("relay_time", "120");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "60");
+            h.set(Keys::kRelayTime, "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -314,12 +314,12 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // too small hold
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "10");
-            h.set("relay_time", "120");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "10");
+            h.set(Keys::kRelayTime, "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -334,12 +334,12 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // too small relay
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "500");
-            h.set("relay_time", "6");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "500");
+            h.set(Keys::kRelayTime, "6");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -353,10 +353,10 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // garbage
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "alice");
-            h.set("relay_time", "bob");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "alice");
+            h.set(Keys::kRelayTime, "bob");
+            auto const setup = setupHashRouter(cfg);
             // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);
@@ -412,5 +412,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(HashRouter, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -15,8 +15,8 @@ Generation requires a one-time setup step to create a virtual environment
 and install Python dependencies, followed by running the generation target:
 
 ```bash
-cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
-cmake --build . --target code_gen        # generate code
+cmake --build . --target setup_code_gen # create venv and install dependencies (once)
+cmake --build . --target code_gen       # generate code
 ```
 
 By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The

@@ -1,31 +1,35 @@
 #pragma once
 
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class IOU;
 
-/** Immutable cryptographic account descriptor. */
+/**
+ * Immutable cryptographic account descriptor.
+ */
 class Account
 {
 private:
     // Tag for access to private contr
-    struct privateCtorTag
+    struct PrivateCtorTag
     {
     };
 
 public:
-    /** The master account. */
-    static Account const master;
+    /**
+     * The master account.
+     */
+    static Account const kMaster;
 
     Account() = delete;
     Account(Account&&) = default;
@@ -35,83 +39,101 @@ public:
     Account&
     operator=(Account&&) = default;
 
-    /** Create an account from a simple string name. */
+    /**
+     * Create an account from a simple string name.
+     */
     /** @{ */
-    Account(std::string name, KeyType type = KeyType::secp256k1);
+    Account(std::string name, KeyType type = KeyType::Secp256k1);
 
-    Account(char const* name, KeyType type = KeyType::secp256k1) : Account(std::string(name), type)
+    Account(char const* name, KeyType type = KeyType::Secp256k1) : Account(std::string(name), type)
     {
     }
 
     // This constructor needs to be public so `std::pair` can use it when
     // emplacing into the cache. However, it is logically `private`. This is
     // enforced with the `privateTag` parameter.
-    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
+    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::PrivateCtorTag);
 
     /** @} */
 
-    /** Create an Account from an account ID. Should only be used when the
-     * secret key is unavailable, such as for pseudo-accounts. */
+    /**
+     * Create an Account from an account ID. Should only be used when the
+     * secret key is unavailable, such as for pseudo-accounts.
+     */
     explicit Account(std::string name, AccountID const& id);
 
-    enum AcctStringType { base58Seed, other };
-    /** Create an account from a base58 seed string.  Throws on invalid seed. */
+    enum class AcctStringType { Base58Seed, Other };
+    /**
+     * Create an account from a base58 seed string.  Throws on invalid seed.
+     */
     Account(AcctStringType stringType, std::string base58SeedStr);
 
-    /** Return the name */
-    std::string const&
+    /**
+     * Return the name
+     */
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    /** Return the public key. */
-    PublicKey const&
+    /**
+     * Return the public key.
+     */
+    [[nodiscard]] PublicKey const&
     pk() const
     {
         return pk_;
     }
 
-    /** Return the secret key. */
-    SecretKey const&
+    /**
+     * Return the secret key.
+     */
+    [[nodiscard]] SecretKey const&
     sk() const
     {
         return sk_;
     }
 
-    /** Returns the Account ID.
-
-        The Account ID is the uint160 hash of the public key.
-    */
-    AccountID
+    /**
+     * Returns the Account ID.
+     *
+     * The Account ID is the uint160 hash of the public key.
+     */
+    [[nodiscard]] AccountID
     id() const
     {
         return id_;
     }
 
-    /** Returns the human readable public key. */
-    std::string const&
+    /**
+     * Returns the human readable public key.
+     */
+    [[nodiscard]] std::string const&
     human() const
     {
         return human_;
     }
 
-    /** Implicit conversion to AccountID.
-
-        This allows passing an Account
-        where an AccountID is expected.
-    */
+    /**
+     * Implicit conversion to AccountID.
+     *
+     * This allows passing an Account
+     * where an AccountID is expected.
+     */
     operator AccountID() const
     {
         return id_;
     }
 
-    /** Returns an IOU for the specified gateway currency. */
+    /**
+     * Returns an IOU for the specified gateway currency.
+     */
     IOU
     operator[](std::string const& s) const;
 
 private:
-    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> cache_;
+    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> cache;
 
     // Return the account from the cache & add it to the cache if needed
     static Account
@@ -132,7 +154,7 @@ operator==(Account const& lhs, Account const& rhs) noexcept
 
 template <class Hasher>
 void
-hash_append(Hasher& h, Account const& v) noexcept
+hash_append(Hasher& h, Account const& v) noexcept  // NOLINT(readability-identifier-naming)
 {
     hash_append(h, v.id());
 }
@@ -143,6 +165,4 @@ operator<=>(Account const& lhs, Account const& rhs) noexcept
     return lhs.id() <=> rhs.id();
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

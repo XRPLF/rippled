@@ -1,43 +1,49 @@
 #pragma once
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 namespace xrpl {
 
-/** Represents a pair of input and output currencies.
-
-    The input currency can be converted to the output
-    currency by multiplying by the rate, represented by
-    Quality.
-
-    For offers, "in" is always TakerPays and "out" is
-    always TakerGets.
-*/
+/**
+ * Represents a pair of input and output currencies.
+ *
+ * The input currency can be converted to the output
+ * currency by multiplying by the rate, represented by
+ * Quality.
+ *
+ * For offers, "in" is always TakerPays and "out" is
+ * always TakerGets.
+ */
 template <class In, class Out>
 struct TAmounts
 {
     TAmounts() = default;
 
-    TAmounts(beast::Zero, beast::Zero) : in(beast::zero), out(beast::zero)
+    TAmounts(beast::Zero, beast::Zero) : in(beast::kZero), out(beast::kZero)
     {
     }
 
-    TAmounts(In const& in_, Out const& out_) : in(in_), out(out_)
+    TAmounts(In in, Out out) : in(std::move(in)), out(std::move(out))
     {
     }
 
-    /** Returns `true` if either quantity is not positive. */
-    bool
+    /**
+     * Returns `true` if either quantity is not positive.
+     */
+    [[nodiscard]] bool
     empty() const noexcept
     {
-        return in <= beast::zero || out <= beast::zero;
+        return in <= beast::kZero || out <= beast::kZero;
     }
 
     TAmounts&
@@ -81,11 +87,12 @@ operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 // XRPL specific constant used for parsing qualities and other things
 #define QUALITY_ONE 1'000'000'000
 
-/** Represents the logical ratio of output currency to input currency.
-    Internally this is stored using a custom floating point representation,
-    as the inverse of the ratio, so that quality will be descending in
-    a sequence of actual values that represent qualities.
-*/
+/**
+ * Represents the logical ratio of output currency to input currency.
+ * Internally this is stored using a custom floating point representation,
+ * as the inverse of the ratio, so that quality will be descending in
+ * a sequence of actual values that represent qualities.
+ */
 class Quality
 {
 public:
@@ -93,39 +100,49 @@ public:
     // have lower unsigned integer representations.
     using value_type = std::uint64_t;
 
-    static int const minTickSize = 3;
-    static int const maxTickSize = 16;
+    static int const kMinTickSize = 3;
+    static int const kMaxTickSize = 16;
 
 private:
     // This has the same representation as STAmount, see the comment on the
     // STAmount. However, this class does not always use the canonical
     // representation. In particular, the increment and decrement operators may
     // cause a non-canonical representation.
-    value_type m_value;
+    value_type value_;
 
 public:
     Quality() = default;
 
-    /** Create a quality from the integer encoding of an STAmount */
+    /**
+     * Create a quality from the integer encoding of an STAmount
+     */
     explicit Quality(std::uint64_t value);
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     explicit Quality(Amounts const& amount);
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     template <class In, class Out>
     explicit Quality(TAmounts<In, Out> const& amount)
         : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
     {
     }
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     template <class In, class Out>
     Quality(Out const& out, In const& in) : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
     {
     }
 
-    /** Advances to the next higher quality level. */
+    /**
+     * Advances to the next higher quality level.
+     */
     /** @{ */
     Quality&
     operator++();
@@ -134,7 +151,9 @@ public:
     operator++(int);
     /** @} */
 
-    /** Advances to the next lower quality level. */
+    /**
+     * Advances to the next lower quality level.
+     */
     /** @{ */
     Quality&
     operator--();
@@ -143,60 +162,65 @@ public:
     operator--(int);
     /** @} */
 
-    /** Returns the quality as STAmount. */
-    STAmount
+    /**
+     * Returns the quality as STAmount.
+     */
+    [[nodiscard]] STAmount
     rate() const
     {
-        return amountFromQuality(m_value);
+        return amountFromQuality(value_);
     }
 
-    /** Returns the quality rounded up to the specified number
-        of decimal digits.
-    */
-    Quality
+    /**
+     * Returns the quality rounded up to the specified number
+     * of decimal digits.
+     */
+    [[nodiscard]] Quality
     round(int tickSize) const;
 
-    /** Returns the scaled amount with in capped.
-        Math is avoided if the result is exact. The output is clamped
-        to prevent money creation.
-    */
+    /**
+     * Returns the scaled amount with in capped.
+     * Math is avoided if the result is exact. The output is clamped
+     * to prevent money creation.
+     */
     [[nodiscard]] Amounts
-    ceil_in(Amounts const& amount, STAmount const& limit) const;
+    ceilIn(Amounts const& amount, STAmount const& limit) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_in(TAmounts<In, Out> const& amount, In const& limit) const;
+    ceilIn(TAmounts<In, Out> const& amount, In const& limit) const;
 
     // Some of the underlying rounding functions called by ceil_in() ignored
     // low order bits that could influence rounding decisions.  This "strict"
     // method uses underlying functions that pay attention to all the bits.
     [[nodiscard]] Amounts
-    ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
+    ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_in_strict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const;
+    ceilInStrict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const;
 
-    /** Returns the scaled amount with out capped.
-        Math is avoided if the result is exact. The input is clamped
-        to prevent money creation.
-    */
+    /**
+     * Returns the scaled amount with out capped.
+     * Math is avoided if the result is exact. The input is clamped
+     * to prevent money creation.
+     */
     [[nodiscard]] Amounts
-    ceil_out(Amounts const& amount, STAmount const& limit) const;
+    ceilOut(Amounts const& amount, STAmount const& limit) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const;
+    ceilOut(TAmounts<In, Out> const& amount, Out const& limit) const;
 
     // Some of the underlying rounding functions called by ceil_out() ignored
     // low order bits that could influence rounding decisions.  This "strict"
     // method uses underlying functions that pay attention to all the bits.
     [[nodiscard]] Amounts
-    ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
+    ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const;
 
     template <class In, class Out>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_out_strict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const;
+    ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const;
 
 private:
     // The ceil_in and ceil_out methods that deal in TAmount all convert
@@ -204,28 +228,29 @@ private:
     // This helper function takes care of all the conversion operations.
     template <class In, class Out, class Lim, typename FnPtr, std::same_as<bool>... Round>
     [[nodiscard]] TAmounts<In, Out>
-    ceil_TAmounts_helper(
+    ceilTAmountsHelper(
         TAmounts<In, Out> const& amount,
         Lim const& limit,
-        Lim const& limit_cmp,
-        FnPtr ceil_function,
+        Lim const& limitCmp,
+        FnPtr ceilFunction,
         Round... round) const;
 
 public:
-    /** Returns `true` if lhs is lower quality than `rhs`.
-        Lower quality means the taker receives a worse deal.
-        Higher quality is better for the taker.
-    */
+    /**
+     * Returns `true` if lhs is lower quality than `rhs`.
+     * Lower quality means the taker receives a worse deal.
+     * Higher quality is better for the taker.
+     */
     friend bool
     operator<(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value > rhs.m_value;
+        return lhs.value_ > rhs.value_;
     }
 
     friend bool
     operator>(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value < rhs.m_value;
+        return lhs.value_ < rhs.value_;
     }
 
     friend bool
@@ -243,7 +268,7 @@ public:
     friend bool
     operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value == rhs.m_value;
+        return lhs.value_ == rhs.value_;
     }
 
     friend bool
@@ -255,7 +280,7 @@ public:
     friend std::ostream&
     operator<<(std::ostream& os, Quality const& quality)
     {
-        os << quality.m_value;
+        os << quality.value_;
         return os;
     }
 
@@ -265,12 +290,12 @@ public:
     relativeDistance(Quality const& q1, Quality const& q2)
     {
         XRPL_ASSERT(
-            q1.m_value > 0 && q2.m_value > 0, "xrpl::Quality::relativeDistance : minimum inputs");
+            q1.value_ > 0 && q2.value_ > 0, "xrpl::Quality::relativeDistance : minimum inputs");
 
-        if (q1.m_value == q2.m_value)  // make expected common case fast
+        if (q1.value_ == q2.value_)  // make expected common case fast
             return 0;
 
-        auto const [minV, maxV] = std::minmax(q1.m_value, q2.m_value);
+        auto const [minV, maxV] = std::minmax(q1.value_, q2.value_);
 
         auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
         auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };
@@ -279,7 +304,7 @@ public:
         auto const maxVMantissa = mantissa(maxV);
         auto const expDiff = exponent(maxV) - exponent(minV);
 
-        double const minVD = static_cast<double>(minVMantissa);
+        auto const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
             (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
@@ -292,73 +317,74 @@ public:
 
 template <class In, class Out, class Lim, typename FnPtr, std::same_as<bool>... Round>
 TAmounts<In, Out>
-Quality::ceil_TAmounts_helper(
+Quality::ceilTAmountsHelper(
     TAmounts<In, Out> const& amount,
     Lim const& limit,
-    Lim const& limit_cmp,
-    FnPtr ceil_function,
+    Lim const& limitCmp,
+    FnPtr ceilFunction,
     Round... roundUp) const
 {
-    if (limit_cmp <= limit)
+    if (limitCmp <= limit)
         return amount;
 
     // Use the existing STAmount implementation for now, but consider
     // replacing with code specific to IOUAMount and XRPAmount
     Amounts const stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
     STAmount const stLim(toSTAmount(limit));
-    Amounts const stRes = ((*this).*ceil_function)(stAmt, stLim, roundUp...);
+    Amounts const stRes = ((*this).*ceilFunction)(stAmt, stLim, roundUp...);
     return TAmounts<In, Out>(toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_in(TAmounts<In, Out> const& amount, In const& limit) const
+Quality::ceilIn(TAmounts<In, Out> const& amount, In const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(Amounts const&, STAmount const&) const =
-        &Quality::ceil_in;
+    static constexpr Amounts (Quality::*kCeilInFnPtr)(Amounts const&, STAmount const&) const =
+        &Quality::ceilIn;
 
-    return ceil_TAmounts_helper(amount, limit, amount.in, ceil_in_fn_ptr);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCeilInFnPtr);
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_in_strict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const
+Quality::ceilInStrict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(Amounts const&, STAmount const&, bool)
-        const = &Quality::ceil_in_strict;
+    static constexpr Amounts (Quality::*kCeilInFnPtr)(Amounts const&, STAmount const&, bool) const =
+        &Quality::ceilInStrict;
 
-    return ceil_TAmounts_helper(amount, limit, amount.in, ceil_in_fn_ptr, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCeilInFnPtr, roundUp);
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const
+Quality::ceilOut(TAmounts<In, Out> const& amount, Out const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(Amounts const&, STAmount const&) const =
-        &Quality::ceil_out;
+    static constexpr Amounts (Quality::*kCeilOutFnPtr)(Amounts const&, STAmount const&) const =
+        &Quality::ceilOut;
 
-    return ceil_TAmounts_helper(amount, limit, amount.out, ceil_out_fn_ptr);
+    return ceil_TAmounts_helper(amount, limit, amount.out, kCeilOutFnPtr);
 }
 
 template <class In, class Out>
 TAmounts<In, Out>
-Quality::ceil_out_strict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const
+Quality::ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(Amounts const&, STAmount const&, bool)
-        const = &Quality::ceil_out_strict;
+    static constexpr Amounts (Quality::*kCeilOutFnPtr)(Amounts const&, STAmount const&, bool)
+        const = &Quality::ceilOutStrict;
 
-    return ceil_TAmounts_helper(amount, limit, amount.out, ceil_out_fn_ptr, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.out, kCeilOutFnPtr, roundUp);
 }
 
-/** Calculate the quality of a two-hop path given the two hops.
-    @param lhs  The first leg of the path: input to intermediate.
-    @param rhs  The second leg of the path: intermediate to output.
-*/
+/**
+ * Calculate the quality of a two-hop path given the two hops.
+ * @param lhs  The first leg of the path: input to intermediate.
+ * @param rhs  The second leg of the path: intermediate to output.
+ */
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs);
+composedQuality(Quality const& lhs, Quality const& rhs);
 
 }  // namespace xrpl

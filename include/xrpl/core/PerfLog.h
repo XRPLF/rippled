@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/core/JobTypes.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/filesystem.hpp>
@@ -18,6 +18,7 @@ class Journal;
 
 namespace xrpl {
 class Application;
+class Section;
 namespace perf {
 
 /**
@@ -121,7 +122,7 @@ public:
      *
      * @return Counters Json object
      */
-    virtual Json::Value
+    [[nodiscard]] virtual json::Value
     countersJson() const = 0;
 
     /**
@@ -129,7 +130,7 @@ public:
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    virtual Json::Value
+    [[nodiscard]] virtual json::Value
     currentJson() const = 0;
 
     /**
@@ -148,10 +149,10 @@ public:
 };
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
+setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
 
 std::unique_ptr<PerfLog>
-make_PerfLog(
+makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
     beast::Journal journal,
@@ -165,12 +166,12 @@ measureDurationAndLog(
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {
-    auto start_time = std::chrono::high_resolution_clock::now();
+    auto startTime = std::chrono::high_resolution_clock::now();
 
     auto result = func();
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     if (duration > maxDelay)
     {
         JLOG(journal.warn()) << actionDescription << " took " << duration.count() << " ms";

@@ -16,16 +16,13 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <memory>
+#include <algorithm>
 #include <utility>
 
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -77,8 +74,8 @@ TransfersNotFrozen::finalize(
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
 
-    for (auto const& [issue, changes] : balanceChanges_)
-    {
+    return std::ranges::all_of(balanceChanges_, [&](auto const& entry) {
+        auto const& [issue, changes] = entry;
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so xrpld doesn't crash in release.
@@ -90,26 +87,15 @@ TransfersNotFrozen::finalize(
                 enforce,
                 "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
-            if (enforce)
-            {
-                return false;
-            }
-            continue;
+            return !enforce;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
-        {
-            return false;
-        }
-    }
-
-    return true;
+        return validateIssuerChanges(issuerSle, changes, tx, j, enforce);
+    });
 }
 
 bool
-TransfersNotFrozen::isValidEntry(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
 {
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
@@ -135,8 +121,8 @@ TransfersNotFrozen::isValidEntry(
 
 STAmount
 TransfersNotFrozen::calculateBalanceChange(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after,
+    SLE::const_ref before,
+    SLE::const_ref after,
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
@@ -180,21 +166,23 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(
-    std::shared_ptr<SLE const> const& after,
-    STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
-    recordBalance({currency, after->at(sfHighLimit).getIssuer()}, {after, balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfHighLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
-    recordBalance({currency, after->at(sfLowLimit).getIssuer()}, {after, -balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfLowLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
@@ -207,7 +195,7 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    std::shared_ptr<SLE const> const& issuer,
+    SLE::const_ref issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
@@ -268,7 +256,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")

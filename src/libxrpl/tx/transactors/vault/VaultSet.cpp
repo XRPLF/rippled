@@ -7,9 +7,12 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -23,7 +26,7 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
@@ -31,7 +34,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->empty() || data->length() > maxDataPayloadLength)
+        if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
             return temMALFORMED;
@@ -40,7 +43,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::zero)
+        if (*assetMax < beast::kZero)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
             return temMALFORMED;
@@ -72,7 +75,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -90,7 +93,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        if (*domain != beast::zero)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -98,7 +101,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
 
         // Sanity check only, this should be enforced by VaultCreate
-        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
+        if (!sleIssuance->isFlag(lsfMPTRequireAuth))
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
@@ -127,7 +130,7 @@ VaultSet::doApply()
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -148,7 +151,7 @@ VaultSet::doApply()
 
     if (auto const domainId = tx[~sfDomainID]; domainId)
     {
-        if (*domainId != beast::zero)
+        if (*domainId != beast::kZero)
         {
             // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
             // been set in the vault. We currently do not support making such a
@@ -172,6 +175,19 @@ VaultSet::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

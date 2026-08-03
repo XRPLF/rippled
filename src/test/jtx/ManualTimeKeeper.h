@@ -4,8 +4,7 @@
 
 #include <atomic>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ManualTimeKeeper : public TimeKeeper
 {
@@ -15,7 +14,7 @@ private:
 public:
     ManualTimeKeeper() = default;
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return now_.load();
@@ -28,5 +27,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

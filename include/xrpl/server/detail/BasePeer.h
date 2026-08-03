@@ -1,7 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -9,14 +9,15 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
-#include <functional>
+#include <chrono>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
-class BasePeer : public io_list::work
+class BasePeer : public IOList::Work
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -26,7 +27,7 @@ protected:
 
     Port const& port_;
     Handler& handler_;
-    endpoint_type remote_address_;
+    endpoint_type remoteAddress_;
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
@@ -39,7 +40,7 @@ public:
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         beast::Journal journal);
 
     void
@@ -60,16 +61,16 @@ BasePeer<Handler, Impl>::BasePeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(remote_address)
+    , remoteAddress_(std::move(remoteAddress))
     , sink_(
           journal.sink(),
           [] {
-              static std::atomic<unsigned> id{0};
-              return "##" + std::to_string(++id) + " ";
+              static std::atomic<unsigned> kID{0};
+              return "##" + std::to_string(++kID) + " ";
           }())
     , j_(sink_)
     , work_(boost::asio::make_work_guard(executor))
@@ -82,9 +83,9 @@ void
 BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
+        return post(strand_, [self = impl().shared_from_this()] { self->close(); });
     error_code ec;
-    xrpl::get_lowest_layer(impl().ws_).socket().close(ec);
+    xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }
 
 }  // namespace xrpl

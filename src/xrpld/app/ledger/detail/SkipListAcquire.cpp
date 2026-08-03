@@ -1,6 +1,8 @@
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
@@ -35,8 +37,10 @@ SkipListAcquire::SkipListAcquire(
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK, "SkipListAcq", LedgerReplayParameters::MAX_QUEUED_TASKS},
+          LedgerReplayParameters::kSubTaskTimeout,
+          {.jobType = JtReplayTask,
+           .jobName = "SkipListAcq",
+           .jobLimit = LedgerReplayParameters::kMaxQueuedTasks},
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -92,10 +96,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace())
                         << "Add a no feature peer " << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
+                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMaxNoFeaturePeerCount)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
+                        timerInterval_ = LedgerReplayParameters::kSubTaskFallbackTimeout;
                         fallBack_ = true;
                     }
                 }
@@ -109,8 +113,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
+    if (timeouts_ > LedgerReplayParameters::kSubTaskMaxTimeouts)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;

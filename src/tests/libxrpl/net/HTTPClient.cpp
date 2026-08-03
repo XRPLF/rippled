@@ -79,7 +79,7 @@ public:
         return ioc_;
     }
 
-    unsigned short
+    [[nodiscard]] unsigned short
     port() const
     {
         return port_;
@@ -110,7 +110,7 @@ public:
         acceptor_.close();
     }
 
-    bool
+    [[nodiscard]] bool
     finished() const
     {
         return finished_;

@@ -65,36 +65,34 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 //------------------------------------------------------------------------------
 
 Env::AppBundle::AppBundle(
-    beast::unit_test::suite& suite,
+    beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::severities::Severity thresh)
+    beast::Severity thresh)
     : AppBundle()
 {
-    using namespace beast::severities;
+    using beast::Severity;
     if (logs)
     {
-        setDebugLogSink(logs->makeSink("Debug", kFatal));
+        setDebugLogSink(logs->makeSink("Debug", Severity::Fatal));
     }
     else
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", Severity::Fatal, suite));
     }
-    auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
-    timeKeeper = timeKeeper_.get();
+    auto tk = std::make_unique<ManualTimeKeeper>();
+    timeKeeper = tk.get();
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
-        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
-    owned = make_Application(std::move(config), std::move(logs), std::move(timeKeeper_));
+        config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
+    owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->getLogs().threshold(thresh);
     if (!app->setup({}))
@@ -215,7 +213,7 @@ Env::balance(Account const& account, Asset const& asset) const
         [&](Issue const& issue) -> PrettyAmount {
             if (isXRP(issue.currency))
                 return balance(account);
-            auto const sle = le(keylet::line(account.id(), issue));
+            auto const sle = le(keylet::trustLine(account.id(), issue));
             if (!sle)
                 return {STAmount(issue, 0), account.name()};
             auto amount = sle->getFieldAmount(sfBalance);
@@ -233,7 +231,7 @@ Env::balance(Account const& account, Asset const& asset) const
             if (account.id() == issuer)
             {
                 // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
+                auto const sle = le(keylet::mptokenIssuance(id));
                 if (!sle)
                     return {STAmount(mptIssue, 0), account.name()};
 
@@ -255,7 +253,7 @@ Env::balance(Account const& account, Asset const& asset) const
 PrettyAmount
 Env::limit(Account const& account, Issue const& issue) const
 {
-    auto const sle = le(keylet::line(account.id(), issue));
+    auto const sle = le(keylet::trustLine(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto const aHigh = account.id() > issue.account;
@@ -274,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -282,13 +307,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);
@@ -303,26 +328,26 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
-        require(flags(account, asfDefaultRipple));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
+        require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
-        require(nflags(account, asfDefaultRipple));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
+        require(Nflags(account, asfDefaultRipple));
     }
-    require(jtx::balance(account, amount));
+    require(jtx::Balance(account, amount));
 }
 
 void
@@ -333,21 +358,21 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     test.expect(balance(account) == start);
 }
 
 Env::ParsedResult
-Env::parseResult(Json::Value const& jr)
+Env::parseResult(json::Value const& jr)
 {
-    auto error = [](ParsedResult& parsed, Json::Value const& object) {
+    auto error = [](ParsedResult& parsed, json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
         // engine to distinguish this case.
         parsed.ter = telENV_RPC_FAILED;
@@ -355,7 +380,7 @@ Env::parseResult(Json::Value const& jr)
         if (!object.isObject())
             return;
         if (object.isMember(jss::error_code))
-            parsed.rpcCode = safe_cast<error_code_i>(object[jss::error_code].asInt());
+            parsed.rpcCode = safeCast<ErrorCodeI>(object[jss::error_code].asInt());
         if (object.isMember(jss::error_message))
             parsed.rpcMessage = object[jss::error_message].asString();
         if (object.isMember(jss::error))
@@ -370,7 +395,7 @@ Env::parseResult(Json::Value const& jr)
         if (result.isMember(jss::engine_result_code))
         {
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
-            parsed.rpcCode.emplace(rpcSUCCESS);
+            parsed.rpcCode.emplace(RpcSuccess);
         }
         else
         {
@@ -408,18 +433,18 @@ Env::submit(JTx const& jt, std::source_location const& loc)
         // otherwise missing the stx field.
         parsedResult.ter = ter_ = temMALFORMED;
 
-        return Json::Value();
+        return json::Value();
     }();
     postconditions(jt, parsedResult, jr, loc);
 }
 
 void
-Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location const& loc)
+Env::signAndSubmit(JTx const& jt, json::Value params, std::source_location const& loc)
 {
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
 
-    Json::Value jr;
+    json::Value jr;
     if (params.isNull())
     {
         // Use the command line interface
@@ -455,7 +480,7 @@ void
 Env::postconditions(
     JTx const& jt,
     ParsedResult const& parsed,
-    Json::Value const& jr,
+    json::Value const& jr,
     std::source_location const& loc)
 {
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
@@ -468,15 +493,15 @@ Env::postconditions(
                  transHuman(*parsed.ter) + "); Expected " + transToken(*jt.ter) + " (" +
                  transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
-    bad = (jt.rpcCode &&
-           !test.expect(
-               parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
-               "apply " + locStr + ": Got RPC result "s +
-                   (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
-                                   : "NO RESULT") +
-                   " (" + parsed.rpcMessage + "); Expected " +
-                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")")) ||
+    bad =
+        (jt.rpcCode &&
+         !test.expect(
+             parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
+             "apply " + locStr + ": Got RPC result "s +
+                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 " (" + parsed.rpcMessage + "); Expected " +
+                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
@@ -538,11 +563,11 @@ Env::tx() const
 }
 
 void
-Env::autofill_sig(JTx& jt)
+Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success const success([&]() {
+    ScopeSuccess const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -557,7 +582,7 @@ Env::autofill_sig(JTx& jt)
     }
 
     // If the sig is still needed, get it here.
-    if (!jt.fill_sig)
+    if (!jt.fillSig)
         return;
     auto const account = jv.isMember(sfDelegate.jsonName)
         ? lookup(jv[sfDelegate.jsonName].asString())
@@ -584,12 +609,12 @@ void
 Env::autofill(JTx& jt)
 {
     auto& jv = jt.jv;
-    if (jt.fill_fee)
-        jtx::fill_fee(jv, *current());
-    if (jt.fill_seq)
-        jtx::fill_seq(jv, *current());
+    if (jt.fillFee)
+        jtx::fillFee(jv, *current());
+    if (jt.fillSeq)
+        jtx::fillSeq(jv, *current());
 
-    if (jt.fill_netid)
+    if (jt.fillNetid)
     {
         uint32_t const networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
@@ -599,13 +624,13 @@ Env::autofill(JTx& jt)
     // Must come last
     try
     {
-        autofill_sig(jt);
+        autofillSig(jt);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
-        Rethrow();
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
+        rethrow();
     }
 }
 
@@ -619,10 +644,10 @@ Env::st(JTx const& jt)
     {
         obj = jtx::parse(jt.jv);
     }
-    catch (jtx::parse_error const&)
+    catch (jtx::ParseError const&)
     {
-        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
-        Rethrow();
+        test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
+        rethrow();
     }
 
     try
@@ -645,10 +670,10 @@ Env::ust(JTx const& jt)
     {
         obj = jtx::parse(jt.jv);
     }
-    catch (jtx::parse_error const&)
+    catch (jtx::ParseError const&)
     {
-        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
-        Rethrow();
+        test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
+        rethrow();
     }
 
     try
@@ -661,17 +686,17 @@ Env::ust(JTx const& jt)
     }
 }
 
-Json::Value
-Env::do_rpc(
+json::Value
+Env::doRpc(
     unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
     auto response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
 
-    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
+    for (unsigned ctr = 0; (ctr < retries_) and (response.first == RpcInternal); ++ctr)
     {
-        JLOG(journal.error()) << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
+        JLOG(journal.error()) << "Env::doRpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
@@ -696,6 +721,4 @@ Env::disableFeature(uint256 const feature)
     app().config().features.erase(feature);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

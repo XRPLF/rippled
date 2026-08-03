@@ -33,7 +33,7 @@ public:
      * @brief Construct a ${name} ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit ${name}(std::shared_ptr<SLE const> sle)
+    explicit ${name}(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -52,13 +52,13 @@ public:
 % if field.get('mpt_support'):
      * MPT Support: ${field['mpt_support']}
 % endif
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -94,13 +94,13 @@ public:
      * MPT Support: ${field['mpt_support']}
 % endif
      * @note This is an untyped field (${field.get('cppType', 'unknown')}).
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -133,13 +133,13 @@ public:
 };
 
 <%
-    required_fields = [f for f in fields if f['requirement'] == 'soeREQUIRED']
+    required_fields = [f for f in fields if f['requirement'] == 'SoeRequired']
 %>\
 /**
  * @brief Builder for ${name} ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class ${name}Builder : public LedgerEntryBuilderBase<${name}Builder>
@@ -168,7 +168,7 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    ${name}Builder(std::shared_ptr<SLE const> sle)
+    ${name}Builder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ${tag})
         {
@@ -177,7 +177,9 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 % for field in fields:
 
     /**

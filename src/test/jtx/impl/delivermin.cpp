@@ -5,16 +5,12 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
-deliver_min::operator()(Env& env, JTx& jt) const
+DeliverMin::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[jss::DeliverMin] = amount_.getJson(JsonOptions::none);
+    jt.jv[jss::DeliverMin] = amount_.getJson(JsonOptions::Values::None);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

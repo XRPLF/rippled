@@ -11,10 +11,9 @@
 #include <string>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class CurrentThreadName_test : public beast::unit_test::suite
+class CurrentThreadName_test : public beast::unit_test::Suite
 {
 private:
     static void
@@ -53,7 +52,7 @@ private:
             beast::setCurrentThreadName(nameToSet);
 
             // Initialize buffer to be safe.
-            char actualName[beast::maxThreadNameLength + 1] = {};
+            char actualName[beast::kMaxThreadNameLength + 1] = {};
             pthread_getname_np(pthread_self(), actualName, sizeof(actualName));
 
             BEAST_EXPECT(std::string(actualName) == expectedName);
@@ -106,5 +105,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

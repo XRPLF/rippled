@@ -11,10 +11,9 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class SkipList_test : public beast::unit_test::suite
+class SkipList_test : public beast::unit_test::Suite
 {
     void
     testSkipList()
@@ -24,9 +23,9 @@ class SkipList_test : public beast::unit_test::suite
         {
             Config const config;
             auto prev = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
+                config.fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
@@ -81,5 +80,4 @@ class SkipList_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

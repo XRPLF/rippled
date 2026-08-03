@@ -2,13 +2,16 @@
 
 #include <boost/regex.hpp>
 
+#include <cstdint>
+#include <iomanip>
+#include <ios>
 #include <optional>
-#include <regex>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <tuple>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 // CTID stands for Concise Transaction ID.
 //
@@ -32,11 +35,11 @@ namespace RPC {
 inline std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
-    constexpr uint32_t maxLedgerSeq = 0x0FFF'FFFF;
-    constexpr uint32_t maxTxnIndex = 0xFFFF;
-    constexpr uint32_t maxNetworkID = 0xFFFF;
+    static constexpr uint32_t kMaxLedgerSeq = 0x0FFF'FFFF;
+    static constexpr uint32_t kMaxTxnIndex = 0xFFFF;
+    static constexpr uint32_t kMaxNetworkId = 0xFFFF;
 
-    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex || networkID > maxNetworkID)
+    if (ledgerSeq > kMaxLedgerSeq || txnIndex > kMaxTxnIndex || networkID > kMaxNetworkId)
         return std::nullopt;
 
     uint64_t const ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
@@ -70,8 +73,8 @@ decodeCTID(T const ctid) noexcept
         if (ctidString.size() != 16)
             return std::nullopt;
 
-        static boost::regex const hexRegex("^[0-9A-Fa-f]{16}$");
-        if (!boost::regex_match(ctidString, hexRegex))
+        static boost::regex const kHexRegex("^[0-9A-Fa-f]{16}$");
+        if (!boost::regex_match(ctidString, kHexRegex))
             return std::nullopt;
 
         try
@@ -96,17 +99,16 @@ decodeCTID(T const ctid) noexcept
     }
 
     // Validate CTID prefix.
-    constexpr uint64_t ctidPrefixMask = 0xF000'0000'0000'0000ULL;
-    constexpr uint64_t ctidPrefix = 0xC000'0000'0000'0000ULL;
-    if ((ctidValue & ctidPrefixMask) != ctidPrefix)
+    static constexpr uint64_t kCtidPrefixMask = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t kCtidPrefix = 0xC000'0000'0000'0000ULL;
+    if ((ctidValue & kCtidPrefixMask) != kCtidPrefix)
         return std::nullopt;
 
-    uint32_t const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
-    uint16_t const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
-    uint16_t const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
+    auto const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
+    auto const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
+    auto const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
 
     return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

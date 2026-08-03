@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-class Apply_test : public beast::unit_test::suite
+class Apply_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -28,7 +28,7 @@ public:
     testFullyCanonicalSigs()
     {
         // Construct a payments w/out a fully-canonical tx
-        std::string const non_fully_canonical_tx =
+        std::string const nonFullyCanonicalTx =
             "12000022000000002400000001201B00497D9C6140000000000F6950684000000"
             "00000000C732103767C7B2C13AD90050A4263745E4BAB2B975417FA22E87780E1"
             "506DDAF21139BE74483046022100E95670988A34C4DB0FA73A8BFD6383872AF43"
@@ -36,16 +36,16 @@ public:
             "2C2DC3AFEDBED37BBCCD97BC8C40E08F8114E25A26437D923EEF4D6D815DF9336"
             "8B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
 
-        auto ret = strUnHex(non_fully_canonical_tx);
+        auto ret = strUnHex(nonFullyCanonicalTx);
         SerialIter sitTrans(makeSlice(*ret));  // NOLINT(bugprone-unchecked-optional-access)
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
+            test::jtx::Env fullyCanonical(*this, test::jtx::testableAmendments());
 
             Validity const valid =
                 checkValidity(
-                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    fullyCanonical.app().getHashRouter(), tx, fullyCanonical.current()->rules())
                     .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");

@@ -29,10 +29,10 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-/** AMM Calculator. Uses AMM formulas to simulate the payment engine
+/**
+ * AMM Calculator. Uses AMM formulas to simulate the payment engine
  * expected results. Assuming the formulas are correct some unit-tests can
  * be verified. Currently supported operations are:
  *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
@@ -42,13 +42,13 @@ namespace test {
  *      find out AMM offer, which changes AMM's SP quality to
  *      the Offer's quality.
  */
-class AMMCalc_test : public beast::unit_test::suite
+class AMMCalc_test : public beast::unit_test::Suite
 {
     using token_iter = boost::sregex_token_iterator;
     using steps = std::vector<std::pair<Amounts, bool>>;
     using transfer_rates = std::map<std::string, std::uint32_t>;
     using swapargs = std::tuple<steps, STAmount, transfer_rates, std::uint32_t>;
-    jtx::Account const gw{jtx::Account("gw")};
+    jtx::Account const gw_{jtx::Account("gw")};
     token_iter const end_;
 
     std::optional<STAmount>
@@ -75,7 +75,7 @@ class AMMCalc_test : public beast::unit_test::suite
             {
                 return XRPAmount{std::stoll(match[2])};
             }
-            return amountFromString(gw[match[1]].asset(), match[2]);
+            return amountFromString(gw_[match[1]].asset(), match[2]);
         }
         return std::nullopt;
     }
@@ -188,7 +188,8 @@ class AMMCalc_test : public beast::unit_test::suite
     static std::string
     toString(STAmount const& a)
     {
-        return (boost::format("%s/%s") % a.getText() % to_string(a.get<Issue>().currency)).str();
+        return (boost::format("%s/%s") % a.getText() % ::xrpl::to_string(a.get<Issue>().currency))
+            .str();
     }
 
     static STAmount
@@ -214,7 +215,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = vp.size();
         STAmount limitStepOut{};
         auto transferRate = [&](STAmount const& amt) {
-            auto const currency = to_string(amt.get<Issue>().currency);
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // swap out reverse
@@ -230,7 +231,7 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             else if (sout <= amts.out)
             {
-                sin = Quality{amts}.ceil_out(amts, sout).in;
+                sin = Quality{amts}.ceilOut(amts, sout).in;
             }
             // limiting step
             else
@@ -256,7 +257,7 @@ class AMMCalc_test : public beast::unit_test::suite
             // assume there is no limiting step in fwd
             else
             {
-                sout = Quality{amts}.ceil_in(amts, sin).out;
+                sout = Quality{amts}.ceilIn(amts, sin).out;
             }
             sin = sout;
             resultOut = sout;
@@ -277,7 +278,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = 0;
         STAmount limitStepIn{};
         auto transferRate = [&](STAmount const& amt) {
-            auto const currency = to_string(amt.get<Issue>().currency);
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // Swap in forward
@@ -293,7 +294,7 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             else if (sin <= amts.in)
             {
-                sout = Quality{amts}.ceil_in(amts, sin).out;
+                sout = Quality{amts}.ceilIn(amts, sin).out;
             }
             // limiting step, requested in is greater than the offer
             // pay exactly amts.in, which gets amts.out
@@ -319,7 +320,7 @@ class AMMCalc_test : public beast::unit_test::suite
             // assume there is no limiting step
             else
             {
-                sin = Quality{amts}.ceil_out(amts, sout).in;
+                sin = Quality{amts}.ceilOut(amts, sout).in;
             }
             resultIn = sin;
         }
@@ -397,8 +398,9 @@ class AMMCalc_test : public beast::unit_test::suite
                 if (auto const pool = getAmounts(++p); pool)
                 {
                     Account const amm("amm");
-                    auto const LPT = amm["LPT"];
-                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, LPT).iou())
+                    auto const lpt = amm["LPT"];
+                    std::cout << ::xrpl::to_string(
+                                     ammLPTokens(pool->first.in, pool->first.out, lpt).iou())
                               << std::endl;
                     return true;
                 }
@@ -458,5 +460,4 @@ class AMMCalc_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

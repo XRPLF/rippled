@@ -1,32 +1,43 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/OrderBookDB.h>
-#include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
-/** Configuration for OrderBookDB */
+/**
+ * Configuration for OrderBookDB
+ */
 struct OrderBookDBConfig
 {
     int pathSearchMax;
     bool standalone;
 };
 
-/** Create an OrderBookDB instance.
-
-    @param registry Service registry for accessing other services
-    @param config Configuration parameters
-    @return A new OrderBookDB instance
-*/
+/**
+ * Create an OrderBookDB instance.
+ *
+ * @param registry Service registry for accessing other services
+ * @param config Configuration parameters
+ * @return A new OrderBookDB instance
+ */
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config);
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config);
 
 class OrderBookDBImpl final : public OrderBookDB
 {
@@ -54,18 +65,6 @@ public:
     void
     update(std::shared_ptr<ReadView const> const& ledger);
 
-    // see if this txn effects any orderbook
-    void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) override;
-
-    BookListeners::pointer
-    getBookListeners(Book const&) override;
-    BookListeners::pointer
-    makeBookListeners(Book const&) override;
-
 private:
     std::reference_wrapper<ServiceRegistry> registry_;
     int const pathSearchMax_;
@@ -82,11 +81,7 @@ private:
     // does an order book to XRP exist
     hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
-    std::recursive_mutex mLock;
-
-    using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
-
-    BookToListenersMap mListeners;
+    std::recursive_mutex lock_;
 
     std::atomic<std::uint32_t> seq_;
 

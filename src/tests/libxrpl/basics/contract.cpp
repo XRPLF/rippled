@@ -18,7 +18,7 @@ TEST(contract, contract)
 
         try
         {
-            Rethrow();
+            rethrow();
         }
         catch (std::runtime_error const& e2)
         {

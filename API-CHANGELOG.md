@@ -28,6 +28,11 @@ This section contains changes targeting a future version.
 
 ### Additions
 
+- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.
+  When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present.
+
+- `ledger_entry`, `account_objects`: The `Delegate` ledger entry now includes an optional `DestinationNode` field, which stores the index into the authorized account's owner directory. This field is present on entries created after bidirectional directory tracking was introduced and may appear in RPC responses for those entries. ([#6681](https://github.com/XRPLF/rippled/pull/6681))
+
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
   - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
   - `LEDGER_ENTRY_FORMATS`: Describes the fields and their optionality for each ledger entry type, including common fields shared across all ledger entries.
@@ -40,6 +45,14 @@ This section contains changes targeting a future version.
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 - gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
+- `account_channels`: The `destination_account` field now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `account_info`: The `urlgravatar` field now uses HTTPS instead of HTTP. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger`: The `full`, `accounts`, `transactions`, `expand`, `binary`, `owner_funds`, and `queue` fields now return an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger_data`: The `binary` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 
 ## XRP Ledger server version 3.1.0
 

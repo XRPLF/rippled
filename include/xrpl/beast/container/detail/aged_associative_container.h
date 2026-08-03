@@ -1,13 +1,12 @@
 #pragma once
 
-namespace beast {
-namespace detail {
+namespace beast::detail {
 
 // Extracts the key portion of value
-template <bool maybe_map>
-struct aged_associative_container_extract_t
+template <bool MaybeMap>
+struct AgedAssociativeContainerExtractT
 {
-    explicit aged_associative_container_extract_t() = default;
+    explicit AgedAssociativeContainerExtractT() = default;
 
     template <class Value>
     decltype(Value::first) const&
@@ -18,9 +17,9 @@ struct aged_associative_container_extract_t
 };
 
 template <>
-struct aged_associative_container_extract_t<false>
+struct AgedAssociativeContainerExtractT<false>
 {
-    explicit aged_associative_container_extract_t() = default;
+    explicit AgedAssociativeContainerExtractT() = default;
 
     template <class Value>
     Value const&
@@ -30,5 +29,4 @@ struct aged_associative_container_extract_t<false>
     }
 };
 
-}  // namespace detail
-}  // namespace beast
+}  // namespace beast::detail

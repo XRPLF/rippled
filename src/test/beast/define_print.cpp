@@ -13,11 +13,12 @@
 
 // Include this .cpp in your project to gain access to the printing suite
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
-/** A suite that prints the list of globally defined suites. */
-class print_test : public suite
+/**
+ * A suite that prints the list of globally defined suites.
+ */
+class print_test : public Suite
 {
 public:
     void
@@ -26,18 +27,18 @@ public:
         std::size_t manual = 0;
         std::size_t total = 0;
 
-        auto prefix = [](suite_info const& s) { return s.manual() ? "|M| " : "    "; };
+        auto prefix = [](SuiteInfo const& s) { return s.manual() ? "|M| " : "    "; };
 
-        for (auto const& s : global_suites())
+        for (auto const& s : globalSuites())
         {
-            log << prefix(s) << s.full_name() << '\n';
+            log << prefix(s) << s.fullName() << '\n';
 
             if (s.manual())
                 ++manual;
             ++total;
         }
 
-        log << amount(total, "suite") << " total, " << amount(manual, "manual suite") << std::endl;
+        log << Amount(total, "suite") << " total, " << Amount(manual, "manual suite") << std::endl;
 
         pass();
     }
@@ -45,5 +46,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL(print, beast, beast);
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

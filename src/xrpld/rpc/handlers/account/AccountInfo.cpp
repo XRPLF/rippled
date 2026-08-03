@@ -47,9 +47,9 @@ namespace xrpl {
  * If the entry is not an account root, sets the 'Invalid' field to true.
  */
 void
-injectSLE(Json::Value& jv, SLE const& sle)
+injectSLE(json::Value& jv, SLE const& sle)
 {
-    jv = sle.getJson(JsonOptions::none);
+    jv = sle.getJson(JsonOptions::Values::None);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
         if (sle.isFieldPresent(sfEmailHash))
@@ -58,10 +58,9 @@ injectSLE(Json::Value& jv, SLE const& sle)
             Blob const b(hash.begin(), hash.end());
             std::string md5 = strHex(makeSlice(b));
             boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+            // VFALCO TODO Give a name to this constant and move it
+            //             to a more visible location.
+            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else
@@ -84,7 +83,7 @@ injectSLE(Json::Value& jv, SLE const& sle)
 // }
 
 // TODO(tom): what is that "default"?
-Json::Value
+json::Value
 doAccountInfo(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -93,18 +92,18 @@ doAccountInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalid_field_error(jss::account);
+            return RPC::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalid_field_error(jss::ident);
+            return RPC::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
     {
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
     }
 
     std::shared_ptr<ReadView const> ledger;
@@ -117,12 +116,12 @@ doAccountInfo(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> lsFlags{
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLsFlags{
         {{"defaultRipple", lsfDefaultRipple},
          {"depositAuth", lsfDepositAuth},
          {"disableMasterKey", lsfDisableMaster},
@@ -134,16 +133,16 @@ doAccountInfo(RPC::JsonContext& context)
          {"requireDestinationTag", lsfRequireDestTag}}};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        disallowIncomingFlags{
+        kDisallowIncomingFlags{
             {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
              {"disallowIncomingCheck", lsfDisallowIncomingCheck},
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
              {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineClawbackFlag{
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineClawbackFlag{
         "allowTrustLineClawback", lsfAllowTrustLineClawback};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineLockingFlag{
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
         "allowTrustLineLocking", lsfAllowTrustLineLocking};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
@@ -155,31 +154,28 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // It doesn't make sense to request the queue
             // with any closed or validated ledger.
-            RPC::inject_error(rpcINVALID_PARAMS, result);
+            RPC::injectError(RpcInvalidParams, result);
             return result;
         }
 
-        Json::Value jvAccepted(Json::objectValue);
+        json::Value jvAccepted(json::ValueType::Object);
         injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
-        Json::Value acctFlags{Json::objectValue};
-        for (auto const& lsf : lsFlags)
+        json::Value acctFlags{json::ValueType::Object};
+        for (auto const& lsf : kLsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        for (auto const& lsf : disallowIncomingFlags)
+        for (auto const& lsf : kDisallowIncomingFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureClawback))
-        {
-            acctFlags[allowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
-        }
+        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
+            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
-            acctFlags[allowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineLockingFlag.second);
+            acctFlags[kAllowTrustLineLockingFlag.first.data()] =
+                sleAccepted->isFlag(kAllowTrustLineLockingFlag.second);
         }
 
         result[jss::account_flags] = std::move(acctFlags);
@@ -210,7 +206,7 @@ doAccountInfo(RPC::JsonContext& context)
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
-            RPC::inject_error(rpcINVALID_PARAMS, result);
+            RPC::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -219,13 +215,13 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            Json::Value jvSignerList = Json::arrayValue;
+            json::Value jvSignerList = json::ValueType::Array;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read(keylet::signers(accountID));
+            auto const sleSigners = ledger->read(keylet::signerList(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::none));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
@@ -243,15 +239,15 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            Json::Value jvQueueData = Json::objectValue;
+            json::Value jvQueueData = json::ValueType::Object;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
-                jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs.size());
+                jvQueueData[jss::txn_count] = static_cast<json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = Json::arrayValue;
+                jvQueueTx = json::ValueType::Array;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -267,7 +263,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    Json::Value jvTx = Json::objectValue;
+                    json::Value jvTx = json::ValueType::Object;
 
                     if (tx.seqProxy.isSeq())
                     {
@@ -335,7 +331,7 @@ doAccountInfo(RPC::JsonContext& context)
     else
     {
         result[jss::account] = toBase58(accountID);
-        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        RPC::injectError(RpcActNotFound, result);
     }
 
     return result;

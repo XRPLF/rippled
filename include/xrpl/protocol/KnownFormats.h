@@ -7,22 +7,28 @@
 #include <boost/container/flat_map.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <forward_list>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
-/** Manages a list of known formats.
-
-    Each format has a name, an associated KeyType (typically an enumeration),
-    and a predefined @ref SOElement.
-
-    @tparam KeyType The type of key identifying the format.
-*/
+/**
+ * Manages a list of known formats.
+ *
+ * Each format has a name, an associated KeyType (typically an enumeration),
+ * and a predefined @ref SOElement.
+ *
+ * @tparam KeyType The type of key identifying the format.
+ */
 template <class KeyType, class Derived>
 class KnownFormats
 {
 public:
-    /** A known format.
+    /**
+     * A known format.
      */
     class Item
     {
@@ -38,27 +44,29 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
-        /** Retrieve the name of the format.
+        /**
+         * Retrieve the name of the format.
          */
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const
         {
             return name_;
         }
 
-        /** Retrieve the transaction type this format represents.
+        /**
+         * Retrieve the transaction type this format represents.
          */
-        KeyType
+        [[nodiscard]] KeyType
         getType() const
         {
             return type_;
         }
 
-        SOTemplate const&
+        [[nodiscard]] SOTemplate const&
         getSOTemplate() const
         {
             return soTemplate_;
@@ -70,33 +78,36 @@ public:
         KeyType const type_;
     };
 
-    /** Create the known formats object.
-
-        Derived classes will load the object with all the known formats.
-    */
+    /**
+     * Create the known formats object.
+     *
+     * Derived classes will load the object with all the known formats.
+     */
 private:
-    KnownFormats() : name_(beast::type_name<Derived>())
+    KnownFormats() : name_(beast::typeName<Derived>())
     {
     }
 
 public:
-    /** Destroy the known formats object.
-
-        The defined formats are deleted.
-    */
+    /**
+     * Destroy the known formats object.
+     *
+     * The defined formats are deleted.
+     */
     virtual ~KnownFormats() = default;
     KnownFormats(KnownFormats const&) = delete;
     KnownFormats&
     operator=(KnownFormats const&) = delete;
 
-    /** Retrieve the type for a format specified by name.
-
-        If the format name is unknown, an exception is thrown.
-
-        @param  name The name of the type.
-        @return      The type.
-    */
-    KeyType
+    /**
+     * Retrieve the type for a format specified by name.
+     *
+     * If the format name is unknown, an exception is thrown.
+     *
+     * @param  name The name of the type.
+     * @return      The type.
+     */
+    [[nodiscard]] KeyType
     findTypeByName(std::string const& name) const
     {
         if (auto const result = findByName(name))
@@ -106,9 +117,10 @@ public:
             name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
-    /** Retrieve a format based on its type.
+    /**
+     * Retrieve a format based on its type.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByType(KeyType type) const
     {
         auto const itr = types_.find(type);
@@ -118,22 +130,23 @@ public:
     }
 
     // begin() and end() are provided for testing purposes.
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] std::forward_list<Item>::const_iterator
     begin() const
     {
         return formats_.begin();
     }
 
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] std::forward_list<Item>::const_iterator
     end() const
     {
         return formats_.end();
     }
 
 protected:
-    /** Retrieve a format based on its name.
+    /**
+     * Retrieve a format based on its name.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByName(std::string const& name) const
     {
         auto const itr = names_.find(name);
@@ -142,15 +155,16 @@ protected:
         return itr->second;
     }
 
-    /** Add a new format.
-
-        @param name The name of this format.
-        @param type The type of this format.
-        @param uniqueFields A std::vector of unique fields
-        @param commonFields A std::vector of common fields
-
-        @return The created format.
-    */
+    /**
+     * Add a new format.
+     *
+     * @param name The name of this format.
+     * @param type The type of this format.
+     * @param uniqueFields A std::vector of unique fields
+     * @param commonFields A std::vector of common fields
+     *
+     * @return The created format.
+     */
     Item const&
     add(char const* name,
         KeyType type,
@@ -159,7 +173,7 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
+            logicError(
                 std::string("Duplicate key for item '") + name + "': already maps to " +
                 item->getName());
         }
@@ -179,10 +193,10 @@ private:
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
     friend Derived;
 };
 

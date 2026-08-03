@@ -15,24 +15,27 @@ namespace xrpl {
     preconditions, postconditions, and invariants.
 */
 
-/** Generates and logs a call stack */
+/**
+ * Generates and logs a call stack
+ */
 void
-LogThrow(std::string const& title);
+logThrow(std::string const& title);
 
-/** Rethrow the exception currently being handled.
-
-    When called from within a catch block, it will pass
-    control to the next matching exception handler, if any.
-    Otherwise, std::terminate will be called.
-
-    ASAN can't handle sudden jumps in control flow very well. This
-    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
-    triggering false positives, since it throws.
-*/
+/**
+ * Rethrow the exception currently being handled.
+ *
+ * When called from within a catch block, it will pass
+ * control to the next matching exception handler, if any.
+ * Otherwise, std::terminate will be called.
+ *
+ * ASAN can't handle sudden jumps in control flow very well. This
+ * function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+ * triggering false positives, since it throws.
+ */
 [[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
-Rethrow()
+rethrow()
 {
-    LogThrow("Re-throwing exception");
+    logThrow("Re-throwing exception");
     throw;
 }
 
@@ -49,16 +52,17 @@ template <class E, class... Args>
 Throw(Args&&... args)
 {
     static_assert(
-        std::is_convertible<E*, std::exception*>::value,
-        "Exception must derive from std::exception.");
+        std::is_convertible_v<E*, std::exception*>, "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());
+    logThrow(std::string("Throwing exception of type " + beast::typeName<E>() + ": ") + e.what());
     throw std::move(e);
 }
 
-/** Called when faulty logic causes a broken invariant. */
+/**
+ * Called when faulty logic causes a broken invariant.
+ */
 [[noreturn]] void
-LogicError(std::string const& how) noexcept;
+logicError(std::string const& how) noexcept;
 
 }  // namespace xrpl

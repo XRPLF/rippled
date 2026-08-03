@@ -1,5 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -16,7 +17,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -32,7 +33,7 @@
 
 namespace xrpl {
 
-static auto checkpointPageCount = 1000;
+static auto gCheckpointPageCount = 1000;
 
 namespace detail {
 
@@ -53,20 +54,20 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
-    auto const& section = config.section("sqdb");
-    auto const backendName = get(section, "backend", "sqlite");
+    auto const& section = config.section(Sections::kSqdb);
+    auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
-    auto const path = config.legacy("database_path");
+    auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }
 
 }  // namespace detail
 
-DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
+DBConfig::DBConfig(std::string dbPath) : connectionString_(std::move(dbPath))
 {
 }
 
@@ -187,14 +188,15 @@ convert(std::string const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
+/**
+ * Run a thread to checkpoint the write ahead log (wal) for
+ * the given soci::session every 1000 pages. This is only implemented
+ * for sqlite databases.
+ *
+ * Note: According to: https://www.sqlite.org/wal.html#ckpt this
+ * is the default behavior of sqlite. We may be able to remove this
+ * class.
+ */
 
 class WALCheckpointer : public Checkpointer
 {
@@ -212,6 +214,12 @@ public:
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
+            // The checkpointer is identified to the C callback by an integer id
+            // (resolved via checkpointerFromId) rather than a raw `this`, so it
+            // cannot dangle if the checkpointer is destroyed. Passing the id
+            // through sqlite's void* user-data requires an integer-to-pointer
+            // cast.
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }
@@ -238,7 +246,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -246,7 +254,7 @@ public:
 
         // If the Job is not added to the JobQueue then we're not running_.
         if (!jobQueue_.addJob(
-                jtWAL,
+                JtWal,
                 "WAL",
                 // If the owning DatabaseCon is destroyed, no need to checkpoint
                 // or keep the checkpointer alive so use a weak_ptr to this.
@@ -258,7 +266,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             running_ = false;
         }
     }
@@ -286,7 +294,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         running_ = false;
     }
 
@@ -305,7 +313,7 @@ protected:
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
-        if (walSize >= checkpointPageCount)
+        if (walSize >= gCheckpointPageCount)
         {
             if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
             {
@@ -334,6 +342,6 @@ makeCheckpointer(
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif

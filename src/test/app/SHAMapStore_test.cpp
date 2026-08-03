@@ -7,13 +7,15 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -32,19 +34,18 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class SHAMapStore_test : public beast::unit_test::suite
+class SHAMapStore_test : public beast::unit_test::Suite
 {
-    static auto const deleteInterval = 8;
+    static auto const kDeleteInterval = 8;
 
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        cfg->LEDGER_HISTORY = deleteInterval;
-        auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", std::to_string(deleteInterval));
+        cfg->ledgerHistory = kDeleteInterval;
+        auto& section = cfg->section(Sections::kNodeDatabase);
+        section.set(Keys::kOnlineDelete, std::to_string(kDeleteInterval));
         return cfg;
     }
 
@@ -52,14 +53,14 @@ class SHAMapStore_test : public beast::unit_test::suite
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(ConfigSection::nodeDatabase()).set("advisory_delete", "1");
+        cfg->section(Sections::kNodeDatabase).set(Keys::kAdvisoryDelete, "1");
         return cfg;
     }
 
     static bool
-    goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
+    goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !RPC::contains_error(json[jss::result]) &&
+        auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
@@ -96,14 +97,14 @@ class SHAMapStore_test : public beast::unit_test::suite
     }
 
     static bool
-    bad(Json::Value const& json, error_code_i error = rpcLGR_NOT_FOUND)
+    bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
-        return json.isMember(jss::result) && RPC::contains_error(json[jss::result]) &&
+        return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::error_code] == error;
     }
 
     std::string
-    getHash(Json::Value const& json)
+    getHash(json::Value const& json)
     {
         BEAST_EXPECT(
             json.isMember(jss::result) && json[jss::result].isMember(jss::ledger) &&
@@ -174,15 +175,15 @@ public:
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
 
-        std::map<std::uint32_t, Json::Value const> ledgers;
+        std::map<std::uint32_t, json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
 
-        ledgers.emplace(std::make_pair(1, env.rpc("ledger", "1")));
+        ledgers.emplace(1, env.rpc("ledger", "1"));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
 
-        ledgers.emplace(std::make_pair(2, env.rpc("ledger", "2")));
+        ledgers.emplace(2, env.rpc("ledger", "2"));
         BEAST_EXPECT(goodLedger(env, ledgers[2], "2"));
 
         ledgerTmp = env.rpc("ledger", "current");
@@ -197,7 +198,7 @@ public:
         auto const firstSeq = waitForReady(env);
         auto lastRotated = firstSeq - 1;
 
-        for (auto i = firstSeq + 1; i < deleteInterval + firstSeq; ++i)
+        for (auto i = firstSeq + 1; i < kDeleteInterval + firstSeq; ++i)
         {
             env.fund(XRP(10000), noripple("test" + std::to_string(i)));
             env.close();
@@ -207,48 +208,48 @@ public:
         }
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
-        for (auto i = 3; i < deleteInterval + lastRotated; ++i)
+        for (auto i = 3; i < kDeleteInterval + lastRotated; ++i)
         {
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 !getHash(ledgers[i]).empty());
         }
 
-        ledgerCheck(env, deleteInterval + 1, 2);
-        transactionCheck(env, deleteInterval);
-        accountTransactionCheck(env, 2 * deleteInterval);
+        ledgerCheck(env, kDeleteInterval + 1, 2);
+        transactionCheck(env, kDeleteInterval);
+        accountTransactionCheck(env, 2 * kDeleteInterval);
 
         {
             // Closing one more ledger triggers a rotate
             env.close();
 
             auto ledger = env.rpc("ledger", "current");
-            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(deleteInterval + 4)));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(kDeleteInterval + 4)));
         }
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + 3);
+        BEAST_EXPECT(store.getLastRotated() == kDeleteInterval + 3);
         lastRotated = store.getLastRotated();
         BEAST_EXPECT(lastRotated == 11);
 
         // That took care of the fake hashes
-        ledgerCheck(env, deleteInterval + 1, 3);
-        transactionCheck(env, deleteInterval);
-        accountTransactionCheck(env, 2 * deleteInterval);
+        ledgerCheck(env, kDeleteInterval + 1, 3);
+        transactionCheck(env, kDeleteInterval);
+        accountTransactionCheck(env, 2 * kDeleteInterval);
 
         // The last iteration of this loop should trigger a rotate
-        for (auto i = lastRotated - 1; i < lastRotated + deleteInterval - 1; ++i)
+        for (auto i = lastRotated - 1; i < lastRotated + kDeleteInterval - 1; ++i)
         {
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
             BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i + 3)));
 
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
-                store.getLastRotated() == lastRotated || i == lastRotated + deleteInterval - 2);
+                store.getLastRotated() == lastRotated || i == lastRotated + kDeleteInterval - 2);
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 !getHash(ledgers[i]).empty());
@@ -256,9 +257,9 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == kDeleteInterval + lastRotated);
 
-        ledgerCheck(env, deleteInterval + 1, lastRotated);
+        ledgerCheck(env, kDeleteInterval + 1, lastRotated);
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
     }
@@ -281,10 +282,10 @@ public:
         // Because advisory_delete is unset,
         // "can_delete" is disabled.
         auto const canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(bad(canDelete, rpcNOT_ENABLED));
+        BEAST_EXPECT(bad(canDelete, RpcNotEnabled));
 
         // Close ledgers without triggering a rotate
-        for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
+        for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
             env.close();
 
@@ -315,7 +316,7 @@ public:
         lastRotated = store.getLastRotated();
 
         // Close enough ledgers to trigger another rotate
-        for (; ledgerSeq < lastRotated + deleteInterval + 1; ++ledgerSeq)
+        for (; ledgerSeq < lastRotated + kDeleteInterval + 1; ++ledgerSeq)
         {
             env.close();
 
@@ -325,7 +326,7 @@ public:
 
         store.rendezvous();
 
-        ledgerCheck(env, deleteInterval + 1, lastRotated);
+        ledgerCheck(env, kDeleteInterval + 1, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
     }
 
@@ -346,14 +347,14 @@ public:
         BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
-        auto const firstBatch = deleteInterval + ledgerSeq;
+        auto const firstBatch = kDeleteInterval + ledgerSeq;
         for (; ledgerSeq < firstBatch; ++ledgerSeq)
         {
             env.close();
@@ -368,9 +369,9 @@ public:
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
-        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (deleteInterval / 2)));
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (deleteInterval / 2));
+        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (kDeleteInterval / 2)));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
         store.rendezvous();
 
@@ -392,7 +393,7 @@ public:
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
-        for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
+        for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
             // No cleanups in this loop.
             env.close();
@@ -422,11 +423,11 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
-        for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
+        for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
             // No cleanups in this loop.
             env.close();
@@ -456,10 +457,10 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
 
-        for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
+        for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
             // No cleanups in this loop.
             env.close();
@@ -488,20 +489,20 @@ public:
         lastRotated = ledgerSeq - 1;
     }
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(ConfigSection::nodeDatabase())};
+        Section section{env.app().config().section(Sections::kNodeDatabase)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set("path", newPath.string());
+        section.set(Keys::kPath, newPath.string());
 
-        auto backend{NodeStore::Manager::instance().make_Backend(
+        auto backend{node_store::Manager::instance().makeBackend(
             section,
-            megabytes(env.app().config().getValueFor(SizedItem::burstSize, std::nullopt)),
+            megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler,
             env.app().getJournal("NodeStoreTest"))};
         backend->open();
@@ -521,6 +522,25 @@ public:
         /////////////////////////////////////////////////////////////
         // Create NodeStore with two backends to allow online deletion of data.
         // Normally, SHAMapStoreImp handles all these details.
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+
+        // Provide default values.
+        if (!nscfg.exists(Keys::kCacheSize))
+        {
+            nscfg.set(
+                Keys::kCacheSize,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        }
+
+        if (!nscfg.exists(Keys::kCacheAge))
+        {
+            nscfg.set(
+                Keys::kCacheAge,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        }
+
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 
         std::string const writableDb = "write";
@@ -528,11 +548,10 @@ public:
         auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
-        constexpr int readThreads = 4;
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        static constexpr int kReadThreads = 4;
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler,
-            readThreads,
+            kReadThreads,
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
@@ -598,5 +617,4 @@ public:
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -4,18 +4,28 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+
 namespace xrpl {
 
-/** Supports data retrieval by managing a set of peers.
-
-    When desired data (such as a ledger or a transaction set)
-    is missing locally it can be obtained by querying connected
-    peers. This class manages common aspects of the retrieval.
-    Callers maintain the set by adding and removing peers depending
-    on whether the peers have useful information.
-
-    The data is represented by its hash.
-*/
+/**
+ * Supports data retrieval by managing a set of peers.
+ *
+ * When desired data (such as a ledger or a transaction set)
+ * is missing locally it can be obtained by querying connected
+ * peers. This class manages common aspects of the retrieval.
+ * Callers maintain the set by adding and removing peers depending
+ * on whether the peers have useful information.
+ *
+ * The data is represented by its hash.
+ */
 class PeerSet
 {
 public:
@@ -33,7 +43,9 @@ public:
         std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
         std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) = 0;
 
-    /** send a message */
+    /**
+     * send a message
+     */
     template <typename MessageType>
     void
     sendRequest(MessageType const& message, std::shared_ptr<Peer> const& peer)
@@ -47,8 +59,10 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) = 0;
 
-    /** get the set of ids of previously added peers */
-    virtual std::set<Peer::id_t> const&
+    /**
+     * get the set of ids of previously added peers
+     */
+    [[nodiscard]] virtual std::set<Peer::id_t> const&
     getPeerIds() const = 0;
 };
 
@@ -62,7 +76,7 @@ public:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app);
+makePeerSetBuilder(Application& app);
 
 /**
  * Make a dummy PeerSet that does not do anything.
@@ -70,6 +84,6 @@ make_PeerSetBuilder(Application& app);
  *       where a real PeerSet is not needed.
  */
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app);
+makeDummyPeerSet(Application& app);
 
 }  // namespace xrpl

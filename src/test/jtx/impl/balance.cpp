@@ -11,21 +11,19 @@
 
 #include <variant>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 #define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
 #define TEST_EXPECTS(cond, reason) \
     ((cond) ? (env.test.pass(), true) : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
-doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, Issue const& issue)
+doBalance(Env& env, AccountID const& account, bool kNone, STAmount const& value, Issue const& issue)
 {
     if (isXRP(issue))
     {
         auto const sle = env.le(keylet::account(account));
-        if (none)
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
@@ -38,8 +36,8 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
     }
     else
     {
-        auto const sle = env.le(keylet::line(account, issue));
-        if (none)
+        auto const sle = env.le(keylet::trustLine(account, issue));
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
@@ -58,12 +56,12 @@ void
 doBalance(
     Env& env,
     AccountID const& account,
-    bool none,
+    bool kNone,
     STAmount const& value,
     MPTIssue const& mptIssue)
 {
     auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
-    if (none)
+    if (kNone)
     {
         TEST_EXPECT(!sle);
     }
@@ -75,13 +73,11 @@ doBalance(
 }
 
 void
-balance::operator()(Env& env) const
+Balance::operator()(Env& env) const
 {
     std::visit(
         [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
         value_.asset().value());
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

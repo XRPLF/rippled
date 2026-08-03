@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doBlackList(RPC::JsonContext& context)
 {
     auto& rm = context.app.getResourceManager();

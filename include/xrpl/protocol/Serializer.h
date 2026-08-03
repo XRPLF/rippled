@@ -6,13 +6,14 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
 
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 
 namespace xrpl {
@@ -21,41 +22,41 @@ class Serializer
 {
 private:
     // DEPRECATED
-    Blob mData;
+    Blob data_;
 
 public:
     explicit Serializer(int n = 256)
     {
-        mData.reserve(n);
+        data_.reserve(n);
     }
 
     Serializer(void const* data, std::size_t size)
     {
-        mData.resize(size);
+        data_.resize(size);
 
         if (size != 0u)
         {
             XRPL_ASSERT(data, "xrpl::Serializer::Serializer(void const*) : non-null input");
-            std::memcpy(mData.data(), data, size);
+            std::memcpy(data_.data(), data, size);
         }
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
-        return Slice(mData.data(), mData.size());
+        return Slice(data_.data(), data_.size());
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
-        return mData.size();
+        return data_.size();
     }
 
-    void const*
+    [[nodiscard]] void const*
     data() const noexcept
     {
-        return mData.data();
+        return data_.data();
     }
 
     // assemble functions
@@ -69,11 +70,11 @@ public:
     int
     add32(T i)
     {
-        int const ret = mData.size();
-        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        int const ret = data_.size();
+        data_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        data_.push_back(static_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -85,15 +86,15 @@ public:
     int
     add64(T i)
     {
-        int const ret = mData.size();
-        mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        int const ret = data_.size();
+        data_.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        data_.push_back(static_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -102,7 +103,7 @@ public:
 
     template <std::size_t Bits, class Tag>
     int
-    addBitString(base_uint<Bits, Tag> const& v)
+    addBitString(BaseUInt<Bits, Tag> const& v)
     {
         return addRaw(v.data(), v.size());
     }
@@ -134,13 +135,13 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static auto const bytes = sizeof(Integer);
-        if ((offset + bytes) > mData.size())
+        static auto const kBytes = sizeof(Integer);
+        if ((offset + kBytes) > data_.size())
             return false;
         number = 0;
 
-        auto ptr = &mData[offset];
-        for (auto i = 0; i < bytes; ++i)
+        auto ptr = &data_[offset];
+        for (auto i = 0; i < kBytes; ++i)
         {
             if (i)
                 number <<= 8;
@@ -151,11 +152,11 @@ public:
 
     template <std::size_t Bits, typename Tag = void>
     bool
-    getBitString(base_uint<Bits, Tag>& data, int offset) const
+    getBitString(BaseUInt<Bits, Tag>& data, int offset) const
     {
-        auto success = (offset + (Bits / 8)) <= mData.size();
+        auto success = (offset + (Bits / 8)) <= data_.size();
         if (success)
-            memcpy(data.begin(), &(mData.front()) + offset, (Bits / 8));
+            memcpy(data.begin(), &(data_.front()) + offset, (Bits / 8));
         return success;
     }
 
@@ -164,51 +165,51 @@ public:
     int
     addFieldID(SerializedTypeID type, int name)
     {
-        return addFieldID(safe_cast<int>(type), name);
+        return addFieldID(safeCast<int>(type), name);
     }
 
     // DEPRECATED
-    uint256
+    [[nodiscard]] uint256
     getSHA512Half() const;
 
     // totality functions
-    Blob const&
+    [[nodiscard]] Blob const&
     peekData() const
     {
-        return mData;
+        return data_;
     }
-    Blob
+    [[nodiscard]] Blob
     getData() const
     {
-        return mData;
+        return data_;
     }
     Blob&
     modData()
     {
-        return mData;
+        return data_;
     }
 
-    int
+    [[nodiscard]] int
     getDataLength() const
     {
-        return mData.size();
+        return data_.size();
     }
-    void const*
+    [[nodiscard]] void const*
     getDataPtr() const
     {
-        return mData.data();
+        return data_.data();
     }
     void*
     getDataPtr()
     {
-        return mData.data();
+        return data_.data();
     }
-    int
+    [[nodiscard]] int
     getLength() const
     {
-        return mData.size();
+        return data_.size();
     }
-    std::string
+    [[nodiscard]] std::string
     getString() const
     {
         return std::string(static_cast<char const*>(getDataPtr()), size());
@@ -216,7 +217,7 @@ public:
     void
     erase()
     {
-        mData.clear();
+        data_.clear();
     }
     bool
     chop(int num);
@@ -225,58 +226,58 @@ public:
     Blob ::iterator
     begin()
     {
-        return mData.begin();
+        return data_.begin();
     }
     Blob ::iterator
     end()
     {
-        return mData.end();
+        return data_.end();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     begin() const
     {
-        return mData.begin();
+        return data_.begin();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     end() const
     {
-        return mData.end();
+        return data_.end();
     }
     void
     reserve(size_t n)
     {
-        mData.reserve(n);
+        data_.reserve(n);
     }
     void
     resize(size_t n)
     {
-        mData.resize(n);
+        data_.resize(n);
     }
-    size_t
+    [[nodiscard]] size_t
     capacity() const
     {
-        return mData.capacity();
+        return data_.capacity();
     }
 
     bool
     operator==(Blob const& v) const
     {
-        return v == mData;
+        return v == data_;
     }
     bool
     operator!=(Blob const& v) const
     {
-        return v != mData;
+        return v != data_;
     }
     bool
     operator==(Serializer const& v) const
     {
-        return v.mData == mData;
+        return v.data_ == data_;
     }
     bool
     operator!=(Serializer const& v) const
     {
-        return v.mData != mData;
+        return v.data_ != data_;
     }
 
     static int
@@ -333,7 +334,7 @@ public:
     template <int N>
     explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
     {
-        static_assert(N > 0, "");
+        static_assert(N > 0);
     }
 
     [[nodiscard]] bool
@@ -345,7 +346,7 @@ public:
     void
     reset() noexcept;
 
-    int
+    [[nodiscard]] int
     getBytesLeft() const noexcept
     {
         return static_cast<int>(remain_);
@@ -369,7 +370,7 @@ public:
     geti64();
 
     template <std::size_t Bits, class Tag = void>
-    base_uint<Bits, Tag>
+    BaseUInt<Bits, Tag>
     getBitString();
 
     uint128
@@ -428,7 +429,7 @@ public:
 };
 
 template <std::size_t Bits, class Tag>
-base_uint<Bits, Tag>
+BaseUInt<Bits, Tag>
 SerialIter::getBitString()
 {
     auto const n = Bits / 8;
@@ -442,7 +443,7 @@ SerialIter::getBitString()
     used_ += n;
     remain_ -= n;
 
-    return base_uint<Bits, Tag>::fromVoid(x);
+    return BaseUInt<Bits, Tag>::fromVoid(x);
 }
 
 }  // namespace xrpl

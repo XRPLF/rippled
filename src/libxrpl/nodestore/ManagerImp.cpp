@@ -1,9 +1,10 @@
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
@@ -21,19 +22,17 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::node_store {
 
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp _;
-    return _;
+    static ManagerImp kInst;
+    return kInst;
 }
 
 void
-ManagerImp::missing_backend()
+ManagerImp::missingBackend()
 {
     Throw<std::runtime_error>(
         "Your xrpld.cfg is missing a [node_db] entry, "
@@ -46,8 +45,10 @@ ManagerImp::missing_backend()
 // the Factory classes is an undefined behaviour.
 void
 registerNuDBFactory(Manager& manager);
+#if XRPL_ROCKSDB_AVAILABLE
 void
 registerRocksDBFactory(Manager& manager);
+#endif
 void
 registerNullFactory(Manager& manager);
 void
@@ -56,40 +57,43 @@ registerMemoryFactory(Manager& manager);
 ManagerImp::ManagerImp()
 {
     registerNuDBFactory(*this);
+#if XRPL_ROCKSDB_AVAILABLE
     registerRocksDBFactory(*this);
+#endif
     registerNullFactory(*this);
     registerMemoryFactory(*this);
 }
 
 std::unique_ptr<Backend>
-ManagerImp::make_Backend(
+ManagerImp::makeBackend(
     Section const& parameters,
     std::size_t burstSize,
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    std::string const type{get(parameters, "type")};
+    std::string const type{get(parameters, Keys::kType)};
     if (type.empty())
-        missing_backend();
+        missingBackend();
 
     auto factory{find(type)};
     if (factory == nullptr)
     {
-        missing_backend();
+        missingBackend();
     }
 
-    return factory->createInstance(NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
+    return factory->createInstance(
+        NodeObject::kKeyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
-ManagerImp::make_Database(
+ManagerImp::makeDatabase(
     std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
 {
-    auto backend{make_Backend(config, burstSize, scheduler, journal)};
+    auto backend{makeBackend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
         scheduler, readThreads, std::move(backend), config, journal);
@@ -98,27 +102,26 @@ ManagerImp::make_Database(
 void
 ManagerImp::insert(Factory& factory)
 {
-    std::lock_guard const _(mutex_);
+    std::scoped_lock const _(mutex_);
     list_.push_back(&factory);
 }
 
 void
 ManagerImp::erase(Factory& factory)
 {
-    std::lock_guard const _(mutex_);
-    auto const iter = std::find_if(
-        list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
-    XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
+    std::scoped_lock const _(mutex_);
+    auto const iter =
+        std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
+    XRPL_ASSERT(iter != list_.end(), "xrpl::node_store::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
 Factory*
 ManagerImp::find(std::string const& name)
 {
-    std::lock_guard const _(mutex_);
-    auto const iter = std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
-        return boost::iequals(name, other->getName());
-    });
+    std::scoped_lock const _(mutex_);
+    auto const iter = std::ranges::find_if(
+        list_, [&name](Factory* other) { return boost::iequals(name, other->getName()); });
     if (iter == list_.end())
         return nullptr;
     return *iter;
@@ -132,5 +135,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::node_store

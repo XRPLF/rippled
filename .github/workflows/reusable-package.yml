@@ -1,0 +1,81 @@
+# Build Linux packages (DEB and RPM) from pre-built binary artifacts.
+# Discovers which configurations to package from linux.json (configs in
+# "package_configs") and fans out one job per distro. Only linux/amd64 is
+# supported; the runner is hardcoded in the job below.
+name: Package
+
+on:
+  workflow_call:
+    inputs:
+      pkg_release:
+        description: "Package release number. Increment when repackaging the same executable."
+        required: false
+        type: string
+        default: "1"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Generate packaging matrix
+        id: generate
+        working-directory: .github/scripts/strategy-matrix
+        run: ./generate.py --packaging >>"${GITHUB_OUTPUT}"
+
+  package:
+    needs: [generate-matrix]
+    if: ${{ github.event.repository.visibility == 'public' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    name: "${{ matrix.artifact_name }}"
+    permissions:
+      contents: read
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: ${{ matrix.image }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download pre-built binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binary executable
+        run: chmod +x "${BUILD_DIR}/xrpld"
+
+      - name: Build package
+        env:
+          PKG_RELEASE: ${{ inputs.pkg_release }}
+        run: ./package/build_pkg.sh
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.artifact_name }}-pkg
+          path: |
+            ${{ env.BUILD_DIR }}/debbuild/*.deb
+            ${{ env.BUILD_DIR }}/debbuild/*.ddeb
+            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
+          if-no-files-found: error

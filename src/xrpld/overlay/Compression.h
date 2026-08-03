@@ -2,13 +2,15 @@
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
-namespace xrpl {
+#include <cstddef>
+#include <cstdint>
 
-namespace compression {
+namespace xrpl::compression {
 
-std::size_t constexpr headerBytes = 6;
-std::size_t constexpr headerBytesCompressed = 10;
+constexpr std::size_t kHeaderBytes = 6;
+constexpr std::size_t kHeaderBytesCompressed = 10;
 
 // All values other than 'none' must have the high bit. The low order four bits
 // must be 0.
@@ -16,7 +18,8 @@ enum class Algorithm : std::uint8_t { None = 0x00, LZ4 = 0x90 };
 
 enum class Compressed : std::uint8_t { On, Off };
 
-/** Decompress input stream.
+/**
+ * Decompress input stream.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data
@@ -55,7 +58,8 @@ decompress(
     return 0;
 }
 
-/** Compress input data.
+/**
+ * Compress input data.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress
@@ -93,6 +97,4 @@ compress(
     }
     return 0;
 }
-}  // namespace compression
-
-}  // namespace xrpl
+}  // namespace xrpl::compression
