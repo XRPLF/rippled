@@ -3936,7 +3936,7 @@ class Vault_test : public beast::unit_test::Suite
         // Deposit 100 IOU → 1000 shares. Borrow 40 → assetsAvailable=60.
         // Clawback 80 IOU → clamped to 60, then share math uses truncation.
         testCase(1, [&, this](Env& env, Data d) {
-            using namespace loanBroker;
+            using namespace loan_broker;
             using namespace loan;
 
             testcase("Scale clawback clamped with outstanding loan");
@@ -4410,7 +4410,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackBurnShares()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this, beast::Severity::Warning);
 
@@ -4670,7 +4670,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackAssets()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
@@ -5524,9 +5524,9 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // 2. Mantissa larger than uint64 max
-            env.setParseFailureExpected(true);
             try
             {
+                auto const g = env.getParseFailureGuard(true);
                 tx[sfAssetsMaximum] = "18446744073709551617e5";  // uint64 max + 1
                 env(tx);
                 BEAST_EXPECTS(false, "Expected parse_error for mantissa larger than uint64 max");
@@ -5537,7 +5537,6 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
             }
-            env.setParseFailureExpected(false);
         }
     }
 
@@ -6094,7 +6093,7 @@ class Vault_test : public beast::unit_test::Suite
         // Loan broker: no cover, no management fee, debt cap 10x principal.
         f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
         {
-            using namespace loanBroker;
+            using namespace loan_broker;
             env(set(f.lender, vaultKeylet.key),
                 kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
             env.close();
@@ -7647,6 +7646,83 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testVaultCreateLEVersion()
+    {
+        using namespace test::jtx;
+
+        Account const owner{"owner"};
+        PrettyAsset const xrpAsset = xrpIssue();
+
+        {
+            testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(!sleVault->isFieldPresent(sfLEVersion));
+        }
+
+        {
+            testcase(
+                "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
+                "VaultVersion::CashBasis");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(sleVault->isFieldPresent(sfLEVersion));
+            BEAST_EXPECT(sleVault->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
+        }
+
+        {
+            testcase("VaultCreate rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            tx[sfLEVersion] = 2;
+            env(tx, Ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+        }
+
+        {
+            testcase("VaultSet rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfLEVersion] = 2;
+            env(setTx, Ter(temMALFORMED));
+            env.close();
+        }
+    }
+
+    void
     testVaultDepositFreezeIOU()
     {
         using namespace test::jtx;
@@ -8318,6 +8394,7 @@ public:
         testVaultEscrowedMPT();
         testAssetsMaximum();
         testVaultDeleteMemoData();
+        testVaultCreateLEVersion();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();
