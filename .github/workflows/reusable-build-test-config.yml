@@ -3,6 +3,12 @@ name: Build and test configuration
 on:
   workflow_call:
     inputs:
+      benchmark:
+        description: "Whether to smoke-run the benchmarks after testing."
+        required: false
+        type: boolean
+        default: false
+
       build_only:
         description: 'Whether to only build or to build and test the code ("true", "false").'
         required: true
@@ -328,12 +334,14 @@ jobs:
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
-      # performance measurement, so it is skipped for instrumented builds
-      # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
-      # for debug builds, where it is much slower, and on Windows, where the
-      # `install` target does not build them.
+      # performance measurement, so there is nothing to gain from repeating it
+      # across configurations: it is opted into by a single config in the
+      # strategy matrix (see the 'benchmark' flag in the JSON files), which
+      # keeps it off instrumented builds (sanitizers/coverage/voidstar), where
+      # it would be slow and meaningless, off Debug builds, where it is much
+      # slower, and off Windows, where the `install` target does not build them.
       - name: Run the benchmarks
-        if: ${{ !inputs.build_only && runner.os != 'Windows' && inputs.build_type != 'Debug' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        if: ${{ inputs.benchmark }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           rc=0
