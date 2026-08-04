@@ -528,8 +528,8 @@ splitMessageParts(
 
     auto const size = Message::totalSize(*smallMsg);
 
-    // A single blob can't be split any further, so it is sent even when it
-    // exceeds maxSize, to avoid infinite recursion.
+    // Split until each message fits, but a single blob can't be split any
+    // further, so stop recursing at that point regardless of maxSize.
     if (size > maxSize && end - begin > 1)
     {
         // free up the message space
@@ -537,8 +537,10 @@ splitMessageParts(
         return splitMessage(messages, largeMsg, maxSize, begin, end);
     }
 
-    // Peers drop messages exceeding the protocol limit on receipt, so don't
-    // waste the bandwidth sending one.
+    // An unsplittable blob is still bounded by the protocol limit: peers drop
+    // messages exceeding it on receipt, so don't waste the bandwidth. maxSize
+    // only ever tightens this (it defaults to kMaximumMessageSize), so a blob
+    // reaching here can exceed maxSize but never the protocol limit.
     if (size > kMaximumMessageSize)
     {
         UNREACHABLE("xrpl::splitMessageParts : maximum message size exceeded");
