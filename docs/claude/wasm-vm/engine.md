@@ -109,6 +109,33 @@ flag. `the_vm_refuses_a_text_format_module` catches that coming back, and
 section scan would do it. It is metered and memory-capped regardless, since `run` installs
 the fuel and the limiter before `instantiate_and_start`.
 
+## Screening without running: `check`
+
+`preflight.rs`'s `check` decides whether `run` would refuse a module before the guest's first
+instruction — compile, imports, entry point — from **the compiled module alone**: no host, no
+store, no gas, no execution. That is not economy, it is a requirement; the caller is a
+transaction's preflight, which has no ledger to serve a host call from.
+
+Three things keep it from becoming a second opinion. Both stages compile through `vm::compile`,
+so the configuration that decides validity cannot differ. The import set is
+`HostFunctionSpec::ALL`, which is also what `register_host_functions` iterates, so adding a
+host function extends the check and the linker at once. And the entry point's three faults are
+described by one `entry_point_fault`, called from `run` with wasmi's error appended.
+
+What it cannot see is guest behaviour and anything absent from the module's exports: a start
+section that traps, and a linear memory over the page cap that the module keeps to itself.
+Both pass the check and then fail instantiation, which is why a run's own refusal at that
+stage cannot be read as the node's fault. `what_static_screening_cannot_see` lists them and
+`screening_and_a_run_agree` pins the equivalence everywhere else — in both directions, so a
+rule that refused a contract the engine would have served fails too.
+
+Import **signatures** are the deliberate gap: `check` compares names and kinds, not types, so
+a mistyped import still parts a module from the engine at instantiation. Closing it needs the
+expected `FuncType` per function, and the only non-duplicating source is the closure
+`register.rs` registers — `wasmi::IntoFunc::into_func()` returns `(FuncType, _)` and
+`Linker::func_wrap` is a thin wrapper over it, so making `register_host_functions` generic
+over a sink would give the linker and a type table from one declaration site.
+
 **A dead end, recorded so nobody retries it.** Host-function parameters cannot be newtypes.
 `wasmi::WasmTy` looks implementable — public, no sealing supertrait — but its bound names
 `UntypedVal`, which wasmi re-exports only through a **private** `mod core`

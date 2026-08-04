@@ -2,12 +2,13 @@ use std::cell::Cell;
 use std::fmt;
 use std::sync::LazyLock;
 use wasmi::{
-    Config, Engine, Export, Extern, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
+    Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
     TrapCode,
 };
 use xrpl_host_functions::{HostError, HostFunctions};
 
 use crate::abi::FatalHostError;
+use crate::preflight::entry_point_fault;
 use crate::register::register_host_functions;
 
 /// wasm linear-memory page size, fixed by the wasm spec (64 KiB).
@@ -257,6 +258,15 @@ fn build_wasm_engine() -> Engine {
     Engine::new(&config)
 }
 
+/// Compile `wasm` for this engine.
+///
+/// The one path to a [`Module`]: the configuration is what decides whether a
+/// contract is valid at all, so [`run`] and [`crate::check`] must not be able to
+/// compile against different ones.
+pub(crate) fn compile(wasm: &[u8]) -> Result<Module, String> {
+    Module::new(wasm_engine(), wasm).map_err(|e| e.to_string())
+}
+
 /// Run a contract: compile `wasm`, give it `gas` fuel, service its host
 /// calls through `host`, and call the exported `function_name`.
 pub fn run<'h>(
@@ -266,8 +276,8 @@ pub fn run<'h>(
     function_name: &str,
 ) -> Result<RunOutcome, RunFailure> {
     let engine = wasm_engine();
-    let module = Module::new(engine, wasm)
-        .map_err(|e| RunFailure::owing_nothing(RunError::Compile(e.to_string())))?;
+    let module =
+        compile(wasm).map_err(|detail| RunFailure::owing_nothing(RunError::Compile(detail)))?;
 
     let mem_limits = StoreLimitsBuilder::new()
         .memory_size(MAX_MEMORY_BYTES)
@@ -305,11 +315,11 @@ pub fn run<'h>(
     let function = match instance.get_typed_func::<(), i32>(&store, function_name) {
         Ok(function) => function,
         Err(e) => {
-            let error = RunError::EntryPoint(entry_point_detail(
-                instance.get_export(&store, function_name),
-                function_name,
-                &e,
-            ));
+            let found = instance
+                .get_export(&store, function_name)
+                .map(|export| export.ty(&store));
+            let error =
+                RunError::EntryPoint(format!("{}: {e}", entry_point_fault(found, function_name)));
             return Err(failed(&store, gas, error));
         }
     };
@@ -324,16 +334,6 @@ pub fn run<'h>(
 
     let fuel_used = fuel_used(&store, gas).map_err(RunFailure::owing_nothing)?;
     Ok(RunOutcome { result, fuel_used })
-}
-
-fn entry_point_detail(export: Option<Extern>, name: &str, error: &wasmi::Error) -> String {
-    match export {
-        Some(Extern::Func(_)) => {
-            format!("entry point '{name}' has the wrong signature, expected '() -> i32': {error}")
-        }
-        Some(_) => format!("export '{name}' is not a function: {error}"),
-        None => format!("no entry point '{name}': {error}"),
-    }
 }
 
 #[cfg(test)]

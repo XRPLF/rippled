@@ -6,7 +6,7 @@ use xrpl_host_functions::{HostError, HostFunctionSpec};
 
 /// The module name the guest imports under (`(import "host_lib" "ldgr_index" …)`),
 /// as the guest SDK and this fork's fixtures spell it.
-const HOST_MODULE: &str = "host_lib";
+pub(crate) const HOST_MODULE: &str = "host_lib";
 
 /// Register the host functions on `linker`, one per [`HostFunctionSpec`] variant.
 ///

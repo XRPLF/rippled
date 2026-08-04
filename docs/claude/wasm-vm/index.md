@@ -6,7 +6,7 @@ bridge that connects it to xrpld.
 | Read | When |
 |---|---|
 | [bridge.md](bridge.md) | changing anything that crosses between C++ and Rust, or the TER map |
-| [engine.md](engine.md) | changing `vm.rs`, `abi.rs`, `region.rs` — the invariants, and the wasmi facts that decided them |
+| [engine.md](engine.md) | changing `vm.rs`, `preflight.rs`, `abi.rs`, `region.rs` — the invariants, and the wasmi facts that decided them |
 | [abi.md](abi.md) | adding or changing a host function |
 | [testing.md](testing.md) | running the loop, or adding a test on either side |
 | [conventions.md](conventions.md) | before writing code or comments in the crate |
@@ -45,7 +45,8 @@ than guessing. See [history.md](history.md) for what is worth recovering.
     Also `HostError`. **The single source of truth for the ABI** — see [abi.md](abi.md).
   - `xrpl-host-functions-macros/` — the proc macro. An implementation detail of the crate
     above, deliberately not re-exported: the ABI has one declaration site.
-  - `xrpl-wasm-vm/` — the wasmi wrapper. `vm.rs` (engine, store, `run`), `abi.rs` (gas,
+  - `xrpl-wasm-vm/` — the wasmi wrapper. `vm.rs` (engine, store, `run`), `preflight.rs`
+    (`check` — compile, imports, entry point, with no host, store or gas), `abi.rs` (gas,
     transfer budget, guest-memory marshaling), `region.rs` (the `(ptr, len)` type),
     `register.rs` (one `func_wrap` per host function). See [engine.md](engine.md).
   - `xrpl-wasm-vm-ffi/` — the cxx bridge, both crossings. `RunStatus`/`RunResult`,
@@ -67,11 +68,11 @@ than guessing. See [history.md](history.md) for what is worth recovering.
 ## Current state (2026-08-04)
 
 **The whole workspace is green**: `cargo test --workspace`, `clippy --workspace
---all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **137 tests** — 33 macro,
-12 facade, 1 doctest, **79 in `xrpl-wasm-vm`** (10 unit; 69 integration — 13 `budgets`,
-12 `host_calls`, 23 `memory_policy`, 21 `vm_limits`), 10 in `xrpl-wasm-vm-ffi`, 2 in
-`xrpl-wasm-testkit`. On the C++ side, **27 tests over the whole loop** in six fixtures:
-`./xrpl_tests --gtest_filter='WasmVMTest.*:*Call.*'`.
+--all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **154 tests** — 33 macro,
+12 facade, 1 doctest, **96 in `xrpl-wasm-vm`** (11 unit; 85 integration — 13 `budgets`,
+12 `host_calls`, 23 `memory_policy`, 16 `preflight`, 21 `vm_limits`), 10 in
+`xrpl-wasm-vm-ffi`, 2 in `xrpl-wasm-testkit`. On the C++ side, **27 tests over the whole
+loop** in six fixtures: `./xrpl_tests --gtest_filter='WasmVMTest.*:*Call.*'`.
 
 **Both crossings are wired and a real contract runs through them**: C++ calls
 `runEscrowWasm`, the engine services `ldgr_index` by calling back into
@@ -84,11 +85,15 @@ functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
 
 ## Next
 
-1. **`preflightEscrowWasm`.** The gap the TER map is currently papering over: a module that
-   will not compile, instantiate, or expose the entry point maps to `tecINTERNAL` with no
-   cost, which is only defensible because preflight is *meant* to have refused it with
-   `temBAD_WASM` first. Nothing does that yet. It needs a second bridge entry that compiles
-   and looks up the export without executing.
+1. **`preflightEscrowWasm`.** The engine half is done — `check` in `preflight.rs`. What is
+   left is the second bridge entry (`check_escrow`, a `CheckStatus`/`CheckResult` pair
+   mirroring `RunStatus`/`RunResult`) and the C++ front, whose signature is
+   `(Bytes, beast::Journal, std::string_view) -> NotTEC`: **no `HostFunctions&`**, since a
+   check needs no host and a `PreflightContext` has no ledger to build one from.
+   Two decisions are still open — what a *panic* at preflight returns
+   (`telFAILED_PROCESSING` reads as the preflight analogue of `tecINTERNAL`'s "the fault is
+   the node's"), and whether the apply-side map moves `Instantiate` off `tecINTERNAL` in the
+   same change; see [bridge.md](bridge.md).
 2. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` is
    reached only from `src/tests/libxrpl/tx/wasm/`. Wiring it up is what makes
    `WasmHostFunctionsImpl` (over a real `ApplyContext`) the host in production rather than
