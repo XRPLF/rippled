@@ -526,13 +526,23 @@ splitMessageParts(
         *smallMsg->add_blobs() = largeMsg.blobs(i);
     }
 
-    // A single blob can't be split any further, so send it regardless of
-    // maxSize to avoid infinite recursion.
-    if (end - begin > 1 && Message::totalSize(*smallMsg) > maxSize)
+    auto const size = Message::totalSize(*smallMsg);
+
+    // A single blob can't be split any further, so it is sent even when it
+    // exceeds maxSize, to avoid infinite recursion.
+    if (size > maxSize && end - begin > 1)
     {
         // free up the message space
         smallMsg.reset();
         return splitMessage(messages, largeMsg, maxSize, begin, end);
+    }
+
+    // Peers drop messages exceeding the protocol limit on receipt, so don't
+    // waste the bandwidth sending one.
+    if (size > kMaximumMessageSize)
+    {
+        UNREACHABLE("xrpl::splitMessageParts : maximum message size exceeded");
+        return 0;
     }
 
     messages.emplace_back(
