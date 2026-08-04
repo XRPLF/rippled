@@ -1852,7 +1852,9 @@ three signals' attributes over OTLP directly.
 
 ## Grafana Dashboards
 
-Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Eleven dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`.
+Ten are Prometheus-backed; `log-derived-insights` is the only Loki/LogQL board and
+is documented last, together with the LogQL-specific traps it exposed.
 
 ### RPC Performance (`rpc-performance`)
 
@@ -2381,6 +2383,112 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
 4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
+
+### Log-Derived Insights (`log-derived-insights`)
+
+The only **Loki/LogQL** dashboard. It surfaces detail that no metric or span
+records, by parsing `debug.log` text. 32 panels in 9 rows.
+
+> **REQUIRES DEBUG LOGS for most rows.** xrpld's default threshold is `Info`
+> (`Severity thresh = Severity::Info`, `app/main/Main.cpp`). Rows tagged `[DBG]`
+> read `DBG`-severity lines that a default node never writes, so those panels are
+> **empty** on an unmodified node — and an empty panel means _not collecting_, not
+> _no problem_. Rows tagged `[DEFAULT OK]` work as shipped.
+>
+> Enable per partition rather than globally (`Resource` alone emits ~329k
+> lines/6h):
+>
+> ```
+> log_level ManifestCache debug
+> log_level Resource debug
+> log_level InboundLedger debug
+> log_level Peer debug
+> ```
+
+| Row                                     | Gate           | Key panels                                                                                                                                                                                 |
+| --------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Worst Offenders — Node Ranking          | `[MIXED]`      | 8 stat panels ranking nodes by error volume, attack-like input, total fee charged, manifest rejections, consensus problems, job latency breaches, sync instability, and ledger fetch waste |
+| Node Operating State Transitions        | `[DEFAULT OK]` | Transition rate and state timeline from `STATE->` (`NetworkOPsImp::setMode`, info)                                                                                                         |
+| Log Volume & Severity Mix               | `[DEFAULT OK]` | Line rate by severity; top-N partitions by rate                                                                                                                                            |
+| Manifests — Disposition & Producers     | `[DBG]`        | Disposition rate; accept-vs-reject; top-N master keys                                                                                                                                      |
+| Resource Fee Charges — Load Attribution | `[DBG]`        | Charge rate by reason; fee-weighted load; top-N peers by IP and public key                                                                                                                 |
+| Ledger Acquisition Efficiency           | `[DBG]`        | Duplicate ratio; good vs duplicate vs timeout                                                                                                                                              |
+| Peer Lifecycle & Disconnects            | `[DBG]`        | Disconnect reason breakdown; handshake and accept rate                                                                                                                                     |
+| Consensus Phase & Mode                  | `[DEFAULT OK]` | Phase transitions; operating-mode proxy; quorum and trusted-set size                                                                                                                       |
+| Slow Job Latency Breaches               | `[DEFAULT OK]` | Run p99, wait p99, breach rate by job (`LoadMonitor`, >500ms only)                                                                                                                         |
+| Error & Warning Stream                  | `[DEFAULT OK]` | WRN/ERR/FTL rate by partition; live log tail                                                                                                                                               |
+
+Filters: `$service_name`, `$deployment_environment`, `$node`,
+`$xrpl_network_type`, `$severity`, plus log-derived `$consensus_phase`,
+`$consensus_mode`, `$manifest_action`, `$charge_reason`, and `$topn`.
+
+#### LogQL traps this dashboard exposed
+
+Ten mistakes that fail **silently** — each cost a debugging cycle, so check them
+before adding any LogQL panel.
+
+1. **`partition` is structured metadata, not a stream label.**
+   `{service_name="xrpld", partition="ManifestCache"}` returns **zero rows with
+   no error**. Correct form: `{service_name="xrpld"} | partition = \`ManifestCache\``.
+Stream labels are only `service_name`, `service_instance_id`,
+`deployment_environment`. Everything else — `partition`, `severity`,
+`xrpl_network_type`, `message`, `trace_id` — is structured metadata.
+
+2. **`label_values()` cannot see structured metadata.** A `query`-type template
+   variable over `xrpl_network_type`, `severity`, or `partition` returns an empty
+   dropdown; only true stream labels populate. Use a `custom` variable with
+   enumerated values instead. This is why filters appeared blank.
+
+3. **A target with no datasource `uid` resolves to the DEFAULT datasource.**
+   The Prometheus dashboards use `{"type": "prometheus"}` with no uid and work
+   only because Prometheus _is_ the default. A Loki target written the same way
+   sends LogQL to Prometheus and returns nothing. Always pin
+   `{"type": "loki", "uid": "${DS_LOKI}"}`.
+
+4. **`$__rate_interval` is Prometheus-only — Loki panels must use `[$__auto]`.**
+   Grafana does not substitute `$__rate_interval` for a Loki target, so Loki
+   receives the literal string and fails with
+   `parse error: not a valid duration string: "$__rate_interval"`, which surfaces
+   as "No data". The other 15 dashboards all use `$__rate_interval` because they
+   are Prometheus-backed; do **not** align LogQL panels to that convention.
+
+5. **Loki caps a query at 2000 series.** Any per-key or per-IP aggregation must be
+   wrapped in `topk(N, ...)` or it fails with HTTP 400. A true distinct-key count
+   over a large key space is therefore not possible in a panel.
+
+6. **Loki tables need `labelsToFields` plus `reduce`.** Loki attaches labels to
+   the Value field instead of returning columns, so a table panel renders bare
+   Time/Value without `labelsToFields`. Grafana also runs a Loki table target as a
+   **range** query even when `instant: true` is set, producing one row per series
+   _per timestamp_ — visible as the same key repeated many times. Use
+   `reduce(lastNotNull, labelsToFields)` then `organize`, and note the value
+   column is then named `Last *`, which any field override must match.
+
+7. **Title Case legends need `label_format`, not value mappings.** A label-driven
+   legend renders the raw log value (`full`, `moderate peer request`). Grafana
+   value mappings do not help — they map the metric _value_, not label text in
+   `displayName`. Rewrite the label in the query:
+   `| label_format state=\`{{if eq .state "full"}}Full{{else}}{{.state}}{{end}}\``.
+
+8. **`unwrap` must be the last pipeline stage.** Any label filter or
+   `label_format` placed after `| unwrap <field>` makes the query invalid and it
+   returns zero frames.
+
+9. **Non-matching lines yield an empty label.** A line in the selected partition
+   that does not match the panel's `regexp` still passes through with an empty
+   extracted label, which renders as a blank legend entry. Guard with
+   `| <label> != \`\`` before aggregating.
+
+10. **Stat panels need `[$__range]`, not `[$__auto]`.** Grafana runs a Loki stat
+    target as a range query even with `instant: true`, so `lastNotNull` reads only
+    the final bucket — a window total shows as a single-bucket count. Aggregate
+    over `$__range` and reduce with `max`.
+
+Also worth knowing: the **Grafana Cloud image renderer cannot query Loki** in this
+stack. A minimal probe dashboard with a hardcoded datasource uid, a literal
+expression and no template variables still rendered "No data", while the identical
+expression returned 241 points through `/api/ds/query`. Verify LogQL panels with
+`/api/ds/query` per target, not with panel-image rendering.
 
 ## Troubleshooting
 
@@ -2964,7 +3072,7 @@ cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
 | Spans      | 16+ span types | All span names appear in Tempo with required attributes |
 | Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics    |
 | Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works |
-| Dashboards | 10 dashboards  | All Grafana dashboards load without errors              |
+| Dashboards | 11 dashboards  | All Grafana dashboards load without errors              |
 
 ### Running Individual Tools
 

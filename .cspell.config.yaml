@@ -263,6 +263,7 @@ words:
   - qalloc
   - qbsprofile
   - queuable
+  - ransitioned
   - Raphson
   - rcflags
   - reparent
@@ -364,6 +365,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - unheld
   - unimpair
   - unroutable
   - unscalable
