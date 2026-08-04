@@ -154,6 +154,15 @@ else()
             >
     )
 
+    # On aarch64, libatomic is required for atomic operations. It is not needed on x86_64.
+    # Linking it statically on Linux
+    if(is_arm64 AND is_linux)
+        target_link_options(
+            common
+            INTERFACE -Wl,--push-state -Wl,-Bstatic -latomic -Wl,--pop-state
+        )
+    endif()
+
     # Keep -stdlib=libstdc++ off the compile commands, but preserve it for linking.
     #
     # Conan turns `compiler.libcxx=libstdc++` into `-stdlib=libstdc++` and puts it in
@@ -162,9 +171,8 @@ else()
     # Clang wrapper supplies those paths itself (via -nostdinc++), so at compile time the
     # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
     # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
-    get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
     if(
-        _cxx_real MATCHES "^/nix/store/"
+        is_nix_compiler
         AND is_linux
         AND is_clang
         AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"

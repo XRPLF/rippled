@@ -134,12 +134,10 @@ public:
         request(
             bSSL,
             deqSites,
-            std::bind(
-                &HTTPClientImp::makeGet,
-                shared_from_this(),
-                strPath,
-                std::placeholders::_1,
-                std::placeholders::_2),
+            [self = shared_from_this(), strPath](
+                boost::asio::streambuf& sb, std::string const& strHost) {
+                self->makeGet(strPath, sb, strHost);
+            },
             timeout,
             complete);
     }
@@ -166,9 +164,9 @@ public:
             shutdown_ = e.code();
 
             JLOG(j_.trace()) << "expires_after: " << shutdown_.message();
-            deadline_.async_wait(
-                std::bind(
-                    &HTTPClientImp::handleDeadline, shared_from_this(), std::placeholders::_1));
+            deadline_.async_wait([self = shared_from_this()](boost::system::error_code const& ec) {
+                self->handleDeadline(ec);
+            });
         }
 
         if (!shutdown_)
@@ -179,11 +177,11 @@ public:
                 query_->host,
                 query_->port,
                 query_->flags,
-                std::bind(
-                    &HTTPClientImp::handleResolve,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult,
+                    boost::asio::ip::tcp::resolver::results_type results) {
+                    self->handleResolve(ecResult, results);
+                });
         }
 
         if (shutdown_)
@@ -220,9 +218,9 @@ public:
             resolver_.cancel();
 
             // Stop the transaction.
-            socket_.asyncShutdown(
-                std::bind(
-                    &HTTPClientImp::handleShutdown, shared_from_this(), std::placeholders::_1));
+            socket_.asyncShutdown([self = shared_from_this()](boost::system::error_code const& ec) {
+                self->handleShutdown(ec);
+            });
         }
     }
 
@@ -262,8 +260,9 @@ public:
             boost::asio::async_connect(
                 socket_.lowestLayer(),
                 result,
-                std::bind(
-                    &HTTPClientImp::handleConnect, shared_from_this(), std::placeholders::_1));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult,
+                    boost::asio::ip::tcp::endpoint const&) { self->handleConnect(ecResult); });
         }
     }
 
@@ -301,8 +300,9 @@ public:
         {
             socket_.asyncHandshake(
                 AutoSocket::ssl_socket::client,
-                std::bind(
-                    &HTTPClientImp::handleRequest, shared_from_this(), std::placeholders::_1));
+                [self = shared_from_this()](boost::system::error_code const& ec) {
+                    self->handleRequest(ec);
+                });
         }
         else
         {
@@ -330,11 +330,10 @@ public:
 
             socket_.asyncWrite(
                 request_,
-                std::bind(
-                    &HTTPClientImp::handleWrite,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleWrite(ecResult, bytesTransferred);
+                });
         }
     }
 
@@ -357,11 +356,10 @@ public:
             socket_.asyncReadUntil(
                 header_,
                 "\r\n\r\n",
-                std::bind(
-                    &HTTPClientImp::handleHeader,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleHeader(ecResult, bytesTransferred);
+                });
         }
     }
 
@@ -372,10 +370,10 @@ public:
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex const kReStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const kReStatus{R"(\`HTTP/1\S+ (\d{3}) .*\')"};  // HTTP/1.1 200 OK
         static boost::regex const kReSize{
-            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex const kReBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+            R"(\`.*\r\nContent-Length:\s+([0-9]+).*\')", boost::regex::icase};
+        static boost::regex const kReBody{R"(\`.*\r\n\r\n(.*)\')"};
 
         boost::smatch smMatch;
         // Match status code.
@@ -424,11 +422,10 @@ public:
             socket_.asyncRead(
                 response_.prepare(responseSize - body_.size()),
                 boost::asio::transfer_all(),
-                std::bind(
-                    &HTTPClientImp::handleData,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleData(ecResult, bytesTransferred);
+                });
         }
     }
 

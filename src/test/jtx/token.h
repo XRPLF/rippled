@@ -2,19 +2,29 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::jtx::token {
 
-/** Mint an NFToken. */
+/**
+ * Mint an NFToken.
+ */
 json::Value
 mint(jtx::Account const& account, std::uint32_t tokenTaxon = 0);
 
-/** Sets the optional TransferFee on an NFTokenMint. */
+/**
+ * Sets the optional TransferFee on an NFTokenMint.
+ */
 class XferFee
 {
 private:
@@ -29,7 +39,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional Issuer on an NFTokenMint. */
+/**
+ * Sets the optional Issuer on an NFTokenMint.
+ */
 class Issuer
 {
 private:
@@ -44,7 +56,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional URI on an NFTokenMint. */
+/**
+ * Sets the optional URI on an NFTokenMint.
+ */
 class Uri
 {
 private:
@@ -59,7 +73,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional amount field on an NFTokenMint. */
+/**
+ * Sets the optional amount field on an NFTokenMint.
+ */
 class Amount
 {
 private:
@@ -74,7 +90,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Get the next NFTokenID that will be issued. */
+/**
+ * Get the next NFTokenID that will be issued.
+ */
 uint256
 getNextID(
     jtx::Env const& env,
@@ -83,7 +101,9 @@ getNextID(
     std::uint16_t flags = 0,
     std::uint16_t xferFee = 0);
 
-/** Get the NFTokenID for a particular nftSequence. */
+/**
+ * Get the NFTokenID for a particular nftSequence.
+ */
 uint256
 getID(
     jtx::Env const& env,
@@ -93,15 +113,21 @@ getID(
     std::uint16_t flags = 0,
     std::uint16_t xferFee = 0);
 
-/** Burn an NFToken. */
+/**
+ * Burn an NFToken.
+ */
 json::Value
 burn(jtx::Account const& account, uint256 const& nftokenID);
 
-/** Create an NFTokenOffer. */
+/**
+ * Create an NFTokenOffer.
+ */
 json::Value
 createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount);
 
-/** Sets the optional Owner on an NFTokenOffer. */
+/**
+ * Sets the optional Owner on an NFTokenOffer.
+ */
 class Owner
 {
 private:
@@ -116,7 +142,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional Expiration field on an NFTokenOffer. */
+/**
+ * Sets the optional Expiration field on an NFTokenOffer.
+ */
 class Expiration
 {
 private:
@@ -131,7 +159,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional Destination field on an NFTokenOffer. */
+/**
+ * Sets the optional Destination field on an NFTokenOffer.
+ */
 class Destination
 {
 private:
@@ -146,14 +176,18 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Cancel NFTokenOffers. */
+/**
+ * Cancel NFTokenOffers.
+ */
 json::Value
 cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers = {});
 
 json::Value
 cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers);
 
-/** Sets the optional RootIndex field when canceling NFTokenOffers. */
+/**
+ * Sets the optional RootIndex field when canceling NFTokenOffers.
+ */
 class RootIndex
 {
 private:
@@ -168,22 +202,30 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Accept an NFToken buy offer. */
+/**
+ * Accept an NFToken buy offer.
+ */
 json::Value
 acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex);
 
-/** Accept an NFToken sell offer. */
+/**
+ * Accept an NFToken sell offer.
+ */
 json::Value
 acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
-/** Broker two NFToken offers. */
+/**
+ * Broker two NFToken offers.
+ */
 json::Value
 brokerOffers(
     jtx::Account const& account,
     uint256 const& buyOfferIndex,
     uint256 const& sellOfferIndex);
 
-/** Sets the optional NFTokenBrokerFee field in a brokerOffer transaction. */
+/**
+ * Sets the optional NFTokenBrokerFee field in a brokerOffer transaction.
+ */
 class BrokerFee
 {
 private:
@@ -198,15 +240,21 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Set the authorized minter on an account root. */
+/**
+ * Set the authorized minter on an account root.
+ */
 json::Value
 setMinter(jtx::Account const& account, jtx::Account const& minter);
 
-/** Clear any authorized minter from an account root. */
+/**
+ * Clear any authorized minter from an account root.
+ */
 json::Value
 clearMinter(jtx::Account const& account);
 
-/** Modify an NFToken. */
+/**
+ * Modify an NFToken.
+ */
 json::Value
 modify(jtx::Account const& account, uint256 const& nftokenID);
 

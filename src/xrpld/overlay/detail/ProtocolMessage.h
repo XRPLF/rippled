@@ -5,14 +5,21 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -35,7 +42,9 @@ protocolMessageType(protocol::TMProofPathRequest const&)
     return protocol::mtPROOF_PATH_REQ;
 }
 
-/** Returns the name of a protocol message given its type. */
+/**
+ * Returns the name of a protocol message given its type.
+ */
 template <class = void>
 std::string
 protocolMessageName(int type)
@@ -94,25 +103,35 @@ namespace detail {
 
 struct MessageHeader
 {
-    /** The size of the message on the wire.
-
-        @note This is the sum of sizes of the header and the payload.
-    */
+    /**
+     * The size of the message on the wire.
+     *
+     * @note This is the sum of sizes of the header and the payload.
+     */
     std::uint32_t totalWireSize = 0;
 
-    /** The size of the header associated with this message. */
+    /**
+     * The size of the header associated with this message.
+     */
     std::uint32_t headerSize = 0;
 
-    /** The size of the payload on the wire. */
+    /**
+     * The size of the payload on the wire.
+     */
     std::uint32_t payloadWireSize = 0;
 
-    /** Uncompressed message size if the message is compressed. */
+    /**
+     * Uncompressed message size if the message is compressed.
+     */
     std::uint32_t uncompressedSize = 0;
 
-    /** The type of the message. */
+    /**
+     * The type of the message.
+     */
     std::uint16_t messageType = 0;
 
-    /** Indicates which compression algorithm the payload is compressed with.
+    /**
+     * Indicates which compression algorithm the payload is compressed with.
      * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
@@ -133,14 +152,15 @@ buffersEnd(BufferSequence const& bufs)
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
-/** Parse a message header
- * @return a seated optional if the message header was successfully
- *         parsed. An unseated optional otherwise, in which case
- *         @param ec contains more information:
- *         - set to `errc::success` if not enough bytes were present
- *         - set to `errc::no_message` if a valid header was not present
- *         @bufs - sequence of input buffers, can't be empty
- *         @size input data size
+/**
+ * Parse a message header.
+ *
+ * @param ec On failure, set to `errc::success` if not enough bytes were
+ *           present, or `errc::no_message` if a valid header was not present.
+ * @param bufs Sequence of input buffers; can't be empty.
+ * @param size Input data size.
+ * @return A seated optional if the message header was successfully parsed, or
+ *         an unseated optional otherwise (see @p ec).
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
@@ -230,12 +250,10 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     return std::nullopt;
 }
 
-template <
-    class T,
-    class Buffers,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+template <class T, class Buffers>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto m = std::make_shared<T>();
 
@@ -265,13 +283,10 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
     return m;
 }
 
-template <
-    class T,
-    class Buffers,
-    class Handler,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+template <class T, class Buffers, class Handler>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto const m = parseMessageContent<T>(header, buffers);
     if (!m)
@@ -292,18 +307,19 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 
 }  // namespace detail
 
-/** Calls the handler for up to one protocol message in the passed buffers.
-
-    If there is insufficient data to produce a complete protocol
-    message, zero is returned for the number of bytes consumed.
-
-    @param buffers The buffer that contains the data we've received
-    @param handler The handler that will be used to process the message
-    @param hint If possible, a hint as to the amount of data to read next. The
-                returned value MAY be zero, which means "no hint"
-
-    @return The number of bytes consumed, or the error code if any.
-*/
+/**
+ * Calls the handler for up to one protocol message in the passed buffers.
+ *
+ * If there is insufficient data to produce a complete protocol
+ * message, zero is returned for the number of bytes consumed.
+ *
+ * @param buffers The buffer that contains the data we've received
+ * @param handler The handler that will be used to process the message
+ * @param hint If possible, a hint as to the amount of data to read next. The
+ *             returned value MAY be zero, which means "no hint"
+ *
+ * @return The number of bytes consumed, or the error code if any.
+ */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
 invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)

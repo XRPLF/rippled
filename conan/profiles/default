@@ -10,16 +10,34 @@
 os={{ os }}
 arch={{ arch }}
 build_type=Debug
-compiler={{compiler}}
+compiler={{ compiler }}
 compiler.version={{ compiler_version }}
 compiler.cppstd=23
 {% if os == "Windows" %}
 compiler.runtime=static
 {% else %}
-compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+compiler.libcxx={{ detect_api.detect_libcxx(compiler, version, compiler_exe) }}
 {% endif %}
 
 [conf]
-{% if compiler == "gcc" and compiler_version < 13 %}
-tools.build:cxxflags+=['-Wno-restrict']
+{# The Boost recipe builds with b2, which doesn't use Conan's toolchain files. #}
+{# Instead it hand-rolls the compiler for user-config.jam, #}
+{# and its fallback probes a version-suffixed binary (e.g. `g++-15`) before plain `g++`. #}
+{# Inside the Nix shell the wrapper only provides `g++`/`gcc` (no `-15` suffix), #}
+{# so on a host that also has a system `g++-15` the probe escapes Nix #}
+{# and picks the system compiler, which is mismatched with the Nix libraries #}
+{# and breaks the build (e.g. Boost.Stacktrace link checks fail). #}
+{# Pinning the executables here short-circuits that probe so Boost (and the rest of the toolchain) #}
+{# resolve the same compiler. #}
+{# Not part of the package ID, so binaries stay shareable. #}
+{% if os != "Windows" %}
+{% set cc_exe  = {"gcc": "gcc",  "clang": "clang",   "apple-clang": "clang"}.get(compiler) %}
+{% set cxx_exe = {"gcc": "g++",  "clang": "clang++", "apple-clang": "clang++"}.get(compiler) %}
+tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 {% endif %}
+
+{# By default, Conan tries to reuse binaries built with different cppstd versions. #}
+{# We want to avoid that to improve reproduceability, so we add the cppstd version to the package ID. #}
+{# More info: https://docs.conan.io/2/reference/extensions/binary_compatibility.html #}
+user.package:cppstd_version=23
+tools.info.package_id:confs+=["user.package:cppstd_version"]

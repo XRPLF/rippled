@@ -184,18 +184,11 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
     auto const lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
-    auto const& rules = ctx.view().rules();
-    if (!rules.enabled(fixInnerObjTemplate))
-    {
-        if (!ammSle->isFieldPresent(sfAuctionSlot))
-            ammSle->makeFieldPresent(sfAuctionSlot);
-    }
-    else
-    {
-        XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
-        if (!ammSle->isFieldPresent(sfAuctionSlot))
-            return {tecINTERNAL, false};
-    }
+
+    XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
+        return {tecINTERNAL, false};
+
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
