@@ -1,7 +1,6 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -198,7 +197,9 @@ homomorphicAdd(Slice const& a, Slice const& b)
     if (auto res = secp256k1_elgamal_add(
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
+    {
         return std::nullopt;
+    }
 
     return serializeEcPair(sum);
 }
@@ -219,7 +220,9 @@ homomorphicSubtract(Slice const& a, Slice const& b)
     if (auto const res = secp256k1_elgamal_subtract(
             secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
+    {
         return std::nullopt;
+    }
 
     return serializeEcPair(diff);
 }
