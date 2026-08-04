@@ -1028,7 +1028,7 @@ repeated here:
 
 ---
 
-## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
+## 5c. Synthetic Workload Generation & Telemetry Validation (Phase 10)
 
 > **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
 > **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
