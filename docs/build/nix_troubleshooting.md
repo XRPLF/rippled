@@ -44,11 +44,6 @@ diff /etc/zshrc /etc/zshrc.backup-before-nix
 If they are identical, the Nix snippet was wiped. This is upstream issue
 [NixOS/nix#3616](https://github.com/NixOS/nix/issues/3616).
 
-For fish, note that `$__fish_sysconf_dir` depends on how fish was installed —
-with Homebrew on Apple Silicon it is `/opt/homebrew/etc/fish`, so the file is
-`/opt/homebrew/etc/fish/conf.d/nix.fish`. fish sources everything in `conf.d`
-automatically, so nothing in your own config ever mentions Nix.
-
 ### Fix
 
 To unblock the current shell:
