@@ -7,10 +7,8 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -20,18 +18,6 @@ namespace xrpl {
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
-
-// Error signals that cross the wasm boundary as trap messages (the C API has no
-// trap code). WasmiEngine::call maps them to TER: hfErrInternal -> tecINTERNAL,
-// hfErrOutOfGas / wasmi's OutOfFuel -> tecOUT_OF_GAS, anything else ->
-// tecFAILED_PROCESSING.
-//
-// Matched as substrings, not by equality: the C API returns the Rust Debug form
-// of the error, e.g. `Error { kind: Message("HfInternal") }` or
-// `Error { kind: TrapCode(OutOfFuel) }`.
-std::string_view inline constexpr hfErrInternal = "HfInternal";
-std::string_view inline constexpr hfErrOutOfGas = "HfOutOfGas";
-std::string_view inline constexpr wasmiTrapOutOfFuel = "OutOfFuel";
 
 enum class HostFunctionError : int32_t {
     Unimplemented = -1,
@@ -54,19 +40,6 @@ enum class HostFunctionError : int32_t {
     IndexOutOfBounds = -18,
     FloatInputMalformed = -19,
     FloatComputationError = -20,
-};
-
-enum class WasmTypes { WtI32, WtI64 };
-
-struct Wmem
-{
-    std::uint8_t* p = nullptr;
-    std::size_t s = 0;
-
-    Wmem() = default;
-    Wmem(void* ptr, std::size_t size) : p(reinterpret_cast<std::uint8_t*>(ptr)), s(size)
-    {
-    }
 };
 
 template <typename T>
@@ -135,71 +108,6 @@ public:
         return size_ == 0;
     }
 };
-
-class WasmRuntimeWrapper
-{
-public:
-    virtual ~WasmRuntimeWrapper() = default;
-
-    virtual Wmem
-    getMem() = 0;
-
-    virtual std::int64_t
-    getGas() = 0;
-
-    virtual std::int64_t
-    setGas(std::int64_t gas) = 0;
-
-    virtual std::int64_t
-    getTransferLimit() = 0;
-
-    virtual std::int64_t
-    setTransferLimit(std::int64_t transferLimit) = 0;
-};
-using RTOptRef = std::optional<std::reference_wrapper<WasmRuntimeWrapper>>;
-
-struct WasmParam
-{
-    // We are not supporting float/double
-
-    WasmTypes type = WasmTypes::WtI32;
-    union
-    {
-        std::int32_t i32;
-        std::int64_t i64 = 0;
-    } of;
-};
-
-template <class... Types>
-inline void
-wasmParamsHlp(std::vector<WasmParam>& v, std::int32_t p, Types&&... args)
-{
-    v.push_back({.type = WasmTypes::WtI32, .of = {.i32 = p}});
-    wasmParamsHlp(v, std::forward<Types>(args)...);
-}
-
-template <class... Types>
-inline void
-wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
-{
-    v.push_back({.type = WasmTypes::WtI64, .of = {.i64 = p}});
-    wasmParamsHlp(v, std::forward<Types>(args)...);
-}
-
-inline void
-wasmParamsHlp(std::vector<WasmParam>& v)
-{
-}
-
-template <class... Types>
-inline std::vector<WasmParam>
-wasmParams(Types&&... args)
-{
-    std::vector<WasmParam> v;
-    v.reserve(sizeof...(args));
-    wasmParamsHlp(v, std::forward<Types>(args)...);
-    return v;
-}
 
 template <typename T, size_t Size = sizeof(T)>
 constexpr T

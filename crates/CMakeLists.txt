@@ -42,7 +42,6 @@ function(add_xrpl_crate name)
     add_dependencies(xrpl_crates ${name}_cxxbridge)
 endfunction()
 
-add_xrpl_crate(rs_hello_world CRATE rs_hello_world FILES lib.rs)
 add_xrpl_crate(xrpl_wasm_vm_ffi CRATE xrpl_wasm_vm_ffi FILES lib.rs)
 
 # Test-only, and deliberately not part of xrpl_wasm_vm_ffi: it carries the `wat` assembler,
