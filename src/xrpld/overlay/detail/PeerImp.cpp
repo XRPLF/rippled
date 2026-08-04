@@ -545,9 +545,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
             return protocol_ >= makeProtocol(2, 3);
         case ProtocolFeature::LedgerReplay:
             return ledgerReplayEnabled_;
-        default:
-            return false;
     }
+    return false;
 }
 
 //------------------------------------------------------------------------------
