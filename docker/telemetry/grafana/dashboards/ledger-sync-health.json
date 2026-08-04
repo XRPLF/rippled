@@ -4159,7 +4159,11 @@
               },
               {
                 "id": "custom.axisLabel",
-                "value": "In Flight (0/1)"
+                "value": "In Flight"
+              },
+              {
+                "id": "unit",
+                "value": "bool_yes_no"
               }
             ]
           },
