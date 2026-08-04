@@ -6947,6 +6947,97 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Bug: a debit can be genuinely non-zero yet still be dust relative to a
+    // sfAssetsTotal/sfAssetsAvailable large enough to exceed STAmount's precision, e.g.
+    // AssetsTotal 2e12 minus a 1e-6 debit needs 19 significant digits and rounds straight
+    // back to 2e12. The shares still move, so ValidVault later fails with "must decrease
+    // vault balance" instead of a clean upfront rejection.
+    //
+    // Fix (fixCleanup3_4_0): reject upfront with tecPRECISION_LOSS if the debit would
+    // canonicalize back to the prior stored value.
+    void
+    testBugVaultDustDebitCanonicalizesToNoOp()
+    {
+        using namespace test::jtx;
+
+        // Fund a single depositor and have them deposit `total` USD in one shot (default
+        // scale 6, so shares mint at exactly total*1e6).
+        auto const seedVault = [](Env& env, Number const& total) {
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+
+            env.fund(XRP(1'000'000), issuer, owner, holder);
+            env.close();
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(100'000'000'000'000LL)));
+            env.close();
+            env(pay(issuer, holder, usd(total)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = holder, .id = keylet.key, .amount = usd(total)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            return keylet;
+        };
+
+        {
+            auto runScenario = [&](FeatureBitset features, TER expected) {
+                Env env(*this, features);
+                Number const total{2, 12};
+                auto const keylet = seedVault(env, total);
+
+                Account const issuer{"issuer"};
+                PrettyAsset const usd{issuer["USD"]};
+
+                // 1 share's worth of assets: 1e-6, below AssetsTotal's storage precision.
+                env(Vault::clawback(
+                        {.issuer = issuer,
+                         .id = keylet.key,
+                         .holder = Account{"holder"},
+                         .amount = usd(Number{1, -6}).value()}),
+                    Ter(expected));
+                env.close();
+            };
+
+            testcase("bug: VaultClawback dust debit fires invariant (pre-fixCleanup3_4_0)");
+            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            testcase("bug: VaultClawback dust debit rejected cleanly (post-fixCleanup3_4_0)");
+            runScenario(all_, tecPRECISION_LOSS);
+        }
+
+        {
+            auto runScenario = [&](FeatureBitset features, TER expected) {
+                Env env(*this, features);
+                Number const total{2, 12};
+                auto const keylet = seedVault(env, total);
+
+                MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+
+                // Redeem 1 share, worth 1e-6 assets, below AssetsTotal's storage precision.
+                env(Vault::withdraw(
+                        {.depositor = Account{"holder"},
+                         .id = keylet.key,
+                         .amount = STAmount{share, 1}}),
+                    Ter(expected));
+                env.close();
+            };
+
+            testcase("bug: VaultWithdraw dust debit fires invariant (pre-fixCleanup3_4_0)");
+            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
+            runScenario(all_, tecPRECISION_LOSS);
+        }
+    }
+
     // Bug: when a depositor's IOU trustline balance is very large (e.g.
     // ~1e17), adding a small deposit (e.g. 1 USD) leaves sfAssetsTotal
     // unchanged at IOU precision because the increment is sub-ULP at the
@@ -8375,6 +8466,7 @@ public:
         testBugMakeDeltaAnteriorScale();
         testVaultDepositCanonicalizeToZero();
         testVaultWithdrawCanonicalizeToZero();
+        testBugVaultDustDebitCanonicalizesToNoOp();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testSequences();
         testPreflight();

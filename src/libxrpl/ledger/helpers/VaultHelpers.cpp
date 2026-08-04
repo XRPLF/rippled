@@ -74,6 +74,14 @@ effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive)
     return assetTotal;
 }
 
+[[nodiscard]] bool
+debitRoundsToNoOp(Asset const& asset, Number const& total, Number const& amount)
+{
+    if (amount == 0)
+        return false;
+    return STAmount{asset, total - amount} == STAmount{asset, total};
+}
+
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     SLE::const_ref vault,

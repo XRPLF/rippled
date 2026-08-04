@@ -273,23 +273,42 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    // A withdrawal for a fixed share amount (variable assets) has no requested-asset amount to
-    // check for rounding, unlike the fixed-assets branch above. sfLossUnrealized in particular
-    // means a small enough share amount can be legitimately worth zero assets. The "final
-    // withdrawal" rule handles its own zero-value case using sfAssetsAvailable directly, so it is
-    // exempt here.
+    // The "final withdrawal" rule below handles its own zero-value case using
+    // sfAssetsAvailable directly, so it is exempt from the checks below.
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
 
-    if (view().rules().enabled(fixCleanup3_4_0) && amount.asset() == share &&
-        assetsWithdrawn == beast::kZero && !isFinalWithdrawal &&
-        effectiveAssetsTotalWithdraw(vault, waiveUnrealizedLoss) != beast::kZero)
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    auto const lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
+
+    if (view().rules().enabled(fixCleanup3_4_0) && !isFinalWithdrawal)
     {
-        // The vault still has a nonzero effective value backing outstanding
-        // shares, but the requested share amount rounds down to zero assets
-        // in the vault asset's native (integral) representation.
-        JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
-        return tecPRECISION_LOSS;
+        // A withdrawal for a fixed share amount (variable assets) has no requested-asset
+        // amount to check for rounding, unlike the fixed-assets branch above: a small enough
+        // share amount can round down to an exact zero even though the vault still holds
+        // positive effective value backing outstanding shares.
+        if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
+            effectiveAssetsTotalWithdraw(vault, waiveUnrealizedLoss) != beast::kZero)
+        {
+            JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
+            return tecPRECISION_LOSS;
+        }
+
+        // assetsWithdrawn can also be genuinely non-zero and still too small to move
+        // sfAssetsTotal or sfAssetsAvailable once canonicalized to STAmount's precision. Either
+        // way the shares still move, so ValidVault would otherwise fail after the fact instead
+        // of a clean upfront rejection.
+        if (debitRoundsToNoOp(vaultAsset, assetsTotal, assetsWithdrawn) ||
+            debitRoundsToNoOp(vaultAsset, assetsAvailable, assetsWithdrawn))
+        {
+            JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
+                                " vault balance";
+            return tecPRECISION_LOSS;
+        }
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -305,13 +324,6 @@ VaultWithdraw::doApply()
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
     }
-
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
-    auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
