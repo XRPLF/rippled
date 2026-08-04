@@ -1,12 +1,12 @@
-#include <tx/wasm/WasmFixture.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
-#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/WasmFixture.h>
 
 #include <cstdint>
 #include <stdexcept>
@@ -173,13 +173,9 @@ TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
         Bytes code;
         std::string_view entryPoint;
     } const cases[] = {
-        {.what = "not wasm at all",
-         .code = Bytes{0, 1, 2, 3},
-         .entryPoint = escrowFunctionName},
+        {.what = "not wasm at all", .code = Bytes{0, 1, 2, 3}, .entryPoint = escrowFunctionName},
         {.what = "empty", .code = Bytes{}, .entryPoint = escrowFunctionName},
-        {.what = "no such export",
-         .code = assemble(kEngineWat),
-         .entryPoint = "no_such_export"},
+        {.what = "no such export", .code = assemble(kEngineWat), .entryPoint = "no_such_export"},
         {.what = "export is not a function",
          .code = assemble(kEngineWat),
          .entryPoint = "not_a_function"},
@@ -302,9 +298,10 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 // the host, and must not take the node with it.
 TEST_F(WasmVMTest, ThrowingHostFunctionBecomesInternal)
 {
-    EXPECT_CALL(host_, getLedgerSqn()).WillOnce([]() -> std::expected<std::uint32_t, HostFunctionError> {
-        Throw<std::runtime_error>("the ledger came apart");
-    });
+    EXPECT_CALL(host_, getLedgerSqn())
+        .WillOnce([]() -> std::expected<std::uint32_t, HostFunctionError> {
+            Throw<std::runtime_error>("the ledger came apart");
+        });
 
     auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 

@@ -1,15 +1,13 @@
 #pragma once
 
-#include <tx/wasm/MockHostFunctions.h>
-
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
-#include <xrpl_wasm_testkit_cxxbridge/lib.h>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/MockHostFunctions.h>
+#include <xrpl_wasm_testkit_cxxbridge/lib.h>
 
 #include <cstdint>
 #include <expected>

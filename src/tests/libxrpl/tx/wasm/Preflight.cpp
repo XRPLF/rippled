@@ -1,10 +1,9 @@
-#include <tx/wasm/WasmFixture.h>
-
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <gtest/gtest.h>
+#include <tx/wasm/WasmFixture.h>
 
 #include <string>
 #include <string_view>

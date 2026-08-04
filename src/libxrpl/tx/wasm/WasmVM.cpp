@@ -85,8 +85,8 @@ outcome(rs::wasm_vm::RunResult const& run)
 //
 // The counterpart of the engine's own `guarded`, which stops a Rust panic on the other
 // side of the bridge. Neither side may unwind into the other, and this is this side's
-// half: the reason `HostContext`'s methods are `noexcept` rather than relying on cxx is
-// documented in `docs/claude/wasm-vm/bridge.md`.
+// half. `HostContext`'s methods are `noexcept` rather than leaving this to cxx because
+// cxx's own `trycatch` catches only `std::exception`, and only for `Result` returns.
 template <class Call>
 std::invoke_result_t<Call>
 guarded(beast::Journal j, std::invoke_result_t<Call> onThrow, Call&& call)

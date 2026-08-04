@@ -54,8 +54,8 @@ guarded(
     }
     catch (...)
     {
-        JLOG(journal.warn())
-            << "wasm host call threw a non-exception in " << location.function_name();
+        JLOG(journal.warn()) << "wasm host call threw a non-exception in "
+                             << location.function_name();
     }
 
     return kHostInternal;

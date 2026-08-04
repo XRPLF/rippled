@@ -1,5 +1,3 @@
-#include <tx/wasm/WasmFixture.h>
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Protocol.h>
@@ -8,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/WasmFixture.h>
 
 #include <cstdint>
 #include <expected>
@@ -294,8 +293,7 @@ protected:
 TEST_F(TraceNumCall, I64ArrivesWholeIncludingMostNegativeValue)
 {
     EXPECT_CALL(
-        host_,
-        traceNum(std::string_view("count"), std::numeric_limits<std::int64_t>::min()))
+        host_, traceNum(std::string_view("count"), std::numeric_limits<std::int64_t>::min()))
         .WillOnce(Return(0));
 
     EXPECT_EQ(hostAnswer(), 0);

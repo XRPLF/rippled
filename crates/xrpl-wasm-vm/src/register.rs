@@ -19,7 +19,7 @@ pub(crate) fn register_host_functions(
 ) -> Result<(), wasmi::errors::LinkerError> {
     // The arms are hand-written and repetitive by decision, not by neglect:
     // generating them needs the typed `link_*` shims, deferred until the C header
-    // is generated from the same table (docs/claude/wasm-vm/abi.md).
+    // is generated from the same table.
     for &op in HostFunctionSpec::ALL {
         match op {
             HostFunctionSpec::GetLedgerSqn => linker.func_wrap(

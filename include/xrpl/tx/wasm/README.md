@@ -5,10 +5,7 @@ runs to decide whether the release conditions are met. Specification:
 [XLS-0102: WASM VM](https://xls.xrpl.org/xls/XLS-0102-wasm-vm.html).
 
 The engine itself is Rust (`crates/xrpl-wasm-vm`, over wasmi), reached through a cxx
-bridge. The design docs live in [`docs/claude/wasm-vm/`](../../../../docs/claude/wasm-vm/index.md)
-— read [`abi.md`](../../../../docs/claude/wasm-vm/abi.md) before adding a host function and
-[`bridge.md`](../../../../docs/claude/wasm-vm/bridge.md) before changing anything that
-crosses between the two languages.
+bridge.
 
 ## What is in this directory
 
