@@ -452,7 +452,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // pool MPT allows transfers (lsfMPTCanTransfer); issuer-involving
         // transfers are always permitted. The check fires on the redeem step
         // against the AMM account via canTransferLPToken().
-        auto scenario = [&](std::uint32_t mptFlags) {
+        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
             env.close();
@@ -462,7 +462,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
             MPT const btc = MPTTester(
                 {.env = env, .issuer = gw_, .holders = {alice_}, .pay = 1'000, .flags = mptFlags});
 
-            AMM const amm(env, gw_, XRP(10'000), btc(10'000));
+            auto const asset1 = poolXrpToBtc ? XRP(10'000) : btc(10'000);
+            auto const asset2 = poolXrpToBtc ? btc(10'000) : XRP(10'000);
+            AMM const amm(env, gw_, asset1, asset2);
             auto const lpIssue = amm.lptIssue();
 
             env.trust(STAmount{lpIssue, 100'000}, alice_);
@@ -490,10 +492,12 @@ class LPTokenTransfer_test : public jtx::AMMTest
         };
 
         // Pool MPT without CanTransfer blocks third-party LP token transfers.
-        scenario(tfMPTCanTrade);
+        testLPTokenTransfer(tfMPTCanTrade, true);
+        testLPTokenTransfer(tfMPTCanTrade, false);
 
         // Pool MPT with CanTransfer allows them.
-        scenario(tfMPTCanTrade | tfMPTCanTransfer);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, true);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
     void
@@ -511,7 +515,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // the spendable balance in accountHolds, just as isLPTokenFrozen does),
         // so an offer to sell it cannot be funded - the same tecUNFUNDED_OFFER
         // outcome as freezing a pool asset (see testOfferCreation).
-        auto scenario = [&](std::uint32_t mptFlags) {
+        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, carol_);
             env.close();
@@ -519,7 +523,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
             MPT const btc = MPTTester(
                 {.env = env, .issuer = gw_, .holders = {carol_}, .pay = 1'000, .flags = mptFlags});
 
-            AMM const amm(env, gw_, XRP(10'000), btc(10'000));
+            auto const asset1 = poolXrpToBtc ? XRP(10'000) : btc(10'000);
+            auto const asset2 = poolXrpToBtc ? btc(10'000) : XRP(10'000);
+            AMM const amm(env, gw_, asset1, asset2);
             auto const lpIssue = amm.lptIssue();
 
             env.trust(STAmount{lpIssue, 100'000}, carol_);
@@ -550,10 +556,12 @@ class LPTokenTransfer_test : public jtx::AMMTest
         };
 
         // Pool MPT without CanTransfer: LP token sell offer is unfunded.
-        scenario(tfMPTCanTrade);
+        testLPTokenTransfer(tfMPTCanTrade, true);
+        testLPTokenTransfer(tfMPTCanTrade, false);
 
         // Pool MPT with CanTransfer: LP token sell offer is created.
-        scenario(tfMPTCanTrade | tfMPTCanTransfer);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, true);
+        testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
 public:
