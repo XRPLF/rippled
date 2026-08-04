@@ -660,10 +660,12 @@ protected:
 
     // Predicts the keylet of the next loan `broker` will originate, before
     // that loan exists, by reading the broker's current LoanSequence.
-    static Keylet
+    Keylet
     nextLoanKeylet(jtx::Env const& env, BrokerInfo const& broker)
     {
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerStateBefore))
+            return keylet::loan(broker.brokerID, 0);
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         return keylet::loan(broker.brokerID, loanSequence);
     }

@@ -686,6 +686,8 @@ private:
                 return;
 
             auto const brokerState = env.le(keylet::loanBroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerState))
+                return;
             // Intentionally shadow the outer values
             auto const loanSequence = brokerState->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
