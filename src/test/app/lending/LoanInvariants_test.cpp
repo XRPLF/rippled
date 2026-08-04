@@ -435,8 +435,6 @@ private:
         createJson["PaymentTotal"] = "2891743748";
         createJson["PrincipalRequested"] = "8516.98";
 
-        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
-
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson, Ter(temINVALID));
         env.close();
