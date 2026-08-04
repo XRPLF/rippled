@@ -483,6 +483,12 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(fixCleanup3_4_0) && afterVault.lossUnrealized < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
+        result = false;
+    }
+
     if (afterVault.assetsTotal < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets outstanding must be positive";

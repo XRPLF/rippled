@@ -506,7 +506,7 @@ run(int argc, char** argv)
     if (vm.contains("version"))
     {
         // LCOV_EXCL_START
-        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "xrpld version " << build_info::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -716,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::ip::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -826,7 +826,7 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("xrpld: rpc");
-    return RPCCall::fromCommandLine(
+    return rpc_call::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }
