@@ -325,12 +325,24 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
 
-        // The last ledger in which the proposed transaction may still be
-        // submitted is the current one, so the proposal is still alive.
+        // A LastLedgerSequence equal to the current ledger leaves no window to
+        // collect signatures before the proposed transaction's own bound
+        // passes, so it is rejected the same as one already in the past
+        // (spec §5.3.2.2).
         {
             json::Value tx = unsignedPayload(env, target, bob, firstTicketSeq);
             tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq();
-            env(proposalCreate(alice, tx, expiration));
+            env(proposalCreate(alice, tx, expiration), Ter(tecEXPIRED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), firstTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+
+        // With no ledger bound on the proposed transaction, the proposal is
+        // created normally.
+        {
+            env(proposalCreate(
+                alice, unsignedPayload(env, target, bob, firstTicketSeq), expiration));
             env.close();
             BEAST_EXPECT(env.le(keylet::txProposal(target.id(), firstTicketSeq)));
             BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);

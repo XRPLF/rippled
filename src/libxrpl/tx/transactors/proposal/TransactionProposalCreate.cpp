@@ -150,7 +150,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     // ordinary path uses for tefMAX_LEDGER: the last ledger in which the
     // proposed transaction may still be submitted (spec §4.5).
     if (proposedTx.isFieldPresent(sfLastLedgerSequence) &&
-        proposedTx.getFieldU32(sfLastLedgerSequence) < ctx.view.seq())
+        proposedTx.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "LastLedgerSequence has passed.";
