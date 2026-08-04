@@ -1,23 +1,32 @@
 codecov:
   require_ci_to_pass: true
+  # The C++ and Rust uploads land minutes apart; without this gate Codecov
+  # publishes a near-zero total from whichever one arrives first.
+  notify:
+    after_n_builds: 2
+    wait_for_ci: true
 
 comment:
   behavior: default
   layout: reach,diff,flags,tree,reach
   show_carryforward_flags: true
+  after_n_builds: 2
 
-# Coverage is uploaded from independent workflows: the C++ build under the `cpp`
-# flag and the Rust build under the `rust` flag. Carrying forward each flag means
-# a commit that only re-runs one language keeps the other language's last-known
-# coverage instead of dropping it, so the combined project total stays stable.
+# C++ and Rust coverage upload from independent workflows under the `cpp` and
+# `rust` flags; carryforward keeps one language's total when only the other reran.
 flag_management:
   default_rules:
     carryforward: true
   individual_flags:
     - name: cpp
       carryforward: true
+      paths:
+        - include/
+        - src/
     - name: rust
       carryforward: true
+      paths:
+        - crates/
 
 coverage:
   range: "70..85"
