@@ -28,7 +28,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
-            RPC::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
@@ -38,14 +38,14 @@ parseVault(json::Value const& params, json::Value& jvResult)
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
-            RPC::injectError(RpcActMalformed, jvResult);
+            rpc::injectError(RpcActMalformed, jvResult);
             return std::nullopt;
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
         {
-            RPC::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
 
@@ -54,7 +54,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     else
     {
         // Invalid combination of fields vault_id/owner/seq
-        RPC::injectError(RpcInvalidParams, jvResult);
+        rpc::injectError(RpcInvalidParams, jvResult);
         return std::nullopt;
     }
 
@@ -62,10 +62,10 @@ parseVault(json::Value const& params, json::Value& jvResult)
 }
 
 json::Value
-doVaultInfo(RPC::JsonContext& context)
+doVaultInfo(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = RPC::lookupLedger(lpLedger, context);
+    auto jvResult = rpc::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;

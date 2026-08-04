@@ -1668,11 +1668,11 @@ public:
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-            env(loanBroker::set(alice, vaultKeylet.key),
-                loanBroker::kDebtMaximum(xrpAsset(1000).value()),
-                loanBroker::kManagementFeeRate(TenthBips16{0}),
-                loanBroker::kCoverRateMinimum(TenthBips32{0}),
-                loanBroker::kCoverRateLiquidation(TenthBips32{0}));
+            env(loan_broker::set(alice, vaultKeylet.key),
+                loan_broker::kDebtMaximum(xrpAsset(1000).value()),
+                loan_broker::kManagementFeeRate(TenthBips16{0}),
+                loan_broker::kCoverRateMinimum(TenthBips32{0}),
+                loan_broker::kCoverRateLiquidation(TenthBips32{0}));
             env.close();
 
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
@@ -2023,7 +2023,7 @@ public:
             env(sponsor::set_fee(sponsor, 0, fixFee), sponsor::SponseeAcc(alice));
             env.close();
 
-            env(ledgerStateFix::nftPageLinks(alice, alice),
+            env(ledger_state_fix::nftPageLinks(alice, alice),
                 Fee(fixFee),
                 sponsor::As(sponsor, spfSponsorFee),
                 Ter(tecFAILED_PROCESSING));
@@ -2047,7 +2047,7 @@ public:
 
             OpenView overlay(&*env.closed());
             auto jt = env.jt(
-                ledgerStateFix::nftPageLinks(alice, alice),
+                ledger_state_fix::nftPageLinks(alice, alice),
                 Fee(fixFee),
                 sponsor::As(sponsor, spfSponsorFee));
 

@@ -3937,7 +3937,7 @@ class Vault_test : public beast::unit_test::Suite
         // Deposit 100 IOU → 1000 shares. Borrow 40 → assetsAvailable=60.
         // Clawback 80 IOU → clamped to 60, then share math uses truncation.
         testCase(1, [&, this](Env& env, Data d) {
-            using namespace loanBroker;
+            using namespace loan_broker;
             using namespace loan;
 
             testcase("Scale clawback clamped with outstanding loan");
@@ -4412,7 +4412,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackBurnShares()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this, beast::Severity::Warning);
 
@@ -4673,7 +4673,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackAssets()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
@@ -6107,7 +6107,7 @@ class Vault_test : public beast::unit_test::Suite
         f.brokerID =
             keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender))).key;
         {
-            using namespace loanBroker;
+            using namespace loan_broker;
             env(set(f.lender, vaultKeylet.key),
                 kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
             env.close();
