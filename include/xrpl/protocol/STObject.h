@@ -229,13 +229,6 @@ public:
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
 
-    /**
-     * The account responsible for the authorization: the delegate when
-     * sfDelegate is present, otherwise the account.
-     */
-    [[nodiscard]] AccountID
-    getInitiator() const;
-
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
     [[nodiscard]] STAmount const&

@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
@@ -101,6 +102,12 @@ class Invariants_test : public beast::unit_test::Suite
         return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
     }
 
+    test::jtx::Env
+    makeEnv(FeatureBitset features)
+    {
+        return {*this, test::jtx::envconfig(), features, nullptr, beast::Severity::Disabled};
+    }
+
     /**
      * Run a specific test case to put the ledger into a state that will be
      * detected by an invariant. Simulates the actions of a transaction that
@@ -130,7 +137,7 @@ class Invariants_test : public beast::unit_test::Suite
         TxAccount setTxAccount = TxAccount::None)
     {
         doInvariantCheck(
-            test::jtx::Env(*this, defaultAmendments()),
+            makeEnv(defaultAmendments()),
             expectLogs,
             precheck,
             fee,
@@ -1494,7 +1501,7 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "PermissionedDomain" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain with no rules."}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 return createPermissionedDomain(ac, a1, a2, 0).get();
@@ -1507,7 +1514,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         static constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 return !!createPermissionedDomain(ac, a1, a2, kTooBig);
@@ -1518,7 +1525,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 3";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain credentials aren't sorted"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto slePd = createPermissionedDomain(ac, a1, a2, 0);
@@ -1542,7 +1549,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 4";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain credentials aren't unique"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto slePd = createPermissionedDomain(ac, a1, a2, 0);
@@ -1565,7 +1572,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain Set 1";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain with no rules."}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
@@ -1586,7 +1593,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
@@ -1617,7 +1624,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain Set 3";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain credentials aren't sorted"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
@@ -1647,7 +1654,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain Set 4";
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"permissioned domain credentials aren't unique"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
@@ -1688,7 +1695,7 @@ class Invariants_test : public beast::unit_test::Suite
         {
             testcase << "PermissionedDomain set 2 domains ";
             doInvariantCheck(
-                Env(*this, features),
+                makeEnv(features),
                 fixEnabled ? badMoreThan1 : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
@@ -1734,7 +1741,7 @@ class Invariants_test : public beast::unit_test::Suite
         {
             testcase << "PermissionedDomain set 0 domains ";
             doInvariantCheck(
-                Env(*this, features),
+                makeEnv(features),
                 fixEnabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
@@ -1757,7 +1764,7 @@ class Invariants_test : public beast::unit_test::Suite
             env1.close();
 
             doInvariantCheck(
-                Env(*this, features),
+                makeEnv(features),
                 a1,
                 a2,
                 fixEnabled ? badNoDomains : emptyV,
@@ -1798,7 +1805,7 @@ class Invariants_test : public beast::unit_test::Suite
         {
             testcase << "PermissionedDomain del, create domain ";
             doInvariantCheck(
-                Env(*this, features),
+                makeEnv(features),
                 fixEnabled ? badNotDeleted : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
@@ -1995,7 +2002,7 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"domain doesn't exist"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 Keylet const offerKey = keylet::offer(a1.id(), 10);
@@ -2022,7 +2029,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // missing domain ID in offer object
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             {{"hybrid offer is malformed"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Keylet const offerKey = keylet::offer(a2.id(), 10);
@@ -2405,7 +2412,7 @@ class Invariants_test : public beast::unit_test::Suite
         vaultID = vKeylet.key;
 
         // Create Loan Broker
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
@@ -2714,7 +2721,7 @@ class Invariants_test : public beast::unit_test::Suite
                         brokerKeylet = this->createLoanBroker(alice, env, asset);
                         if (!BEAST_EXPECT(env.le(brokerKeylet)))
                             return false;
-                        env(loanBroker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env(loan_broker::coverDeposit(alice, brokerKeylet.key, asset(10)));
                         env.close();
                         return BEAST_EXPECT(env.le(brokerKeylet));
                     };
@@ -3364,6 +3371,41 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{
                 ttVAULT_DEPOSIT, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // A negative loss unrealized must trip the invariant. ttLOAN_MANAGE is
+        // allowed to change loss unrealized, so it isolates this check from the
+        // "must not change loss unrealized" invariant. Gated behind
+        // fixCleanup3_4_0 (see below).
+        doInvariantCheck(
+            {"loss unrealized must not be negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Without fixCleanup3_4_0 the same state must NOT trip the invariant,
+        // preserving pre-amendment behavior (no fork risk).
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - fixCleanup3_4_0),
+            {},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
             precloseXrp,
             TxAccount::A2);
 
@@ -4342,7 +4384,7 @@ class Invariants_test : public beast::unit_test::Suite
         };
 
         doInvariantCheck(
-            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            makeEnv(defaultAmendments() - fixCleanup3_2_0),
             {},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{},
@@ -5468,7 +5510,7 @@ class Invariants_test : public beast::unit_test::Suite
         // sfHighLimit issue, not the keylet currency).
         testcase << "overwrite: NoXRPTrustLines" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
                        : std::vector<std::string>{},
             [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -5496,7 +5538,7 @@ class Invariants_test : public beast::unit_test::Suite
         // Regression: bad deep-freeze trust line followed by a valid one.
         testcase << "overwrite: NoDeepFreeze" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
                                                    "normal freeze was created"}}
                        : std::vector<std::string>{},
@@ -5530,7 +5572,7 @@ class Invariants_test : public beast::unit_test::Suite
         // still fires ("a MPT issuance was created").
         testcase << "overwrite: NoZeroEscrow MPT" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
-            Env(*this, features),
+            makeEnv(features),
             fixEnabled ? std::vector<std::string>{{"escrow specifies invalid amount"}}
                        : std::vector<std::string>{{"a MPT issuance was created"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {

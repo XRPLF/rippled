@@ -8,7 +8,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -16,6 +15,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -44,7 +44,7 @@ using namespace jtx;
  * Test for TMGetObjectByHash reply size limiting.
  *
  * This verifies the fix that limits TMGetObjectByHash replies to
- * Tuning::hardMaxReplyNodes to prevent excessive memory usage and
+ * tuning::hardMaxReplyNodes to prevent excessive memory usage and
  * potential DoS attacks from peers requesting large numbers of objects.
  */
 class TMGetObjectByHash_test : public beast::unit_test::Suite
@@ -61,11 +61,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     public:
         PeerTest(
             Application& app,
-            std::shared_ptr<PeerFinder::Slot> const& slot,
+            std::shared_ptr<peer_finder::Slot> const& slot,
             http_request_type&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
-            Resource::Consumer consumer,
+            resource::Consumer consumer,
             std::unique_ptr<TMGetObjectByHash_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
@@ -133,8 +133,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto streamPtr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::ip::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::ip::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
         PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
@@ -227,7 +227,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     void
     run() override
     {
-        int const limit = static_cast<int>(Tuning::kHardMaxReplyNodes);
+        int const limit = static_cast<int>(tuning::kHardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);
         testReplyLimit(limit - 1, limit - 1);
