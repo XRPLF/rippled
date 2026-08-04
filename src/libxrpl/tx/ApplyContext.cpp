@@ -63,8 +63,10 @@ ApplyContext::apply(TER ter)
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->setVMReturnCode(*vmReturnCode_);
     }
+    // tecINTERNAL reports an xrpld bug, not gas the transaction owes: a cost
+    // recorded before we hit it is not trustworthy, so it is left unreported.
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    view_->setGasUsed(gasUsed_);
+    view_->setGasUsed(ter == tecINTERNAL ? std::nullopt : gasUsed_);
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
