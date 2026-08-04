@@ -805,19 +805,36 @@ ValidVault::finalize(
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (!maybeVaultDeltaAssets)
+
+                // Post-fixCleanup3_4_0: a withdrawal that redeems shares from a
+                // pool with no effective value left to back them (e.g. fully
+                // impaired/insolvent) legitimately moves zero assets on both
+                // sides — VaultWithdraw::doApply does not touch either
+                // balance-holding entry for a zero-value transfer, so no delta
+                // is recorded. VaultWithdraw::doApply separately rejects
+                // (tecPRECISION_LOSS) the case where a *positive* per-share
+                // value merely rounds down to zero, so a missing delta while
+                // the pool still held positive effective value indicates a
+                // real accounting bug, not this exception.
+                bool const zeroDeltaIsLegitimate = view.rules().enabled(fixCleanup3_4_0) &&
+                    !maybeVaultDeltaAssets && beforeVault.assetsTotal <= beforeVault.lossUnrealized;
+
+                if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault balance";
                     return false;  // That's all we can do
                 }
 
+                DeltaInfo const vaultDeltaAssets = maybeVaultDeltaAssets.value_or(
+                    DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+
                 // Get the posterior scale to round calculations to
-                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+                auto const minScale = computeVaultMinScale(vaultDeltaAssets, view.rules());
 
                 auto const vaultPseudoDeltaAssets =
-                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+                    roundToAsset(vaultAsset, vaultDeltaAssets.delta, minScale);
 
-                if (vaultPseudoDeltaAssets >= kZero)
+                if (!zeroDeltaIsLegitimate && vaultPseudoDeltaAssets >= kZero)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must decrease vault balance";
                     result = false;
@@ -832,7 +849,7 @@ ValidVault::finalize(
                     return destination == vaultAsset.getIssuer();
                 }();
 
-                if (!issuerWithdrawal)
+                if (!issuerWithdrawal && !zeroDeltaIsLegitimate)
                 {
                     auto const maybeAccDelta = deltaAssetsTxAccount(tx, fee);
                     auto const maybeOtherAccDelta = [&]() -> std::optional<DeltaInfo> {

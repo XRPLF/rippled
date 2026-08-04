@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
@@ -51,6 +52,19 @@ enum class TruncateShares : bool { No = false, Yes = true };
  * the redeemer is the sole remaining shareholder.
  */
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
+
+/**
+ * Returns the effective total of assets backing outstanding shares, i.e.
+ * sfAssetsTotal, discounted by sfLossUnrealized unless waived. This is the
+ * numerator used by both withdraw conversion helpers (assetsToSharesWithdraw
+ * and sharesToAssetsWithdraw) to compute the share/asset exchange rate.
+ *
+ * @param vault The vault SLE.
+ * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
+ *              loss.
+ */
+[[nodiscard]] Number
+effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from

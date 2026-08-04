@@ -273,6 +273,25 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
+    // A withdrawal for a fixed share amount (variable assets) has no requested-asset amount to
+    // check for rounding, unlike the fixed-assets branch above. sfLossUnrealized in particular
+    // means a small enough share amount can be legitimately worth zero assets. The "final
+    // withdrawal" rule handles its own zero-value case using sfAssetsAvailable directly, so it is
+    // exempt here.
+    bool const isFinalWithdrawal =
+        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
+
+    if (view().rules().enabled(fixCleanup3_4_0) && amount.asset() == share &&
+        assetsWithdrawn == beast::kZero && !isFinalWithdrawal &&
+        effectiveAssetsTotalWithdraw(vault, waiveUnrealizedLoss) != beast::kZero)
+    {
+        // The vault still has a nonzero effective value backing outstanding
+        // shares, but the requested share amount rounds down to zero assets
+        // in the vault asset's native (integral) representation.
+        JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
+        return tecPRECISION_LOSS;
+    }
+
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
     // (checkWithdrawFreeze), so IgnoreFreeze avoids a redundant check that
     // would incorrectly return zero for vault pseudo-accounts whose shares
@@ -309,8 +328,6 @@ VaultWithdraw::doApply()
     // When the rule applies, the payout is the remaining sfAssetsAvailable; in a clean vault
     // the helper result should already equal that value, and any mismatch is a rounding artifact
     // worth logging.
-    bool const isFinalWithdrawal =
-        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
     if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
