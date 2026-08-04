@@ -138,7 +138,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
+            peer->charge(resource::kFeeUselessData, "ledger_data useless");
             return;
         }
 
@@ -152,7 +152,7 @@ public:
             {
                 JLOG(j_.warn()) << "Got invalid node data for TX set " << hash << " from peer "
                                 << peer->id();
-                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 return;
             }
 
@@ -161,7 +161,7 @@ public:
             {
                 JLOG(j_.warn()) << "Got invalid node id for TX set " << hash << " from peer "
                                 << peer->id();
-                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 return;
             }
 
@@ -171,11 +171,11 @@ public:
         auto const san = ta->takeNodes(std::move(data), peer);
         if (san.isInvalid())
         {
-            peer->charge(Resource::kFeeInvalidData, "ledger_data invalid");
+            peer->charge(resource::kFeeInvalidData, "ledger_data invalid");
         }
         else if (!san.isUseful())
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
+            peer->charge(resource::kFeeUselessData, "ledger_data useless");
         }
     }
 
