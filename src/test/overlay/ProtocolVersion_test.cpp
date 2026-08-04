@@ -36,7 +36,6 @@ public:
         testcase("Convert protocol version to string");
         BEAST_EXPECT(to_string(makeProtocol(1, 3)) == "XRPL/1.3");
         BEAST_EXPECT(to_string(makeProtocol(2, 0)) == "XRPL/2.0");
-        BEAST_EXPECT(to_string(makeProtocol(2, 1)) == "XRPL/2.1");
         BEAST_EXPECT(to_string(makeProtocol(10, 10)) == "XRPL/10.10");
 
         {
@@ -60,7 +59,7 @@ public:
 
             BEAST_EXPECT(negotiateProtocolVersion("RTXP/1.2") == std::nullopt);
             BEAST_EXPECT(
-                negotiateProtocolVersion("RTXP/1.2, XRPL/2.0, XRPL/2.1") == makeProtocol(2, 1));
+                negotiateProtocolVersion("RTXP/1.2, XRPL/2.1, XRPL/2.2") == makeProtocol(2, 2));
             BEAST_EXPECT(negotiateProtocolVersion("XRPL/2.2") == makeProtocol(2, 2));
             BEAST_EXPECT(
                 negotiateProtocolVersion("RTXP/1.2, XRPL/2.3, XRPL/2.4, XRPL/999.999") ==

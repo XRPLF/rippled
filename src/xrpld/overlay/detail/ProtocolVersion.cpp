@@ -27,7 +27,6 @@ namespace xrpl {
  */
 
 constexpr ProtocolVersion const kSupportedProtocolList[]{
-    {2, 1},
     {2, 2},
     {2, 3},
 };

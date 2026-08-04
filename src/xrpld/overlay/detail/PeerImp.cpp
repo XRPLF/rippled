@@ -541,16 +541,13 @@ PeerImp::supportsFeature(ProtocolFeature f) const
 {
     switch (f)
     {
-        case ProtocolFeature::ValidatorListPropagation:
-            return protocol_ >= makeProtocol(2, 1);
-        case ProtocolFeature::ValidatorList2Propagation:
-            return protocol_ >= makeProtocol(2, 2);
         case ProtocolFeature::LedgerNodeDepth:
             return protocol_ >= makeProtocol(2, 3);
         case ProtocolFeature::LedgerReplay:
             return ledgerReplayEnabled_;
+        default:
+            return false;
     }
-    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -884,7 +881,7 @@ PeerImp::doProtocolStart()
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
-    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    if (inbound_)
     {
         app_.getValidators().forEachAvailable(
             [&](std::string const& manifest,
@@ -2402,42 +2399,10 @@ PeerImp::onValidatorListMessage(
 }
 
 void
-PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
-{
-    try
-    {
-        if (!supportsFeature(ProtocolFeature::ValidatorListPropagation))
-        {
-            JLOG(pJournal_.debug()) << "ValidatorList: received validator list from peer using "
-                                    << "protocol version " << to_string(protocol_)
-                                    << " which shouldn't support this feature.";
-            fee_.update(Resource::kFeeUselessData, "unsupported peer");
-            return;
-        }
-        onValidatorListMessage(
-            "ValidatorList", m->manifest(), m->version(), ValidatorList::parseBlobs(*m));
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(pJournal_.warn()) << "ValidatorList: Exception, " << e.what();
-        using namespace std::string_literals;
-        fee_.update(Resource::kFeeInvalidData, e.what());
-    }
-}
-
-void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m)
 {
     try
     {
-        if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
-        {
-            JLOG(pJournal_.debug()) << "ValidatorListCollection: received validator list from peer "
-                                    << "using protocol version " << to_string(protocol_)
-                                    << " which shouldn't support this feature.";
-            fee_.update(Resource::kFeeUselessData, "unsupported peer");
-            return;
-        }
         if (m->version() < 2)
         {
             JLOG(pJournal_.debug())
