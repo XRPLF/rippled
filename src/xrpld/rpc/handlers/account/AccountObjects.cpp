@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -191,6 +192,13 @@ getAccountObjects(
         for (; entryIter != dirEntries.end(); ++entryIter)
         {
             auto const sleNode = ledger.read(keylet::child(*entryIter));
+            if (!sleNode)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::doAccountObjects : null SLE");
+                continue;
+                // LCOV_EXCL_STOP
+            }
 
             bool canAppend = true;
 

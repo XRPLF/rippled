@@ -13,18 +13,18 @@ namespace xrpl::node_store {
 // https://developers.google.com/protocol-buffers/docs/encoding#varints
 
 // field tag
-struct varint;
+struct Varint;
 
-// Metafuncton to return largest
+// Metafunction to return largest
 // possible size of T represented as varint.
 // T must be unsigned
 template <class T, bool = std::is_unsigned_v<T>>
-struct varint_traits;
+struct VarintTraits;
 
 template <class T>
-struct varint_traits<T, true>
+struct VarintTraits<T, true>
 {
-    explicit varint_traits() = default;
+    explicit VarintTraits() = default;
 
     static constexpr std::size_t kMax = ((8 * sizeof(T)) + 6) / 7;
 };
@@ -104,7 +104,7 @@ writeVarint(void* p0, std::size_t v)
 template <class T>
 void
 read(nudb::detail::istream& is, std::size_t& u)
-    requires(std::is_same_v<T, varint>)
+    requires(std::is_same_v<T, Varint>)
 {
     auto p0 = is(1);
     auto p1 = p0;
@@ -118,7 +118,7 @@ read(nudb::detail::istream& is, std::size_t& u)
 template <class T>
 void
 write(nudb::detail::ostream& os, std::size_t t)
-    requires(std::is_same_v<T, varint>)
+    requires(std::is_same_v<T, Varint>)
 {
     writeVarint(os.data(sizeVarint(t)), t);
 }
