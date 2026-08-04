@@ -29,6 +29,7 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
+        "fast_float/8.2.10",
         "grpc/1.81.1",
         "libarchive/3.8.7",
         "nudb/2.0.9",
