@@ -847,6 +847,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         {
             if (sb.rules().enabled(featureMPTokensV2))
             {
+                SOMETIMES(
+                      true,
+                      "BookStep::forEachOffer removed MPT offer after "
+                      "overflow during crossing");
                 removeOffer("Removing offer with overflowing amount calculation");
                 return true;
             }
