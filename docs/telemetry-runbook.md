@@ -1877,7 +1877,15 @@ three signals' attributes over OTLP directly.
 
 ## Grafana Dashboards
 
-Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Fifteen dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`.
+Fourteen are Prometheus-backed; `log-derived-insights` is the only Loki/LogQL
+board and is documented last, together with the LogQL-specific traps it exposed.
+
+> Nine dashboards have a reference section below. `fee-market`, `job-queue`,
+> `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`, and
+> `validator-health` are provisioned but not yet documented here — their panel
+> descriptions carry the same six-heading reference format, so open the panel
+> info icon in Grafana until a section is written.
 
 ### RPC Performance (`rpc-performance`)
 
@@ -2052,26 +2060,54 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Alerting
 
-xrpld provisions six Grafana alert rules on the health-critical metrics, so a
-stock stack alerts out of the box with no UI setup. Rules are provisioned from
+xrpld provisions thirteen Grafana alert rules on the health-critical metrics, so
+a stock stack alerts out of the box with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
 folder **xrpld**.
 
+> **All rules ship `isPaused: true`.** Thresholds are tuned against a small
+> dev/devnet population, so every rule is deactivated on arrival — compare it
+> against your own baseline, then unpause. The key is camelCase: `is_paused` is
+> **silently ignored** by the provisioning loader (no error, no warning) and
+> leaves the rule live. Note the sibling field `notification_settings` _is_
+> snake_case.
+
 ### Alert catalogue
 
-All rules evaluate every minute against the Prometheus datasource, over a
-5-minute window, and group by `service_instance_id` so each node alerts on its
-own. Alerts fire only after the condition holds for the `for` dwell time.
+All rules evaluate every minute against the Prometheus datasource and aggregate
+`by (service_instance_id)` so each node alerts on its own. Every expr selects
+`{service_name="xrpld"}` — the same Prometheus may also host a legacy statsd
+fleet exporting some of these names (`state_accounting_*` in particular) with no
+xrpld resource attributes, and without the selector those series get summed in.
+Alerts fire only after the condition holds for the `for` dwell time.
 
-| Alert                   | Severity | Fires when                                | For |
-| ----------------------- | -------- | ----------------------------------------- | --- |
-| `LedgerHistoryMismatch` | critical | `rate(ledger_history_mismatch_total)` > 0 | 5m  |
-| `LedgerCloseStalled`    | critical | `rate(ledgers_closed_total)` ≈ 0          | 3m  |
-| `ValidationsMissed`     | warning  | `rate(validation_missed_total)` > 0       | 5m  |
-| `ValidationsNotChecked` | warning  | `rate(validations_checked_total)` ≈ 0     | 5m  |
-| `JobQueueTxOverflow`    | warning  | `rate(jq_trans_overflow_total)` > 0       | 5m  |
-| `JobQueueLatencyHigh`   | warning  | p99 `job_queued_us` > 1s                  | 5m  |
+| Alert                     | Severity | Fires when                                         | For |
+| ------------------------- | -------- | -------------------------------------------------- | --- |
+| `LedgerHistoryMismatch`   | critical | `increase(ledger_history_mismatch_total[15m])` > 0 | 2m  |
+| `LedgerCloseStalled`      | critical | `rate(ledgers_closed_total)` ≈ 0                   | 3m  |
+| `ValidatedLedgerStale`    | critical | `ledgermaster_validated_ledger_age` > 60s          | 5m  |
+| `ValidationsMissed`       | warning  | validator miss _ratio_ > 0.1                       | 15m |
+| `ValidationsNotChecked`   | warning  | `rate(validations_checked_total)` ≈ 0              | 5m  |
+| `JobQueueTxOverflow`      | warning  | `increase(jq_trans_overflow_total[15m])` > 0       | 2m  |
+| `JobQueueLatencyHigh`     | warning  | p99 `job_queued_us` > 1s                           | 5m  |
+| `NodeStoreIOLatencyHigh`  | warning  | p95 `ios_latency_milliseconds` > 1s                | 10m |
+| `NodeStateFlapping`       | warning  | > 3 re-entries into FULL per hour                  | 15m |
+| `NodeNotFull`             | warning  | `server_state` < 4 (FULL)                          | 15m |
+| `ManifestJobQueueConvoy`  | warning  | `jobq_manifest_waiting` > 3                        | 10m |
+| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 50 kB/s       | 10m |
+| `PeerResourceDisconnects` | warning  | > 5 resource-driven peer disconnects per 30m       | 5m  |
+
+Two expression idioms recur and are load-bearing — do not "simplify" them away:
+
+- **Sparse counters use `increase(...[15m])` with a short `for`,** not
+  `rate(...[5m])` with `for: 5m`. A single increment keeps `rate[5m]` nonzero for
+  only ~4 minutes of dwell, so a 5-minute `for` can never be satisfied and the
+  rule silently never fires for the one-off events it exists to catch.
+- **"Node stopped doing X" rules synthesise an explicit zero** via
+  `or (0 * max_over_time(...[1h]))`, because `sum by()` returns rows only for
+  still-reporting nodes: one dead node's row simply disappears from the result,
+  so `noDataState` never triggers unless _every_ node vanishes at once.
 
 #### Consensus / ledger health
 
@@ -2085,11 +2121,27 @@ one every ~3-5s. Likely causes: lost peer connectivity, consensus stall, or the
 process is hung. This rule also fires on _NoData_ — if the series disappears the
 node is likely down. Check peer count and process health first.
 
+**ValidatedLedgerStale** — The validated ledger has fallen more than 60s behind.
+This is the clearest single "is this node healthy" signal on XRPL: it is the
+symptom nearly every consensus or sync failure eventually produces, so it is
+often the first thing to check and the last thing to clear. Measured p95 is ~4s
+on a healthy node.
+
 #### Validator health
 
 **ValidationsMissed** — This validator's validations are not agreeing with the
 validated ledger. Sustained misses risk removal from UNLs. Check clock sync,
 peer connectivity, and whether the node is keeping up with ledger close.
+
+> **Why this is a ratio gated on `validations_sent_total`, not
+> `rate(validation_missed_total) > 0`:** `ValidationTracker` classifies a ledger
+> as a miss whenever `weValidated && networkValidated` is not _both_ true. A node
+> that does not validate never sets `weValidated`, so **every** reconciled ledger
+> counts as a miss and the raw rate is permanently nonzero — the measured miss
+> ratio is exactly `1.0` on non-validating nodes. No threshold can separate "not
+> a validator" from "validator disagreeing", so the rule gates on
+> `validations_sent_total > 0` to exclude non-validators entirely, and then
+> measures the ratio among nodes that genuinely do validate.
 
 **ValidationsNotChecked** — The node has stopped checking incoming validations
 from peers. Likely causes: overlay/peer disconnection or a stalled validation
@@ -2104,6 +2156,71 @@ being dropped. The node is shedding load it cannot process. Check CPU, the
 **JobQueueLatencyHigh** — p99 queue wait exceeds 1 second, i.e. jobs back up
 before running. The node is saturated. Correlate with CPU and the Job Queue
 dashboard.
+
+**NodeStoreIOLatencyHigh** — p95 node-store IO latency exceeds 1s. Sustained
+store latency is the usual _upstream cause_ of state flapping and sync stalls, so
+this often fires alongside `NodeStateFlapping` and explains it. Check disk
+utilisation and whether the node store sits on a slow volume — moving it to a
+local NVMe has previously cut time-to-`full` by more than 3x. Measured p99-of-p95
+is 37-49ms on healthy nodes and 488-566ms on nodes that are actively flapping.
+
+#### Node operating state
+
+**NodeStateFlapping** — The node is oscillating `full → syncing/connected → full`
+instead of holding sync. Measured: a flapping node re-enters `full` 4-6 times per
+hour sustained, while a healthy node manages 0-1, so the `> 3` threshold sits
+between the two populations with roughly a 3x margin.
+
+The rule counts `state_accounting_full_transitions`, which counts transitions
+_into_ `full` and is exported as a cumulative gauge — `increase()` is therefore
+correct, and its counter-reset correction turns a process restart into a small
+positive delta rather than a false spike. `state_changes_total` cannot be used
+here: it carries no from/to labels, so it cannot tell a flap from a normal
+startup walk.
+
+**The `uptime > 3600` gate is load-bearing.** Every node walks
+`disconnected → connected → syncing → tracking → full` once at boot; without the
+gate, every restart pages. The trade-off is deliberate: flapping confined to the
+first hour after boot is not alerted.
+
+Investigate in this order: `NodeStoreIOLatencyHigh` (most common cause), peer
+connectivity, then clock sync.
+
+**NodeNotFull** — The node has been below `FULL` for 15m
+(`0`=disconnected, `1`=connected, `2`=syncing, `3`=tracking, `4`=full). This is
+deliberately a _separate_ rule from `NodeStateFlapping`: a node that drops to
+syncing and stays there produces no further full-transitions, so the flapping
+counter by definition cannot catch it.
+
+#### Overlay / manifests
+
+**ManifestJobQueueConvoy** — Manifest jobs are backing up in the job queue. Peers
+send `TMManifests` dumps up to ~57MB (just under `kMaximumMessageSize`, see
+`overlay/Message.h`), and `JtManifest` is registered with `maxLimit`
+(`core/JobTypes.h`), so every peer's dump runs concurrently and they convoy on
+`ManifestCache::mutex_`; `OverlayImpl::onManifests` also re-verifies the blob a
+second time on Accept. Measured effect: each `RcvManifests` job took 16-18s and
+the entire 8-worker pool was occupied.
+
+This is the most reliable manifest-flood signal because `jobq_manifest_waiting`
+is `0` at the 99.9th percentile on every node over 24h — any sustained backlog is
+a genuine outlier rather than normal variance.
+
+**ManifestFloodInbound** — Inbound manifest byte-rate exceeds 50 kB/s. Catches the
+wire-level cause (a peer shipping oversized dumps) even when the job pool absorbs
+it without a visible backlog. Measured steady state is 0.7-2.3 kB/s against a p99
+of 267-420 kB/s during the startup flood, so the threshold sits ~20x above normal
+and well below a real flood.
+
+> **Both manifest rules deliberately suppress startup.** The manifest storm at
+> boot is _measured normal behaviour_, so `ManifestFloodInbound` carries an
+> `uptime > 1800` gate and `ManifestJobQueueConvoy` relies on a 10m dwell that the
+> startup burst does not outlast. A flood confined to the first 30 minutes after
+> boot will therefore not alert.
+
+**PeerResourceDisconnects** — The node dropped more than 5 peers in 30m for
+exceeding resource budgets. Sustained disconnects starve the node of peers and
+precede sync loss.
 
 ### Tuning thresholds
 
@@ -2142,43 +2259,109 @@ to Slack **and** email; a warning goes to Slack only. Both group by
 
 #### Configure delivery (no secrets in git)
 
-The Slack webhook and email address are **not** hard-coded — the YAML
-references `${SLACK_WEBHOOK_URL}` and `${ALERT_EMAIL_TO}`, which Grafana
-expands from the environment at startup. Supply them through a gitignored
-env file:
+The Slack webhook and email address are **not** hard-coded. `contactpoints.yaml`
+ships deliberately unroutable placeholders — an `https://hooks.slack.invalid/…`
+host and an `…@xrpld.invalid` address — which keep provisioning valid so the
+stack boots with zero configuration while alerts route nowhere.
+
+To enable delivery, edit those two values **in place** with a real webhook and
+address, and do not commit the result.
 
 ```bash
 cp docker/telemetry/.env.alerting.example docker/telemetry/.env.alerting
-# edit .env.alerting — this file is gitignored, never commit the webhook/address
+# edit .env.alerting — gitignored; holds the SMTP relay settings
+$EDITOR docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml
 docker compose -f docker/telemetry/docker-compose.yml up -d grafana
 ```
 
-- **Slack** — set `SLACK_WEBHOOK_URL` to an incoming-webhook URL. Drives both
-  tiers.
-- **Email** — set `ALERT_EMAIL_TO` (comma-separated) **and** point the
-  `GF_SMTP_*` vars at a real relay with `GF_SMTP_ENABLED=true`. Grafana can
-  only send mail once SMTP is configured.
+- **Slack** — replace the placeholder `url:` with an incoming-webhook URL. Drives
+  both tiers.
+- **Email** — replace the placeholder `addresses:` (comma- or semicolon-separated)
+  **and** point the `GF_SMTP_*` vars in `.env.alerting` at a real relay with
+  `GF_SMTP_ENABLED=true`. Grafana can only send mail once SMTP is configured.
 
-Any variable left blank disables that path; the stack still runs. To add a
-third destination (PagerDuty, Opsgenie, a custom webhook), add a receiver to
-the relevant contact point.
+Three traps worth knowing before you edit this file:
+
+- **Do not substitute `${SLACK_WEBHOOK_URL}` / `${ALERT_EMAIL_TO}` here.** Grafana
+  expands `${VAR}` but does **not** support `${VAR:-default}`, so an unset variable
+  expands to empty, fails validation, and Grafana **exits 1** — taking the whole
+  telemetry stack down, not just alerting. A blank variable does not "disable that
+  path"; it breaks startup.
+- **Never empty a `receivers:` list to disable a tier.** A contact point with no
+  receivers ceases to exist, the policy tree then references a missing receiver,
+  and Grafana refuses to boot. Point the route at a contact point that still
+  exists instead.
+- **File provisioning is upsert-only.** Deleting a receiver from the YAML does not
+  remove it from an instance that already booted with it — the old receiver keeps
+  delivering. Removal needs an explicit `deleteContactPoints:` block listing the
+  uid (a commented example sits at the bottom of `contactpoints.yaml`).
+
+To add a third destination (PagerDuty, Opsgenie, a custom webhook), add a receiver
+to the relevant contact point.
+
+#### Deploying alerts to Grafana Cloud
+
+Grafana Cloud has **no provisioning filesystem**, so these `apiVersion: 1` files
+cannot be loaded there. Cloud deployment goes through the REST API via
+`docker/telemetry/upload_alerts_to_grafana.py`, which reads the same tracked
+`rules.yaml` as the single source of truth (so local and Cloud cannot drift) and
+applies the Cloud-specific transforms: the local `prometheus` datasource uid is
+swapped for the Cloud one, the `folder:` _name_ becomes an existing `folderUID`,
+and `interval` becomes integer seconds.
+
+```bash
+cd docker/telemetry
+python3 upload_alerts_to_grafana.py --dry-run # always dry-run first
+python3 upload_alerts_to_grafana.py           # create rules, paused
+python3 upload_alerts_to_grafana.py --verify  # read back what is deployed
+```
+
+Credentials come from `.env.grafanaserviceapi` (gitignored, a service-account
+token with `alert.rules:write`); the recipient address comes from `ALERT_EMAIL_TO`
+in `.env.alerting`. Neither is ever written to a tracked file. Use
+`--no-delivery` to land the rules before a recipient is chosen, and `--activate`
+only once the thresholds have been checked against the target fleet's baseline.
+
+> **The Cloud notification policy tree must not be pushed.** There is exactly one
+> policy tree per org and the PUT endpoint **replaces it wholesale**. On a shared
+> stack the root receiver and its sibling routes belong to other teams, so pushing
+> an xrpld-shaped tree would silently re-route their alerts. The uploader
+> therefore never touches the tree; instead each rule carries
+> `notification_settings.receiver`, which routes that rule directly to the xrpld
+> contact point and bypasses the tree entirely. Verify with a before/after hash of
+> `GET /api/v1/provisioning/policies`.
 
 ### Verifying alert provisioning loaded
 
 After the stack is up:
 
 ```bash
-# All six rules present?
-curl -s http://localhost:3000/api/v1/provisioning/alert-rules | jq '.[].title'
+# All thirteen rules present, and is each one paused?
+curl -s http://localhost:3000/api/v1/provisioning/alert-rules |
+    jq -r '.[] | "\(.title)\tpaused=\(.isPaused)"'
 
 # Contact points present?
 curl -s http://localhost:3000/api/v1/provisioning/contact-points | jq '.[].name'
 ```
 
+Check `paused=true` explicitly rather than assuming it: a mis-spelled
+`is_paused` is dropped without any error and the rule provisions **live**.
+
 Grafana logs a provisioning error and skips the file if the YAML is malformed:
 
 ```bash
 docker compose -f docker/telemetry/docker-compose.yml logs grafana | grep -i alerting
+```
+
+A malformed _expression_ fails differently and more quietly — the rule loads but
+every evaluation errors. After a threshold or expr change, confirm each rule's
+query still returns data:
+
+```bash
+# Should print a numeric value per node, and no empty results
+curl -sG http://localhost:9090/api/v1/query \
+    --data-urlencode 'query=sum by (service_instance_id) (rate(ledgers_closed_total{service_name="xrpld"}[5m]))' |
+    jq '.data.result | length'
 ```
 
 ## Log-Trace Correlation
@@ -2204,6 +2387,12 @@ The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. 
 
 The OTel Collector emits logs to Loki with `service_name="xrpld"` (not `job="xrpld"`).
 
+For log-derived panels built on these queries, see the
+[Log-Derived Insights](#log-derived-insights-log-derived-insights) dashboard and its
+LogQL trap list — `partition`, `severity`, and `xrpl_network_type` are
+**structured metadata**, not stream labels, so they must be filtered with `|`
+after the selector and cannot be discovered by `label_values()`.
+
 ```logql
 # Find all logs for a specific trace
 {service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
@@ -2211,11 +2400,13 @@ The OTel Collector emits logs to Loki with `service_name="xrpld"` (not `job="xrp
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
 {service_name="xrpld"} |= "ERR" |= "trace_id="
 
-# All logs from a specific partition that were emitted during a span
-{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+# All logs from a specific partition that were emitted during a span.
+# Prefer the structured-metadata filter over a line match: `|= "LedgerMaster"`
+# also matches the substring anywhere in the message body.
+{service_name="xrpld"} | partition = `LedgerMaster` | trace_id != ""
 
 # Logs from a specific subsystem during a span (e.g. LedgerConsensus)
-{service_name="xrpld"} |= "LedgerConsensus" |= "trace_id="
+{service_name="xrpld"} | partition = `LedgerConsensus` | trace_id != ""
 
 # Logs from the last hour containing trace context
 {service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
@@ -2231,6 +2422,120 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
 4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
+
+### Log-Derived Insights (`log-derived-insights`)
+
+The only **Loki/LogQL** dashboard. It surfaces detail that no metric or span
+records, by parsing `debug.log` text. 41 panels in 10 rows: 8 stat, 18
+timeseries, 2 table, 1 state-timeline, 1 logs, 1 text, across 35 queries.
+
+> **REQUIRES DEBUG LOGS for most rows.** xrpld's default threshold is `Info`
+> (`Severity thresh = Severity::Info`, `app/main/Main.cpp`). Rows tagged `[DBG]`
+> read `DBG`-severity lines that a default node never writes, so those panels are
+> **empty** on an unmodified node — and an empty panel means _not collecting_, not
+> _no problem_. Rows tagged `[DEFAULT OK]` work as shipped.
+>
+> Enable per partition rather than globally (`Resource` alone emits ~329k
+> lines/6h):
+>
+> ```
+> log_level ManifestCache debug
+> log_level Resource debug
+> log_level InboundLedger debug
+> log_level Peer debug
+> log_level PeerFinder debug
+> ```
+>
+> Those five cover every `[DBG]` row. The `[MIXED]` stat row additionally
+> reads `LedgerConsensus` and `LoadMonitor`, both of which already emit at
+> the default level, so its error/consensus/breach/sync panels populate
+> without any change — only its manifest, fee, and fetch-waste panels need
+> debug enabled.
+
+| Row                                     | Gate           | Key panels                                                                                                                                                                                 |
+| --------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Worst Offenders — Node Ranking          | `[MIXED]`      | 8 stat panels ranking nodes by error volume, attack-like input, total fee charged, manifest rejections, consensus problems, job latency breaches, sync instability, and ledger fetch waste |
+| Node Operating State Transitions        | `[DEFAULT OK]` | Transition rate and state timeline from `STATE->` (`NetworkOPsImp::setMode`, info)                                                                                                         |
+| Log Volume & Severity Mix               | `[DEFAULT OK]` | Line rate by severity; top-N partitions by rate                                                                                                                                            |
+| Manifests — Disposition & Producers     | `[DBG]`        | Disposition rate; accept-vs-reject; top-N master keys                                                                                                                                      |
+| Resource Fee Charges — Load Attribution | `[DBG]`        | Charge rate by reason; fee-weighted load; top-N peers by IP and public key                                                                                                                 |
+| Ledger Acquisition Efficiency           | `[DBG]`        | Duplicate ratio; good vs duplicate vs timeout                                                                                                                                              |
+| Peer Lifecycle & Disconnects            | `[DBG]`        | Disconnect reason breakdown; handshake and accept rate                                                                                                                                     |
+| Consensus Phase & Mode                  | `[DEFAULT OK]` | Phase transitions; operating-mode proxy; quorum and trusted-set size                                                                                                                       |
+| Slow Job Latency Breaches               | `[DEFAULT OK]` | Run p99, wait p99, breach rate by job (`LoadMonitor`, >500ms only)                                                                                                                         |
+| Error & Warning Stream                  | `[DEFAULT OK]` | WRN/ERR/FTL rate by partition; live log tail                                                                                                                                               |
+
+Filters: `$service_name`, `$deployment_environment`, `$node`,
+`$xrpl_network_type`, `$severity`, plus log-derived `$consensus_phase`,
+`$consensus_mode`, `$manifest_action`, `$charge_reason`, and `$topn`.
+
+#### LogQL traps this dashboard exposed
+
+Ten mistakes that fail **silently** — each cost a debugging cycle, so check them
+before adding any LogQL panel.
+
+1. **`partition` is structured metadata, not a stream label.**
+   `{service_name="xrpld", partition="ManifestCache"}` returns **zero rows with
+   no error**. Correct form: `{service_name="xrpld"} | partition = \`ManifestCache\``.
+Stream labels are only `service_name`, `service_instance_id`,
+`deployment_environment`. Everything else — `partition`, `severity`,
+`xrpl_network_type`, `message`, `trace_id` — is structured metadata.
+
+2. **`label_values()` cannot see structured metadata.** A `query`-type template
+   variable over `xrpl_network_type`, `severity`, or `partition` returns an empty
+   dropdown; only true stream labels populate. Use a `custom` variable with
+   enumerated values instead. This is why filters appeared blank.
+
+3. **A target with no datasource `uid` resolves to the DEFAULT datasource.**
+   The Prometheus dashboards use `{"type": "prometheus"}` with no uid and work
+   only because Prometheus _is_ the default. A Loki target written the same way
+   sends LogQL to Prometheus and returns nothing. Always pin
+   `{"type": "loki", "uid": "${DS_LOKI}"}`.
+
+4. **`$__rate_interval` is Prometheus-only — Loki panels must use `[$__auto]`.**
+   Grafana does not substitute `$__rate_interval` for a Loki target, so Loki
+   receives the literal string and fails with
+   `parse error: not a valid duration string: "$__rate_interval"`, which surfaces
+   as "No data". The other 14 dashboards all use `$__rate_interval` because they
+   are Prometheus-backed; do **not** align LogQL panels to that convention.
+
+5. **Loki caps a query at 2000 series.** Any per-key or per-IP aggregation must be
+   wrapped in `topk(N, ...)` or it fails with HTTP 400. A true distinct-key count
+   over a large key space is therefore not possible in a panel.
+
+6. **Loki tables need `labelsToFields` plus `reduce`.** Loki attaches labels to
+   the Value field instead of returning columns, so a table panel renders bare
+   Time/Value without `labelsToFields`. Grafana also runs a Loki table target as a
+   **range** query even when `instant: true` is set, producing one row per series
+   _per timestamp_ — visible as the same key repeated many times. Use
+   `reduce(lastNotNull, labelsToFields)` then `organize`, and note the value
+   column is then named `Last *`, which any field override must match.
+
+7. **Title Case legends need `label_format`, not value mappings.** A label-driven
+   legend renders the raw log value (`full`, `moderate peer request`). Grafana
+   value mappings do not help — they map the metric _value_, not label text in
+   `displayName`. Rewrite the label in the query:
+   `| label_format state=\`{{if eq .state "full"}}Full{{else}}{{.state}}{{end}}\``.
+
+8. **`unwrap` must be the last pipeline stage.** Any label filter or
+   `label_format` placed after `| unwrap <field>` makes the query invalid and it
+   returns zero frames.
+
+9. **Non-matching lines yield an empty label.** A line in the selected partition
+   that does not match the panel's `regexp` still passes through with an empty
+   extracted label, which renders as a blank legend entry. Guard with
+   `| <label> != \`\`` before aggregating.
+
+10. **Stat panels need `[$__range]`, not `[$__auto]`.** Grafana runs a Loki stat
+    target as a range query even with `instant: true`, so `lastNotNull` reads only
+    the final bucket — a window total shows as a single-bucket count. Aggregate
+    over `$__range` and reduce with `max`.
+
+Also worth knowing: the **Grafana Cloud image renderer cannot query Loki** in this
+stack. A minimal probe dashboard with a hardcoded datasource uid, a literal
+expression and no template variables still rendered "No data", while the identical
+expression returned 241 points through `/api/ds/query`. Verify LogQL panels with
+`/api/ds/query` per target, not with panel-image rendering.
 
 ## Troubleshooting
 
@@ -3760,7 +4065,7 @@ cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
 | Spans      | 16+ span types | All span names appear in Tempo with required attributes |
 | Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics    |
 | Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works |
-| Dashboards | 10 dashboards  | All Grafana dashboards load without errors              |
+| Dashboards | 15 dashboards  | All Grafana dashboards load without errors              |
 
 ### Running Individual Tools
 
