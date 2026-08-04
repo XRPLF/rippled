@@ -499,7 +499,6 @@ private:
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
-        auto const borrowerBalance = env.balance(borrower, mpt);
         env(pay(borrower, keylet.key, mpt(10'100)), Fee(XRP(100)), Ter(tesSUCCESS));
         env.close();
         // Verify the MPT is still unauthorized.
@@ -602,7 +601,6 @@ private:
 
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
-        auto const borrowerBalance = env.balance(borrower, mpt);
         env(pay(borrower, keylet.key, mpt(10'100)), Fee(XRP(100)), Ter(tesSUCCESS));
         env.close();
         // Verify broker is still not authorized

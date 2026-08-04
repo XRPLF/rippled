@@ -316,7 +316,6 @@ private:
             auto const jr = env.rpc("submit", borrower.name(), submitParam);
 
             BEAST_EXPECT(jr.isMember(jss::result));
-            auto const jResult = jr[jss::result];
         }
 
         env.close();
@@ -429,8 +428,6 @@ private:
 
         env(loanBroker::set(lender, vaultKeyLet.key), txFee);
         env.close();
-
-        // BrokerInfo brokerInfo{xrpIssue(), keylet, vaultKeyLet, {}};
 
         STAmount const debtMaximumRequest = XRPAmount(200'000);
 
