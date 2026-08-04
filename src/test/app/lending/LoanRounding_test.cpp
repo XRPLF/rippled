@@ -247,7 +247,7 @@ private:
         BEAST_EXPECT(env.ter() == tesSUCCESS);
         env.close();
 
-        // Validate CoverAvailable == 80 XRP and DebtTotal remains 804
+        // Validate CoverAvailable == 81 XRP and DebtTotal remains 804
         if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {

@@ -240,10 +240,10 @@ private:
                 << " assetsTotalAfter=" << assetsTotalAfter
                 << " delta=" << (assetsTotalAfter - assetsTotalBefore) << std::endl;
 
-            // Value-based proof: underflowed window yields a payoff larger than
-            // the clamped (non-underflow) reference.
+            // Regression check: the underflowed window must be clamped so the
+            // payoff matches the non-underflow reference, i.e. no overcharge.
             BEAST_EXPECT(fullDue == fullDueClamped);
-            if (fullDue > fullDueClamped)
+            if (fullDue != fullDueClamped)
                 log << "PoC delta: overcharge (fullDue > clamped)" << std::endl;
         }
 

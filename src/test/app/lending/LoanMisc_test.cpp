@@ -518,7 +518,7 @@ public:
 
         using namespace jtx;
 
-        auto const updateInterval = std::min(numIterations / 5, 100);
+        auto const updateInterval = std::max(std::min(numIterations / 5, 100), 1);
 
         for (int i = 0; i < numIterations; ++i)
         {

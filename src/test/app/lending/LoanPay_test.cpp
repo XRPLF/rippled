@@ -217,8 +217,11 @@ private:
 
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
 
-        auto const loanKeylet = keylet::loan(
-            result.brokerKeylet().key, (env.le(result.brokerKeylet()))->at(sfLoanSequence));
+        auto const brokerSle = env.le(result.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(result.brokerKeylet().key, brokerSle->at(sfLoanSequence));
         env(loan::set(
                 borrower, result.brokerKeylet().key, asset(10'000).value(), tfLoanOverpayment),
             Sig(sfCounterpartySignature, lender),
@@ -237,7 +240,7 @@ private:
 
         BEAST_EXPECTS(
             env.balance(lender) - loanBrokerBalanceBefore == expectedOverpaymentManagementFee,
-            "overpayment management fee missmatch; expected:" +
+            "overpayment management fee mismatch; expected:" +
                 to_string(expectedOverpaymentManagementFee) +
                 " got: " + to_string(env.balance(lender) - loanBrokerBalanceBefore));
     }

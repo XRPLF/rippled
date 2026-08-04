@@ -484,8 +484,7 @@ private:
         testcase << "Batch Bypass Counterparty";
 
         bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes,
-            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+            Batch::kDisabledTxTypes, [](auto const& disabled) { return disabled == ttLOAN_SET; });
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -596,7 +595,8 @@ private:
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         auto const vaultBefore = env.le(broker.vaultKeylet());
-        BEAST_EXPECT(vaultBefore);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
         Number const vaultAvailableBefore = vaultBefore->at(sfAssetsAvailable);
 
         // Loan: $1B principal, 3 payments, 600s interval, rate=1 TenthBips32.
@@ -616,7 +616,8 @@ private:
         env.close();
 
         auto const loanSle = env.le(loanKeylet);
-        BEAST_EXPECT(loanSle);
+        if (!BEAST_EXPECT(loanSle))
+            return;
         Number const expectedTotalInterest =
             loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfPrincipalOutstanding);
 
@@ -624,6 +625,8 @@ private:
         env.close();
 
         auto const vaultAfter = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
         Number const vaultAvailableAfter = vaultAfter->at(sfAssetsAvailable);
         Number const vaultGain = vaultAvailableAfter - vaultAvailableBefore;
 
