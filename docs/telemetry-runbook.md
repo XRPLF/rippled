@@ -1852,9 +1852,15 @@ three signals' attributes over OTLP directly.
 
 ## Grafana Dashboards
 
-Eleven dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`.
-Ten are Prometheus-backed; `log-derived-insights` is the only Loki/LogQL board and
-is documented last, together with the LogQL-specific traps it exposed.
+Fifteen dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`.
+Fourteen are Prometheus-backed; `log-derived-insights` is the only Loki/LogQL
+board and is documented last, together with the LogQL-specific traps it exposed.
+
+> Nine dashboards have a reference section below. `fee-market`, `job-queue`,
+> `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`, and
+> `validator-health` are provisioned but not yet documented here — their panel
+> descriptions carry the same six-heading reference format, so open the panel
+> info icon in Grafana until a section is written.
 
 ### RPC Performance (`rpc-performance`)
 
@@ -2356,6 +2362,12 @@ The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. 
 
 The OTel Collector emits logs to Loki with `service_name="xrpld"` (not `job="xrpld"`).
 
+For log-derived panels built on these queries, see the
+[Log-Derived Insights](#log-derived-insights-log-derived-insights) dashboard and its
+LogQL trap list — `partition`, `severity`, and `xrpl_network_type` are
+**structured metadata**, not stream labels, so they must be filtered with `|`
+after the selector and cannot be discovered by `label_values()`.
+
 ```logql
 # Find all logs for a specific trace
 {service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
@@ -2363,11 +2375,13 @@ The OTel Collector emits logs to Loki with `service_name="xrpld"` (not `job="xrp
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
 {service_name="xrpld"} |= "ERR" |= "trace_id="
 
-# All logs from a specific partition that were emitted during a span
-{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+# All logs from a specific partition that were emitted during a span.
+# Prefer the structured-metadata filter over a line match: `|= "LedgerMaster"`
+# also matches the substring anywhere in the message body.
+{service_name="xrpld"} | partition = `LedgerMaster` | trace_id != ""
 
 # Logs from a specific subsystem during a span (e.g. LedgerConsensus)
-{service_name="xrpld"} |= "LedgerConsensus" |= "trace_id="
+{service_name="xrpld"} | partition = `LedgerConsensus` | trace_id != ""
 
 # Logs from the last hour containing trace context
 {service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
@@ -2387,7 +2401,8 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 ### Log-Derived Insights (`log-derived-insights`)
 
 The only **Loki/LogQL** dashboard. It surfaces detail that no metric or span
-records, by parsing `debug.log` text. 32 panels in 9 rows.
+records, by parsing `debug.log` text. 41 panels in 10 rows: 8 stat, 18
+timeseries, 2 table, 1 state-timeline, 1 logs, 1 text, across 35 queries.
 
 > **REQUIRES DEBUG LOGS for most rows.** xrpld's default threshold is `Info`
 > (`Severity thresh = Severity::Info`, `app/main/Main.cpp`). Rows tagged `[DBG]`
@@ -2403,7 +2418,14 @@ records, by parsing `debug.log` text. 32 panels in 9 rows.
 > log_level Resource debug
 > log_level InboundLedger debug
 > log_level Peer debug
+> log_level PeerFinder debug
 > ```
+>
+> Those five cover every `[DBG]` row. The `[MIXED]` stat row additionally
+> reads `LedgerConsensus` and `LoadMonitor`, both of which already emit at
+> the default level, so its error/consensus/breach/sync panels populate
+> without any change — only its manifest, fee, and fetch-waste panels need
+> debug enabled.
 
 | Row                                     | Gate           | Key panels                                                                                                                                                                                 |
 | --------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -2449,7 +2471,7 @@ Stream labels are only `service_name`, `service_instance_id`,
    Grafana does not substitute `$__rate_interval` for a Loki target, so Loki
    receives the literal string and fails with
    `parse error: not a valid duration string: "$__rate_interval"`, which surfaces
-   as "No data". The other 15 dashboards all use `$__rate_interval` because they
+   as "No data". The other 14 dashboards all use `$__rate_interval` because they
    are Prometheus-backed; do **not** align LogQL panels to that convention.
 
 5. **Loki caps a query at 2000 series.** Any per-key or per-IP aggregation must be
@@ -3072,7 +3094,7 @@ cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
 | Spans      | 16+ span types | All span names appear in Tempo with required attributes |
 | Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics    |
 | Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works |
-| Dashboards | 11 dashboards  | All Grafana dashboards load without errors              |
+| Dashboards | 15 dashboards  | All Grafana dashboards load without errors              |
 
 ### Running Individual Tools
 
