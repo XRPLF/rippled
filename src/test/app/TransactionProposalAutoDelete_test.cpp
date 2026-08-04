@@ -4,9 +4,12 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 
@@ -130,6 +133,14 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq + 1)));
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, target) == 0);
+
+        // Directory integrity: deletion must have unlinked the proposals from
+        // alice's owner directory, not just erased the entries. A dangling
+        // directory entry would make this AccountDelete fail.
+        incLgrSeqForAccDel(env, alice);
+        env(acctdelete(alice, bob), Fee(env.current()->fees().increment));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(alice.id())));
     }
 
     // The proposal is keyed by target account and ticket, so another account
@@ -427,6 +438,347 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
     }
 
+    // A tfAllOrNothing Batch whose inner transaction spends the proposal's
+    // ticket but whose sibling fails is discarded entirely: the ticket
+    // survives, so the proposal — still executable — must survive with it.
+    void
+    testBatchDiscardKeepsProposal(FeatureBitset features)
+    {
+        testcase("discarded batch keeps proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        // Inner #1 (ticket-based) would succeed; inner #2 fails, so
+        // tfAllOrNothing discards every inner change, ticket included.
+        auto const seq = env.seq(target);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(target, seq, batchFee, tfAllOrNothing),
+            batch::Inner(pay(target, bob, XRP(1)), 0, ticketSeq),
+            batch::Inner(pay(target, bob, XRP(1'000'000)), seq + 1));
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        // The ticket survived the discard.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
+
+        // The resurrected ticket still triggers cleanup when it is finally
+        // consumed for real.
+        env(noop(target), ticket::Use(ticketSeq));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // Under tfIndependent a failed inner transaction is still applied as a
+    // claimed-fee result, durably consuming its ticket — so the proposal
+    // must be deleted even though the inner transaction failed.
+    void
+    testBatchInnerTecStillDeletes(FeatureBitset features)
+    {
+        testcase("failed independent inner transaction still deletes proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        auto const seq = env.seq(target);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(target, seq, batchFee, tfIndependent),
+            batch::Inner(pay(target, bob, XRP(1'000'000)), 0, ticketSeq),
+            batch::Inner(pay(target, bob, XRP(1)), seq + 1));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, target) == 0);
+    }
+
+    // tfUntilFailure applies inner transactions up to the first failure:
+    // tickets consumed before the break delete their proposals; tickets never
+    // reached keep theirs.
+    void
+    testBatchPartialConsumption(FeatureBitset features)
+    {
+        testcase("partially applied batch deletes only consumed tickets' proposals");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 2));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq + 1), expiration));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+
+        // Inner #1 consumes the first ticket, inner #2 fails and stops the
+        // batch, inner #3 (second ticket) is never attempted.
+        auto const seq = env.seq(target);
+        auto const batchFee = batch::calcBatchFee(env, 0, 3);
+        env(batch::outer(target, seq, batchFee, tfUntilFailure),
+            batch::Inner(pay(target, bob, XRP(1)), 0, ticketSeq),
+            batch::Inner(pay(target, bob, XRP(1'000'000)), seq + 1),
+            batch::Inner(pay(target, bob, XRP(1)), 0, ticketSeq + 1));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq + 1)));
+        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        // The unreached ticket survives.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
+    }
+
+    // A delegate (sfDelegate) submits and pays for the transaction, but the
+    // ticket consumed belongs to the delegating account — the hook must key
+    // on the ticket owner, not on the submitter or fee payer.
+    void
+    testDelegatedTicketSpend(FeatureBitset features)
+    {
+        testcase("delegated transaction ticket spend deletes proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const marty{"marty"};  // target's delegate
+        env.fund(XRP(10000), alice, target, bob, marty);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env(delegate::set(target, marty, {"Payment"}));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        env(pay(target, bob, XRP(1)), delegate::As(marty), ticket::Use(ticketSeq));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        // The target's one remaining object is the Delegate entry itself.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
+    }
+
+    // A fee-sponsored transaction charges its fee to the sponsor while the
+    // account's own ticket is consumed — the hook must follow the ticket.
+    void
+    testFeeSponsoredTicketSpend(FeatureBitset features)
+    {
+        testcase("fee-sponsored transaction ticket spend deletes proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const spons{"sponsor"};
+        env.fund(XRP(10000), alice, target, bob, spons);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        env(pay(target, bob, XRP(1)),
+            ticket::Use(ticketSeq),
+            Fee(XRP(1)),
+            sponsor::As(spons, spfSponsorFee),
+            Sig(sfSponsorSignature, spons));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, target) == 0);
+    }
+
+    // A TicketCreate submitted using a ticket consumes it like any other
+    // transaction, then mints fresh tickets; only the consumed ticket's
+    // proposal goes away.
+    void
+    testTicketCreateViaTicket(FeatureBitset features)
+    {
+        testcase("ticket-funded TicketCreate deletes consumed ticket's proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        env(ticket::create(target, 1), ticket::Use(ticketSeq));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        // The freshly minted ticket is the target's only object.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
+    }
+
+    // A proposal that is already terminal (Expiration passed) is still
+    // deleted when its ticket is consumed: the hook deliberately has no
+    // terminal-state check, and XLS-0103 §4.5 makes automatic cleanup
+    // unconditional.
+    void
+    testExpiredProposalStillDeleted(FeatureBitset features)
+    {
+        testcase("expired proposal still deleted on ticket spend");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 60s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        // Sail past the expiration: the proposal is terminal but stays in
+        // ledger state (nothing cleans up on expiry by itself).
+        env.close(env.now() + 120s);
+        BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq)));
+
+        env(noop(target), ticket::Use(ticketSeq));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // With more than 32 owned objects the proposer's directory spans multiple
+    // pages, so deletion must honor the sfOwnerNode page hint stored at
+    // creation rather than assume the root page.
+    void
+    testMultiPageOwnerDirectory(FeatureBitset features)
+    {
+        testcase("proposal on a non-root owner directory page");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        env(ticket::create(target, 1));
+        // Fill alice's owner directory past one page (32 entries) before the
+        // proposal is created.
+        env(ticket::create(alice, 40));
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 600s).time_since_epoch().count();
+
+        env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
+        env.close();
+
+        auto const sle = env.le(keylet::txProposal(target.id(), ticketSeq));
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+        // The shape under test: the proposal must have landed off the root
+        // directory page.
+        BEAST_EXPECT((*sle)[sfOwnerNode] != 0);
+        BEAST_EXPECT(ownerCount(env, alice) == 40 + kProposalOwnerCount);
+
+        env(noop(target), ticket::Use(ticketSeq));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
+        BEAST_EXPECT(ownerCount(env, alice) == 40);
+    }
+
     // No sponsored-proposal case: a TransactionProposal cannot carry a
     // reserve sponsor today — ttTRANSACTION_PROPOSAL_CREATE is not in the v1
     // reserve-sponsorship allow-list (isReserveSponsorAllowed) and
@@ -447,6 +799,14 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         testTargetAccountDeleted(testableAmendments());
         testProposerIsTarget(testableAmendments());
         testProposalBlocksOwnerAccountDelete(testableAmendments());
+        testBatchDiscardKeepsProposal(testableAmendments());
+        testBatchInnerTecStillDeletes(testableAmendments());
+        testBatchPartialConsumption(testableAmendments());
+        testDelegatedTicketSpend(testableAmendments());
+        testFeeSponsoredTicketSpend(testableAmendments());
+        testTicketCreateViaTicket(testableAmendments());
+        testExpiredProposalStillDeleted(testableAmendments());
+        testMultiPageOwnerDirectory(testableAmendments());
     }
 };
 
