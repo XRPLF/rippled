@@ -34,6 +34,16 @@ namespace xrpl {
     verifying validations (which will be signed by its secret counterpart), a
     sequence number, and a digital signature.
 
+    Suppose the secret keys installed on an XRPL validator are compromised. Not
+    only do you have to generate and install new key pairs on each validator,
+    EVERY xrpld needs to have its config updated with the new public keys, and
+    is vulnerable to forged validation signatures until this is done.  The
+    solution is a new layer of indirection: A master secret key under
+    restrictive access control is used to sign a "manifest": essentially, a
+    certificate including the master public key, an ephemeral public key for
+    verifying validations (which will be signed by its secret counterpart), a
+    sequence number, and a digital signature.
+
     The manifest has two serialized forms: one which includes the digital
     signature and one which doesn't.  There is an obvious causal dependency
     relationship between the (latter) form with no signature, the signature
