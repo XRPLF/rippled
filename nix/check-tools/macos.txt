@@ -1,0 +1,47 @@
+Detected OS: macos (Darwin arm64)
+
+Core build tools:
+  [ ok ] cmake                cmake version 4.1.2
+  [ ok ] conan                Conan version 2.28.1
+  [ ok ] git                  git version 2.54.0
+  [ ok ] python3              Python 3.13.13
+
+Development tooling:
+  [ ok ] ccache               ccache version 4.13.6
+  [ ok ] clang                clang version 22.1.7
+  [ ok ] clang++              clang version 22.1.7
+  [ ok ] ClangBuildAnalyzer   ClangBuildAnalyzer 1.6.0
+  [ ok ] curl                 curl 8.20.0 (aarch64-apple-darwin25.3.0) libcurl/8.20.0 OpenSSL/3.6.2 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.69.0 mit-krb5/1.22.1
+  [ ok ] file                 file-5.47
+  [ ok ] less                 less 692 (PCRE2 regular expressions)
+  [ ok ] make                 GNU Make 4.4.1
+  [ ok ] netstat              present
+  [ ok ] ninja                1.13.2
+  [ ok ] perl                 v5.42.0
+  [ ok ] pkg-config           0.29.2
+  [ ok ] vim                  VIM - Vi IMproved 9.2 (2026 Feb 14, compiled Jan 01 1980 00:00:00)
+  [ ok ] zip                  Zip 3.0
+  [ ok ] clang-format         clang-format version 22.1.7
+  [ ok ] dot                  dot - graphviz version 12.2.1 (0)
+  [ ok ] doxygen              1.16.1
+  [ ok ] gcovr                gcovr 8.4
+  [ ok ] gh                   gh version 2.94.0 (nixpkgs)
+  [ ok ] git-cliff            git-cliff 2.13.1
+  [ ok ] git-lfs              git-lfs/3.7.1 (3.7.1; darwin arm64; go 1.26.3)
+  [ ok ] gpg                  gpg (GnuPG) 2.4.9
+  [ ok ] pre-commit           pre-commit 4.5.1
+  [ ok ] run-clang-tidy       usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
+
+Rust toolchain:
+  [ ok ] cargo                cargo 1.95.0 (f2d3ce0bd 2026-03-21)
+  [ ok ] cargo-audit          cargo-audit-audit 0.22.1
+  [ ok ] cargo-llvm-cov       cargo-llvm-cov 0.8.5
+  [ ok ] cargo-nextest        cargo-nextest 0.9.137
+  [ ok ] clippy               clippy 0.1.95 (59807616e1 2026-04-14)
+  [ ok ] rust-analyzer        rust-analyzer 1.95.0 (59807616 2026-04-14)
+  [ ok ] rustc                rustc 1.95.0 (59807616e 2026-04-14)
+  [ ok ] rustfmt              rustfmt 1.9.0-stable (59807616e1 2026-04-14)
+
+Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
+
+All 36 checked tools are present and runnable.
