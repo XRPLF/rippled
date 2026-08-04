@@ -3945,16 +3945,16 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
-                auto const cleanup330 = env.current()->rules().enabled(fixCleanup3_3_0);
+                auto const cleanup340 = env.current()->rules().enabled(fixCleanup3_4_0);
                 auto const minBidPrice =
                     IOUAmount{Number{ammAlice.tokens()} * getFee(1) / kAuctionSlotMinFeeFraction};
-                auto const firstPrice = cleanup330 ? minBidPrice : IOUAmount{tiny};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     MPT(ammAlice[0])(10'000'000'000),
                     USD(10'000),
-                    cleanup330 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
                                : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
@@ -3967,7 +3967,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     MPT(ammAlice[0])(10'000'000'000),
                     USD(10'000),
-                    cleanup330
+                    cleanup340
                         ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
                         : ammAlice.tokens()));
             },
@@ -7164,7 +7164,7 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
-        testBid(all - fixCleanup3_3_0);
+        testBid(all - fixCleanup3_4_0);
         testClawback();
         testClawbackFromAMMAccount(all);
         testClawbackFromAMMAccount(all - featureSingleAssetVault);
