@@ -189,7 +189,7 @@ private:
         testcase("Minimum cover rounding allows undercoverage (XRP)");
 
         using namespace jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env{*this, features};
 
@@ -453,8 +453,8 @@ private:
         env.close();
 
         auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
-        env(loanBroker::set(lender, vaultKeylet.key),
-            loanBroker::kDebtMaximum(Number{100}),
+        env(loan_broker::set(lender, vaultKeylet.key),
+            loan_broker::kDebtMaximum(Number{100}),
             Fee(env.current()->fees().base * 2));
         env.close();
 
@@ -514,7 +514,7 @@ private:
 
             using namespace jtx;
             using namespace loan;
-            using namespace loanBroker;
+            using namespace loan_broker;
 
             Env env(*this, features);
 

@@ -43,7 +43,7 @@ private:
     {
         using namespace jtx;
         using namespace std::chrono_literals;
-        using namespace Lending;
+        using namespace lending;
 
         // From FIND-012
         {
@@ -256,7 +256,7 @@ private:
             {
                 auto const coverDepositValue =
                     broker.asset(broker.params.coverDeposit * 10).value();
-                env(loanBroker::coverDeposit(lender, broker.brokerID, coverDepositValue));
+                env(loan_broker::coverDeposit(lender, broker.brokerID, coverDepositValue));
                 env.close();
             }
 
@@ -318,7 +318,7 @@ private:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        using namespace Lending;
+        using namespace lending;
         Env env(*this, features);
 
         Account const issuer{"issuer"};
@@ -452,7 +452,7 @@ private:
     {
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         bool const withAmendment = features[fixCleanup3_2_0];
 

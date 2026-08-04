@@ -39,7 +39,7 @@ private:
 
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env{*this, features};
 
@@ -402,7 +402,7 @@ private:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = iou(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
         env.close();
         // Verify broker owner has a trustline
         auto const brokerTrustline = keylet::trustLine(broker, iou);
@@ -482,7 +482,7 @@ private:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = mpt(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
@@ -581,7 +581,7 @@ private:
         // at least 1,000 cover. Default cover is 1,000, so we add more to be
         // safe.
         auto const additionalCover = mpt(50'000).value();
-        env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
+        env(loan_broker::coverDeposit(broker, brokerInfo.brokerID, STAmount{mpt, additionalCover}));
         env.close();
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);

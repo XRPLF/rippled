@@ -255,7 +255,7 @@ private:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        using namespace Lending;
+        using namespace lending;
         Env env(*this, features);
 
         Account const issuer{"issuer"};
@@ -497,7 +497,7 @@ private:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        using namespace Lending;
+        using namespace lending;
         Env env{*this, features};
 
         Account const issuer{"issuer"};

@@ -11,15 +11,15 @@
 namespace xrpl {
 
 json::Value
-doBookChanges(RPC::JsonContext& context)
+doBookChanges(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> ledger;
 
-    json::Value result = RPC::lookupLedger(ledger, context);
+    json::Value result = rpc::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
 
-    return RPC::computeBookChanges(ledger);
+    return rpc::computeBookChanges(ledger);
 }
 
 }  // namespace xrpl

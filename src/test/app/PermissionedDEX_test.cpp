@@ -1816,7 +1816,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.fund(XRP(1000), carol);
             env.close();
 
-            env(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+            env(ledger_state_fix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
         }
 
         {
@@ -1829,13 +1829,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             // BookExchangeRate fixes require sfBookDirectory.
-            auto missingBookDirectory = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto missingBookDirectory = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             missingBookDirectory.removeMember(sfBookDirectory.jsonName);
             env(missingBookDirectory, Ter(temINVALID));
 
             // BookExchangeRate fixes reject fields that belong to other
             // LedgerStateFix types.
-            auto extraOwner = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto extraOwner = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             extraOwner[sfOwner.jsonName] = carol.human();
             env(extraOwner, Ter(temINVALID));
         }
@@ -1847,7 +1847,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             {
                 // Preclaim check: the target directory must exist.
-                env(ledgerStateFix::bookExchangeRate(setup.carol, uint256{1}),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, uint256{1}),
                     Fee(fixFee),
                     Ter(tecOBJECT_NOT_FOUND));
             }
@@ -1861,7 +1861,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 BEAST_EXPECT(ownerDirSle);
                 BEAST_EXPECT(!ownerDirSle->isFieldPresent(sfExchangeRate));
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, ownerDir.key),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, ownerDir.key),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1885,7 +1885,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                     BEAST_EXPECT(exchangeRate == quality);
                 }
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, dirKey),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1932,7 +1932,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             auto const fixFee = drops(env.current()->fees().increment);
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
             env.close();
 
             // Confirm sfExchangeRate now matches the key quality.
@@ -1947,7 +1947,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             }
 
             // Submitting again should fail — nothing to fix.
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey),
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey),
                 Fee(fixFee),
                 Ter(tecNO_PERMISSION));
         }

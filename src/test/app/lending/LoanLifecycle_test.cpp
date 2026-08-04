@@ -127,7 +127,7 @@ private:
                 BEAST_EXPECT(brokerSle->at(sfDebtTotal) == 0);
 
                 auto const coverAvailable = brokerSle->at(sfCoverAvailable);
-                env(loanBroker::coverWithdraw(
+                env(loan_broker::coverWithdraw(
                     lender, broker.brokerID, STAmount(broker.asset, coverAvailable)));
                 env.close();
 
@@ -135,7 +135,7 @@ private:
                 BEAST_EXPECT(brokerSle && brokerSle->at(sfCoverAvailable) == 0);
             }
             // Verify we can delete the loan broker
-            env(loanBroker::del(lender, broker.brokerID));
+            env(loan_broker::del(lender, broker.brokerID));
             env.close();
         }
     }
@@ -357,7 +357,7 @@ private:
 
             auto const brokerKeylet = keylet::loanBroker(broker.id(), env.seq(broker));
 
-            env(loanBroker::set(broker, vaultKeylet.key), txFee);
+            env(loan_broker::set(broker, vaultKeylet.key), txFee);
             env.close();
 
             auto const serviceFee = 101;

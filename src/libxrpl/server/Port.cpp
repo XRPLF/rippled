@@ -107,7 +107,7 @@ populate(
         {
             // First, check to see if 0.0.0.0 or ipv6 equivalent was configured,
             // which means all IP addresses.
-            auto const addr = beast::IP::Endpoint::fromStringChecked(ip);
+            auto const addr = beast::ip::Endpoint::fromStringChecked(ip);
             if (addr)
             {
                 if (isUnspecified(*addr))

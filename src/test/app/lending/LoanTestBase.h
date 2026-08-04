@@ -476,7 +476,7 @@ protected:
 
         auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
 
-        using namespace loanBroker;
+        using namespace loan_broker;
         env(set(lender, vaultKeylet.key, params.flags),
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
@@ -1550,7 +1550,7 @@ protected:
         auto const borrowerStartingBalance = env.balance(borrower, broker.asset);
 
         // Try to delete the loan broker with an active loan
-        env(loanBroker::del(lender, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
+        env(loan_broker::del(lender, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
         // Ensure the above tx doesn't get ordered after the LoanDelete and
         // delete our broker!
         env.close();
@@ -1625,7 +1625,7 @@ protected:
         int interestExponent)
     {
         using namespace jtx;
-        using namespace Lending;
+        using namespace lending;
 
         auto const& asset = broker.asset.raw();
         auto const currencyLabel = getCurrencyLabel(asset);
@@ -2083,7 +2083,7 @@ protected:
                                   Number const& startingCoverAvailable,
                                   Number const& amountToBeCovered) {
             coverAvailable(broker.brokerID, startingCoverAvailable - amountToBeCovered);
-            env(loanBroker::coverDeposit(
+            env(loan_broker::coverDeposit(
                 brokerAcct, broker.brokerID, STAmount{broker.asset, amountToBeCovered}));
             coverAvailable(broker.brokerID, startingCoverAvailable);
             env.close();

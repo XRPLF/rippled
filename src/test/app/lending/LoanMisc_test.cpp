@@ -348,7 +348,7 @@ private:
         testcase("Lending: CanTrade disabled has no impact");
         using namespace jtx;
         using namespace loan;
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         Env env(*this, all_);
 

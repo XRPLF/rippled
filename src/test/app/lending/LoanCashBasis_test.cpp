@@ -192,9 +192,9 @@ private:
 
             BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-            env(loanBroker::set(lender, broker.vaultID),
-                loanBroker::kLoanBrokerId(broker.brokerID),
-                loanBroker::kDebtMaximum(debtMaximum),
+            env(loan_broker::set(lender, broker.vaultID),
+                loan_broker::kLoanBrokerId(broker.brokerID),
+                loan_broker::kDebtMaximum(debtMaximum),
                 Fee(env.current()->fees().base * 2));
             env.close();
 
