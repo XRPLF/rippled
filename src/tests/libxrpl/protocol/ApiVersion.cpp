@@ -6,21 +6,21 @@ using namespace xrpl;
 
 TEST(ApiVersion, invariants)
 {
-    static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumSupportedVersion);
-    static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumValidVersion);
-    static_assert(RPC::kApiMaximumSupportedVersion <= RPC::kApiMaximumValidVersion);
-    static_assert(RPC::kApiBetaVersion <= RPC::kApiMaximumValidVersion);
+    static_assert(rpc::kApiMinimumSupportedVersion <= rpc::kApiMaximumSupportedVersion);
+    static_assert(rpc::kApiMinimumSupportedVersion <= rpc::kApiMaximumValidVersion);
+    static_assert(rpc::kApiMaximumSupportedVersion <= rpc::kApiMaximumValidVersion);
+    static_assert(rpc::kApiBetaVersion <= rpc::kApiMaximumValidVersion);
 }
 
 // Update when we change versions
 TEST(ApiVersion, versions)
 {
-    static_assert(RPC::kApiMinimumSupportedVersion >= 1);
-    static_assert(RPC::kApiMinimumSupportedVersion < 2);
-    static_assert(RPC::kApiMaximumSupportedVersion >= 2);
-    static_assert(RPC::kApiMaximumSupportedVersion < 3);
-    static_assert(RPC::kApiMaximumValidVersion >= 3);
-    static_assert(RPC::kApiMaximumValidVersion < 4);
-    static_assert(RPC::kApiBetaVersion >= 3);
-    static_assert(RPC::kApiBetaVersion < 4);
+    static_assert(rpc::kApiMinimumSupportedVersion >= 1);
+    static_assert(rpc::kApiMinimumSupportedVersion < 2);
+    static_assert(rpc::kApiMaximumSupportedVersion >= 2);
+    static_assert(rpc::kApiMaximumSupportedVersion < 3);
+    static_assert(rpc::kApiMaximumValidVersion >= 3);
+    static_assert(rpc::kApiMaximumValidVersion < 4);
+    static_assert(rpc::kApiBetaVersion >= 3);
+    static_assert(rpc::kApiBetaVersion < 4);
 }

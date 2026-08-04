@@ -109,11 +109,11 @@ private:
     Setup setup_;
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
-    Resource::Manager& resourceManager_;
-    PeerFinder::StoreSqdb store_;
-    std::unique_ptr<PeerFinder::Manager> peerFinder_;
+    resource::Manager& resourceManager_;
+    peer_finder::StoreSqdb store_;
+    std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
-    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
+    hash_map<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
     std::atomic<Peer::id_t> nextId_;
@@ -141,7 +141,7 @@ public:
         Application& app,
         Setup setup,
         ServerHandler& serverHandler,
-        Resource::Manager& resourceManager,
+        resource::Manager& resourceManager,
         Resolver& resolver,
         boost::asio::io_context& ioContext,
         BasicConfig const& config,
@@ -157,13 +157,13 @@ public:
     void
     stop() override;
 
-    PeerFinder::Manager&
+    peer_finder::Manager&
     peerFinder()
     {
         return *peerFinder_;
     }
 
-    Resource::Manager&
+    resource::Manager&
     resourceManager()
     {
         return resourceManager_;
@@ -182,7 +182,7 @@ public:
         endpoint_type remoteEndpoint) override;
 
     void
-    connect(beast::IP::Endpoint const& remoteEndpoint) override;
+    connect(beast::ip::Endpoint const& remoteEndpoint) override;
 
     int
     limit() override;
@@ -252,7 +252,7 @@ public:
     addActive(std::shared_ptr<PeerImp> const& peer);
 
     void
-    remove(std::shared_ptr<PeerFinder::Slot> const& slot);
+    remove(std::shared_ptr<peer_finder::Slot> const& slot);
 
     /**
      * Called when a peer has connected successfully
@@ -451,13 +451,13 @@ private:
 
     std::shared_ptr<Writer>
     makeRedirectResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
+        std::shared_ptr<peer_finder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress);
 
     static std::shared_ptr<Writer>
     makeErrorResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
+        std::shared_ptr<peer_finder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
         std::string const& msg);

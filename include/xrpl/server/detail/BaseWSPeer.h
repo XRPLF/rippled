@@ -196,7 +196,7 @@ BaseWSPeer<Handler, Impl>::run()
     startTimer();
     closeOnTimer_ = true;
     impl().ws_.set_option(boost::beast::websocket::stream_base::decorator([](auto& res) {
-        res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
+        res.set(boost::beast::http::field::server, build_info::getFullVersionString());
     }));
     impl().ws_.async_accept(
         request_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
