@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -79,7 +80,10 @@ LoanSet::preflight(PreflightContext const& ctx)
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
     }();
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
+    // A proposed LoanSet is stored unsigned; its CounterpartySignature is
+    // collected on-ledger afterward, so its absence here is expected, not an
+    // error (spec §5.3.1.2).
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && (ctx.flags & TapProposal) == 0)
     {
         JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;

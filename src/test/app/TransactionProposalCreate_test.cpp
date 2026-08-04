@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 
@@ -580,6 +581,69 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, proposer) == 0);
     }
 
+    // A proposed transaction may itself require an auxiliary co-signer beyond
+    // its own Account: a LoanSet's Counterparty, or the Sponsor of an
+    // account-level SponsorshipTransfer (spec §6.1, §6.6.3). That co-signature
+    // field is collected later via TransactionProposalSign, so — just like
+    // the ordinary signature fields — it must be absent, not required, at
+    // creation time.
+    void
+    testAuxiliaryCoSignatureTypes(FeatureBitset features)
+    {
+        testcase("proposal for a transaction type with an auxiliary co-signature");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};        // the proposer
+        Account const borrower{"borrower"};  // the target account
+
+        env.fund(XRP(10000), alice, borrower);
+        env.close();
+
+        std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
+
+        // LoanSet: the Counterparty's signature is collected later; it must
+        // not be required up front.
+        {
+            std::uint32_t const ticketSeq = env.seq(borrower) + 1;
+            env(ticket::create(borrower, 1));
+            env.close();
+
+            json::Value tx = loan::set(borrower, uint256{1}, 1'000);
+            tx[jss::Sequence] = 0;
+            tx[sfTicketSequence.getJsonName()] = ticketSeq;
+            tx[jss::Fee] = std::to_string(env.current()->fees().base.drops());
+            tx[jss::SigningPubKey] = "";
+
+            env(proposalCreate(alice, tx, expiration));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::txProposal(borrower.id(), ticketSeq)));
+        }
+
+        // SponsorshipTransfer (account-level reserve sponsorship): the
+        // Sponsor's signature is likewise collected later.
+        {
+            std::uint32_t const ticketSeq = env.seq(borrower) + 1;
+            env(ticket::create(borrower, 1));
+            env.close();
+
+            json::Value tx = sponsor::transfer(borrower, tfSponsorshipCreate);
+            tx[sfSponsor.getJsonName()] = alice.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+            tx[jss::Sequence] = 0;
+            tx[sfTicketSequence.getJsonName()] = ticketSeq;
+            tx[jss::Fee] = std::to_string(env.current()->fees().base.drops());
+            tx[jss::SigningPubKey] = "";
+
+            env(proposalCreate(alice, tx, expiration));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::txProposal(borrower.id(), ticketSeq)));
+        }
+    }
+
     void
     run() override
     {
@@ -592,6 +656,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testBatchReserve(testableAmendments());
         testMultiAccountBatch(testableAmendments());
         testPseudoTarget(testableAmendments());
+        testAuxiliaryCoSignatureTypes(testableAmendments());
     }
 };
 
