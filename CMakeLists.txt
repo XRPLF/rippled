@@ -17,6 +17,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # A user-provided -DCMAKE_OSX_DEPLOYMENT_TARGET still takes precedence.
 #
 # CMAKE_SYSTEM_NAME can't be used before project(), so CMAKE_HOST_SYSTEM_NAME is used instead.
+#
+# When CMAKE_OSX_DEPLOYMENT_TARGET is bumped to >=26.0, FastFloat dependency won't be needed anymore
 if(
     CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
     AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET
