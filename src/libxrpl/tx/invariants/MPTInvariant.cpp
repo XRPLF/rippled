@@ -287,6 +287,7 @@ ValidMPTIssuance::finalize(
                 //    participate in AMM pool liquidity or have LPTokens only.
                 //  - At most two MPTokens may be deleted if AMM pool, which has exactly
                 //    two tokens, is empty after withdraw/clawback.
+                SOMETIMES(mptokensCreated_ == 2, "AMM withdraw/clawback recreated two MPTokens");
                 if (mptokensCreated_ > 2 || mptokensDeleted_ > 2)
                 {
                     JLOG(j.fatal()) << "Invariant failed: MPT authorize  succeeded "

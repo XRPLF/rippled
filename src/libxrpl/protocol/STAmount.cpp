@@ -1471,6 +1471,11 @@ roundNumberResult(
     // and for materializing the final integral amount.
     NumberRoundModeGuard const finalRound(roundMode(resultNegative, roundUp));
     auto result = STAmount{asset, number};
+    [[maybe_unused]] bool const nonzeroPositiveRoundUp =
+        roundUp && !resultNegative && number != beast::kZero;
+    ALWAYS(
+        !nonzeroPositiveRoundUp || result != beast::kZero,
+        "xrpl::roundNumberResult : positive rounded-up MPT result is representable");
 
     if (roundUp && !resultNegative && !result)
     {

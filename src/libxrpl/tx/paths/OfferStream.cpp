@@ -338,7 +338,12 @@ TOfferStreamBase<TIn, TOut>::step()
             // MPT offers require featureMPTokensV2 (enforced at OfferCreate
             // preflight). So the amendment is always enabled here and this
             // legacy re-throw is unreachable in practice.
-            throw;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            XRPL_ASSERT(
+                view_.rules().enabled(featureMPTokensV2),
+                "xrpl::TOfferStreamBase::step : overflow implies MPTokensV2");
+            throw;
+            // LCOV_EXCL_STOP
         }
 
         if (shouldRemoveSmallIncreasedQOffer)

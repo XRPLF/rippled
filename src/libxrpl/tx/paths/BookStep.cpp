@@ -858,7 +858,12 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // offers require featureMPTokensV2 (enforced at OfferCreate
             // preflight). So the amendment is always enabled when we get here
             // and this legacy re-throw is unreachable in practice.
-            throw;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            XRPL_ASSERT(
+                sb.rules().enabled(featureMPTokensV2),
+                "xrpl::BookStep::forEachOffer : overflow implies MPTokensV2");
+            throw;
+            // LCOV_EXCL_STOP
         }
     };
 
