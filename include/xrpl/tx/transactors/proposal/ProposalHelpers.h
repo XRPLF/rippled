@@ -1,7 +1,11 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
@@ -70,5 +74,29 @@ proposalOwnerCount(STObject const& proposedTx)
     return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
                                                                 : kProposalOwnerCount;
 }
+
+/**
+ * Delete a TransactionProposal ledger entry.
+ *
+ * Removes the entry from its Owner's directory, releases the reserve the
+ * proposal holds against the Owner, and erases the entry. Shared by every
+ * deletion path the spec defines (XLS-0103 §4.5): automatic cleanup when the
+ * proposed transaction's TicketSequence is consumed, and the
+ * TransactionProposalCancel / TransactionProposalSign cleanup paths once
+ * those transactions exist.
+ *
+ * A TransactionProposal cannot carry a reserve sponsor today (its type is
+ * not sponsorship-supported), so the release always lands on the Owner; it
+ * goes through decreaseOwnerCountForObject regardless, matching ticketDelete,
+ * so it would follow an sfSponsor recorded on the entry if the type ever
+ * becomes sponsorable.
+ *
+ * @param view The apply view for making changes
+ * @param sleProposal The TransactionProposal ledger entry to delete
+ * @param j Journal for logging
+ * @return tesSUCCESS, or tefBAD_LEDGER if the ledger contradicts the entry
+ */
+TER
+deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
 
 }  // namespace xrpl

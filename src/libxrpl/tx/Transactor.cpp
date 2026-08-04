@@ -41,6 +41,7 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -864,8 +865,25 @@ Transactor::ticketDelete(
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
+    std::uint32_t const ticketSeq{(*sleTicket)[sfTicketSequence]};
+
     // Remove Ticket from ledger.
     view.erase(sleTicket);
+
+    // Once the Ticket is gone, a TransactionProposal keyed to it can never
+    // execute: its proposed transaction would fail with tefNO_TICKET. Clean
+    // up the stale proposal and release its Owner's reserve (XLS-0103 §4.5).
+    // This runs both when the proposal's own completed transaction consumes
+    // the ticket and when the account spends the ticket on something else.
+    if (view.rules().enabled(featureCosign))
+    {
+        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+        {
+            if (TER const ter = deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+
     return tesSUCCESS;
 }
 
