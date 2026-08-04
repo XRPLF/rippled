@@ -1475,7 +1475,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     void
     testAccrualLoanOriginationDeltas()
     {
-        using namespace xrpl::Accrual;
+        using namespace xrpl::accrual;
 
         struct TestCase
         {
@@ -1495,7 +1495,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         for (auto const& tc : testCases)
         {
-            testcase("Accrual::loanOriginationDeltas: " + tc.name);
+            testcase("accrual::loanOriginationDeltas: " + tc.name);
 
             auto const deltas = loanOriginationDeltas(tc.principalRequested, tc.interestDue);
             BEAST_EXPECTS(
@@ -1513,9 +1513,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
     void
     testCashBasisLoanOriginationDeltas()
     {
-        using namespace xrpl::CashBasis;
+        using namespace xrpl::cash_basis;
 
-        testcase("CashBasis::loanOriginationDeltas: interestDue is ignored");
+        testcase("cash_basis::loanOriginationDeltas: interestDue is ignored");
 
         Number const principalRequested{1'000};
         Number const interestDue{75};
@@ -1533,7 +1533,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     void
     testAccrualLoanOriginationExceedsVaultMaximum()
     {
-        using namespace xrpl::Accrual;
+        using namespace xrpl::accrual;
 
         struct TestCase
         {
@@ -1569,7 +1569,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         for (auto const& tc : testCases)
         {
-            testcase("Accrual::loanOriginationExceedsVaultMaximum: " + tc.name);
+            testcase("accrual::loanOriginationExceedsVaultMaximum: " + tc.name);
             BEAST_EXPECT(
                 loanOriginationExceedsVaultMaximum(
                     tc.vaultMaximum, tc.vaultTotal, tc.interestDue) == tc.expected);
@@ -1613,19 +1613,19 @@ class LendingHelpers_test : public beast::unit_test::Suite
     void
     testAccrualLoanVaultExposure()
     {
-        testcase("Accrual::loanVaultExposure");
+        testcase("accrual::loanVaultExposure");
 
         auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(xrpl::Accrual::loanVaultExposure(sle) == Number{950});
+        BEAST_EXPECT(xrpl::accrual::loanVaultExposure(sle) == Number{950});
     }
 
     void
     testCashBasisLoanVaultExposure()
     {
-        testcase("CashBasis::loanVaultExposure");
+        testcase("cash_basis::loanVaultExposure");
 
         auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(xrpl::CashBasis::loanVaultExposure(sle) == Number{800});
+        BEAST_EXPECT(xrpl::cash_basis::loanVaultExposure(sle) == Number{800});
     }
 
     void
@@ -1641,8 +1641,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .feePaid = Number{3}};
 
         {
-            testcase("Accrual::loanPaymentDeltas: nonzero valueChange");
-            auto const deltas = xrpl::Accrual::loanPaymentDeltas(parts);
+            testcase("accrual::loanPaymentDeltas: nonzero valueChange");
+            auto const deltas = xrpl::accrual::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == parts.valueChange);
             BEAST_EXPECT(
                 deltas.debtTotalDelta ==
@@ -1650,8 +1650,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("CashBasis::loanPaymentDeltas: nonzero valueChange ignored");
-            auto const deltas = xrpl::CashBasis::loanPaymentDeltas(parts);
+            testcase("cash_basis::loanPaymentDeltas: nonzero valueChange ignored");
+            auto const deltas = xrpl::cash_basis::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == parts.interestPaid);
             BEAST_EXPECT(deltas.debtTotalDelta == parts.principalPaid);
         }
@@ -1675,7 +1675,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto const deltas = loanOriginationDeltas(legacyVault, principalRequested, interestDue);
             auto const expected =
-                xrpl::Accrual::loanOriginationDeltas(principalRequested, interestDue);
+                xrpl::accrual::loanOriginationDeltas(principalRequested, interestDue);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1687,7 +1687,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto const deltas =
                 loanOriginationDeltas(cashBasisVault, principalRequested, interestDue);
-            auto const expected = xrpl::CashBasis::loanOriginationDeltas(principalRequested);
+            auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1713,7 +1713,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             BEAST_EXPECT(
                 loanOriginationExceedsVaultMaximum(legacyVault, vaultTotal, interestDue) ==
-                xrpl::Accrual::loanOriginationExceedsVaultMaximum(
+                xrpl::accrual::loanOriginationExceedsVaultMaximum(
                     vaultMaximum, vaultTotal, interestDue));
         }
 
@@ -1741,7 +1741,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(legacyVault, sle) == xrpl::Accrual::loanVaultExposure(sle));
+                loanVaultExposure(legacyVault, sle) == xrpl::accrual::loanVaultExposure(sle));
         }
 
         {
@@ -1752,7 +1752,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(cashBasisVault, sle) == xrpl::CashBasis::loanVaultExposure(sle));
+                loanVaultExposure(cashBasisVault, sle) == xrpl::cash_basis::loanVaultExposure(sle));
         }
     }
 
@@ -1774,7 +1774,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             testcase("loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks Accrual");
             Env const env{*this};
             auto const deltas = loanPaymentDeltas(legacyVault, parts);
-            auto const expected = xrpl::Accrual::loanPaymentDeltas(parts);
+            auto const expected = xrpl::accrual::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1786,7 +1786,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "picks CashBasis");
             Env const env{*this};
             auto const deltas = loanPaymentDeltas(cashBasisVault, parts);
-            auto const expected = xrpl::CashBasis::loanPaymentDeltas(parts);
+            auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
