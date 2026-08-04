@@ -151,10 +151,10 @@ public:
         using namespace jtx;
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -164,7 +164,7 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
 
@@ -190,7 +190,7 @@ public:
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = std::move(params);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
 
@@ -262,10 +262,10 @@ public:
         env.close();
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -275,49 +275,49 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
-        // Test RPC::Tuning::max_src_cur source currencies.
+        // Test rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_src_cur source currencies.
+        // Test more than rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur + 1);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur + 1);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
-        // Test RPC::Tuning::max_auto_src_cur source currencies.
-        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
+        // Test rpc::tuning::max_auto_src_cur source currencies.
+        for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
             env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_auto_src_cur source currencies.
+        // Test more than rpc::tuning::max_auto_src_cur source currencies.
         env.trust(Account("alice")["AUD"](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
