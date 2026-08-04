@@ -122,6 +122,13 @@ so the configuration that decides validity cannot differ. The import set is
 host function extends the check and the linker at once. And the entry point's three faults are
 described by one `entry_point_fault`, called from `run` with wasmi's error appended.
 
+The rules themselves are pure functions over what a module *declares* — `check_import` takes
+`(namespace, name, ExternType)`, `entry_point_fault` takes an `Option<ExternType>` — so the
+unit tests state each rule, its precedence and its wording on inputs built directly, and
+`tests/preflight.rs` is left to run real modules. Precedence is a decision, not an accident:
+an import breaking two rules reports the namespace, which is what explains the module's other
+imports too.
+
 What it cannot see is guest behaviour and anything absent from the module's exports: a start
 section that traps, and a linear memory over the page cap that the module keeps to itself.
 Both pass the check and then fail instantiation, which is why a run's own refusal at that

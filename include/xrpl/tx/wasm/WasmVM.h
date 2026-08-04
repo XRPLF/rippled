@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -28,6 +30,26 @@ runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
     std::int64_t gasLimit,
+    std::string_view funcName = escrowFunctionName);
+
+// Screen `wasmCode`: whether `runEscrowWasm` would refuse it before the contract's
+// first instruction. Compiles the module and reads its imports and exports; runs
+// nothing.
+//
+// Takes no `HostFunctions`, because the verdict comes from the compiled module alone.
+// That is what makes this callable from a transactor's `preflight`, which has no view
+// to build a host over.
+//
+// `temBAD_WASM` for every fault in the module - the transaction carries something this
+// engine cannot run, so it is refused before it can reach the ledger.
+// `telFAILED_PROCESSING` if the engine itself failed: nothing was learned about the
+// module, and a defect here is not evidence that the transaction is malformed.
+//
+// Does not throw.
+NotTEC
+preflightEscrowWasm(
+    Bytes const& wasmCode,
+    beast::Journal j,
     std::string_view funcName = escrowFunctionName);
 
 }  // namespace xrpl

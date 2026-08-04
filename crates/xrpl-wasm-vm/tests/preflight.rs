@@ -174,6 +174,21 @@ fn a_host_function_imported_as_a_global_does_not_pass() {
     );
 }
 
+/// A module faulty at two stages is refused by the earlier one — it imports what no
+/// engine serves *and* exports no entry point. The imports are what the rest of the
+/// module depends on, so that is the message worth having.
+#[test]
+fn the_earlier_stage_is_the_one_reported() {
+    let refusal = refusal(
+        r#"(module
+             (import "host_lib" "no_such_function" (func $f (result i32)))
+             (memory (export "memory") 1)
+             (func (export "not_the_entry_point") (result i32) (call $f)))"#,
+    );
+
+    assert_stage!(refusal, CheckError::Import(_));
+}
+
 /// The signature is the one part of an import screening does not compare, so a
 /// module that will not link can still pass. Recorded here because it is the gap
 /// this stage leaves, not because it is wanted.

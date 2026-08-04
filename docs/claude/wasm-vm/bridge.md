@@ -5,6 +5,11 @@
 `crates/xrpl-wasm-vm-ffi/src/lib.rs` is the whole of the Rust half; `HostContext.{h,cpp}` and
 `WasmVM.{h,cpp}` are the C++ half. Two decisions carry the design.
 
+Three crossings, not two: `run_escrow` in, the host calls back out, and `check_escrow`
+in. The third goes one way only — screening a module needs no host — so it takes no
+`HostContext`, has no C++-exception half to contain, and is the one bridge function the
+crate's own tests can call outright.
+
 **The result is total, not `Result<T>`.** cxx's `Result` sugar throws a `rust::Error` into
 C++; a status is the better interface for a condition the caller has to turn into a TER
 anyway. `RunResult { status, result, gas_used, detail }` flattens the engine's
@@ -25,6 +30,12 @@ given a status *and* a TER.
   compile_error!` keeps a profile change from silently defeating it.
 - The asymmetry is what makes each half sufficient: because the C++ shims never unwind,
   every frame between a panic and `catch_unwind` is Rust.
+
+Both halves are named `guarded`, and each is one function that every crossing goes through:
+Rust's takes the panic arm as an argument (`ffi::RunResult::panicked`), C++'s takes the value
+to answer with if the call throws. Anything C++ catches there is xrpld's own — a bad
+allocation, or a `funcName` that is not valid UTF-8 and so cannot become a `rust::Str` —
+never a wasm outcome, since those arrive as statuses.
 
 `HostContext` holds a `HostFunctions&` and lowers its typed `std::expected` onto the wire.
 The `&self`-vs-non-const worry was a non-issue: a `const` member function holding a
@@ -53,12 +64,54 @@ node's, and charging a transaction for a node's defect would write that defect i
 | `Internal`, `Panic` | `tecINTERNAL` | none |
 
 The `Compile`/`Instantiate`/`EntryPoint` row is `tecINTERNAL` because preflight is meant to
-have refused such a module with `temBAD_WASM` long before apply — which is why preflight is
-item 1 in [the roadmap](index.md#next). `NoMemory` had no old TER to match (it used to reach
-the guest as code -14); `tecFAILED_PROCESSING` treats it as the contract fault it is.
+have refused such a module with `temBAD_WASM` long before apply. **That row is now known to
+be wrong for `Instantiate`** — see below. `NoMemory` had no old TER to match (it used to
+reach the guest as code -14); `tecFAILED_PROCESSING` treats it as the contract fault it is.
 
 `gas <= 0` is refused as `temBAD_AMOUNT` before the engine is called, restoring what
 `WasmiEngine::run` did — see [open-questions.md](open-questions.md).
+
+## The preflight map
+
+`preflightEscrowWasm` owns it, and it is deliberately flat: every fault in the module is
+one answer, because a caller's only decision is whether the transaction may proceed.
+
+| `CheckStatus` | `NotTEC` |
+|---|---|
+| `Ok` | `tesSUCCESS` |
+| `Compile`, `Import`, `EntryPoint` | `temBAD_WASM` |
+| `Panic` | `telFAILED_PROCESSING` |
+
+The statuses stay distinct anyway: the *detail* is what a contract author needs, and one
+status per stage keeps the map's arms reviewable and lets it grow without inventing
+distinctions later.
+
+`Panic` is not `temBAD_WASM`. A defect in the engine teaches nothing about the module, and
+`tem` would record our bug as the transaction's malformation; `tel` is the preflight
+analogue of `tecINTERNAL`'s "the fault is the node's" — local, not forwarded, no fee. Two
+things follow that are worth stating: divergence between nodes is not what the code choice
+fixes (a panic in deterministic code is not node-local, and if it were, no TER would
+reconcile the two), and this arm has no test on the C++ side, because there is no reliable
+way to make the engine panic from a fixture.
+
+**The signature the C++ front does not have is the point**: `(Bytes, beast::Journal,
+std::string_view) -> NotTEC`, with no `HostFunctions&`. The deleted `preflightEscrowWasm`
+took one and could therefore never have been called from a real `preflight()` —
+`PreflightContext` has no view to build a host over.
+
+## Why `Instantiate` should stop being `tecINTERNAL`
+
+`check` closes compile, imports and the entry point, but two ways instantiation fails are
+invisible to it: a start section that traps, and a linear memory over the page cap that the
+module does not export ([engine.md](engine.md)). Both are deterministic properties of the
+module, so a contract can pass preflight, be escrowed, and then fail to instantiate at
+apply — where the map currently blames the node and charges nothing.
+
+The fix is two lines and its own change: report `Instantiate` as `tecFAILED_PROCESSING`
+with its gas, and in `vm::run` classify a failure carrying a trap code (`e.as_trap_code()`)
+as `Trap` rather than `Instantiate`, since a start section trapping is guest code trapping.
+`tecINTERNAL` then means what it says — `Internal` and `Panic`, the node's own defects — and
+the map stops depending on preflight's completeness for its correctness.
 
 ## The one copy left on the byte path, and why it needs `HostFunctions` to change
 

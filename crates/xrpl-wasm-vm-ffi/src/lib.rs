@@ -1,10 +1,13 @@
 //! The cxx bridge between the escrow wasm engine and xrpld.
 //!
-//! Two crossings. C++ calls `run_escrow` once per escrow finish; the engine's host
+//! Three crossings. C++ calls `run_escrow` once per escrow finish; the engine's host
 //! calls come back out through the C++ `HostContext`, which `CxxHost` presents to the
 //! engine as an ordinary [`HostFunctions`] implementor. The ABI those calls speak is
 //! declared once, in `xrpl-host-functions`, so neither side of this file gets to
 //! restate a signature.
+//!
+//! `check_escrow` is the third, and it crosses in one direction only: screening a
+//! module needs no host, so nothing comes back out.
 //!
 //! **Neither direction may unwind into the other**, and the two halves of that are
 //! not symmetric:
@@ -26,7 +29,7 @@
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use xrpl_host_functions::{HostError, HostFunctions, HostResult};
-use xrpl_wasm_vm::{RunError, RunFailure, RunOutcome, run};
+use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
 /// and every arithmetic overflow in the engine becomes a node crash instead of a
@@ -77,6 +80,35 @@ mod ffi {
         detail: String,
     }
 
+    /// Why a module cannot be run — one variant per way [`check`] can refuse it,
+    /// so the caller maps a status to a TER rather than reading a message.
+    #[derive(Debug, Hash)]
+    #[repr(i32)]
+    enum CheckStatus {
+        /// The module compiles, imports only what the engine serves, and exports
+        /// the entry point as `() -> i32`.
+        Ok,
+        /// `wasm` is not a valid module under this engine's configuration.
+        Compile,
+        /// An import the engine does not define: another module namespace, a name
+        /// that is not a host function, or one imported as something else.
+        Import,
+        /// No export of that name with signature `() -> i32`.
+        EntryPoint,
+        /// The engine panicked. A defect in this crate or the one below it, and
+        /// not a fault in the module — which is why it is a status of its own
+        /// rather than one more way a contract can be malformed.
+        Panic,
+    }
+
+    /// A check's verdict. No cost, because nothing was executed.
+    struct CheckResult {
+        status: CheckStatus,
+        /// The engine's own description of the refusal, for the log. Empty on
+        /// `Ok`.
+        detail: String,
+    }
+
     extern "Rust" {
         /// Run `wasm`'s `function_name` export with `gas` fuel, servicing host calls
         /// through `host`.
@@ -89,6 +121,15 @@ mod ffi {
         /// instruction; the C++ front refuses it as `temBAD_AMOUNT` before calling
         /// here, so it is not given a status of its own.
         fn run_escrow(host: &HostContext, wasm: &[u8], gas: u64, function_name: &str) -> RunResult;
+
+        /// Screen `wasm` before it can reach the ledger: whether [`run_escrow`]
+        /// would refuse it before the guest's first instruction.
+        ///
+        /// Takes no host, no gas and no store — the verdict comes from the
+        /// compiled module alone, which is what makes it callable from a
+        /// transaction's preflight, where there is no ledger to serve a host call
+        /// from. **Never throws**, for the same reason [`run_escrow`] does not.
+        fn check_escrow(wasm: &[u8], function_name: &str) -> CheckResult;
     }
 
     unsafe extern "C++" {
@@ -147,6 +188,11 @@ struct CxxHost<'a> {
 ///
 /// The conversion *is* the sign test — it fails on exactly the negative values — so
 /// there is no cast to argue about.
+///
+/// Named functions rather than `From` impls, and not by preference: every type
+/// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
+/// rule forbids the impl. Two readings of the same `i32` would want distinguishing
+/// names here in any case.
 fn bytes_written(n: i32) -> HostResult<usize> {
     usize::try_from(n).map_err(|_| HostError::from_code(n))
 }
@@ -187,14 +233,50 @@ fn run_escrow(
     gas: u64,
     function_name: &str,
 ) -> ffi::RunResult {
-    guarded(|| {
-        let host = CxxHost { ctx: host };
-        flatten(run(wasm, gas, &host, function_name))
-    })
+    guarded(
+        || {
+            let host = CxxHost { ctx: host };
+            run(wasm, gas, &host, function_name).into()
+        },
+        ffi::RunResult::panicked,
+    )
 }
 
-/// Run `body`, turning a panic into [`ffi::RunStatus::Panic`] rather than letting it
-/// unwind into C++.
+fn check_escrow(wasm: &[u8], function_name: &str) -> ffi::CheckResult {
+    guarded(
+        || check(wasm, function_name).into(),
+        ffi::CheckResult::panicked,
+    )
+}
+
+impl ffi::RunResult {
+    /// A run the engine panicked in.
+    ///
+    /// The cost is not reported: a panicking run's meter is not evidence of
+    /// anything, and `0` says "unknown" where a number would say "this is what it
+    /// owed".
+    fn panicked(detail: String) -> ffi::RunResult {
+        ffi::RunResult {
+            status: ffi::RunStatus::Panic,
+            result: 0,
+            gas_used: 0,
+            detail,
+        }
+    }
+}
+
+impl ffi::CheckResult {
+    /// A check the engine panicked in.
+    fn panicked(detail: String) -> ffi::CheckResult {
+        ffi::CheckResult {
+            status: ffi::CheckStatus::Panic,
+            detail,
+        }
+    }
+}
+
+/// Run `body`, handing a panic to `panicked` rather than letting it unwind into
+/// C++.
 ///
 /// **Why catching here is enough.** An unwind can only be caught where every frame
 /// between the panic and the catch is Rust, and every frame here is: the engine and
@@ -207,15 +289,11 @@ fn run_escrow(
 /// and the one thing that outlives the call — the C++ `HostContext` — is only ever
 /// touched through those `noexcept` methods, which either complete or report.
 ///
-/// The cost is not reported. A panicking run's meter is not evidence of anything, and
-/// `0` says "unknown" where a number would say "this is what it owed".
-fn guarded(body: impl FnOnce() -> ffi::RunResult) -> ffi::RunResult {
-    catch_unwind(AssertUnwindSafe(body)).unwrap_or_else(|payload| ffi::RunResult {
-        status: ffi::RunStatus::Panic,
-        result: 0,
-        gas_used: 0,
-        detail: panic_detail(&*payload),
-    })
+/// Generic over the result so both crossings share the one catch: the two answer
+/// with different structs, and a second `catch_unwind` is the last thing this file
+/// should have two of.
+fn guarded<T>(body: impl FnOnce() -> T, panicked: impl FnOnce(String) -> T) -> T {
+    catch_unwind(AssertUnwindSafe(body)).unwrap_or_else(|payload| panicked(panic_detail(&*payload)))
 }
 
 /// The panic's message, for the log.
@@ -231,23 +309,29 @@ fn panic_detail(payload: &(dyn Any + Send)) -> String {
     format!("panicked: {message}")
 }
 
-/// Flatten the engine's two-channel result onto the one struct cxx can carry.
-fn flatten(result: Result<RunOutcome, RunFailure>) -> ffi::RunResult {
-    match result {
-        Ok(RunOutcome { result, fuel_used }) => ffi::RunResult {
-            status: ffi::RunStatus::Ok,
-            result,
-            gas_used: fuel_used,
-            detail: String::new(),
-        },
-        // `fuel_used` is carried on both channels by construction, so a failed run
-        // reports its cost here without this having to decide what one is.
-        Err(RunFailure { error, fuel_used }) => ffi::RunResult {
-            status: status_of(&error),
-            result: 0,
-            gas_used: fuel_used,
-            detail: error.to_string(),
-        },
+/// The engine's two-channel result on the one struct cxx can carry.
+///
+/// A `From` rather than a named function because the mapping is total and there is
+/// only one of it: every field of the wire struct is decided by the outcome, so
+/// there is no second reading for a name to distinguish.
+impl From<Result<RunOutcome, RunFailure>> for ffi::RunResult {
+    fn from(result: Result<RunOutcome, RunFailure>) -> ffi::RunResult {
+        match result {
+            Ok(RunOutcome { result, fuel_used }) => ffi::RunResult {
+                status: ffi::RunStatus::Ok,
+                result,
+                gas_used: fuel_used,
+                detail: String::new(),
+            },
+            // `fuel_used` is carried on both channels by construction, so a failed
+            // run reports its cost here without this having to decide what one is.
+            Err(RunFailure { error, fuel_used }) => ffi::RunResult {
+                status: ffi::RunStatus::from(&error),
+                result: 0,
+                gas_used: fuel_used,
+                detail: error.to_string(),
+            },
+        }
     }
 }
 
@@ -255,15 +339,45 @@ fn flatten(result: Result<RunOutcome, RunFailure>) -> ffi::RunResult {
 ///
 /// Exhaustive rather than closed with a wildcard: an outcome added to the engine has
 /// to be given a status — and therefore a TER on the far side — before this compiles.
-fn status_of(error: &RunError) -> ffi::RunStatus {
-    match error {
-        RunError::Compile(_) => ffi::RunStatus::Compile,
-        RunError::Instantiate(_) => ffi::RunStatus::Instantiate,
-        RunError::EntryPoint(_) => ffi::RunStatus::EntryPoint,
-        RunError::OutOfGas => ffi::RunStatus::OutOfGas,
-        RunError::Internal => ffi::RunStatus::Internal,
-        RunError::NoMemory => ffi::RunStatus::NoMemory,
-        RunError::Trap(_) => ffi::RunStatus::Trap,
+impl From<&RunError> for ffi::RunStatus {
+    fn from(error: &RunError) -> ffi::RunStatus {
+        match error {
+            RunError::Compile(_) => ffi::RunStatus::Compile,
+            RunError::Instantiate(_) => ffi::RunStatus::Instantiate,
+            RunError::EntryPoint(_) => ffi::RunStatus::EntryPoint,
+            RunError::OutOfGas => ffi::RunStatus::OutOfGas,
+            RunError::Internal => ffi::RunStatus::Internal,
+            RunError::NoMemory => ffi::RunStatus::NoMemory,
+            RunError::Trap(_) => ffi::RunStatus::Trap,
+        }
+    }
+}
+
+/// A verdict on the wire. No cost to carry, so `Ok` is the empty description.
+impl From<Result<(), CheckError>> for ffi::CheckResult {
+    fn from(result: Result<(), CheckError>) -> ffi::CheckResult {
+        match result {
+            Ok(()) => ffi::CheckResult {
+                status: ffi::CheckStatus::Ok,
+                detail: String::new(),
+            },
+            Err(error) => ffi::CheckResult {
+                status: ffi::CheckStatus::from(&error),
+                detail: error.to_string(),
+            },
+        }
+    }
+}
+
+/// The status a [`CheckError`] crosses as, exhaustive for the same reason
+/// [`ffi::RunStatus`]'s conversion is.
+impl From<&CheckError> for ffi::CheckStatus {
+    fn from(error: &CheckError) -> ffi::CheckStatus {
+        match error {
+            CheckError::Compile(_) => ffi::CheckStatus::Compile,
+            CheckError::Import(_) => ffi::CheckStatus::Import,
+            CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
+        }
     }
 }
 
@@ -275,11 +389,13 @@ mod tests {
     use super::*;
 
     fn ok(result: i32, fuel_used: u64) -> ffi::RunResult {
-        flatten(Ok(RunOutcome { result, fuel_used }))
+        let outcome: Result<RunOutcome, RunFailure> = Ok(RunOutcome { result, fuel_used });
+        outcome.into()
     }
 
     fn failed(error: RunError, fuel_used: u64) -> ffi::RunResult {
-        flatten(Err(RunFailure { error, fuel_used }))
+        let outcome: Result<RunOutcome, RunFailure> = Err(RunFailure { error, fuel_used });
+        outcome.into()
     }
 
     #[test]
@@ -303,8 +419,8 @@ mod tests {
         assert_eq!(crossed.result, 0, "a failed run returned no value");
     }
 
-    /// The `RunError` set as the test *expects* it, not as `status_of` reports it:
-    /// deriving it from the function under test would make the assertion vacuous.
+    /// The `RunError` set as the test *expects* it, not as the conversion reports it:
+    /// deriving it from the code under test would make the assertion vacuous.
     fn every_run_error() -> Vec<RunError> {
         vec![
             RunError::Compile(String::new()),
@@ -323,7 +439,7 @@ mod tests {
     fn every_run_error_crosses_as_a_status_of_its_own() {
         let mut seen = Vec::new();
         for error in every_run_error() {
-            let status = status_of(&error);
+            let status = ffi::RunStatus::from(&error);
             assert!(
                 !seen.contains(&status),
                 "{error:?} shares {status:?} with an earlier outcome"
@@ -337,13 +453,17 @@ mod tests {
     #[test]
     fn no_failure_crosses_as_success() {
         for error in every_run_error() {
-            assert_ne!(status_of(&error), ffi::RunStatus::Ok, "{error:?}");
+            assert_ne!(
+                ffi::RunStatus::from(&error),
+                ffi::RunStatus::Ok,
+                "{error:?}"
+            );
         }
     }
 
     #[test]
     fn a_panic_becomes_a_status_instead_of_an_unwind() {
-        let crossed = guarded(|| panic!("the engine came apart"));
+        let crossed = guarded(|| panic!("the engine came apart"), ffi::RunResult::panicked);
 
         assert_eq!(crossed.status, ffi::RunStatus::Panic);
         assert_eq!(crossed.detail, "panicked: the engine came apart");
@@ -355,14 +475,17 @@ mod tests {
     #[test]
     fn a_formatted_panic_keeps_its_message() {
         let overflowed = 3;
-        let crossed = guarded(|| panic!("gas underflowed by {overflowed}"));
+        let crossed = guarded(
+            || panic!("gas underflowed by {overflowed}"),
+            ffi::RunResult::panicked,
+        );
 
         assert_eq!(crossed.detail, "panicked: gas underflowed by 3");
     }
 
     #[test]
     fn a_panic_with_no_message_still_reports_one() {
-        let crossed = guarded(|| std::panic::panic_any(7u32));
+        let crossed = guarded(|| std::panic::panic_any(7u32), ffi::RunResult::panicked);
 
         assert_eq!(crossed.status, ffi::RunStatus::Panic);
         assert_eq!(crossed.detail, "panicked: payload is not a string");
@@ -370,7 +493,7 @@ mod tests {
 
     #[test]
     fn a_run_that_does_not_panic_is_untouched() {
-        let crossed = guarded(|| ok(1, 2));
+        let crossed = guarded(|| ok(1, 2), ffi::RunResult::panicked);
 
         assert_eq!(crossed.status, ffi::RunStatus::Ok);
         assert_eq!(crossed.result, 1);
@@ -393,5 +516,89 @@ mod tests {
     fn a_caught_cxx_exception_arrives_as_internal() {
         assert_eq!(bytes_written(-1), Err(HostError::Internal));
         assert_eq!(reported(-1), Err(HostError::Internal));
+    }
+
+    // -----------------------------------------------------------------------
+    // The check crossing
+    //
+    // `check_escrow` takes no host, so unlike `run_escrow` it can be called
+    // outright here — the modules are hand-written bytes because this crate has
+    // no assembler and needs none for two of them.
+    // -----------------------------------------------------------------------
+
+    /// The smallest valid module: the eight-byte header and nothing else. It
+    /// compiles and imports nothing, so it reaches the entry-point stage.
+    const EMPTY_MODULE: [u8; 8] = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
+
+    #[test]
+    fn a_module_that_does_not_compile_crosses_as_compile() {
+        let crossed = check_escrow(b"not wasm", "escrow_finish");
+
+        assert_eq!(crossed.status, ffi::CheckStatus::Compile);
+        assert!(
+            crossed.detail.starts_with("compile: "),
+            "{}",
+            crossed.detail
+        );
+    }
+
+    /// The whole crossing, end to end: a real module through the real engine, with
+    /// the refusal the C++ side will log.
+    #[test]
+    fn a_module_without_the_entry_point_crosses_as_entry_point() {
+        let crossed = check_escrow(&EMPTY_MODULE, "escrow_finish");
+
+        assert_eq!(crossed.status, ffi::CheckStatus::EntryPoint);
+        assert_eq!(crossed.detail, "no entry point 'escrow_finish'");
+    }
+
+    /// The `CheckError` set as the test *expects* it, not as the conversion reports
+    /// it: deriving it from the code under test would make the assertion vacuous.
+    fn every_check_error() -> Vec<CheckError> {
+        vec![
+            CheckError::Compile(String::new()),
+            CheckError::Import(String::new()),
+            CheckError::EntryPoint(String::new()),
+        ]
+    }
+
+    /// Distinct statuses, because the TER map on the far side reads nothing else.
+    #[test]
+    fn every_check_error_crosses_as_a_status_of_its_own() {
+        let mut seen = Vec::new();
+        for error in every_check_error() {
+            let status = ffi::CheckStatus::from(&error);
+            assert!(
+                !seen.contains(&status),
+                "{error:?} shares {status:?} with an earlier refusal"
+            );
+            seen.push(status);
+        }
+    }
+
+    /// `Ok` is the one status no refusal may take: the far side reads it as
+    /// `tesSUCCESS` and would let the module through.
+    #[test]
+    fn no_refusal_crosses_as_success() {
+        for error in every_check_error() {
+            assert_ne!(
+                ffi::CheckStatus::from(&error),
+                ffi::CheckStatus::Ok,
+                "{error:?}"
+            );
+        }
+    }
+
+    /// A panic during a check is its own status rather than one more malformed
+    /// module: the far side answers a node-local failure, not `temBAD_WASM`.
+    #[test]
+    fn a_panic_during_a_check_becomes_a_status_instead_of_an_unwind() {
+        let crossed = guarded(
+            || panic!("the checker came apart"),
+            ffi::CheckResult::panicked,
+        );
+
+        assert_eq!(crossed.status, ffi::CheckStatus::Panic);
+        assert_eq!(crossed.detail, "panicked: the checker came apart");
     }
 }

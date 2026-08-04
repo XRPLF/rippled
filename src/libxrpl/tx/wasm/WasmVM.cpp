@@ -14,12 +14,14 @@
 #include <expected>
 #include <optional>
 #include <string_view>
+#include <type_traits>
 
 namespace xrpl {
 
 namespace {
 
 using RunStatus = rs::wasm_vm::RunStatus;
+using CheckStatus = rs::wasm_vm::CheckStatus;
 
 // The engine's outcome as the caller's: a value with its cost, or a TER with the cost to
 // record beside it.
@@ -65,9 +67,69 @@ outcome(rs::wasm_vm::RunResult const& run)
         case RunStatus::Panic:
             return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
     }
+    std::unreachable();
+}
 
-    // Not reachable through the enum, but a value outside it is representable.
-    return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+// Call into the engine, answering `onThrow` if the call throws.
+//
+// The engine reports every outcome as a status rather than an exception, so anything
+// caught here is xrpld's own: a bad allocation, or a `funcName` that is not valid UTF-8
+// and so cannot become a `rust::Str`. Both entry points answer such a failure the way
+// they answer a defect in the engine itself.
+//
+// The counterpart of the engine's own `guarded`, which stops a Rust panic on the other
+// side of the bridge. Neither side may unwind into the other, and this is this side's
+// half: the reason `HostContext`'s methods are `noexcept` rather than relying on cxx is
+// documented in `docs/claude/wasm-vm/bridge.md`.
+template <class Call>
+std::invoke_result_t<Call>
+guarded(beast::Journal j, std::invoke_result_t<Call> onThrow, Call&& call)
+{
+    try
+    {
+        return call();
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.error()) << "wasm: engine call threw: " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(j.error()) << "wasm: engine call threw a non-exception";
+    }
+
+    return onThrow;
+}
+
+// A screening verdict as a TER.
+//
+// `temBAD_WASM` says the transaction carries something this engine cannot run: a
+// malformed transaction, refused before it can reach the ledger. A panic inside the
+// engine is different in kind - nothing was learned about the module - so the answer is
+// node-local rather than a claim about the transaction.
+//
+// Exhaustive over the status enum, with no `default`, for the same reason `outcome` is.
+NotTEC
+verdict(CheckStatus status)
+{
+    switch (status)
+    {
+        case CheckStatus::Ok:
+            return tesSUCCESS;
+
+        // The module will not compile, imports what no engine of this ABI serves, or
+        // does not export the entry point as `() -> i32`.
+        case CheckStatus::Compile:
+        case CheckStatus::Import:
+        case CheckStatus::EntryPoint:
+            return temBAD_WASM;
+
+        // The engine panicked: a defect in the engine, reported rather than fatal to
+        // the node, and not the transaction's fault.
+        case CheckStatus::Panic:
+            return telFAILED_PROCESSING;
+    }
+    std::unreachable();
 }
 
 }  // namespace
@@ -85,15 +147,16 @@ runEscrowWasm(
     if (gasLimit <= 0)
         return std::unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
 
-    try
-    {
-        // The host caches the current ledger object, the slot table and the contract's
-        // data for the length of one run, so a reused one would answer a later contract
-        // out of an earlier contract's state.
+    auto const nodeSideFault = std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+
+    return guarded(hfs.getJournal(), nodeSideFault, [&]() -> std::expected<EscrowResult, WasmTER> {
+        // The host caches the current ledger object, the slot table and the
+        // contract's data for the length of one run, so a reused one would answer a
+        // later contract out of an earlier contract's state.
         if (!hfs.checkSelf())
         {
             JLOG(hfs.getJournal().error()) << "wasm: host functions not clean before the run";
-            return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+            return nodeSideFault;
         }
 
         HostContext ctx{hfs};
@@ -111,20 +174,26 @@ runEscrowWasm(
                 << ", ter: " << transToken(result.error().ter);
         }
         return result;
-    }
-    // The engine reports every wasm outcome as a status rather than an exception, so
-    // anything caught here is xrpld's own: a bad allocation, or a `funcName` that is not
-    // valid UTF-8 and so cannot become a `rust::Str`.
-    catch (std::exception const& e)
-    {
-        JLOG(hfs.getJournal().error()) << "wasm: engine call threw: " << e.what();
-    }
-    catch (...)
-    {
-        JLOG(hfs.getJournal().error()) << "wasm: engine call threw a non-exception";
-    }
+    });
+}
 
-    return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+NotTEC
+preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName)
+{
+    return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
+        auto const checked = rs::wasm_vm::check_escrow(
+            rust::Slice<std::uint8_t const>(wasmCode.data(), wasmCode.size()),
+            rust::Str(funcName.data(), funcName.size()));
+
+        auto const ter = verdict(checked.status);
+        if (!isTesSuccess(ter))
+        {
+            JLOG(j.warn()) << "wasm: "
+                           << std::string_view(checked.detail.data(), checked.detail.size())
+                           << ", ter: " << transToken(ter);
+        }
+        return ter;
+    });
 }
 
 }  // namespace xrpl

@@ -49,12 +49,25 @@ public:
     }
 };
 
-// Base for every wasm test: a mocked host whose log is captured, and one way into the engine.
+// Assemble `wat`. Throws `rust::Error` on a typo, which gtest reports against the test that
+// holds it.
 //
-// Modules are written as WebAssembly text and assembled here. The assembler is in a
-// test-only crate: the engine itself refuses text (`the_vm_refuses_a_text_format_module`),
-// because a text assembler on the consensus path would make a transaction's validity a build
-// flag.
+// A free function because not every wasm test needs a host: `preflightEscrowWasm` takes none,
+// so its fixture derives from `testing::Test` rather than from `WasmTest`.
+inline Bytes
+assembleWat(std::string_view wat)
+{
+    auto const wasm = rs::wasm_testkit::compile_wat(rust::Str(wat.data(), wat.size()));
+    return Bytes{wasm.begin(), wasm.end()};
+}
+
+// Base for every wasm test that runs a contract: a mocked host whose log is captured, and one
+// way into the engine.
+//
+// Modules are written as WebAssembly text and assembled by `assembleWat`. The assembler is in
+// a test-only crate: the engine itself refuses text
+// (`the_vm_refuses_a_text_format_module`), because a text assembler on the consensus path
+// would make a transaction's validity a build flag.
 class WasmTest : public testing::Test
 {
 protected:
@@ -77,13 +90,10 @@ protected:
         EXPECT_CALL(host_, checkSelf()).WillRepeatedly(testing::Return(true));
     }
 
-    // Assemble `wat`. Throws `rust::Error` on a typo, which gtest reports against the test
-    // that holds the fixture.
     static Bytes
     assemble(std::string_view wat)
     {
-        auto const wasm = rs::wasm_testkit::compile_wat(rust::Str(wat.data(), wat.size()));
-        return Bytes{wasm.begin(), wasm.end()};
+        return assembleWat(wat);
     }
 
     std::expected<EscrowResult, WasmTER>

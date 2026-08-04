@@ -54,34 +54,39 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
     check_entry_point(&module, function_name)
 }
 
-/// Every import must be one the linker defines.
-///
-/// The set is [`HostFunctionSpec::ALL`], which is also what
-/// [`crate::register::register_host_functions`] iterates — so a check and a run
-/// cannot disagree about which names exist, and adding a host function extends
-/// both at once. The one thing this does not compare is the *signature*, which
-/// still parts a module from the engine at instantiation.
+/// Every import must be one the linker defines. The first that is not ends the
+/// check, so a module with several faults reports the earliest.
 fn check_imports(module: &Module) -> Result<(), CheckError> {
     for import in module.imports() {
-        let name = import.name();
+        check_import(import.module(), import.name(), import.ty()).map_err(CheckError::Import)?;
+    }
+    Ok(())
+}
 
-        if import.module() != HOST_MODULE {
-            return Err(CheckError::Import(format!(
-                "'{}::{name}' is not from '{HOST_MODULE}'",
-                import.module()
-            )));
-        }
-        if !HostFunctionSpec::ALL
-            .iter()
-            .any(|op| op.wasm_name() == name)
-        {
-            return Err(CheckError::Import(format!("no host function '{name}'")));
-        }
-        if !matches!(import.ty(), ExternType::Func(_)) {
-            return Err(CheckError::Import(format!(
-                "'{HOST_MODULE}::{name}' is not a function"
-            )));
-        }
+/// Whether the engine defines this one import.
+///
+/// The set of names is [`HostFunctionSpec::ALL`], which is also what
+/// [`crate::register::register_host_functions`] iterates — so a check and a run
+/// cannot disagree about which names exist, and adding a host function extends
+/// both at once. The one thing this does not compare is `ty`'s *signature*, which
+/// still parts a module from the engine at instantiation; the kind is compared
+/// because the engine defines these names as functions and as nothing else.
+///
+/// The rules are ordered, not merely alternatives: a guest importing `env::malloc`
+/// is told about the namespace rather than that `malloc` is not a host function,
+/// because the namespace is the one that explains every other import it has too.
+fn check_import(module: &str, name: &str, ty: &ExternType) -> Result<(), String> {
+    if module != HOST_MODULE {
+        return Err(format!("'{module}::{name}' is not from '{HOST_MODULE}'"));
+    }
+    if !HostFunctionSpec::ALL
+        .iter()
+        .any(|op| op.wasm_name() == name)
+    {
+        return Err(format!("no host function '{name}'"));
+    }
+    if !matches!(ty, ExternType::Func(_)) {
+        return Err(format!("'{HOST_MODULE}::{name}' is not a function"));
     }
     Ok(())
 }
@@ -112,9 +117,97 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
     }
 }
 
+/// The rules, one by one, on inputs built directly rather than parsed out of a
+/// module. `tests/preflight.rs` runs real modules through [`check`]; what is here is
+/// what a module cannot state precisely — which rule fires, in which order, and in
+/// what words the caller logs it.
+///
+/// `wat` is a dev-dependency, so the one test here that does need a module writes it
+/// as text like every other test in the crate. What the library must not gain is a
+/// text *entry point* — `check` and `run` take binaries — and a `cfg(test)` caller
+/// cannot give it one.
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wasmi::{GlobalType, MemoryType, Mutability};
+
+    /// A host function as a guest declares it. Any function type will do: the
+    /// signature is not what [`check_import`] compares.
+    fn a_function() -> ExternType {
+        ExternType::Func(FuncType::new([ValType::I32], [ValType::I32]))
+    }
+
+    /// A name every one of these tests can use, taken from the ABI rather than
+    /// spelled, so it stays a real host function as the ABI changes.
+    fn a_host_function_name() -> &'static str {
+        HostFunctionSpec::ALL[0].wasm_name()
+    }
+
+    // -----------------------------------------------------------------------
+    // Imports
+    // -----------------------------------------------------------------------
+
+    /// Every name the ABI declares is served. Derived from `ALL` rather than
+    /// listed, so a host function added to the ABI is covered the day it lands.
+    #[test]
+    fn every_declared_host_function_is_served() {
+        for op in HostFunctionSpec::ALL {
+            assert_eq!(
+                check_import(HOST_MODULE, op.wasm_name(), &a_function()),
+                Ok(()),
+                "{}",
+                op.wasm_name()
+            );
+        }
+    }
+
+    #[test]
+    fn an_import_from_another_namespace_is_refused() {
+        for namespace in ["env", "host", "host_lib2", ""] {
+            let refusal = check_import(namespace, a_host_function_name(), &a_function())
+                .expect_err(namespace);
+            assert!(
+                refusal.contains("is not from 'host_lib'"),
+                "{namespace}: {refusal}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_unknown_name_is_refused() {
+        let refusal =
+            check_import(HOST_MODULE, "no_such_function", &a_function()).expect_err("unknown name");
+        assert_eq!(refusal, "no host function 'no_such_function'");
+    }
+
+    /// The engine defines these names as functions and as nothing else, so a module
+    /// importing one as a global or a memory does not link either.
+    #[test]
+    fn a_host_function_imported_as_anything_else_is_refused() {
+        for ty in [
+            ExternType::Global(GlobalType::new(ValType::I32, Mutability::Const)),
+            ExternType::Memory(MemoryType::new(1, None)),
+        ] {
+            let name = a_host_function_name();
+            let refusal = check_import(HOST_MODULE, name, &ty).expect_err("not a function");
+            assert_eq!(refusal, format!("'host_lib::{name}' is not a function"));
+        }
+    }
+
+    /// The rules are ordered. An import that breaks two of them is reported by the
+    /// first, so the message a contract author reads is the one that explains the
+    /// rest of their imports too.
+    #[test]
+    fn the_namespace_is_reported_before_the_name() {
+        let refusal = check_import("env", "no_such_function", &a_function())
+            .expect_err("neither the namespace nor the name is served");
+
+        assert!(refusal.contains("is not from 'host_lib'"), "{refusal}");
+        assert!(
+            !refusal.contains("no host function"),
+            "the namespace explains it: {refusal}"
+        );
+    }
 
     /// Both halves of the type are load-bearing, and neither is checked anywhere
     /// a module cannot reach.
@@ -130,5 +223,65 @@ mod tests {
         ] {
             assert!(!is_entry_point(&wrong), "{wrong:?}");
         }
+    }
+
+    /// Three faults, three descriptions. A run reports these too, with wasmi's own
+    /// error appended, so a swapped arm would mislead at both stages at once.
+    #[test]
+    fn each_entry_point_fault_is_described_as_itself() {
+        assert_eq!(
+            entry_point_fault(Some(a_function()), "finish"),
+            "entry point 'finish' has the wrong signature, expected '() -> i32'"
+        );
+        assert_eq!(
+            entry_point_fault(
+                Some(ExternType::Global(GlobalType::new(
+                    ValType::I32,
+                    Mutability::Const
+                ))),
+                "finish"
+            ),
+            "export 'finish' is not a function"
+        );
+        assert_eq!(
+            entry_point_fault(None, "finish"),
+            "no entry point 'finish'",
+            "an absent export must not be reported as a wrong signature"
+        );
+    }
+
+    /// The bridge logs this string and the C++ tests match on it, so the stage's
+    /// prefix is part of the interface rather than a debugging aid.
+    #[test]
+    fn a_refusal_names_its_stage() {
+        assert_eq!(
+            CheckError::Compile("bad magic".to_string()).to_string(),
+            "compile: bad magic"
+        );
+        assert_eq!(
+            CheckError::Import("no host function 'x'".to_string()).to_string(),
+            "import: no host function 'x'"
+        );
+        // The entry point's detail already says which of its three faults it is,
+        // so a prefix would only repeat it.
+        assert_eq!(
+            CheckError::EntryPoint("no entry point 'finish'".to_string()).to_string(),
+            "no entry point 'finish'"
+        );
+    }
+
+    #[test]
+    fn the_stages_run_in_order() {
+        assert!(
+            matches!(check(b"not wasm", "finish"), Err(CheckError::Compile(_))),
+            "nothing is screened until the module compiles"
+        );
+
+        // A module that compiles and imports nothing, so it reaches the entry point.
+        let empty = wat::parse_str("(module)").expect("assembles");
+        assert!(
+            matches!(check(&empty, "finish"), Err(CheckError::EntryPoint(_))),
+            "a module that compiles and imports nothing reaches the entry point"
+        );
     }
 }

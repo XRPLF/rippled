@@ -49,8 +49,9 @@ than guessing. See [history.md](history.md) for what is worth recovering.
     (`check` — compile, imports, entry point, with no host, store or gas), `abi.rs` (gas,
     transfer budget, guest-memory marshaling), `region.rs` (the `(ptr, len)` type),
     `register.rs` (one `func_wrap` per host function). See [engine.md](engine.md).
-  - `xrpl-wasm-vm-ffi/` — the cxx bridge, both crossings. `RunStatus`/`RunResult`,
-    `run_escrow`, `CxxHost`, the panic guard. See [bridge.md](bridge.md).
+  - `xrpl-wasm-vm-ffi/` — the cxx bridge, all three crossings. `RunStatus`/`RunResult` and
+    `run_escrow`, `CheckStatus`/`CheckResult` and `check_escrow`, `CxxHost`, the panic
+    guard. See [bridge.md](bridge.md).
   - `xrpl-wasm-testkit/` — **test-only**: `compile_wat`, so the C++ tests write their modules
     as WebAssembly text. A crate of its own so `wat` cannot reach the shipped node; see
     [testing.md](testing.md).
@@ -58,7 +59,8 @@ than guessing. See [history.md](history.md) for what is worth recovering.
   `HostFunctions` interface), `HostFuncImpl*.cpp` (its implementations, over
   `ApplyContext&`), `WasmCommon.h` (`HostFunctionError`, `Wmem`, `WasmTER`, `FieldLocator`).
   The bridge's C++ half is `HostContext.{h,cpp}` (the ABI-shaped view of `HostFunctions`)
-  and `WasmVM.{h,cpp}` (`runEscrowWasm`, gas validation, the TER map).
+  and `WasmVM.{h,cpp}` (`runEscrowWasm`, `preflightEscrowWasm`, gas validation, both TER
+  maps).
 - `src/tests/libxrpl/tx/wasm/` — the C++ tests, in the `xrpl_tests` gtest binary.
 - `include/xrpl/tx/wasm/README.md` is **stale**: it uses the long name `get_ledger_sqn`
   where the code registers `ldgr_index`, and references `detail/WasmVM.cpp`,
@@ -68,15 +70,17 @@ than guessing. See [history.md](history.md) for what is worth recovering.
 ## Current state (2026-08-04)
 
 **The whole workspace is green**: `cargo test --workspace`, `clippy --workspace
---all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **154 tests** — 33 macro,
-12 facade, 1 doctest, **96 in `xrpl-wasm-vm`** (11 unit; 85 integration — 13 `budgets`,
-12 `host_calls`, 23 `memory_policy`, 16 `preflight`, 21 `vm_limits`), 10 in
-`xrpl-wasm-vm-ffi`, 2 in `xrpl-wasm-testkit`. On the C++ side, **27 tests over the whole
-loop** in six fixtures: `./xrpl_tests --gtest_filter='WasmVMTest.*:*Call.*'`.
+--all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **168 tests** — 33 macro,
+12 facade, 1 doctest, **105 in `xrpl-wasm-vm`** (19 unit; 86 integration — 13 `budgets`,
+12 `host_calls`, 23 `memory_policy`, 17 `preflight`, 21 `vm_limits`), 15 in
+`xrpl-wasm-vm-ffi`, 2 in `xrpl-wasm-testkit`. On the C++ side, **37 tests over the whole
+loop** in seven fixtures: `./xrpl_tests
+--gtest_filter='WasmVMTest.*:*Call.*:PreflightTest.*'`.
 
-**Both crossings are wired and a real contract runs through them**: C++ calls
+**All three crossings are wired and a real contract runs through them**: C++ calls
 `runEscrowWasm`, the engine services `ldgr_index` by calling back into
-`xrpl::HostFunctions`, and the guest reads the answer out of its own memory. Five host
+`xrpl::HostFunctions`, and the guest reads the answer out of its own memory;
+`preflightEscrowWasm` screens a module through the third, with no host at all. Five host
 functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
 `trace_num`) out of the ~65 the full ABI will carry.
 
@@ -85,23 +89,29 @@ functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
 
 ## Next
 
-1. **`preflightEscrowWasm`.** The engine half is done — `check` in `preflight.rs`. What is
-   left is the second bridge entry (`check_escrow`, a `CheckStatus`/`CheckResult` pair
-   mirroring `RunStatus`/`RunResult`) and the C++ front, whose signature is
-   `(Bytes, beast::Journal, std::string_view) -> NotTEC`: **no `HostFunctions&`**, since a
-   check needs no host and a `PreflightContext` has no ledger to build one from.
-   Two decisions are still open — what a *panic* at preflight returns
-   (`telFAILED_PROCESSING` reads as the preflight analogue of `tecINTERNAL`'s "the fault is
-   the node's"), and whether the apply-side map moves `Instantiate` off `tecINTERNAL` in the
-   same change; see [bridge.md](bridge.md).
-2. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` is
-   reached only from `src/tests/libxrpl/tx/wasm/`. Wiring it up is what makes
-   `WasmHostFunctionsImpl` (over a real `ApplyContext`) the host in production rather than
-   in principle.
-3. **A gas parity oracle.** `Wasm_test.cpp` asserts exact gas numbers (e.g. 29'502) and is
+1. **Move `Instantiate` off `tecINTERNAL`**, and report a trapping start section as `Trap`
+   rather than as a module that would not instantiate. Two lines plus their tests, and it is
+   what actually removes the papering-over: `check` cannot see either of the two remaining
+   instantiate faults, so the apply-side map must stop depending on preflight's
+   completeness. [bridge.md](bridge.md) has the reasoning.
+2. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` and
+   `preflightEscrowWasm` are reached only from `src/tests/libxrpl/tx/wasm/`. Wiring it up is
+   what makes `WasmHostFunctionsImpl` (over a real `ApplyContext`) the host in production
+   rather than in principle. **Blocked on the protocol fields**: `FinishFunction` and
+   `ComputationAllowance` exist nowhere in this fork or upstream, and adding
+   `FinishFunction` also has to answer the **contract code-size cap** — there is none, and
+   preflight's cost is linear in the blob (a 249 KB module of duplicate imports measures
+   1.5 ms, mostly wasmi's own parse).
+3. **Import signatures at preflight.** `check` compares an import's namespace, name and
+   kind, not its type, so a mistyped import still parts a module from the engine at
+   instantiation. Deferred to when `host_functions!` generates the wasm-level lowering,
+   which the C header and the typed `link_*` shims in [abi.md](abi.md) both want anyway.
+   Note the deleted C++ `check` did not compare signatures either, so this is inherited
+   rather than new.
+4. **A gas parity oracle.** `Wasm_test.cpp` asserts exact gas numbers (e.g. 29'502) and is
    the best oracle we have, but it is commented out and its fixtures cannot run on this
    engine — see the `env` finding in [testing.md](testing.md).
-4. **The `Bytes`-by-value copy in `HostFunctions`** — [bridge.md](bridge.md). A
+5. **The `Bytes`-by-value copy in `HostFunctions`** — [bridge.md](bridge.md). A
    49-signature sweep, so it wants a caller to measure against first.
 
 Also open: the two performance items and the ABI questions in

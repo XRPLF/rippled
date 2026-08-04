@@ -39,6 +39,9 @@
   (`let f: fn(&ffi::HostContext) -> _ = ...`) fails with `Undefined symbols:
   _rs$wasm_vm$cxxbridge1$…`. So keep those tests on pure logic — the status map, the panic
   guard, the wire conversions — and put anything that needs a host in the gtest.
+  **`check_escrow` is the exception**: it takes no `HostContext`, so its tests call the real
+  bridge function, hand-writing the two modules they need as bytes (the eight-byte header is
+  a valid module) rather than reaching for an assembler this crate does not have.
 
 ## The Rust tests
 
@@ -98,6 +101,13 @@ gas, entryPoint)`. `HostCallTest` adds a `wat()` the derived fixture supplies an
 Then one fixture per host function — `LedgerSqnCall`, `CurrentLedgerObjFieldCall`,
 `Sha512HalfCall`, `TraceCall`, `TraceNumCall` — because the module *is* that function's shared
 setup. `WasmVMTest` keeps what belongs to the engine rather than to any function.
+
+**`PreflightTest` deliberately derives from `testing::Test`, not from `WasmTest`**, and holds
+no mock: `preflightEscrowWasm` takes no host, and a fixture that supplied one would hide the
+signature that is the point. That is why `assembleWat` is a free function in `WasmFixture.h`
+rather than a `WasmTest` member. `PreflightTest.ScreeningAgreesWithARun` is the one test
+there that does build a host — it puts the same modules through `runEscrowWasm` so the two
+entry points do not have to be trusted to agree.
 
 **The journal is captured, not sent to a null sink.**
 `WasmVMTest.ThrowingHostFunctionBecomesInternal` asserts the exception text *and* that the log
