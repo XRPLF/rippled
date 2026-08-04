@@ -201,21 +201,67 @@ constexpr std::size_t kMaxManifestBytes = 358;
 constexpr std::size_t kMaxManifestBase64 = base64::encodedSize(kMaxManifestBytes);
 
 /**
- * Maximum number of manifests carried in a single TMManifests message.
+ * Default number of untrusted manifests to store in cache and allowed
+ * in one Manifest message.
  *
- * Outbound, the TMManifests message sent to a peer includes every trusted
- * manifest and fills the rest of this budget with untrusted gossip, so it
- * never exceeds this size. Inbound, trusted manifests are always processed
- * and untrusted ones are processed up to this many, so a peer sending its
- * whole cache cannot force unbounded work.
+ * Bounds unlisted validators two ways. In the cache, a manifest for a
+ * brand-new unlisted key is rejected once this many are held, so peer gossip
+ * cannot grow the cache without end. In a TMManifests message, this many are
+ * sent and processed, so a peer sending its whole cache cannot force unbounded
+ * work.
  *
- * The trusted set is tiny relative to this bound, so trusted manifests are
- * not dropped in practice. This is a transitional per-message cap; the cache
- * already bounds untrusted manifests (see kMaxUntrustedCount), so it is no
- * longer needed once the network has upgraded past nodes that send their
- * whole cache in one message.
+ * Operators can override this with `[overlay] max_untrusted_count`. Both users
+ * read the configured value and fall back to this default.
  */
-constexpr std::size_t kMaxManifestsPerMessage = 200;
+constexpr std::size_t kMaxUntrustedCount = 300;
+
+/**
+ * Default number of trusted manifests allowed in a Manifest message.
+ * Not used atm while creating the message, but used to calculate the higher limit on
+ * received message size. Introduced to maintain consistency. Future implementation
+ * will use this limit.
+ *
+ * Trusted manifests are never dropped: every one this node holds is sent, and
+ * every one received is processed, since dropping one would delay a validator
+ * key rotation. This count only sizes the largest message accepted, so it must
+ * stay above any realistic validator list. Cap can be increased in the config
+ * file if messages get rejected with actual trusted manifest count crossing
+ * configured(or else default) value.
+ * Operators can override this with `[overlay] max_trusted_count`.
+ */
+constexpr std::size_t kMaxTrustedCount = 300;
+
+/**
+ * Number of untrusted manifests to store in cache and allowed
+ * in one Manifest message..
+ *
+ * Returns the operator's override when one is configured, otherwise
+ * @ref kMaxUntrustedCount. Config stores an override rather than the default
+ * itself because the core module cannot depend on this module.
+ *
+ * @param configured The value from `[overlay] max_untrusted_count`, or
+ *     `std::nullopt` when the operator did not set it.
+ */
+constexpr std::size_t
+untrustedManifestCount(std::optional<std::size_t> const& configured)
+{
+    return configured.value_or(kMaxUntrustedCount);
+}
+
+/**
+ * Number of trusted manifests allowed in a Manifest message.
+ *
+ * Not a cap on how many are sent or processed; see @ref kMaxTrustedCount.
+ * but used to calculate the higher limit on received message size.
+ *
+ * @param configured The value from `[overlay] max_trusted_count`, or
+ *     `std::nullopt` when the operator did not set it.
+ */
+constexpr std::size_t
+trustedManifestCount(std::optional<std::size_t> const& configured)
+{
+    return configured.value_or(kMaxTrustedCount);
+}
 
 /**
  * Constructs Manifest from serialized string
@@ -361,9 +407,10 @@ private:
     /**
      * Maximum number of untrusted master keys kept in the cache.
      *
-     * Once reached, a manifest for a brand-new unlisted key is rejected.
+     * Once reached, a manifest for a brand-new unlisted key is rejected. Set
+     * from the config, defaulting to @ref kMaxUntrustedCount.
      */
-    static constexpr std::size_t kMaxUntrustedCount = 100;
+    std::size_t const maxUntrustedCount_;
 
     /**
      * Running count of manifests rejected because the untrusted cap was full.
@@ -381,7 +428,17 @@ private:
     static constexpr std::uint64_t kUntrustedRejectCount = 10000;
 
 public:
-    explicit ManifestCache(beast::Journal j = beast::Journal(beast::Journal::getNullSink())) : j_(j)
+    /**
+     * @param j Journal for logging.
+     *
+     * @param maxUntrustedCount Untrusted master keys to keep. Pass the
+     *     configured value; defaults to @ref kMaxUntrustedCount. Taken as a
+     *     parameter because this module cannot depend on the config.
+     */
+    explicit ManifestCache(
+        beast::Journal j = beast::Journal(beast::Journal::getNullSink()),
+        std::size_t maxUntrustedCount = kMaxUntrustedCount)
+        : j_(j), maxUntrustedCount_(maxUntrustedCount)
     {
     }
 

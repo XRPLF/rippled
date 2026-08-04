@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
@@ -53,6 +54,13 @@
 #include <vector>
 
 namespace xrpl {
+
+// The largest counts an operator can configure must still imply a message size
+// within the overall protocol message limit. The same check for the defaults
+// lives in Message.h.
+static_assert(
+    maximumManifestsMessageSize(Config::kMaxManifestCount, Config::kMaxManifestCount) <
+    kMaximumMessageSize);
 
 class PeerImp;
 class BasicConfig;
