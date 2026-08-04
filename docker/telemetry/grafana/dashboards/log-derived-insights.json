@@ -259,14 +259,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
         "y": 13
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: errors",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -315,7 +314,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Errors [{{service_instance_id}}]"
         }
       ],
       "id": 3
@@ -330,14 +330,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
+        "w": 12,
+        "x": 12,
         "y": 13
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: charges",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -386,7 +385,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Charges [{{service_instance_id}}]"
         }
       ],
       "id": 4
@@ -401,14 +401,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 13
+        "w": 12,
+        "x": 0,
+        "y": 21
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: fee",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -457,7 +456,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Fee Charged [{{service_instance_id}}]"
         }
       ],
       "id": 5
@@ -472,14 +472,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 13
+        "w": 12,
+        "x": 12,
+        "y": 21
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: rejections",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -528,7 +527,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Rejections [{{service_instance_id}}]"
         }
       ],
       "id": 6
@@ -543,14 +543,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 21
+        "y": 29
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: events",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -599,7 +598,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Consensus Events [{{service_instance_id}}]"
         }
       ],
       "id": 7
@@ -614,14 +614,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 21
+        "w": 12,
+        "x": 12,
+        "y": 29
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: breaches",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -670,7 +669,8 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Breaches [{{service_instance_id}}]"
         }
       ],
       "id": 8
@@ -685,14 +685,13 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 21
+        "w": 12,
+        "x": 0,
+        "y": 37
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "suffix: transitions",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -741,29 +740,29 @@
           "refId": "A",
           "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Transitions [{{service_instance_id}}]"
         }
       ],
       "id": 9
     },
     {
       "type": "stat",
-      "title": "Nodes By Ledger Fetch Waste",
-      "description": "###### What this is:\n*Which nodes waste the most bandwidth fetching ledger data they already hold.*\n\n###### How it's computed:\n*Duplicate ledger nodes divided by total fetched, per node, from the InboundLedger stats lines.*\n\n###### Reading it:\n*A ratio of 0.8 means four in five fetched nodes were already present locally.*\n\n###### Healthy range:\n*Below roughly 0.3. Some duplication is unavoidable when fetching from several peers.*\n\n###### Watch for:\n*Sustained values above 0.8, which waste both bandwidth and peer resource credit.*\n\n###### Keywords:\n- **Duplicate** *(per fetch)* — a ledger node already held locally.\n\n###### Computation boundary:\n*Result: Per node — a RATIO of two summed counters, not a count.*\n*Derived in the Grafana query via `unwrap`.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### Note:\n*Requires debug logs on the InboundLedger partition.*\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
+      "title": "Nodes By Duplicate Ledger Fetches",
+      "description": "###### What this is:\n*Which nodes wasted the most ledger-fetch bandwidth, counted as duplicate SHAMap nodes received.*\n\n###### How it's computed:\n*Sum of the `dupe` counter from `Ledger AS/TX node stats` log lines, per node, over the dashboard window. `dupe` is matched by its own regex because the emitter omits any counter that is zero.*\n\n###### Reading it:\n*Every duplicate is a ledger node the peer sent that this node already held: bytes crossed the network, the peer spent resource credit serving it, and it was discarded.*\n\n###### Healthy range:\n*Workload-dependent. Compare nodes of the same role rather than reading an absolute value; some duplication is unavoidable when fetching one ledger from several peers.*\n\n###### Watch for:\n*A node far ahead of its siblings, which points at that node's fetch logic or peer set rather than a network condition.*\n\n###### Keywords:\n- **Ledger node** *(per fetch)* — one SHAMap node fetched while acquiring a ledger.\n- **Duplicate** *(per fetch)* — a node already held locally; wasted bandwidth and peer credit.\n\n###### Computation boundary:\n*Result: Per node — a COUNT of duplicates, not a ratio.*\n*NOT recorded as a metric. Derived in the Grafana query via `unwrap` over raw log text.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### Note:\n*Requires debug logs on the InboundLedger partition. For the duplicate RATIO see \"Ledger Node Fetch Duplicate Ratio\" in the Ledger Acquisition Efficiency row — a stat panel cannot render a division, because Loki does not name binary-operation frames and Grafana falls back to \"Value #A\".*\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 21
+        "w": 12,
+        "x": 12,
+        "y": 37
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.service_instance_id}",
-          "unit": "percentunit",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -773,17 +772,15 @@
               },
               {
                 "color": "yellow",
-                "value": 0.5
+                "value": 100000
               },
               {
                 "color": "red",
-                "value": 0.8
+                "value": 1000000
               }
             ]
           },
-          "custom": {},
-          "min": 0,
-          "max": 1
+          "custom": {}
         },
         "overrides": []
       },
@@ -795,7 +792,7 @@
         "textMode": "value_and_name",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": ["max"],
           "fields": "",
           "values": false
         },
@@ -812,9 +809,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap good [$__range]))))",
+          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])))",
           "instant": true,
-          "queryType": "instant"
+          "queryType": "instant",
+          "legendFormat": "Duplicates [{{service_instance_id}}]"
         }
       ],
       "id": 10
@@ -827,7 +825,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 57
       },
       "panels": [],
       "id": 11
@@ -844,7 +842,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 58
       },
       "fieldConfig": {
         "defaults": {
@@ -904,7 +902,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 58
       },
       "fieldConfig": {
         "defaults": {
@@ -912,7 +910,8 @@
           "custom": {
             "fillOpacity": 80,
             "lineWidth": 0,
-            "spanNulls": true
+            "spanNulls": 1800000,
+            "insertNulls": false
           },
           "color": {
             "mode": "palette-classic"
@@ -956,7 +955,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 52
+        "y": 68
       },
       "panels": [],
       "id": 14
@@ -969,7 +968,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 69
       },
       "fieldConfig": {
         "defaults": {
@@ -1028,7 +1027,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 53
+        "y": 69
       },
       "fieldConfig": {
         "defaults": {
@@ -1087,7 +1086,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 63
+        "y": 79
       },
       "panels": [],
       "id": 17
@@ -1100,7 +1099,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 80
       },
       "fieldConfig": {
         "defaults": {
@@ -1159,7 +1158,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 80
       },
       "fieldConfig": {
         "defaults": {
@@ -1227,7 +1226,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 90
       },
       "fieldConfig": {
         "defaults": {
@@ -1364,7 +1363,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 88
+        "y": 104
       },
       "panels": [],
       "id": 21
@@ -1377,7 +1376,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 89
+        "y": 105
       },
       "fieldConfig": {
         "defaults": {
@@ -1436,7 +1435,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 89
+        "y": 105
       },
       "fieldConfig": {
         "defaults": {
@@ -1495,7 +1494,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 115
       },
       "fieldConfig": {
         "defaults": {
@@ -1644,7 +1643,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 113
+        "y": 129
       },
       "panels": [],
       "id": 25
@@ -1652,12 +1651,12 @@
     {
       "type": "timeseries",
       "title": "Ledger Node Fetch Duplicate Ratio",
-      "description": "###### What this is:\n*The fraction of fetched ledger nodes that were duplicates this node already held.*\n\n###### How it's computed:\n*Sum of the dupe counter divided by the sum of good plus dupe, parsed from the `Ledger AS/TX node stats` log lines.*\n\n###### Reading it:\n*This is wasted ledger-fetch bandwidth. A ratio of 0.5 means half of everything fetched was already present.*\n\n###### Healthy range:\n*Below roughly 0.3. Some duplication is unavoidable when fetching from several peers at once.*\n\n###### Watch for:\n*Sustained values above 0.8. Live observation has recorded good:142 dupe:891, an 86 percent duplicate rate, which wastes both bandwidth and peer resource credit.*\n\n###### Keywords:\n- **Ledger node** *(per fetch)* — one SHAMap node fetched while acquiring a ledger.\n- **Duplicate** *(per fetch)* — a node already held locally; wasted bandwidth and peer credit.\n\n###### Computation boundary:\n*Result: Per node — a ratio of two summed counters, dupe / (good + dupe).*\n*NOT recorded as a metric. Derived in the Grafana query via `unwrap` over the counters in the InboundLedger stats line.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer / takeAsRootNode`\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
+      "description": "###### What this is:\n*The fraction of fetched ledger nodes that were duplicates this node already held.*\n\n###### How it's computed:\n*Sum of the dupe counter divided by the sum of good plus dupe, parsed from the `Ledger AS/TX node stats` log lines. Each field is matched independently because the emitter omits any counter that is zero.*\n\n###### Reading it:\n*This is wasted ledger-fetch bandwidth. A ratio of 0.5 means half of everything fetched was already present.*\n\n###### Healthy range:\n*Below roughly 0.3. Some duplication is unavoidable when fetching from several peers at once.*\n\n###### Watch for:\n*Sustained values above 0.8. Live observation has recorded good:142 dupe:891, an 86 percent duplicate rate, which wastes both bandwidth and peer resource credit.*\n\n###### Keywords:\n- **Ledger node** *(per fetch)* — one SHAMap node fetched while acquiring a ledger.\n- **Duplicate** *(per fetch)* — a node already held locally; wasted bandwidth and peer credit.\n\n###### Computation boundary:\n*Result: Per node — a ratio of two summed counters, dupe / (good + dupe).*\n*NOT recorded as a metric. Derived in the Grafana query via `unwrap` over the counters in the InboundLedger stats line.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer / takeAsRootNode`\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
       "gridPos": {
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 114
+        "y": 130
       },
       "fieldConfig": {
         "defaults": {
@@ -1718,7 +1717,7 @@
           },
           "refId": "A",
           "legendFormat": "Duplicate Ratio [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap good [$__auto])))"
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto])))"
         }
       ],
       "id": 26,
@@ -1735,7 +1734,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 114
+        "y": 130
       },
       "fieldConfig": {
         "defaults": {
@@ -1777,7 +1776,7 @@
           },
           "refId": "A",
           "legendFormat": "Good [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
         },
         {
           "datasource": {
@@ -1786,7 +1785,7 @@
           },
           "refId": "B",
           "legendFormat": "Duplicate [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
         },
         {
           "datasource": {
@@ -1812,7 +1811,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 124
+        "y": 140
       },
       "panels": [],
       "id": 28
@@ -1825,7 +1824,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 125
+        "y": 141
       },
       "fieldConfig": {
         "defaults": {
@@ -1884,7 +1883,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 125
+        "y": 141
       },
       "fieldConfig": {
         "defaults": {
@@ -1952,7 +1951,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 135
+        "y": 151
       },
       "panels": [],
       "id": 31
@@ -1965,7 +1964,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 136
+        "y": 152
       },
       "fieldConfig": {
         "defaults": {
@@ -2024,7 +2023,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 136
+        "y": 152
       },
       "fieldConfig": {
         "defaults": {
@@ -2083,7 +2082,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 146
+        "y": 162
       },
       "fieldConfig": {
         "defaults": {
@@ -2152,7 +2151,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 156
+        "y": 172
       },
       "panels": [],
       "id": 35
@@ -2165,7 +2164,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 157
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -2225,7 +2224,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 157
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -2284,7 +2283,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 167
+        "y": 183
       },
       "fieldConfig": {
         "defaults": {
@@ -2344,7 +2343,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 177
+        "y": 193
       },
       "panels": [],
       "id": 39
@@ -2357,7 +2356,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 178
+        "y": 194
       },
       "fieldConfig": {
         "defaults": {
@@ -2435,7 +2434,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 178
+        "y": 194
       },
       "fieldConfig": {
         "defaults": {},
@@ -2449,7 +2448,12 @@
         "prettifyLogMessage": false,
         "enableLogDetails": true,
         "dedupStrategy": "none",
-        "sortOrder": "Descending"
+        "sortOrder": "Descending",
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
