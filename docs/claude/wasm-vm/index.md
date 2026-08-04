@@ -46,7 +46,8 @@ than guessing. See [history.md](history.md) for what is worth recovering.
   - `xrpl-host-functions-macros/` — the proc macro. An implementation detail of the crate
     above, deliberately not re-exported: the ABI has one declaration site.
   - `xrpl-wasm-vm/` — the wasmi wrapper. `vm.rs` (engine, store, `run`), `preflight.rs`
-    (`check` — compile, imports, entry point, with no host, store or gas), `abi.rs` (gas,
+    (`check` — compile, imports, entry point, declared memory, with no host, store or
+    gas), `abi.rs` (gas,
     transfer budget, guest-memory marshaling), `region.rs` (the `(ptr, len)` type),
     `register.rs` (one `func_wrap` per host function). See [engine.md](engine.md).
   - `xrpl-wasm-vm-ffi/` — the cxx bridge, all three crossings. `RunStatus`/`RunResult` and
@@ -70,10 +71,10 @@ than guessing. See [history.md](history.md) for what is worth recovering.
 ## Current state (2026-08-04)
 
 **The whole workspace is green**: `cargo test --workspace`, `clippy --workspace
---all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **168 tests** — 33 macro,
-12 facade, 1 doctest, **105 in `xrpl-wasm-vm`** (19 unit; 86 integration — 13 `budgets`,
-12 `host_calls`, 23 `memory_policy`, 17 `preflight`, 21 `vm_limits`), 15 in
-`xrpl-wasm-vm-ffi`, 2 in `xrpl-wasm-testkit`. On the C++ side, **37 tests over the whole
+--all-targets`, `fmt`, and `cargo doc -p xrpl-wasm-vm --no-deps`. **173 tests** — 33 macro,
+12 facade, 1 doctest, **110 in `xrpl-wasm-vm`** (20 unit; 90 integration — 13 `budgets`,
+12 `host_calls`, 23 `memory_policy`, 20 `preflight`, 22 `vm_limits`), 15 in
+`xrpl-wasm-vm-ffi`, 2 in `xrpl-wasm-testkit`. On the C++ side, **40 tests over the whole
 loop** in seven fixtures: `./xrpl_tests
 --gtest_filter='WasmVMTest.*:*Call.*:PreflightTest.*'`.
 
@@ -89,12 +90,7 @@ functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
 
 ## Next
 
-1. **Move `Instantiate` off `tecINTERNAL`**, and report a trapping start section as `Trap`
-   rather than as a module that would not instantiate. Two lines plus their tests, and it is
-   what actually removes the papering-over: `check` cannot see either of the two remaining
-   instantiate faults, so the apply-side map must stop depending on preflight's
-   completeness. [bridge.md](bridge.md) has the reasoning.
-2. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` and
+1. **A caller.** `EscrowFinish.cpp` still has no wasm reference, so `runEscrowWasm` and
    `preflightEscrowWasm` are reached only from `src/tests/libxrpl/tx/wasm/`. Wiring it up is
    what makes `WasmHostFunctionsImpl` (over a real `ApplyContext`) the host in production
    rather than in principle. **Blocked on the protocol fields**: `FinishFunction` and
@@ -102,16 +98,16 @@ functions are registered (`ldgr_index`, `home_le_field`, `sha512_half`, `trace`,
    `FinishFunction` also has to answer the **contract code-size cap** — there is none, and
    preflight's cost is linear in the blob (a 249 KB module of duplicate imports measures
    1.5 ms, mostly wasmi's own parse).
-3. **Import signatures at preflight.** `check` compares an import's namespace, name and
+2. **Import signatures at preflight.** `check` compares an import's namespace, name and
    kind, not its type, so a mistyped import still parts a module from the engine at
    instantiation. Deferred to when `host_functions!` generates the wasm-level lowering,
    which the C header and the typed `link_*` shims in [abi.md](abi.md) both want anyway.
    Note the deleted C++ `check` did not compare signatures either, so this is inherited
    rather than new.
-4. **A gas parity oracle.** `Wasm_test.cpp` asserts exact gas numbers (e.g. 29'502) and is
+3. **A gas parity oracle.** `Wasm_test.cpp` asserts exact gas numbers (e.g. 29'502) and is
    the best oracle we have, but it is commented out and its fixtures cannot run on this
    engine — see the `env` finding in [testing.md](testing.md).
-5. **The `Bytes`-by-value copy in `HostFunctions`** — [bridge.md](bridge.md). A
+4. **The `Bytes`-by-value copy in `HostFunctions`** — [bridge.md](bridge.md). A
    49-signature sweep, so it wants a caller to measure against first.
 
 Also open: the two performance items and the ABI questions in

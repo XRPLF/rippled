@@ -83,8 +83,9 @@ pub struct RunOutcome {
 pub enum RunError {
     /// `wasm` is not a valid module under this engine's configuration.
     Compile(String),
-    /// The module compiled but would not instantiate: an import the linker does
-    /// not define, an initial memory past the page cap, a trapping start section.
+    /// The module compiled but the engine would not accept it: an import the
+    /// linker does not define, or an initial memory past the page cap. Not guest
+    /// code failing — a start section that traps is [`RunError::Trap`].
     Instantiate(String),
     /// No export named `function_name` with signature `() -> i32`: absent, not a
     /// function, or a function of another type — which the detail tells apart.
@@ -99,7 +100,8 @@ pub enum RunError {
     /// to resolve the memory from.
     NoMemory,
     /// The guest trapped: `unreachable`, division by zero, an out-of-bounds
-    /// access, or `memory.grow` past the page cap.
+    /// access, or `memory.grow` past the page cap. Wherever the guest was
+    /// executing, including a start section during instantiation.
     Trap(String),
 }
 
@@ -185,6 +187,22 @@ fn guest_halted(error: &wasmi::Error) -> Option<RunError> {
         return Some(host_fatal(fatal.0));
     }
     (error.as_trap_code() == Some(TrapCode::OutOfFuel)).then_some(RunError::OutOfGas)
+}
+
+/// Why instantiation failed, once [`guest_halted`] has ruled out the two conditions
+/// that can arise anywhere.
+///
+/// A start section is guest code, so it can trap on its own — `unreachable`, a
+/// division by zero, an out-of-bounds access — and a trap is the guest's fault
+/// wherever it happens. Naming that after the *stage* would file it beside the
+/// module faults a caller treats as its own defect, and charge nothing for
+/// instructions the contract burned. What is left for [`RunError::Instantiate`] is a
+/// module the linker or the store would not accept at all.
+fn instantiation_failure(error: &wasmi::Error) -> RunError {
+    match error.as_trap_code() {
+        Some(_) => RunError::Trap(error.to_string()),
+        None => RunError::Instantiate(error.to_string()),
+    }
 }
 
 /// The outcome a host-fatal `HostError` is.
@@ -306,7 +324,7 @@ pub fn run<'h>(
     let instance = match linker.instantiate_and_start(&mut store, &module) {
         Ok(instance) => instance,
         Err(e) => {
-            let error = guest_halted(&e).unwrap_or_else(|| RunError::Instantiate(e.to_string()));
+            let error = guest_halted(&e).unwrap_or_else(|| instantiation_failure(&e));
             return Err(failed(&store, gas, error));
         }
     };

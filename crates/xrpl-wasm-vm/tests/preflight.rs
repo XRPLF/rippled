@@ -375,42 +375,86 @@ fn screening_and_a_run_agree() {
     }
 }
 
-/// The gap, listed rather than described. A start section is guest code, and
-/// running it is what screening must not do; a memory the module keeps to itself
-/// is not in its exports. Both leave a module that passes screening and then fails
-/// to instantiate, which is why a run's own refusal cannot be treated as the
-/// node's fault.
+/// A module asking for more memory than the engine grants is refused, so the
+/// contract that could never run does not reach the ledger. The cap itself passes.
+#[test]
+fn an_exported_memory_past_the_cap_does_not_pass() {
+    let wat = module(
+        &[&format!(
+            r#"(memory (export "memory") {})"#,
+            MAX_MEMORY_PAGES + 1
+        )],
+        "(i32.const 0)",
+    );
+    let refusal = assert_stage!(refusal(&wat), CheckError::Memory(_)).to_string();
+    assert!(refusal.contains("past the 128-page cap"), "{refusal}");
+
+    passes(&module(
+        &[&format!(r#"(memory (export "memory") {MAX_MEMORY_PAGES})"#)],
+        "(i32.const 0)",
+    ));
+}
+
+/// A declared *maximum* past the cap is legal and simply unreachable, so screening
+/// must not turn it away: `vm_limits` runs this very module to completion.
+#[test]
+fn a_declared_maximum_past_the_cap_still_passes() {
+    passes(&module(
+        &[&format!(
+            r#"(memory (export "memory") 1 {})"#,
+            MAX_MEMORY_PAGES + 1
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// The gap, listed rather than described, and now one entry long. A memory a module
+/// keeps to itself is not in its exports, so this is the one module that passes
+/// screening and then fails to *instantiate* — which is why a run's refusal at that
+/// stage cannot be read as the node's fault.
+///
+/// A contract needs an exported memory to make any host call, so a module of this
+/// shape can do nothing but compute; the SDK does not produce one.
 #[test]
 fn what_static_screening_cannot_see() {
     let host = FakeHost::new();
+    let wat = format!(
+        r#"(module (memory {})
+             (func (export "finish") (result i32) (i32.const 0)))"#,
+        MAX_MEMORY_PAGES + 1
+    );
 
-    for (label, wat) in [
-        (
-            "a start section that traps",
-            format!(
-                r#"(module {ONE_PAGE}
-                     (func $init (unreachable))
-                     (start $init)
-                     (func (export "finish") (result i32) (i32.const 0)))"#
-            ),
-        ),
-        (
-            "an unexported memory past the cap",
-            format!(
-                r#"(module (memory {})
-                     (func (export "finish") (result i32) (i32.const 0)))"#,
-                MAX_MEMORY_PAGES + 1
-            ),
-        ),
-    ] {
-        let wasm = assemble(&wat);
-        passes(&wat);
+    passes(&wat);
 
-        let failure = xrpl_wasm_vm::run(&wasm, PLENTY_OF_GAS, &host, ENTRY)
-            .expect_err(&format!("{label}: expected the run to refuse it"));
-        assert!(
-            matches!(failure.error, RunError::Instantiate(_)),
-            "{label}: {failure}"
-        );
-    }
+    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
+        .expect_err("the store's limiter must refuse the memory");
+    assert!(
+        matches!(failure.error, RunError::Instantiate(_)),
+        "{failure}"
+    );
+}
+
+/// A start section is guest code, so screening cannot see whether it traps — but it
+/// no longer has to. A trap is the guest's fault wherever it happens, so the run
+/// charges the contract for what it burned instead of reporting a module the node
+/// should have screened.
+#[test]
+fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
+    let host = FakeHost::new();
+    let wat = format!(
+        r#"(module {ONE_PAGE}
+             (func $init (unreachable))
+             (start $init)
+             (func (export "finish") (result i32) (i32.const 0)))"#
+    );
+
+    passes(&wat);
+
+    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
+        .expect_err("a start section that traps must not complete the run");
+    assert!(matches!(failure.error, RunError::Trap(_)), "{failure}");
+    assert!(
+        failure.fuel_used > 0,
+        "charged for what it burned: {failure}"
+    );
 }

@@ -103,6 +103,28 @@ TEST_F(PreflightTest, ImportFromAnotherModuleIsRefused)
     EXPECT_THAT(logged(), testing::HasSubstr("is not from 'host_lib'"));
 }
 
+// A contract asking for more linear memory than the engine grants can never run, so it is
+// refused before it can be escrowed. The cap itself is granted.
+TEST_F(PreflightTest, MemoryPastTheCapIsRefused)
+{
+    constexpr std::string_view tooMuch = R"wat(
+    (module
+      (memory (export "memory") 129)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflight(tooMuch), temBAD_WASM);
+    EXPECT_THAT(logged(), testing::HasSubstr("memory: initial memory of 129 pages"));
+
+    constexpr std::string_view atTheCap = R"wat(
+    (module
+      (memory (export "memory") 128)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflight(atTheCap), tesSUCCESS);
+}
+
 TEST_F(PreflightTest, MissingEntryPointIsRefused)
 {
     constexpr std::string_view wat = R"wat(

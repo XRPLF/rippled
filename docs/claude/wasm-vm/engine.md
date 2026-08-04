@@ -30,7 +30,9 @@ cost that cannot be read becomes `RunError::Internal` rather than a number — `
 forgive a run its whole cost and `gas` would charge an untouched one for everything.
 `guest_halted` asks "did the guest halt?" at *every* stage from instantiation on, so a start
 section that burns the limit is `OutOfGas`, not `Instantiate`: the stage a run stopped at is
-not what the caller maps.
+not what the caller maps. `instantiation_failure` finishes the thought — a failure carrying a
+trap code is `Trap`, since a start section that traps is guest code trapping — leaving
+`Instantiate` to mean a module the linker or the store would not accept.
 
 **Two ways a byte answer reaches the guest**, both taking a `Region`:
 
@@ -129,12 +131,20 @@ unit tests state each rule, its precedence and its wording on inputs built direc
 an import breaking two rules reports the namespace, which is what explains the module's other
 imports too.
 
-What it cannot see is guest behaviour and anything absent from the module's exports: a start
-section that traps, and a linear memory over the page cap that the module keeps to itself.
-Both pass the check and then fail instantiation, which is why a run's own refusal at that
-stage cannot be read as the node's fault. `what_static_screening_cannot_see` lists them and
-`screening_and_a_run_agree` pins the equivalence everywhere else — in both directions, so a
-rule that refused a contract the engine would have served fails too.
+A fourth stage screens what a module *declares*: an exported linear memory whose initial size
+is past the page cap is refused, since the store's limiter would refuse it anyway. The
+**minimum** only — a declared maximum past the cap is legal and simply unreachable. Only the
+exported memory is visible, which is enough for every contract the guest SDK produces, since
+a contract needs an exported memory to make a host call at all.
+
+What stays invisible is one module: a memory the module keeps to itself, over the cap, which
+passes the check and then fails instantiation — the reason a run's refusal at that stage is
+charged to the contract rather than blamed on the node ([bridge.md](bridge.md)). A start
+section is invisible too, but no longer matters: a trap in one is reported as
+`RunError::Trap` and charged like any other trap.
+`what_static_screening_cannot_see` is that one module, and `screening_and_a_run_agree` pins
+the equivalence everywhere else — in both directions, so a rule that refused a contract the
+engine would have served fails too.
 
 Import **signatures** are the deliberate gap: `check` compares names and kinds, not types, so
 a mistyped import still parts a module from the engine at instantiation. Closing it needs the

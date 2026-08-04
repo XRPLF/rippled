@@ -120,6 +120,49 @@ TEST_F(WasmVMTest, HostCallWithNoExportedMemoryFails)
     EXPECT_TRUE(outcome.error().cost.has_value());
 }
 
+// A module that will not instantiate is the contract's fault and is charged, not the node's.
+// Screening does not see every way this happens - a linear memory the module keeps to itself
+// is absent from its exports - so such a module can pass preflight and still be refused here.
+TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
+{
+    // 129 pages, not exported, so nothing outside the module declares it.
+    constexpr std::string_view wat = R"wat(
+    (module
+      (memory 129)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflightEscrowWasm(assembleWat(wat), beast::Journal{sink_}), tesSUCCESS)
+        << "screening cannot see an unexported memory";
+
+    auto const outcome = run(wat);
+
+    ASSERT_FALSE(outcome.has_value());
+    EXPECT_EQ(outcome.error().ter, tecFAILED_PROCESSING);
+    EXPECT_TRUE(outcome.error().cost.has_value());
+}
+
+// A start section is guest code, so a trap in one is the contract's fault wherever it
+// happens - charged for what it burned, rather than reported as a module the node should
+// have screened.
+TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
+{
+    constexpr std::string_view wat = R"wat(
+    (module
+      (memory (export "memory") 1)
+      (func $init (unreachable))
+      (start $init)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    auto const outcome = run(wat);
+
+    ASSERT_FALSE(outcome.has_value());
+    EXPECT_EQ(outcome.error().ter, tecFAILED_PROCESSING);
+    ASSERT_TRUE(outcome.error().cost.has_value());
+    EXPECT_GT(*outcome.error().cost, 0) << "the start section's instructions are metered";
+}
+
 // Preflight is meant to refuse these with `temBAD_WASM`; reaching apply means the screening
 // did not happen, which is the node's fault and not the transaction's.
 TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)

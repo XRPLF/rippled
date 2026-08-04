@@ -372,8 +372,14 @@ fn an_unused_import_is_still_linked() {
 /// is even looked up, and `set_fuel` and the memory limiter are both installed by
 /// then — so it is metered like any other guest code, and a run it stops is
 /// charged for what it burned.
+///
+/// Reported as a **trap**, not as a module that would not instantiate: a trap is the
+/// guest's fault wherever it happens, and the stage a run stopped at is not what the
+/// caller maps. Filing it under the stage would put a contract's own defect among the
+/// faults a caller treats as the node's, and charge nothing for the instructions the
+/// contract burned reaching it.
 #[test]
-fn a_trapping_start_section_fails_instantiation_and_is_charged() {
+fn a_trapping_start_section_is_a_guest_trap_and_is_charged() {
     let host = FakeHost::new();
 
     let wat = format!(
@@ -384,13 +390,38 @@ fn a_trapping_start_section_fails_instantiation_and_is_charged() {
     );
     let failure = assert_stage!(
         run_with_gas(&wat, PLENTY_OF_GAS, &host)
-            .expect_err("a start section that traps must not instantiate"),
-        RunError::Instantiate(_)
+            .expect_err("a start section that traps must not complete the run"),
+        RunError::Trap(_)
     );
     assert!(
         failure.fuel_used > 0,
         "the start section's instructions are metered: {failure}"
     );
+}
+
+/// What `RunError::Instantiate` is left to mean: a module the linker or the store
+/// would not accept, rather than one whose guest code failed. Its two shapes, so the
+/// variant is not left standing for nothing.
+#[test]
+fn instantiation_failure_is_a_module_the_engine_will_not_accept() {
+    let host = FakeHost::new();
+
+    // The linker defines no such import.
+    let wat = module(
+        &[
+            r#"(import "host_lib" "no_such_function" (func $f (result i32)))"#,
+            ONE_PAGE,
+        ],
+        "(call $f)",
+    );
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
+
+    // The store's limiter will not grant the memory, and does not trap to say so.
+    let wat = module(
+        &[&format!("(memory {})", MAX_MEMORY_PAGES + 1)],
+        "(i32.const 0)",
+    );
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
 }
 
 /// A start section that runs out of gas is reported as out of gas, not as a module

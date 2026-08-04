@@ -95,6 +95,8 @@ mod ffi {
         Import,
         /// No export of that name with signature `() -> i32`.
         EntryPoint,
+        /// The module asks for more linear memory than the engine grants.
+        Memory,
         /// The engine panicked. A defect in this crate or the one below it, and
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
@@ -377,6 +379,7 @@ impl From<&CheckError> for ffi::CheckStatus {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
             CheckError::Import(_) => ffi::CheckStatus::Import,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
+            CheckError::Memory(_) => ffi::CheckStatus::Memory,
         }
     }
 }
@@ -559,6 +562,7 @@ mod tests {
             CheckError::Compile(String::new()),
             CheckError::Import(String::new()),
             CheckError::EntryPoint(String::new()),
+            CheckError::Memory(String::new()),
         ]
     }
 

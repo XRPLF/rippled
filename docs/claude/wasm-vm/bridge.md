@@ -59,14 +59,20 @@ node's, and charging a transaction for a node's defect would write that defect i
 |---|---|---|
 | `Ok` | — | `gas_used` |
 | `OutOfGas` | `tecOUT_OF_GAS` | `gas_used` |
-| `Trap`, `NoMemory` | `tecFAILED_PROCESSING` | `gas_used` |
-| `Compile`, `Instantiate`, `EntryPoint` | `tecINTERNAL` | none |
+| `Trap`, `NoMemory`, `Instantiate` | `tecFAILED_PROCESSING` | `gas_used` |
+| `Compile`, `EntryPoint` | `tecINTERNAL` | none |
 | `Internal`, `Panic` | `tecINTERNAL` | none |
 
-The `Compile`/`Instantiate`/`EntryPoint` row is `tecINTERNAL` because preflight is meant to
-have refused such a module with `temBAD_WASM` long before apply. **That row is now known to
-be wrong for `Instantiate`** — see below. `NoMemory` had no old TER to match (it used to
-reach the guest as code -14); `tecFAILED_PROCESSING` treats it as the contract fault it is.
+`Compile` and `EntryPoint` are `tecINTERNAL` because preflight decides both from the same
+bytes and the same engine, so agreement is not a matter of degree: reaching apply means the
+screening did not happen. `Instantiate` is **not** in that row, and the reason is the point of
+the whole arrangement — see below. `NoMemory` had no old TER to match (it used to reach the
+guest as code -14); `tecFAILED_PROCESSING` treats it as the contract fault it is.
+
+One thing to settle before a long-lived escrow exists: `Compile` is only a node fault while
+the engine's configuration never changes. A contract created under one feature set and
+finished under another could legitimately fail to compile at apply, so either the config is
+amendment-gated or `Compile` joins the charged row.
 
 `gas <= 0` is refused as `temBAD_AMOUNT` before the engine is called, restoring what
 `WasmiEngine::run` did — see [open-questions.md](open-questions.md).
@@ -79,7 +85,7 @@ one answer, because a caller's only decision is whether the transaction may proc
 | `CheckStatus` | `NotTEC` |
 |---|---|
 | `Ok` | `tesSUCCESS` |
-| `Compile`, `Import`, `EntryPoint` | `temBAD_WASM` |
+| `Compile`, `Import`, `EntryPoint`, `Memory` | `temBAD_WASM` |
 | `Panic` | `telFAILED_PROCESSING` |
 
 The statuses stay distinct anyway: the *detail* is what a contract author needs, and one
@@ -99,19 +105,23 @@ std::string_view) -> NotTEC`, with no `HostFunctions&`. The deleted `preflightEs
 took one and could therefore never have been called from a real `preflight()` —
 `PreflightContext` has no view to build a host over.
 
-## Why `Instantiate` should stop being `tecINTERNAL`
+## Why `Instantiate` is the contract's fault
 
-`check` closes compile, imports and the entry point, but two ways instantiation fails are
-invisible to it: a start section that traps, and a linear memory over the page cap that the
-module does not export ([engine.md](engine.md)). Both are deterministic properties of the
-module, so a contract can pass preflight, be escrowed, and then fail to instantiate at
-apply — where the map currently blames the node and charges nothing.
+The map must not depend on preflight being exhaustive, because it cannot be. `check` closes
+compile, imports, the entry point and an exported memory over the page cap — but a memory a
+module *keeps to itself* is absent from its exports, so such a module passes screening and
+then fails to instantiate ([engine.md](engine.md)). That is a deterministic property of the
+code, identical on every node, and nothing this node did; charging it as
+`tecFAILED_PROCESSING` says so, where `tecINTERNAL` would blame the node and forgive the gas.
 
-The fix is two lines and its own change: report `Instantiate` as `tecFAILED_PROCESSING`
-with its gas, and in `vm::run` classify a failure carrying a trap code (`e.as_trap_code()`)
-as `Trap` rather than `Instantiate`, since a start section trapping is guest code trapping.
-`tecINTERNAL` then means what it says — `Internal` and `Panic`, the node's own defects — and
-the map stops depending on preflight's completeness for its correctness.
+The other half is in the engine rather than the map: `vm::instantiation_failure` reports a
+failure carrying a trap code as `RunError::Trap`, because a start section that traps is guest
+code trapping, and a trap is the guest's fault wherever it happens. What is left for
+`Instantiate` is a module the linker or the store would not accept at all —
+`vm_limits::instantiation_failure_is_a_module_the_engine_will_not_accept` pins both shapes.
+
+So `tecINTERNAL` now means what it says: `Internal` and `Panic`, the node's own defects, plus
+the two stages preflight decides exactly.
 
 ## The one copy left on the byte path, and why it needs `HostFunctions` to change
 

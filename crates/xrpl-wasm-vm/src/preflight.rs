@@ -7,18 +7,21 @@
 //! makes it callable from a transaction's preflight, which has no ledger to serve
 //! host calls from.
 //!
-//! Two things it deliberately does not screen. A module exporting no linear
+//! Two things it deliberately does not screen. A module exporting **no** linear
 //! memory passes: a contract that makes no host call needs none, and one that
 //! does is refused at the call and charged for what it burned. A start section
-//! passes: it is guest code, and executing it is the one thing a check must not
-//! do.
+//! passes: it is guest code, and executing it is the one thing a check must not do
+//! — a trap in one is charged to the contract like any other trap.
+//!
+//! One thing it screens that a run can only discover: an exported memory larger
+//! than the engine grants. See [`check_memory`] for what stays invisible.
 
 use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::HostFunctionSpec;
 
 use crate::register::HOST_MODULE;
-use crate::vm::compile;
+use crate::vm::{MAX_MEMORY_PAGES, compile};
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
 /// stages separately.
@@ -32,6 +35,8 @@ pub enum CheckError {
     Import(String),
     /// No export named `function_name` with signature `() -> i32`.
     EntryPoint(String),
+    /// The module asks for more linear memory than the engine grants.
+    Memory(String),
 }
 
 impl fmt::Display for CheckError {
@@ -42,16 +47,23 @@ impl fmt::Display for CheckError {
             // The detail says which of the entry point's failures this is, since
             // "no entry point" would be wrong for an export of the wrong type.
             CheckError::EntryPoint(detail) => write!(f, "{detail}"),
+            CheckError::Memory(detail) => write!(f, "memory: {detail}"),
         }
     }
 }
 
-/// Screen `wasm`: it must compile, import only what the engine serves, and export
-/// `function_name` as `() -> i32`.
+/// Screen `wasm`: it must compile, import only what the engine serves, export
+/// `function_name` as `() -> i32`, and ask for no more memory than it may have.
+///
+/// The stages are ordered by how much of the module each explains. An import fault
+/// is reported before a missing entry point because the imports are what the rest of
+/// the module is built on; memory comes last, being a resource request rather than a
+/// mistake about the ABI.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
     let module = compile(wasm).map_err(CheckError::Compile)?;
     check_imports(&module)?;
-    check_entry_point(&module, function_name)
+    check_entry_point(&module, function_name)?;
+    check_memory(&module)
 }
 
 /// Every import must be one the linker defines. The first that is not ends the
@@ -102,6 +114,38 @@ fn check_entry_point(module: &Module, name: &str) -> Result<(), CheckError> {
 /// `get_typed_func::<(), i32>` accepts.
 fn is_entry_point(ty: &FuncType) -> bool {
     ty.params().is_empty() && matches!(ty.results(), [ValType::I32])
+}
+
+/// A module may not declare more linear memory than the engine grants.
+///
+/// Only what it *exports* is visible here. A memory a module keeps to itself is not
+/// in its exports, and the store's limiter is what refuses that one — at
+/// instantiation, where the run is charged nothing and the caller cannot tell it
+/// from any other resource failure. Screening the exported case covers every
+/// contract built against the guest SDK, since a contract needs an exported memory
+/// to make a host call at all.
+fn check_memory(module: &Module) -> Result<(), CheckError> {
+    for export in module.exports() {
+        if let ExternType::Memory(ty) = export.ty() {
+            check_initial_pages(ty.minimum()).map_err(CheckError::Memory)?;
+        }
+    }
+    Ok(())
+}
+
+/// Whether the engine will grant a memory of this declared initial size.
+///
+/// The *minimum* only: a declared maximum past the cap is legal and simply
+/// unreachable, which `vm_limits::a_declared_maximum_past_the_cap_is_allowed_but_
+/// unreachable` pins on the run side. Refusing it here would turn a runnable
+/// contract away.
+fn check_initial_pages(pages: u64) -> Result<(), String> {
+    if pages > u64::from(MAX_MEMORY_PAGES) {
+        return Err(format!(
+            "initial memory of {pages} pages is past the {MAX_MEMORY_PAGES}-page cap"
+        ));
+    }
+    Ok(())
 }
 
 /// How an entry-point lookup failed, in the words both stages use: a check and a
@@ -250,6 +294,22 @@ mod tests {
         );
     }
 
+    /// The cap itself is granted; one page past it is not. The boundary is the whole
+    /// rule, and it is the same boundary the store's limiter applies at
+    /// instantiation.
+    #[test]
+    fn the_initial_memory_may_reach_the_cap_but_not_pass_it() {
+        assert_eq!(check_initial_pages(0), Ok(()));
+        assert_eq!(check_initial_pages(u64::from(MAX_MEMORY_PAGES)), Ok(()));
+
+        let past = u64::from(MAX_MEMORY_PAGES) + 1;
+        let refusal = check_initial_pages(past).expect_err("one page past the cap");
+        assert_eq!(
+            refusal,
+            format!("initial memory of {past} pages is past the {MAX_MEMORY_PAGES}-page cap")
+        );
+    }
+
     /// The bridge logs this string and the C++ tests match on it, so the stage's
     /// prefix is part of the interface rather than a debugging aid.
     #[test]
@@ -257,6 +317,10 @@ mod tests {
         assert_eq!(
             CheckError::Compile("bad magic".to_string()).to_string(),
             "compile: bad magic"
+        );
+        assert_eq!(
+            CheckError::Memory("initial memory of 129 pages".to_string()).to_string(),
+            "memory: initial memory of 129 pages"
         );
         assert_eq!(
             CheckError::Import("no host function 'x'".to_string()).to_string(),

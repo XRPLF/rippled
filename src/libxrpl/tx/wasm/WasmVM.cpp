@@ -51,14 +51,20 @@ outcome(rs::wasm_vm::RunResult const& run)
         // its host calls need - so it is charged for what it burned reaching that point.
         case RunStatus::Trap:
         case RunStatus::NoMemory:
+        // A module that will not instantiate is the contract's fault too. Screening
+        // cannot see every way this happens - a linear memory the module keeps to itself
+        // is absent from its exports - so a module can pass preflight and still be
+        // refused here. It is a deterministic property of the code either way, and one
+        // this node's own conduct had no part in.
+        case RunStatus::Instantiate:
             return std::unexpected(WasmTER{.ter = tecFAILED_PROCESSING, .cost = cost});
 
-        // A module that will not compile, instantiate, or expose the entry point should
-        // have been refused at preflight with `temBAD_WASM`. Reaching apply means the
-        // screening did not happen, which is a node-side fault rather than the
-        // transaction's.
+        // A module that will not compile, or does not expose the entry point, should have
+        // been refused at preflight with `temBAD_WASM`: screening decides both from the
+        // same bytes and the same engine, so agreeing here is not a matter of degree.
+        // Reaching apply means the screening did not happen, which is a node-side fault
+        // rather than the transaction's.
         case RunStatus::Compile:
-        case RunStatus::Instantiate:
         case RunStatus::EntryPoint:
         // The host could not serve a call, or it threw and `HostContext` caught it.
         case RunStatus::Internal:
@@ -117,11 +123,13 @@ verdict(CheckStatus status)
         case CheckStatus::Ok:
             return tesSUCCESS;
 
-        // The module will not compile, imports what no engine of this ABI serves, or
-        // does not export the entry point as `() -> i32`.
+        // The module will not compile, imports what no engine of this ABI serves, does
+        // not export the entry point as `() -> i32`, or asks for more linear memory than
+        // it may have.
         case CheckStatus::Compile:
         case CheckStatus::Import:
         case CheckStatus::EntryPoint:
+        case CheckStatus::Memory:
             return temBAD_WASM;
 
         // The engine panicked: a defect in the engine, reported rather than fatal to
