@@ -53,6 +53,15 @@ namespace xrpl {
     dynamically generates the signatureless form when it needs to verify
     the signature.
 
+    The manifest has two serialized forms: one which includes the digital
+    signature and one which doesn't.  There is an obvious causal dependency
+    relationship between the (latter) form with no signature, the signature
+    of that form, and the (former) form which includes that signature.  In
+    other words, a message can't contain a signature of itself.  The code
+    below stores a serialized manifest which includes the signature, and
+    dynamically generates the signatureless form when it needs to verify
+    the signature.
+
     An instance of ManifestCache stores, for each trusted validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
     seen for that validator, if any.  On startup, the [validator_token] config
