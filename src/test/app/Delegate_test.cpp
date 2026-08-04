@@ -2823,15 +2823,15 @@ class Delegate_test : public beast::unit_test::Suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loanBroker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::coverDeposit(alice, keylet.key, XRP(1)),
+                env(loan_broker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverWithdraw(alice, keylet.key, XRP(1)),
+                env(loan_broker::coverWithdraw(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
 
                 env(loan::set(alice, keylet.key, Number(100)), delegate::As(bob), Ter(temINVALID));
                 env(loan::manage(alice, keylet.key, 0), delegate::As(bob), Ter(temINVALID));
