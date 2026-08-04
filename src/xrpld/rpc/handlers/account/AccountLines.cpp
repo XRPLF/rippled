@@ -82,24 +82,24 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
 //   this account's side)
 // }
 json::Value
-doAccountLines(RPC::JsonContext& context)
+doAccountLines(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -116,12 +116,12 @@ doAccountLines(RPC::JsonContext& context)
     }();
     if (!strPeer.empty() && !raPeerAccount)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountLines, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountLines, context))
         return *err;
 
     // this flag allows the requester to ask incoming trustlines in default
@@ -150,7 +150,7 @@ doAccountLines(RPC::JsonContext& context)
     if (params.isMember(jss::marker))
     {
         if (!params[jss::marker].isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
@@ -181,7 +181,7 @@ doAccountLines(RPC::JsonContext& context)
         if (!sle)
             return rpcError(RpcInvalidParams);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
+        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(RpcInvalidParams);
     }
 
@@ -207,7 +207,7 @@ doAccountLines(RPC::JsonContext& context)
                     if (++count == limit)
                     {
                         marker = sleCur->key();
-                        nextHint = RPC::getStartHint(sleCur, visitData.accountID);
+                        nextHint = rpc::getStartHint(sleCur, visitData.accountID);
                     }
 
                     if (sleCur->getType() != ltRIPPLE_STATE)
@@ -259,7 +259,7 @@ doAccountLines(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addLine(jsonLines, item);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 
