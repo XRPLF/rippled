@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-namespace beast::IP {
+namespace beast::ip {
 
 inline Endpoint
 randomEP(bool v4 = true)
@@ -44,4 +44,4 @@ randomEP(bool v4 = true)
         randInt<std::uint16_t>(1, UINT16_MAX)};
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

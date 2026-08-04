@@ -15,6 +15,10 @@ updates:
     commit-message:
       prefix: "ci: [DEPENDABOT] "
     target-branch: develop
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: cargo
     directory: /crates

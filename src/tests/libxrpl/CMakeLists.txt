@@ -32,10 +32,13 @@ add_dependencies(xrpl_tests xrpl_crates)
 # supported on Windows.
 set(test_modules
     basics
+    beast
     consensus
     crypto
     json
+    nodestore
     peerfinder
+    protocol
     resource
     shamap
     tx
