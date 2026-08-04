@@ -7,23 +7,44 @@
 #   xrpld-critical  — Slack + email; receives critical-severity alerts.
 # The severity split is wired in policies.yaml.
 #
-# Secrets and personal addresses are NOT hard-coded. To enable delivery,
-# replace the disabled placeholder values below with a real Slack webhook
-# and alert email — e.g. by copying docker/telemetry/.env.alerting.example
-# to .env.alerting (gitignored) and swapping the placeholder lines to
-# ${SLACK_WEBHOOK_URL} / ${ALERT_EMAIL_TO}. See the Alerting section of
-# docs/telemetry-runbook.md for setup.
-#
-# The defaults are deliberately non-empty, invalid-but-valid-shaped
+# ---------------------------------------------------------------------------
+# Supplying a real destination
+# ---------------------------------------------------------------------------
+# The values below are deliberately non-empty, invalid-but-valid-shaped
 # placeholders (an unroutable webhook host and a .invalid email). Grafana's
-# alerting provisioning validator REQUIRES a non-empty Slack url and email
-# addresses, and it does NOT support ${VAR:-default} expansion — an unset
-# ${VAR} expands to empty and crashes Grafana on startup. The placeholders
-# keep the whole stack booting with zero configuration; alerts simply route
-# nowhere until a real destination is supplied.
+# provisioning validator REQUIRES a non-empty Slack url and a non-empty email
+# `addresses`, so the placeholders keep the whole stack booting with zero
+# configuration; alerts simply route nowhere until a destination is supplied.
 #
-# Email delivery additionally requires SMTP configured on the Grafana
-# service (GF_SMTP_* in docker-compose.yml).
+# To enable delivery, edit the two placeholder values IN PLACE with a real
+# webhook / address. Do NOT commit the result — and do not substitute
+# ${SLACK_WEBHOOK_URL} / ${ALERT_EMAIL_TO} here expecting a fallback:
+# Grafana expands ${VAR} but does NOT support ${VAR:-default}, so an unset
+# variable expands to empty, fails validation, and Grafana exits 1 — taking
+# the whole telemetry stack down, not just alerting.
+#
+# Two further traps when editing this file:
+#
+#   * Never leave a `receivers:` list empty to "disable" a tier. A contact
+#     point with no receivers ceases to exist, the policy tree then references
+#     a missing receiver, and Grafana refuses to boot.
+#
+#   * File provisioning is upsert-only. Deleting a receiver here does NOT
+#     remove it from an instance that already booted with it — the old
+#     receiver keeps delivering. Removal requires an explicit
+#     `deleteContactPoints:` block (see the commented example at the bottom).
+#
+# Email delivery additionally requires SMTP configured on the Grafana service.
+# The GF_SMTP_* variables live in docker/telemetry/.env.alerting (gitignored,
+# see .env.alerting.example) and reach Grafana via the compose `env_file`;
+# they are NOT set in docker-compose.yml. Email stays off until
+# GF_SMTP_ENABLED=true and the relay settings point somewhere real.
+#
+# Grafana Cloud does NOT use this file — Cloud has no provisioning filesystem.
+# Cloud delivery is created over the REST API by upload_alerts_to_grafana.py,
+# which builds a single email-only contact point and attaches it to each rule
+# via per-rule notification_settings. See that script's header for why the
+# notification policy tree must not be touched on a shared Cloud instance.
 
 apiVersion: 1
 
@@ -37,10 +58,14 @@ contactPoints:
         settings:
           # Disabled placeholder: an unroutable webhook host. A non-empty url
           # selects Slack webhook mode (no recipient/token required) and keeps
-          # provisioning valid. Replace with a real ${SLACK_WEBHOOK_URL} to
-          # enable delivery.
+          # provisioning valid. Replace with a real webhook to enable delivery.
           url: https://hooks.slack.invalid/disabled
-          title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
+          # `rulename` is used rather than CommonLabels.service_instance_id
+          # because on NoData/Error evaluations Grafana replaces the query's
+          # label set with only {datasource_uid, ref_id}, so the node label is
+          # absent and the title would render blank — and several rules are
+          # deliberately configured to fire that way.
+          title: "{{ .CommonLabels.rulename }}"
         disableResolveMessage: false
 
   # --- Critical tier: Slack + email ---
@@ -52,14 +77,25 @@ contactPoints:
         settings:
           # Disabled placeholder — see xrpld-slack-default above.
           url: https://hooks.slack.invalid/disabled
-          title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
+          title: "[CRITICAL] {{ .CommonLabels.rulename }}"
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email
         settings:
           # Disabled placeholder: a .invalid address keeps the required
           # `addresses` field non-empty so provisioning validates. Replace
-          # with a real ${ALERT_EMAIL_TO} (and enable SMTP) to deliver.
+          # with a real address (and enable SMTP) to deliver. Multiple
+          # recipients are semicolon- or comma-separated.
           addresses: alerts-disabled@xrpld.invalid
+          # One message listing all recipients, rather than one message each.
           singleEmail: true
         disableResolveMessage: false
+
+# To retire a receiver that a running Grafana has already stored, uncomment
+# and list its uid here — deleting the block above is not sufficient:
+#
+# deleteContactPoints:
+#   - orgId: 1
+#     uid: xrpld-slack-default
+#   - orgId: 1
+#     uid: xrpld-slack-critical
