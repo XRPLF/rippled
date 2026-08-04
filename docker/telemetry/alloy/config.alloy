@@ -1,0 +1,279 @@
+// Grafana Alloy collector config for an xrpld node.
+//
+// WHY THIS FILE EXISTS
+// --------------------
+// Some deployments feed telemetry through Grafana Alloy instead of the
+// reference OpenTelemetry Collector (otel-collector-config.grafanacloud.yaml).
+// xrpld sends OTLP (traces + native beast::insight metrics) to Alloy, which
+// forwards to the Grafana Cloud OTLP gateway. That path carries traces and
+// native metrics, but on its own produces NO span-derived RED metrics
+// (span_calls_total / span_duration_milliseconds_*): those are NOT emitted by
+// xrpld -- they are derived by a spanmetrics connector from the spans. Without
+// the connector a node is missing from every span-based Grafana dashboard.
+//
+// This config therefore mirrors the two stages the reference collector has:
+//   1. resource tagging  (service.name, deployment.environment, xrpl.network.type)
+//   2. spanmetrics       (derives the RED metrics the dashboards query)
+// See docker/telemetry/otel-collector-config.grafanacloud.yaml for the
+// authoritative collector equivalent; keep the dimension list in sync with it.
+//
+// PIPELINE
+//
+//   HOST / SYSTEMD METRICS:
+//     unix exporter + custom scrape --> relabel(host) --> prometheus.remote_write
+//
+//   xrpld OTLP:
+//     receiver.otlp ─▶ processor.transform.tier ─┬─▶ connector.spanmetrics ─┐
+//                                                 │                          │
+//                                                 └─▶ processor.batch ◀───────┘
+//                                                          │ traces + metrics
+//                                                          ▼
+//                                                 exporter.otlphttp (GC OTLP gateway)
+//
+// The Grafana Cloud OTLP gateway converts OTLP resource attributes to
+// Prometheus labels server-side, so no otelcol.exporter.prometheus is needed.
+//
+// CONFIGURATION -- NO SECRETS OR TENANT IDS ARE HARD-CODED IN THIS FILE.
+// All credentials, endpoints, usernames and the per-node host label are read
+// from the environment (same pattern as .env.grafanacloud.example). Copy
+// .env.grafanacloud-alloy.example to .env.grafanacloud-alloy, fill it in, and
+// source it before starting Alloy. Required variables:
+//   GRAFANACLOUD_PROM_URL   Prometheus remote_write push URL
+//   GRAFANACLOUD_PROM_USER   remote_write basic-auth username (numeric stack id)
+//   GRAFANACLOUD_PROM_KEY    remote_write basic-auth password (access token)
+//   GRAFANACLOUD_OTLP_URL    OTLP/HTTP gateway URL, including the /otlp path
+//   GRAFANACLOUD_OTLP_USER   OTLP basic-auth username (numeric stack id)
+//   GRAFANACLOUD_OTLP_KEY    OTLP basic-auth password (access token)
+//   XRPLD_HOST_LABEL         host label for this node's scraped metrics
+//
+// PER-DEPLOYMENT EDITS: the deployment.environment and xrpl.network.type tier
+// values in otelcol.processor.transform are literals (OTTL cannot read env
+// vars) -- edit them to match this node's tier and network.
+
+logging {
+  level = "info"
+}
+
+// ===========================================================================
+// HOST / SYSTEMD METRICS  (Prometheus remote_write path)
+// ===========================================================================
+
+prometheus.remote_write "grafanacloud" {
+  endpoint {
+    url = sys.env("GRAFANACLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANACLOUD_PROM_USER")
+      password = sys.env("GRAFANACLOUD_PROM_KEY")
+    }
+  }
+}
+
+prometheus.exporter.unix "default" {
+  enable_collectors = ["systemd", "textfile"]
+  systemd {
+    unit_include = "(rippled|xrpld).*"
+  }
+  textfile {
+    directory = "/usr/local/bin/"
+  }
+}
+
+prometheus.scrape "system_metrics" {
+  targets         = prometheus.exporter.unix.default.targets
+  scrape_interval = "15s"
+  forward_to      = [prometheus.relabel.hostname.receiver]
+}
+
+prometheus.scrape "custom_rippled_metrics" {
+  targets = [{
+    __address__ = "localhost:9256",
+  }]
+  scrape_interval = "15s"
+  forward_to      = [prometheus.relabel.hostname.receiver]
+}
+
+prometheus.relabel "hostname" {
+  forward_to = [prometheus.remote_write.grafanacloud.receiver]
+
+  rule {
+    action        = "replace"
+    source_labels = ["instance"]
+    replacement   = sys.env("XRPLD_HOST_LABEL")
+    target_label  = "host"
+  }
+}
+
+// ===========================================================================
+// xrpld OTLP -> Grafana Cloud  (traces + native metrics + derived spanmetrics)
+// ===========================================================================
+
+// Receiver: xrpld sends OTLP/HTTP on 4318 and gRPC on 4317 (localhost only).
+otelcol.receiver.otlp "xrpld" {
+  grpc {
+    endpoint = "127.0.0.1:4317"
+  }
+  http {
+    endpoint = "127.0.0.1:4318"
+  }
+
+  output {
+    // Both signals pass through resource tagging first so they leave with
+    // identical resource identity.
+    traces  = [otelcol.processor.transform.tier.input]
+    metrics = [otelcol.processor.transform.tier.input]
+  }
+}
+
+// Resource tagging (reference: resource/tier + resource/stripsdk).
+//   * service.name -> "xrpld". Also corrects the service_name="true"
+//     bool-binding bug on stale binaries: even an un-rebuilt node exports a
+//     correct service.name once it passes through here.
+//   * deployment.environment -> set from XRPLD_DEPLOYMENT_ENV (the collector
+//     IS the environment, so it is authoritative -> upsert).
+//   * xrpl.network.type -> set only when absent (don't overwrite the node's
+//     own value). OTTL `where ... == nil` gives insert (not upsert) semantics.
+//   * telemetry.sdk.* -> deleted (SDK noise).
+otelcol.processor.transform "tier" {
+  error_mode = "ignore"
+
+  // NOTE: statements are OTTL (raw strings) -- River sys.env() does NOT expand
+  // inside them, and OTTL has no env() converter. The tier values below are
+  // plain deployment labels (not secrets), so they are literals here.
+  // PER-DEPLOYMENT EDIT: set deployment.environment and xrpl.network.type to
+  // match this node's tier and network.
+  trace_statements {
+    context = "resource"
+    statements = [
+      `set(attributes["service.name"], "xrpld")`,
+      `set(attributes["deployment.environment"], "prod")`,
+      `set(attributes["xrpl.network.type"], "mainnet") where attributes["xrpl.network.type"] == nil`,
+      `delete_key(attributes, "telemetry.sdk.language")`,
+      `delete_key(attributes, "telemetry.sdk.name")`,
+      `delete_key(attributes, "telemetry.sdk.version")`,
+    ]
+  }
+
+  metric_statements {
+    context = "resource"
+    statements = [
+      `set(attributes["service.name"], "xrpld")`,
+      `set(attributes["deployment.environment"], "prod")`,
+      `set(attributes["xrpl.network.type"], "mainnet") where attributes["xrpl.network.type"] == nil`,
+      `delete_key(attributes, "telemetry.sdk.language")`,
+      `delete_key(attributes, "telemetry.sdk.name")`,
+      `delete_key(attributes, "telemetry.sdk.version")`,
+    ]
+  }
+
+  output {
+    // Traces fan out: to the batch/gateway path AND into the spanmetrics
+    // connector so the RED metrics are derived from the same tagged spans.
+    traces = [
+      otelcol.processor.batch.xrpld.input,
+      otelcol.connector.spanmetrics.xrpld.input,
+    ]
+    // Native metrics go straight to the batch/gateway path.
+    metrics = [otelcol.processor.batch.xrpld.input]
+  }
+}
+
+// Spanmetrics connector (reference: connectors.spanmetrics, namespace "span").
+// Derives span_calls_total and span_duration_milliseconds_* that every span
+// dashboard queries. The dimension list and buckets are copied from the
+// reference otel-collector-config.grafanacloud.yaml -- keep them in sync (a
+// panel that groups by a dimension missing here renders empty).
+otelcol.connector.spanmetrics "xrpld" {
+  namespace = "span"
+
+  histogram {
+    unit = "ms"
+    explicit {
+      // Buckets MUST stay strictly ascending (the connector binary-searches
+      // them and silently misbuckets otherwise) and MUST match the two
+      // otel-collector-config*.yaml lists. Sub-MILLISECOND boundaries exist
+      // because most xrpld spans sit far below 1ms (tx.preflight means
+      // ~0.012ms): a 1ms floor put >99.99% of samples in bucket one and pinned
+      // every p95/p99 at a constant 0.95ms.
+      // otel-collector-config*.yaml lists. Sub-second boundaries cover
+      // RPC/tx/ledger spans; 2s-4s resolve second-scale consensus spans
+      // (consensus.round ~3.9s, consensus.establish ~1.9s) that used to pile
+      // into one 1s-5s bucket; 10s/30s give the ledger.acquire catch-up tail
+      // (~17% exceeds 5s) a measurable home so its p95/p99 stop reading +Inf.
+      buckets = ["0.01ms", "0.05ms", "0.1ms", "0.25ms", "0.5ms", "1ms", "5ms", "10ms", "25ms", "50ms", "100ms", "250ms", "500ms", "1s", "2s", "3s", "4s", "5s", "10s", "30s"]
+    }
+  }
+
+  // RPC / transaction dimensions.
+  dimension { name = "command" }
+  dimension { name = "rpc_status" }
+  dimension { name = "tx_type" }
+  dimension { name = "ter_result" }
+  dimension { name = "stage" }
+  dimension { name = "txq_status" }
+  dimension { name = "load_type" }
+  dimension { name = "is_batch" }
+
+  // Consensus dimensions.
+  dimension { name = "consensus_mode" }
+  dimension { name = "close_time_correct" }
+  dimension { name = "consensus_state" }
+  dimension { name = "mode_new" }
+  dimension { name = "consensus_stalled" }
+  dimension { name = "consensus_phase" }
+  dimension { name = "consensus_result" }
+
+  // Overlay / peer dimensions.
+  dimension { name = "local" }
+  dimension { name = "suppressed" }
+  dimension { name = "proposal_trusted" }
+  dimension { name = "validation_trusted" }
+
+  // gRPC surface dimensions.
+  dimension { name = "method" }
+  dimension { name = "grpc_role" }
+  dimension { name = "grpc_status" }
+
+  // ledger.acquire dimensions.
+  dimension { name = "outcome" }
+  dimension { name = "acquire_reason" }
+
+  output {
+    // Derived span metrics rejoin the metric stream at the batch processor.
+    metrics = [otelcol.processor.batch.xrpld.input]
+  }
+}
+
+// Batch traces + metrics (native and span-derived) before export.
+otelcol.processor.batch "xrpld" {
+  timeout         = "1s"
+  send_batch_size = 1024
+
+  output {
+    traces  = [otelcol.exporter.otlphttp.grafanacloud.input]
+    metrics = [otelcol.exporter.otlphttp.grafanacloud.input]
+  }
+}
+
+// Grafana Cloud OTLP gateway auth + exporter. The gateway converts OTLP
+// resource attributes to Prometheus labels server-side.
+otelcol.auth.basic "grafanacloud" {
+  username = sys.env("GRAFANACLOUD_OTLP_USER")
+  password = sys.env("GRAFANACLOUD_OTLP_KEY")
+}
+
+otelcol.exporter.otlphttp "grafanacloud" {
+  client {
+    endpoint = sys.env("GRAFANACLOUD_OTLP_URL")
+    auth     = otelcol.auth.basic.grafanacloud.handler
+  }
+  retry_on_failure {
+    enabled          = true
+    max_elapsed_time = "5m"
+  }
+  sending_queue {
+    enabled       = true
+    num_consumers = 4
+    queue_size    = 1000
+  }
+}

@@ -54,7 +54,7 @@ public:
 
             // Read service_instance_id, same key as the [telemetry]
             // section uses, so multi-node deployments can distinguish
-            // metric sources via the exported_instance Prometheus label.
+            // metric sources via the service_instance_id Prometheus label.
             std::string const instanceId = get(params, "service_instance_id");
 
             // service.name from [insight] (falls back to the value the

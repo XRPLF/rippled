@@ -1670,7 +1670,7 @@ ApplicationImp::startTelemetry()
         set(endpoint, "metrics_endpoint", section);
 
         // Pass the service_instance_id so the MeterProvider Resource
-        // carries it, giving Prometheus an exported_instance label.
+        // carries it, giving Prometheus an service_instance_id label.
         std::string instanceId;
         set(instanceId, "service_instance_id", section);
         if (instanceId.empty() && nodeIdentity_)

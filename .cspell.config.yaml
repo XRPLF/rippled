@@ -112,6 +112,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dthms
   - dxrpl
   - elgamal
   - enabled
@@ -231,6 +232,7 @@ words:
   - onlatest
   - ostr
   - otelc
+  - otelcol
   - oxalica
   - pargs
   - partitioner
@@ -261,6 +263,7 @@ words:
   - qalloc
   - qbsprofile
   - queuable
+  - ransitioned
   - Raphson
   - rcflags
   - reparent
@@ -362,6 +365,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - unheld
   - unimpair
   - unroutable
   - unscalable

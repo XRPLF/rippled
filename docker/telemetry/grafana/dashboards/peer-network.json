@@ -1,8 +1,38 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Annotate perf-iac runs",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
-  "description": "What this shows: Consensus proposals and validations received from peers, and transaction relay efficiency for this node.\nUse it to: Check that peers are feeding this node proposals, validations, and transactions, and gauge relay overhead.",
+  "description": "What this shows: Consensus proposals and validations received from peers, and transaction relay efficiency for this node.  \u2014  Use it to: Check that peers are feeding this node proposals, validations, and transactions, and gauge relay overhead.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +41,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "###### What this is:\n*How many consensus proposals this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received proposals over 5 minutes, per node.*\n\n###### Reading it:\n*A steady rate roughly proportional to the number of proposing validators.*\n\n###### Healthy range:\n*Workload-dependent; scales with validator count and connectivity.*\n\n###### Watch for:\n*A drop toward zero (isolation from the network) or a sudden flood far above baseline (proposal spam).*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`",
+      "description": "###### What this is:\n*How many consensus proposals this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received proposals over 5 minutes, per node.*\n\n###### Reading it:\n*A steady rate roughly proportional to the number of proposing validators.*\n\n###### Healthy range:\n*Workload-dependent; scales with validator count and connectivity.*\n\n###### Watch for:\n*A drop toward zero (isolation from the network) or a sudden flood far above baseline (proposal spam).*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Proposers** *(network event)* \u2014 the count of validators whose proposals this node heard in the last closed round.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -29,14 +59,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Proposals Received / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Proposals Received / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: proposals/s",
           "custom": {
             "axisLabel": "Proposals / Sec",
@@ -51,7 +82,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "###### What this is:\n*How many ledger validations this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received validations over 5 minutes, per node.*\n\n###### Reading it:\n*Steady and proportional to the number of validators the node hears from.*\n\n###### Healthy range:\n*Workload-dependent; roughly one burst per validator per closed ledger.*\n\n###### Watch for:\n*A fall toward zero (loss of validator connectivity) or an abnormal surge from untrusted sources.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`",
+      "description": "###### What this is:\n*How many ledger validations this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received validations over 5 minutes, per node.*\n\n###### Reading it:\n*Steady and proportional to the number of validators the node hears from.*\n\n###### Healthy range:\n*Workload-dependent; roughly one burst per validator per closed ledger.*\n\n###### Watch for:\n*A fall toward zero (loss of validator connectivity) or an abnormal surge from untrusted sources.*\n\n###### Keywords:\n- **Trusted / untrusted / duplicate** *(per node)* \u2014 message classification: trusted (from UNL validators), untrusted (others), or duplicate (already seen).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`\n\n###### References:\n[Trusted / untrusted / duplicate](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#trusted-untrusted-duplicate)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -69,14 +100,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Validations Received / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Validations Received / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix: validations/s",
           "custom": {
             "axisLabel": "Validations / Sec",
@@ -91,7 +123,7 @@
     },
     {
       "title": "Proposals Trusted vs Untrusted",
-      "description": "###### What this is:\n*The share of received proposals that come from trusted (UNL) validators versus everyone else.*\n\n###### How it's computed:\n*Received-proposal rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*A healthy node with a good UNL shows a solid trusted slice.*\n\n###### Healthy range:\n*Workload-dependent; a meaningful trusted fraction is expected.*\n\n###### Watch for:\n*A collapsing trusted share or a large untrusted volume, consistent with proposal flooding from non-UNL peers.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`",
+      "description": "###### What this is:\n*The share of received proposals that come from trusted (UNL) validators versus everyone else.*\n\n###### How it's computed:\n*Received-proposal rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*A healthy node with a good UNL shows a solid trusted slice.*\n\n###### Healthy range:\n*Workload-dependent; a meaningful trusted fraction is expected.*\n\n###### Watch for:\n*A collapsing trusted share or a large untrusted volume, consistent with proposal flooding from non-UNL peers.*\n\n###### Keywords:\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Trusted / untrusted / duplicate** *(per node)* \u2014 message classification: trusted (from UNL validators), untrusted (others), or duplicate (already seen).\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`\n\n###### References:\n[Proposal](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Trusted / untrusted / duplicate](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#proposal)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -109,14 +141,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (proposal_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"proposal_trusted\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (proposal_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"proposal_trusted\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short"
         },
         "overrides": []
@@ -124,7 +157,7 @@
     },
     {
       "title": "Validations Trusted vs Untrusted",
-      "description": "###### What this is:\n*The share of received validations from trusted (UNL) validators versus untrusted sources.*\n\n###### How it's computed:\n*Received-validation rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*The trusted slice should dominate for a well-configured node.*\n\n###### Healthy range:\n*Workload-dependent; trusted validations expected to be the majority.*\n\n###### Watch for:\n*A shrinking trusted share or a spike of untrusted validations, which can indicate misconfiguration or abuse.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`",
+      "description": "###### What this is:\n*The share of received validations from trusted (UNL) validators versus untrusted sources.*\n\n###### How it's computed:\n*Received-validation rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*The trusted slice should dominate for a well-configured node.*\n\n###### Healthy range:\n*Workload-dependent; trusted validations expected to be the majority.*\n\n###### Watch for:\n*A shrinking trusted share or a spike of untrusted validations, which can indicate misconfiguration or abuse.*\n\n###### Keywords:\n- **Trusted / untrusted / duplicate** *(per node)* \u2014 message classification: trusted (from UNL validators), untrusted (others), or duplicate (already seen).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`\n\n###### References:\n[Trusted / untrusted / duplicate](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#trusted-untrusted-duplicate)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -142,14 +175,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (validation_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"validation_trusted\", \"(.*)\")"
+          "expr": "label_replace(label_join(label_replace(sum by (validation_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"validation_trusted\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short"
         },
         "overrides": []
@@ -157,7 +191,7 @@
     },
     {
       "title": "Reduce-Relay Peer Selection",
-      "description": "###### What this is:\n*How transaction relay picks peers: chosen relay sources, suppressed peers, and peers with the feature off.*\n\n###### How it's computed:\n*Current peer counts in each category (selected, suppressed, not-enabled), per node.*\n\n###### Reading it:\n*A high suppressed-to-selected ratio means relay is saving bandwidth as intended.*\n\n###### Healthy range:\n*Workload-dependent; suppressed should exceed selected in a well-connected mesh.*\n\n###### Watch for:\n*A large not-enabled count (older peers forcing full relay) or selected climbing while suppressed falls.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`",
+      "description": "###### What this is:\n*How transaction relay picks peers: chosen relay sources, suppressed peers, and peers with the feature off.*\n\n###### How it's computed:\n*Current peer counts in each category (selected, suppressed, not-enabled), per node.*\n\n###### Reading it:\n*A high suppressed-to-selected ratio means relay is saving bandwidth as intended.*\n\n###### Healthy range:\n*Workload-dependent; suppressed should exceed selected in a well-connected mesh.*\n\n###### Watch for:\n*A large not-enabled count (older peers forcing full relay) or selected climbing while suppressed falls.*\n\n###### Keywords:\n- **Reduce-relay** *(per node)* \u2014 an optimization that relays messages through selected peers only, suppressing redundant forwarding.\n- **Transaction suppression** *(per node)* \u2014 dropping a transaction already seen from another peer, so it is not reprocessed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#reduce-relay)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -175,26 +209,29 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Selected\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Selected\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Suppressed\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Suppressed\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Not Enabled\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Not Enabled\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Peer Count",
@@ -209,7 +246,7 @@
     },
     {
       "title": "Reduce-Relay Missing-Tx Frequency",
-      "description": "###### What this is:\n*How often a peer has to fetch a transaction it missed because relay suppressed it.*\n\n###### How it's computed:\n*The reported frequency of on-demand missing-transaction fetches, per node.*\n\n###### Reading it:\n*Lower is better; near-flat means suppression is well tuned.*\n\n###### Healthy range:\n*Workload-dependent; a low, stable value is expected.*\n\n###### Watch for:\n*A rising trend, meaning suppression is too aggressive and the on-demand fetch path is growing.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`",
+      "description": "###### What this is:\n*How often a peer has to fetch a transaction it missed because relay suppressed it.*\n\n###### How it's computed:\n*The reported frequency of on-demand missing-transaction fetches, per node.*\n\n###### Reading it:\n*Lower is better; near-flat means suppression is well tuned.*\n\n###### Healthy range:\n*Workload-dependent; a low, stable value is expected.*\n\n###### Watch for:\n*A rising trend, meaning suppression is too aggressive and the on-demand fetch path is growing.*\n\n###### Keywords:\n- **Reduce-relay** *(per node)* \u2014 an optimization that relays messages through selected peers only, suppressing redundant forwarding.\n- **Transaction suppression** *(per node)* \u2014 dropping a transaction already seen from another peer, so it is not reprocessed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#reduce-relay)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -227,14 +264,15 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missing Tx Freq\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missing Tx Freq\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Frequency",
@@ -253,6 +291,19 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "service_name",
         "label": "Service Name",
         "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
@@ -260,7 +311,7 @@
         "query": "label_values(service_name)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -280,7 +331,7 @@
         "query": "label_values(deployment_environment)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -300,7 +351,7 @@
         "query": "label_values(xrpl_network_type)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -380,7 +431,7 @@
         "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -400,7 +451,7 @@
         "query": "label_values(span_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -420,7 +471,7 @@
         "query": "label_values(span_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -440,5 +491,5 @@
   },
   "title": "Peer Network",
   "uid": "peer-network",
-  "refresh": "5s"
+  "refresh": "30s"
 }

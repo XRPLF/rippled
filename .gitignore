@@ -89,3 +89,4 @@ target/
 
 # clangd cache
 /.cache
+.claude/

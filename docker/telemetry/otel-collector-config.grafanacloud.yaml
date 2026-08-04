@@ -1,0 +1,280 @@
+# OpenTelemetry Collector configuration — Grafana Cloud dual-export variant.
+#
+# Identical to otel-collector-config.yaml (local Tempo/Prometheus/Loki) but
+# ALSO ships all three signals to Grafana Cloud over a single OTLP/HTTP
+# endpoint. Local backends are kept so the on-box stack still works as a
+# fallback; remove the local exporters from the pipelines below if you want
+# cloud-only.
+#
+# Selecting this config is a RUNTIME choice — no code or image changes:
+#   Local only (default):
+#     docker compose -f docker/telemetry/docker-compose.yml up -d
+#   Local + Grafana Cloud:
+#     docker compose -f docker/telemetry/docker-compose.yml \
+#                    -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+#
+# The override file mounts THIS config over the collector's config path and
+# injects the three required secrets as environment variables:
+#   GRAFANA_CLOUD_OTLP_ENDPOINT  e.g. https://otlp-gateway-<zone>.grafana.net/otlp
+#   GRAFANA_CLOUD_INSTANCE_ID    numeric Grafana Cloud stack/instance id
+#   GRAFANA_CLOUD_API_TOKEN      a Cloud Access Policy token with metrics/traces/logs:write
+# Find all three under Grafana Cloud -> Connections -> "OpenTelemetry (OTLP)".
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  # Basic-auth for the Grafana Cloud OTLP gateway: username = instance id,
+  # password = API token. Values come from the container environment so no
+  # secret is committed to the repo.
+  basicauth/grafanacloud:
+    client_auth:
+      username: ${env:GRAFANA_CLOUD_INSTANCE_ID}
+      password: ${env:GRAFANA_CLOUD_API_TOKEN}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog:
+    include:
+      - /var/log/xrpld/*/debug.log
+    operators:
+      - type: regex_parser
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: "%Y-%b-%d %H:%M:%S.%f"
+          location: UTC
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+  # Box-only (uncommitted): probabilistic 0.5% tail sampling on the
+  # trace-storage branch only. spanmetrics-derived metrics see 100% of spans
+  # (they run on a separate branch) so RED remain exact; Tempo/Cloud stores
+  # ~1/200 of traces to keep long-running node cost bounded.
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    policies:
+      - name: half-percent
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 0.5
+  resource/logs:
+    attributes:
+      - key: service.name
+        value: xrpld
+        action: upsert
+      - key: job
+        value: xrpld
+        action: upsert
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards to Grafana
+  # Cloud, letting one cloud stack hold data from many collectors and
+  # filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see the "Deployment
+  # Tiers" section of docs/telemetry-runbook.md.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
+  # Strip SDK-injected resource attributes (telemetry.sdk.language/name/version).
+  # The OpenTelemetry SDK auto-adds these to every Resource; they carry no
+  # operational value, so drop them for every signal on every backend.
+  resource/stripsdk:
+    attributes:
+      - key: telemetry.sdk.language
+        action: delete
+      - key: telemetry.sdk.name
+        action: delete
+      - key: telemetry.sdk.version
+        action: delete
+  # Grafana Cloud ingests metrics via OTLP (no Prometheus scrape), so the
+  # tier/instance resource attributes never become series labels the way the
+  # local prometheus exporter promotes them (resource_to_telemetry_conversion
+  # is Prometheus-exporter-only). Copy them onto datapoint labels so the
+  # dashboards' $node / $deployment_environment / $xrpl_network_type filters
+  # resolve on Cloud exactly as they do locally.
+  #
+  # NOTE: service.name is intentionally NOT copied here. Cloud's OTLP ingest
+  # already promotes service.name to the `service_name` label, and adding a
+  # datapoint attribute with the same name causes Mimir to concatenate both
+  # values as `xrpld;xrpld`. service.instance.id does not exhibit the same
+  # doubling, so the copy for $node is kept.
+  transform/cloudlabels:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
+          - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
+          - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
+
+connectors:
+  spanmetrics:
+    namespace: "span"
+    # Emit span-derived metrics every 15s (default is 60s). Grafana Cloud
+    # ingests these as one datapoint per flush, and dashboard rate() panels
+    # use [$__rate_interval], which at short ranges (<=1h) can be shorter than
+    # the flush interval. A 60s flush left <2 samples per rate window on Cloud,
+    # so those panels rendered "No data". 15s keeps >=2 samples per window at
+    # every dashboard range, at the cost of ~4x span-metric datapoints to Cloud.
+    metrics_flush_interval: 15s
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes propagate to the output metrics regardless;
+    # label promotion is handled by resource_to_telemetry_conversion on the
+    # prometheus exporter. Listing the per-node id and tier keys keeps
+    # series from distinct nodes/tiers grouped separately.
+    resource_metrics_key_attributes:
+      - service.instance.id
+      - deployment.environment
+      - xrpl.network.type
+    histogram:
+      # Pin unit=ms so the metric stays span_duration_milliseconds_* and le
+      # labels stay in ms even if a future collector flips the default to
+      # seconds (connector.spanmetrics.useSecondAsDefaultMetricsUnit gate).
+      unit: ms
+      explicit:
+        # Buckets MUST stay strictly ascending (the connector binary-searches
+        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
+        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
+        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
+        # put >99.99% of samples in the first bucket and pinned every p95/p99
+        # at a constant 0.95ms. Sub-second boundaries cover
+        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
+        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
+        # that used to pile into a single 1s-5s bucket; 10s/30s give the
+        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
+        # home so its p95/p99 stop reading as +Inf.
+        buckets:
+          [
+            0.01ms,
+            0.05ms,
+            0.1ms,
+            0.25ms,
+            0.5ms,
+            1ms,
+            5ms,
+            10ms,
+            25ms,
+            50ms,
+            100ms,
+            250ms,
+            500ms,
+            1s,
+            2s,
+            3s,
+            4s,
+            5s,
+            10s,
+            30s,
+          ]
+    dimensions:
+      - name: command
+      - name: rpc_status
+      - name: consensus_mode
+      # Only the boolean close_time_correct is promoted, never the close_time
+      # value itself: close_time is a monotonic NetClock timestamp, so a
+      # dimension on it would mint a new metric series every ledger (unbounded
+      # cardinality). The close-time value is exposed as the server_info
+      # last_close_time gauge instead (for last-close age); the close interval
+      # comes from the ledgers_closed_total counter.
+      - name: close_time_correct
+      - name: consensus_state
+      - name: local
+      - name: suppressed
+      - name: proposal_trusted
+      - name: validation_trusted
+      - name: tx_type
+      - name: ter_result
+      - name: stage
+      - name: txq_status
+      - name: load_type
+      - name: is_batch
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
+      - name: method
+      - name: grpc_role
+      - name: grpc_status
+      - name: outcome
+      - name: acquire_reason
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels so the local
+    # scrape surface can be filtered by tier. (Grafana Cloud ingests the
+    # attributes natively via OTLP, so this only affects the local export.)
+    resource_to_telemetry_conversion:
+      enabled: true
+  # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
+  # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
+  # Loki (logs). Retry + queue guard against transient gateway errors.
+  otlphttp/grafanacloud:
+    endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
+    auth:
+      authenticator: basicauth/grafanacloud
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      enabled: true
+
+service:
+  extensions: [health_check, basicauth/grafanacloud]
+  pipelines:
+    # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
+    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlphttp/loki
+    # from the respective exporter lists.
+    # 100% of spans feed the spanmetrics connector so span-derived RED
+    # metrics stay exact. No tail sampling on this branch.
+    traces/metrics:
+      receivers: [otlp]
+      processors: [resource/tier, resource/stripsdk, batch]
+      exporters: [spanmetrics]
+    # Trace-STORAGE branch: 0.5% probabilistic tail sampling before Tempo
+    # and Grafana Cloud, so stored trace volume is ~1/200 of ingested spans.
+    traces/store:
+      receivers: [otlp]
+      processors: [tail_sampling, resource/tier, resource/stripsdk, batch]
+      exporters: [otlp/tempo, otlphttp/grafanacloud]
+    # The local Prometheus scrape promotes tier/instance resource attrs to
+    # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does
+    # not, so it runs a separate pipeline that copies them onto datapoint
+    # labels via transform/cloudlabels. Splitting avoids the local scrape and
+    # the transform both writing a service_instance_id label on the same series.
+    metrics/local:
+      receivers: [otlp, spanmetrics]
+      processors: [resource/tier, resource/stripsdk, batch]
+      exporters: [prometheus]
+    metrics/cloud:
+      receivers: [otlp, spanmetrics]
+      processors:
+        [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
+      exporters: [otlphttp/grafanacloud]
+    logs:
+      receivers: [filelog]
+      processors: [resource/logs, resource/tier, resource/stripsdk, batch]
+      exporters: [otlphttp/loki, otlphttp/grafanacloud]

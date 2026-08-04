@@ -283,7 +283,7 @@ public:
      * (e.g. "http://localhost:4318/v1/metrics").
      * @param instanceId  Value for the service.instance.id resource
      * attribute. When non-empty, Prometheus metrics
-     * carry an exported_instance label for per-node
+     * carry a service_instance_id label for per-node
      * filtering.
      */
     void

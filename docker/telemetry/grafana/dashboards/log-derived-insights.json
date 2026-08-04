@@ -1,0 +1,2471 @@
+{
+  "description": "What this shows: Signals derived from xrpld's debug.log via Loki (LogQL), covering detail that no metric or span records — manifest dispositions per master key, resource fee charges per IP and public key, ledger-fetch duplicate ratios, peer disconnect reasons, and consensus phase transitions.  —  Use it to: Investigate behaviour that the Prometheus dashboards cannot express, and to attribute load or abuse to a specific peer, key, or job.  —  REQUIRES DEBUG LOGS: most panels here read from log lines emitted at DBG severity, which xrpld suppresses by default (default threshold is Info, see Main.cpp). On a default-configured node those panels are EMPTY, and an empty panel here means 'not collecting', NOT 'no problem'. Enable per partition with `log_level <Partition> debug` — for example `log_level ManifestCache debug`. Rows are marked [DBG] when they require debug logs and [DEFAULT OK] when they work at the default Info level.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "schemaVersion": 39,
+  "tags": ["node", "logs", "logql"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "Log-Derived Insights",
+  "uid": "log-derived-insights",
+  "refresh": "30s",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_LOKI",
+        "label": "Loki Data Source",
+        "description": "Loki data source holding xrpld debug.log lines",
+        "type": "datasource",
+        "query": "loki",
+        "current": {
+          "text": "Loki",
+          "value": "loki"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "refresh": 1,
+        "options": [],
+        "skipUrlSync": false
+      },
+      {
+        "name": "service_name",
+        "label": "Service Name",
+        "description": "Filter by emitting service",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "xrpld",
+          "value": "xrpld"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Deployment Environment",
+        "description": "Filter by deployment tier (local, ci, test, prod)",
+        "type": "query",
+        "query": "label_values({service_name=\"xrpld\"}, deployment_environment)",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values({service_name=\"xrpld\"}, service_instance_id)",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network Type",
+        "description": "Filter by XRPL network. Structured metadata, so values are enumerated rather than discovered.",
+        "type": "custom",
+        "query": "mainnet,testnet,devnet",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "severity",
+        "label": "Log Severity",
+        "description": "Filter by xrpld log severity (DBG, NFO, WRN, ERR, FTL). Structured metadata, not a stream label.",
+        "type": "custom",
+        "query": "DBG,NFO,WRN,ERR,FTL",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "consensus_phase",
+        "label": "Consensus Phase",
+        "description": "Derived from log text: ConsensusPhase transitions (Open, Establish, Accepted)",
+        "type": "custom",
+        "query": "Open,Establish,Accepted",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "consensus_mode",
+        "label": "Consensus Mode",
+        "description": "Derived from log text: ConsensusLogger operating mode (full, syncing, observing, tracking)",
+        "type": "custom",
+        "query": "full,syncing,observing,tracking",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "manifest_action",
+        "label": "Manifest Action",
+        "description": "Derived from log text: ManifestCache disposition. UntrustedCapacity exists only on rc5+ builds.",
+        "type": "custom",
+        "query": "AcceptedNew,AcceptedUpdate,Stale,Revoked,Invalid,UntrustedCapacity",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "charge_reason",
+        "label": "Fee Charge Reason",
+        "description": "Derived from log text: Resource fee charge reason",
+        "type": "custom",
+        "query": "useless data,moderate peer request,heavy peer request,light peer request,trivial peer request,unwanted data,init drop",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      },
+      {
+        "name": "topn",
+        "label": "Top N",
+        "description": "Row limit for top-N tables. Loki caps a query at 2000 series, so unbounded per-key aggregation fails.",
+        "type": "custom",
+        "query": "5,10,15,20,25",
+        "includeAll": false,
+        "current": {
+          "text": "10",
+          "value": "10"
+        },
+        "multi": false,
+        "options": [],
+        "refresh": 0,
+        "sort": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "Read This First — Debug Log Requirement",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "### ⚠️ Most panels on this dashboard require debug logs\n\nxrpld's default log threshold is **Info** (`Severity thresh = Severity::Info` in `Main.cpp`). Every panel in a row marked **[DBG]** reads log lines emitted at `DBG` severity, which a default-configured node **does not write**.\n\n**An empty [DBG] panel means \"not collecting\", NOT \"no problem\".** A manifest dashboard reading zero because `ManifestCache` sits at Info is indistinguishable from a healthy one.\n\nEnable per partition rather than globally — global debug is a firehose (`Resource` alone emits ~329k lines / 6h):\n\n```\nlog_level ManifestCache debug\nlog_level Resource debug\nlog_level InboundLedger debug\nlog_level Peer debug\nlog_level LedgerConsensus debug\n```\n\nRows marked **[DEFAULT OK]** work at the default Info level and need no configuration change."
+      },
+      "id": 1
+    },
+    {
+      "type": "row",
+      "title": "Worst Offenders — Node Ranking  [MIXED]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "panels": [],
+      "id": 2
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Error Volume",
+      "description": "###### What this is:\n*Which nodes are logging the most errors.*\n\n###### How it's computed:\n*Count of ERR and FTL log lines per node over the dashboard window, ranked highest first.*\n\n###### Reading it:\n*The top entry is the node in the most trouble. Compare nodes rather than reading an absolute value.*\n\n###### Healthy range:\n*Zero, or a small flat count. ERR is not routine.*\n\n###### Watch for:\n*Any node pulling far ahead of its peers, which usually means a fault local to that node rather than a network condition.*\n\n###### Keywords:\n- **ERR / FTL** *(per line)* — the two most severe xrpld log levels; both survive the default Info threshold.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: errors",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 3
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Attack-Like Input",
+      "description": "###### What this is:\n*Which nodes are receiving the most malformed or unwanted peer payloads.*\n\n###### How it's computed:\n*Count of Resource fee charges whose reason is useless data, unwanted data, or init drop, per node.*\n\n###### Reading it:\n*These three reasons indicate a peer sent something the node could not use, so a high count is the closest log-derived proxy for abusive input.*\n\n###### Healthy range:\n*Low and flat. Some useless data is normal on a busy overlay.*\n\n###### Watch for:\n*A sharp rise on one node, especially paired with a single dominant IP in the charged-peers table below.*\n\n###### Keywords:\n- **Useless data** *(per charge)* — payload the node could not use, e.g. an empty or malformed message.\n- **Init drop** *(per charge)* — a connection dropped during initialisation.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Requires debug logs on the Resource partition.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: charges",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Total Fee Charged",
+      "description": "###### What this is:\n*Which nodes are absorbing the most peer-imposed load, weighted by fee amount.*\n\n###### How it's computed:\n*Sum of every resource fee amount parsed from the Resource partition, per node.*\n\n###### Reading it:\n*Weighted by cost rather than event count, so one heavy request at 2000 outranks eight moderate ones at 250.*\n\n###### Healthy range:\n*Proportional to peer count and request volume; compare nodes of similar role.*\n\n###### Watch for:\n*One node far above peers of the same role, which means it is carrying disproportionate peer load.*\n\n###### Keywords:\n- **Fee weight** *(per charge)* — the credit amount: 2000 heavy, 250 moderate, 150 useless data.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Requires debug logs on the Resource partition.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: fee",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000000
+              },
+              {
+                "color": "red",
+                "value": 10000000
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Manifest Rejection",
+      "description": "###### What this is:\n*Which nodes are rejecting the most inbound manifests.*\n\n###### How it's computed:\n*Count of ManifestCache lines with a Stale, Invalid, Revoked, or UntrustedCapacity outcome, per node.*\n\n###### Reading it:\n*A manifest flood shows up here first. Stale dominates normally because peers re-gossip manifests the node already holds.*\n\n###### Healthy range:\n*Workload-dependent; nodes on the same network should sit close together.*\n\n###### Watch for:\n*A single node far ahead, or any Invalid at all, which means a signature failed verification.*\n\n###### Keywords:\n- **Rejection** *(per manifest)* — any non-accepted disposition.\n- **UntrustedCapacity** *(per manifest)* — rate-limit rejection for an unlisted key; rc5+ builds only.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`ManifestCache::applyManifest`\n\n###### Note:\n*Requires debug logs on the ManifestCache partition.*\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: rejections",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 10000
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Consensus Problem",
+      "description": "###### What this is:\n*Which nodes are logging the most consensus warnings and errors.*\n\n###### How it's computed:\n*Count of LedgerConsensus lines at WRN severity or above, per node.*\n\n###### Reading it:\n*Consensus is a network-wide process, so a single node standing out points at that node rather than the network.*\n\n###### Healthy range:\n*Low. Some warnings occur during normal round churn.*\n\n###### Watch for:\n*One node far above its peers, or a step change after a deploy.*\n\n###### Keywords:\n- **Consensus round** *(per ledger)* — one Open to Establish to Accepted cycle.\n- **Dispute** *(per transaction)* — a transaction peers disagree about including.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/consensus/Consensus.h)\n\n###### Function:\n`Consensus::timerEntry / checkConsensus`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: events",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Job Latency Breach",
+      "description": "###### What this is:\n*Which nodes are missing job latency targets most often.*\n\n###### How it's computed:\n*Count of LoadMonitor slow-job lines per node; the emitter only fires above a 500ms threshold.*\n\n###### Reading it:\n*A direct read on which node is most overloaded. Works at the default log level.*\n\n###### Healthy range:\n*Low. A busy node breaches occasionally.*\n\n###### Watch for:\n*A node far ahead of its peers, which usually means disk or CPU pressure local to it.*\n\n###### Keywords:\n- **Breach** *(per job)* — one job execution over the 500ms LoadMonitor threshold.\n\n###### Computation boundary:\n*Result: Per node — a count of BREACHES, never of total job executions.*\n*Derived in the Grafana query. Use the native `job_*` metrics for totals.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*Counts breaches above 500ms only, so it is an exception count and not a latency measure.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: breaches",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Sync Instability",
+      "description": "###### What this is:\n*Which nodes are spending the most time out of the full state.*\n\n###### How it's computed:\n*Count of STATE-> transitions into any non-full state, per node.*\n\n###### Reading it:\n*A stable node holds full and emits nothing here, so any non-zero value means it left full that many times.*\n\n###### Healthy range:\n*Zero on a synced node.*\n\n###### Watch for:\n*A repeating count, which means the node is flapping rather than having had one bad moment.*\n\n###### Keywords:\n- **Operating mode** *(per node)* — Disconnected, Connected, Syncing, Tracking, Full.\n- **Flapping** *(per node)* — repeated departures from full.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "suffix: transitions",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "Nodes By Ledger Fetch Waste",
+      "description": "###### What this is:\n*Which nodes waste the most bandwidth fetching ledger data they already hold.*\n\n###### How it's computed:\n*Duplicate ledger nodes divided by total fetched, per node, from the InboundLedger stats lines.*\n\n###### Reading it:\n*A ratio of 0.8 means four in five fetched nodes were already present locally.*\n\n###### Healthy range:\n*Below roughly 0.3. Some duplication is unavoidable when fetching from several peers.*\n\n###### Watch for:\n*Sustained values above 0.8, which waste both bandwidth and peer resource credit.*\n\n###### Keywords:\n- **Duplicate** *(per fetch)* — a ledger node already held locally.\n\n###### Computation boundary:\n*Result: Per node — a RATIO of two summed counters, not a count.*\n*Derived in the Grafana query via `unwrap`.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### Note:\n*Requires debug logs on the InboundLedger partition.*\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.service_instance_id}",
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          },
+          "custom": {},
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": ["mean"],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap good [$__range]))))",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Node Operating State Transitions  [DEFAULT OK]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "panels": [],
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Node State Transition Rate",
+      "description": "###### What this is:\n*Rate of node operating-state transitions: disconnected, connected, syncing, tracking, and full.*\n\n###### How it's computed:\n*Per-second count of `STATE->` log lines, with the target state parsed from the line.*\n\n###### Reading it:\n*Each line is one transition INTO that state. A stable node sits in full and emits nothing.*\n\n###### Healthy range:\n*Flat at zero once synced. Any non-zero value means the node is changing state.*\n\n###### Watch for:\n*A repeating full to syncing to tracking to full cycle, which means the node cannot hold sync. Live observation shows 110 transitions per state per day on a flapping node.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n- **Transition** *(per node)* — one `STATE->` log line, emitted only when the state actually changes.\n\n###### Computation boundary:\n*Result: Per node — each series counts one server's own transitions.*\n*NOT recorded as a metric anywhere. Derived entirely in the Grafana query by regex over raw log text; xrpld only writes the line.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.state} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: transitions/s",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Transitions / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (state, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ \"$severity\" | regexp `STATE->(?P<state>\\w+)` | state != `` | label_format state=`{{if eq .state \"full\"}}Full{{else if eq .state \"syncing\"}}Syncing{{else if eq .state \"tracking\"}}Tracking{{else if eq .state \"connected\"}}Connected{{else if eq .state \"disconnected\"}}Disconnected{{else}}{{.state}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 12
+    },
+    {
+      "type": "state-timeline",
+      "title": "Node State Timeline",
+      "description": "###### What this is:\n*The node's operating state over time, as a discrete timeline.*\n\n###### How it's computed:\n*The most recent `STATE->` transition in each interval, rendered as a state band.*\n\n###### Reading it:\n*Shows at a glance how long the node spent in each state and exactly when it left full.*\n\n###### Healthy range:\n*One unbroken full band across the window.*\n\n###### Watch for:\n*Any band that is not full, and repeated narrow bands, which indicate state flapping.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n\n###### Computation boundary:\n*Result: Per node — one band per server per state.*\n*NOT recorded as a metric anywhere. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### Note:\n*Only transitions are logged, so a node that never changes state produces no data here. Read with the transition-rate panel beside it.*\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.state} [${__field.labels.service_instance_id}]",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "auto",
+        "rowHeight": 0.9,
+        "mergeValues": true,
+        "alignValue": "center",
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (state, service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ \"$severity\" | regexp `STATE->(?P<state>\\w+)` | state != `` | label_format state=`{{if eq .state \"full\"}}Full{{else if eq .state \"syncing\"}}Syncing{{else if eq .state \"tracking\"}}Tracking{{else if eq .state \"connected\"}}Connected{{else if eq .state \"disconnected\"}}Disconnected{{else}}{{.state}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 13
+    },
+    {
+      "type": "row",
+      "title": "Log Volume & Severity Mix  [DEFAULT OK]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "panels": [],
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "Log Line Rate By Severity",
+      "description": "###### What this is:\n*Rate of log lines emitted by xrpld, split by severity.*\n\n###### How it's computed:\n*Per-second count of matching log lines grouped by the severity field parsed out of each line.*\n\n###### Reading it:\n*Use this to confirm the log pipeline is alive, and to see at a glance whether DBG lines are being collected at all.*\n\n###### Healthy range:\n*Workload-dependent. If the DBG series is absent, every panel in a [DBG] row on this dashboard will be empty.*\n\n###### Watch for:\n*A sudden collapse to only WRN and ERR, which means debug logging was turned off and the [DBG] rows have gone blind rather than quiet.*\n\n###### Keywords:\n- **Severity** *(per line)* — xrpld log level: DBG, NFO, WRN, ERR, FTL.\n- **Structured metadata** *(per line)* — Loki fields parsed from the line, filtered with `|` rather than in the stream selector.\n\n###### Computation boundary:\n*Result: Per node per severity — a count of log lines, not of events in the node.*\n*Derived in the Grafana query; the collector's filelog receiver parses severity, xrpld itself exports no such metric.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki structured metadata](https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 53
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.severity} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: lines/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Log Lines / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (severity, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ \"$severity\" | label_format severity=`{{if eq .severity \"DBG\"}}Debug{{else if eq .severity \"NFO\"}}Info{{else if eq .severity \"WRN\"}}Warning{{else if eq .severity \"ERR\"}}Error{{else if eq .severity \"FTL\"}}Fatal{{else}}{{.severity}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 15,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Log Line Rate By Partition (Top $topn)",
+      "description": "###### What this is:\n*The busiest xrpld log partitions by line rate.*\n\n###### How it's computed:\n*Per-second count of log lines grouped by the partition field, limited to the top N series.*\n\n###### Reading it:\n*Shows which subsystem dominates log volume, which is the main cost driver for Loki ingest.*\n\n###### Healthy range:\n*Workload-dependent. Resource, JobQueue, and LedgerConsensus are normally the loudest.*\n\n###### Watch for:\n*A partition suddenly dominating, which usually means a subsystem entered a retry or error loop.*\n\n###### Keywords:\n- **Partition** *(per line)* — the xrpld subsystem that emitted the line, e.g. ManifestCache, Resource, LedgerConsensus.\n\n###### Computation boundary:\n*Result: Per node per partition — a count of log lines.*\n*Derived in the Grafana query; truncated to the top N by Loki's series limit.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 53
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.partition} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: lines/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Log Lines / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (partition, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ \"$severity\" [$__auto])))"
+        }
+      ],
+      "id": 16,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Manifests — Disposition & Producers  [DBG]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 63
+      },
+      "panels": [],
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Manifest Disposition Rate",
+      "description": "###### What this is:\n*Rate of manifest apply outcomes: accepted, stale, revoked, invalid, or rate-limited.*\n\n###### How it's computed:\n*Per-second count of ManifestCache log lines, with the action parsed out of the `Manifest: <action>;Pk: ...` text.*\n\n###### Reading it:\n*AcceptedNew and AcceptedUpdate are useful work; Stale and UntrustedCapacity are rejections and normally dominate.*\n\n###### Healthy range:\n*Accepted rates are low and bursty. A high sustained Stale rate is normal — peers gossip manifests this node already holds.*\n\n###### Watch for:\n*Any Invalid, which means a signature failed verification, and a sustained UntrustedCapacity climb, which indicates a manifest flood from unlisted keys.*\n\n###### Keywords:\n- **Manifest** *(per validator)* — a signed record binding a validator's master key to its current signing key.\n- **Disposition** *(per manifest)* — the apply outcome: AcceptedNew, AcceptedUpdate, Stale, Revoked, Invalid, UntrustedCapacity.\n- **Stale** *(per manifest)* — sequence number not greater than the one already held; the common benign rejection.\n\n###### Computation boundary:\n*Result: Per node per action — counts log EVENTS, not distinct manifests.*\n*NOT recorded as a metric. `applyManifest` has no instrumentation; this is regex over `logMftAct` output in the Grafana query.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`ManifestCache::applyManifest / logMftAct`\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.action} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: manifests/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Manifests / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (action, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" | regexp `Manifest: (?P<action>[A-Za-z]+);` | action =~ \"$manifest_action\" [$__auto]))"
+        }
+      ],
+      "id": 18,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manifest Accept Vs Reject Rate",
+      "description": "###### What this is:\n*Manifest outcomes collapsed into two series: accepted versus rejected.*\n\n###### How it's computed:\n*Per-second counts of ManifestCache lines, with AcceptedNew and AcceptedUpdate summed as accepted and all other actions summed as rejected.*\n\n###### Reading it:\n*Gives the useful-work fraction of inbound manifest processing without per-action detail.*\n\n###### Healthy range:\n*Rejected normally far exceeds accepted; peers routinely re-gossip known manifests.*\n\n###### Watch for:\n*A rejected rate in the hundreds per second, which indicates a manifest flood consuming the JtManifest job queue.*\n\n###### Keywords:\n- **Accepted** *(per manifest)* — AcceptedNew or AcceptedUpdate; the manifest changed cache state.\n- **Rejected** *(per manifest)* — Stale, Invalid, Revoked, or UntrustedCapacity.\n\n###### Computation boundary:\n*Result: Per node — two summed series over the same log lines.*\n*Derived in the Grafana query. Accepted may legitimately be absent: measured 1,360 AcceptedNew per 7d, so short windows often contain none. Both series carry `or vector(0)` so a zero-accept window renders a flat zero line rather than disappearing.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`ManifestCache::applyManifest / logMftAct`\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: manifests/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Manifests / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "legendFormat": "Accepted [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: Accepted` [$__auto])) or vector(0)"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "B",
+          "legendFormat": "Rejected [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__auto])) or vector(0)"
+        }
+      ],
+      "id": 19,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Top $topn Manifest Producers By Master Key",
+      "description": "###### What this is:\n*The master keys responsible for the most manifest log events in the selected window.*\n\n###### How it's computed:\n*Count of ManifestCache lines grouped by the base58 master key parsed from the log text, limited to the top N.\nCounts are per log EVENT, not per distinct manifest.*\n\n###### Reading it:\n*Identifies which validator keys generate the most manifest churn on this node.*\n\n###### Healthy range:\n*A small number of keys with modest repeat counts. Live observation shows roughly 19 to 24 events per key per hour.*\n\n###### Watch for:\n*A single unlisted key with a very high count, which is the signature of a targeted manifest flood.*\n\n###### Keywords:\n- **Master key** *(per validator)* — the long-lived base58 key a manifest is signed under.\n- **Log event** *(per line)* — one manifest apply attempt; the same key recurs as peers re-gossip.\n\n###### Computation boundary:\n*Result: Per master key per node — counts log EVENTS, NOT distinct manifests and NOT distinct keys.*\n*Derived in the Grafana query. Truncated to top N: Loki rejects queries returning over 2000 series, so a true distinct-key count is impossible here.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`logMftAct`\n\n###### Note:\n*Truncated to the top N. Loki rejects a query returning over 2000 series, so a full distinct-key count is not possible here.*\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 74
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last *"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Log Events"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pk"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Master Key"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_instance_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Node"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Log Events",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "countRows": false,
+          "fields": ""
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": ["lastNotNull"],
+            "labelsToFields": true,
+            "includeTimeField": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Field": true,
+              "Time": true
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "instant": true,
+          "queryType": "instant",
+          "expr": "topk($topn, sum by (pk, service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" | regexp `Manifest: (?P<action>[A-Za-z]+);Pk: (?P<pk>[A-Za-z0-9]+);` | pk != `` | action =~ \"$manifest_action\" [$__range])))"
+        }
+      ],
+      "id": 20,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Resource Fee Charges — Load Attribution  [DBG]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 88
+      },
+      "panels": [],
+      "id": 21
+    },
+    {
+      "type": "timeseries",
+      "title": "Fee Charge Rate By Reason",
+      "description": "###### What this is:\n*Rate at which this node charges peers a resource fee, split by the reason for the charge.*\n\n###### How it's computed:\n*Per-second count of Resource log lines, with the reason parsed from the `for <reason> ($<fee>)` text.*\n\n###### Reading it:\n*Shows what kind of peer behaviour is costing this node the most. Moderate peer request normally dominates.*\n\n###### Healthy range:\n*Workload-dependent and roughly proportional to peer count and request volume.*\n\n###### Watch for:\n*A rising useless data rate, which means peers are sending malformed or unwanted payloads.*\n\n###### Keywords:\n- **Resource fee** *(per peer)* — an internal load credit charged against a peer, unrelated to XRP transaction fees.\n- **Reason** *(per charge)* — why the charge was applied, e.g. moderate peer request, useless data.\n\n###### Computation boundary:\n*Result: Per node per reason — a count of charge events.*\n*NOT recorded as a metric. Derived in the Grafana query from `Logic::charge` log output.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 89
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: charges/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Charges / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (reason, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | severity =~ \"$severity\" | regexp `for (?P<reason>[a-z ]+) \\(\\$(?P<fee>[0-9]+)\\)` | reason =~ \"$charge_reason\" | reason != `` | label_format reason=`{{if eq .reason \"useless data\"}}Useless Data{{else if eq .reason \"moderate peer request\"}}Moderate Peer Request{{else if eq .reason \"heavy peer request\"}}Heavy Peer Request{{else if eq .reason \"light peer request\"}}Light Peer Request{{else if eq .reason \"trivial peer request\"}}Trivial Peer Request{{else if eq .reason \"unwanted data\"}}Unwanted Data{{else if eq .reason \"init drop\"}}Init Drop{{else}}{{.reason}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 22,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Fee-Weighted Charge Load",
+      "description": "###### What this is:\n*Resource fee charges weighted by the fee amount, rather than counted equally.*\n\n###### How it's computed:\n*Per-second sum of the fee value parsed from each Resource charge line, using LogQL unwrap.*\n\n###### Reading it:\n*A single heavy peer request at 2000 outweighs eight moderate ones at 250, so this ranks real cost rather than event count.*\n\n###### Healthy range:\n*Workload-dependent; should track peer request volume smoothly.*\n\n###### Watch for:\n*Spikes that do not appear in the charge-count panel, which mean a shift toward expensive request types.*\n\n###### Keywords:\n- **Fee weight** *(per charge)* — the credit amount, e.g. 250 moderate, 2000 heavy; higher means costlier.\n\n###### Computation boundary:\n*Result: Per node per reason — a SUM of fee amounts, not a count of events.*\n*Derived in the Grafana query via LogQL `unwrap` over the parsed fee value.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 89
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.reason} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: fee/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Fee Units / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (reason, service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | severity =~ \"$severity\" | regexp `for (?P<reason>[a-z ]+) \\(\\$(?P<fee>[0-9]+)\\)` | reason =~ \"$charge_reason\" | reason != `` | label_format reason=`{{if eq .reason \"useless data\"}}Useless Data{{else if eq .reason \"moderate peer request\"}}Moderate Peer Request{{else if eq .reason \"heavy peer request\"}}Heavy Peer Request{{else if eq .reason \"light peer request\"}}Light Peer Request{{else if eq .reason \"trivial peer request\"}}Trivial Peer Request{{else if eq .reason \"unwanted data\"}}Unwanted Data{{else if eq .reason \"init drop\"}}Init Drop{{else}}{{.reason}}{{end}}` | unwrap fee [$__auto]))"
+        }
+      ],
+      "id": 23,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Top $topn Charged Peers By IP And Public Key",
+      "description": "###### What this is:\n*The peers accumulating the most resource fee charges, identified by IP address and node public key.*\n\n###### How it's computed:\n*Sum of fee amounts parsed from Resource charge lines, grouped by IP and public key, limited to the top N.*\n\n###### Reading it:\n*This is the direct answer to which peer is costing this node the most, and is the primary abuse-attribution view.*\n\n###### Healthy range:\n*Charges spread across many peers with no single dominant entry.*\n\n###### Watch for:\n*One IP far above the rest, especially paired with the useless data reason, which indicates an abusive or misbehaving peer.*\n\n###### Keywords:\n- **Node public key** *(per peer)* — the peer's base58 identity, stable across reconnects.\n- **IP address** *(per peer)* — source address; the optional `:port` suffix is stripped so one peer is one row.\n\n###### Computation boundary:\n*Result: Per peer per node — a SUM of fee amounts over the dashboard window.*\n*Derived in the Grafana query. Truncated to top N by Loki's 2000-series limit, so this is the head of the distribution, never a total.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Truncated to the top N because of Loki's 2000-series query limit.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 99
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last *"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Total Fee Charged"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ip"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "IP Address"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pubkey"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Public Key"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_instance_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Node"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Total Fee Charged",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "countRows": false,
+          "fields": ""
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": ["lastNotNull"],
+            "labelsToFields": true,
+            "includeTimeField": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Field": true,
+              "Time": true
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "instant": true,
+          "queryType": "instant",
+          "expr": "topk($topn, sum by (ip, pubkey, service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | severity =~ \"$severity\" | regexp `Charging IP Address: (?P<ip>[0-9a-fA-F:.]+?)(?::[0-9]+)?, Public Key: (?P<pubkey>[A-Za-z0-9]+) for (?P<reason>[a-z ]+) \\(\\$(?P<fee>[0-9]+)\\)` | reason =~ \"$charge_reason\" | unwrap fee [$__range])))"
+        }
+      ],
+      "id": 24,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Ledger Acquisition Efficiency  [DBG]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 113
+      },
+      "panels": [],
+      "id": 25
+    },
+    {
+      "type": "timeseries",
+      "title": "Ledger Node Fetch Duplicate Ratio",
+      "description": "###### What this is:\n*The fraction of fetched ledger nodes that were duplicates this node already held.*\n\n###### How it's computed:\n*Sum of the dupe counter divided by the sum of good plus dupe, parsed from the `Ledger AS/TX node stats` log lines.*\n\n###### Reading it:\n*This is wasted ledger-fetch bandwidth. A ratio of 0.5 means half of everything fetched was already present.*\n\n###### Healthy range:\n*Below roughly 0.3. Some duplication is unavoidable when fetching from several peers at once.*\n\n###### Watch for:\n*Sustained values above 0.8. Live observation has recorded good:142 dupe:891, an 86 percent duplicate rate, which wastes both bandwidth and peer resource credit.*\n\n###### Keywords:\n- **Ledger node** *(per fetch)* — one SHAMap node fetched while acquiring a ledger.\n- **Duplicate** *(per fetch)* — a node already held locally; wasted bandwidth and peer credit.\n\n###### Computation boundary:\n*Result: Per node — a ratio of two summed counters, dupe / (good + dupe).*\n*NOT recorded as a metric. Derived in the Grafana query via `unwrap` over the counters in the InboundLedger stats line.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer / takeAsRootNode`\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 114
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Duplicate Ratio",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "legendFormat": "Duplicate Ratio [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap good [$__auto])))"
+        }
+      ],
+      "id": 26,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Ledger Node Fetch Rate — Good Vs Duplicate Vs Timeout",
+      "description": "###### What this is:\n*Absolute rate of useful ledger nodes fetched, duplicates received, and acquire timeouts.*\n\n###### How it's computed:\n*Per-second sums of the good, dupe, and timeouts counters parsed from InboundLedger acquire log lines.*\n\n###### Reading it:\n*Gives the absolute volumes behind the duplicate-ratio panel, so a high ratio at trivial volume can be told apart from a high ratio at scale.*\n\n###### Healthy range:\n*Good should exceed duplicate during active sync. Timeouts should stay near zero.*\n\n###### Watch for:\n*A rising timeout series, which means peers are not answering ledger requests and sync will stall.*\n\n###### Keywords:\n- **Good** *(per fetch)* — a useful, previously unheld ledger node.\n- **Timeout** *(per acquire)* — a ledger request a peer never answered.\n\n###### Computation boundary:\n*Result: Per node — SUMS of the parsed counters, giving absolute volumes behind the ratio panel.*\n*Derived in the Grafana query via `unwrap`.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 114
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: nodes/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Ledger Nodes / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "legendFormat": "Good [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "B",
+          "legendFormat": "Duplicate [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `node stats: good:(?P<good>[0-9]+) dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "C",
+          "legendFormat": "Acquire Timeouts [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `Acquire \\S+ timeouts:(?P<timeouts>[0-9]+)` | unwrap timeouts [$__auto]))"
+        }
+      ],
+      "id": 27,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Peer Lifecycle & Disconnects  [DBG]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 124
+      },
+      "panels": [],
+      "id": 28
+    },
+    {
+      "type": "timeseries",
+      "title": "Peer Disconnect Rate By Reason",
+      "description": "###### What this is:\n*Rate of peer connection endings, split by the reason recorded in the log.*\n\n###### How it's computed:\n*Per-second count of Peer log lines matching Timeout, Closed, or a refused connection attempt.*\n\n###### Reading it:\n*Distinguishes clean teardown from failure. Closed is a normal ending; Timeout and Connection refused are not.*\n\n###### Healthy range:\n*Closed dominant with a low, steady background of the others.*\n\n###### Watch for:\n*A Timeout rate approaching the Closed rate, which points at network trouble or unresponsive peers.*\n\n###### Keywords:\n- **Closed** *(per peer)* — a clean connection teardown; the normal ending.\n- **Timeout** *(per peer)* — the peer stopped responding.\n- **Connection refused** *(per attempt)* — an outbound attempt the remote rejected.\n\n###### Computation boundary:\n*Result: Per node per outcome — a count of peer lifecycle events.*\n*Derived in the Grafana query. Note `overlay_peer_disconnects` exists as a metric but carries no reason breakdown, which is what this panel adds.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::close / onTimer`\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 125
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.outcome} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: events/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Peer Events / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (outcome, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Peer` | severity =~ \"$severity\" | regexp `\\] (?P<outcome>Timeout|Closed|onConnect: Connection refused)` | outcome != `` | label_format outcome=`{{if eq .outcome \"Closed\"}}Closed{{else if eq .outcome \"Timeout\"}}Timeout{{else if eq .outcome \"onConnect: Connection refused\"}}Connection Refused{{else}}{{.outcome}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 29,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Peer Handshake And Accept Rate",
+      "description": "###### What this is:\n*Rate of completed peer handshakes and accepted inbound connections.*\n\n###### How it's computed:\n*Per-second count of PeerFinder log lines matching handshake and accept events.*\n\n###### Reading it:\n*Read together with the disconnect panel: healthy churn has handshakes roughly balancing disconnects.*\n\n###### Healthy range:\n*Low and steady once the node has a full peer slate.*\n\n###### Watch for:\n*A high handshake rate alongside a high disconnect rate, which means peers connect and immediately drop.*\n\n###### Keywords:\n- **Handshake** *(per peer)* — protocol negotiation completed with a peer.\n- **Accept** *(per peer)* — an inbound connection admitted to a peer slot.\n\n###### Computation boundary:\n*Result: Per node — counts of PeerFinder events.*\n*Derived in the Grafana query.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/Logic.h)\n\n###### Function:\n`Logic::on_handshake / on_accept`\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 125
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: events/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Peer Events / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "legendFormat": "Handshake [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic handshake` [$__auto]))"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "B",
+          "legendFormat": "Accept [{{service_instance_id}}]",
+          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic accept` [$__auto]))"
+        }
+      ],
+      "id": 30,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Consensus Phase & Mode  [DEFAULT OK]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 135
+      },
+      "panels": [],
+      "id": 31
+    },
+    {
+      "type": "timeseries",
+      "title": "Consensus Phase Transition Rate",
+      "description": "###### What this is:\n*Rate of consensus phase transitions into Open, Establish, and Accepted.*\n\n###### How it's computed:\n*Per-second count of log lines announcing a ConsensusPhase transition, grouped by the target phase.*\n\n###### Reading it:\n*A healthy node cycles Open to Establish to Accepted once per ledger, so all three series should track together.*\n\n###### Healthy range:\n*Roughly one transition per phase per ledger interval, near 0.25 per second on a 4-second close.*\n\n###### Watch for:\n*Establish transitions outnumbering Accepted, which means rounds start but fail to converge.*\n\n###### Keywords:\n- **Consensus phase** *(per round)* — Open collects transactions, Establish converges on a set, Accepted applies it.\n- **Transition** *(per round)* — one phase change; a healthy node cycles all three once per ledger.\n\n###### Computation boundary:\n*Result: Per node per phase — a count of transitions.*\n*Derived in the Grafana query by regex over the phase-change log line.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/consensus/Consensus.h)\n\n###### Function:\n`Consensus::phase transition logging`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 136
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.phase} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: transitions/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Transitions / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (phase, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ \"$severity\" | regexp `[Tt]ransitioned to ConsensusPhase::(?P<phase>\\w+)` | phase =~ \"$consensus_phase\" [$__auto]))"
+        }
+      ],
+      "id": 32,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Consensus Operating Mode Rate",
+      "description": "###### What this is:\n*Rate of consensus heartbeat log lines, split by the operating mode reported in each.*\n\n###### How it's computed:\n*Per-second count of ConsensusLogger heartbeat lines, with the mode parsed from the `mode: <value>` text.*\n\n###### Reading it:\n*This acts as a mode-occupancy proxy: the heartbeat fires about once per second, so the dominant series is the node's current mode.*\n\n###### Healthy range:\n*Almost entirely the full series on a synced node.*\n\n###### Watch for:\n*Any sustained syncing, observing, or tracking share, which means the node is not participating normally.*\n\n###### Keywords:\n- **Consensus mode** *(per node)* — the node's participation level: full proposing, observing, syncing, tracking.\n- **Heartbeat** *(per second)* — the ConsensusLogger timer line, emitted roughly once per second.\n\n###### Computation boundary:\n*Result: Per node per mode — a count of heartbeat lines, used as a mode-occupancy PROXY rather than a true duration.*\n*Derived in the Grafana query. For exact durations use the state_accounting metrics on the Node Health dashboard.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`ConsensusLogger heartbeat`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 136
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.mode} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: beats/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Heartbeats / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "sum by (mode, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `NetworkOPs` | severity =~ \"$severity\" | regexp `ConsensusLogger.*?mode: (?P<mode>\\w+)\\.` | mode =~ \"$consensus_mode\" | mode != `` | label_format mode=`{{if eq .mode \"full\"}}Full{{else if eq .mode \"syncing\"}}Syncing{{else if eq .mode \"observing\"}}Observing{{else if eq .mode \"tracking\"}}Tracking{{else}}{{.mode}}{{end}}` [$__auto]))"
+        }
+      ],
+      "id": 33,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Validator List Quorum And Trusted Set Size",
+      "description": "###### What this is:\n*The quorum threshold and trusted validator count this node computed, as recorded in the log.*\n\n###### How it's computed:\n*Quorum and total are parsed from the `Using quorum of N for new set of M trusted validators` line and plotted as values.*\n\n###### Reading it:\n*Confirms the node agrees with the network on how many validators it trusts and how many must agree.*\n\n###### Healthy range:\n*Stable, with quorum at roughly 80 percent of the trusted total.*\n\n###### Watch for:\n*A drop in the trusted total, which shrinks the quorum and weakens the node's safety margin.*\n\n###### Keywords:\n- **Quorum** *(per node)* — how many trusted validators must agree; normally about 80 percent of the trusted set.\n- **Trusted set** *(per node)* — validators from the UNL this node currently trusts.\n\n###### Computation boundary:\n*Result: Per node — the last VALUE parsed from the log line, not a rate or count.*\n*Derived in the Grafana query via `unwrap`. Overlaps the `unl_quorum` metric; prefer that metric for the value and this panel for churn events.*\n\n###### Source:\n[ValidatorList.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/ValidatorList.cpp)\n\n###### Function:\n`ValidatorList::updateTrusted`\n\n###### References:\n[Unique Node List](https://xrpl.org/docs/concepts/consensus-protocol/unique-node-list)",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 146
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: validators",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "axisLabel": "Validators",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "min", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "legendFormat": "Quorum [{{service_instance_id}}]",
+          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap quorum [$__auto]))"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "B",
+          "legendFormat": "Trusted Validators [{{service_instance_id}}]",
+          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap total [$__auto]))"
+        }
+      ],
+      "id": 34,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Slow Job Latency Breaches  [DEFAULT OK]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 156
+      },
+      "panels": [],
+      "id": 35
+    },
+    {
+      "type": "timeseries",
+      "title": "Slow Job Run Time (p99)",
+      "description": "###### What this is:\n*The 99th percentile run time of jobs that breached their latency target.*\n\n###### How it's computed:\n*Quantile over the run millisecond value parsed from LoadMonitor job lines, grouped by job name.*\n\n###### Reading it:\n*Identifies which job types are the slowest when they do run long.*\n\n###### Healthy range:\n*Only a handful of job names should appear at all. Values in the tens of seconds indicate real stalls.*\n\n###### Watch for:\n*ProcessLData or InboundLedger dominating, which is the signature of the cold-read sync bottleneck.*\n\n###### Keywords:\n- **Job** *(per task)* — a unit of work on xrpld's job queue, e.g. ProcessLData, InboundLedger.\n- **Run time** *(per job)* — time spent executing, excluding queue wait.\n- **Breach** *(per job)* — an execution exceeding the 500ms LoadMonitor threshold; only these are logged.\n\n###### Computation boundary:\n*Result: Per node per job type — a p99 over BREACHES ONLY, never over all executions.*\n*Derived in the Grafana query via `unwrap`. For total job counts and latencies use the native `job_*` metrics on the Job Queue Analysis dashboard.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*These lines are only emitted above a 500ms latency threshold, so this panel counts BREACHES, never total job executions. Use the Job Queue Analysis dashboard for totals.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 157
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.jobname} [${__field.labels.service_instance_id}]",
+          "unit": "ms",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Run Time (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "quantile_over_time(0.99, {service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` | severity =~ \"$severity\" | regexp `Job: (?P<jobname>\\S+) run: (?P<run>[0-9]+)ms wait: (?P<wait>[0-9]+)ms` | unwrap run [$__auto]) by (jobname, service_instance_id)"
+        }
+      ],
+      "id": 36,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Slow Job Breach Rate By Job Name (Top $topn)",
+      "description": "###### What this is:\n*How often each job type breaches its latency target.*\n\n###### How it's computed:\n*Per-second count of LoadMonitor job lines grouped by job name, limited to the top N.*\n\n###### Reading it:\n*Read with the p99 panel: a job can breach rarely but severely, or often but mildly.*\n\n###### Healthy range:\n*Near zero. Any sustained non-zero rate means a job type is routinely missing its target.*\n\n###### Watch for:\n*A step change after a deploy, which points at a regression in that job's path.*\n\n###### Keywords:\n- **Breach** *(per job)* — an execution over the 500ms threshold.\n- **Job type** *(per task)* — the named job class, e.g. sweep, ProcessLData.\n\n###### Computation boundary:\n*Result: Per node per job type — a count of BREACHES, not of executions.*\n*Derived in the Grafana query; truncated to top N.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*Counts BREACHES above the 500ms threshold, not total job executions.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 157
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.jobname} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: breaches/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Breaches / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (jobname, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` | severity =~ \"$severity\" | regexp `Job: (?P<jobname>\\S+) run: (?P<run>[0-9]+)ms wait: (?P<wait>[0-9]+)ms` | jobname != `` [$__auto])))"
+        }
+      ],
+      "id": 37,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Slow Job Queue Wait Time (p99)",
+      "description": "###### What this is:\n*The 99th percentile queue wait time of jobs that breached their latency target.*\n\n###### How it's computed:\n*Quantile over the wait millisecond value parsed from LoadMonitor job lines, grouped by job name.*\n\n###### Reading it:\n*Separates queueing delay from execution cost. High wait with low run means the job queue is saturated rather than the work being slow.*\n\n###### Healthy range:\n*Near zero. Live observation shows wait at 0ms for most breaches, meaning run time is the cause.*\n\n###### Watch for:\n*Wait time rising above run time, which shifts the diagnosis from slow work to a saturated job queue.*\n\n###### Keywords:\n- **Wait time** *(per job)* — time queued before execution began.\n- **Run versus wait** *(per job)* — high wait means a saturated queue; high run means slow work.\n\n###### Computation boundary:\n*Result: Per node per job type — a p99 over BREACHES ONLY.*\n*Derived in the Grafana query via `unwrap`.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*Counts BREACHES above the 500ms threshold, not total job executions.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 167
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.jobname} [${__field.labels.service_instance_id}]",
+          "unit": "ms",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Queue Wait Time (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "quantile_over_time(0.99, {service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` | severity =~ \"$severity\" | regexp `Job: (?P<jobname>\\S+) run: (?P<run>[0-9]+)ms wait: (?P<wait>[0-9]+)ms` | unwrap wait [$__auto]) by (jobname, service_instance_id)"
+        }
+      ],
+      "id": 38,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Error & Warning Stream  [DEFAULT OK]",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 177
+      },
+      "panels": [],
+      "id": 39
+    },
+    {
+      "type": "timeseries",
+      "title": "Warning And Error Rate By Partition (Top $topn)",
+      "description": "###### What this is:\n*Rate of WRN, ERR, and FTL log lines by partition.*\n\n###### How it's computed:\n*Per-second count of log lines at warning severity or above, grouped by partition and limited to the top N.*\n\n###### Reading it:\n*This is the one row that works fully at default log level, so it is the first place to look on an unmodified node.*\n\n###### Healthy range:\n*Low and flat. LoadMonitor warnings are expected on a busy node.*\n\n###### Watch for:\n*Any ERR or FTL series appearing, and step changes in a partition that is normally quiet.*\n\n###### Keywords:\n- **Severity** *(per line)* — WRN, ERR, or FTL; the levels a default-configured node still writes.\n- **Partition** *(per line)* — the emitting xrpld subsystem.\n\n###### Computation boundary:\n*Result: Per node per partition per severity — a count of log lines.*\n*Derived in the Grafana query. This row is the only one that works fully at default log level.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 178
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.partition} ${__field.labels.severity} [${__field.labels.service_instance_id}]",
+          "unit": "suffix: lines/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Log Lines / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "WRN": {
+                  "text": "Warning",
+                  "index": 0
+                },
+                "ERR": {
+                  "text": "Error",
+                  "index": 1
+                },
+                "FTL": {
+                  "text": "Fatal",
+                  "index": 2
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["lastNotNull", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "topk($topn, sum by (partition, severity, service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `WRN|ERR|FTL` [$__auto])))"
+        }
+      ],
+      "id": 40,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Recent Warnings And Errors",
+      "description": "###### What this is:\n*The most recent log lines at warning severity or above.*\n\n###### How it's computed:\n*Raw log stream filtered to WRN, ERR, and FTL, newest first.*\n\n###### Reading it:\n*Use this to read the actual text behind a spike in the rate panel beside it.*\n\n###### Healthy range:\n*Sparse. LoadMonitor slow-job warnings are the common benign entry.*\n\n###### Watch for:\n*Repeating identical errors, which indicate a stuck retry loop rather than a transient fault.*\n\n###### Keywords:\n- **Log stream** *(per node)* — the raw lines behind the aggregate rates, newest first.\n\n###### Computation boundary:\n*Result: Raw log lines, no aggregation.*\n*Rendered directly from Loki; no computation applied.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 178
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "refId": "A",
+          "expr": "{service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `WRN|ERR|FTL` | line_format `{{.partition}}:{{.severity}} {{.message}}`"
+        }
+      ],
+      "id": 41,
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      }
+    }
+  ]
+}

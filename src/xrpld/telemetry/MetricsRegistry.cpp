@@ -288,7 +288,7 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     auto reader =
         metric_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
 
-    // Configure resource attributes so Prometheus exported_instance labels
+    // Configure resource attributes so Prometheus service_instance_id labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
     resource::ResourceAttributes attrs;
     // Use std::string, not a string literal: ResourceAttributes stores an
@@ -377,9 +377,8 @@ MetricsRegistry::initSyncInstruments()
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
         "txq_dropped_total", "Total transactions refused admission to the queue by reason");
-    // Note: xrpld_validation_agreements_total / xrpld_validation_missed_total
-    // are monotonic ObservableCounters created in registerValidationTotalsCounters()
-    // (below), observed from ValidationTracker's gross lifetime tallies.
+    // Note: validation_agreements_total / validation_missed_total are monotonic
+    // ObservableCounters created in registerValidationTotalsCounters() (below).
 }
 #endif  // XRPL_ENABLE_TELEMETRY
 
@@ -514,8 +513,12 @@ MetricsRegistry::recordJobStarted(
     // must carry the identical label set or they cannot be joined.
     std::string const handler(sanitiseHandler(jobName));
     jobStartedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
-    if (jobQueuedDurationHistogram_)
+    if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
     {
+        // Guard against negative queued durations: the caller derives this
+        // from a steady-clock delta that can go slightly negative under clock
+        // skew or reordering. The OTel SDK rejects negative histogram values
+        // (logging a warning per call), so skip them rather than spam.
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
             {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
@@ -1042,6 +1045,22 @@ MetricsRegistry::registerServerInfoGauge()
                     observe(
                         "last_close_converge_time_ms",
                         static_cast<int64_t>(consensusInfo["previous_mseconds"].asUInt()));
+                }
+
+                // Network close time of the last closed ledger, as NetClock
+                // seconds since the XRPL epoch (2000-01-01). Unlike a span
+                // timestamp, a gauge value survives as a queryable time series,
+                // so dashboards can show last-close age (staleness) via
+                // now - value. The close interval comes from the
+                // ledgers_closed_total counter, not a delta of this gauge
+                // (a timestamp gauge's delta aliases to the scrape period).
+                // Skip until a ledger has closed.
+                if (auto const closed = app.getLedgerMaster().getClosedLedger())
+                {
+                    observe(
+                        "last_close_time",
+                        static_cast<int64_t>(
+                            closed->header().closeTime.time_since_epoch().count()));
                 }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
@@ -1605,7 +1624,7 @@ MetricsRegistry::registerValidationTotalsCounters()
     // count). We therefore observe the tracker's GROSS lifetime tallies, which
     // count each ledger once at first classification and are never adjusted on
     // repair (initial-classification semantics — see ValidationTracker). The
-    // repaired/agreement view remains available from xrpld_validation_agreement.
+    // repaired/agreement view remains available from validation_agreement.
     //
     // reconcile() is called first so pending events are resolved before the
     // tallies are read; the callback fires every ~10 s from the
