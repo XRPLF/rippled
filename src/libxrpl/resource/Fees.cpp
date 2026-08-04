@@ -2,7 +2,7 @@
 
 #include <xrpl/resource/Charge.h>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 Charge const kFeeMalformedRequest(200, "malformed request");
 Charge const kFeeRequestNoReply(10, "unsatisfiable request");
@@ -23,6 +23,6 @@ Charge const kFeeHeavyBurdenPeer(2000, "heavy peer request");
 Charge const kFeeWarning(4000, "received warning");
 Charge const kFeeDrop(6000, "dropped");
 
-// See also Resource::Logic::charge for log level cutoff values
+// See also resource::Logic::charge for log level cutoff values
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

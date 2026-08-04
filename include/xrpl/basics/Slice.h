@@ -11,6 +11,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -247,6 +248,13 @@ makeSlice(std::vector<T, Alloc> const& v)
 template <class Traits, class Alloc>
 Slice
 makeSlice(std::basic_string<char, Traits, Alloc> const& s)
+{
+    return Slice(s.data(), s.size());
+}
+
+template <class Traits>
+Slice
+makeSlice(std::basic_string_view<char, Traits> s)
 {
     return Slice(s.data(), s.size());
 }
