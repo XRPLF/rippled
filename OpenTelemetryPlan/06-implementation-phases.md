@@ -484,7 +484,7 @@ graph LR
     end
 
     subgraph backends["Trace Backends"]
-        D["Jaeger / Tempo"]
+        D["Tempo"]
     end
 
     subgraph metrics["Metrics Stack"]
