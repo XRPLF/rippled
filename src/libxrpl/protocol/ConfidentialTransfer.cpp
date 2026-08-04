@@ -198,10 +198,7 @@ homomorphicAdd(Slice const& a, Slice const& b)
     if (auto res = secp256k1_elgamal_add(
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
-    {
-        JLOG(debugLog().error()) << "homomorphicAdd: secp256k1_elgamal_add failed";
         return std::nullopt;
-    }
 
     return serializeEcPair(sum);
 }
@@ -222,10 +219,7 @@ homomorphicSubtract(Slice const& a, Slice const& b)
     if (auto const res = secp256k1_elgamal_subtract(
             secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
-    {
-        JLOG(debugLog().error()) << "homomorphicSubtract: secp256k1_elgamal_subtract failed";
         return std::nullopt;
-    }
 
     return serializeEcPair(diff);
 }
