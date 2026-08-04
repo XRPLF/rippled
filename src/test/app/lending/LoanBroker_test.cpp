@@ -290,7 +290,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                     {
                         auto const amount = vault.asset(n);
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == amount.number());
-                        env.require(Balance(pseudoAccount, amount));
+                        env.require(jtx::Balance(pseudoAccount, amount));
                     }
                 };
 
@@ -537,8 +537,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             auto const expectedBalance = aliceBalance + coverFunds -
                 (aliceBalance.value().native() ? STAmount(env.current()->fees().base.value())
                                                : vault.asset(0));
-            env.require(Balance(alice, expectedBalance));
-            env.require(Balance(pseudoAccount, vault.asset(kNone)));
+            env.require(jtx::Balance(alice, expectedBalance));
+            env.require(jtx::Balance(pseudoAccount, vault.asset(kNone)));
         }
     }
 
