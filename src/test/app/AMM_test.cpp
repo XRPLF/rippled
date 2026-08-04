@@ -3130,9 +3130,9 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const minBidPrice =
                     IOUAmount{Number{ammAlice.tokens()} * getFee(1) / kAuctionSlotMinFeeFraction};
-                auto const cleanup330 = features[fixCleanup3_3_0];
-                auto const expectedPrice = cleanup330 ? minBidPrice : IOUAmount{0};
-                auto const expectedTokens = cleanup330
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const expectedPrice = cleanup340 ? minBidPrice : IOUAmount{0};
+                auto const expectedTokens = cleanup340
                     ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
                     : ammAlice.tokens();
 
