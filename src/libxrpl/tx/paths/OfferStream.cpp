@@ -325,9 +325,9 @@ TOfferStreamBase<TIn, TOut>::step()
             if (view_.rules().enabled(featureMPTokensV2))
             {
                 SOMETIMES(
-                      true,
-                      "OfferStream::step removed MPT offer with overflowing "
-                      "reduced quality");
+                    true,
+                    "OfferStream::step removed MPT offer with overflowing "
+                    "reduced quality");
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing offer with overflowing reduced quality "
                                  << entry->key();
