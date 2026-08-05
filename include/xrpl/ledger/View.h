@@ -85,7 +85,7 @@ isLPTokenFrozen(
  *   featureMPTokensV2 (MPTs can only be AMM pool assets once V2 is enabled).
  *
  *    @return tesSUCCESS if permitted, otherwise the canTransfer() failure code
- *            (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
+ * (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
  */
 [[nodiscard]] TER
 canTransferLPToken(
