@@ -752,7 +752,7 @@ attributable to a stage rather than merely observed.
 
 **Aggregation.** `getobject_lookup_us` times the fetch loop once per request, and
 `getobject_lookups_total` is added once per request carrying the batch hit and miss totals. The
-loop is bounded by `Tuning::kHardMaxReplyNodes` (12288), so timing or counting each iteration
+loop is bounded by `tuning::kHardMaxReplyNodes` (12288), so timing or counting each iteration
 would cost more than the lookups it measures. `getobject_request_objects` records the requested
 count, which is what the charge bands price on. `getobject_charge` records only the dynamic
 component returned by `computeGetObjectByHashFee()`; the admission-time base charge is a constant.
