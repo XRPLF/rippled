@@ -1028,7 +1028,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
             // Report our server version every flag ledger:
             if (ledger.ledger->isVotingLedger())
-                v.setFieldU64(sfServerVersion, BuildInfo::getEncodedVersion());
+                v.setFieldU64(sfServerVersion, build_info::getEncodedVersion());
 
             // Report our load
             {

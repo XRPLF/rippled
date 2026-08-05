@@ -49,7 +49,7 @@ using namespace jtx;
  * Test for TMGetObjectByHash reply size limiting.
  *
  * This verifies the fix that limits TMGetObjectByHash replies to
- * Tuning::hardMaxReplyNodes to prevent excessive memory usage and
+ * tuning::hardMaxReplyNodes to prevent excessive memory usage and
  * potential DoS attacks from peers requesting large numbers of objects.
  */
 class TMGetObjectByHash_test : public beast::unit_test::Suite
@@ -66,11 +66,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     public:
         PeerTest(
             Application& app,
-            std::shared_ptr<PeerFinder::Slot> const& slot,
+            std::shared_ptr<peer_finder::Slot> const& slot,
             http_request_type&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
-            Resource::Consumer consumer,
+            resource::Consumer consumer,
             std::unique_ptr<TMGetObjectByHash_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
@@ -110,7 +110,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
          *
          * `Peer::charge()` is pure virtual and `processGetObjectByHash()`
          * calls it unqualified, so this override sees the exact
-         * `Resource::Charge` the handler built -- the same object passed to
+         * `resource::Charge` the handler built -- the same object passed to
          * `computeGetObjectByHashFee()`'s caller. That makes the handler's
          * *choice of argument* observable, which reading `fee_` or calling
          * the pricing helper with the test's own arguments cannot do.
@@ -120,7 +120,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
          * disconnect/accounting behaviour intact.
          */
         void
-        charge(Resource::Charge const& fee, std::string const& context) override
+        charge(resource::Charge const& fee, std::string const& context) override
         {
             lastAppliedCharge_ = fee;
             lastChargeContext_ = context;
@@ -130,11 +130,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         /**
          * The charge captured by the override above, or nullopt if none.
          *
-         * `Resource::Charge` has no default constructor, so the optional
+         * `resource::Charge` has no default constructor, so the optional
          * also distinguishes "not charged at all" from "charged zero" --
          * a distinction the rejection-gate tests depend on.
          */
-        [[nodiscard]] std::optional<Resource::Charge> const&
+        [[nodiscard]] std::optional<resource::Charge> const&
         getLastAppliedCharge() const
         {
             return lastAppliedCharge_;
@@ -164,7 +164,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // protected on PeerImp; exposed here because it is the one
         // deterministic, same-thread witness that a rejection gate fired --
         // `charge()` itself dispatches to the peer's strand.
-        [[nodiscard]] Resource::Charge
+        [[nodiscard]] resource::Charge
         peekFeeCharge() const
         {
             return currentFeeCharge();
@@ -173,7 +173,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // The differential-pricing helper, so a test can compare the charge
         // applied by the handler against the helper's own result for the
         // same inputs. Static and protected on PeerImp.
-        [[nodiscard]] static Resource::Charge
+        [[nodiscard]] static resource::Charge
         peekComputeFee(int const requested, int const found)
         {
             return computeGetObjectByHashFee(requested, found);
@@ -206,7 +206,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         /**
          * @see getLastAppliedCharge(). Same threading rules as above.
          */
-        std::optional<Resource::Charge> lastAppliedCharge_;
+        std::optional<resource::Charge> lastAppliedCharge_;
 
         /**
          * @see getLastChargeContext(). Same threading rules as above.
@@ -244,8 +244,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto streamPtr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::ip::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::ip::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
         PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
@@ -408,10 +408,10 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
 
         // Successful-setup assertion: a fresh peer starts at the trivial
         // fee, so the post-condition below can only come from this call.
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeTrivialPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeTrivialPeer.cost());
         BEAST_EXPECT(peer->getLastSentMessage() == nullptr);
 
-        int const oversize = static_cast<int>(Tuning::kHardMaxReplyNodes) + 1;
+        int const oversize = static_cast<int>(tuning::kHardMaxReplyNodes) + 1;
         peer->onMessage(createUnstoredRequest(oversize));
 
         // State: nothing was replied to, because the gate returns before
@@ -421,9 +421,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // Cause: the charge is exactly the invalid-data fee, not merely
         // "some larger fee". The label pins which gate fired -- the
         // malformed-ledgerhash gate charges a different constant.
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeInvalidData.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeInvalidData.cost());
         BEAST_EXPECT(peer->peekFeeCharge().cost() == 400);
-        BEAST_EXPECT(peer->peekFeeCharge().label() == Resource::kFeeInvalidData.label());
+        BEAST_EXPECT(peer->peekFeeCharge().label() == resource::kFeeInvalidData.label());
 
         // Negative path for the differential charge: the gate returns before
         // the handler runs, so computeGetObjectByHashFee() is never reached
@@ -448,7 +448,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         PeerTest::resetId();
         auto peer = createPeer(env);
 
-        int const atLimit = static_cast<int>(Tuning::kHardMaxReplyNodes);
+        int const atLimit = static_cast<int>(tuning::kHardMaxReplyNodes);
         peer->onMessage(createUnstoredRequest(atLimit));
 
         // Accepted: the request was queued, so the fee is the
@@ -459,8 +459,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // before reading anything so the observation cannot race the worker.
         env.app().getJobQueue().rendezvous();
 
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeModerateBurdenPeer.cost());
-        BEAST_EXPECT(peer->peekFeeCharge().cost() != Resource::kFeeInvalidData.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeModerateBurdenPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() != resource::kFeeInvalidData.cost());
         BEAST_EXPECT(peer->peekFeeCharge().cost() == 250);
 
         // The request was in bounds, so the worker ran and replied. Nothing
@@ -503,7 +503,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         PeerTest::resetId();
         auto peer = createPeer(env);
 
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeTrivialPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeTrivialPeer.cost());
 
         // Small in-bounds object count, so this can only be the ledgerhash
         // gate: the oversize gate is checked afterwards and cannot fire.
@@ -512,9 +512,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         peer->onMessage(request);
 
         BEAST_EXPECT(peer->getLastSentMessage() == nullptr);
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeMalformedRequest.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeMalformedRequest.cost());
         BEAST_EXPECT(peer->peekFeeCharge().cost() == 200);
-        BEAST_EXPECT(peer->peekFeeCharge().label() == Resource::kFeeMalformedRequest.label());
+        BEAST_EXPECT(peer->peekFeeCharge().label() == resource::kFeeMalformedRequest.label());
 
         // Negative path: the gate returns before the handler, so no
         // differential charge was ever applied.
@@ -546,8 +546,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         env.app().getJobQueue().rendezvous();
 
         // Not the malformed charge: the request was admitted.
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeModerateBurdenPeer.cost());
-        BEAST_EXPECT(peer->peekFeeCharge().cost() != Resource::kFeeMalformedRequest.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeModerateBurdenPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() != resource::kFeeMalformedRequest.cost());
         BEAST_EXPECT(peer->peekFeeCharge().cost() == 250);
 
         // A reply was produced, and it echoes the request's ledgerhash.
@@ -711,12 +711,12 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // charge is exactly zero regardless of the split. Asserted rather
         // than assumed: it is why this test does not also pin a non-trivial
         // fee -- testComputeFeeExactValues covers the billable bands.
-        BEAST_EXPECT(requested <= static_cast<int>(Tuning::kFreeObjectsPerRequest));
+        BEAST_EXPECT(requested <= static_cast<int>(tuning::kFreeObjectsPerRequest));
         BEAST_EXPECT(applied->cost() == 0);
 
         // `fee_` is untouched on this path: the handler charges through
         // charge(), never through fee_.update().
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeTrivialPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeTrivialPeer.cost());
     }
 
     /**
@@ -773,14 +773,14 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
      */
     struct FeeConstants
     {
-        int free{static_cast<int>(Tuning::kFreeObjectsPerRequest)};
-        int hit{static_cast<int>(Tuning::kCostPerLookupHit)};
-        int miss{static_cast<int>(Tuning::kCostPerLookupMiss)};
-        int bandSmall{static_cast<int>(Tuning::kCostBandSmall)};
-        int bandMedium{static_cast<int>(Tuning::kCostBandMedium)};
-        int bandLarge{static_cast<int>(Tuning::kCostBandLarge)};
-        int smallMax{static_cast<int>(Tuning::kBandSmallMax)};
-        int mediumMax{static_cast<int>(Tuning::kBandMediumMax)};
+        int free{static_cast<int>(tuning::kFreeObjectsPerRequest)};
+        int hit{static_cast<int>(tuning::kCostPerLookupHit)};
+        int miss{static_cast<int>(tuning::kCostPerLookupMiss)};
+        int bandSmall{static_cast<int>(tuning::kCostBandSmall)};
+        int bandMedium{static_cast<int>(tuning::kCostBandMedium)};
+        int bandLarge{static_cast<int>(tuning::kCostBandLarge)};
+        int smallMax{static_cast<int>(tuning::kBandSmallMax)};
+        int mediumMax{static_cast<int>(tuning::kBandMediumMax)};
     };
 
     /**
@@ -913,7 +913,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
      * abusive batches by exactly the overshoot.
      *
      * The assertion is on `PeerTest::charge()`, which overrides the virtual
-     * the handler calls, so it observes the very `Resource::Charge` object
+     * the handler calls, so it observes the very `resource::Charge` object
      * the handler constructed. Two other candidate witnesses were rejected:
      *   - `fee_` / `peekFeeCharge()`: this path never touches `fee_`, it
      *     goes through `charge()`.
@@ -935,8 +935,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         PeerTest::resetId();
         auto peer = createPeer(env);
 
-        int const requested = static_cast<int>(Tuning::kHardMaxReplyNodes) + 1;
-        int const capped = static_cast<int>(Tuning::kHardMaxReplyNodes);
+        int const requested = static_cast<int>(tuning::kHardMaxReplyNodes) + 1;
+        int const capped = static_cast<int>(tuning::kHardMaxReplyNodes);
 
         // Successful-setup assertion: nothing has been charged yet, so the
         // post-condition below can only come from the handler call.
@@ -980,7 +980,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
 
         // `fee_` is untouched on this path, which is why the override above
         // exists rather than a peekFeeCharge() assertion.
-        BEAST_EXPECT(peer->peekFeeCharge().cost() == Resource::kFeeTrivialPeer.cost());
+        BEAST_EXPECT(peer->peekFeeCharge().cost() == resource::kFeeTrivialPeer.cost());
 
         // Pricing on the requested count is strictly more expensive than
         // pricing on the capped count, which is what makes the choice
@@ -1008,7 +1008,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         //   getobject_request_objects  <- the request's objects_size()
         //   getobject_lookups_total    <- reply size (hits) and the derived
         //                                 miss count, per testHitMissSplit
-        //   getobject_charge           <- the applied Resource::Charge,
+        //   getobject_charge           <- the applied resource::Charge,
         //                                 captured by PeerTest::charge()
         //   getobject_rejected_total   <- the two gates' exact fee_ values
         //                                 plus "no charge was applied"
@@ -1016,7 +1016,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         // clock reading. The counter and histogram values themselves remain
         // unverified by unit test and are checked live against Prometheus
         // per the design's live-validation step.
-        int const limit = static_cast<int>(Tuning::kHardMaxReplyNodes);
+        int const limit = static_cast<int>(tuning::kHardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);
         testReplyLimit(limit - 1, limit - 1);

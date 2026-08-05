@@ -2386,8 +2386,10 @@ after the selector and cannot be discovered by `label_values()`.
 # Find all logs for a specific trace
 {service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
-# Error logs with trace context (log lines with ERR severity that have a trace_id)
-{service_name="xrpld"} |= "ERR" |= "trace_id="
+# Error logs with trace context (log lines with ERR severity that have a trace_id).
+# Use the severity field, not `|= "ERR"`: a line filter also matches the literal
+# "ERR" anywhere in the message body (measured: 4 DBG lines per 6h on devnet).
+{service_name="xrpld"} | severity = `ERR` | trace_id != ""
 
 # All logs from a specific partition that were emitted during a span.
 # Prefer the structured-metadata filter over a line match: `|= "LedgerMaster"`
@@ -2397,11 +2399,14 @@ after the selector and cannot be discovered by `label_values()`.
 # Logs from a specific subsystem during a span (e.g. LedgerConsensus)
 {service_name="xrpld"} | partition = `LedgerConsensus` | trace_id != ""
 
-# Logs from the last hour containing trace context
-{service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+# Logs from the last hour containing trace context. `partition`, `severity`, and
+# `trace_id` are already parsed into structured metadata by the collector's
+# filelog receiver, so re-extracting them with regexp is unnecessary work.
+{service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
-count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
+sum(count_over_time({service_name="xrpld"} | trace_id != "" [5m]))
+sum(count_over_time({service_name="xrpld"} | trace_id = "" [5m]))
 ```
 
 ### Verifying Log Correlation
@@ -2409,7 +2414,7 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} | trace_id != ""`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ### Log-Derived Insights (`log-derived-insights`)

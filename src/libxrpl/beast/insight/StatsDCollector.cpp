@@ -207,7 +207,7 @@ private:
     static constexpr auto kMaxPacketSize = 1472;
 
     Journal journal_;
-    IP::Endpoint address_;
+    ip::Endpoint address_;
     std::string prefix_;
     boost::asio::io_context ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
@@ -222,13 +222,13 @@ private:
     std::thread thread_;
 
     static boost::asio::ip::udp::endpoint
-    toEndpoint(IP::Endpoint const& ep)
+    toEndpoint(ip::Endpoint const& ep)
     {
         return boost::asio::ip::udp::endpoint(ep.address(), ep.port());
     }
 
 public:
-    StatsDCollectorImp(IP::Endpoint address, std::string prefix, Journal journal)
+    StatsDCollectorImp(ip::Endpoint address, std::string prefix, Journal journal)
         : journal_(journal)
         , address_(std::move(address))
         , prefix_(std::move(prefix))
@@ -710,7 +710,7 @@ StatsDMeterImpl::doProcess()
 //------------------------------------------------------------------------------
 
 std::shared_ptr<StatsDCollector>
-StatsDCollector::make(IP::Endpoint const& address, std::string const& prefix, Journal journal)
+StatsDCollector::make(ip::Endpoint const& address, std::string const& prefix, Journal journal)
 {
     return std::make_shared<detail::StatsDCollectorImp>(address, prefix, journal);
 }
