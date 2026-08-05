@@ -265,24 +265,24 @@ getAccountObjects(
 }
 
 json::Value
-doAccountObjects(RPC::JsonContext& context)
+doAccountObjects(rpc::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
 
     auto const id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -331,10 +331,10 @@ doAccountObjects(RPC::JsonContext& context)
     }
     else
     {
-        auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+        auto [rpcStatus, type] = rpc::chooseLedgerEntryType(params);
 
-        if (!RPC::isAccountObjectsValidType(type))
-            return RPC::invalidFieldError(jss::type);
+        if (!rpc::isAccountObjectsValidType(type))
+            return rpc::invalidFieldError(jss::type);
 
         if (rpcStatus)
         {
@@ -349,7 +349,7 @@ doAccountObjects(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountObjects, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountObjects, context))
         return *err;
 
     uint256 dirIndex;
@@ -358,18 +358,18 @@ doAccountObjects(RPC::JsonContext& context)
     {
         auto const& marker = params[jss::marker];
         if (!marker.isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         auto const& markerStr = marker.asString();
         auto const& idx = markerStr.find(',');
         if (idx == std::string::npos)
-            return RPC::invalidFieldError(jss::marker);
+            return rpc::invalidFieldError(jss::marker);
 
         if (!dirIndex.parseHex(markerStr.substr(0, idx)))
-            return RPC::invalidFieldError(jss::marker);
+            return rpc::invalidFieldError(jss::marker);
 
         if (!entryIndex.parseHex(markerStr.substr(idx + 1)))
-            return RPC::invalidFieldError(jss::marker);
+            return rpc::invalidFieldError(jss::marker);
     }
 
     std::optional<bool> sponsoredFilter;
@@ -377,17 +377,17 @@ doAccountObjects(RPC::JsonContext& context)
     {
         auto const& sponsoredJv = params[jss::sponsored];
         if (!sponsoredJv.isBool())
-            return RPC::expectedFieldError(jss::sponsored, "boolean");
+            return rpc::expectedFieldError(jss::sponsored, "boolean");
 
         sponsoredFilter = sponsoredJv.asBool();
     }
 
     if (!getAccountObjects(
             *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsoredFilter, result))
-        return RPC::invalidFieldError(jss::marker);
+        return rpc::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 
