@@ -7,14 +7,30 @@
 #include <boost/filesystem.hpp>
 
 #include <string>
+#include <vector>
 
 namespace xrpl {
 
 struct SavedState
 {
+    // Legacy two-backend fields. Retained for on-disk back-compat: a state written
+    // by an older (two-backend) build has only these. On read, an empty `generations`
+    // is reconstructed as {archiveDb, writableDb} (oldest -> newest). On write, these
+    // are kept in sync with the ring ends (archiveDb = generations.front(),
+    // writableDb = generations.back()). CAUTION: a downgraded build boots from the
+    // pair alone — it deletes middle-generation directories as orphans (losing any
+    // node whose only copy lives there) and its rotations leave DbGenerations rows
+    // stale; getSavedState detects that staleness (ring ends disagreeing with the
+    // pair) and falls back to the pair.
     std::string writableDb;
     std::string archiveDb;
     LedgerIndex lastRotated{};
+
+    // The online_delete generation ring, ordered oldest -> newest. New nodes are
+    // written to generations.back() (the writable generation); reads probe
+    // newest -> oldest. Persisted as a newline-delimited list so a variable number
+    // of generations round-trips through the single-row state table.
+    std::vector<std::string> generations;
 };
 
 /**

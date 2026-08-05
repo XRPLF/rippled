@@ -10,6 +10,7 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -99,6 +100,14 @@ private:
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
     std::uint32_t deleteBatch_ = 100;
+    // Bounds for online_delete_generations: at least writable + one archive (the
+    // historical two-backend behavior); the maximum caps fd and directory growth.
+    static constexpr std::uint32_t kMinGenerations = 2;
+    static constexpr std::uint32_t kMaxGenerations = 64;
+    // Number of NodeStore generations to retain in the ring before retiring the oldest.
+    // The disk<->copy tradeoff: larger keeps more (transient) on-disk data but re-stores
+    // a cold node less often (~once per this many rotations instead of every rotation).
+    std::uint32_t numGenerations_ = 8;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
     /**
@@ -174,7 +183,7 @@ public:
 private:
     // callback for visitNodes
     bool
-    copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node);
+    copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node, NodeObjectType rescueType);
     void
     run();
     void
