@@ -329,8 +329,8 @@ TOfferStreamBase<TIn, TOut>::step()
                     "OfferStream::step removed MPT offer with overflowing "
                     "reduced quality");
                 permRmOffer(entry->key());
-                JLOG(j_.trace()) << "Removing offer with overflowing reduced quality "
-                                 << entry->key();
+                JLOG(j_.warn()) << "Removing offer with overflowing reduced quality "
+                                << entry->key();
                 offer_ = TOffer<TIn, TOut>{};
                 continue;
             }
