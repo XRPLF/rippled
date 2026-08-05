@@ -140,7 +140,7 @@ resolveWsCommandSpanName(json::Value const& jv, Config const& config)
         return rpc_span::val::unknownCommand;
 
     auto const* handler =
-        RPC::getHandler(RPC::getAPIVersionNumber(jv, config.betaRpcApi), config.betaRpcApi, cmd);
+        rpc::getHandler(rpc::getAPIVersionNumber(jv, config.betaRpcApi), config.betaRpcApi, cmd);
     return (handler != nullptr) ? std::string_view{handler->name}
                                 : std::string_view{rpc_span::val::unknownCommand};
 }
