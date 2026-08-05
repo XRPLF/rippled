@@ -18,9 +18,9 @@ namespace xrpl {
 namespace node_store {
 class Database;
 }  // namespace node_store
-namespace Resource {
+namespace resource {
 class Manager;
-}  // namespace Resource
+}  // namespace resource
 namespace perf {
 class PerfLog;
 }  // namespace perf
@@ -163,7 +163,7 @@ public:
     virtual PeerReservationTable&
     getPeerReservations() = 0;
 
-    virtual Resource::Manager&
+    virtual resource::Manager&
     getResourceManager() = 0;
 
     // Storage services
