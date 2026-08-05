@@ -1,6 +1,7 @@
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
