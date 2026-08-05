@@ -102,6 +102,10 @@ undefined:nudb
 # Snappy compression library intentional overflows
 unsigned-integer-overflow:snappy.cc
 
+# fast_float parses floats with a SWAR trick (parse_eight_digits_unrolled) that
+# multiplies eight packed digits modulo 2^64; the wraparound is by design.
+unsigned-integer-overflow:fast_float
+
 # Abseil intentional overflows in hashing, RNG and time arithmetic.
 # Matched at library scope (like boost above): the wraparound is by design
 # across many absl files (hash mixing, raw_hash_set probing, duration math,
