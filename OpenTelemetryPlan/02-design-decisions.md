@@ -218,7 +218,7 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 | Key                   | Type / value                                            | Description                    |
 | --------------------- | ------------------------------------------------------- | ------------------------------ |
 | `service.name`        | `"xrpld"`                                               | Standard `SERVICE_NAME`        |
-| `service.version`     | `BuildInfo::getVersionString()`                         | Standard `SERVICE_VERSION`     |
+| `service.version`     | `build_info::getVersionString()`                        | Standard `SERVICE_VERSION`     |
 | `service.instance.id` | node public key (base58)                                | Standard `SERVICE_INSTANCE_ID` |
 | `xrpl.network.id`     | network id (e.g. 0 for mainnet)                         | Network identifier             |
 | `xrpl.network.type`   | `"mainnet"` \| `"testnet"` \| `"devnet"` \| `"unknown"` | Network kind                   |
