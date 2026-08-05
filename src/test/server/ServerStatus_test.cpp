@@ -202,8 +202,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             if (ec)
                 return;
         }
-
-        return;
     }
 
     void
@@ -218,7 +216,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
-        return;
     }
 
     void
@@ -235,7 +232,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto const ip = env.app().config()[Sections::kPortRpc].get<std::string>(Keys::kIp);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeHTTPRequest(*ip, *port, body, fields), *ip, *port, secure, resp, ec);
-        return;
     }
 
     static auto
@@ -562,10 +558,12 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace test::jtx;
         using namespace boost::asio;
         using namespace boost::beast::http;
-        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+        // Run the server with a single io thread so disconnectClient() below
+        // can deterministically drain the server's io_context (see its docs).
+        Env env{*this, singleThreadIo(envconfig([&](std::unique_ptr<Config> cfg) {
                     (*cfg)[Sections::kPortRpc].set(Keys::kLimit, std::to_string(limit));
                     return cfg;
-                })};
+                }))};
 
         auto const section = env.app().config().section(Sections::kPortRpc);
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -584,16 +582,27 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(!ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>> clients;
-        int connectionCount{1};  // starts at 1 because the Env already has one
-                                 // for JSONRPCCLient
 
-        // for nonzero limits, go one past the limit, although failures happen
-        // at the limit, so this really leads to the last two clients failing.
-        // for zero limit, pick an arbitrary nonzero number of clients - all
-        // should connect fine.
+        // Env owns a persistent JSON-RPC HTTP client connection to port_rpc as
+        // part of startup, which counts against this port's connection limit.
+        // This test wants a known starting occupancy of zero, so for nonzero
+        // limits it deterministically drops that hidden client and waits for
+        // the server to register the disconnect before opening its own clients.
+        //
+        // Starting from zero is important because the port limit rejects once
+        // the incremented connection count reaches the configured limit. With a
+        // zero baseline and N = limit + 1 test-owned clients, exactly the last
+        // two requests should be rejected.
+        if (limit != 0)
+            BEAST_EXPECT(env.disconnectClient());
+
+        // For nonzero limits, go one past the limit. The port rejects at the
+        // limit, not only above it, so this yields the last two clients
+        // failing. For zero limit, pick an arbitrary nonzero number of clients
+        // and expect them all to succeed.
 
         int const testTo = (limit == 0) ? 50 : limit + 1;
-        while (connectionCount < testTo)
+        while (static_cast<int>(clients.size()) < testTo)
         {
             clients.emplace_back(ip::tcp::socket{ios}, boost::beast::multi_buffer{});
             async_connect(clients.back().first, it, yield[ec]);
@@ -601,19 +610,24 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});
             async_write(clients.back().first, req, yield[ec]);
             BEAST_EXPECT(!ec);
-            ++connectionCount;
         }
 
-        int readCount = 0;
+        int successfulReads = 0;
         for (auto& [soc, buf] : clients)
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             async_read(soc, buf, resp, yield[ec]);
-            ++readCount;
-            // expect the reads to fail for the clients that connected at or
-            // above the limit. If limit is 0, all reads should succeed
-            BEAST_EXPECT((limit == 0 || readCount < limit - 1) ? (!ec) : bool(ec));
+            if (!ec)
+                ++successfulReads;
         }
+
+        // This test cares about the exact number of accepted requests, not which
+        // specific client observed the rejection. With a zero baseline (the
+        // hidden Env client dropped above), the server accepts until the
+        // connection count reaches the limit: all clients for limit 0, else
+        // limit - 1 of the limit + 1 clients (the last two are rejected).
+        int const expectedReads = (limit == 0) ? static_cast<int>(clients.size()) : limit - 1;
+        BEAST_EXPECT(successfulReads == expectedReads);
     }
 
     void

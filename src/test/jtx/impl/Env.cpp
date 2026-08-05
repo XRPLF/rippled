@@ -272,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -471,9 +498,9 @@ Env::postconditions(
          !test.expect(
              parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
              "apply " + locStr + ": Got RPC result "s +
-                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 (parsed.rpcCode ? rpc::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
                  " (" + parsed.rpcMessage + "); Expected " +
-                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 rpc::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
                  ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
@@ -602,7 +629,7 @@ Env::autofill(JTx& jt)
     catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
         rethrow();
     }
 }

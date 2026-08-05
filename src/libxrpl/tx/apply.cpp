@@ -177,9 +177,9 @@ applyBatchTransactions(
 
     int applied = 0;
 
-    for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
+    for (auto const& stx : batchTxn.getBatchTransactions())
     {
-        auto const result = applyOneTransaction(STTx{std::move(rb)});
+        auto const result = applyOneTransaction(*stx);
         XRPL_ASSERT(
             result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
             "Outer Batch failure, inner transaction should not be applied");

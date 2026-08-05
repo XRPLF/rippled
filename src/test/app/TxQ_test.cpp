@@ -20,6 +20,8 @@
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -2336,6 +2338,43 @@ public:
     }
 
     void
+    testSponsorTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow sponsored transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions are not allowed to be queued.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 6, 5, 3);
+    }
+
+    void
     testDelegateTxCannotQueue()
     {
         using namespace jtx;
@@ -2532,7 +2571,7 @@ public:
         auto fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2561,7 +2600,7 @@ public:
         fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -3186,7 +3225,7 @@ public:
 
         {
             auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(info.isMember(jss::result) && RPC::containsError(info[jss::result]));
+            BEAST_EXPECT(info.isMember(jss::result) && rpc::containsError(info[jss::result]));
         }
 
         env.close();
@@ -4591,7 +4630,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4649,7 +4688,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4698,6 +4737,7 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testSponsorTxCannotQueue();
         testDelegateTxCannotQueue();
         testConsequences();
     }

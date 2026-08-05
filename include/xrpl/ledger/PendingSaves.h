@@ -8,12 +8,13 @@
 
 namespace xrpl {
 
-/** Keeps track of which ledgers haven't been fully saved.
-
-    During the ledger building process this collection will keep
-    track of those ledgers that are being built but have not yet
-    been completely written.
-*/
+/**
+ * Keeps track of which ledgers haven't been fully saved.
+ *
+ * During the ledger building process this collection will keep
+ * track of those ledgers that are being built but have not yet
+ * been completely written.
+ */
 class PendingSaves
 {
 private:
@@ -22,12 +23,13 @@ private:
     std::condition_variable await_;
 
 public:
-    /** Start working on a ledger
-
-        This is called prior to updating the SQLite indexes.
-
-        @return 'true' if work should be done
-    */
+    /**
+     * Start working on a ledger
+     *
+     * This is called prior to updating the SQLite indexes.
+     *
+     * @return 'true' if work should be done
+     */
     bool
     startWork(LedgerIndex seq)
     {
@@ -45,12 +47,13 @@ public:
         return true;
     }
 
-    /** Finish working on a ledger
-
-        This is called after updating the SQLite indexes.
-        The tracking of the work in progress is removed and
-        threads awaiting completion are notified.
-    */
+    /**
+     * Finish working on a ledger
+     *
+     * This is called after updating the SQLite indexes.
+     * The tracking of the work in progress is removed and
+     * threads awaiting completion are notified.
+     */
     void
     finishWork(LedgerIndex seq)
     {
@@ -60,7 +63,9 @@ public:
         await_.notify_all();
     }
 
-    /** Return `true` if a ledger is in the progress of being saved. */
+    /**
+     * Return `true` if a ledger is in the progress of being saved.
+     */
     bool
     pending(LedgerIndex seq)
     {
@@ -68,14 +73,15 @@ public:
         return map_.contains(seq);
     }
 
-    /** Check if a ledger should be dispatched
-
-        Called to determine whether work should be done or
-        dispatched. If work is already in progress and the
-        call is synchronous, wait for work to be completed.
-
-        @return 'true' if work should be done or dispatched
-    */
+    /**
+     * Check if a ledger should be dispatched
+     *
+     * Called to determine whether work should be done or
+     * dispatched. If work is already in progress and the
+     * call is synchronous, wait for work to be completed.
+     *
+     * @return 'true' if work should be done or dispatched
+     */
     bool
     shouldWork(LedgerIndex seq, bool isSynchronous)
     {
@@ -108,12 +114,13 @@ public:
         } while (true);
     }
 
-    /** Get a snapshot of the pending saves
-
-        Each entry in the returned map corresponds to a ledger
-        that is in progress or dispatched. The boolean indicates
-        whether work is currently in progress.
-    */
+    /**
+     * Get a snapshot of the pending saves
+     *
+     * Each entry in the returned map corresponds to a ledger
+     * that is in progress or dispatched. The boolean indicates
+     * whether work is currently in progress.
+     */
     std::map<LedgerIndex, bool>
     getSnapshot() const
     {

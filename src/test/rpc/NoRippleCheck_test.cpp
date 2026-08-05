@@ -286,9 +286,9 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             // be better if we could add this functionality to Env somehow
             // or otherwise disable endpoint charging for certain test
             // cases.
-            using namespace xrpl::Resource;
+            using namespace xrpl::resource;
             using namespace std::chrono;
-            using namespace beast::IP;
+            using namespace beast::ip;
             auto c = env.app().getResourceManager().newInboundEndpoint(
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
@@ -301,7 +301,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::kNoRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::rpc::tuning::kNoRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();

@@ -15,59 +15,71 @@
 //------------------------------------------------------------------------------
 
 namespace beast {
-namespace IP {
+namespace ip {
 
 using Address = boost::asio::ip::address;
 
-/** Returns the address represented as a string. */
+/**
+ * Returns the address represented as a string.
+ */
 inline std::string
 to_string(Address const& addr)
 {
     return addr.to_string();
 }
 
-/** Returns `true` if this is a loopback address. */
+/**
+ * Returns `true` if this is a loopback address.
+ */
 inline bool
 isLoopback(Address const& addr)
 {
     return addr.is_loopback();
 }
 
-/** Returns `true` if the address is unspecified. */
+/**
+ * Returns `true` if the address is unspecified.
+ */
 inline bool
 isUnspecified(Address const& addr)
 {
     return addr.is_unspecified();
 }
 
-/** Returns `true` if the address is a multicast address. */
+/**
+ * Returns `true` if the address is a multicast address.
+ */
 inline bool
 isMulticast(Address const& addr)
 {
     return addr.is_multicast();
 }
 
-/** Returns `true` if the address is a private unroutable address. */
+/**
+ * Returns `true` if the address is a private unroutable address.
+ */
 inline bool
 isPrivate(Address const& addr)
 {
     return (addr.is_v4()) ? isPrivate(addr.to_v4()) : isPrivate(addr.to_v6());
 }
 
-/** Returns `true` if the address is a public routable address. */
+/**
+ * Returns `true` if the address is a public routable address.
+ */
 inline bool
 isPublic(Address const& addr)
 {
     return (addr.is_v4()) ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
 }
 
-}  // namespace IP
+}  // namespace ip
 
 //------------------------------------------------------------------------------
 
 template <class Hasher>
 void
-hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
+hash_append(Hasher& h, beast::ip::Address const& addr) noexcept
 {
     using beast::hash_append;
     if (addr.is_v4())
@@ -89,12 +101,12 @@ hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
 
 namespace boost {
 template <>
-struct hash<::beast::IP::Address>
+struct hash<::beast::ip::Address>
 {
     explicit hash() = default;
 
     std::size_t
-    operator()(::beast::IP::Address const& addr) const
+    operator()(::beast::ip::Address const& addr) const
     {
         return ::beast::Uhash<>{}(addr);
     }

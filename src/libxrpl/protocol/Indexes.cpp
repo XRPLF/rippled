@@ -17,6 +17,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 
 #include <boost/endian/conversion.hpp>
@@ -32,23 +33,41 @@
 
 namespace xrpl {
 
-/** Type-specific prefix for calculating ledger indices.
+// This list should include all of the keylet functions that take a single
+// AccountID parameter. Declared in Indexes.h; defined here so the header need
+// not include jss.h.
+std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
+    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
+     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
+     // It's normally impossible to create an item at nftpage_min, but
+     // test it anyway, since the invariant checks for it.
+     {.function = &keylet::nftokenPageMin,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
+     {.function = &keylet::nftokenPageMax,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
+     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
-    The identifier for a given object within the ledger is calculated based
-    on some object-specific parameters. To ensure that different types of
-    objects have different indices, even if they happen to use the same set
-    of parameters, we use "tagged hashing" by adding a type-specific prefix.
-
-    @note These values are part of the protocol and *CANNOT* be arbitrarily
-          changed. If they were, on-ledger objects may no longer be able to
-          be located or addressed.
-
-          Additions to this list are OK, but changing existing entries to
-          assign them a different values should never be needed.
-
-          Entries that are removed should be moved to the bottom of the enum
-          and marked as [[deprecated]] to prevent accidental reuse.
-*/
+/**
+ * Type-specific prefix for calculating ledger indices.
+ *
+ * The identifier for a given object within the ledger is calculated based
+ * on some object-specific parameters. To ensure that different types of
+ * objects have different indices, even if they happen to use the same set
+ * of parameters, we use "tagged hashing" by adding a type-specific prefix.
+ *
+ * @note These values are part of the protocol and *CANNOT* be arbitrarily
+ *       changed. If they were, on-ledger objects may no longer be able to
+ *       be located or addressed.
+ *
+ *       Additions to this list are OK, but changing existing entries to
+ *       assign them a different values should never be needed.
+ *
+ *       Entries that are removed should be moved to the bottom of the enum
+ *       and marked as [[deprecated]] to prevent accidental reuse.
+ */
 enum class LedgerNameSpace : std::uint16_t {
     Account = 'a',
     DirNode = 'd',
@@ -84,6 +103,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Vault = 'V',
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
+    Sponsorship = '>',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -152,7 +172,12 @@ std::uint64_t
 getQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
-    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+    //
+    // Load the final 8 bytes as a big-endian integer.  load_big_u64 reads
+    // through unaligned byte storage (via memcpy) and applies the endian
+    // conversion, avoiding the alignment/strict-aliasing UB of casting the
+    // unsigned char* returned by end() to a std::uint64_t*.
+    return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
 uint256
@@ -278,8 +303,11 @@ quality(Keylet const& k, std::uint64_t q) noexcept
     // for indexes.
     uint256 x = k.key;
 
-    // FIXME This is ugly and we can and should do better...
-    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+    // Store the quality as a big-endian integer in the final 8 bytes.
+    // store_big_u64 writes through unaligned byte storage (via memcpy) and
+    // applies the endian conversion, avoiding the alignment/strict-aliasing UB
+    // of casting the unsigned char* returned by end() to a std::uint64_t*.
+    boost::endian::store_big_u64(x.end() - 8, q);
 
     return {ltDIR_NODE, x};
 }
@@ -316,6 +344,12 @@ Keylet
 signerList(AccountID const& account) noexcept
 {
     return signerList(account, 0);
+}
+
+Keylet
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
+{
+    return {ltSPONSORSHIP, indexHash(LedgerNameSpace::Sponsorship, sponsor, sponsee)};
 }
 
 Keylet

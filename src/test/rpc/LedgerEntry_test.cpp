@@ -15,6 +15,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>
@@ -93,6 +94,8 @@ std::vector<std::pair<json::StaticString, FieldType>> gMappings{
     {jss::oracle_document_id, FieldType::UInt32Field},
     {jss::owner, FieldType::AccountField},
     {jss::seq, FieldType::UInt32Field},
+    {jss::sponsor, FieldType::AccountField},
+    {jss::sponsee, FieldType::AccountField},
     {jss::subject, FieldType::AccountField},
     {jss::ticket_seq, FieldType::UInt32Field},
 };
@@ -107,7 +110,7 @@ getFieldType(json::StaticString fieldName)
         return it->second;
     }
 
-    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.cStr()));
+    Throw<std::runtime_error>("`gMappings` is missing field " + std::string(fieldName.cStr()));
 }
 
 std::string
@@ -346,7 +349,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 auto const expectedErrMsg =
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID));
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -380,13 +383,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
 
                 correctRequest[parentFieldName][fieldName] = json::ValueType::Null;
                 json::Value const jrr2 = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr2, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr2, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
             }
             auto tryField = [&](json::Value fieldValue) -> void {
                 correctRequest[parentFieldName][fieldName] = fieldValue;
@@ -396,7 +399,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     expectedError,
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID)),
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID)),
                     location);
             };
 
@@ -1080,8 +1083,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::issuer.cStr())
-                    : RPC::expectedFieldMessage(jss::issuer, "AccountID");
+                    ? rpc::missingFieldMessage(jss::issuer.cStr())
+                    : rpc::expectedFieldMessage(jss::issuer, "AccountID");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1111,7 +1114,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                RPC::expectedFieldMessage(jss::authorized_credentials, "array"));
+                rpc::expectedFieldMessage(jss::authorized_credentials, "array"));
         }
 
         {
@@ -1131,8 +1134,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::credential_type.cStr())
-                    : RPC::expectedFieldMessage(jss::credential_type, "hex string");
+                    ? rpc::missingFieldMessage(jss::credential_type.cStr())
+                    : rpc::expectedFieldMessage(jss::credential_type, "hex string");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1833,7 +1836,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
 
                     {
@@ -1848,7 +1851,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
                 };
 
@@ -1882,6 +1885,59 @@ class LedgerEntry_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
         runLedgerEntryTest(env, jss::signer_list);
+    }
+
+    void
+    testSponsorship()
+    {
+        testcase("Sponsorship");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+        env(sponsor::set(alice, 0, 100), sponsor::SponseeAcc(bob));
+        env.close();
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const sponsorshipIndex = to_string(keylet::sponsorship(alice.id(), bob.id()).key);
+
+        {
+            // Request by sponsor and sponsee.
+            json::Value jvParams;
+            jvParams[jss::sponsorship][jss::sponsor] = alice.human();
+            jvParams[jss::sponsorship][jss::sponsee] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Request by index.
+            json::Value jvParams;
+            jvParams[jss::sponsorship] = sponsorshipIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Check all malformed cases.
+            runLedgerEntryTest(
+                env,
+                jss::sponsorship,
+                {
+                    {.fieldName = jss::sponsor, .malformedErrorMsg = "malformedSponsor"},
+                    {.fieldName = jss::sponsee, .malformedErrorMsg = "malformedSponsee"},
+                });
+        }
     }
 
     void
@@ -2232,7 +2288,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
     }
 
-    /// Test the ledger entry types that don't take parameters
+    /**
+     * Test the ledger entry types that don't take parameters
+     */
     void
     testFixed()
     {
@@ -2248,7 +2306,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2283,7 +2342,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given fixed-position ledger
+        /**
+         * Runs a series of tests for a given fixed-position ledger
          * entry.
          *
          * @param field: The Json request field to use.
@@ -2441,7 +2501,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2481,7 +2542,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given ledger index.
+        /**
+         * Runs a series of tests for a given ledger index.
          *
          * @param ledger: The ledger index value of the "hashes" request
          *   parameter. May not necessarily be a number.
@@ -2676,6 +2738,7 @@ public:
         testPayChan();
         testRippleState();
         testSignerList();
+        testSponsorship();
         testTicket();
         testDID();
         testInvalidOracleLedgerEntry();

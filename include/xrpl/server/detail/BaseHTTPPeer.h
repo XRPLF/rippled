@@ -35,7 +35,9 @@
 
 namespace xrpl {
 
-/** Represents an active connection. */
+/**
+ * Represents an active connection.
+ */
 template <class Handler, class Impl>
 class BaseHTTPPeer : public IOList::Work, public Session
 {
@@ -155,7 +157,7 @@ protected:
         return port_;
     }
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     remoteAddress() override
     {
         return beast::IPAddressConversion::fromAsio(remoteAddress_);

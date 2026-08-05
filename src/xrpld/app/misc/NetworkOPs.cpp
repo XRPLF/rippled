@@ -21,8 +21,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
@@ -54,6 +52,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -266,7 +266,9 @@ class NetworkOPsImp final : public NetworkOPs
         }
     };
 
-    //! Server fees published on `server` subscription
+    /**
+     * Server fees published on `server` subscription
+     */
     struct ServerFeeSummary
     {
         ServerFeeSummary() = default;
@@ -469,9 +471,10 @@ public:
     void
     setStandAlone() override;
 
-    /** Called to initially start our timers.
-        Not called for stand-alone mode.
-    */
+    /**
+     * Called to initially start our timers.
+     * Not called for stand-alone mode.
+     */
     void
     setStateTimer() override;
 
@@ -838,7 +841,8 @@ private:
 
     LedgerMaster& ledgerMaster_;
 
-    /** Maps each order book to its current set of subscribers.
+    /**
+     * Maps each order book to its current set of subscribers.
      *  Outer key: the Book (currency pair + optional domain).
      *  Inner key: InfoSub::seq (unique per connection).
      *  Inner value: weak_ptr so that a dropped connection does not prevent
@@ -1211,7 +1215,7 @@ NetworkOPsImp::processClusterTimer()
             n.set_nodename(node.name());
     });
 
-    Resource::Gossip const gossip = registry_.get().getResourceManager().exportConsumers();
+    resource::Gossip const gossip = registry_.get().getResourceManager().exportConsumers();
     for (auto& item : gossip.items)
     {
         protocol::TMLoadSource& node = *cluster.add_loadsources();
@@ -2483,7 +2487,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
         multiObj.visit(
-            RPC::kApiVersion<1>,  //
+            rpc::kApiVersion<1>,  //
             [](json::Value& jvTx) {
                 // Type conversion for older API versions to string
                 if (jvTx.isMember(jss::ledger_index))
@@ -2684,7 +2688,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (!registry_.get().getApp().config().serverDomain.empty())
         info[jss::server_domain] = registry_.get().getApp().config().serverDomain;
 
-    info[jss::build_version] = BuildInfo::getVersionString();
+    info[jss::build_version] = build_info::getVersionString();
 
     info[jss::server_state] = strOperatingMode(admin);
 
@@ -3163,7 +3167,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         if (!streamMaps_[SBookChanges].empty())
         {
-            json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
+            json::Value const jvObj = xrpl::rpc::computeBookChanges(lpAccepted);
 
             auto it = streamMaps_[SBookChanges].begin();
             while (it != streamMaps_[SBookChanges].end())
@@ -3277,9 +3281,9 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
-        RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
-        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        RPC::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
+        rpc::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
+        rpc::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
+        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists
@@ -3291,7 +3295,7 @@ NetworkOPsImp::transJson(
         if (transaction->isFieldPresent(sfNetworkID))
             netID = transaction->getFieldU32(sfNetworkID);
 
-        if (std::optional<std::string> ctid = RPC::encodeCTID(ledger->header().seq, txnSeq, netID);
+        if (std::optional<std::string> ctid = rpc::encodeCTID(ledger->header().seq, txnSeq, netID);
             ctid)
             jvObj[jss::ctid] = *ctid;
     }
@@ -3342,7 +3346,7 @@ NetworkOPsImp::transJson(
     forAllApiVersions(
         multiObj.visit(),  //
         [&]<unsigned Version>(json::Value& jvTx, std::integral_constant<unsigned, Version>) {
-            RPC::insertDeliverMax(jvTx[jss::transaction], transaction->getTxnType(), Version);
+            rpc::insertDeliverMax(jvTx[jss::transaction], transaction->getTxnType(), Version);
 
             if constexpr (Version > 1)
             {
@@ -3815,10 +3819,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     return true;
             }
 
-            for (auto& node : meta->getNodes())
-            {
+            return std::ranges::any_of(meta->getNodes(), [&](auto& node) {
                 if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
-                    continue;
+                    return false;
 
                 if (node.isFieldPresent(sfNewFields))
                 {
@@ -3832,9 +3835,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                     }
                 }
-            }
-
-            return false;
+                return false;
+            });
         };
 
         auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
@@ -3876,7 +3878,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 .ledgerRange = {.min = minLedger, .max = maxLedger},
                 .marker = marker,
                 .limit = 0,
-                .bAdmin = true};
+                .bAdmin = true,
+                .delegate = std::nullopt};
             return db.newestAccountTxPage(options);
         };
 
@@ -3888,7 +3891,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             int feeChargeCount = 0;
             if (auto sptr = subInfo.sinkWptr.lock(); sptr)
             {
-                sptr->getConsumer().charge(Resource::kFeeMediumBurdenRpc);
+                sptr->getConsumer().charge(resource::kFeeMediumBurdenRpc);
                 ++feeChargeCount;
             }
             else

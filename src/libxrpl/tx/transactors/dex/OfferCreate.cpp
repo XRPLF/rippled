@@ -283,10 +283,23 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
+            auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
+
+            // Check if the issuer has lsfDisallowIncomingTrustline set.
+            // If so, the account must already have a trustline to receive tokens.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                issuerAccount->isFlag(lsfDisallowIncomingTrustline))
+            {
+                if (!trustLine)
+                {
+                    JLOG(j.debug()) << "delay: can't receive IOUs from issuer with "
+                                       "DisallowIncomingTrustline set";
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                }
+            }
+
             if (issuerAccount->isFlag(lsfRequireAuth))
             {
-                auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
-
                 if (!trustLine)
                 {
                     return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
@@ -308,8 +321,6 @@ OfferCreate::checkAcceptAsset(
                     return ((flags & TapRetry) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
                 }
             }
-
-            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -833,9 +844,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
+        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
@@ -869,7 +878,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())

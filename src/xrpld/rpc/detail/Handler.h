@@ -20,7 +20,7 @@ namespace json {
 class Object;
 }  // namespace json
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 // Under what condition can we call this RPC?
 enum class Condition {
@@ -38,7 +38,7 @@ struct Handler
     char const* name;
     Method<json::Value> valueMethod;
     Role role;
-    RPC::Condition condition;
+    rpc::Condition condition;
 
     unsigned minApiVer = kApiMinimumSupportedVersion;
     unsigned maxApiVer = kApiMaximumValidVersion;
@@ -47,7 +47,9 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::ValueType::Object with a single entry. */
+/**
+ * Return a json::ValueType::Object with a single entry.
+ */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
@@ -57,7 +59,9 @@ makeObjectValue(Value const& value, json::StaticString const& field = jss::messa
     return result;
 }
 
-/** Return names of all methods. */
+/**
+ * Return names of all methods.
+ */
 std::set<char const*>
 getHandlerNames();
 
@@ -88,7 +92,7 @@ conditionMet(Condition conditionRequired, T& context)
 
     if (!context.app.config().standalone() && conditionRequired != Condition::NoCondition)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return RpcNoCurrent;
@@ -118,4 +122,4 @@ conditionMet(Condition conditionRequired, T& context)
     return RpcSuccess;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

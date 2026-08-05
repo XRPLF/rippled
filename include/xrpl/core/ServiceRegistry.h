@@ -15,12 +15,12 @@
 namespace xrpl {
 
 // Forward declarations
-namespace NodeStore {
+namespace node_store {
 class Database;
-}  // namespace NodeStore
-namespace Resource {
+}  // namespace node_store
+namespace resource {
 class Manager;
-}  // namespace Resource
+}  // namespace resource
 namespace perf {
 class PerfLog;
 }  // namespace perf
@@ -83,17 +83,17 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
 
 using NodeCache = TaggedCache<SHAMapHash, Blob>;
 
-/** Service registry for dependency injection.
-
-    This abstract interface provides access to various services and components
-    used throughout the application. It separates the service locator pattern
-    from the Application lifecycle management.
-
-    Components that need access to services can hold a reference to
-    ServiceRegistry rather than Application when they only need service
-    access and not lifecycle management.
-
-*/
+/**
+ * Service registry for dependency injection.
+ *
+ * This abstract interface provides access to various services and components
+ * used throughout the application. It separates the service locator pattern
+ * from the Application lifecycle management.
+ *
+ * Components that need access to services can hold a reference to
+ * ServiceRegistry rather than Application when they only need service
+ * access and not lifecycle management.
+ */
 class ServiceRegistry
 {
 public:
@@ -160,11 +160,11 @@ public:
     virtual PeerReservationTable&
     getPeerReservations() = 0;
 
-    virtual Resource::Manager&
+    virtual resource::Manager&
     getResourceManager() = 0;
 
     // Storage services
-    virtual NodeStore::Database&
+    virtual node_store::Database&
     getNodeStore() = 0;
 
     virtual SHAMapStore&
@@ -240,7 +240,9 @@ public:
     [[nodiscard]] virtual std::optional<uint256> const&
     getTrapTxID() const = 0;
 
-    /** Retrieve the "wallet database" */
+    /**
+     * Retrieve the "wallet database"
+     */
     virtual DatabaseCon&
     getWalletDB() = 0;
 

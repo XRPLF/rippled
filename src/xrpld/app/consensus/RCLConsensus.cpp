@@ -1,6 +1,5 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
 
-#include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLCxTx.h>
@@ -17,8 +16,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Consensus.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 
@@ -32,6 +29,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/CensorshipDetector.h>
+#include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/crypto/csprng.h>
@@ -389,7 +389,7 @@ RCLConsensus::Adaptor::onClose(
     if (!wrongLCL)
     {
         LedgerIndex const seq = prevLedger->header().seq + 1;
-        RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
+        CensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
             [&proposed, seq](boost::intrusive_ptr<SHAMapItem const> const& item) {
@@ -847,7 +847,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
             // Report our server version every flag ledger:
             if (ledger.ledger->isVotingLedger())
-                v.setFieldU64(sfServerVersion, BuildInfo::getEncodedVersion());
+                v.setFieldU64(sfServerVersion, build_info::getEncodedVersion());
 
             // Report our load
             {
@@ -955,7 +955,9 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     }
 }
 
-//! @see Consensus::simulate
+/**
+ * @see Consensus::simulate
+ */
 
 void
 RCLConsensus::simulate(

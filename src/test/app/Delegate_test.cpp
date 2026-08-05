@@ -275,7 +275,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const bob{"bob"};
 
             auto const txFee = env.current()->fees().base;
-            env.fund(env.current()->fees().accountReserve(0) + txFee, alice);
+            env.fund(env.current()->fees().accountReserve(0, 1) + txFee, alice);
             env.fund(XRP(100000), bob);
             env.close();
 
@@ -292,7 +292,7 @@ class Delegate_test : public beast::unit_test::Suite
 
             auto const txFee = env.current()->fees().base;
 
-            env.fund(env.current()->fees().accountReserve(1) + (txFee * 4), alice);
+            env.fund(env.current()->fees().accountReserve(1, 1) + (txFee * 4), alice);
             env.fund(XRP(100000), bob, carol);
             env.close();
 
@@ -318,8 +318,8 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            env.fund(drops(env.current()->fees().accountReserve(1)), alice);
-            env.fund(drops(env.current()->fees().accountReserve(2)), bob);
+            env.fund(drops(env.current()->fees().accountReserve(1, 1)), alice);
+            env.fund(drops(env.current()->fees().accountReserve(2, 1)), bob);
             env.close();
 
             // alice gives bob permission
@@ -422,7 +422,7 @@ class Delegate_test : public beast::unit_test::Suite
                 Account const carol{"carol"};
 
                 auto const baseFee = env.current()->fees().base;
-                auto const reserve = env.current()->fees().accountReserve(1);
+                auto const reserve = env.current()->fees().accountReserve(1, 1);
                 auto const paymentAmount = XRP(1);
                 auto const highFee = reserve + baseFee;
                 BEAST_EXPECT(highFee > reserve);
@@ -488,9 +488,9 @@ class Delegate_test : public beast::unit_test::Suite
             Account const carol{"carol"};
 
             auto const baseFee = env.current()->fees().base;
-            auto const baseReserve = env.current()->fees().accountReserve(0);
+            auto const baseReserve = env.current()->fees().accountReserve(0, 1);
 
-            env.fund(env.current()->fees().accountReserve(1) + baseFee + XRP(1), alice);
+            env.fund(env.current()->fees().accountReserve(1, 1) + baseFee + XRP(1), alice);
             env.fund(baseReserve, bob);
             env.fund(XRP(1000), carol);
             env.close();
@@ -523,7 +523,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const carol{"carol"};
 
             auto const baseFee = env.current()->fees().base;
-            auto const reserve = env.current()->fees().accountReserve(1);
+            auto const reserve = env.current()->fees().accountReserve(1, 1);
 
             // Alice is funded with (reserve + baseFee): after DelegateSet she has
             // exactly 'reserve', which is insufficient to send XRP(10) while keeping
@@ -2612,7 +2612,9 @@ class Delegate_test : public beast::unit_test::Suite
             {"CredentialDelete", featureCredentials},
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
-            {"PermissionedDomainDelete", featurePermissionedDomains}};
+            {"PermissionedDomainDelete", featurePermissionedDomains},
+            {"SponsorshipSet", featureSponsor},
+        };
 
         // Can not delegate tx if any required feature disabled.
         {
@@ -2747,7 +2749,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 56;
+        std::size_t const expectedDelegableCount = 57;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
@@ -2821,15 +2823,15 @@ class Delegate_test : public beast::unit_test::Suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loanBroker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loanBroker::coverDeposit(alice, keylet.key, XRP(1)),
+                env(loan_broker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverWithdraw(alice, keylet.key, XRP(1)),
+                env(loan_broker::coverWithdraw(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loanBroker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
+                env(loan_broker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
 
                 env(loan::set(alice, keylet.key, Number(100)), delegate::As(bob), Ter(temINVALID));
                 env(loan::manage(alice, keylet.key, 0), delegate::As(bob), Ter(temINVALID));
