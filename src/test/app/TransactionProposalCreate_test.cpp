@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
@@ -175,6 +176,15 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temBAD_SIGNER);
         }
 
+        // An unrecognized TransactionType cannot even be constructed as an
+        // STTx (there is no format to validate it against), so it is
+        // rejected the same as any other malformed payload.
+        {
+            json::Value tx = payload();
+            tx[jss::TransactionType] = 65535;
+            reject(tx, temMALFORMED);
+        }
+
         // A pseudo-transaction is never submittable by an account.
         {
             json::Value tx = payload();
@@ -248,6 +258,12 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.le(keylet::txProposal(alice.id(), aliceTicketSeq)));
             BEAST_EXPECT(env.le(keylet::ticket(alice.id(), aliceTicketSeq)));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // Consume the leftover Ticket so alice's ownerCount is back to
+            // zero for the remaining cases below.
+            env(noop(alice), ticket::Use(aliceTicketSeq));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
 
         // A payload that fails its own transaction type's preflight surfaces

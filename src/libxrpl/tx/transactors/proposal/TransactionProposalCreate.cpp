@@ -61,8 +61,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
         return temINVALID;
     }
 
-    if (proposedTx.isFieldPresent(sfFlags) &&
-        ((proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u))
+    if (proposedTx.isFlag(tfInnerBatchTxn))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries tfInnerBatchTxn.";
