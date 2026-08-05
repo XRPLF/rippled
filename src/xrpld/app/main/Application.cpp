@@ -330,7 +330,7 @@ public:
                   telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
                       "",  // Updated later via setServiceInstanceId()
-                      BuildInfo::getVersionString(),
+                      build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
 
