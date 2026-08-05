@@ -319,7 +319,7 @@ MPTTester::createJV(MPTCreate const& arg)
 }
 
 void
-MPTTester::create(MPTCreate const& arg)
+MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -332,7 +332,7 @@ MPTTester::create(MPTCreate const& arg)
          .metadata = arg.metadata,
          .immutableFlags = arg.immutableFlags,
          .domainID = arg.domainID});
-    if (!isTesSuccess(submit(arg, jv)))
+    if (!isTesSuccess(submit(arg, {jv, loc})))
     {
         // Verify issuance doesn't exist
         env_.require(RequireAny(
@@ -397,13 +397,13 @@ MPTTester::destroyJV(MPTDestroy const& arg)
 }
 
 void
-MPTTester::destroy(MPTDestroy const& arg)
+MPTTester::destroy(MPTDestroy const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
     json::Value const jv =
         destroyJV({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
-    submit(arg, jv);
+    submit(arg, {jv, loc});
 }
 
 Account const&
@@ -431,7 +431,7 @@ MPTTester::authorizeJV(MPTAuthorize const& arg)
 }
 
 void
-MPTTester::authorize(MPTAuthorize const& arg)
+MPTTester::authorize(MPTAuthorize const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -440,7 +440,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
     });
-    if (auto const result = submit(arg, jv); isTesSuccess(result))
+    if (auto const result = submit(arg, {jv, loc}); isTesSuccess(result))
     {
         // Issuer authorizes
         if (!arg.account || *arg.account == issuer_)
@@ -545,7 +545,7 @@ MPTTester::setJV(MPTSet const& arg)
 }
 
 void
-MPTTester::set(MPTSet const& arg)
+MPTTester::set(MPTSet const& arg, std::source_location const& loc)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -560,7 +560,7 @@ MPTTester::set(MPTSet const& arg)
          .domainID = arg.domainID,
          .issuerPubKey = arg.issuerPubKey,
          .auditorPubKey = arg.auditorPubKey});
-    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0) != 0u)
+    if (submit(arg, {jv, loc}) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);
@@ -1223,7 +1223,7 @@ MPTTester::fillConversionCiphertexts(
 }
 
 void
-MPTTester::convert(MPTConvert const& arg)
+MPTTester::convert(MPTConvert const& arg, std::source_location const& loc)
 {
     json::Value const jv = convertJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -1255,7 +1255,7 @@ MPTTester::convert(MPTConvert const& arg)
 
     auto const prevOutstanding = getIssuanceOutstandingBalance();
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
@@ -1372,7 +1372,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
 }
 
 void
-MPTTester::send(MPTConfidentialSend const& arg)
+MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
 {
     json::Value const jv = sendJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -1419,7 +1419,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
@@ -1726,7 +1726,7 @@ computeNextSendChainState(
 }
 
 void
-MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
+MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_location const& loc)
 {
     json::Value jv;
     auto const account = arg.account ? *arg.account : issuer_;
@@ -1766,7 +1766,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     auto const prevOA = getIssuanceOutstandingBalance();
     auto const prevVersion = getMPTokenVersion(holder);
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
@@ -1925,7 +1925,7 @@ MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
 }
 
 void
-MPTTester::mergeInbox(MPTMergeInbox const& arg)
+MPTTester::mergeInbox(MPTMergeInbox const& arg, std::source_location const& loc)
 {
     json::Value const jv = mergeInboxJV(arg);
     Account const& account = requireValue(arg.account, "account");
@@ -1943,7 +1943,7 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
@@ -2026,7 +2026,7 @@ MPTTester::getMPTokenVersion(Account const account) const
 }
 
 void
-MPTTester::convertBack(MPTConvertBack const& arg)
+MPTTester::convertBack(MPTConvertBack const& arg, std::source_location const& loc)
 {
     json::Value const jv = convertBackJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
@@ -2054,7 +2054,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     auto const prevOutstanding = getIssuanceOutstandingBalance();
     auto const prevVersion = getMPTokenVersion(account);
 
-    if (submit(arg, jv) == tesSUCCESS)
+    if (submit(arg, {jv, loc}) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
