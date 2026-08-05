@@ -167,12 +167,12 @@ ammAssetOut(
 
     if (!isFeatureEnabled(fixAMMv1_3))
     {
-        auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / denom;
+        auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
         return toSTAmount(assetBalance.asset(), b);
     }
 
     // minimize withdraw
-    auto const frac = (t1 * t1 - t1 * (2 - f)) / denom;
+    auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
     return multiply(assetBalance, frac, Number::RoundingMode::Downward);
 }
 
