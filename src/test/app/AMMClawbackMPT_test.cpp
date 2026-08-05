@@ -644,44 +644,6 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 BEAST_EXPECT(danLpAfter == danLpBefore);
             }
         }
-
-        // A clawback that rounds NON-zero must behave identically whether
-        // fixCleanup3_3_0 is enabled or not: the guard is scoped strictly to
-        // the zero-rounding case and must not perturb adjacent withdrawals.
-        // The assertions below are unconditional, so passing under both `all`
-        // and `all - fixCleanup3_3_0` proves the outcomes are identical.
-        {
-            Account const emma{"emma"};
-            Account const finn{"finn"};
-            env.fund(XRP(10'000'000), emma, finn);
-            env.close();
-
-            MPTTester const mptBtc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {emma, finn},
-                 .pay = 1'000,
-                 .flags = tfMPTCanClawback | kMptDexFlags});
-            MPT const btc = mptBtc;
-
-            AMM amm(env, emma, btc(3), XRP(333'000));
-            amm.deposit(finn, btc(3), XRP(333'000));
-
-            auto const issuerOABefore = mptBtc.getBalance(gw);
-            auto const finnLpBefore = amm.getLPTokensBalance(finn.id());
-
-            // Claw btc(2): rounds down to a single BTC clawed (non-zero), so
-            // the guard never fires. Same result with fixCleanup3_3_0 on/off.
-            env(amm::ammClawback(gw, emma, btc, XRP, btc(2)), Ter(tesSUCCESS));
-            env.close();
-
-            BEAST_EXPECT((amm.expectBalances(
-                btc(5), XRPAmount(444'000'000'001), IOUAmount{1332666499916614, -9})));
-            BEAST_EXPECT(mptBtc.getBalance(gw) == issuerOABefore - 1);
-            BEAST_EXPECT((amm.getLPTokensBalance(emma.id()) == IOUAmount{3331666249791539, -10}));
-            // Counterparty untouched.
-            BEAST_EXPECT(amm.getLPTokensBalance(finn.id()) == finnLpBefore);
-        }
     }
 
     void
@@ -2000,6 +1962,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testInvalidRequest(all);
         testFeatureDisabled(all);
         testAMMClawbackAmount(all);
+        testAMMClawbackAmount(all - fixCleanup3_3_0);
         testAMMClawbackAmountRoundsToZero(all);
         testAMMClawbackAmountRoundsToZero(all - fixCleanup3_3_0);
         testAMMClawbackAll(all);
