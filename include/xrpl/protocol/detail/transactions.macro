@@ -1194,6 +1194,20 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCount, SoeOptional},
 }))
 
+/** This transaction posts an unsigned transaction on-ledger as a
+    TransactionProposal, pending multi-signature collection. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 92, TransactionProposalCreate,
+    Delegation::NotDelegable,
+    featureCosign,
+    NoPriv,
+    ({
+    {sfProposedTransaction, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
