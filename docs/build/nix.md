@@ -128,6 +128,13 @@ Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Li
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
+Builds of the Rust crates (`-Drust=ON`) also work out of the box: every shell
+provides the Rust toolchain pinned in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) along with Corrosion, the
+CMake package that the build needs (see
+[Rust and Corrosion](./environment.md#rust-and-corrosion)), plus the
+`cargo-audit`, `cargo-llvm-cov` and `cargo-nextest` plugins.
+
 ## Automatic Activation with direnv
 
 [direnv](https://direnv.net/) or [nix-direnv](https://github.com/nix-community/nix-direnv) can automatically activate the Nix development shell when you enter the repository directory.

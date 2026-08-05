@@ -80,6 +80,7 @@ jobs:
               -Dwerr=ON \
               -Dxrpld=ON \
               -Dverify_headers=ON \
+              -Drust=ON \
               ..
 
       # clang-tidy needs the generated headers (protobuf, cxxbridge) to exist

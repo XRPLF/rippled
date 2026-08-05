@@ -7,7 +7,13 @@ from pathlib import Path
 
 THIS_DIR = Path(__file__).parent.resolve()
 
-_BASE_CMAKE_ARGS = ["-Dtests=ON", "-Dwerr=ON", "-Dxrpld=ON", "-Dwextra=ON"]
+_BASE_CMAKE_ARGS = [
+    "-Dtests=ON",
+    "-Dwerr=ON",
+    "-Dxrpld=ON",
+    "-Dwextra=ON",
+    "-Drust=ON",
+]
 
 # Maps sanitizer names (as used in cmake) to short config-name suffixes.
 _SANITIZER_SUFFIX: dict[str, str] = {

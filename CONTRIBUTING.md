@@ -319,7 +319,7 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for ho
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must generate the files it depends on (protobuf headers, cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `xrpl_tidy_prerequisites` target, which generates all of them:
+Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `xrpl_tidy_prerequisites` target, which generates all of them:
 
 ```bash
 cmake --build build --target xrpl_tidy_prerequisites

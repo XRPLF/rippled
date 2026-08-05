@@ -291,9 +291,15 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        if(rust)
+            target_link_libraries(xrpld rs_hello_world_cxxbridge)
+        else()
+            # Tests of the Rust interop include generated cxxbridge headers,
+            # which do not exist without the crates, so keep them out of the
+            # build tree entirely. They are named `Rust<something>_test.cpp`.
+            list(FILTER sources EXCLUDE REGEX "/Rust[^/]*_test\\.cpp$")
+        endif()
         target_sources(xrpld PRIVATE ${sources})
-
-        target_link_libraries(xrpld rs_hello_world_cxxbridge)
     endif()
 
     target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
