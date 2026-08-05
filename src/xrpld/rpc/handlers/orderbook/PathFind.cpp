@@ -18,7 +18,7 @@
 namespace xrpl {
 
 json::Value
-doPathFind(RPC::JsonContext& context)
+doPathFind(rpc::JsonContext& context)
 {
     using namespace telemetry;
     // Scoped so pathfind.compute/discover (created synchronously below on this
@@ -55,7 +55,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::kFeeHeavyBurdenRpc;
+        context.loadType = resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
