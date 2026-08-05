@@ -150,7 +150,7 @@ class Xrpl(ConanFile):
         # OpenTelemetry C++ SDK for distributed tracing (optional).
         # Provides OTLP/HTTP exporter, batch span processor, and trace API.
         if self.options.telemetry:
-            self.requires("opentelemetry-cpp/1.26.0")
+            self.requires("opentelemetry-cpp/1.28.0")
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
