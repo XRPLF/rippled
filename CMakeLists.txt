@@ -141,6 +141,10 @@ endif()
 
 add_subdirectory(crates)
 include(XrplCore)
+
+add_custom_target(xrpl_tidy_prerequisites)
+add_dependencies(xrpl_tidy_prerequisites xrpl.libpb xrpl_crates)
+
 include(XrplProtocolAutogen)
 include(XrplInstall)
 include(XrplPackaging)

@@ -33,3 +33,5 @@ updates:
     open-pull-requests-limit: 10
     groups:
       rust-dependencies:
+        patterns:
+          - "*"

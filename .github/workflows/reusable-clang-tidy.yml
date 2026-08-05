@@ -82,17 +82,11 @@ jobs:
               -Dverify_headers=ON \
               ..
 
-      # clang-tidy needs headers generated from proto files
-      - name: Build libxrpl.libpb
+      # clang-tidy needs the generated headers (protobuf, cxxbridge) to exist
+      - name: Build clang-tidy prerequisites
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
-
-      # clang-tidy needs cxxbridge headers generated from Rust crates
-      - name: Build xrpl_crates
-        working-directory: ${{ env.BUILD_DIR }}
-        run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl_crates
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl_tidy_prerequisites
 
       - name: Run clang tidy
         id: run_clang_tidy
