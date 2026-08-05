@@ -1155,7 +1155,7 @@ private:
      * (the Telemetry resource is fixed once start() builds it).
      */
     void
-    startTelemetry();
+    startTelemetry() const;
 
     std::shared_ptr<Ledger>
     getLastFullLedger();
@@ -1566,7 +1566,7 @@ ApplicationImp::start(bool withTimers)
 }
 
 void
-ApplicationImp::startTelemetry()
+ApplicationImp::startTelemetry() const
 {
     telemetry_->start();
 }
