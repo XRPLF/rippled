@@ -48,7 +48,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
     // no batch inner transactions.
-    if (isProposalTx(proposedTx))
+    if (proposal::isProposalTx(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
         return temINVALID;
@@ -71,14 +71,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction is stored in its unsigned canonical form; the
     // ledger populates its signature fields as contributions arrive.
-    if (hasSignatureField(proposedTx))
+    if (proposal::hasSignatureField(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries signature fields.";
         return temBAD_SIGNER;
     }
 
-    if (!hasEmptySigningPubKey(proposedTx))
+    if (!proposal::hasEmptySigningPubKey(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "SigningPubKey must be present and empty.";
@@ -99,7 +99,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // common field, so "no Sequence" is expressed as a Sequence of 0 rather
     // than an absent field. A ticket decouples the proposal from the target
     // account's live sequence, so unrelated target-account activity cannot
-    // invalidate it while signatures are collected (spec §4.2.1).
+    // invalidate it while signatures are collected (On-Chain Cosigner spec
+    // §4.2.1).
     if (!proposedTx.isFieldPresent(sfTicketSequence) || proposedTx.getFieldU32(sfSequence) != 0)
         return temSEQ_AND_TICKET;
 
@@ -107,7 +108,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // current rules, so no statically-dead proposal can be stored. TapDryRun
     // accepts the unsigned canonical form without a signature check;
     // TapProposal additionally skips signature-presence checks (e.g. Batch
-    // signer matching), which are deferred to submission time (spec §5.3.1.2).
+    // signer matching), which are deferred to submission time (On-Chain
+    // Cosigner spec §5.3.1.2).
     try
     {
         STTx const stx{STObject{proposedTx}};
@@ -119,7 +121,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
                                    "failed preflight: "
                                 << transHuman(inner.ter);
             // Surface the proposed transaction type's own preflight code
-            // rather than collapsing it to a generic error (spec §5.3.1).
+            // rather than collapsing it to a generic error (On-Chain Cosigner
+            // spec §5.3.1).
             return inner.ter;
         }
     }
@@ -148,7 +151,8 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     // Once the proposed transaction's own ledger bound has passed it can never
     // be applied, so the proposal is dead on arrival. The bound is the one the
     // ordinary path uses for tefMAX_LEDGER: the last ledger in which the
-    // proposed transaction may still be submitted (spec §4.5).
+    // proposed transaction may still be submitted (On-Chain Cosigner spec
+    // §4.5).
     if (proposedTx.isFieldPresent(sfLastLedgerSequence) &&
         proposedTx.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
     {
@@ -189,7 +193,7 @@ TransactionProposalCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const proposedTx = ctx_.tx.getFieldObject(sfProposedTransaction);
-    std::uint32_t const ownerCount = proposalOwnerCount(proposedTx);
+    std::uint32_t const ownerCount = proposal::proposalOwnerCount(proposedTx);
 
     // The proposal holds a full transaction plus its collected signatures, so
     // it reserves more than a typical ledger entry (5 increments; 10 for a

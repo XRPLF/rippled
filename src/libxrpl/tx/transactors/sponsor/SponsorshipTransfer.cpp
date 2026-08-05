@@ -199,7 +199,11 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     bool const isAccountReserveSponsorship =
         isCreateOrReassign && reserveSponsor && !ctx.tx.isFieldPresent(sfObjectID);
 
-    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
+    // A proposed SponsorshipTransfer is stored unsigned; its SponsorSignature
+    // is collected on-ledger afterward, so its absence here is expected, not
+    // an error (On-Chain Cosigner spec §5.3.1.2).
+    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature) &&
+        (ctx.flags & TapProposal) == 0)
     {
         JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
         return temMALFORMED;

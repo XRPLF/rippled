@@ -10,7 +10,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
+namespace xrpl::proposal {
 
 /**
  * Whether the proposed transaction is itself a proposal transaction, which
@@ -99,4 +99,4 @@ proposalOwnerCount(STObject const& proposedTx)
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
 
-}  // namespace xrpl
+}  // namespace xrpl::proposal

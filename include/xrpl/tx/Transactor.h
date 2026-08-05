@@ -59,6 +59,10 @@ public:
         , j(j)
     {
         XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
+        XRPL_ASSERT_IF(
+            (flags & TapProposal) != TapNone,
+            (flags & TapDryRun) != TapNone,
+            "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
     PreflightContext(
@@ -70,6 +74,10 @@ public:
         : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
         XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT_IF(
+            (flags & TapProposal) != TapNone,
+            (flags & TapDryRun) != TapNone,
+            "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
     PreflightContext&
