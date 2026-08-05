@@ -99,7 +99,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // common field, so "no Sequence" is expressed as a Sequence of 0 rather
     // than an absent field. A ticket decouples the proposal from the target
     // account's live sequence, so unrelated target-account activity cannot
-    // invalidate it while signatures are collected (spec §4.2.1).
+    // invalidate it while signatures are collected (On-Chain Cosigner spec
+    // §4.2.1).
     if (!proposedTx.isFieldPresent(sfTicketSequence) || proposedTx.getFieldU32(sfSequence) != 0)
         return temSEQ_AND_TICKET;
 
@@ -107,7 +108,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // current rules, so no statically-dead proposal can be stored. TapDryRun
     // accepts the unsigned canonical form without a signature check;
     // TapProposal additionally skips signature-presence checks (e.g. Batch
-    // signer matching), which are deferred to submission time (spec §5.3.1.2).
+    // signer matching), which are deferred to submission time (On-Chain
+    // Cosigner spec §5.3.1.2).
     try
     {
         STTx const stx{STObject{proposedTx}};
@@ -119,7 +121,8 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
                                    "failed preflight: "
                                 << transHuman(inner.ter);
             // Surface the proposed transaction type's own preflight code
-            // rather than collapsing it to a generic error (spec §5.3.1).
+            // rather than collapsing it to a generic error (On-Chain Cosigner
+            // spec §5.3.1).
             return inner.ter;
         }
     }
@@ -148,7 +151,8 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     // Once the proposed transaction's own ledger bound has passed it can never
     // be applied, so the proposal is dead on arrival. The bound is the one the
     // ordinary path uses for tefMAX_LEDGER: the last ledger in which the
-    // proposed transaction may still be submitted (spec §4.5).
+    // proposed transaction may still be submitted (On-Chain Cosigner spec
+    // §4.5).
     if (proposedTx.isFieldPresent(sfLastLedgerSequence) &&
         proposedTx.getFieldU32(sfLastLedgerSequence) <= ctx.view.seq())
     {

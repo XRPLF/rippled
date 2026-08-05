@@ -409,7 +409,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 
     // A proposed Batch is stored unsigned; its BatchSigners are collected
     // on-ledger afterward, so the signer-presence match belongs to submission
-    // time, not proposal creation (spec §5.3.1.2).
+    // time, not proposal creation (On-Chain Cosigner spec §5.3.1.2).
     if ((ctx.flags & TapProposal) != 0)
         return tesSUCCESS;
 

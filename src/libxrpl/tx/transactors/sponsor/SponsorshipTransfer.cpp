@@ -201,7 +201,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
     // A proposed SponsorshipTransfer is stored unsigned; its SponsorSignature
     // is collected on-ledger afterward, so its absence here is expected, not
-    // an error (spec §5.3.1.2).
+    // an error (On-Chain Cosigner spec §5.3.1.2).
     if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature) &&
         (ctx.flags & TapProposal) == 0)
     {

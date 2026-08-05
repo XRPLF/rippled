@@ -232,7 +232,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
 
         // A payload that fails its own transaction type's preflight surfaces
-        // that type's own code, not a generic error (spec §5.3.1.2).
+        // that type's own code, not a generic error (On-Chain Cosigner spec §5.3.1.2).
         {
             json::Value tx = payload();
             tx[jss::Amount] = "0";
@@ -329,7 +329,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // A LastLedgerSequence equal to the current ledger leaves no window to
         // collect signatures before the proposed transaction's own bound
         // passes, so it is rejected the same as one already in the past
-        // (spec §5.3.2.2).
+        // (On-Chain Cosigner spec §5.3.2.2).
         {
             json::Value tx = unsignedPayload(env, target, bob, firstTicketSeq);
             tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq();
@@ -470,11 +470,11 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
     }
 
-    // A multi-account Batch is the primary motivating case (spec §10): its inner
+    // A multi-account Batch is the primary motivating case (On-Chain Cosigner spec §10): its inner
     // transactions touch accounts other than the outer one, so submitting it
     // directly would require a BatchSigners entry per participant. A proposal is
     // stored unsigned, so those signatures are collected on-ledger afterward and
-    // the signer-presence match is skipped at creation time (spec §5.3.1.2).
+    // the signer-presence match is skipped at creation time (On-Chain Cosigner spec §5.3.1.2).
     void
     testMultiAccountBatch(FeatureBitset features)
     {
@@ -538,7 +538,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
-    // though it exists on-ledger (spec §5.3.2.5).
+    // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
     void
     testPseudoTarget(FeatureBitset features)
     {
@@ -583,7 +583,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
     // A proposed transaction may itself require an auxiliary co-signer beyond
     // its own Account: a LoanSet's Counterparty, or the Sponsor of an
-    // account-level SponsorshipTransfer (spec §6.1, §6.6.3). That co-signature
+    // account-level SponsorshipTransfer (On-Chain Cosigner spec §6.1, §6.6.3). That co-signature
     // field is collected later via TransactionProposalSign, so — just like
     // the ordinary signature fields — it must be absent, not required, at
     // creation time.
