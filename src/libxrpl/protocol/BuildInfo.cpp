@@ -13,7 +13,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::BuildInfo {
+namespace xrpl::build_info {
 
 namespace {
 
@@ -173,4 +173,4 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace xrpl::BuildInfo
+}  // namespace xrpl::build_info

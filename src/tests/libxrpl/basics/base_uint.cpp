@@ -59,65 +59,67 @@ struct BaseUintTest : public ::testing::Test
     static void
     testComparisons()
     {
-        {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {{"0000000000000000", "0000000000000001"},
-                 {"0000000000000000", "ffffffffffffffff"},
-                 {"1234567812345678", "2345678923456789"},
-                 {"8000000000000000", "8000000000000001"},
-                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                 {"fffffffffffffffe", "ffffffffffffffff"}}};
+        using HexPair = std::pair<std::string_view, std::string_view>;
 
-            for (auto const& arg : kTestArgs)
+        {
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"0000000000000000", "0000000000000001"},
+                {"0000000000000000", "ffffffffffffffff"},
+                {"1234567812345678", "2345678923456789"},
+                {"8000000000000000", "8000000000000001"},
+                {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffe", "ffffffffffffffff"},
+            });
+
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
                 // For code readability, we want to use general boolean
                 // expectations instead of specific EXPECT_LT etc.
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {
-                    {"000000000000000000000000", "000000000000000000000001"},
-                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                    {"555555555555555555555555", "55555555555a555555555555"},
-                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-                }};
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"000000000000000000000000", "000000000000000000000001"},
+                {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                {"555555555555555555555555", "55555555555a555555555555"},
+                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+            });
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
     }
@@ -401,14 +403,14 @@ TEST_F(BaseUintTest, base_uint)
             {
             }
         };
-        constexpr StrBaseUInt kTestCases[] = {
+        constexpr auto kTestCases = std::to_array<StrBaseUInt>({
             "000000000000000000000000",
             "000000000000000000000001",
             "fedcba9876543210ABCDEF91",
             "19FEDCBA0123456789abcdef",
             "800000000000000000000000",
             "fFfFfFfFfFfFfFfFfFfFfFfF",
-        };
+        });
 
         for (StrBaseUInt const& t : kTestCases)
         {
