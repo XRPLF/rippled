@@ -231,6 +231,25 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temSEQ_AND_TICKET);
         }
 
+        // If this TransactionProposalCreate itself pays with a Ticket, and the
+        // proposed transaction targets that same account and Ticket, applying
+        // this transaction consumes the Ticket the proposal depends on before
+        // the proposal is even stored: it would be dead on arrival.
+        {
+            std::uint32_t const aliceTicketSeq = env.seq(alice) + 1;
+            env(ticket::create(alice, 1));
+            env.close();
+
+            json::Value const tx = unsignedPayload(env, alice, bob, aliceTicketSeq);
+            env(proposalCreate(alice, tx, expiration),
+                ticket::Use(aliceTicketSeq),
+                Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::txProposal(alice.id(), aliceTicketSeq)));
+            BEAST_EXPECT(env.le(keylet::ticket(alice.id(), aliceTicketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+        }
+
         // A payload that fails its own transaction type's preflight surfaces
         // that type's own code, not a generic error (On-Chain Cosigner spec §5.3.1.2).
         {

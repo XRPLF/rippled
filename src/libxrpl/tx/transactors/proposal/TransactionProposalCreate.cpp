@@ -104,6 +104,20 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     if (!proposedTx.isFieldPresent(sfTicketSequence) || proposedTx.getFieldU32(sfSequence) != 0)
         return temSEQ_AND_TICKET;
 
+    // If this transaction itself is paying with a Ticket, and the proposed
+    // transaction is targeting that same account and Ticket, then applying
+    // this transaction consumes the very Ticket the proposal depends on
+    // before the proposal is even stored: the proposal would be dead on
+    // arrival, and its only recourse would be TransactionProposalCancel.
+    if (ctx.tx.getSeqProxy().isTicket() &&
+        proposedTx.getAccountID(sfAccount) == ctx.tx.getAccountID(sfAccount) &&
+        proposedTx.getFieldU32(sfTicketSequence) == ctx.tx.getSeqProxy().value())
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
+                               "reuses the Ticket this transaction itself consumes.";
+        return temMALFORMED;
+    }
+
     // The proposed transaction must pass its own static checks under the
     // current rules, so no statically-dead proposal can be stored. TapDryRun
     // accepts the unsigned canonical form without a signature check;
