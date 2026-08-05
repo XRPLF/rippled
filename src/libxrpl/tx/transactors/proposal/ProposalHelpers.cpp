@@ -15,7 +15,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
+namespace xrpl::proposal {
 
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j)
@@ -27,7 +27,7 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
     XRPL_ASSERT(
         sleProposal && sleProposal->getType() == ltTRANSACTION_PROPOSAL &&
             view.exists(Keylet{ltTRANSACTION_PROPOSAL, sleProposal->key()}),
-        "xrpl::deleteProposal : valid proposal sle of this view");
+        "xrpl::proposal::deleteProposal : valid proposal sle of this view");
 
     AccountID const owner = sleProposal->getAccountID(sfOwner);
 
@@ -62,4 +62,4 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
     return tesSUCCESS;
 }
 
-}  // namespace xrpl
+}  // namespace xrpl::proposal

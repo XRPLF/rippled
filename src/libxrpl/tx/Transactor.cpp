@@ -879,7 +879,7 @@ Transactor::ticketDelete(
     {
         if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
         {
-            if (TER const ter = deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
                 return ter;  // LCOV_EXCL_LINE
         }
     }

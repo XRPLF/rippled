@@ -102,7 +102,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq + 1)));
         // Each proposal reserves several owner increments; the target owns
         // only its two Tickets.
-        BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
         BEAST_EXPECT(ownerCount(env, target) == 2);
 
         // A sequence-based transaction of the target consumes no ticket, so
@@ -121,7 +121,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq + 1)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         BEAST_EXPECT(ownerCount(env, target) == 1);
 
         // The target spends the second ticket on something unrelated to the
@@ -179,7 +179,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), targetTicketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
     // A ticket is consumed even when its transaction fails with a tec, and
@@ -266,7 +266,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
 
         env(proposalCreate(alice, proposedTx, expiration));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
 
         env(noop(target), ticket::Use(ticketSeq));
         env.close();
@@ -348,7 +348,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
         env.close();
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
 
         incLgrSeqForAccDel(env, target);
         env(acctdelete(target, bob), Fee(env.current()->fees().increment));
@@ -389,7 +389,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         auto const sle = env.le(keylet::txProposal(alice.id(), ticketSeq));
         BEAST_EXPECT(sle && sle->getAccountID(sfOwner) == alice.id());
         // One Ticket plus the proposal's increments, all against alice.
-        BEAST_EXPECT(ownerCount(env, alice) == 1 + kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == 1 + proposal::kProposalOwnerCount);
 
         env(noop(alice), ticket::Use(ticketSeq));
         env.close();
@@ -435,7 +435,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(env.le(keylet::account(alice.id())));
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
     // A tfAllOrNothing Batch whose inner transaction spends the proposal's
@@ -476,7 +476,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         // The ticket survived the discard.
         BEAST_EXPECT(ownerCount(env, target) == 1);
 
@@ -556,7 +556,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq), expiration));
         env(proposalCreate(alice, unsignedPayload(env, target, bob, ticketSeq + 1), expiration));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
 
         // Inner #1 consumes the first ticket, inner #2 fails and stops the
         // batch, inner #3 (second ticket) is never attempted.
@@ -570,7 +570,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), ticketSeq + 1)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         // The unreached ticket survives.
         BEAST_EXPECT(ownerCount(env, target) == 1);
     }
@@ -770,7 +770,7 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         // The shape under test: the proposal must have landed off the root
         // directory page.
         BEAST_EXPECT((*sle)[sfOwnerNode] != 0);
-        BEAST_EXPECT(ownerCount(env, alice) == 40 + kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == 40 + proposal::kProposalOwnerCount);
 
         env(noop(target), ticket::Use(ticketSeq));
         env.close();
