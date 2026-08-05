@@ -230,7 +230,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
     TRANSACTION(SponsorshipTransfer,                                                                                                                           \
         TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
         TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
-        TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
+        TF_FLAG(tfSponsorshipReassign, 0x00040000)                                                                                                             \
+        TF_FLAG(tfSponsorshipReap, 0x00080000),                                                                                                                \
         MASK_ADJ(0))
 
 // clang-format on

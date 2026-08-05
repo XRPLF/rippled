@@ -13,6 +13,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -185,6 +186,18 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
+TER
+removeSponsorshipFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const&,
+    SLE::ref sleDel,
+    beast::Journal j)
+{
+    return deleteSponsorshipObject(view, sleDel, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -211,12 +224,206 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltSPONSORSHIP:
+            return removeSponsorshipFromLedger;
         default:
             return nullptr;
     }
 }
 
 }  // namespace
+
+TER
+checkAccountDeletable(
+    ReadView const& view,
+    SLE::const_ref sleAccount,
+    AccountID const& dst,
+    beast::Journal j)
+{
+    AccountID const account = sleAccount->getAccountID(sfAccount);
+
+    // If an issuer has any issued NFTs resident in the ledger then it
+    // cannot be deleted.
+    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+        return tecHAS_OBLIGATIONS;
+
+    // If the account owns any NFTs it cannot be deleted.
+    Keylet const first = keylet::nftokenPageMin(account);
+    Keylet const last = keylet::nftokenPageMax(account);
+
+    auto const cp =
+        view.read(Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
+    if (cp)
+        return tecHAS_OBLIGATIONS;
+
+    // A sponsored account may only pay its residual XRP to its own sponsor.
+    if (sleAccount->isFieldPresent(sfSponsor))
+    {
+        if (dst != sleAccount->getAccountID(sfSponsor))
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    // An account that is sponsoring others cannot be deleted.
+    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
+        sleAccount->isFieldPresent(sfSponsoringAccountCount))
+        return tecHAS_OBLIGATIONS;
+
+    // We don't allow an account to be deleted if its sequence number
+    // is within 256 of the current ledger.  This prevents replay of old
+    // transactions if this account is resurrected after it is deleted.
+    //
+    // We look at the account's Sequence rather than the transaction's
+    // Sequence in preparation for Tickets.
+    static constexpr std::uint32_t kSeqDelta{255};
+    if ((*sleAccount)[sfSequence] + kSeqDelta > view.seq())
+        return tecTOO_SOON;
+
+    // We don't allow an account to be deleted if
+    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // current ledger. This is to prevent having duplicate NFTokenIDs after
+    // account re-creation.
+    //
+    // Without this restriction, duplicate NFTokenIDs can be reproduced when
+    // authorized minting is involved. Because when the minter mints a NFToken,
+    // the issuer's sequence does not change. So when the issuer re-creates
+    // their account and mints a NFToken, it is possible that the
+    // NFTokenSequence of this NFToken is the same as the one that the
+    // authorized minter minted in a previous ledger.
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSeqDelta >
+        view.seq())
+        return tecTOO_SOON;
+
+    // Verify that the account does not own any objects that would prevent
+    // the account from being deleted.
+    Keylet const ownerDirKeylet{keylet::ownerDir(account)};
+    if (dirIsEmpty(view, ownerDirKeylet))
+        return tesSUCCESS;
+
+    SLE::const_pointer sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::kZero};
+
+    // Account has no directory at all.  This _should_ have been caught
+    // by the dirIsEmpty() check earlier, but it's okay to catch it here.
+    if (!cdirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+        return tesSUCCESS;
+
+    std::uint32_t deletableDirEntryCount{0};
+    do
+    {
+        // Make sure any directory node types that we find are the kind
+        // we can delete.
+        auto sleItem = view.read(keylet::child(dirEntry));
+        if (!sleItem)
+        {
+            // Directory node has an invalid index.  Bail out.
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "AccountDelete: directory node in ledger " << view.seq()
+                            << " has index to object that is missing: " << to_string(dirEntry);
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+
+        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+
+        if (nonObligationDeleter(nodeType) == nullptr)
+            return tecHAS_OBLIGATIONS;
+
+        // We found a deletable directory entry.  Count it.  If we find too
+        // many deletable directory entries then bail out.
+        if (++deletableDirEntryCount > kMaxDeletableDirEntries)
+            return tefTOO_BIG;
+
+    } while (cdirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+
+    return tesSUCCESS;
+}
+
+TER
+applyAccountDelete(ApplyContext& ctx, SLE::pointer src, SLE::pointer dst, beast::Journal j)
+{
+    auto& view = ctx.view();
+    AccountID const accountID = src->getAccountID(sfAccount);
+
+    Keylet const ownerDirKeylet{keylet::ownerDir(accountID)};
+    auto const ter = cleanupOnAccountDelete(
+        view,
+        ownerDirKeylet,
+        [&](LedgerEntryType nodeType,
+            uint256 const& dirEntry,
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
+            if (auto deleter = nonObligationDeleter(nodeType))
+            {
+                TER const result{deleter(ctx.registry, view, accountID, dirEntry, sleItem, j)};
+
+                return {result, SkipEntry::No};
+            }
+
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::applyAccountDelete : undeletable item not found in preclaim");
+            JLOG(j.error()) << "AccountDelete undeletable item not found in preclaim.";
+            return {tecHAS_OBLIGATIONS, SkipEntry::No};
+            // LCOV_EXCL_STOP
+        },
+        j);
+    if (!isTesSuccess(ter))
+        return ter;
+
+    // Transfer any XRP remaining after the fee is paid to the destination:
+    auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
+    (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
+    ctx.deliver(remainingBalance);
+
+    if (src->isFieldPresent(sfSponsor))
+    {
+        auto const sponsorID = src->getAccountID(sfSponsor);
+        auto sponsorSle = view.peek(keylet::account(sponsorID));
+
+        if (!sponsorSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
+
+        XRPL_ASSERT(
+            sponsoringAccountCount != 0,
+            "xrpl::applyAccountDelete : sponsoring account count is present");
+        if (sponsoringAccountCount == 0)
+        {
+            // sanity check
+            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
+            // present with a value of 0.
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
+        view.update(sponsorSle);
+
+        // Following line might look redundant, but without it, sfSponsor
+        // would end up remaining in after-ltAccountRoot during the
+        // InvariantCheck.
+        src->makeFieldAbsent(sfSponsor);
+    }
+
+    XRPL_ASSERT(
+        (*src)[sfBalance] == XRPAmount(0), "xrpl::applyAccountDelete : source balance is zero");
+
+    // If there's still an owner directory associated with the source account
+    // delete it.
+    if (view.exists(ownerDirKeylet) && !view.emptyDirDelete(ownerDirKeylet))
+    {
+        JLOG(j.error()) << "AccountDelete cannot delete root dir node of " << toBase58(accountID);
+        return tecHAS_OBLIGATIONS;
+    }
+
+    // Re-arm the password change fee if we can and need to.
+    if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+        dst->clearFlag(lsfPasswordSpent);
+
+    view.update(dst);
+    view.erase(src);
+
+    return tesSUCCESS;
+}
 
 TER
 AccountDelete::preclaim(PreclaimContext const& ctx)
@@ -253,99 +460,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    // If an issuer has any issued NFTs resident in the ledger then it
-    // cannot be deleted.
-    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
-        return tecHAS_OBLIGATIONS;
-
-    // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftokenPageMin(account);
-    Keylet const last = keylet::nftokenPageMax(account);
-
-    auto const cp = ctx.view.read(
-        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
-    if (cp)
-        return tecHAS_OBLIGATIONS;
-
-    if (sleAccount->isFieldPresent(sfSponsor))
-    {
-        if (dst != sleAccount->getAccountID(sfSponsor))
-            return tecNO_SPONSOR_PERMISSION;
-    }
-    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
-        sleAccount->isFieldPresent(sfSponsoringAccountCount))
-        return tecHAS_OBLIGATIONS;
-
-    // We don't allow an account to be deleted if its sequence number
-    // is within 256 of the current ledger.  This prevents replay of old
-    // transactions if this account is resurrected after it is deleted.
-    //
-    // We look at the account's Sequence rather than the transaction's
-    // Sequence in preparation for Tickets.
-    static constexpr std::uint32_t kSeqDelta{255};
-    if ((*sleAccount)[sfSequence] + kSeqDelta > ctx.view.seq())
-        return tecTOO_SOON;
-
-    // We don't allow an account to be deleted if
-    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
-    // current ledger. This is to prevent having duplicate NFTokenIDs after
-    // account re-creation.
-    //
-    // Without this restriction, duplicate NFTokenIDs can be reproduced when
-    // authorized minting is involved. Because when the minter mints a NFToken,
-    // the issuer's sequence does not change. So when the issuer re-creates
-    // their account and mints a NFToken, it is possible that the
-    // NFTokenSequence of this NFToken is the same as the one that the
-    // authorized minter minted in a previous ledger.
-    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSeqDelta >
-        ctx.view.seq())
-        return tecTOO_SOON;
-
-    // Verify that the account does not own any objects that would prevent
-    // the account from being deleted.
-    Keylet const ownerDirKeylet{keylet::ownerDir(account)};
-    if (dirIsEmpty(ctx.view, ownerDirKeylet))
-        return tesSUCCESS;
-
-    SLE::const_pointer sleDirNode{};
-    unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZero};
-
-    // Account has no directory at all.  This _should_ have been caught
-    // by the dirIsEmpty() check earlier, but it's okay to catch it here.
-    if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-        return tesSUCCESS;
-
-    std::uint32_t deletableDirEntryCount{0};
-    do
-    {
-        // Make sure any directory node types that we find are the kind
-        // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
-        if (!sleItem)
-        {
-            // Directory node has an invalid index.  Bail out.
-            // LCOV_EXCL_START
-            JLOG(ctx.j.fatal()) << "AccountDelete: directory node in ledger " << ctx.view.seq()
-                                << " has index to object that is missing: " << to_string(dirEntry);
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-
-        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
-
-        if (nonObligationDeleter(nodeType) == nullptr)
-            return tecHAS_OBLIGATIONS;
-
-        // We found a deletable directory entry.  Count it.  If we find too
-        // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > kMaxDeletableDirEntries)
-            return tefTOO_BIG;
-
-    } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-
-    return tesSUCCESS;
+    return checkAccountDeletable(ctx.view, sleAccount, dst, ctx.j);
 }
 
 TER
@@ -369,87 +484,7 @@ AccountDelete::doApply()
             return err;
     }
 
-    Keylet const ownerDirKeylet{keylet::ownerDir(accountID_)};
-    auto const ter = cleanupOnAccountDelete(
-        view(),
-        ownerDirKeylet,
-        [&](LedgerEntryType nodeType,
-            uint256 const& dirEntry,
-            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
-            if (auto deleter = nonObligationDeleter(nodeType))
-            {
-                TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};
-
-                return {result, SkipEntry::No};
-            }
-
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::AccountDelete::doApply : undeletable item not found "
-                "in preclaim");
-            JLOG(j_.error()) << "AccountDelete undeletable item not "
-                                "found in preclaim.";
-            return {tecHAS_OBLIGATIONS, SkipEntry::No};
-            // LCOV_EXCL_STOP
-        },
-        ctx_.journal);
-    if (!isTesSuccess(ter))
-        return ter;
-
-    // Transfer any XRP remaining after the fee is paid to the destination:
-    auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
-    (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
-    ctx_.deliver(remainingBalance);
-
-    if (src->isFieldPresent(sfSponsor))
-    {
-        auto const sponsorID = src->getAccountID(sfSponsor);
-        auto sponsorSle = view().peek(keylet::account(sponsorID));
-
-        if (!sponsorSle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
-
-        XRPL_ASSERT(
-            sponsoringAccountCount != 0,
-            "xrpl::AccountDelete::doApply : sponsoring account count is present");
-        if (sponsoringAccountCount == 0)
-        {
-            // sanity check
-            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
-            // present with a value of 0.
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        }
-        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
-        view().update(sponsorSle);
-
-        // Following line might look redundant, but without it, sfSponsor
-        // would end up remaining in after-ltAccountRoot during the
-        // InvariantCheck.
-        src->makeFieldAbsent(sfSponsor);
-    }
-
-    XRPL_ASSERT(
-        (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");
-
-    // If there's still an owner directory associated with the source account
-    // delete it.
-    if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
-    {
-        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(accountID_);
-        return tecHAS_OBLIGATIONS;
-    }
-
-    // Re-arm the password change fee if we can and need to.
-    if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
-        dst->clearFlag(lsfPasswordSpent);
-
-    view().update(dst);
-    view().erase(src);
-
-    return tesSUCCESS;
+    return applyAccountDelete(ctx_, src, dst, j_);
 }
 
 void

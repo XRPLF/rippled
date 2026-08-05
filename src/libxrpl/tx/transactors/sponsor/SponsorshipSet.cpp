@@ -164,50 +164,6 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
-deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
-{
-    if (!sle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const sponsorID = (*sle)[sfOwner];
-    auto const sponseeID = (*sle)[sfSponsee];
-
-    // The sponsor owns the Sponsorship object, so deletion releases the
-    // sponsor's owner reserve.
-    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
-    if (!sponsorAccSle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (!view.dirRemove(keylet::ownerDir(sponsorID), (*sle)[sfOwnerNode], sle->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsor.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-    if (!view.dirRemove(keylet::ownerDir(sponseeID), (*sle)[sfSponseeNode], sle->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsee.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    decreaseOwnerCountForObject(view, sponsorAccSle, sle, 1, j);
-
-    // Return any prefunded fee amount to the sponsor before erasing the object.
-    if (sle->isFieldPresent(sfFeeAmount))
-    {
-        (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
-        view.update(sponsorAccSle);
-    }
-
-    view.erase(sle);
-
-    return tesSUCCESS;
-}
-
 TER
 SponsorshipSet::doApply()
 {
@@ -232,7 +188,7 @@ SponsorshipSet::doApply()
         if (!sponsorshipSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        return deleteSponsorship(ctx_.view(), sponsorshipSle, ctx_.journal);
+        return deleteSponsorshipObject(ctx_.view(), sponsorshipSle, ctx_.journal);
     }
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];

@@ -1172,7 +1172,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     Delegation::NotDelegable,
     featureSponsor,
-    NoPriv,
+    MayDeleteAcct,
     ({
     {sfObjectID, SoeOptional},
     {sfSponsee, SoeOptional},

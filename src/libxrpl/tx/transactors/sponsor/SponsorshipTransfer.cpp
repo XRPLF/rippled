@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/account/AccountDelete.h>
 
 #include <bit>
 #include <cstdint>
@@ -95,11 +96,22 @@ SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
     return tfSponsorshipTransferMask;
 }
 
+XRPAmount
+SponsorshipTransfer::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Reaping deletes an account, so it costs one owner reserve like
+    // AccountDelete to keep account churn uneconomical. Other transfer flags
+    // use the normal base fee.
+    if (tx.isFlag(tfSponsorshipReap))
+        return calculateOwnerReserveFee(view, tx);
+    return Transactor::calculateBaseFee(view, tx);
+}
+
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
     static constexpr auto transferFlags =
-        tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
+        tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd | tfSponsorshipReap;
     if (std::popcount(ctx.tx.getFlags() & transferFlags) != 1)
     {
         JLOG(ctx.j.debug()) << "preflight: Only one SponsorshipTransfer flag can be set per tx.";
@@ -184,6 +196,37 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
         if (ctx.tx.isFieldPresent(sfSponsee) &&
             ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
+            return temMALFORMED;
+        }
+    }
+
+    if (ctx.tx.isFlag(tfSponsorshipReap))
+    {
+        // Reaping deletes an abandoned, under-reserved sponsored account. The
+        // sponsee is the target and the reaping sponsor is the tx sender, so no
+        // sfSponsor is supplied, the target must be a named account other than
+        // the sender, and no object may be specified (account-level only).
+        if (ctx.tx.isFieldPresent(sfSponsor))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsor must not be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.isFieldPresent(sfObjectID))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfObjectID must not be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSponsee))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsee must be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
         {
             JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
             return temMALFORMED;
@@ -289,6 +332,37 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         auto const sponsor = targetSle->getAccountID(*sponsorField);
         if (account != sponsor && account != sponseeID)
             return tecNO_PERMISSION;
+    }
+    else if (ctx.tx.isFlag(tfSponsorshipReap))
+    {
+        // Reaping introduces no new sponsor and is account-level only.
+        if (newSponsorSle || objectID.has_value())
+            return tecNO_PERMISSION;
+
+        // The target must be an account-level sponsored account.
+        if (!isSponsored)
+            return tecNO_PERMISSION;
+
+        // Only the account's current sponsor may reap it.
+        auto const sponsor = targetSle->getAccountID(*sponsorField);
+        if (account != sponsor)
+            return tecNO_SPONSOR_PERMISSION;
+
+        // Reaping is limited to a sponsee that cannot stand on its own reserve.
+        // A solvent sponsee is never reapable — the sponsor should release the
+        // sponsorship with tfSponsorshipEnd instead. Keeping its own reserve is
+        // the sponsee's defense against being reaped.
+        XRPAmount const balance = sponseeSle->getFieldAmount(sfBalance).xrp();
+        XRPAmount const ownReserve =
+            accountReserve(ctx.view, sponseeSle, ctx.j, {.accountCountDelta = 1});
+        if (balance >= ownReserve)
+            return tecNO_PERMISSION;
+
+        // The sponsee account must itself satisfy the deletion preconditions
+        // (no obligations, outside the sequence-replay window).
+        if (auto const ter = checkAccountDeletable(ctx.view, sponseeSle, sponsor, ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;
@@ -517,6 +591,21 @@ SponsorshipTransfer::doApply()
                     decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;  // LCOV_EXCL_LINE
+        }
+        else if (ctx_.tx.isFlag(tfSponsorshipReap))
+        {
+            // Reap the abandoned sponsee: delete its account, returning its
+            // residual XRP (and any prefunded sponsorship) to the sponsor. The
+            // account deletion unwinds the sfSponsor reserve sponsorship, so
+            // the sponsor's SponsoringAccountCount is released here.
+            auto const sponsorID = sponseeSle->getAccountID(sfSponsor);
+            auto sponsorSle = view().peek(keylet::account(sponsorID));
+            if (!sponsorSle)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            if (auto const ter = applyAccountDelete(ctx_, sponseeSle, sponsorSle, ctx_.journal);
+                !isTesSuccess(ter))
+                return ter;
         }
     }
 

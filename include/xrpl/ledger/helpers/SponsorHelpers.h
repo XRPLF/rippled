@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -200,5 +201,17 @@ getLedgerEntryOwnerCount(SLE const& sle);
  */
 SF_ACCOUNT const&
 getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner);
+
+/**
+ * Delete a Sponsorship (ltSPONSORSHIP) ledger object cleanly.
+ *
+ * Unlinks the object from both the sponsor's and sponsee's owner directories,
+ * releases the sponsor's owner reserve, refunds any prefunded sfFeeAmount to
+ * the sponsor, and erases the object. Shared by SponsorshipSet (tfDeleteObject)
+ * and AccountDelete's non-obligation deleter so a sponsored or sponsoring
+ * account can be deleted without its Sponsorship object blocking it.
+ */
+[[nodiscard]] TER
+deleteSponsorshipObject(ApplyView& view, SLE::ref sle, beast::Journal j);
 
 }  // namespace xrpl

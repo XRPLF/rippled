@@ -4368,27 +4368,60 @@ public:
         Account const sponsor("sponsor");
 
         {
-            // Delete Sponsor/Sponsee Account with ltSponsorship (tecHAS_OBLIGATIONS)
+            // The sponsee may delete its account even while a Sponsorship
+            // object exists: the object is torn down and its prefunded fee is
+            // refunded to the sponsor.
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), alice, bob, sponsor);
             env.close();
 
-            // set sponsor
+            // prefunded Sponsorship object between sponsor and alice
             env(sponsor::set(sponsor, 0, 100, XRP(100)),
                 sponsor::SponseeAcc(alice),
                 Ter(tesSUCCESS));
             env.close();
 
-            incLgrSeqForAccDel(env, sponsor);
+            auto const keylet = keylet::sponsorship(sponsor, alice);
+            BEAST_EXPECT(env.le(keylet));
+
+            incLgrSeqForAccDel(env, alice);
+
+            auto const requiredFee = drops(env.current()->fees().increment);
+            auto const sponsorBalBefore = env.balance(sponsor);
+            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::account(alice)));
+            BEAST_EXPECT(!env.le(keylet));  // Sponsorship object removed
+            // Prefunded fee refunded to the sponsor.
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
+        }
+
+        {
+            // The sponsor that owns the Sponsorship object may also delete its
+            // own account; the object is removed from both directories.
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Ter(tesSUCCESS));
+            env.close();
 
             auto const keylet = keylet::sponsorship(sponsor, alice);
-            auto const sponsorObj = env.le(keylet);
-            BEAST_EXPECT(sponsorObj);
+            BEAST_EXPECT(env.le(keylet));
 
-            // AccountDelete
+            incLgrSeqForAccDel(env, sponsor);
+
             auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
-            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::account(sponsor)));
+            BEAST_EXPECT(!env.le(keylet));  // Sponsorship object removed
+            // alice remains, no longer linked to the removed object.
+            BEAST_EXPECT(env.le(keylet::account(alice)));
         }
 
         {
@@ -4524,6 +4557,231 @@ public:
                 auto const sponsorSle = env.le(keylet::account(sponsor));
                 BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0);
             }
+        }
+    }
+
+    void
+    testReap()
+    {
+        testcase("Reap");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        // preflight: malformed reap transactions
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // Missing sfSponsee.
+            env(sponsor::transfer(sponsor, tfSponsorshipReap), Ter(temMALFORMED));
+
+            // sfSponsee equal to the account.
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(sponsor),
+                Ter(temMALFORMED));
+
+            // More than one transfer flag.
+            env(sponsor::transfer(sponsor, tfSponsorshipReap | tfSponsorshipEnd),
+                sponsor::SponseeAcc(alice),
+                Ter(temINVALID_FLAG));
+        }
+
+        // Reap succeeds on an abandoned, under-reserved sponsored account.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            // Create alice as a sponsored account holding a single drop.
+            env(pay(sponsor, alice, drops(1)), Txflags(tfSponsorCreatedAccount), Fee(XRP(1)));
+            env.close();
+
+            auto const aliceSle = env.le(keylet::account(alice));
+            BEAST_EXPECT(aliceSle && aliceSle->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+
+            // Cannot reap until the sponsee clears the sequence-replay window.
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(drops(env.current()->fees().increment)),
+                Ter(tecTOO_SOON));
+
+            incLgrSeqForAccDel(env, alice);
+
+            auto const reapFee = drops(env.current()->fees().increment);
+            auto const sponsorBalBefore = env.balance(sponsor);
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(reapFee),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // The account is gone and the sponsor's reserve is released.
+            BEAST_EXPECT(!env.le(keylet::account(alice)));
+            auto const sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoringAccountCount));
+            // The sponsor recovers the sponsee's residual drop, less the fee.
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore - reapFee + drops(1));
+        }
+
+        // A solvent sponsee can never be reaped — keeping its own reserve is
+        // the sponsee's defense.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            env(pay(sponsor, alice, XRP(10000)), Txflags(tfSponsorCreatedAccount));
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(drops(env.current()->fees().increment)),
+                Ter(tecNO_PERMISSION));
+
+            // The account is untouched and still sponsored.
+            auto const aliceSle = env.le(keylet::account(alice));
+            BEAST_EXPECT(aliceSle && aliceSle->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+        }
+
+        // Only the account's current sponsor may reap it.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            env(pay(sponsor, alice, drops(1)), Txflags(tfSponsorCreatedAccount), Fee(XRP(1)));
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+
+            // bob is not alice's sponsor.
+            env(sponsor::transfer(bob, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(drops(env.current()->fees().increment)),
+                Ter(tecNO_SPONSOR_PERMISSION));
+
+            BEAST_EXPECT(env.le(keylet::account(alice)));
+        }
+
+        // Reap also tears down a prefunded Sponsorship object for the sponsee,
+        // refunding its fee to the sponsor.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            env(pay(sponsor, alice, drops(1)), Txflags(tfSponsorCreatedAccount), Fee(XRP(1)));
+            env.close();
+
+            // Prefund a Sponsorship object for the sponsee.
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const sponsorship = keylet::sponsorship(sponsor, alice);
+            BEAST_EXPECT(env.le(sponsorship));
+
+            incLgrSeqForAccDel(env, alice);
+
+            auto const reapFee = drops(env.current()->fees().increment);
+            auto const sponsorBalBefore = env.balance(sponsor);
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(reapFee),
+                Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::account(alice)));
+            BEAST_EXPECT(!env.le(sponsorship));  // Sponsorship object removed
+            auto const sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoringAccountCount));
+            // Sponsor recovers the prefunded fee plus the residual drop.
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore - reapFee + XRP(100) + drops(1));
+        }
+
+        // With featureSponsor disabled the transaction type is unavailable.
+        {
+            Env env{*this, testableAmendments() - featureSponsor};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Ter(temDISABLED));
+        }
+
+        // Reap is account-level only; supplying an object id is malformed.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipReap, keylet::account(alice).key),
+                sponsor::SponseeAcc(alice),
+                Ter(temMALFORMED));
+        }
+
+        // A target that is not sponsored cannot be reaped.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(drops(env.current()->fees().increment)),
+                Ter(tecNO_PERMISSION));
+
+            BEAST_EXPECT(env.le(keylet::account(alice)));
+        }
+
+        // Reaping a sponsee that does not exist returns terNO_ACCOUNT.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);  // never funded
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipReap),
+                sponsor::SponseeAcc(alice),
+                Fee(drops(env.current()->fees().increment)),
+                Ter(terNO_ACCOUNT));
+        }
+
+        // A sponsor cannot pull back its reserve on an under-reserved sponsee
+        // without deleting it: tfSponsorshipEnd is rejected, so the account is
+        // never left as an unbacked, under-reserved zombie.
+        {
+            Env env{*this, testableAmendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            env(pay(sponsor, alice, drops(1)), Txflags(tfSponsorCreatedAccount), Fee(XRP(1)));
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd),
+                sponsor::SponseeAcc(alice),
+                Ter(tecINSUFFICIENT_RESERVE));
+
+            // Still sponsored — the reserve was not pulled back.
+            auto const aliceSle = env.le(keylet::account(alice));
+            BEAST_EXPECT(aliceSle && aliceSle->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
         }
     }
 
@@ -5453,6 +5711,7 @@ protected:
         testSponsorAccount();
 
         testAccountDelete();
+        testReap();
 
         testDelegatePermission();
         testDelegateBlockReserveSponsor();
