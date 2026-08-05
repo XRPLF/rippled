@@ -18,8 +18,8 @@
   )
 
   ;; Standard finish function
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     i32.const 1
   )
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

@@ -13,6 +13,7 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -85,6 +86,21 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZero};
 }
 
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Only require featureMPTokensV1 when the escrow amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+    {
+        if (!ctx.rules.enabled(featureMPTokensV1))
+            return false;
+    }
+
+    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
+        ctx.rules.enabled(featureSmartEscrow);
+}
+
 template <ValidIssueType T>
 static NotTEC
 escrowCreatePreflightHelper(PreflightContext const& ctx);
@@ -107,7 +123,7 @@ template <>
 NotTEC
 escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
+    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
@@ -121,20 +137,13 @@ XRPAmount
 EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
-    if (tx.isFieldPresent(sfFinishFunction))
+    if (tx.isFieldPresent(sfBytecode))
     {
         // 10 base fees for the transaction (1 is in
         // `Transactor::calculateBaseFee`), plus 5 drops per byte
-        txnFees += 9 * view.fees().base + 5 * tx[sfFinishFunction].size();
+        txnFees += 9 * view.fees().base + 5 * tx[sfBytecode].size();
     }
     return txnFees;
-}
-
-bool
-EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return (!ctx.tx.isFieldPresent(sfFinishFunction) && !ctx.tx.isFieldPresent(sfData)) ||
-        ctx.rules.enabled(featureSmartEscrow);
 }
 
 NotTEC
@@ -168,17 +177,17 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    if (ctx.tx.isFieldPresent(sfFinishFunction) && !ctx.tx.isFieldPresent(sfCancelAfter))
+    if (ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfCancelAfter))
         return temBAD_EXPIRATION;
 
     // In the absence of a FinishAfter, the escrow can be finished
     // immediately, which can be confusing. When creating an escrow,
     // we want to ensure that either a FinishAfter time is explicitly
     // specified or a completion condition is attached.
-    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] && !ctx.tx[~sfFinishFunction])
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] && !ctx.tx[~sfBytecode])
     {
         JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
-                               "Condition, or FinishFunction.";
+                               "Condition, or Bytecode.";
         return temMALFORMED;
     }
 
@@ -198,32 +207,32 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfData))
     {
-        if (!ctx.tx.isFieldPresent(sfFinishFunction))
+        if (!ctx.tx.isFieldPresent(sfBytecode))
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate with Data requires FinishFunction";
+            JLOG(ctx.j.debug()) << "EscrowCreate with Data requires Bytecode";
             return temMALFORMED;
         }
         auto const data = ctx.tx.getFieldVL(sfData);
-        if (data.size() > maxWasmDataLength)
+        if (data.size() > kMaxWasmDataLength)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
             return temMALFORMED;
         }
     }
 
-    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    if (ctx.tx.isFieldPresent(sfBytecode))
     {
         auto const fees(ctx.registry.get().getFees());
-        if (fees.extensionSizeLimit == 0 || fees.extensionComputeLimit == 0)
+        if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
         }
 
-        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.empty() || code.size() > fees.extensionSizeLimit)
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
+        if (code.empty() || code.size() > fees.bytecodeSizeLimit)
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size " << code.size();
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad size " << code.size();
             return temMALFORMED;
         }
         // actual validity of WASM code happens in `preflightSigValidated`
@@ -236,16 +245,16 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 NotTEC
 EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    if (ctx.tx.isFieldPresent(sfBytecode))
     {
-        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
         // basic checks happen in `preflight`
 
         HostFunctions mock(ctx.j);
         auto const re = preflightEscrowWasm(code, mock, escrowFunctionName);
         if (!isTesSuccess(re))
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
             return re;
         }
     }
@@ -269,7 +278,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    Issue const& issue = amount.get<Issue>();
+    auto const& issue = amount.get<Issue>();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
@@ -283,7 +292,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, issue.currency));
+    auto const sleRippleState = ctx.view.read(keylet::trustLine(account, issuer, issue.currency));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -346,7 +355,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecNO_PERMISSION;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -508,18 +517,35 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
-    auto const reserveToAdd = calculateAdditionalReserve(ctx_.tx[~sfFinishFunction]);
-
-    auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + reserveToAdd);
+    auto const reserveToAdd = calculateAdditionalReserve(ctx_.tx[~sfBytecode]);
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
-    if (balance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    // First check: whoever is on the hook for the new owner increment
+    // can cover it. When sponsored this hits the sponsor branch and
+    // validates the sponsor's reserve + remaining credit. When
+    // unsponsored this hits the source branch and validates the
+    // source's pre-lock balance against base + (currentOC+1)*increment.
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = reserveToAdd}, j_);
+        !isTesSuccess(ret))
+        return ret;
 
-    // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (balance < reserve + STAmount(amount).xrp())
+        // Second check (XRP escrow only): after locking the escrowed
+        // amount, the source must still meet its own reserve floor. This is
+        // always the source's own balance against the source's own reserve —
+        // the sponsor's reserve was already validated above, and a sponsor
+        // never covers the locked funds. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. ownerCountDelta differs by case:
+        // - sponsored:   0  — sponsor covers the new owner increment, so the
+        //                source only owes reserve for its current owners.
+        // - unsponsored: 1  — source owes reserve including the new increment.
+        auto const sourceReserve = accountReserve(
+            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+        if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
@@ -544,7 +570,7 @@ EscrowCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
-    (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
+    (*slep)[~sfBytecode] = ctx_.tx[~sfBytecode];
     (*slep)[~sfData] = ctx_.tx[~sfData];
 
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
@@ -613,16 +639,14 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, reserveToAdd, ctx_.journal);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, reserveToAdd, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }
 
 void
-EscrowCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+EscrowCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

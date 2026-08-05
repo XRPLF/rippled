@@ -167,10 +167,9 @@ public:
         for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
-            std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(beforeSorted[i.first]));
-            std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), cmpEp);
+            std::ranges::copy(*i.second, std::back_inserter(before[i.first]));
+            std::ranges::copy(*i.second, std::back_inserter(beforeSorted[i.first]));
+            std::ranges::sort(beforeSorted[i.first], cmpEp);
         }
 
         c.hops.shuffle();
@@ -180,10 +179,9 @@ public:
         for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
              ++i.first, ++i.second)
         {
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
-            std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(afterSorted[i.first]));
-            std::sort(afterSorted[i.first].begin(), afterSorted[i.first].end(), cmpEp);
+            std::ranges::copy(*i.second, std::back_inserter(after[i.first]));
+            std::ranges::copy(*i.second, std::back_inserter(afterSorted[i.first]));
+            std::ranges::sort(afterSorted[i.first], cmpEp);
         }
 
         // each hop bucket should contain the same items

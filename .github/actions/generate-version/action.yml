@@ -15,7 +15,7 @@ runs:
       shell: bash
       env:
         VERSION: ${{ github.ref_name }}
-      run: echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+      run: echo "VERSION=${VERSION}" >>"${GITHUB_ENV}"
 
     # When a tag is not pushed, then the version (e.g. 1.2.3-b0) is extracted
     # from the BuildInfo.cpp file and the shortened commit hash appended to it.
@@ -28,17 +28,17 @@ runs:
         echo 'Extracting version from BuildInfo.cpp.'
         VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
         if [[ -z "${VERSION}" ]]; then
-          echo 'Unable to extract version from BuildInfo.cpp.'
-          exit 1
+            echo 'Unable to extract version from BuildInfo.cpp.'
+            exit 1
         fi
 
         echo 'Appending shortened commit hash to version.'
         SHA='${{ github.sha }}'
         VERSION="${VERSION}+${SHA:0:7}"
 
-        echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+        echo "VERSION=${VERSION}" >>"${GITHUB_ENV}"
 
     - name: Output version
       id: version
       shell: bash
-      run: echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+      run: echo "version=${VERSION}" >>"${GITHUB_OUTPUT}"

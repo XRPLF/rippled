@@ -14,11 +14,11 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <exception>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -58,10 +58,10 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    if (wasmReturnCode_.has_value())
+    if (vmReturnCode_.has_value())
     {
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->setWasmReturnCode(*wasmReturnCode_);
+        view_->setVMReturnCode(*vmReturnCode_);
     }
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     view_->setGasUsed(gasUsed_);
@@ -77,11 +77,7 @@ ApplyContext::size()
 
 void
 ApplyContext::visit(
-    std::function<void(
-        uint256 const&,
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&)> const& func)
+    std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
 {
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }
@@ -111,13 +107,11 @@ ApplyContext::checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         // call each check's per-entry method
-        visit([&checkers](
-                  uint256 const& index,
-                  bool isDelete,
-                  std::shared_ptr<SLE const> const& before,
-                  std::shared_ptr<SLE const> const& after) {
-            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-        });
+        visit(
+            [&checkers](
+                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+            });
 
         // Note: do not replace this logic with a `...&&` fold expression.
         // The fold expression will only run until the first check fails (it
@@ -128,7 +122,7 @@ ApplyContext::checkInvariantsHelper(
             tx, result, fee, *view_, journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
 
         // call each check's finalizer to see that it passes
-        if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
+        if (!std::ranges::all_of(finalizers, [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
                                   << to_string(tx.getJson(JsonOptions::Values::None));

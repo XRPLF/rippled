@@ -1,8 +1,8 @@
 #include <stdint.h>
 
 int32_t float_from_uint(uint8_t const *, int32_t, uint8_t *, int32_t, int32_t);
-int32_t check_keylet(uint8_t const *, int32_t, uint8_t const *, int32_t,
-                     uint8_t *, int32_t);
+int32_t check_id(uint8_t const *, int32_t, uint8_t const *, int32_t, uint8_t *,
+                 int32_t);
 
 uint8_t e_data1[32 * 1024];
 uint8_t e_data2[32 * 1024];
@@ -31,10 +31,9 @@ int32_t test2()
   // Set up valid non-zero AccountID (20 bytes) at offset 10
   for (int i = 0; i < 20; i++)
     e_data2[10 + i] = i + 1;
-  // Call check_keylet with misaligned uint32 at &e_data2[1] to hit line 72 in
+  // Call check_id with misaligned uint32 at &e_data2[1] to hit line 72 in
   // HostFuncWrapper.cpp
-  int32_t result =
-      check_keylet(&e_data2[10], 20, &e_data2[1], 4, &e_data2[35], 32);
+  int32_t result = check_id(&e_data2[10], 20, &e_data2[1], 4, &e_data2[35], 32);
   // Return the misaligned value directly to validate it was read correctly (-1
   // if all 0xFF)
   return result >= 0 ? *((int32_t *)(&e_data2[36])) : result;

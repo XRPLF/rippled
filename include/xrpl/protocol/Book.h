@@ -2,16 +2,28 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/utility/base_from_member.hpp>
 
+#include <compare>
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <ostream>
+#include <string>
+
 namespace xrpl {
 
-/** Specifies an order book.
-    The order book is a pair of Issues called in and out.
-    @see Issue.
-*/
+/**
+ * Specifies an order book.
+ * The order book is a pair of Issues called in and out.
+ * @see Issue.
+ */
 class Book final : public CountedObject<Book>
 {
 public:
@@ -49,7 +61,9 @@ hash_append(Hasher& h, Book const& b)
 Book
 reversed(Book const& book);
 
-/** Equality comparison. */
+/**
+ * Equality comparison.
+ */
 /** @{ */
 [[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
@@ -58,14 +72,16 @@ operator==(Book const& lhs, Book const& rhs)
 }
 /** @} */
 
-/** Strict weak ordering. */
+/**
+ * Strict weak ordering.
+ */
 /** @{ */
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
-    if (auto const c{lhs.in <=> rhs.in}; c != 0)
+    if (auto const c{lhs.in <=> rhs.in}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
-    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     // Manually compare optionals
@@ -140,8 +156,8 @@ private:
     using issue_hasher = std::hash<xrpl::Issue>;
     using mptissue_hasher = std::hash<xrpl::MPTIssue>;
 
-    issue_hasher m_issue_hasher_;
-    mptissue_hasher m_mptissue_hasher_;
+    issue_hasher mIssueHasher_;
+    mptissue_hasher mMptissueHasher_;
 
 public:
     explicit hash() = default;
@@ -151,11 +167,11 @@ public:
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(m_issue_hasher_(issue));
+                value_type const result(mIssueHasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(m_mptissue_hasher_(issue));
+                value_type const result(mMptissueHasher_(issue));
                 return result;
             });
     }
@@ -170,8 +186,8 @@ private:
     using asset_hasher = std::hash<xrpl::Asset>;
     using uint256_hasher = xrpl::uint256::hasher;
 
-    asset_hasher issue_hasher_;
-    uint256_hasher uint256_hasher_;
+    asset_hasher issueHasher_;
+    uint256_hasher uint256Hasher_;
 
 public:
     hash() = default;
@@ -182,11 +198,11 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(issue_hasher_(value.in));
-        boost::hash_combine(result, issue_hasher_(value.out));
+        value_type result(issueHasher_(value.in));
+        boost::hash_combine(result, issueHasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, uint256_hasher_(*value.domain));
+            boost::hash_combine(result, uint256Hasher_(*value.domain));
 
         return result;
     }

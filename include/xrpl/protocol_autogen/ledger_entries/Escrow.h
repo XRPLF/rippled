@@ -33,7 +33,7 @@ public:
      * @brief Construct a Escrow ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Escrow(std::shared_ptr<SLE const> sle)
+    explicit Escrow(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -175,27 +175,27 @@ public:
     }
 
     /**
-     * @brief Get sfFinishFunction (SoeOptional)
+     * @brief Get sfBytecode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
-    getFinishFunction() const
+    getBytecode() const
     {
-        if (hasFinishFunction())
-            return this->sle_->at(sfFinishFunction);
+        if (hasBytecode())
+            return this->sle_->at(sfBytecode);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfFinishFunction is present.
+     * @brief Check if sfBytecode is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasFinishFunction() const
+    hasBytecode() const
     {
-        return this->sle_->isFieldPresent(sfFinishFunction);
+        return this->sle_->isFieldPresent(sfBytecode);
     }
 
     /**
@@ -411,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    EscrowBuilder(std::shared_ptr<SLE const> sle)
+    EscrowBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltESCROW)
         {
@@ -420,7 +420,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)
@@ -500,13 +502,13 @@ public:
     }
 
     /**
-     * @brief Set sfFinishFunction (SoeOptional)
+     * @brief Set sfBytecode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setFinishFunction(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
-        object_[sfFinishFunction] = value;
+        object_[sfBytecode] = value;
         return *this;
     }
 

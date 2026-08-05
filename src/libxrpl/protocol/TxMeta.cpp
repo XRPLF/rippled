@@ -23,16 +23,16 @@
 namespace xrpl {
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : transactionID_(txid), ledgerSeq_(ledger), nodes_(obj.getFieldArray(sfAffectedNodes))
+    : transactionID_(txid)
+    , ledgerSeq_(ledger)
+    , index_(obj.getFieldU32(sfTransactionIndex))
+    , result_(obj.getFieldU8(sfTransactionResult))
+    , nodes_([&obj] {
+        auto const affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
+        XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
+        return affectedNodes != nullptr ? *affectedNodes : obj.getFieldArray(sfAffectedNodes);
+    }())
 {
-    result_ = obj.getFieldU8(sfTransactionResult);
-    index_ = obj.getFieldU32(sfTransactionIndex);
-
-    auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes != nullptr)
-        nodes_ = *affectedNodes;
-
     setAdditionalFields(obj);
 }
 
@@ -197,8 +197,8 @@ TxMeta::getAsObject() const
     if (gasUsed_.has_value())
         metaData.setFieldU32(sfGasUsed, *gasUsed_);
 
-    if (wasmReturnCode_.has_value())
-        metaData.setFieldI32(sfWasmReturnCode, *wasmReturnCode_);
+    if (vmReturnCode_.has_value())
+        metaData.setFieldI32(sfVMReturnCode, *vmReturnCode_);
 
     return metaData;
 }

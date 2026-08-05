@@ -13,7 +13,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -31,8 +30,7 @@ ApplyViewImpl::apply(
     bool isDryRun,
     beast::Journal j)
 {
-    return items_.apply(
-        to, tx, ter, deliver_, parentBatchId, gasUsed_, wasmReturnCode_, isDryRun, j);
+    return items_.apply(to, tx, ter, deliver_, parentBatchId, gasUsed_, vmReturnCode_, isDryRun, j);
 }
 
 std::size_t
@@ -44,11 +42,9 @@ ApplyViewImpl::size()
 void
 ApplyViewImpl::visit(
     OpenView& to,
-    std::function<void(
-        uint256 const& key,
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after)> const& func)
+    std::function<
+        void(uint256 const& key, bool isDelete, SLE::const_ref before, SLE::const_ref after)> const&
+        func)
 {
     items_.visit(to, func);
 }

@@ -1,9 +1,20 @@
 #pragma once
 
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

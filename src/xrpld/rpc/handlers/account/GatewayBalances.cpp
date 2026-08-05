@@ -106,8 +106,8 @@ doGatewayBalances(RPC::JsonContext& context)
         // null is treated as a valid 0-sized array of hotwallet
         if (hw.isArrayOrNull())
         {
-            for (unsigned i = 0; i < hw.size(); ++i)
-                valid &= addHotWallet(hw[i]);
+            for (auto const& wallet : hw)
+                valid &= addHotWallet(wallet);
         }
         else if (hw.isString())
         {
@@ -144,7 +144,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     // Traverse the cold wallet's trust lines
     {
-        forEachItem(*ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+        forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);

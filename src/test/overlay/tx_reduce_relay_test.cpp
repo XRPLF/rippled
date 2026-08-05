@@ -81,10 +81,10 @@ private:
                 {
                     c.loadFromString(str.str());
 
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_ENABLE == enable);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_METRICS == metrics);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_MIN_PEERS == min);
-                    BEAST_EXPECT(c.TX_RELAY_PERCENTAGE == pct);
+                    BEAST_EXPECT(c.txReduceRelayEnable == enable);
+                    BEAST_EXPECT(c.txReduceRelayMetrics == metrics);
+                    BEAST_EXPECT(c.txReduceRelayMinPeers == min);
+                    BEAST_EXPECT(c.txRelayPercentage == pct);
                     if (success)
                     {
                         pass();
@@ -173,7 +173,7 @@ private:
     std::uint16_t rid_{1};
     shared_context context_;
     ProtocolVersion protocolVersion_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
 
 public:
     tx_reduce_relay_test() : context_(makeSslContext("")), protocolVersion_{1, 7}
@@ -232,9 +232,9 @@ private:
         testcase(test);
         jtx::Env env(*this);
         std::vector<std::shared_ptr<PeerTest>> peers;
-        env.app().config().TX_REDUCE_RELAY_ENABLE = txRREnabled;
-        env.app().config().TX_REDUCE_RELAY_MIN_PEERS = minPeers;
-        env.app().config().TX_RELAY_PERCENTAGE = relayPercentage;
+        env.app().config().txReduceRelayEnable = txRREnabled;
+        env.app().config().txReduceRelayMinPeers = minPeers;
+        env.app().config().txRelayPercentage = relayPercentage;
         PeerTest::init();
         lid_ = 0;
         rid_ = 0;

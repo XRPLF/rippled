@@ -14,5 +14,5 @@
     i32.eq
   )
 
-  (export "finish" (func $test_sign_ext))
+  (export "escrow_finish" (func $test_sign_ext))
 )

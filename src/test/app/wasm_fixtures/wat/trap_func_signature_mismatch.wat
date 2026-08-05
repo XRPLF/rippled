@@ -16,7 +16,7 @@
   ;; Put Type A function into Table[0]
   (elem (i32.const 0) $void_func)
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; Attempt to call Index 0, but CLAIM we expect Type B (result i32).
     ;; The function at Index 0 matches Type A.
     ;; TRAP: "indirect call type mismatch"
@@ -29,5 +29,5 @@
     call_indirect (type $type_i32)
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )
