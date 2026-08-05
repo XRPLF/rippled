@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
+namespace xrpl::proposal {
 
 /**
  * Whether the proposed transaction is itself a proposal transaction, which
@@ -71,4 +71,4 @@ proposalOwnerCount(STObject const& proposedTx)
                                                                 : kProposalOwnerCount;
 }
 
-}  // namespace xrpl
+}  // namespace xrpl::proposal

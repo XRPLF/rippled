@@ -48,7 +48,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
     // no batch inner transactions.
-    if (isProposalTx(proposedTx))
+    if (proposal::isProposalTx(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
         return temINVALID;
@@ -71,14 +71,14 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction is stored in its unsigned canonical form; the
     // ledger populates its signature fields as contributions arrive.
-    if (hasSignatureField(proposedTx))
+    if (proposal::hasSignatureField(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "carries signature fields.";
         return temBAD_SIGNER;
     }
 
-    if (!hasEmptySigningPubKey(proposedTx))
+    if (!proposal::hasEmptySigningPubKey(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
                                "SigningPubKey must be present and empty.";
@@ -193,7 +193,7 @@ TransactionProposalCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const proposedTx = ctx_.tx.getFieldObject(sfProposedTransaction);
-    std::uint32_t const ownerCount = proposalOwnerCount(proposedTx);
+    std::uint32_t const ownerCount = proposal::proposalOwnerCount(proposedTx);
 
     // The proposal holds a full transaction plus its collected signatures, so
     // it reserves more than a typical ledger entry (5 increments; 10 for a

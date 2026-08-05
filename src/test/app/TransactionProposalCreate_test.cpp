@@ -108,7 +108,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // The proposal reserves several owner increments against the proposer.
         // The target only owns the Ticket used by the proposed transaction.
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         BEAST_EXPECT(ownerCount(env, target) == 1);
     }
 
@@ -346,7 +346,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 alice, unsignedPayload(env, target, bob, firstTicketSeq), expiration));
             env.close();
             BEAST_EXPECT(env.le(keylet::txProposal(target.id(), firstTicketSeq)));
-            BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         }
 
         // The target and ticket already carry a proposal.
@@ -355,7 +355,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                     alice, unsignedPayload(env, target, bob, firstTicketSeq), expiration),
                 Ter(tecDUPLICATE));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         }
 
         // A different ticket of the same target is a different proposal.
@@ -364,7 +364,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 alice, unsignedPayload(env, target, bob, firstTicketSeq + 1), expiration));
             env.close();
             BEAST_EXPECT(env.le(keylet::txProposal(target.id(), firstTicketSeq + 1)));
-            BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
         }
 
         // The target account does not exist, so it can never sign.
@@ -373,7 +373,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 Ter(tecNO_TARGET));
             env.close();
             BEAST_EXPECT(!env.le(keylet::txProposal(carol.id(), 1)));
-            BEAST_EXPECT(ownerCount(env, alice) == 2 * kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
         }
     }
 
@@ -399,7 +399,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         // Fund alice just short of the reserve the proposal requires.
-        env.fund(env.current()->fees().accountReserve(kProposalOwnerCount, 1) - drops(1), alice);
+        env.fund(
+            env.current()->fees().accountReserve(proposal::kProposalOwnerCount, 1) - drops(1),
+            alice);
         env.close();
 
         std::uint32_t const expiration = (env.now() + 100s).time_since_epoch().count();
@@ -416,7 +418,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(proposalCreate(alice, proposedTx, expiration));
         env.close();
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), targetTicketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
     // A proposed Batch holds several inner transactions and the signatures of
@@ -467,7 +469,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(env.le(keylet::txProposal(target.id(), targetTicketSeq)));
-        BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
     }
 
     // A multi-account Batch is the primary motivating case (On-Chain Cosigner spec §10): its inner
@@ -533,7 +535,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // signatures are collected later through TransactionProposalSign.
         auto const stored = sle->getFieldObject(sfProposedTransaction);
         BEAST_EXPECT(!stored.isFieldPresent(sfBatchSigners));
-        BEAST_EXPECT(ownerCount(env, alice) == kBatchProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
     }
 
     // The target account must be able to authorize a transaction through a
