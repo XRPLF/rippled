@@ -413,7 +413,7 @@ public:
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
-            beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+            beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
             auto request = xrpl::makeRequest(

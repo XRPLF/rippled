@@ -62,7 +62,7 @@ public:
 
     using ref = std::shared_ptr<InfoSub> const&;
 
-    using Consumer = Resource::Consumer;
+    using Consumer = resource::Consumer;
 
 public:
     /**

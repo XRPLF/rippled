@@ -151,7 +151,7 @@ randomBigInt(std::uint8_t minSize = 1, std::uint8_t maxSize = 5)
     auto const numCoeff = numCoeffDist(eng);
     std::vector<std::uint64_t> coeffs;
     coeffs.reserve(numCoeff);
-    for (int i = 0; i < numCoeff; ++i)
+    for (auto i = 0uz; i < numCoeff; ++i)
     {
         coeffs.push_back(dist(eng));
     }
@@ -167,7 +167,7 @@ TEST(Base58Test, multiprecision)
     auto eng = randEngine();
     std::uniform_int_distribution<std::uint64_t> dist;
     std::uniform_int_distribution<std::uint64_t> dist1(1);
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
         if (d == 0u)
@@ -185,7 +185,7 @@ TEST(Base58Test, multiprecision)
         EXPECT_EQ(refMod.convert_to<std::uint64_t>(), mod);
         EXPECT_EQ(foundDiv, refDiv);
     }
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
         auto bigInt = multiprecision_utils::randomBigInt(/*minSize*/ 2);
@@ -204,7 +204,7 @@ TEST(Base58Test, multiprecision)
         auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_EQ(refAdd, foundAdd);
     }
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist1(eng);
         // Force overflow
@@ -221,7 +221,7 @@ TEST(Base58Test, multiprecision)
         auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_NE(refAdd, foundAdd);
     }
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist(eng);
         auto bigInt = multiprecision_utils::randomBigInt(/* minSize */ 2);
@@ -239,7 +239,7 @@ TEST(Base58Test, multiprecision)
         auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
         EXPECT_EQ(refMul, foundMul);
     }
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::uint64_t const d = dist1(eng);
         // Force overflow
@@ -265,7 +265,7 @@ TEST(Base58Test, fast_matches_ref)
 
         std::array<std::uint8_t, 64> b256ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b256Result;
-        for (int i = 0; i < 2; ++i)
+        for (auto i = 0uz; i < 2; ++i)
         {
             std::span const outBuf{b58ResultBuf[i]};
             if (i == 0)
@@ -297,7 +297,7 @@ TEST(Base58Test, fast_matches_ref)
             }
         }
 
-        for (int i = 0; i < 2; ++i)
+        for (auto i = 0uz; i < 2; ++i)
         {
             std::span const outBuf{b256ResultBuf[i].data(), b256ResultBuf[i].size()};
             if (i == 0)
@@ -339,7 +339,7 @@ TEST(Base58Test, fast_matches_ref)
 
         std::array<std::uint8_t, 64> b256ResultBuf[2];
         std::array<std::span<std::uint8_t>, 2> b256Result;
-        for (int i = 0; i < 2; ++i)
+        for (auto i = 0uz; i < 2; ++i)
         {
             std::span const outBuf{b58ResultBuf[i].data(), b58ResultBuf[i].size()};
             if (i == 0)
@@ -370,7 +370,7 @@ TEST(Base58Test, fast_matches_ref)
             }
         }
 
-        for (int i = 0; i < 2; ++i)
+        for (auto i = 0uz; i < 2; ++i)
         {
             std::span const outBuf{b256ResultBuf[i].data(), b256ResultBuf[i].size()};
             if (i == 0)
@@ -425,7 +425,7 @@ TEST(Base58Test, fast_matches_ref)
 
     // test with random data
     constexpr std::size_t kIters = 100000;
-    for (int i = 0; i < kIters; ++i)
+    for (auto i = 0uz; i < kIters; ++i)
     {
         std::array<std::uint8_t, 128> b256DataBuf{};
         auto const [tokType, b256Data] = randomB256TestData(b256DataBuf);

@@ -30,6 +30,7 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
+        "fast_float/8.2.10",
         "grpc/1.81.1",
         "libarchive/3.8.7",
         "nudb/2.0.9",
@@ -149,7 +150,7 @@ class Xrpl(ConanFile):
         # OpenTelemetry C++ SDK for distributed tracing (optional).
         # Provides OTLP/HTTP exporter, batch span processor, and trace API.
         if self.options.telemetry:
-            self.requires("opentelemetry-cpp/1.26.0")
+            self.requires("opentelemetry-cpp/1.28.0")
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
@@ -218,6 +219,7 @@ class Xrpl(ConanFile):
             "boost::thread",
             "date::date",
             "ed25519::ed25519",
+            "fast_float::fast_float",
             "grpc::grpc++",
             "libarchive::libarchive",
             "lz4::lz4",
