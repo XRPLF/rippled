@@ -67,7 +67,7 @@ repos:
       - id: cargo-fmt
         name: cargo fmt
         entry: cargo fmt --manifest-path crates/Cargo.toml --all
-        language: rust
+        language: system
         types: [rust]
         pass_filenames: false # rustfmt formats the whole workspace
 
