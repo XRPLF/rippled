@@ -736,12 +736,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .err = temMALFORMED,
             });
 
-            // Cannot set auditor key without issuer key
-            mptAlice.set({
-                .account = alice,
-                .auditorPubKey = mptAlice.getPubKey(alice),
-                .err = temMALFORMED,
-            });
+            // Note: "auditor key without issuer key" (temMALFORMED before
+            // ConfidentialKeyRotation) is covered in ConfidentialKeyRotation_test
 
             // Cannot set Holder and issuer Keys in the same transaction
             mptAlice.set({
@@ -787,9 +783,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // Cannot update issuer public key once set
+        // Cannot update issuer public key once set (pre-ConfidentialKeyRotation behavior)
         {
-            Env env{*this, features};
+            Env env{*this, features - featureConfidentialKeyRotation};
             Account const alice("alice");
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
@@ -819,8 +815,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Cannot update issuer and auditor public keys once set
         // Note: trying to set only auditor key fails in preflight (temMALFORMED)
         // so we must provide both keys, which fails on issuer key check first
+        // (pre-ConfidentialKeyRotation behavior)
         {
-            Env env{*this, features};
+            Env env{*this, features - featureConfidentialKeyRotation};
             Account const alice("alice");
             Account const bob("bob");
             Account const auditor("auditor");
@@ -900,8 +897,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         }
 
         // Set issuer key first, then auditor key in a separate tx
+        // (pre-ConfidentialKeyRotation behavior)
         {
-            Env env{*this, features};
+            Env env{*this, features - featureConfidentialKeyRotation};
             Account const alice("alice");
             Account const auditor("auditor");
             MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
