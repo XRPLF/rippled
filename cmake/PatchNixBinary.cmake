@@ -1,26 +1,37 @@
 #[===================================================================[
    Patch executables to run in non-Nix environments.
 
-   The Nix-based CI image links binaries against an ELF interpreter (loader)
-   that lives in the Nix store, so the resulting binaries don't run elsewhere
-   (including once installed from the .deb package). `patch_nix_binary` adds a
-   POST_BUILD step that resets the interpreter to the system default loader and
-   drops the rpath.
+   The Nix toolchain links binaries against an ELF interpreter (loader)
+   that lives in the Nix store, so the resulting binaries don't run elsewhere.
+   `patch_nix_binary` adds a POST_BUILD step that resets the interpreter
+   to the system default loader and drops the rpath.
 
-   This is only active inside the Nix-based image, detected by the presence of
-   /tmp/loader-path.sh (shipped by that image, resolves the default loader). It
-   is skipped for sanitizer builds, whose runtime libraries are resolved through
-   the rpath. Everywhere else `patch_nix_binary` is a no-op.
+   This runs by default for Nix-toolchain builds (determined by whether the compiler resolves under /nix/store/).
+   Those builds are where binaries get a Nix-store loader.
+   It is opted out of by setting the XRPLD_NO_PATCH_NIX_BINARY environment variable —
+   the plain Nix dev shells set it, since their binaries link a newer glibc
+   and must not be retargeted to the system loader.
+
+   Non-Nix builds (a system compiler, already using the system loader) and sanitizer builds
+   (runtime libraries resolved through the rpath) are skipped too.
+   Everywhere else `patch_nix_binary` is a no-op.
+
+   The default loader is resolved by bin/default-loader-path.sh.
 #]===================================================================]
 
 include_guard(GLOBAL)
 
 include(CompilationEnv)
 
-# Provided by the Nix-based CI image; prints the system default ELF loader path.
-set(_loader_path_script "/tmp/loader-path.sh")
+# Resolves the system default ELF loader path for the current architecture.
+set(_loader_path_script "${CMAKE_SOURCE_DIR}/bin/default-loader-path.sh")
 
-if(is_linux AND NOT SANITIZERS_ENABLED AND EXISTS "${_loader_path_script}")
+if(
+    is_linux
+    AND NOT SANITIZERS_ENABLED
+    AND is_nix_compiler
+    AND NOT DEFINED ENV{XRPLD_NO_PATCH_NIX_BINARY}
+)
     execute_process(
         COMMAND "${_loader_path_script}"
         OUTPUT_VARIABLE DEFAULT_LOADER_PATH
