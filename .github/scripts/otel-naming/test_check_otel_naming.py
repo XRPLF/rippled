@@ -17,6 +17,7 @@ filenames, OTel-standard keys, and metric labels — is the subtlest.
 import contextlib
 import importlib.util
 import io
+import json
 import shutil
 import tempfile
 import unittest
@@ -809,6 +810,133 @@ class RuleDDashboards(unittest.TestCase):
         self.assertEqual(
             self._run('"expr": "x by (span.not_a_key)"', {"command"}),
             ["span.not_a_key"],
+        )
+
+    # ----- log-datasource (Loki/LogQL) exemption -----
+
+    @staticmethod
+    def _dashboard(panels):
+        """Serialize a minimal well-formed dashboard around the given panels."""
+        return json.dumps({"panels": panels})
+
+    @staticmethod
+    def _panel(ds_type, expr):
+        return {
+            "type": "timeseries",
+            "datasource": {"type": ds_type, "uid": "U1"},
+            "targets": [{"datasource": {"type": ds_type, "uid": "U1"}, "expr": expr}],
+        }
+
+    def test_loki_query_labels_exempt(self):
+        # LogQL labels come from a collector regex_parser capture or an in-query
+        # `| regexp` stage, so they have no L1/L6 source and must not be flagged.
+        expr = 'sum by (partition, severity) ({service_name="xrpld"} | regexp `(?P<state>\\w+)`)'
+        self.assertEqual(
+            self._run(self._dashboard([self._panel("loki", expr)]), {"command"}), []
+        )
+
+    def test_prometheus_query_still_checked_in_same_file(self):
+        # The exemption is per query, not per file: a Prometheus panel beside a
+        # Loki one is still validated.
+        panels = [
+            self._panel("loki", 'sum by (partition) ({service_name="xrpld"})'),
+            self._panel("prometheus", "sum by (bogus_label) (rate(x[5m]))"),
+        ]
+        self.assertEqual(
+            self._run(self._dashboard(panels), {"command"}), ["bogus_label"]
+        )
+
+    def test_target_inherits_panel_datasource(self):
+        # A target with no datasource of its own inherits the panel's, so its
+        # LogQL labels are still exempt.
+        panel = {
+            "type": "timeseries",
+            "datasource": {"type": "loki", "uid": "U1"},
+            "targets": [{"expr": 'sum by (partition) ({service_name="xrpld"})'}],
+        }
+        self.assertEqual(self._run(self._dashboard([panel]), {"command"}), [])
+
+    def test_loki_exemption_does_not_leak_to_sibling_panel(self):
+        # A Loki panel must not make a later panel's datasource-less query
+        # exempt -- inheritance flows down the tree, never sideways.
+        panels = [
+            self._panel("loki", 'sum by (partition) ({service_name="xrpld"})'),
+            {"type": "timeseries", "targets": [{"expr": "sum by (leaked_label) (x)"}]},
+        ]
+        self.assertEqual(
+            self._run(self._dashboard(panels), {"command"}), ["leaked_label"]
+        )
+
+    def test_nested_row_panel_is_walked(self):
+        # Panels nested inside a collapsed row must still be checked.
+        row = {
+            "type": "row",
+            "panels": [self._panel("prometheus", "sum by (nested_bogus) (x)")],
+        }
+        self.assertEqual(
+            self._run(self._dashboard([row]), {"command"}), ["nested_bogus"]
+        )
+
+    def test_traceql_intrinsics_not_flagged(self):
+        # `name` is the span-name intrinsic and `resource.service.instance.id`
+        # strips to a dotted service-identity key; neither is in *SpanNames.h.
+        expr = '{name="consensus.accept" && resource.service.instance.id=~"$node"}'
+        self.assertEqual(
+            self._run(self._dashboard([self._panel("tempo", expr)]), {"command"}), []
+        )
+
+    def test_malformed_json_falls_back_to_raw_scan(self):
+        # A fragment cannot be attributed to a datasource, so every query is
+        # checked rather than silently skipped.
+        self.assertEqual(
+            self._run('"expr": "sum by (fragment_bogus) (x)"', {"command"}),
+            ["fragment_bogus"],
+        )
+
+
+class PromotedResourceLabels(unittest.TestCase):
+    """L2: resource attrs the collector promotes onto metric datapoints."""
+
+    def _run(self, collector_text):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "docker" / "telemetry" / "otel-collector-config.yaml",
+                collector_text,
+            )
+            return chk.promoted_resource_labels(d)
+        finally:
+            shutil.rmtree(d)
+
+    def test_both_forms_returned(self):
+        # The prometheus exporter rewrites dots to underscores, and TraceQL uses
+        # the dotted form, so a listed key must validate either way.
+        labels = self._run(
+            "    resource_metrics_key_attributes:\n"
+            "      - service.instance.id\n"
+            "      - deployment.environment\n"
+            "      - xrpl.network.type\n"
+        )
+        self.assertIn("deployment_environment", labels)
+        self.assertIn("deployment.environment", labels)
+        self.assertIn("xrpl_network_type", labels)
+
+    def test_block_ends_at_next_key(self):
+        # A sibling key ends the list; its values must not become labels.
+        labels = self._run(
+            "    resource_metrics_key_attributes:\n"
+            "      - deployment.environment\n"
+            "    histogram:\n"
+            "      unit: ms\n"
+        )
+        self.assertIn("deployment_environment", labels)
+        self.assertNotIn("unit", labels)
+        self.assertNotIn("ms", labels)
+
+    def test_absent_config_returns_empty(self):
+        # Presence-gated, like every other rule input.
+        self.assertEqual(
+            chk.promoted_resource_labels(Path(tempfile.gettempdir()) / "nope"), set()
         )
 
 

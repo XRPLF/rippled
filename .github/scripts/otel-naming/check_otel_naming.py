@@ -45,7 +45,8 @@ Layers
                  include/**
   L2 collector : docker/telemetry/otel-collector-config.yaml   (spanmetrics dims)
   L3 tempo     : docker/telemetry/tempo.yaml                    (span filter tags)
-  L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels)
+  L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels;
+                 Loki/LogQL queries exempt -- see LOG_QUERY_DATASOURCES)
   L5 runbook   : docs/telemetry-runbook.md                      (attr tables)
   L6 metrics   : MetricsRegistry.cpp instrument labels          (native-metric
                  label keys, a valid dashboard-label source besides L1)
@@ -65,7 +66,11 @@ Rules (each FAILS the build, when its inputs are present)
   C  Every tempo span-filter tag exists in the L1 key set.
   D  Every dashboard label resolves to an L1 span attribute, an L6
      native-metric label, or a builtin. TraceQL `span.`/`resource.` scope
-     prefixes are stripped before the L1 lookup.
+     prefixes are stripped before the L1 lookup. Log-datasource (Loki/LogQL)
+     queries are exempt: their labels are minted by collector `regex_parser`
+     captures or an in-query `| regexp` stage, so they have no L1/L6 source to
+     resolve against (see LOG_QUERY_DATASOURCES). The exemption is per QUERY,
+     not per file, so a mixed dashboard still has its PromQL panels checked.
   E  No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the
      L1 resource attrs xrpl.network.* and the EXTERNAL_INFRA_LABELS dotted
      form -- xrpl.work.item/.branch/.node.role -- may be dotted). Span names,
@@ -84,6 +89,7 @@ Exit code is non-zero if any present-and-enforced rule finds a violation.
 Warnings never change the exit code.
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -863,6 +869,100 @@ EXTERNAL_INFRA_LABELS = {
 }
 
 
+# Datasource types whose query language draws its label names from the log
+# stream at query time rather than from anything this repo's OTel code emits.
+#
+# A LogQL label has a third provenance Rule D cannot model: it is minted either
+# by the collector's `regex_parser` named capture groups (partition, severity —
+# see otel-collector-config.yaml) or by a `| regexp` stage inside the query
+# itself (action, pk, state, mode, phase, jobname, ip, pubkey). Both create the
+# label at ingest/query time, so no L1 (*SpanNames.h) or L6 (MetricsRegistry)
+# lookup can ever resolve them — checking them against those layers reports a
+# violation for a label that is correct by construction.
+#
+# This skips the QUERY, not the file: a dashboard mixing Prometheus and Loki
+# panels still has its Prometheus panels validated.
+LOG_QUERY_DATASOURCES = {"loki"}
+
+# JSON keys that hold a query string (`expr` on panel targets, `query` on
+# template variables).
+QUERY_KEYS = ("expr", "query")
+
+
+def datasource_type(node: object) -> Optional[str]:
+    """Return the lowercased `datasource.type` of a dashboard node, if any.
+
+    Grafana writes the datasource either as an object (`{"type": "loki",
+    "uid": "..."}`) or, on template variables, as a bare uid string. Only the
+    object form carries the type, which is what identifies the query language.
+    """
+    if isinstance(node, dict):
+        ds = node.get("datasource")
+        if isinstance(ds, dict):
+            ds_type = ds.get("type")
+            if isinstance(ds_type, str):
+                return ds_type.lower()
+    return None
+
+
+def iter_dashboard_queries(node: object, inherited: Optional[str] = None):
+    """Yield `(query_string, datasource_type)` for every query in a dashboard.
+
+    `datasource_type` is the query's own datasource when it declares one, else
+    the nearest enclosing one (a panel's datasource covers its targets), else
+    None. Walks the whole tree so panels nested inside collapsed rows are not
+    missed.
+    """
+    if isinstance(node, dict):
+        current = datasource_type(node) or inherited
+        for key in QUERY_KEYS:
+            value = node.get(key)
+            if isinstance(value, str) and value:
+                yield value, current
+        for value in node.values():
+            yield from iter_dashboard_queries(value, current)
+    elif isinstance(node, list):
+        for value in node:
+            yield from iter_dashboard_queries(value, inherited)
+
+
+def promoted_resource_labels(root: Path) -> Set[str]:
+    """Return resource attributes the collector promotes to metric labels.
+
+    The spanmetrics connector's `resource_metrics_key_attributes` lists the
+    resource attributes copied onto every derived metric datapoint, where the
+    prometheus exporter rewrites dots to underscores. So `deployment.environment`
+    in the collector config becomes the `deployment_environment` label a
+    dashboard filters on. Both forms are returned: the underscore form for
+    PromQL, the dotted form for TraceQL `resource.<key>` references.
+
+    Derived from the config rather than hardcoded, so adding a key there is
+    picked up automatically -- the same no-allowlist principle as Rules B and C.
+    """
+    path = root / "docker" / "telemetry" / "otel-collector-config.yaml"
+    if not path.is_file():
+        return set()
+    try:
+        text = read_source(path)
+    except OSError:
+        return set()
+    labels: Set[str] = set()
+    in_block = False
+    for line in text.splitlines():
+        if re.search(r"\bresource_metrics_key_attributes\s*:", line):
+            in_block = True
+            continue
+        if in_block:
+            m = re.match(r"\s*-\s*([A-Za-z0-9_.]+)\s*$", line)
+            if m:
+                key = m.group(1)
+                labels.add(key.replace(".", "_"))
+                labels.add(key)
+            elif line.strip() and not line.lstrip().startswith("-"):
+                in_block = False
+    return labels
+
+
 def run_rule_d_dashboards(
     root: Path, l1_keys: Set[str], metric_labels: Set[str], report: Report
 ) -> None:
@@ -886,23 +986,59 @@ def run_rule_d_dashboards(
         "job",
         "job_type",  # standard Prometheus label for job-queue metrics
         "instance",
+        # TraceQL intrinsics: fields of the span itself rather than attributes,
+        # so they have no *SpanNames.h entry. `name` is the span name, matched
+        # as `{name="consensus.accept"}`.
+        "name",
+        "duration",
+        "kind",
+        # Dotted form of the service identity, as TraceQL writes it
+        # (`resource.service.instance.id` -> stripped to `service.instance.id`).
+        "service.instance.id",
+        "service.name",
+        "service.version",
     }
     # A dashboard label is valid if it is a span attribute (L1), a native-metric
-    # label (L6), a Prometheus/Grafana builtin, or an external-infra identity
-    # label (EXTERNAL_INFRA_LABELS).
-    valid = l1_keys | metric_labels | builtins | EXTERNAL_INFRA_LABELS
+    # label (L6), a resource attribute the collector promotes onto metrics (L2),
+    # a Prometheus/Grafana/TraceQL builtin, or an external-infra identity label
+    # (EXTERNAL_INFRA_LABELS).
+    valid = (
+        l1_keys
+        | metric_labels
+        | promoted_resource_labels(root)
+        | builtins
+        | EXTERNAL_INFRA_LABELS
+    )
     found = False
+    checked = 0
+    skipped_log_queries = 0
     for f in files:
         try:
             text = read_source(f)
         except OSError:
             continue
-        # PromQL `sum by (a, b)` and `{label="..."}` references.
+        # Parse so each query can be attributed to its datasource. Anything that
+        # is not a well-formed dashboard object falls back to scanning the raw
+        # text, which cannot attribute a datasource and so checks every query.
+        # JSON validity itself is already enforced by the prettier pre-commit
+        # hook, so this is a fallback and not a silent pass.
+        try:
+            queries = list(iter_dashboard_queries(json.loads(text)))
+        except ValueError:
+            queries = [(text, None)]
         labels: Set[str] = set()
-        for m in re.finditer(r"by\s*\(([^)]*)\)", text):
-            labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
-        for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\"", text):
-            labels.add(m.group(1))
+        for query, ds_type in queries:
+            if ds_type in LOG_QUERY_DATASOURCES:
+                skipped_log_queries += 1
+                continue
+            checked += 1
+            # PromQL `sum by (a, b)` and `{label="..."}` references. The
+            # raw-text fallback still carries JSON's backslash-escaped quotes,
+            # so accept an optional backslash before the quote.
+            for m in re.finditer(r"by\s*\(([^)]*)\)", query):
+                labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
+            for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\\?\"", query):
+                labels.add(m.group(1))
         for lbl in sorted(labels):
             # Strip a TraceQL scope prefix (span./resource./...) — the bare
             # attribute is what must resolve against L1.
@@ -917,7 +1053,10 @@ def run_rule_d_dashboards(
                 "must exist in L1, a metric label, or be a builtin",
             )
     if not found:
-        report.ok(f"D: dashboard PromQL labels all resolve ({len(files)} file(s))")
+        note = f"D: dashboard PromQL labels all resolve ({len(files)} file(s), {checked} query(s)"
+        if skipped_log_queries:
+            note += f", {skipped_log_queries} log query(s) skipped"
+        report.ok(note + ")")
 
 
 def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
