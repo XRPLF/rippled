@@ -32,7 +32,7 @@
  *    |  |                                                  | |
  *    |  |  +---------------------------------------------+ | |
  *    |  |  | rpc.command.{name}                          | | |
- *    |  |  | RPC::callMethod()                           | | |
+ *    |  |  | rpc::callMethod()                           | | |
  *    |  |  | attrs: command, version, rpc_role, rpc_status | | |
  *    |  |  +---------------------------------------------+ | |
  *    |  +--------------------------------------------------+ |
@@ -60,7 +60,7 @@
  *    |                                                       |
  *    |  +--------------------------------------------------+ |
  *    |  | rpc.command.{name}                               | |
- *    |  | RPC::callMethod()                                | |
+ *    |  | rpc::callMethod()                                | |
  *    |  | attrs: command, version, rpc_role, rpc_status     | |
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+
@@ -81,7 +81,7 @@
  *
  *    +-------------------------------------------------------+
  *    | rpc.command.{name} (error: too_busy/unknown/etc)       |
- *    | RPC::doCommand() — fillHandler() rejection             |
+ *    | rpc::doCommand() — fillHandler() rejection             |
  *    +-------------------------------------------------------+
  *
  *  gRPC path (see GrpcSpanNames.h for constants):

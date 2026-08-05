@@ -1224,7 +1224,7 @@ private:
      * MetricsRegistry::startAsyncGauges() for the full list.
      */
     void
-    startTelemetryGauges();
+    startTelemetryGauges() const;
 
     std::shared_ptr<Ledger>
     getLastFullLedger();
@@ -1681,7 +1681,7 @@ ApplicationImp::startTelemetry() const
 }
 
 void
-ApplicationImp::startTelemetryGauges()
+ApplicationImp::startTelemetryGauges() const
 {
     if (metricsRegistry_)
         metricsRegistry_->startAsyncGauges();
