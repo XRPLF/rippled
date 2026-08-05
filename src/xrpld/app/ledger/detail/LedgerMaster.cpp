@@ -1042,8 +1042,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
-                    higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
+                    higherVersionCount += build_info::isNewerVersion(version) ? 1 : 0;
+                    xrpldCount += build_info::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
@@ -2088,21 +2088,21 @@ LedgerMaster::makeFetchPack(
     if (!have)
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
         JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger open");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->header().seq < getEarliestFetch())
     {
         JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger early");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2112,7 +2112,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
                               << "don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger no parent");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger no parent");
         return;
     }
 
