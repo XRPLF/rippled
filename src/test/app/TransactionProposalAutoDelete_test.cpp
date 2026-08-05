@@ -629,8 +629,8 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
-        Account const spons{"sponsor"};
-        env.fund(XRP(10000), alice, target, bob, spons);
+        Account const payer{"sponsor"};
+        env.fund(XRP(10000), alice, target, bob, payer);
         env.close();
 
         std::uint32_t const ticketSeq = env.seq(target) + 1;
@@ -645,8 +645,8 @@ struct TransactionProposalAutoDelete_test : public beast::unit_test::Suite
         env(pay(target, bob, XRP(1)),
             ticket::Use(ticketSeq),
             Fee(XRP(1)),
-            sponsor::As(spons, spfSponsorFee),
-            Sig(sfSponsorSignature, spons));
+            sponsor::As(payer, spfSponsorFee),
+            Sig(sfSponsorSignature, payer));
         env.close();
 
         BEAST_EXPECT(!env.le(keylet::txProposal(target.id(), ticketSeq)));
