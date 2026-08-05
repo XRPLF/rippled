@@ -17,6 +17,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -36,12 +37,16 @@
 #include <soci/session.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <limits>
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
+#include <ratio>
 #include <string>
 #include <thread>
 #include <utility>
@@ -51,6 +56,7 @@ namespace xrpl::test {
 
 class SHAMapStore_test : public beast::unit_test::Suite
 {
+protected:
     static auto const kDeleteInterval = 8;
 
     static auto
@@ -1240,6 +1246,145 @@ public:
         bfs::remove_all(root);
     }
 
+protected:
+    static uint256
+    benchHash(std::uint32_t id)
+    {
+        uint256 h;
+        std::memcpy(h.begin(), &id, sizeof(id));
+        return h;
+    }
+
+    struct EvacStats
+    {
+        // Nodes copied forward out of retiring generations (the write cost the
+        // generational design exists to reduce).
+        std::uint64_t evacuated = 0;
+        std::uint64_t retirements = 0;
+        double millis = 0;
+    };
+
+    // Drive the exact production evacuation pattern against a ring with the given
+    // budget: a cold working set written once, fresh churn every interval, and during
+    // each retire window a fetch of every live node (what visitNodes(copyNode) does).
+    // Copy-forwards happen only for nodes served by the retiring generation, so the
+    // returned volume is the design's real re-store cost.
+    EvacStats
+    runEvacuationModel(
+        jtx::Env& env,
+        std::string const& prefix,
+        std::size_t budget,
+        std::size_t rotations,
+        std::uint32_t coldCount,
+        std::uint32_t churnPerRotation)
+    {
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+        auto const noop = [](std::vector<std::string> const&) {};
+
+        std::vector<std::shared_ptr<node_store::Backend>> generations;
+        generations.emplace_back(makeBackendRotating(env, scheduler, prefix + "_g0"));
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
+            scheduler, 4, std::move(generations), nscfg, env.app().getJournal("NodeStoreTest"));
+        node_store::Database& db = *dbr;
+
+        auto const storeId = [&](std::uint32_t id) {
+            Blob blob(8, static_cast<std::uint8_t>(id));
+            db.store(NodeObjectType::AccountNode, std::move(blob), benchHash(id), 0);
+        };
+        auto const fetchId = [&](std::uint32_t id) {
+            return db.fetchNodeObject(
+                       benchHash(id), 0, node_store::FetchType::Synchronous, false) != nullptr;
+        };
+
+        // The cold working set: written once, never modified, must survive forever.
+        for (std::uint32_t i = 0; i < coldCount; ++i)
+            storeId(i);
+
+        EvacStats stats;
+        auto const start = std::chrono::steady_clock::now();
+        std::uint32_t churnId = 1u << 24;
+        std::size_t gen = 1;
+        for (std::size_t r = 0; r < rotations; ++r)
+        {
+            // This interval's churn: new versions that supersede last interval's.
+            std::vector<std::uint32_t> churn;
+            churn.reserve(churnPerRotation);
+            for (std::uint32_t c = 0; c < churnPerRotation; ++c)
+            {
+                storeId(churnId);
+                churn.push_back(churnId++);
+            }
+
+            dbr->advance(
+                makeBackendRotating(env, scheduler, prefix + "_g" + std::to_string(gen++)), noop);
+
+            while (dbr->generationCount() > budget)
+            {
+                dbr->beginRetire();
+                // Evacuation walk: every live node (cold set + current churn).
+                for (std::uint32_t i = 0; i < coldCount; ++i)
+                    fetchId(i);
+                for (auto const id : churn)
+                    fetchId(id);
+                stats.evacuated += dbr->copyForwardCount();
+                ++stats.retirements;
+                dbr->retireOldest(noop);
+                dbr->endRetire();
+            }
+        }
+        stats.millis =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start)
+                .count();
+
+        // Retention: the entire cold set is still fetchable after every retirement.
+        std::uint32_t missing = 0;
+        for (std::uint32_t i = 0; i < coldCount; ++i)
+        {
+            if (!fetchId(i))
+                ++missing;
+        }
+        BEAST_EXPECT(missing == 0);
+
+        return stats;
+    }
+
+    void
+    testEvacuationScaling()
+    {
+        // The quantitative claim the feature rests on: an evacuated cold node is
+        // copied into the NEWEST generation, which then ages across the whole ring, so
+        // a cold node is re-stored once per `budget` rotations. The legacy two-backend
+        // design re-stored every live node on EVERY rotation (rotations x cold here);
+        // even the minimal ring halves that, and the default ring divides it by 8.
+        testcase("evacuation volume is O(churn), not O(total state)");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        constexpr std::uint32_t kCold = 1000;
+        constexpr std::uint32_t kChurn = 32;
+        constexpr std::size_t kRotations = 16;
+        constexpr std::uint64_t kSlack = kRotations * kChurn;
+
+        auto const b2 = runEvacuationModel(env, "esc_b2", 2, kRotations, kCold, kChurn);
+        auto const b8 = runEvacuationModel(env, "esc_b8", 8, kRotations, kCold, kChurn);
+
+        // Cold set re-stored once per `budget` rotations: ~rotations/2 passes vs
+        // ~rotations/8 passes over the same workload.
+        BEAST_EXPECT(b2.evacuated >= (kRotations / 2 - 1) * kCold);
+        BEAST_EXPECT(b2.evacuated <= ((kRotations / 2 + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b8.evacuated >= (kRotations / 8 - 1) * kCold);
+        BEAST_EXPECT(b8.evacuated <= ((kRotations / 8 + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b8.evacuated * 3 <= b2.evacuated);
+
+        log << "evacuation volume over " << kRotations << " rotations (cold=" << kCold
+            << ", churn/rot=" << kChurn << "): legacy full-copy (analytic) -> "
+            << kRotations * kCold << ", budget=2 -> " << b2.evacuated << ", budget=8 -> "
+            << b8.evacuated << " nodes re-stored" << std::endl;
+    }
+
+private:
     void
     run() override
     {
@@ -1257,10 +1402,48 @@ public:
         testCorruptedStateRefusal();
         testOrphanCleanup();
         testPathRelocation();
+        testEvacuationScaling();
     }
 };
 
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
+
+// Benchmark matrix over cold-set size and generation budget. Run manually:
+//   xrpld --unittest=xrpl.app.SHAMapStoreBench
+class SHAMapStoreBench_test : public SHAMapStore_test
+{
+    void
+    run() override
+    {
+        testcase("evacuation volume/latency matrix");
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        constexpr std::uint32_t kChurn = 32;
+        constexpr std::size_t kRotations = 16;
+
+        log << "cold,budget,rotations,churn_per_rotation,retirements,"
+               "evacuated_nodes,evacuated_per_retirement,millis"
+            << std::endl;
+        for (std::uint32_t const cold : {1000u, 4000u, 16000u})
+        {
+            for (std::size_t const budget : {2u, 4u, 8u, 16u})
+            {
+                auto const prefix =
+                    "bench_c" + std::to_string(cold) + "_b" + std::to_string(budget);
+                auto const stats =
+                    runEvacuationModel(env, prefix, budget, kRotations, cold, kChurn);
+                log << cold << "," << budget << "," << kRotations << "," << kChurn << ","
+                    << stats.retirements << "," << stats.evacuated << ","
+                    << ((stats.retirements != 0u) ? stats.evacuated / stats.retirements : 0) << ","
+                    << stats.millis << std::endl;
+            }
+        }
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(SHAMapStoreBench, app, xrpl);
 
 }  // namespace xrpl::test
