@@ -29,7 +29,7 @@
 
 namespace xrpl {
 using namespace telemetry;
-namespace RPC {
+namespace rpc {
 
 namespace {
 
@@ -119,7 +119,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     {
         // Count all jobs at jtCLIENT priority or higher.
         int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
-        if (jobCount > Tuning::kMaxJobQueueClients)
+        if (jobCount > tuning::kMaxJobQueueClients)
         {
             JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return RpcTooBusy;
@@ -215,8 +215,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         span.recordException(e);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
 
-        if (context.loadType == Resource::kFeeReferenceRpc)
-            context.loadType = Resource::kFeeExceptionRpc;
+        if (context.loadType == resource::kFeeReferenceRpc)
+            context.loadType = resource::kFeeExceptionRpc;
 
         injectError(RpcInternal, result);
         return RpcInternal;
@@ -239,6 +239,14 @@ resolveCommandSpanName(JsonContext const& context)
     if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return rpc_span::val::unknownCommand;
 
+    // fillHandler() rejects a request that supplies both fields with differing
+    // values as rpcUNKNOWN_COMMAND. Mirror that here, or the span would be
+    // labelled with one of the two names and misattribute the error to a
+    // command that was never dispatched.
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method) &&
+        context.params[jss::command].asString() != context.params[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
     std::string const cmd = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
@@ -251,7 +259,7 @@ resolveCommandSpanName(JsonContext const& context)
 }  // namespace
 
 Status
-doCommand(RPC::JsonContext& context, json::Value& result)
+doCommand(rpc::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
@@ -262,6 +270,13 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         auto const cmdName = resolveCommandSpanName(context);
         auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName);
+        // Mirror the attribute set callMethod() puts on a successful command
+        // span, so error spans stay filterable by API version and role.
+        span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+        span.setAttribute(
+            rpc_span::attr::rpcRole,
+            context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                        : std::string_view(rpc_span::val::user));
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
 
@@ -296,7 +311,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
-    auto handler = RPC::getHandler(version, betaEnabled, method);
+    auto handler = rpc::getHandler(version, betaEnabled, method);
 
     if (handler == nullptr)
         return Role::FORBID;
@@ -304,5 +319,5 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role;
 }
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

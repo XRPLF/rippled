@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
@@ -48,7 +49,6 @@
 #include <mutex>
 #include <random>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -881,7 +881,7 @@ InboundLedger::filterNodes(
  */
 // data must not have hash prefix
 bool
-InboundLedger::takeHeader(std::string const& data)
+InboundLedger::takeHeader(std::string_view data)
 {
     // Return value: true=normal, false=bad data
     JLOG(journal_.trace()) << "got header acquiring ledger " << hash_;
@@ -927,7 +927,10 @@ InboundLedger::takeHeader(std::string const& data)
  * Call with a lock
  */
 void
-InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
+InboundLedger::receiveNode(
+    std::shared_ptr<Peer> const& peer,
+    protocol::TMLedgerData const& packet,
+    SHAMapAddNode& san)
 {
     if (!haveHeader_)
     {
@@ -970,32 +973,47 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
     {
         auto const f = filter.get();
 
-        for (auto const& node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            auto const nodeID = deserializeSHAMapNodeID(node.nodeid());
+            auto treeNode = getTreeNode(ledgerNode.nodedata());
+            if (!treeNode)
+            {
+                JLOG(journal_.warn())
+                    << "Got invalid node data for ledger " << hash_ << " from peer " << peer->id();
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_data invalid");
+                san.incInvalid();
+                return;
+            }
 
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
-                throw std::runtime_error("data does not properly deserialize");
-
-            if (nodeID->isRoot())
             {
-                san += map.addRootNode(rootHash, makeSlice(node.nodedata()), f);
-            }
-            else
-            {
-                san += map.addKnownNode(*nodeID, makeSlice(node.nodedata()), f);
+                JLOG(journal_.warn())
+                    << "Got invalid node id for ledger " << hash_ << " from peer " << peer->id();
+                peer->charge(resource::kFeeInvalidData, "ledger_node.node_id invalid");
+                san.incInvalid();
+                return;
             }
 
-            if (!san.isGood())
+            auto const result = nodeID->isRoot()
+                ? map.addRootNode(rootHash, std::move(treeNode), f)
+                : map.addKnownNode(*nodeID, std::move(treeNode), f);
+            san += result;
+
+            if (result.isInvalid())
             {
-                JLOG(journal_.warn()) << "Received bad node data";
+                JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
+                                      << " from peer " << peer->id();
+                peer->charge(resource::kFeeInvalidData, "ledger_node invalid");
                 return;
             }
         }
     }
     catch (std::exception const& e)
     {
-        JLOG(journal_.error()) << "Received bad node data: " << e.what();
+        // If we get here it is not necessarily because the node was bad, so don't charge the peer.
+        JLOG(journal_.error()) << "Could not process node for ledger " << hash_ << " from peer "
+                               << peer->id() << ": " << e.what();
         san.incInvalid();
         return;
     }
@@ -1024,7 +1042,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
  * Call with a lock
  */
 bool
-InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
+InboundLedger::takeAsRootNode(std::string_view data, SHAMapAddNode& san)
 {
     if (failed_ || haveState_)
     {
@@ -1040,10 +1058,19 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
         // LCOV_EXCL_STOP
     }
 
+    auto treeNode = getTreeNode(data);
+    if (!treeNode)
+    {
+        JLOG(journal_.warn()) << "Got invalid AS root node data for ledger " << hash_;
+        san.incInvalid();
+        return false;
+    }
+
     AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
-    san +=
-        ledger_->stateMap().addRootNode(SHAMapHash{ledger_->header().accountHash}, data, &filter);
-    return san.isGood();
+    auto const result = ledger_->stateMap().addRootNode(
+        SHAMapHash{ledger_->header().accountHash}, std::move(treeNode), &filter);
+    san += result;
+    return !result.isInvalid();
 }
 
 /**
@@ -1051,7 +1078,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
  * Call with a lock
  */
 bool
-InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
+InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
 {
     if (failed_ || haveTransactions_)
     {
@@ -1067,9 +1094,19 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
         // LCOV_EXCL_STOP
     }
 
+    auto treeNode = getTreeNode(data);
+    if (!treeNode)
+    {
+        JLOG(journal_.warn()) << "Got invalid TX root node data for ledger " << hash_;
+        san.incInvalid();
+        return false;
+    }
+
     TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
-    san += ledger_->txMap().addRootNode(SHAMapHash{ledger_->header().txHash}, data, &filter);
-    return san.isGood();
+    auto const result = ledger_->txMap().addRootNode(
+        SHAMapHash{ledger_->header().txHash}, std::move(treeNode), &filter);
+    san += result;
+    return !result.isInvalid();
 }
 
 std::vector<InboundLedger::neededHash_t>
@@ -1132,7 +1169,7 @@ InboundLedger::gotData(
  * Returns the number of useful nodes
  */
 // VFALCO NOTE, it is not necessary to pass the entire Peer,
-//              we can get away with just a Resource::Consumer endpoint.
+//              we can get away with just a resource::Consumer endpoint.
 //
 //        TODO Change peer to Consumer
 //
@@ -1144,7 +1181,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::kFeeMalformedRequest, "ledger_data empty header");
+            peer->charge(resource::kFeeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1159,7 +1196,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::kFeeMalformedRequest, "ledger_data invalid header");
+                    peer->charge(resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1167,22 +1204,35 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             }
 
             if (!haveState_ && (packet.nodes().size() > 1) &&
-                !takeAsRootNode(makeSlice(packet.nodes(1).nodedata()), san))
+                !takeAsRootNode(packet.nodes(1).nodedata(), san))
             {
-                JLOG(journal_.warn()) << "Included AS root invalid";
+                JLOG(journal_.warn()) << "Included AS root invalid for ledger " << hash_
+                                      << " from peer " << peer->id();
+                if (san.isInvalid())
+                {
+                    peer->charge(resource::kFeeInvalidData, "ledger_data invalid AS root");
+                    return -1;
+                }
             }
 
             if (!haveTransactions_ && (packet.nodes().size() > 2) &&
-                !takeTxRootNode(makeSlice(packet.nodes(2).nodedata()), san))
+                !takeTxRootNode(packet.nodes(2).nodedata(), san))
             {
-                JLOG(journal_.warn()) << "Included TX root invalid";
+                JLOG(journal_.warn()) << "Included TX root invalid for ledger " << hash_
+                                      << " from peer " << peer->id();
+                if (san.isInvalid())
+                {
+                    peer->charge(resource::kFeeInvalidData, "ledger_data invalid TX root");
+                    return -1;
+                }
             }
         }
         catch (std::exception const& ex)
         {
-            JLOG(journal_.warn()) << "Included AS/TX root invalid: " << ex.what();
+            JLOG(journal_.warn()) << "Included AS/TX root invalid for ledger " << hash_
+                                  << " from peer " << peer->id() << ": " << ex.what();
             using namespace std::string_literals;
-            peer->charge(Resource::kFeeInvalidData, "ledger_data "s + ex.what());
+            peer->charge(resource::kFeeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1198,30 +1248,24 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::kFeeMalformedRequest, "ledger_data no nodes");
+            peer->charge(resource::kFeeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 
         ScopedLockType const sl(mtx_);
 
-        // Verify node IDs and data are complete
-        for (auto const& node : packet.nodes())
-        {
-            if (!node.has_nodeid() || !node.has_nodedata())
-            {
-                JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_data bad node");
-                return -1;
-            }
-        }
-
         SHAMapAddNode san;
-        receiveNode(packet, san);
+        receiveNode(peer, packet, san);
 
         JLOG(journal_.debug()) << "Ledger "
                                << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
                                << " node stats: " << san.get();
 
+        // `san` accumulates across the whole packet, so `isInvalid()` (bad_ > 0) does not mean the
+        // packet had no useful nodes: credit whatever good/useful nodes were sent rather than
+        // discarding everything because one node in an otherwise-good packet was bad.
+        // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
+        // exact failure site, so the peer is only charged for problems they are responsible for.
         if (san.isUseful())
             progress_ = true;
 

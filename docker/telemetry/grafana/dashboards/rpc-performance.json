@@ -199,7 +199,8 @@
       "options": {
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "maxHeight": 600
         },
         "yAxis": {
           "axisLabel": "Duration (ms)",
@@ -226,7 +227,7 @@
     },
     {
       "title": "Overall RPC Throughput",
-      "description": "###### What this is:\n*Two layers of the request pipeline: connections accepted by the HTTP handler versus requests parsed and dispatched.*\n\n###### How it's computed:\n*Per-second rates of the outer request-accept layer and the inner processing layer over 5 minutes, per node.*\n\n###### Reading it:\n*The two lines should track each other closely.*\n\n###### Healthy range:\n*Workload-dependent; both lines roughly equal.*\n\n###### Watch for:\n*A gap between accept and process, meaning requests are queued or rejected before dispatch.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler::processSession ; ServerHandler::processRequest`",
+      "description": "###### What this is:\n*Two layers of the request pipeline: connections accepted by the HTTP handler versus requests parsed and dispatched.*\n\n###### How it's computed:\n*Per-second rates of the outer request-accept layer and the inner processing layer over 5 minutes, per node.*\n\n###### Reading it:\n*The two lines should track each other closely.*\n\n###### Healthy range:\n*Workload-dependent; both lines roughly equal.*\n\n###### Watch for:\n*A gap between accept and process, meaning requests are queued or rejected before dispatch.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler::processSession ; ServerHandler::processRequest`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -309,7 +310,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: commands/s",
           "custom": {
             "axisLabel": "Commands / Sec",
             "spanNulls": 1800000,
@@ -386,7 +387,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops"
+          "unit": "suffix: messages/s"
         },
         "overrides": []
       },
@@ -426,7 +427,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: requests/s",
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
@@ -446,8 +447,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 41
+        "x": 12,
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -475,7 +476,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: requests/s",
           "custom": {
             "axisLabel": "Requests / Sec",
             "spanNulls": 1800000,
@@ -497,7 +498,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 41
       },
       "panels": []
     },
@@ -509,7 +510,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -544,12 +545,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -571,7 +572,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -597,12 +598,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -624,7 +625,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 58
       },
       "options": {
         "tooltip": {
@@ -650,12 +651,12 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: errors/s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
+            "axisLabel": "Errors / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -677,7 +678,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 75
+        "y": 66
       },
       "options": {
         "tooltip": {
@@ -732,7 +733,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 74
       },
       "options": {
         "tooltip": {
@@ -785,7 +786,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 91
+        "y": 82
       },
       "options": {
         "tooltip": {
@@ -856,7 +857,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 99
+        "y": 90
       },
       "options": {
         "reduceOptions": {
@@ -866,7 +867,8 @@
         },
         "orientation": "auto",
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "tooltip": {}
       },
       "targets": [
         {

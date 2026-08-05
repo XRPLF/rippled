@@ -263,6 +263,7 @@ words:
   - qalloc
   - qbsprofile
   - queuable
+  - ransitioned
   - Raphson
   - rcflags
   - reparent
@@ -334,6 +335,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - synthesise
   - takergets
   - takerpays
   - ters
@@ -363,6 +365,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - unheld
   - unimpair
   - unroutable
   - unscalable
@@ -380,6 +383,7 @@ words:
   - unvetoed
   - upvotes
   - USDB
+  - utilisation
   - variadics
   - venv
   - vfalco

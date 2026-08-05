@@ -23,6 +23,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -77,15 +78,21 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     using namespace telemetry;
     // updateAll runs on every ledger close. Skip span emission when there are
     // no active path subscriptions, to avoid a steady stream of empty spans at
-    // mainnet close cadence. A null guard is used in that case; all other work
-    // still runs unchanged (notably the isNewPathRequest() flag reset below),
-    // so behaviour matches the pre-span code path.
-    auto span = requests.empty()
-        ? SpanGuard{}
-        : SpanGuard::span(
-              TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
-    span.setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
-    span.setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
+    // mainnet close cadence. All other work still runs unchanged (notably the
+    // isNewPathRequest() flag reset below), so behaviour matches the pre-span
+    // code path.
+    //
+    // Scoped, so the pathfind.compute spans that doUpdate() creates below on
+    // this thread nest under it. std::optional because ScopedSpanGuard is
+    // deliberately non-movable, so it cannot be produced by a ternary.
+    std::optional<ScopedSpanGuard> span;
+    if (!requests.empty())
+    {
+        span.emplace(
+            TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
+        span->setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
+        span->setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
+    }
 
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
@@ -269,7 +276,7 @@ json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
@@ -300,7 +307,7 @@ PathRequestManager::makeLegacyPathRequest(
 
 json::Value
 PathRequestManager::doLegacyPathRequest(
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {

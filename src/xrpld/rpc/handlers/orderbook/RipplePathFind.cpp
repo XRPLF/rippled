@@ -24,7 +24,7 @@ namespace xrpl {
 
 // This interface is deprecated.
 json::Value
-doRipplePathFind(RPC::JsonContext& context)
+doRipplePathFind(rpc::JsonContext& context)
 {
     using namespace telemetry;
     // pathfind.request nests under rpc.command. This scope is held across
@@ -34,16 +34,21 @@ doRipplePathFind(RPC::JsonContext& context)
     // span's log lines stay trace-correlated.
     auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
-    // Addresses are hashed before emission for privacy.
-    if (auto const& src = context.params[jss::source_account]; src.isString())
+    // Addresses are hashed before emission for privacy. Read through a const
+    // reference: the non-const json::Value::operator[] inserts a null for a
+    // missing key, which would make PathRequest::parseJson's isMember() checks
+    // see an absent field as present and return Malformed instead of Missing.
+    // Reading for telemetry must not alter what the request looks like.
+    auto const& params = std::as_const(context.params);
+    if (auto const& src = params[jss::source_account]; src.isString())
         span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));
-    if (auto const& dst = context.params[jss::destination_account]; dst.isString())
+    if (auto const& dst = params[jss::destination_account]; dst.isString())
         span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
 
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::shared_ptr<ReadView const> lpLedger;
     json::Value jvResult;
@@ -54,7 +59,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::kMaxValidatedLedgerAge)
+            rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcError(RpcNoNetwork);
@@ -163,11 +168,11 @@ doRipplePathFind(RPC::JsonContext& context)
     }
 
     // The caller specified a ledger
-    jvResult = RPC::lookupLedger(lpLedger, context);
+    jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
+    rpc::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
         return rpcError(RpcTooBusy);
 

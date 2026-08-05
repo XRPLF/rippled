@@ -378,9 +378,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
-            "axisLabel": "Expired / Sec",
+            "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -419,9 +419,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: transactions/s",
           "custom": {
-            "axisLabel": "Dropped / Sec",
+            "axisLabel": "Transactions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

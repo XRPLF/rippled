@@ -334,7 +334,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "thresholds": {
             "steps": [
               {
@@ -385,7 +385,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "custom": {}
         },
         "overrides": []
@@ -612,9 +612,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cpm",
+          "unit": "suffix: validations/min",
           "custom": {
-            "axisLabel": "Per Minute",
+            "axisLabel": "Validations / Min",
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
@@ -804,7 +804,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix:/hr",
+          "unit": "suffix: changes/hr",
           "thresholds": {
             "steps": [
               {
@@ -855,7 +855,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cpm",
+          "unit": "suffix: ledgers/min",
           "thresholds": {
             "steps": [
               {

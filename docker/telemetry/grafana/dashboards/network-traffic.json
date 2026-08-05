@@ -41,7 +41,7 @@
   "panels": [
     {
       "title": "Active Peers",
-      "description": "###### What this is:\n*Number of active inbound and outbound peer connections the node currently holds.*\n\n###### How it's computed:\n*Current value of the inbound and outbound active-peer counts per node.*\n\n###### Reading it:\n*Outbound is what the node dials out; inbound is what others open to it. Both should be stable.*\n\n###### Healthy range:\n*roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.*\n\n###### Watch for:\n*Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).*\n\n###### Source:\n[PeerfinderManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/PeerfinderManager.cpp)\n\n###### Function:\n`Logic Stats ctor`",
+      "description": "###### What this is:\n*Number of active inbound and outbound peer connections the node currently holds.*\n\n###### How it's computed:\n*Current value of the inbound and outbound active-peer counts per node.*\n\n###### Reading it:\n*Outbound is what the node dials out; inbound is what others open to it. Both should be stable.*\n\n###### Healthy range:\n*roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.*\n\n###### Watch for:\n*Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).*\n\n###### Keywords:\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerfinderManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/PeerfinderManager.cpp)\n\n###### Function:\n`Logic Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#peer)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -89,7 +89,7 @@
     },
     {
       "title": "Peer Disconnects",
-      "description": "###### What this is:\n*Peer connections that dropped, as a per-interval increase.*\n\n###### How it's computed:\n*Disconnect events per rate-interval, per node.*\n\n###### Reading it:\n*A flat or slowly rising line is normal; the slope matters more than the absolute value.*\n\n###### Healthy range:\n*workload-dependent; slow, steady growth.*\n\n###### Watch for:\n*Sharp step-ups in the slope (network instability, resource exhaustion, or many peers dropping the node at once).*\n\n###### Source:\n[OverlayImpl.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.h)\n\n###### Function:\n`OverlayImpl::Stats ctor`",
+      "description": "###### What this is:\n*Peer connections that dropped, as a per-interval increase.*\n\n###### How it's computed:\n*Disconnect events per rate-interval, per node.*\n\n###### Reading it:\n*A flat or slowly rising line is normal; the slope matters more than the absolute value.*\n\n###### Healthy range:\n*workload-dependent; slow, steady growth.*\n\n###### Watch for:\n*Sharp step-ups in the slope (network instability, resource exhaustion, or many peers dropping the node at once).*\n\n###### Keywords:\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.h)\n\n###### Function:\n`OverlayImpl::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#peer)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -130,7 +130,7 @@
     },
     {
       "title": "Total Network Bytes",
-      "description": "###### What this is:\n*Total bytes received and sent across all peer connections.*\n\n###### How it's computed:\n*Per-second in/out byte rate per node.*\n\n###### Reading it:\n*Overall bandwidth footprint; in and out usually track network activity together.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Sudden sustained jumps not matched by ledger or transaction activity (relay storms or a noisy peer).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Total bytes received and sent across all peer connections.*\n\n###### How it's computed:\n*Per-second in/out byte rate per node.*\n\n###### Reading it:\n*Overall bandwidth footprint; in and out usually track network activity together.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Sudden sustained jumps not matched by ledger or transaction activity (relay storms or a noisy peer).*\n\n###### Keywords:\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -212,9 +212,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -267,9 +267,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -329,9 +329,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -391,9 +391,9 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "cps",
+          "unit": "suffix: messages/s",
           "custom": {
-            "axisLabel": "Messages",
+            "axisLabel": "Messages / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",

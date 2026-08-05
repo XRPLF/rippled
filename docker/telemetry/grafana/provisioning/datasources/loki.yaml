@@ -25,11 +25,11 @@ datasources:
         # hashes (or tx hashes). They are NOT OTel trace IDs and cannot
         # be resolved via the trace-by-id endpoint. Build a Grafana
         # Explore deep-link that runs TraceQL on the span attribute
-        # `xrpl.consensus.ledger_id` — set on `consensus.round` spans to
+        # `consensus_ledger_id` — set on `consensus.round` spans to
         # the full prev_ledger hash. This finds the round span whose
         # first 16 bytes were folded into the OTel trace_id by
         # SpanGuard::hashSpan().
         - matcherRegex: "\\b([A-F0-9]{64})\\b"
           name: ConsensusLedgerHash
           urlDisplayLabel: "Search Tempo"
-          url: '/explore?schemaVersion=1&orgId=1&panes={"tempo":{"datasource":"tempo","queries":[{"refId":"A","queryType":"traceql","query":"{.xrpl.consensus.ledger_id=\"$${__value.raw}\"}"}],"range":{"from":"now-1h","to":"now"}}}'
+          url: '/explore?schemaVersion=1&orgId=1&panes={"tempo":{"datasource":"tempo","queries":[{"refId":"A","queryType":"traceql","query":"{span.consensus_ledger_id=\"$${__value.raw}\"}"}],"range":{"from":"now-1h","to":"now"}}}'

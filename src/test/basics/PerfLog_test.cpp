@@ -312,7 +312,7 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> labels = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -483,7 +483,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -806,7 +806,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -946,7 +946,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;

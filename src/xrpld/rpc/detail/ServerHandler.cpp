@@ -1,9 +1,11 @@
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
@@ -98,13 +100,49 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
     response<string_body> msg;
     msg.version(request.version());
     msg.result(status);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
     msg.body() = "Invalid protocol.";
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
+}
+
+/**
+ * Resolve the command attribute for a WebSocket message to a bounded value.
+ *
+ * The command/method field is client-supplied and is promoted to a Prometheus
+ * label by the spanmetrics connector, so the raw string must never be emitted:
+ * arbitrary request input would drive unbounded label cardinality. Resolving
+ * against the handler registry keeps per-command attribution for real commands
+ * and collapses everything else to a single "unknown" series.
+ *
+ * A request naming both fields with different values is not a real command
+ * (processSession rejects it below), so it also resolves to "unknown".
+ *
+ * @param jv      The parsed WebSocket request object.
+ * @param config  Node config, for the beta-RPC-API flag used to look up the
+ *                handler for the request's API version.
+ * @return The canonical handler name, or "unknown" for an unrecognized,
+ *         missing, non-string, or self-contradictory command.
+ */
+static std::string_view
+resolveWsCommandSpanName(json::Value const& jv, Config const& config)
+{
+    bool const hasCommand = jv.isMember(jss::command) && jv[jss::command].isString();
+    bool const hasMethod = jv.isMember(jss::method) && jv[jss::method].isString();
+    if (!hasCommand && !hasMethod)
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = hasCommand ? jv[jss::command].asString() : jv[jss::method].asString();
+    if (hasCommand && hasMethod && cmd != jv[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
+    auto const* handler =
+        rpc::getHandler(rpc::getAPIVersionNumber(jv, config.betaRpcApi), config.betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
 }
 
 // VFALCO TODO Rewrite to use boost::beast::http::fields
@@ -134,7 +172,7 @@ ServerHandler::ServerHandler(
     boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     CollectorManager& cm)
     : app_(app)
     , resourceManager_(resourceManager)
@@ -348,7 +386,7 @@ ServerHandler::onWSMessage(
 {
     json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
+    if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
         // Fresh root so each WS message is its own trace.
         auto span = ScopedSpanGuard::freshRoot(
@@ -434,14 +472,13 @@ ServerHandler::processSession(
     // Fresh root so each WS message is its own trace.
     auto span = ScopedSpanGuard::freshRoot(
         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
-    if (jv.isMember(jss::command) && jv[jss::command].isString())
-    {
-        span.setAttribute(rpc_span::attr::command, jv[jss::command].asString().c_str());
-    }
-    else if (jv.isMember(jss::method) && jv[jss::method].isString())
-    {
-        span.setAttribute(rpc_span::attr::command, jv[jss::method].asString().c_str());
-    }
+    // The command is client-supplied and becomes a Prometheus label via the
+    // spanmetrics connector, so it is resolved against the handler registry
+    // before emission: a recognized command keeps its canonical name, anything
+    // else collapses to "unknown". Emitting the raw string would let request
+    // input drive unbounded label cardinality. Mirrors the HTTP path's
+    // resolveCommandSpanName().
+    span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
 
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
@@ -456,11 +493,11 @@ ServerHandler::processSession(
 
     // Requests without "command" are invalid.
     json::Value jr(json::ValueType::Object);
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
+    resource::Charge loadType = resource::kFeeReferenceRpc;
     try
     {
-        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().betaRpcApi);
-        if (apiVersion == RPC::kApiInvalidVersion ||
+        auto apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
+        if (apiVersion == rpc::kApiInvalidVersion ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
@@ -469,7 +506,7 @@ ServerHandler::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::kApiInvalidVersion ? jss::invalid_API_version
+            jr[jss::error] = apiVersion == rpc::kApiInvalidVersion ? jss::invalid_API_version
                                                                    : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
@@ -481,13 +518,13 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::kFeeMalformedRpc);
+            is->getConsumer().charge(resource::kFeeMalformedRpc);
             span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
             span.setError(jr[jss::error].asString());
             return jr;
         }
 
-        auto required = RPC::roleRequired(
+        auto required = rpc::roleRequired(
             apiVersion,
             app_.config().betaRpcApi,
             jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
@@ -495,16 +532,16 @@ ServerHandler::processSession(
             required,
             session->port(),
             jv,
-            beast::IP::fromAsio(session->remoteEndpoint().address()),
+            beast::ip::fromAsio(session->remoteEndpoint().address()),
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::kFeeMalformedRpc;
+            loadType = resource::kFeeMalformedRpc;
             jr[jss::result] = rpcError(RpcForbidden);
         }
         else
         {
-            RPC::JsonContext context{
+            rpc::JsonContext context{
                 {.j = app_.getJournal("RPCHandler"),
                  .app = app_,
                  .loadType = loadType,
@@ -519,7 +556,7 @@ ServerHandler::processSession(
                 {.user = is->user(), .forwardedFor = is->forwardedFor()}};
 
             auto start = std::chrono::system_clock::now();
-            RPC::doCommand(context, jr[jss::result]);
+            rpc::doCommand(context, jr[jss::result]);
             auto end = std::chrono::system_clock::now();
             logDuration(jv, end - start, journal_);
         }
@@ -527,7 +564,7 @@ ServerHandler::processSession(
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        jr[jss::result] = RPC::makeError(RpcInternal);
+        jr[jss::result] = rpc::makeError(RpcInternal);
         JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                << "Input JSON: " << json::Compact{json::Value{jv}};
         span.recordException(ex);
@@ -606,7 +643,7 @@ ServerHandler::processSession(
     auto const requestBody = ::xrpl::buffersToString(session->request().body().data());
     span.setAttribute(rpc_span::attr::requestPayloadSize, static_cast<int64_t>(requestBody.size()));
 
-    bool const ok = processRequest(
+    processRequest(
         session->port(),
         requestBody,
         session->remoteAddress().atPort(0),
@@ -628,15 +665,11 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
-    // Reflect the request outcome on the wrapper span instead of always OK.
-    if (ok)
-    {
-        span.setOk();
-    }
-    else
-    {
-        span.setError(rpc_span::val::error);
-    }
+    // Status is left unset: the OTel spec says instrumentation should leave it
+    // unset unless the operation itself errored, and reserves Ok for an
+    // operator asserting success. This span only delimits the HTTP request and
+    // has no error of its own to report — the outcome is determined inside
+    // rpc.process, which sets its own status.
 }
 
 static json::Value
@@ -655,11 +688,11 @@ constexpr json::Int kServerOverloaded = -32604;
 constexpr json::Int kForbidden = -32605;
 constexpr json::Int kWrongVersion = -32606;
 
-bool
+void
 ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
-    beast::IP::Endpoint const& remoteIPAddress,
+    beast::ip::Endpoint const& remoteIPAddress,
     Output const& output,
     std::shared_ptr<JobQueue::Coro> coro,
     std::string_view forwardedFor,
@@ -684,6 +717,7 @@ ServerHandler::processRequest(
     // (the span would otherwise end UNSET, invisible to {status.code=error}).
     auto httpReplyError = [&](int status, std::string const& message) {
         spanHadError = true;
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(message);
         httpReply(status, message, output, rpcJ);
     };
@@ -691,11 +725,11 @@ ServerHandler::processRequest(
     json::Value jsonOrig;
     {
         json::Reader reader;
-        if ((request.size() > RPC::Tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
+        if ((request.size() > rpc::tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
             httpReplyError(400, "Unable to parse request: " + reader.getFormattedErrorMessages());
-            return false;
+            return;
         }
     }
 
@@ -707,7 +741,7 @@ ServerHandler::processRequest(
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
             httpReplyError(400, "Malformed batch request");
-            return false;
+            return;
         }
         size = jsonOrig[jss::params].size();
     }
@@ -716,6 +750,17 @@ ServerHandler::processRequest(
         span.setAttribute(rpc_span::attr::batchSize, static_cast<int64_t>(size));
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
+
+    // Append a per-request error item and record that the request failed.
+    // Batch responses (and ripplerpc < 3.0) always carry HTTP 200, so the
+    // span status can only learn about these failures through spanHadError.
+    // Every per-item error path must go through here, or an entirely failed
+    // batch would end its span as successful.
+    auto appendItemError = [&](json::Value&& item) {
+        spanHadError = true;
+        reply.append(std::move(item));
+    };
+
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -726,35 +771,35 @@ ServerHandler::processRequest(
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
-        unsigned apiVersion = RPC::kApiVersionIfUnspecified;
+        unsigned apiVersion = rpc::kApiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
-            apiVersion = RPC::getAPIVersionNumber(
+            apiVersion = rpc::getAPIVersionNumber(
                 jsonRPC[jss::params][json::UInt(0)], app_.config().betaRpcApi);
         }
 
-        if (apiVersion == RPC::kApiVersionIfUnspecified && batch)
+        if (apiVersion == rpc::kApiVersionIfUnspecified && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
+            apiVersion = rpc::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
         }
 
-        if (apiVersion == RPC::kApiInvalidVersion)
+        if (apiVersion == rpc::kApiInvalidVersion)
         {
             if (!batch)
             {
                 httpReplyError(400, jss::invalid_API_version.cStr());
-                return false;
+                return;
             }
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -763,7 +808,7 @@ ServerHandler::processRequest(
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
         {
-            required = RPC::roleRequired(
+            required = rpc::roleRequired(
                 apiVersion, app_.config().betaRpcApi, jsonRPC[jss::method].asString());
         }
 
@@ -778,7 +823,7 @@ ServerHandler::processRequest(
             role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
         }
 
-        Resource::Consumer usage;
+        resource::Consumer usage;
         if (isUnlimited(role))
         {
             usage = resourceManager_.newUnlimitedEndpoint(remoteIPAddress);
@@ -792,70 +837,70 @@ ServerHandler::processRequest(
                 if (!batch)
                 {
                     httpReplyError(503, "Server is overloaded");
-                    return false;
+                    return;
                 }
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
         }
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReplyError(403, "Forbidden");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReplyError(400, "Null method");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
         json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReplyError(400, "method is not string");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
         std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReplyError(400, "method is empty");
-                return false;
+                return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -875,18 +920,18 @@ ServerHandler::processRequest(
             }
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(resource::kFeeMalformedRpc);
                 httpReplyError(400, "params unparsable");
-                return false;
+                return;
             }
             else
             {
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::kFeeMalformedRpc);
+                    usage.charge(resource::kFeeMalformedRpc);
                     httpReplyError(400, "params unparsable");
-                    return false;
+                    return;
                 }
             }
         }
@@ -900,16 +945,16 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(resource::kFeeMalformedRpc);
                 if (!batch)
                 {
                     httpReplyError(400, "ripplerpc is not a string");
-                    return false;
+                    return;
                 }
 
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
             ripplerpc = params[jss::ripplerpc].asString();
@@ -931,9 +976,9 @@ ServerHandler::processRequest(
         params[jss::command] = strMethod;
         JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = journal_,
              .app = app_,
              .loadType = loadType,
@@ -952,12 +997,12 @@ ServerHandler::processRequest(
 
         try
         {
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
         }
         catch (std::exception const& ex)
         {
             // LCOV_EXCL_START
-            result = RPC::makeError(RpcInternal);
+            result = rpc::makeError(RpcInternal);
             JLOG(journal_.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << json::Compact{json::Value{params}};
@@ -1067,7 +1112,7 @@ ServerHandler::processRequest(
                 reply[jss::error][jss::error_code].isInt())
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
-                return RPC::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
+                return rpc::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
             }
         }
         // Return OK.
@@ -1110,7 +1155,6 @@ ServerHandler::processRequest(
         span.setOk();
     }
     httpReply(httpStatus, response, output, rpcJ);
-    return !spanHadError;
 }
 
 //------------------------------------------------------------------------------
@@ -1139,7 +1183,7 @@ ServerHandler::statusResponse(http_request_type const& request) const
         msg.body() = "<HTML><BODY>Server cannot accept clients: " + reason + "</BODY></HTML>";
     }
     msg.version(request.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
     msg.prepare_payload();
@@ -1304,7 +1348,7 @@ setupClient(ServerHandler::Setup& setup)
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.contains("https");
-    if (beast::IP::isUnspecified(iter->ip))
+    if (beast::ip::isUnspecified(iter->ip))
     {
         // VFALCO HACK! to make localhost work
         setup.client.ip = iter->ip.is_v6() ? "::1" : "127.0.0.1";
@@ -1352,7 +1396,7 @@ makeServerHandler(
     boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     CollectorManager& cm)
 {
     return std::make_unique<ServerHandler>(

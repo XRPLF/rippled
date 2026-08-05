@@ -321,7 +321,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: warnings/s",
           "thresholds": {
             "steps": [
               {
@@ -371,7 +371,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: drops/s",
           "thresholds": {
             "steps": [
               {
@@ -421,7 +421,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
@@ -503,7 +503,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: calls/s",
           "custom": {
             "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
@@ -592,7 +592,7 @@
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ops",
+          "unit": "suffix: operations/s",
           "custom": {
             "axisLabel": "Operations / Sec",
             "spanNulls": 1800000,
