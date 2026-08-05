@@ -24,7 +24,7 @@ namespace xrpl {
 
 // This interface is deprecated.
 json::Value
-doRipplePathFind(RPC::JsonContext& context)
+doRipplePathFind(rpc::JsonContext& context)
 {
     using namespace telemetry;
     // pathfind.request nests under rpc.command. This scope is held across
@@ -48,7 +48,7 @@ doRipplePathFind(RPC::JsonContext& context)
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::shared_ptr<ReadView const> lpLedger;
     json::Value jvResult;
@@ -59,7 +59,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::kMaxValidatedLedgerAge)
+            rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcError(RpcNoNetwork);
@@ -168,11 +168,11 @@ doRipplePathFind(RPC::JsonContext& context)
     }
 
     // The caller specified a ledger
-    jvResult = RPC::lookupLedger(lpLedger, context);
+    jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
+    rpc::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
         return rpcError(RpcTooBusy);
 

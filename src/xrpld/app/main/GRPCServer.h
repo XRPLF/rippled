@@ -103,7 +103,7 @@ private:
     // typedef for actual handler (that populates a response)
     // handlers are defined in rpc/GRPCHandlers.h
     template <class Request, class Response>
-    using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
+    using Handler = std::function<std::pair<Response, grpc::Status>(rpc::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
     static constexpr unsigned kApiVersion = 1;
 
@@ -190,10 +190,10 @@ private:
         Forward<Request, Response> forward_;
 
         // Condition required for this RPC
-        RPC::Condition requiredCondition_;
+        rpc::Condition requiredCondition_;
 
         // Load type for this RPC
-        Resource::Charge loadType_;
+        resource::Charge loadType_;
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
@@ -215,8 +215,8 @@ private:
             BindListener<Request, Response> bindListener,
             Handler<Request, Response> handler,
             Forward<Request, Response> forward,
-            RPC::Condition requiredCondition,
-            Resource::Charge loadType,
+            rpc::Condition requiredCondition,
+            resource::Charge loadType,
             std::vector<boost::asio::ip::address> const& secureGatewayIPs,
             std::string_view name = "");
 
@@ -240,7 +240,7 @@ private:
         process(std::shared_ptr<JobQueue::Coro> coro);
 
         // return load type of this RPC
-        Resource::Charge
+        resource::Charge
         getLoadType();
 
         // return the Role used for this RPC
@@ -248,7 +248,7 @@ private:
         getRole(bool isUnlimited);
 
         // register endpoint with ResourceManager and return usage
-        Resource::Consumer
+        resource::Consumer
         getUsage();
 
         // Returns the ip of the client
@@ -297,7 +297,7 @@ private:
 
         // forward request to a p2p node
         void
-        forwardToP2p(RPC::GRPCContext<Request>& context);
+        forwardToP2p(rpc::GRPCContext<Request>& context);
 
     };  // CallData
 
