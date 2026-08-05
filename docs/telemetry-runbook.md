@@ -2095,7 +2095,7 @@ Alerts fire only after the condition holds for the `for` dwell time.
 | `NodeStateFlapping`       | warning  | > 3 re-entries into FULL per hour                  | 15m |
 | `NodeNotFull`             | warning  | `server_state` < 4 (FULL)                          | 15m |
 | `ManifestJobQueueConvoy`  | warning  | `jobq_manifest_waiting` > 3                        | 10m |
-| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 50 kB/s       | 10m |
+| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 512 kB/s      | 10m |
 | `PeerResourceDisconnects` | warning  | > 5 resource-driven peer disconnects per 30m       | 5m  |
 
 Two expression idioms recur and are load-bearing — do not "simplify" them away:
@@ -2124,8 +2124,17 @@ node is likely down. Check peer count and process health first.
 **ValidatedLedgerStale** — The validated ledger has fallen more than 60s behind.
 This is the clearest single "is this node healthy" signal on XRPL: it is the
 symptom nearly every consensus or sync failure eventually produces, so it is
-often the first thing to check and the last thing to clear. Measured p95 is ~4s
-on a healthy node.
+often the first thing to check and the last thing to clear. Measured over 7 days:
+p50 2s, p95 4s, p99 5s on every node.
+
+> **The `< 1209600` clause in this rule's expression is required — do not remove
+> it.** When a node holds no validated ledger at all,
+> `LedgerMaster::getValidatedLedgerAge()` returns `weeks{2}` (1 209 600 s) as a
+> **sentinel**, not a measurement. Without the clause the rule reads that as "14
+> days stale" and fires on every node during startup — measured, it produced
+> sustained firing on all nine nodes over a six-day window, healthy ones included.
+> A node genuinely stuck without a validated ledger is caught by
+> `LedgerCloseStalled` and `NodeNotFull` instead.
 
 #### Validator health
 
@@ -2206,11 +2215,16 @@ This is the most reliable manifest-flood signal because `jobq_manifest_waiting`
 is `0` at the 99.9th percentile on every node over 24h — any sustained backlog is
 a genuine outlier rather than normal variance.
 
-**ManifestFloodInbound** — Inbound manifest byte-rate exceeds 50 kB/s. Catches the
+**ManifestFloodInbound** — Inbound manifest byte-rate exceeds 512 kB/s. Catches the
 wire-level cause (a peer shipping oversized dumps) even when the job pool absorbs
-it without a visible backlog. Measured steady state is 0.7-2.3 kB/s against a p99
-of 267-420 kB/s during the startup flood, so the threshold sits ~20x above normal
-and well below a real flood.
+it without a visible backlog. Measured over 7 days: healthy p95 0.2-0.5 kB/s and
+p99 1.0-1.8 kB/s, against peaks up to 2.7 MB/s during real storms — so the
+threshold sits ~280x above healthy p99 and ~5x below the peaks.
+
+> An earlier revision used 50 kB/s, justified from a 24-hour window. Over a full
+> week that produced ~41 sustained 5-minute firings across six **healthy** nodes,
+> i.e. routine paging. Prefer a 7-day sample when tuning any threshold here; 24
+> hours is too short to expose weekly variation.
 
 > **Both manifest rules deliberately suppress startup.** The manifest storm at
 > boot is _measured normal behaviour_, so `ManifestFloodInbound` carries an
@@ -2397,8 +2411,10 @@ after the selector and cannot be discovered by `label_values()`.
 # Find all logs for a specific trace
 {service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
-# Error logs with trace context (log lines with ERR severity that have a trace_id)
-{service_name="xrpld"} |= "ERR" |= "trace_id="
+# Error logs with trace context (log lines with ERR severity that have a trace_id).
+# Use the severity field, not `|= "ERR"`: a line filter also matches the literal
+# "ERR" anywhere in the message body (measured: 4 DBG lines per 6h on devnet).
+{service_name="xrpld"} | severity = `ERR` | trace_id != ""
 
 # All logs from a specific partition that were emitted during a span.
 # Prefer the structured-metadata filter over a line match: `|= "LedgerMaster"`
@@ -2408,11 +2424,14 @@ after the selector and cannot be discovered by `label_values()`.
 # Logs from a specific subsystem during a span (e.g. LedgerConsensus)
 {service_name="xrpld"} | partition = `LedgerConsensus` | trace_id != ""
 
-# Logs from the last hour containing trace context
-{service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+# Logs from the last hour containing trace context. `partition`, `severity`, and
+# `trace_id` are already parsed into structured metadata by the collector's
+# filelog receiver, so re-extracting them with regexp is unnecessary work.
+{service_name="xrpld"} | trace_id != ""
 
 # Count of traced vs untraced log lines
-count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
+sum(count_over_time({service_name="xrpld"} | trace_id != "" [5m]))
+sum(count_over_time({service_name="xrpld"} | trace_id = "" [5m]))
 ```
 
 ### Verifying Log Correlation
@@ -2420,7 +2439,7 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} | trace_id != ""`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ### Log-Derived Insights (`log-derived-insights`)

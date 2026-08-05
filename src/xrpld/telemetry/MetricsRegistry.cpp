@@ -1247,7 +1247,7 @@ MetricsRegistry::registerBuildInfoGauge()
             {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                    ->Observe(1, {{"version", std::string(BuildInfo::getVersionString())}});
+                    ->Observe(1, {{"version", std::string(build_info::getVersionString())}});
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1441,9 +1441,9 @@ MetricsRegistry::registerPeerQualityGauge()
                     auto const firstDigit = v.find_first_of("0123456789");
                     if (firstDigit == std::string_view::npos)
                         return 0;
-                    return BuildInfo::encodeSoftwareVersion(v.substr(firstDigit));
+                    return build_info::encodeSoftwareVersion(v.substr(firstDigit));
                 };
-                auto const ownEncoded = encodeVersion(BuildInfo::getVersionString());
+                auto const ownEncoded = encodeVersion(build_info::getVersionString());
 
                 app.getOverlay().foreach([&](std::shared_ptr<Peer> const& peer) {
                     ++totalPeers;

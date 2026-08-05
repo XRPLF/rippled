@@ -112,7 +112,7 @@ public:
         explicit Setup() = default;
 
         std::shared_ptr<boost::asio::ssl::context> context;
-        beast::IP::Address publicIp;
+        beast::ip::Address publicIp;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
@@ -149,7 +149,7 @@ public:
      * performed asynchronously.
      */
     virtual void
-    connect(beast::IP::Endpoint const& address) = 0;
+    connect(beast::ip::Endpoint const& address) = 0;
 
     /**
      * Returns the maximum number of peers we are configured to allow.

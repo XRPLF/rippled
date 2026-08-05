@@ -181,8 +181,18 @@ groups:
 
       # The validated ledger falling behind wall-clock is the single clearest
       # "this node is unhealthy" signal on XRPL: it is the symptom every other
-      # consensus/sync failure eventually produces. Measured p95 is 4s on every
-      # node over 24h, so 60s carries ~15x headroom.
+      # consensus/sync failure eventually produces. Measured p50 2s / p95 4s /
+      # p99 5s across all nodes over 7d, so 60s carries ~12x headroom over p99.
+      #
+      # The `< 1209600` clause is REQUIRED, not defensive. When there is no
+      # validated ledger at all, LedgerMaster::getValidatedLedgerAge() returns
+      # weeks{2} == 1209600s as a SENTINEL rather than a measurement
+      # (LedgerMaster.cpp, "No validated ledger" branch). Without the clause the
+      # rule reads that sentinel as "14 days stale" and fires on every node
+      # during startup — measured: it produced sustained firing on all 9 nodes
+      # including healthy ones over a 6-day window. Excluding the exact sentinel
+      # keeps the rule measuring real staleness; a node genuinely holding no
+      # validated ledger is caught by LedgerCloseStalled and NodeNotFull.
       - uid: xrpld-validated-ledger-stale
         title: ValidatedLedgerStale
         condition: C
@@ -207,7 +217,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: max by (service_instance_id) (ledgermaster_validated_ledger_age{service_name="xrpld"})
+              expr: max by (service_instance_id) (ledgermaster_validated_ledger_age{service_name="xrpld"} < 1209600)
               instant: true
               range: false
               intervalMs: 1000
@@ -831,11 +841,20 @@ groups:
       # catches the wire-level cause (a peer shipping huge dumps) even when the
       # job pool absorbs it without a visible backlog.
       #
-      # Measured: steady state 0.7-2.3 kB/s; p99 during the startup flood
-      # 267-420 kB/s. 50 kB/s sits ~20x above steady state and well below the
-      # flood. The uptime gate suppresses the measured startup storm, which is
-      # normal behaviour — the trade-off is that a flood confined to the first
-      # 30 minutes after boot is deliberately not alerted.
+      # Threshold derived from a 7-day sample (uptime-gated), NOT from the
+      # 24h window that an earlier revision used:
+      #   healthy p95 0.2-0.5 kB/s, p99 1.0-1.8 kB/s
+      #   observed peaks up to 2.7 MB/s during real manifest storms
+      # 512 kB/s sits ~280x above healthy p99 and ~5x below the peaks. An
+      # earlier 50 kB/s threshold produced ~41 sustained 5-min samples across
+      # six healthy nodes over six days (i.e. routine paging); 512 kB/s reduces
+      # that to 2 while still catching every genuine storm.
+      #
+      # The uptime gate exists because the startup manifest burst is MEASURED
+      # NORMAL behaviour. It does not hide real floods — the same 7-day sample
+      # shows firing rates with and without the gate within a factor of two — but a
+      # flood confined to the first 30 minutes after boot is deliberately not
+      # alerted. ManifestJobQueueConvoy covers that window via the job pool.
       - uid: xrpld-manifest-flood-inbound
         title: ManifestFloodInbound
         condition: C
@@ -850,7 +869,7 @@ groups:
           summary: "Inbound manifest flood on {{ $labels.service_instance_id }}"
           description: >-
             Node {{ $labels.service_instance_id }} is receiving
-            {{ $values.B.Value }} B/s of manifest traffic (>50 kB/s) over 10m.
+            {{ $values.B.Value }} B/s of manifest traffic (>512 kB/s) over 10m.
             A peer is flooding oversized TMManifests dumps.
         data:
           - refId: A
@@ -893,7 +912,7 @@ groups:
               conditions:
                 - evaluator:
                     type: gt
-                    params: [51200]
+                    params: [524288]
               datasource:
                 type: __expr__
                 uid: __expr__

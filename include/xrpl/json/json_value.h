@@ -624,6 +624,7 @@ class ValueConstIterator : public ValueIteratorBase
 public:
     using size_t = unsigned int;
     using difference_type = int;
+    using value_type = Value const;
     // std::iterator_traits needs value_type and iterator_category to classify
     // this as a Cpp17InputIterator; without them it defaults to output-only,
     // which breaks standard algorithms (e.g. std::all_of). The iterator walks a

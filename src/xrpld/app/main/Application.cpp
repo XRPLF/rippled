@@ -252,7 +252,7 @@ public:
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
-    std::unique_ptr<Resource::Manager> resourceManager_;
+    std::unique_ptr<resource::Manager> resourceManager_;
 
     std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
@@ -348,7 +348,7 @@ public:
                   telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
                       "",  // Updated later via setServiceInstanceId()
-                      BuildInfo::getVersionString(),
+                      build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
 
@@ -412,7 +412,7 @@ public:
         , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
-              Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
+              resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
         , nodeStore_(shaMapStore_->makeNodeStore(
               config_->prefetchWorkers > 0 ? config_->prefetchWorkers : 4))
         , nodeFamily_(*this, *collectorManager_)
@@ -722,7 +722,7 @@ public:
         return *loadManager_;
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         return *resourceManager_;
@@ -1274,7 +1274,7 @@ private:
      * fallback) and metricsRegistry_ is constructed.
      */
     void
-    startTelemetry();
+    startTelemetry() const;
 
     /**
      * Register the pull-model observable instruments. Second telemetry phase.
@@ -1296,7 +1296,7 @@ private:
      * MetricsRegistry::startAsyncGauges() for the full list.
      */
     void
-    startTelemetryGauges();
+    startTelemetryGauges() const;
 
     std::shared_ptr<Ledger>
     getLastFullLedger();
@@ -1363,7 +1363,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             logs_->threshold(Severity::Debug);
     }
 
-    JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()
+    JLOG(journal_.info()) << "Process starting: " << build_info::getFullVersionString()
                           << ", Instance Cookie: " << instanceCookie_;
 
     if (numberOfThreads(*config_) < 2)
@@ -1673,9 +1673,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
-        RPC::JsonContext context{
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
             {.j = getJournal("RPCHandler"),
              .app = *this,
              .loadType = loadType,
@@ -1685,11 +1685,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiMaximumSupportedVersion},
+             .apiVersion = rpc::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
-        RPC::doCommand(context, jvResult);
+        rpc::doCommand(context, jvResult);
 
         if (!config_->quiet())
         {
@@ -1705,7 +1705,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 void
 ApplicationImp::start(bool withTimers)
 {
-    JLOG(journal_.info()) << "Application starting. Version is " << BuildInfo::getVersionString();
+    JLOG(journal_.info()) << "Application starting. Version is " << build_info::getVersionString();
 
     if (withTimers)
     {
@@ -1728,7 +1728,7 @@ ApplicationImp::start(bool withTimers)
 }
 
 void
-ApplicationImp::startTelemetry()
+ApplicationImp::startTelemetry() const
 {
     // Start tracing first so subsequent startup/early activity can be traced.
     telemetry_->start();
@@ -1753,7 +1753,7 @@ ApplicationImp::startTelemetry()
 }
 
 void
-ApplicationImp::startTelemetryGauges()
+ApplicationImp::startTelemetryGauges() const
 {
     if (metricsRegistry_)
         metricsRegistry_->startAsyncGauges();

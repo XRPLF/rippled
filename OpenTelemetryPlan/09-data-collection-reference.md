@@ -1045,7 +1045,7 @@ repeated here:
 
 ---
 
-## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
+## 5c. Synthetic Workload Generation & Telemetry Validation (Phase 10)
 
 > **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
 > **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
@@ -1401,7 +1401,7 @@ macros, not as `MetricsRegistry` members: the two rejection counters in
 **Per request, not per object.** `getobject_lookup_us` times the whole fetch
 loop once, and `getobject_lookups_total` adds the batch hit and miss totals in
 two calls. Incrementing per object on a loop bounded by
-`Tuning::kHardMaxReplyNodes` (12288) would cost measurably and add no
+`tuning::kHardMaxReplyNodes` (12288) would cost measurably and add no
 information the batch totals do not already carry.
 
 **All three histograms need an explicit bucket view.** The SDK's default
@@ -1431,7 +1431,7 @@ observation in one or two buckets and make the distribution unreadable.
 `addHistogramView()` exists to take caller-supplied boundaries for exactly this
 case.
 
-- **Counts** run 1 to `Tuning::kHardMaxReplyNodes` (12288). The low end is
+- **Counts** run 1 to `tuning::kHardMaxReplyNodes` (12288). The low end is
   fine-grained because the honest sync path asks for at most 8 objects, so the
   interesting distinction is between a normal request and a large one. The upper
   bounds follow the charge size bands — `kBandSmallMax` (64) and
@@ -1439,7 +1439,7 @@ case.
   with each price change.
 - **Charges** run 0 to roughly 99k for a full-size all-miss request. Two of the
   boundaries are the resource thresholds that decide a peer's fate:
-  `Resource::kWarningThreshold` (5000) and `Resource::kDropThreshold` (25000),
+  `resource::kWarningThreshold` (5000) and `resource::kDropThreshold` (25000),
   both in `include/xrpl/resource/detail/Tuning.h`. Placing bucket edges exactly
   there lets a panel read off how close real charges run to a warning or a drop,
   rather than interpolating across an edge.

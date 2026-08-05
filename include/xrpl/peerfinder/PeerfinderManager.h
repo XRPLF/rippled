@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 //------------------------------------------------------------------------------
 
@@ -181,17 +181,17 @@ public:
      * file, along with the set of corresponding IP addresses.
      */
     virtual void
-    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses) = 0;
+    addFixedPeer(std::string_view name, std::vector<beast::ip::Endpoint> const& addresses) = 0;
 
     /**
-     * Add a set of strings as fallback IP::Endpoint sources.
+     * Add a set of strings as fallback ip::Endpoint sources.
      * @param name A label used for diagnostics.
      */
     virtual void
     addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) = 0;
 
     /**
-     * Add a URL as a fallback location to obtain IP::Endpoint sources.
+     * Add a URL as a fallback location to obtain ip::Endpoint sources.
      * @param name A label used for diagnostics.
      */
     /* VFALCO NOTE Unimplemented
@@ -208,8 +208,8 @@ public:
      */
     virtual std::pair<std::shared_ptr<Slot>, Result>
     newInboundSlot(
-        beast::IP::Endpoint const& localEndpoint,
-        beast::IP::Endpoint const& remoteEndpoint) = 0;
+        beast::ip::Endpoint const& localEndpoint,
+        beast::ip::Endpoint const& remoteEndpoint) = 0;
 
     /**
      * Create a new outbound slot with the specified remote endpoint.
@@ -217,7 +217,7 @@ public:
      * Usually this is because of a duplicate connection.
      */
     virtual std::pair<std::shared_ptr<Slot>, Result>
-    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) = 0;
+    newOutboundSlot(beast::ip::Endpoint const& remoteEndpoint) = 0;
 
     /**
      * Called when mtENDPOINTS is received.
@@ -258,7 +258,7 @@ public:
      * @return `true` if the connection should be kept
      */
     virtual bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint) = 0;
+    onConnected(std::shared_ptr<Slot> const& slot, beast::ip::Endpoint const& localEndpoint) = 0;
 
     /**
      * Request an active slot type.
@@ -275,7 +275,7 @@ public:
     /**
      * Return a set of addresses we should connect to.
      */
-    virtual std::vector<beast::IP::Endpoint>
+    virtual std::vector<beast::ip::Endpoint>
     autoconnect() = 0;
 
     virtual std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
@@ -289,4 +289,4 @@ public:
     oncePerSecond() = 0;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

@@ -597,7 +597,7 @@ public:
     {
         throwUnimplemented();
     }
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         throwUnimplemented();

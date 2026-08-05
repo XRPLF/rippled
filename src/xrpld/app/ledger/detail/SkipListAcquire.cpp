@@ -39,10 +39,10 @@ SkipListAcquire::SkipListAcquire(
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::kSubTaskTimeout,
+          ledger_replay_parameters::kSubTaskTimeout,
           {.jobType = JtReplayTask,
            .jobName = "SkipListAcq",
-           .jobLimit = LedgerReplayParameters::kMaxQueuedTasks},
+           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -98,10 +98,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace())
                         << "Add a no feature peer " << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMaxNoFeaturePeerCount)
+                    if (++noFeaturePeerCount_ >= ledger_replay_parameters::kMaxNoFeaturePeerCount)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::kSubTaskFallbackTimeout;
+                        timerInterval_ = ledger_replay_parameters::kSubTaskFallbackTimeout;
 
                         // Too few peers support ledger replay, so this
                         // sub-task gives up on the skip-list shortcut and
@@ -131,7 +131,7 @@ void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::kSubTaskMaxTimeouts)
+    if (timeouts_ > ledger_replay_parameters::kSubTaskMaxTimeouts)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;

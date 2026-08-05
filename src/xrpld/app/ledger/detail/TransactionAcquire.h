@@ -6,10 +6,10 @@
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <chrono>
@@ -75,8 +75,8 @@ public:
 
     SHAMapAddNode
     takeNodes(
-        std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
-        std::shared_ptr<Peer> const&);
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
+        std::shared_ptr<Peer> const& peer);
 
     void
     init(int startPeers);
