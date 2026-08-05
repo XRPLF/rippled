@@ -1,7 +1,62 @@
 #include <test/app/wasm_fixtures/fixtures.h>
-#include <test/jtx.h>
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/account_txn_id.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/check.h>
+#include <test/jtx/contract.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/delivermin.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/did.h>
+#include <test/jtx/directory.h>
+#include <test/jtx/domain.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/invoice_id.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/ledgerStateFix.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/prop.h>
+#include <test/jtx/quality.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/requires.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tag.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
 
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
@@ -9,7 +64,7 @@
 namespace xrpl {
 namespace test {
 
-class Contract_test : public beast::unit_test::suite
+class Contract_test : public beast::unit_test::Suite
 {
     struct TestLedgerData
     {
@@ -18,18 +73,18 @@ class Contract_test : public beast::unit_test::suite
         std::string result;
     };
 
-    Json::Value
+    json::Value
     getLastLedger(jtx::Env& env)
     {
-        Json::Value params;
+        json::Value params;
         params[jss::ledger_index] = env.closed()->seq();
         params[jss::transactions] = true;
         params[jss::expand] = true;
         return env.rpc("json", "ledger", to_string(params));
     }
 
-    Json::Value
-    getTxByIndex(Json::Value const& jrr, int const index)
+    json::Value
+    getTxByIndex(json::Value const& jrr, int const index)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
         {
@@ -49,7 +104,7 @@ class Contract_test : public beast::unit_test::suite
         {
             auto const txn = getTxByIndex(jrr, ledgerResult.index);
             BEAST_EXPECT(txn.isMember(jss::metaData));
-            Json::Value const meta = txn[jss::metaData];
+            json::Value const meta = txn[jss::metaData];
             BEAST_EXPECT(txn[sfTransactionType.jsonName] == ledgerResult.txType);
             BEAST_EXPECT(meta[sfTransactionResult.jsonName] == ledgerResult.result);
         }
@@ -73,8 +128,8 @@ class Contract_test : public beast::unit_test::suite
         return {k.key, view.read(k)};
     }
 
-    Json::Value
-    getContractCreateTx(Json::Value const& jrr)
+    json::Value
+    getContractCreateTx(json::Value const& jrr)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
         {
@@ -87,17 +142,17 @@ class Contract_test : public beast::unit_test::suite
     uint256
     getContractHash(Blob const& wasmBytes)
     {
-        return xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        return xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
     }
 
     void
-    validateFunctions(std::shared_ptr<SLE const> const& sle, Json::Value const& functions)
+    validateFunctions(std::shared_ptr<SLE const> const& sle, json::Value const& functions)
     {
         auto const stored = sle->getFieldArray(sfFunctions);
         BEAST_EXPECT(stored.size() == functions.size());
         for (std::size_t i = 0; i < stored.size(); ++i)
         {
-            auto const sIPV = stored[i].getJson(JsonOptions::none);
+            auto const sIPV = stored[i].getJson(JsonOptions::Values::None);
             auto const& eIPV = functions[i]["Function"];
 
             // Compare function name.
@@ -151,7 +206,7 @@ class Contract_test : public beast::unit_test::suite
     void
     validateInstanceParams(
         std::shared_ptr<SLE const> const& sle,
-        Json::Value const& instanceParamValues)
+        json::Value const& instanceParamValues)
     {
         // Convert stored SLE array to JSON and compare against expected JSON.
         auto const stored = sle->getFieldArray(sfInstanceParameterValues);
@@ -160,7 +215,7 @@ class Contract_test : public beast::unit_test::suite
         for (std::size_t i = 0; i < stored.size(); ++i)
         {
             // Convert the STObject entry to JSON for easy comparison.
-            auto const sIPV = stored[i].getJson(JsonOptions::none);
+            auto const sIPV = stored[i].getJson(JsonOptions::Values::None);
             auto const& eIPV = instanceParamValues[i]["InstanceParameterValue"];
 
             // Compare flag if present.
@@ -194,7 +249,7 @@ class Contract_test : public beast::unit_test::suite
     void
     validateInstanceParamValues(
         std::shared_ptr<SLE const> const& sle,
-        Json::Value const& instanceParamValues)
+        json::Value const& instanceParamValues)
     {
         // Convert stored SLE array to JSON and compare against expected JSON.
         auto const stored = sle->getFieldArray(sfInstanceParameterValues);
@@ -203,7 +258,7 @@ class Contract_test : public beast::unit_test::suite
         for (std::size_t i = 0; i < stored.size(); ++i)
         {
             // Convert the STObject entry to JSON for easy comparison.
-            auto const sIPV = stored[i].getJson(JsonOptions::none);
+            auto const sIPV = stored[i].getJson(JsonOptions::Values::None);
             auto const& eIPV = instanceParamValues[i]["InstanceParameterValue"];
 
             // Compare flag if present.
@@ -239,7 +294,7 @@ class Contract_test : public beast::unit_test::suite
         std::uint32_t const& flags,
         std::uint32_t const& seq,
         uint256 const& contractHash,
-        std::optional<Json::Value> const& instanceParamValues = std::nullopt,
+        std::optional<json::Value> const& instanceParamValues = std::nullopt,
         std::optional<std::string> const& uri = std::nullopt)
     {
         auto const sle = env.current()->read(k);
@@ -269,8 +324,8 @@ class Contract_test : public beast::unit_test::suite
         Blob const& wasmBytes,
         uint256 const& contractHash,
         std::uint64_t const& referenceCount,
-        Json::Value const& functions,
-        std::optional<Json::Value> const& instanceParams = std::nullopt)
+        json::Value const& functions,
+        std::optional<json::Value> const& instanceParams = std::nullopt)
     {
         auto const [id, sle] = contractSourceKeyAndSle(*env.current(), contractHash);
         BEAST_EXPECT(sle);
@@ -281,15 +336,15 @@ class Contract_test : public beast::unit_test::suite
     }
 
     template <typename... Args>
-    std::tuple<jtx::Account, uint256, Json::Value>
+    std::tuple<jtx::Account, uint256, json::Value>
     setContract(jtx::Env& env, TER const& result, Args&&... args)
     {
         auto jt = env.jt(std::forward<Args>(args)...);
-        env(jt, jtx::ter(result));
+        env(jt, jtx::Ter(result));
         env.close();
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -313,7 +368,7 @@ class Contract_test : public beast::unit_test::suite
         if (!wasmBytes || wasmBytes->empty())
             return std::make_tuple(jtx::Account{"invalid"}, uint256{}, jt.jv);
         uint256 const contractHash =
-            xrpl::sha512Half_s(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
+            xrpl::sha512HalfS(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
         auto const accountID = parseBase58<AccountID>(jt.jv[sfAccount].asString());
         auto const [contractKey, sle] = contractKeyAndSle(
             *env.current(), contractHash, *accountID, jt.jv[sfSequence.jsonName].asUInt());
@@ -358,7 +413,7 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm), ter(temDISABLED));
+            env(contract::create(alice, BaseContractWasm), Ter(temDISABLED));
         }
 
         // temINVALID_FLAG: tfContractMask is not allowed.
@@ -370,8 +425,8 @@ class Contract_test : public beast::unit_test::suite
             env.close();
 
             env(contract::create(alice, BaseContractWasm),
-                txflags(tfBurnable),
-                ter(temINVALID_FLAG));
+                Txflags(tfBurnable),
+                Ter(temINVALID_FLAG));
         }
 
         // temMALFORMED: Neither ContractCode nor ContractHash present
@@ -382,13 +437,13 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             // Missing both ContractCode and ContractHash
 
-            env(jv, ter(temMALFORMED));
+            env(jv, Ter(temMALFORMED));
         }
 
         // temMALFORMED: Both ContractCode and ContractHash present
@@ -399,7 +454,7 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
@@ -408,7 +463,7 @@ class Contract_test : public beast::unit_test::suite
                 "D955DAC2E77519F05AD151A5D3C99FC8125FB39D58FF9F106F1ACA4491902C"
                 "25";
 
-            env(jv, ter(temMALFORMED));
+            env(jv, Ter(temMALFORMED));
         }
 
         // temARRAY_EMPTY: ContractCode present but Functions missing
@@ -419,14 +474,14 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
             // Missing Functions array
 
-            env(jv, ter(temARRAY_EMPTY));
+            env(jv, Ter(temARRAY_EMPTY));
         }
 
         // temARRAY_EMPTY: ContractCode present but Functions missing
@@ -437,14 +492,14 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
-            jv[sfFunctions.jsonName] = Json::arrayValue;  // Empty array
+            jv[sfFunctions.jsonName] = json::ValueType::Array;  // Empty array
 
-            env(jv, ter(temARRAY_EMPTY));
+            env(jv, Ter(temARRAY_EMPTY));
         }
 
         // temARRAY_TOO_LARGE: Functions array too large
@@ -469,7 +524,7 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_function("func11", {}),
                 contract::add_function("func12", {}),
                 contract::add_function("func13", {}),
-                ter(temARRAY_TOO_LARGE));
+                Ter(temARRAY_TOO_LARGE));
         }
 
         // temREDUNDANT: Duplicate function name
@@ -483,7 +538,7 @@ class Contract_test : public beast::unit_test::suite
             env(contract::create(alice, BaseContractWasm),
                 contract::add_function("test", {}),
                 contract::add_function("test", {}),  // Duplicate
-                ter(temREDUNDANT));
+                Ter(temREDUNDANT));
         }
 
         // temARRAY_TOO_LARGE: Function Parameters array too large
@@ -516,7 +571,7 @@ class Contract_test : public beast::unit_test::suite
                         {0, "param31", "UINT8"}, {0, "param32", "UINT8"},
                         {0, "param33", "UINT8"},  // 33rd parameter
                     }),
-                ter(temARRAY_TOO_LARGE));
+                Ter(temARRAY_TOO_LARGE));
         }
 
         // temMALFORMED: Function Parameter is missing flag
@@ -527,23 +582,23 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
-            jv[sfFunctions.jsonName] = Json::arrayValue;
+            jv[sfFunctions.jsonName] = json::ValueType::Array;
 
-            Json::Value func;
+            json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
-            func[sfFunction.jsonName][sfParameters.jsonName] = Json::arrayValue;
+            func[sfFunction.jsonName][sfParameters.jsonName] = json::ValueType::Array;
 
-            Json::Value param;
+            json::Value param;
             param[sfParameter.jsonName][sfParameterType.jsonName]["type"] = "UINT8";
             func[sfFunction.jsonName][sfParameters.jsonName].append(param);
 
             jv[sfFunctions.jsonName].append(func);
-            env(jv, ter(temMALFORMED));
+            env(jv, Ter(temMALFORMED));
         }
 
         // temMALFORMED: Function Parameter is missing type
@@ -554,24 +609,24 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
-            jv[sfFunctions.jsonName] = Json::arrayValue;
+            jv[sfFunctions.jsonName] = json::ValueType::Array;
 
-            Json::Value func;
+            json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
-            func[sfFunction.jsonName][sfParameters.jsonName] = Json::arrayValue;
+            func[sfFunction.jsonName][sfParameters.jsonName] = json::ValueType::Array;
 
-            Json::Value param;
+            json::Value param;
             param[sfParameter.jsonName][sfParameterFlag.jsonName] = 0;
             // Missing sfParameterType
             func[sfFunction.jsonName][sfParameters.jsonName].append(param);
 
             jv[sfFunctions.jsonName].append(func);
-            env(jv, ter(temMALFORMED));
+            env(jv, Ter(temMALFORMED));
         }
 
         // temINVALID_FLAG: Invalid parameter flag in Function.
@@ -584,7 +639,7 @@ class Contract_test : public beast::unit_test::suite
 
             env(contract::create(alice, BaseContractWasm),
                 contract::add_function("test", {{0xFF000000, "param", "UINT8"}}),  // Invalid flag
-                ter(temINVALID_FLAG));
+                Ter(temINVALID_FLAG));
         }
 
         // temARRAY_EMPTY: InstanceParameters empty array
@@ -595,18 +650,18 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
-            jv[sfFunctions.jsonName] = Json::arrayValue;
-            Json::Value func;
+            jv[sfFunctions.jsonName] = json::ValueType::Array;
+            json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             jv[sfFunctions.jsonName].append(func);
-            jv[sfInstanceParameters.jsonName] = Json::arrayValue;  // Empty array
+            jv[sfInstanceParameters.jsonName] = json::ValueType::Array;  // Empty array
 
-            env(jv, ter(temARRAY_EMPTY));
+            env(jv, Ter(temARRAY_EMPTY));
         }
 
         // temARRAY_TOO_LARGE: InstanceParameters array is too large
@@ -652,7 +707,7 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_instance_param(0, "param31", "UINT8", 31),
                 contract::add_instance_param(0, "param32", "UINT8", 32),
                 contract::add_instance_param(0, "param33", "UINT8", 33),
-                ter(temARRAY_TOO_LARGE));
+                Ter(temARRAY_TOO_LARGE));
         }
 
         // temARRAY_EMPTY: InstanceParameterValues is missing
@@ -663,18 +718,18 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
             jv[sfContractCode.jsonName] = BaseContractWasm;
-            jv[sfFunctions.jsonName] = Json::arrayValue;
-            Json::Value func;
+            jv[sfFunctions.jsonName] = json::ValueType::Array;
+            json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             jv[sfFunctions.jsonName].append(func);
-            jv[sfInstanceParameterValues.jsonName] = Json::arrayValue;  // Empty array
+            jv[sfInstanceParameterValues.jsonName] = json::ValueType::Array;  // Empty array
 
-            env(jv, ter(temARRAY_EMPTY));
+            env(jv, Ter(temARRAY_EMPTY));
         }
 
         // // Test 18: InstanceParameterValues array is too large.
@@ -685,22 +740,22 @@ class Contract_test : public beast::unit_test::suite
         //     env.fund(XRP(10'000), alice);
         //     env.close();
 
-        //     Json::Value jv;
+        //     json::Value jv;
         //     jv[jss::TransactionType] = jss::ContractCreate;
         //     jv[jss::Account] = alice.human();
         //     jv[jss::Fee] = to_string(XRP(10).value());
         //     jv[sfContractCode.jsonName] = BaseContractWasm;
-        //     jv[sfFunctions.jsonName] = Json::arrayValue;
-        //     Json::Value func;
+        //     jv[sfFunctions.jsonName] = json::ValueType::Array;
+        //     json::Value func;
         //     func[sfFunction.jsonName][sfFunctionName.jsonName] = "test";
         //     func[sfFunction.jsonName][sfParameters.jsonName] =
-        //     Json::arrayValue; jv[sfFunctions.jsonName].append(func);
-        //     jv[sfInstanceParameterValues.jsonName] = Json::arrayValue;
+        //     json::ValueType::Array; jv[sfFunctions.jsonName].append(func);
+        //     jv[sfInstanceParameterValues.jsonName] = json::ValueType::Array;
 
         //     // Add more than maxContractParams
         //     for (int i = 0; i < 257; ++i)
         //     {
-        //         Json::Value param;
+        //         json::Value param;
         //         param[sfInstanceParameterValue.jsonName]
         //              [sfParameterFlag.jsonName] = 0;
         //         param[sfInstanceParameterValue.jsonName]
@@ -710,7 +765,7 @@ class Contract_test : public beast::unit_test::suite
         //         jv[sfInstanceParameterValues.jsonName].append(param);
         //     }
 
-        //     env(jv, ter(temARRAY_TOO_LARGE));
+        //     env(jv, Ter(temARRAY_TOO_LARGE));
         // }
 
         // // Test 19: InstanceParameterValue missing flag
@@ -721,19 +776,19 @@ class Contract_test : public beast::unit_test::suite
         //     env.fund(XRP(10'000), alice);
         //     env.close();
 
-        //     Json::Value jv;
+        //     json::Value jv;
         //     jv[jss::TransactionType] = jss::ContractCreate;
         //     jv[jss::Account] = alice.human();
         //     jv[jss::Fee] = to_string(XRP(10).value());
         //     jv[sfContractCode.jsonName] = BaseContractWasm;
-        //     jv[sfFunctions.jsonName] = Json::arrayValue;
-        //     Json::Value func;
+        //     jv[sfFunctions.jsonName] = json::ValueType::Array;
+        //     json::Value func;
         //     func[sfFunction.jsonName][sfFunctionName.jsonName] = "test";
         //     func[sfFunction.jsonName][sfParameters.jsonName] =
-        //     Json::arrayValue; jv[sfFunctions.jsonName].append(func);
-        //     jv[sfInstanceParameterValues.jsonName] = Json::arrayValue;
+        //     json::ValueType::Array; jv[sfFunctions.jsonName].append(func);
+        //     jv[sfInstanceParameterValues.jsonName] = json::ValueType::Array;
 
-        //     Json::Value param;
+        //     json::Value param;
         //     // Missing sfParameterFlag
         //     param[sfInstanceParameterValue.jsonName][sfParameterValue.jsonName]
         //          ["type"] = "UINT8";
@@ -741,7 +796,7 @@ class Contract_test : public beast::unit_test::suite
         //          ["value"] = 1;
         //     jv[sfInstanceParameterValues.jsonName].append(param);
 
-        //     env(jv, ter(temMALFORMED));
+        //     env(jv, Ter(temMALFORMED));
         // }
 
         // // Test 20: InstanceParameterValue missing value
@@ -752,26 +807,26 @@ class Contract_test : public beast::unit_test::suite
         //     env.fund(XRP(10'000), alice);
         //     env.close();
 
-        //     Json::Value jv;
+        //     json::Value jv;
         //     jv[jss::TransactionType] = jss::ContractCreate;
         //     jv[jss::Account] = alice.human();
         //     jv[jss::Fee] = to_string(XRP(10).value());
         //     jv[sfContractCode.jsonName] = BaseContractWasm;
-        //     jv[sfFunctions.jsonName] = Json::arrayValue;
-        //     Json::Value func;
+        //     jv[sfFunctions.jsonName] = json::ValueType::Array;
+        //     json::Value func;
         //     func[sfFunction.jsonName][sfFunctionName.jsonName] = "test";
         //     func[sfFunction.jsonName][sfParameters.jsonName] =
-        //     Json::arrayValue; jv[sfFunctions.jsonName].append(func);
-        //     jv[sfInstanceParameterValues.jsonName] = Json::arrayValue;
+        //     json::ValueType::Array; jv[sfFunctions.jsonName].append(func);
+        //     jv[sfInstanceParameterValues.jsonName] = json::ValueType::Array;
 
-        //     Json::Value param;
+        //     json::Value param;
         //     param[sfInstanceParameterValue.jsonName][sfParameterFlag.jsonName]
         //     =
         //         0;
         //     // Missing sfParameterValue
         //     jv[sfInstanceParameterValues.jsonName].append(param);
 
-        //     env(jv, ter(temMALFORMED));
+        //     env(jv, Ter(temMALFORMED));
         // }
 
         // // Test 21: InstanceParameterValue invalid flag
@@ -786,7 +841,7 @@ class Contract_test : public beast::unit_test::suite
         //         contract::add_function("test", {}),
         //         contract::add_instance_param(
         //             0xFF000000, "param", "UINT8", 1),  // Invalid flag
-        //         ter(temINVALID_FLAG));
+        //         Ter(temINVALID_FLAG));
         // }
 
         // // Test 22: Success - ContractCode with Functions
@@ -799,8 +854,8 @@ class Contract_test : public beast::unit_test::suite
 
         //     env(contract::create(alice, BaseContractWasm),
         //         contract::add_function("base", {}),
-        //         fee(XRP(200)),
-        //         ter(tesSUCCESS));
+        //         Fee(XRP(200)),
+        //         Ter(tesSUCCESS));
         // }
 
         // // Test 23: Success - ContractCode with Functions and parameters
@@ -815,8 +870,8 @@ class Contract_test : public beast::unit_test::suite
         //         contract::add_function(
         //             "base", {{0, "param1", "UINT8"}, {0, "param2",
         //             "UINT32"}}),
-        //         fee(XRP(200)),
-        //         ter(tesSUCCESS));
+        //         Fee(XRP(200)),
+        //         Ter(tesSUCCESS));
         // }
 
         // // Test 24: Success - with InstanceParameters and
@@ -832,8 +887,8 @@ class Contract_test : public beast::unit_test::suite
         //         contract::add_instance_param(0, "uint8", "UINT8", 1),
         //         contract::add_instance_param(0, "uint32", "UINT32", 100),
         //         contract::add_function("base", {}),
-        //         fee(XRP(200)),
-        //         ter(tesSUCCESS));
+        //         Fee(XRP(200)),
+        //         Ter(tesSUCCESS));
         // }
     }
 
@@ -857,8 +912,8 @@ class Contract_test : public beast::unit_test::suite
                     alice,
                     uint256{"D955DAC2E77519F05AD151A5D3C99FC8125FB39D58FF9F106F"
                             "1ACA4491902C25"}),
-                fee(XRP(200)),
-                ter(temMALFORMED));
+                Fee(XRP(200)),
+                Ter(temMALFORMED));
         }
 
         // temMALFORMED: ContractCode provided is empty
@@ -871,8 +926,8 @@ class Contract_test : public beast::unit_test::suite
 
             env(contract::create(alice, ""),  // Empty code
                 contract::add_function("test", {}),
-                fee(XRP(200)),
-                ter(temMALFORMED));
+                Fee(XRP(200)),
+                Ter(temMALFORMED));
         }
 
         // tesSUCCESS: ContractCode provided, ContractSource doesn't exist yet
@@ -886,8 +941,8 @@ class Contract_test : public beast::unit_test::suite
 
             env(contract::create(alice, BaseContractWasm),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
 
             // TODO: Validate
         }
@@ -905,16 +960,16 @@ class Contract_test : public beast::unit_test::suite
             env(contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
             env.close();
 
             // Second create with same code (install)
             env(contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 2),  // Different value
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
 
             // TODO: Validate
         }
@@ -931,8 +986,8 @@ class Contract_test : public beast::unit_test::suite
             env(contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
             env.close();
 
             // Get the hash of the contract
@@ -942,8 +997,8 @@ class Contract_test : public beast::unit_test::suite
             // Install using ContractHash
             env(contract::create(alice, contractHash),
                 contract::add_instance_param(0, "uint8", "UINT8", 2),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
 
             // TODO: Validate
         }
@@ -963,8 +1018,8 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_instance_param(0, "uint32", "UINT32", 100),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
             env.close();
 
             // Get the hash
@@ -975,8 +1030,8 @@ class Contract_test : public beast::unit_test::suite
             // Only providing one parameter when ContractSource expects two
             env(contract::create(alice, contractHash),
                 contract::add_instance_param(0, "uint8", "UINT8", 2),
-                fee(XRP(200)),
-                ter(temMALFORMED));
+                Fee(XRP(200)),
+                Ter(temMALFORMED));
         }
 
         // temMALFORMED: ContractHash provided but ContractSource doesn't
@@ -993,7 +1048,7 @@ class Contract_test : public beast::unit_test::suite
             auto const wasmBytes = strUnHex(Base2ContractWasm);
             uint256 const contractHash = getContractHash(*wasmBytes);
 
-            env(contract::create(alice, contractHash), fee(XRP(200)), ter(temMALFORMED));
+            env(contract::create(alice, contractHash), Fee(XRP(200)), Ter(temMALFORMED));
         }
 
         // tesSUCCESS: ContractCode with InstanceParameters for first
@@ -1009,8 +1064,8 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_instance_param(0, "uint8", "UINT8", 255),
                 contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(100)),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
         }
 
         // tesSUCCESS: Multiple installs of same contract
@@ -1026,24 +1081,24 @@ class Contract_test : public beast::unit_test::suite
             env(contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
             env.close();
 
             // Bob installs same contract
             env(contract::create(bob, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 2),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
             env.close();
 
             // Alice installs another instance
             env(contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 3),
                 contract::add_function("base", {}),
-                fee(XRP(200)),
-                ter(tesSUCCESS));
+                Fee(XRP(200)),
+                Ter(tesSUCCESS));
         }
     }
 
@@ -1071,8 +1126,8 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                token::uri("https://example.com/contract"),
-                fee(XRP(200)));
+                token::Uri("https://example.com/contract"),
+                Fee(XRP(200)));
 
             // validate contract
             // validateContract(
@@ -1112,7 +1167,7 @@ class Contract_test : public beast::unit_test::suite
                     contract::create(alice, BaseContractWasm),
                     contract::add_instance_param(0, "uint8", "UINT8", 1),
                     contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                    fee(XRP(200)));
+                    Fee(XRP(200)));
 
                 // validate contract
                 // validateContract(
@@ -1138,7 +1193,7 @@ class Contract_test : public beast::unit_test::suite
                     contract::create(alice, BaseContractWasm),
                     contract::add_instance_param(0, "uint8", "UINT8", 1),
                     contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                    fee(XRP(200)));
+                    Fee(XRP(200)));
 
                 // validate contract
                 // validateContract(
@@ -1182,15 +1237,15 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             // Modify contract
             auto jt = env.jt(
                 contract::modify(alice, contractAccount, Base2ContractWasm),
                 contract::add_instance_param(0, "uint16", "UINT16", 1),
                 contract::add_function("base", {{0, "uint16", "UINT16"}}),
-                fee(XRP(200)));
-            env(jt, ter(tesSUCCESS));
+                Fee(XRP(200)));
+            env(jt, Ter(tesSUCCESS));
             env.close();
 
             // old contract source is deleted
@@ -1201,7 +1256,7 @@ class Contract_test : public beast::unit_test::suite
             // new contract source exists
             auto const wasmBytes = strUnHex(Base2ContractWasm);
             uint256 const newContractHash =
-                xrpl::sha512Half_s(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
+                xrpl::sha512HalfS(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
             auto const [contractKey, contractSle] =
                 contractSourceKeyAndSle(*env.current(), newContractHash);
             BEAST_EXPECT(contractSle);
@@ -1237,7 +1292,7 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             auto const [contractAccount2, contractHash2, jv2] = setContract(
                 env,
@@ -1245,15 +1300,15 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, Base2ContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             // Modify contract
             auto jt = env.jt(
                 contract::modify(alice, contractAccount, contractHash2),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
-            env(jt, ter(tesSUCCESS));
+                Fee(XRP(200)));
+            env(jt, Ter(tesSUCCESS));
             env.close();
 
             // old contract source is deleted
@@ -1299,11 +1354,11 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             // Modify contract
-            auto jt = env.jt(contract::modify(alice, contractAccount, bob), fee(XRP(200)));
-            env(jt, ter(tesSUCCESS));
+            auto jt = env.jt(contract::modify(alice, contractAccount, bob), Fee(XRP(200)));
+            env(jt, Ter(tesSUCCESS));
             env.close();
 
             // validate modified contract
@@ -1343,9 +1398,9 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
-            env(contract::del(alice, contractAccount), ter(tesSUCCESS));
+            env(contract::del(alice, contractAccount), Ter(tesSUCCESS));
             env.close();
 
             // Pseudo Account is deleted
@@ -1377,7 +1432,7 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             auto const seq2 = env.current()->seq();
             auto const [contractAccount2, contractHash2, jv2] = setContract(
@@ -1386,9 +1441,9 @@ class Contract_test : public beast::unit_test::suite
                 contract::create(alice, BaseContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 1),
                 contract::add_function("base", {{0, "uint8", "UINT8"}}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
-            env(contract::del(alice, contractAccount), ter(tesSUCCESS));
+            env(contract::del(alice, contractAccount), Ter(tesSUCCESS));
             env.close();
 
             // Pseudo Account is deleted
@@ -1430,7 +1485,7 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::userDelete(alice, BaseContractWasm), ter(temDISABLED));
+            env(contract::userDelete(alice, BaseContractWasm), Ter(temDISABLED));
         }
     }
 
@@ -1490,16 +1545,16 @@ class Contract_test : public beast::unit_test::suite
             contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_simple_create", {}),
             contract::add_function("object_simple_update", {}),
-            fee(XRP(2000)));
+            Fee(XRP(2000)));
 
         env(contract::call(alice, contractAccount, "object_simple_create"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
 
         env(contract::call(alice, contractAccount, "object_simple_update"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1525,16 +1580,16 @@ class Contract_test : public beast::unit_test::suite
             contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_nested_create", {}),
             contract::add_function("object_nested_update", {}),
-            fee(XRP(2000)));
+            Fee(XRP(2000)));
 
         env(contract::call(alice, contractAccount, "object_nested_create"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
 
         env(contract::call(alice, contractAccount, "object_nested_update"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1560,16 +1615,16 @@ class Contract_test : public beast::unit_test::suite
             contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_with_arrays_create", {}),
             contract::add_function("object_with_arrays_update", {}),
-            fee(XRP(2000)));
+            Fee(XRP(2000)));
 
         env(contract::call(alice, contractAccount, "object_with_arrays_create"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
 
         env(contract::call(alice, contractAccount, "object_with_arrays_update"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1595,16 +1650,16 @@ class Contract_test : public beast::unit_test::suite
             contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_with_nested_arrays_create", {}),
             contract::add_function("object_with_nested_arrays_update", {}),
-            fee(XRP(2000)));
+            Fee(XRP(2000)));
 
         env(contract::call(alice, contractAccount, "object_with_nested_arrays_create"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
 
         env(contract::call(alice, contractAccount, "object_with_nested_arrays_update"),
-            escrow::comp_allowance(1'000'000),
-            ter(tesSUCCESS));
+            escrow::Gas(1'000'000),
+            Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1651,10 +1706,10 @@ class Contract_test : public beast::unit_test::suite
                     "902C"
                     "25"),
                 contract::add_function("instance_params_uint", {}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             // {
-            //     Json::Value params;
+            //     json::Value params;
             //     params[jss::ledger_index] = env.current()->seq() - 1;
             //     params[jss::transactions] = true;
             //     params[jss::expand] = true;
@@ -1663,8 +1718,8 @@ class Contract_test : public beast::unit_test::suite
             // }
 
             env(contract::call(alice, contractAccount, "instance_params_uint"),
-                escrow::comp_allowance(1000000),
-                ter(tesSUCCESS));
+                escrow::Gas(1000000),
+                Ter(tesSUCCESS));
             env.close();
         }
 
@@ -1679,15 +1734,15 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_instance_param(0, "vl", "VL", "DEADBEEF"),
                 contract::add_instance_param(0, "account", "ACCOUNT", alice.human()),
                 contract::add_instance_param(
-                    0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::none)),
+                    0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::Values::None)),
                 contract::add_instance_param(
-                    0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::none)),
+                    0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::Values::None)),
                 contract::add_instance_param(0, "number", "NUMBER", "1.2"),
                 contract::add_function("instance_params_other", {}),
-                fee(XRP(200)));
+                Fee(XRP(200)));
 
             // {
-            //     Json::Value params;
+            //     json::Value params;
             //     params[jss::ledger_index] = env.current()->seq() - 1;
             //     params[jss::transactions] = true;
             //     params[jss::expand] = true;
@@ -1696,8 +1751,8 @@ class Contract_test : public beast::unit_test::suite
             // }
 
             env(contract::call(alice, contractAccount, "instance_params_other"),
-                escrow::comp_allowance(1000000),
-                ter(tesSUCCESS));
+                escrow::Gas(1000000),
+                Ter(tesSUCCESS));
             env.close();
         }
     }
@@ -1748,10 +1803,10 @@ class Contract_test : public beast::unit_test::suite
                     //  {0, "issue", "ISSUE"},
                     //  {0, "currency", "CURRENCY"}
                 }),
-            fee(XRP(200)));
+            Fee(XRP(200)));
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -1760,7 +1815,7 @@ class Contract_test : public beast::unit_test::suite
         // }
 
         env(contract::call(alice, contractAccount, "function_params_uint"),
-            escrow::comp_allowance(1000000),
+            escrow::Gas(1000000),
             contract::add_param(0, "uint8", "UINT8", 255),
             contract::add_param(0, "uint16", "UINT16", 65535),
             contract::add_param(0, "uint32", "UINT32", static_cast<std::uint32_t>(4294967295)),
@@ -1776,21 +1831,21 @@ class Contract_test : public beast::unit_test::suite
                 "UINT256",
                 "D955DAC2E77519F05AD151A5D3C99FC8125FB39D58FF9F106F1ACA4491902C"
                 "25"),
-            ter(tesSUCCESS));
+            Ter(tesSUCCESS));
 
         env(contract::call(alice, contractAccount, "function_params_other"),
-            escrow::comp_allowance(1000000),
+            escrow::Gas(1000000),
             contract::add_param(0, "vl", "VL", "DEADBEEF"),
             contract::add_param(0, "account", "ACCOUNT", alice.human()),
             contract::add_param(
-                0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::none)),
+                0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::Values::None)),
             contract::add_param(
-                0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::none)),
+                0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::Values::None)),
             contract::add_param(0, "number", "NUMBER", "1.2"),
             // contract::add_param(0, "issue", "ISSUE",
             // to_json(USD(1).value().issue())), contract::add_param(0,
             // "currency", "CURRENCY", "USD"),
-            ter(tesSUCCESS));
+            Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1815,10 +1870,10 @@ class Contract_test : public beast::unit_test::suite
             contract::create(alice, emitTxWasmHex),
             contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("emit", {}),
-            fee(XRP(200)));
+            Fee(XRP(200)));
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -1826,9 +1881,7 @@ class Contract_test : public beast::unit_test::suite
         //     std::cout << jrr << std::endl;
         // }
 
-        env(contract::call(alice, contractAccount, "emit"),
-            escrow::comp_allowance(1000000),
-            ter(tesSUCCESS));
+        env(contract::call(alice, contractAccount, "emit"), escrow::Gas(1000000), Ter(tesSUCCESS));
         env.close();
     }
 
@@ -1850,11 +1903,11 @@ class Contract_test : public beast::unit_test::suite
         env.close();
 
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to contract events stream
-            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams] = json::ValueType::Array;
             stream[jss::streams].append("contract_events");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -1873,10 +1926,10 @@ class Contract_test : public beast::unit_test::suite
             contract::create(alice, eventsWasmHex),
             contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(2000)),
             contract::add_function("events", {}),
-            fee(XRP(200)));
+            Fee(XRP(200)));
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -1885,13 +1938,13 @@ class Contract_test : public beast::unit_test::suite
         // }
 
         env(contract::call(alice, contractAccount, "events"),
-            escrow::comp_allowance(1000000),
-            ter(tesSUCCESS));
+            escrow::Gas(1000000),
+            Ter(tesSUCCESS));
         env.close();
 
         {
             // Get contract info
-            Json::Value params;
+            json::Value params;
             params[jss::contract_account] = contractAccount.human();
             params[jss::account] = alice.human();
             auto const jrr = env.rpc("json", "contract_info", to_string(params));
@@ -1960,10 +2013,10 @@ class Contract_test : public beast::unit_test::suite
                     {0, "account", "ACCOUNT"},
                     {0, "amount", "AMOUNT"},
                 }),
-            fee(XRP(200)));
+            Fee(XRP(200)));
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -1972,14 +2025,14 @@ class Contract_test : public beast::unit_test::suite
         // }
 
         env(contract::call(alice, contractAccount, "easymode"),
-            escrow::comp_allowance(1000000),
+            escrow::Gas(1000000),
             contract::add_param(0, "account", "ACCOUNT", bob.human()),
             contract::add_param(0, "amount", "AMOUNT", XRP(1)),
-            ter(tesSUCCESS));
+            Ter(tesSUCCESS));
         env.close();
 
         // {
-        //     Json::Value params;
+        //     json::Value params;
         //     params[jss::ledger_index] = env.current()->seq() - 1;
         //     params[jss::transactions] = true;
         //     params[jss::expand] = true;
@@ -2018,7 +2071,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testWithFeats(sa);
     }
 };

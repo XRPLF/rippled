@@ -2,23 +2,29 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
 #include <boost/system/error_code.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <string>
 
-/** A static or dynamic source of peer addresses.
-    These are used as fallbacks when we are bootstrapping and don't have
-    a local cache, or when none of our addresses are functioning. Typically
-    sources will represent things like static text in the config file, a
-    separate local file with addresses, or a remote HTTPS URL that can
-    be updated automatically. Another solution is to use a custom DNS server
-    that hands out peer IP addresses when name lookups are performed.
-*/
+namespace xrpl::PeerFinder {
+
+/**
+ * A static or dynamic source of peer addresses.
+ * These are used as fallbacks when we are bootstrapping and don't have
+ * a local cache, or when none of our addresses are functioning. Typically
+ * sources will represent things like static text in the config file, a
+ * separate local file with addresses, or a remote HTTPS URL that can
+ * be updated automatically. Another solution is to use a custom DNS server
+ * that hands out peer IP addresses when name lookups are performed.
+ */
 class Source
 {
 public:
-    /** The results of a fetch. */
+    /**
+     * The results of a fetch.
+     */
     struct Results
     {
         explicit Results() = default;
@@ -30,9 +36,7 @@ public:
         IPAddresses addresses;
     };
 
-    virtual ~Source()
-    {
-    }
+    virtual ~Source() = default;
     virtual std::string const&
     name() = 0;
     virtual void
@@ -43,5 +47,4 @@ public:
     fetch(Results& results, beast::Journal journal) = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

@@ -21,7 +21,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinish"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinish"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,7 +34,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     auto const fulfillmentValue = canonical_VL();
     auto const conditionValue = canonical_VL();
     auto const credentialIDsValue = canonical_VECTOR256();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     EscrowFinishBuilder builder{
         accountValue,
@@ -48,7 +48,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     builder.setFulfillment(fulfillmentValue);
     builder.setCondition(conditionValue);
     builder.setCredentialIDs(credentialIDsValue);
-    builder.setComputationAllowance(computationAllowanceValue);
+    builder.setGas(gasValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -103,11 +103,11 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = computationAllowanceValue;
-        auto const actualOpt = tx.getComputationAllowance();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfComputationAllowance should be present";
-        expectEqualField(expected, *actualOpt, "sfComputationAllowance");
-        EXPECT_TRUE(tx.hasComputationAllowance());
+        auto const& expected = gasValue;
+        auto const actualOpt = tx.getGas();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGas should be present";
+        expectEqualField(expected, *actualOpt, "sfGas");
+        EXPECT_TRUE(tx.hasGas());
     }
 
 }
@@ -118,7 +118,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -131,7 +131,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     auto const fulfillmentValue = canonical_VL();
     auto const conditionValue = canonical_VL();
     auto const credentialIDsValue = canonical_VECTOR256();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     // Build an initial transaction
     EscrowFinishBuilder initialBuilder{
@@ -145,7 +145,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     initialBuilder.setFulfillment(fulfillmentValue);
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
-    initialBuilder.setComputationAllowance(computationAllowanceValue);
+    initialBuilder.setGas(gasValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -198,10 +198,10 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = computationAllowanceValue;
-        auto const actualOpt = rebuiltTx.getComputationAllowance();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfComputationAllowance should be present";
-        expectEqualField(expected, *actualOpt, "sfComputationAllowance");
+        auto const& expected = gasValue;
+        auto const actualOpt = rebuiltTx.getGas();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGas should be present";
+        expectEqualField(expected, *actualOpt, "sfGas");
     }
 
 }
@@ -211,7 +211,7 @@ TEST(TransactionsEscrowFinishTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -225,7 +225,7 @@ TEST(TransactionsEscrowFinishTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -239,7 +239,7 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -269,8 +269,8 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCondition().has_value());
     EXPECT_FALSE(tx.hasCredentialIDs());
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
-    EXPECT_FALSE(tx.hasComputationAllowance());
-    EXPECT_FALSE(tx.getComputationAllowance().has_value());
+    EXPECT_FALSE(tx.hasGas());
+    EXPECT_FALSE(tx.getGas().has_value());
 }
 
 }

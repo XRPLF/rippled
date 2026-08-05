@@ -1,21 +1,43 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpld/app/misc/FeeVote.h>
+#include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/tx/apply.h>
 
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <source_location>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct FeeSettingsFields
 {
@@ -26,8 +48,8 @@ struct FeeSettingsFields
     std::optional<XRPAmount> baseFeeDrops = std::nullopt;
     std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
     std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
-    std::optional<std::uint32_t> extensionComputeLimit = std::nullopt;
-    std::optional<std::uint32_t> extensionSizeLimit = std::nullopt;
+    std::optional<std::uint32_t> gasLimit = std::nullopt;
+    std::optional<std::uint32_t> bytecodeSizeLimit = std::nullopt;
     std::optional<std::uint32_t> gasPrice = std::nullopt;
 };
 
@@ -66,20 +88,9 @@ createFeeTx(
         }
         if (rules.enabled(featureSmartEscrow) || forceAllFields)
         {
+            obj.setFieldU32(sfGasLimit, fields.gasLimit ? *fields.gasLimit : 0);
             obj.setFieldU32(
-                sfExtensionComputeLimit,
-                fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
-            obj.setFieldU32(
-                sfExtensionSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
-            obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
-        }
-        if (rules.enabled(featureSmartEscrow) || forceAllFields)
-        {
-            obj.setFieldU32(
-                sfExtensionComputeLimit,
-                fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
-            obj.setFieldU32(
-                sfExtensionSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
+                sfBytecodeSizeLimit, fields.bytecodeSizeLimit ? *fields.bytecodeSizeLimit : 0);
             obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
         }
     };
@@ -132,8 +143,8 @@ createInvalidFeeTx(
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj.setFieldU32(sfExtensionComputeLimit, 100 + uniqueValue);
-                obj.setFieldU32(sfExtensionSizeLimit, 200 + uniqueValue);
+                obj.setFieldU32(sfGasLimit, 100 + uniqueValue);
+                obj.setFieldU32(sfBytecodeSizeLimit, 200 + uniqueValue);
                 obj.setFieldU32(sfGasPrice, 300 + uniqueValue);
             }
         }
@@ -146,7 +157,7 @@ createInvalidFeeTx(
 TER
 applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
-    auto const res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
+    auto const res = apply(env.app(), view, tx, ApplyFlags::TapNone, env.journal);
     return res.ter;
 }
 
@@ -156,7 +167,7 @@ verifyFeeObject(
     Rules const& rules,
     FeeSettingsFields const& expected)
 {
-    auto const feeObject = ledger->read(keylet::fees());
+    auto const feeObject = ledger->read(keylet::feeSettings());
     if (!feeObject)
         return false;
 
@@ -200,18 +211,17 @@ verifyFeeObject(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        if (!checkEquality(sfExtensionComputeLimit, expected.extensionComputeLimit.value_or(0)))
+        if (!checkEquality(sfGasLimit, expected.gasLimit.value_or(0)))
             return false;
-        if (!checkEquality(sfExtensionSizeLimit, expected.extensionSizeLimit.value_or(0)))
+        if (!checkEquality(sfBytecodeSizeLimit, expected.bytecodeSizeLimit.value_or(0)))
             return false;
         if (!checkEquality(sfGasPrice, expected.gasPrice.value_or(0)))
             return false;
     }
     else
     {
-        if (feeObject->isFieldPresent(sfExtensionComputeLimit) ||
-            feeObject->isFieldPresent(sfExtensionSizeLimit) ||
-            feeObject->isFieldPresent(sfGasPrice))
+        if (feeObject->isFieldPresent(sfGasLimit) ||
+            feeObject->isFieldPresent(sfBytecodeSizeLimit) || feeObject->isFieldPresent(sfGasPrice))
             return false;
     }
 
@@ -226,12 +236,12 @@ getTxs(std::shared_ptr<SHAMap> const& txSet)
     {
         auto const data = i->slice();
         auto serialIter = SerialIter(data);
-        txs.push_back(STTx(serialIter));
+        txs.emplace_back(serialIter);
     }
     return txs;
 };
 
-class FeeVote_test : public beast::unit_test::suite
+class FeeVote_test : public beast::unit_test::Suite
 {
     void
     testSetup()
@@ -241,13 +251,13 @@ class FeeVote_test : public beast::unit_test::suite
         {
             // defaults
             Section const config;
-            auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
-            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
+            auto setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
+            BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
+            BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
         }
         {
             Section config;
@@ -255,16 +265,16 @@ class FeeVote_test : public beast::unit_test::suite
                 {"reference_fee = 50",
                  "account_reserve = 1234567",
                  "owner_reserve = 1234",
-                 "extension_compute_limit = 100",
-                 "extension_size_limit = 200",
-                 " gas_price = 300"});
-            auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 50);
-            BEAST_EXPECT(setup.account_reserve == 1234567);
-            BEAST_EXPECT(setup.owner_reserve == 1234);
-            BEAST_EXPECT(setup.extension_compute_limit == 100);
-            BEAST_EXPECT(setup.extension_size_limit == 200);
-            BEAST_EXPECT(setup.gas_price == 300);
+                 "gas_limit = 100",
+                 "bytecode_size_limit = 200",
+                 "gas_price = 300"});
+            auto setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.referenceFee == 50);
+            BEAST_EXPECT(setup.accountReserve == 1234567);
+            BEAST_EXPECT(setup.ownerReserve == 1234);
+            BEAST_EXPECT(setup.gasLimit == 100);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == 200);
+            BEAST_EXPECT(setup.gasPrice == 300);
         }
         {
             Section config;
@@ -272,17 +282,17 @@ class FeeVote_test : public beast::unit_test::suite
                 {"reference_fee = blah",
                  "account_reserve = yada",
                  "owner_reserve = foo",
-                 "extension_compute_limit = bar",
-                 "extension_size_limit = baz",
+                 "gas_limit = bar",
+                 "bytecode_size_limit = baz",
                  "gas_price = qux"});
             // Illegal values are ignored, and the defaults left unchanged
-            auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
-            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
+            auto setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
+            BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
+            BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
         }
         {
             Section config;
@@ -290,20 +300,18 @@ class FeeVote_test : public beast::unit_test::suite
                 {"reference_fee = -50",
                  "account_reserve = -1234567",
                  "owner_reserve = -1234",
-                 "extension_compute_limit = -100",
-                 "extension_size_limit = -200",
+                 "gas_limit = -100",
+                 "bytecode_size_limit = -200",
                  "gas_price = -300"});
-            // Negative values wrap to large positive uint32_t values.
-            // reference_fee is uint64_t and has bounds checking, so it keeps
-            // the default.
-            // Illegal values are ignored, and the defaults left unchanged
-            auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == static_cast<std::uint32_t>(-1234567));
-            BEAST_EXPECT(setup.owner_reserve == static_cast<std::uint32_t>(-1234));
-            BEAST_EXPECT(setup.extension_compute_limit == static_cast<std::uint32_t>(-100));
-            BEAST_EXPECT(setup.extension_size_limit == static_cast<std::uint32_t>(-200));
-            BEAST_EXPECT(setup.gas_price == static_cast<std::uint32_t>(-300));
+            // Negative gas/bytecode limit values wrap past their maximum and are
+            // ignored. Other uint32_t fields keep the existing behavior.
+            auto setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == static_cast<std::uint32_t>(-1234567));
+            BEAST_EXPECT(setup.ownerReserve == static_cast<std::uint32_t>(-1234));
+            BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
+            BEAST_EXPECT(setup.gasPrice == static_cast<std::uint32_t>(-300));
         }
         {
             auto const big64 = std::to_string(
@@ -313,17 +321,35 @@ class FeeVote_test : public beast::unit_test::suite
                 {"reference_fee = " + big64,
                  "account_reserve = " + big64,
                  "owner_reserve = " + big64,
-                 "extension_compute_limit = " + big64,
-                 "extension_size_limit = " + big64,
+                 "gas_limit = " + big64,
+                 "bytecode_size_limit = " + big64,
                  "gas_price = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
-            auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
-            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
+            auto setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
+            BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
+            BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
+        }
+        {
+            Section config;
+            config.append(
+                {"gas_limit = " + std::to_string(kMaxGasLimit + 1),
+                 "bytecode_size_limit = " + std::to_string(kMaxBytecodeSizeLimit + 1)});
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
+        }
+        {
+            Section config;
+            config.append(
+                {"gas_limit = " + std::to_string(kMaxGasLimit),
+                 "bytecode_size_limit = " + std::to_string(kMaxBytecodeSizeLimit)});
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.gasLimit == kMaxGasLimit);
+            BEAST_EXPECT(setup.bytecodeSizeLimit == kMaxBytecodeSizeLimit);
         }
     }
 
@@ -334,11 +360,11 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees disabled (legacy format)
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureXRPFees - featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -364,11 +390,11 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees enabled (new format)
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -392,11 +418,11 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with both XRPFees and SmartEscrow enabled
         {
-            jtx::Env env(*this, jtx::testable_amendments());
+            jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -407,8 +433,8 @@ class FeeVote_test : public beast::unit_test::suite
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
-                .extensionComputeLimit = 100,
-                .extensionSizeLimit = 200,
+                .gasLimit = 100,
+                .bytecodeSizeLimit = 200,
                 .gasPrice = 300};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
@@ -421,14 +447,48 @@ class FeeVote_test : public beast::unit_test::suite
             BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
+        // Test that Smart Escrow limits reject values above their maximums.
+        {
+            jtx::Env env(*this, jtx::testableAmendments());
+            auto ledger = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
+
+            auto testBadFields = [&](FeeSettingsFields const& fields) {
+                auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
+                OpenView accum(ledger.get());
+                BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, feeTx)));
+            };
+
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .gasLimit = kMaxGasLimit + 1,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
+                 .gasPrice = 300});
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .gasLimit = kMaxGasLimit,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1,
+                 .gasPrice = 300});
+        }
+
         // Test that the Smart Escrow fields are rejected if the
         // feature is disabled
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -439,8 +499,8 @@ class FeeVote_test : public beast::unit_test::suite
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
-                .extensionComputeLimit = 100,
-                .extensionSizeLimit = 200,
+                .gasLimit = 100,
+                .bytecodeSizeLimit = 200,
                 .gasPrice = 300};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields, true);
@@ -456,11 +516,11 @@ class FeeVote_test : public beast::unit_test::suite
         testcase("Fee Transaction Validation");
 
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureXRPFees - featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -478,11 +538,11 @@ class FeeVote_test : public beast::unit_test::suite
         }
 
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -500,11 +560,11 @@ class FeeVote_test : public beast::unit_test::suite
         }
 
         {
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees | featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees | featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -527,11 +587,11 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Pseudo Transaction Properties");
 
-        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+        jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -566,11 +626,11 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Multiple Fee Updates");
 
-        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+        jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -614,11 +674,11 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Wrong Ledger Sequence");
 
-        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+        jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -645,11 +705,11 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Partial Field Updates");
 
-        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+        jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -691,11 +751,11 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Single Invalid Transaction");
 
-        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
+        jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -724,24 +784,24 @@ class FeeVote_test : public beast::unit_test::suite
         using namespace jtx;
 
         FeeSetup setup;
-        setup.reference_fee = 42;
-        setup.account_reserve = 1234567;
-        setup.owner_reserve = 7654321;
+        setup.referenceFee = 42;
+        setup.accountReserve = 1234567;
+        setup.ownerReserve = 7654321;
 
         // Test with XRPFees enabled
         {
-            Env env(*this, testable_amendments() - featureSmartEscrow);
-            auto feeVote = make_FeeVote(setup, env.app().getJournal("FeeVote"));
+            Env env(*this, testableAmendments() - featureSmartEscrow);
+            auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
             auto sec = randomSecretKey();
-            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+            auto pub = derivePublicKey(KeyType::Secp256k1, sec);
 
             auto val = std::make_shared<STValidation>(
                 env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [](STValidation& v) {
@@ -755,23 +815,23 @@ class FeeVote_test : public beast::unit_test::suite
             feeVote->doValidation(currentFees, ledger->rules(), *val);
 
             BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
-            BEAST_EXPECT(val->getFieldAmount(sfBaseFeeDrops) == XRPAmount(setup.reference_fee));
+            BEAST_EXPECT(val->getFieldAmount(sfBaseFeeDrops) == XRPAmount(setup.referenceFee));
         }
 
         // Test with XRPFees disabled (legacy format)
         {
-            Env env(*this, testable_amendments() - featureXRPFees - featureSmartEscrow);
-            auto feeVote = make_FeeVote(setup, env.app().getJournal("FeeVote"));
+            Env env(*this, testableAmendments() - featureXRPFees - featureSmartEscrow);
+            auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
             auto sec = randomSecretKey();
-            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+            auto pub = derivePublicKey(KeyType::Secp256k1, sec);
 
             auto val = std::make_shared<STValidation>(
                 env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [](STValidation& v) {
@@ -784,7 +844,7 @@ class FeeVote_test : public beast::unit_test::suite
 
             // In legacy mode, should vote using legacy fields
             BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.reference_fee);
+            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.referenceFee);
         }
     }
 
@@ -796,22 +856,22 @@ class FeeVote_test : public beast::unit_test::suite
         using namespace jtx;
 
         FeeSetup setup;
-        setup.reference_fee = 42;
-        setup.account_reserve = 1234567;
-        setup.owner_reserve = 7654321;
+        setup.referenceFee = 42;
+        setup.accountReserve = 1234567;
+        setup.ownerReserve = 7654321;
 
-        Env env(*this, testable_amendments() - featureSmartEscrow);
+        Env env(*this, testableAmendments() - featureSmartEscrow);
 
         // establish what the current fees are
         BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
         BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
         BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
 
-        auto feeVote = make_FeeVote(setup, env.app().getJournal("FeeVote"));
+        auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
         auto ledger = std::make_shared<Ledger>(
-            create_genesis,
+            kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -829,15 +889,15 @@ class FeeVote_test : public beast::unit_test::suite
         for (int i = 0; i < 5; i++)
         {
             auto sec = randomSecretKey();
-            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+            auto pub = derivePublicKey(KeyType::Secp256k1, sec);
 
             auto val = std::make_shared<STValidation>(
                 env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [&](STValidation& v) {
                     v.setFieldU32(sfLedgerSequence, ledger->seq());
                     // Vote for different fees than current
-                    v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                    v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
-                    v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
+                    v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.referenceFee});
+                    v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.accountReserve});
+                    v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.ownerReserve});
                 });
             if ((i % 2) != 0)
                 val->setTrusted();
@@ -869,10 +929,10 @@ class FeeVote_test : public beast::unit_test::suite
         BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
 
         // Check the values
-        BEAST_EXPECT(feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.reference_fee});
-        BEAST_EXPECT(feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.account_reserve});
+        BEAST_EXPECT(feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.referenceFee});
+        BEAST_EXPECT(feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.accountReserve});
         BEAST_EXPECT(
-            feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.owner_reserve});
+            feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.ownerReserve});
     }
 
     void
@@ -882,23 +942,23 @@ class FeeVote_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env(*this, testable_amendments() | featureXRPFees | featureSmartEscrow);
+        Env env(*this, testableAmendments() | featureXRPFees | featureSmartEscrow);
 
         // establish what the current fees are
         BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
         BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
         BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
-        BEAST_EXPECT(env.current()->fees().extensionComputeLimit == 0);
-        BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
+        BEAST_EXPECT(env.current()->fees().gasLimit == 0);
+        BEAST_EXPECT(env.current()->fees().bytecodeSizeLimit == 0);
         BEAST_EXPECT(env.current()->fees().gasPrice == 0);
 
         auto const createFeeTxFromVoting =
             [&](FeeSetup const& setup) -> std::pair<STTx, std::shared_ptr<Ledger>> {
-            auto feeVote = make_FeeVote(setup, env.app().getJournal("FeeVote"));
+            auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
             auto ledger = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -917,7 +977,7 @@ class FeeVote_test : public beast::unit_test::suite
             for (int i = 0; i < 5; i++)
             {
                 auto sec = randomSecretKey();
-                auto pub = derivePublicKey(KeyType::secp256k1, sec);
+                auto pub = derivePublicKey(KeyType::Secp256k1, sec);
 
                 auto val = std::make_shared<STValidation>(
                     env.app().getTimeKeeper().now(),
@@ -927,12 +987,12 @@ class FeeVote_test : public beast::unit_test::suite
                     [&](STValidation& v) {
                         v.setFieldU32(sfLedgerSequence, ledger->seq());
                         // Vote for different fees than current
-                        v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                        v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
-                        v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
-                        v.setFieldU32(sfExtensionComputeLimit, setup.extension_compute_limit);
-                        v.setFieldU32(sfExtensionSizeLimit, setup.extension_size_limit);
-                        v.setFieldU32(sfGasPrice, setup.gas_price);
+                        v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.referenceFee});
+                        v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.accountReserve});
+                        v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.ownerReserve});
+                        v.setFieldU32(sfGasLimit, setup.gasLimit);
+                        v.setFieldU32(sfBytecodeSizeLimit, setup.bytecodeSizeLimit);
+                        v.setFieldU32(sfGasPrice, setup.gasPrice);
                     });
                 if (i % 2)
                     val->setTrusted();
@@ -972,27 +1032,25 @@ class FeeVote_test : public beast::unit_test::suite
 
             // Check the values
             BEAST_EXPECTS(
-                feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.reference_fee}, line);
+                feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.referenceFee}, line);
             BEAST_EXPECTS(
-                feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.account_reserve}, line);
+                feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.accountReserve}, line);
             BEAST_EXPECTS(
-                feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.owner_reserve},
+                feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.ownerReserve},
                 line);
-            BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionComputeLimit) == setup.extension_compute_limit, line);
-            BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionSizeLimit) == setup.extension_size_limit, line);
-            BEAST_EXPECTS(feeTx.getFieldU32(sfGasPrice) == setup.gas_price, line);
+            BEAST_EXPECTS(feeTx.getFieldU32(sfGasLimit) == setup.gasLimit, line);
+            BEAST_EXPECTS(feeTx.getFieldU32(sfBytecodeSizeLimit) == setup.bytecodeSizeLimit, line);
+            BEAST_EXPECTS(feeTx.getFieldU32(sfGasPrice) == setup.gasPrice, line);
         };
 
         {
             FeeSetup setup;
-            setup.reference_fee = 42;
-            setup.account_reserve = 1234567;
-            setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = 100;
-            setup.extension_size_limit = 200;
-            setup.gas_price = 300;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 100;
+            setup.bytecodeSizeLimit = 200;
+            setup.gasPrice = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
             checkFeeTx(setup, feeTx, ledger);
@@ -1000,14 +1058,29 @@ class FeeVote_test : public beast::unit_test::suite
 
         {
             FeeSetup setup;
-            setup.reference_fee = 42;
-            setup.account_reserve = 1234567;
-            setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = 0;
-            setup.extension_size_limit = 0;
-            setup.gas_price = 300;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = 0;
+            setup.bytecodeSizeLimit = 0;
+            setup.gasPrice = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        {
+            FeeSetup setup;
+            setup.referenceFee = 42;
+            setup.accountReserve = 1234567;
+            setup.ownerReserve = 7654321;
+            setup.gasLimit = kMaxGasLimit + 1;
+            setup.bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1;
+            setup.gasPrice = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            setup.gasLimit = ledger->fees().gasLimit;
+            setup.bytecodeSizeLimit = ledger->fees().bytecodeSizeLimit;
             checkFeeTx(setup, feeTx, ledger);
         }
     }
@@ -1031,5 +1104,4 @@ class FeeVote_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(FeeVote, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

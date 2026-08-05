@@ -7,7 +7,7 @@ race:boost/context/
 race:boost/asio/executor.hpp
 race:boost::asio
 
-# Suppress tsan related issues in rippled code.
+# Suppress tsan related issues in xrpld code.
 race:src/libxrpl/basics/make_SSLContext.cpp
 race:src/libxrpl/basics/Number.cpp
 race:src/libxrpl/json/json_value.cpp
@@ -46,7 +46,7 @@ race:xrpl/server/detail/ServerImpl.h
 race:xrpl/nodestore/detail/DatabaseNodeImp.h
 race:src/libxrpl/beast/utility/beast_Journal.cpp
 race:src/test/beast/LexicalCast_test.cpp
-race:ripple::ServerHandler
+race:ServerHandler
 
 # More suppressions in external library code.
 race:crtstuff.c
@@ -65,7 +65,7 @@ deadlock:src/xrpld/app/misc/detail/ValidatorSite.cpp
 signal:src/libxrpl/beast/utility/beast_Journal.cpp
 signal:src/xrpld/core/detail/Workers.cpp
 signal:src/xrpld/core/JobQueue.cpp
-signal:ripple::Workers::Worker
+signal:Workers::Worker
 
 # Aggressive suppressing of deadlock tsan errors
 deadlock:pthread_create

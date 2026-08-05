@@ -1,16 +1,31 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
+#include <test/jtx/amount.h>
 
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/OpenLedger.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
-class GetAggregatePrice_test : public beast::unit_test::suite
+namespace xrpl::test::jtx::oracle {
+
+class GetAggregatePrice_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -20,22 +35,22 @@ public:
         using namespace jtx;
         Account const owner{"owner"};
         Account const some{"some"};
-        static OraclesData oracles = {{owner, 1}};
+        static OraclesData kOracles = {{owner, 1}};
 
         {
             Env env(*this);
             auto const baseFee = env.current()->fees().base;
             // missing base_asset
-            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
+            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", kOracles);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'base_asset'.");
 
             // missing quote_asset
-            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, oracles);
+            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, kOracles);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> const invalidAsset = {
-                NoneTag,
+                kNoneTag,
                 1,
                 -1,
                 1.2,
@@ -51,11 +66,11 @@ public:
                 "012345678901234567890123456789012345678G"};
             for (auto const& v : invalidAsset)
             {
-                ret = Oracle::aggregatePrice(env, "USD", v, oracles);
+                ret = Oracle::aggregatePrice(env, "USD", v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, "USD", oracles);
+                ret = Oracle::aggregatePrice(env, v, "USD", kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, v, oracles);
+                ret = Oracle::aggregatePrice(env, v, v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
 
@@ -68,7 +83,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // no token pairs found
-            ret = Oracle::aggregatePrice(env, "YAN", "USD", oracles);
+            ret = Oracle::aggregatePrice(env, "YAN", "USD", kOracles);
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid oracle document id
@@ -76,11 +91,11 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> const invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {kNoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
-                Json::Value jv;
+                json::Value jv;
                 toJson(jv, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
@@ -106,7 +121,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> const invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTrim = {kNoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -115,7 +130,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> const invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTime = {kNoneTag, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(
@@ -159,7 +174,7 @@ public:
                 Oracle const oracle(
                     env,
                     {.owner = owner,
-                     .documentID = rand(),
+                     .documentID = randInt<std::uint32_t>(),
                      .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
                      .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
@@ -169,10 +184,10 @@ public:
         // Aggregate data set includes all price oracle instances, no trimming
         // or time threshold
         {
-            auto const all = testable_amendments();
+            auto const all = testableAmendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
-                for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+                for (auto const mantissaSize : MantissaRange::getAllScales())
                 {
                     // Regardless of the features enabled, RPC is controlled by
                     // the global mantissa size. And since it's a thread-local,
@@ -283,13 +298,13 @@ public:
 
             OraclesData oracles;
             prep(env, oracles);
-            for (int i = 0; i < oracles.size(); ++i)
+            for (auto& oracleData : oracles)
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
+                    {.owner = oracleData.first,
                      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
+                     .documentID = asUInt(*oracleData.second),
                      .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
@@ -308,16 +323,93 @@ public:
     }
 
     void
+    testNullTxReadMeta()
+    {
+        testcase("Null txRead metadata");
+        using namespace jtx;
+
+        // Verify that iteratePriceData handles a null txRead result
+        // gracefully (returns early) rather than crashing with a
+        // nullptr dereference. This simulates local data corruption
+        // where a transaction referenced by sfPreviousTxnID is missing
+        // from the ledger's transaction map.
+        Env env(*this);
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+
+        Account const owner{"owner"};
+        env.fund(XRP(1'000), owner);
+
+        // Create oracle with XRP/USD and XRP/EUR
+        Oracle oracle(
+            env,
+            {.owner = owner,
+             .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
+             .fee = baseFee});
+
+        // Update oracle to only have XRP/EUR, pushing XRP/USD into
+        // history. iteratePriceData will need to read historical tx
+        // metadata to find the XRP/USD price.
+        oracle.set(UpdateArg{.series = {{"XRP", "EUR", 850, 1}}, .fee = baseFee});
+
+        OraclesData const oracles{{owner, oracle.documentID()}};
+
+        // Precondition: with an uncorrupted oracle, the historical
+        // traversal must succeed and produce a price for XRP/USD.
+        // This proves the test reaches iteratePriceData's history
+        // path; without it, a future change that breaks the setup
+        // could turn the post-corruption assertion into a vacuous
+        // pass (objectNotFound is reachable from many unrelated
+        // code paths).
+        {
+            auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+            BEAST_EXPECT(!ret.isMember(jss::error));
+            BEAST_EXPECT(ret.isMember(jss::median));
+        }
+
+        // Simulate data corruption: modify the oracle SLE in the open
+        // ledger to have a bogus sfPreviousTxnID that doesn't exist in
+        // any ledger. sfPreviousTxnLgrSeq still points to a valid closed
+        // ledger, so getLedgerBySeq succeeds but txRead returns null.
+        auto const oracleKeylet = keylet::oracle(owner, oracle.documentID());
+        uint256 const bogusTxnID{0xABCABCAB};
+        bool const modified = env.app().getOpenLedger().modify(
+            [&oracleKeylet, &bogusTxnID](OpenView& view, beast::Journal) -> bool {
+                auto const sle = view.read(oracleKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                replacement->setFieldH256(sfPreviousTxnID, bogusTxnID);
+                view.rawReplace(replacement);
+                return true;
+            });
+
+        // Confirm the injection actually took effect: modify must
+        // report success, and re-reading the SLE must show the
+        // bogus hash. Otherwise the failure-mode assertion below
+        // would not be exercising the null-txRead path at all.
+        BEAST_EXPECT(modified);
+        if (auto const sle = env.current()->read(oracleKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->getFieldH256(sfPreviousTxnID) == bogusTxnID);
+
+        // Query for XRP/USD using the "current" (open) ledger.
+        // The oracle SLE now has a bogus sfPreviousTxnID. The current
+        // oracle only has EUR, so iteratePriceData will try to read
+        // history. txRead returns null for the bogus hash, and the
+        // null check should cause a graceful early return instead of
+        // a nullptr dereference.
+        auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+        BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+    }
+
+    void
     run() override
     {
         testErrors();
         testRpc();
+        testNullTxReadMeta();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

@@ -33,7 +33,7 @@ public:
      * @brief Construct a Contract ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Contract(std::shared_ptr<SLE const> sle)
+    explicit Contract(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractAccount (soeREQUIRED)
+     * @brief Get sfContractAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractHash (soeREQUIRED)
+     * @brief Get sfContractHash (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -123,7 +123,7 @@ public:
     }
 
     /**
-     * @brief Get sfInstanceParameterValues (soeOPTIONAL)
+     * @brief Get sfInstanceParameterValues (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -148,7 +148,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -176,7 +176,7 @@ public:
  * @brief Builder for Contract ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class ContractBuilder : public LedgerEntryBuilderBase<ContractBuilder>
@@ -209,7 +209,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    ContractBuilder(std::shared_ptr<SLE const> sle)
+    ContractBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCONTRACT)
         {
@@ -218,10 +218,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -232,7 +234,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -243,7 +245,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -254,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -265,7 +267,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -276,7 +278,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractAccount (soeREQUIRED)
+     * @brief Set sfContractAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -287,7 +289,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractHash (soeREQUIRED)
+     * @brief Set sfContractHash (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -298,7 +300,7 @@ public:
     }
 
     /**
-     * @brief Set sfInstanceParameterValues (soeOPTIONAL)
+     * @brief Set sfInstanceParameterValues (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&
@@ -309,7 +311,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractBuilder&

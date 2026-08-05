@@ -1,14 +1,21 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
+
+#include <memory>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 namespace credentials {
@@ -19,15 +26,11 @@ namespace credentials {
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
 bool
-checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed);
-
-// Return true if any expired credential was found in arr (and deleted)
-bool
-removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j);
+checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
-TER
-deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j);
+[[nodiscard]] TER
+deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
@@ -40,13 +43,13 @@ checkFields(STTx const& tx, beast::Journal j);
 TER
 valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal j);
 
-// Check if subject has any credential maching the given domain. If you call it
+// Check if subject has any credential matching the given domain. If you call it
 // in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
 // doApply. This will ensure that expired credentials are deleted.
 TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
 
-// This function is only called when we about to return tecNO_PERMISSION
+// This function is only called when we are about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
 TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& ctx, AccountID const& dst);
@@ -62,10 +65,43 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 
 }  // namespace credentials
 
-// Check expired credentials and for credentials maching DomainID of the ledger
+// Check expired credentials and for credentials matching DomainID of the ledger
 // object
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);
+
+/**
+ * @brief Check whether src is authorized to deposit to dst.
+ *
+ * @param tx Transaction containing optional credential IDs.
+ * @param view Read-only ledger view.
+ * @param src Source account.
+ * @param dst Destination account.
+ * @param sleDst Destination AccountRoot, if it exists.
+ * @param j Journal for diagnostics.
+ * @return tesSUCCESS if the deposit is allowed, otherwise an authorization
+ *         error.
+ */
+TER
+checkDepositPreauth(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE const> const& sleDst,
+    beast::Journal j);
+
+/**
+ * @brief Remove expired credentials referenced by the transaction.
+ *
+ * @param tx Transaction containing optional sfCredentialIDs.
+ * @param view Mutable ledger view.
+ * @param j Journal for diagnostics.
+ * @return tesSUCCESS if no referenced credentials expired, tecEXPIRED if any
+ *         were removed, or an error from credential deletion.
+ */
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j);
 
 // Check expired credentials and for existing DepositPreauth ledger object
 TER
@@ -74,7 +110,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::const_ref sleDst,
     beast::Journal j);
 
 }  // namespace xrpl

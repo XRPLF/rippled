@@ -18,10 +18,10 @@ class ContractUserDeleteBuilder;
 /**
  * @brief Transaction: ContractUserDelete
  *
- * Type: ttCONTRACT_USER_DELETE (89)
- * Delegable: Delegation::delegable
+ * Type: ttCONTRACT_USER_DELETE (96)
+ * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractUserDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfContractAccount (soeREQUIRED)
+     * @brief Get sfContractAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,49 +59,14 @@ public:
     }
 
     /**
-     * @brief Get sfFunctionName (soeREQUIRED)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_VL::type::value_type
-    getFunctionName() const
-    {
-        return this->tx_->at(sfFunctionName);
-    }
-    /**
-     * @brief Get sfParameters (soeOPTIONAL)
-     * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
-    getParameters() const
-    {
-        if (this->tx_->isFieldPresent(sfParameters))
-            return this->tx_->getFieldArray(sfParameters);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfParameters is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasParameters() const
-    {
-        return this->tx_->isFieldPresent(sfParameters);
-    }
-
-    /**
-     * @brief Get sfComputationAllowance (soeREQUIRED)
+     * @brief Get sfGas (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
-    getComputationAllowance() const
+    getGas() const
     {
-        return this->tx_->at(sfComputationAllowance);
+        return this->tx_->at(sfGas);
     }
 };
 
@@ -109,7 +74,7 @@ public:
  * @brief Builder for ContractUserDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ContractUserDeleteBuilder : public TransactionBuilderBase<ContractUserDeleteBuilder>
@@ -119,20 +84,18 @@ public:
      * @brief Construct a new ContractUserDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
      * @param contractAccount The sfContractAccount field value.
-     * @param functionName The sfFunctionName field value.
-     * @param computationAllowance The sfComputationAllowance field value.
+     * @param gas The sfGas field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     ContractUserDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& contractAccount,                     std::decay_t<typename SF_VL::type::value_type> const& functionName,                     std::decay_t<typename SF_UINT32::type::value_type> const& computationAllowance,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& contractAccount,                     std::decay_t<typename SF_UINT32::type::value_type> const& gas,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<ContractUserDeleteBuilder>(ttCONTRACT_USER_DELETE, account, sequence, fee)
     {
         setContractAccount(contractAccount);
-        setFunctionName(functionName);
-        setComputationAllowance(computationAllowance);
+        setGas(gas);
     }
 
     /**
@@ -149,10 +112,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfContractAccount (soeREQUIRED)
+     * @brief Set sfContractAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractUserDeleteBuilder&
@@ -163,35 +128,13 @@ public:
     }
 
     /**
-     * @brief Set sfFunctionName (soeREQUIRED)
+     * @brief Set sfGas (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractUserDeleteBuilder&
-    setFunctionName(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setGas(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfFunctionName] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfParameters (soeOPTIONAL)
-     * @return Reference to this builder for method chaining.
-     */
-    ContractUserDeleteBuilder&
-    setParameters(STArray const& value)
-    {
-        object_.setFieldArray(sfParameters, value);
-        return *this;
-    }
-
-    /**
-     * @brief Set sfComputationAllowance (soeREQUIRED)
-     * @return Reference to this builder for method chaining.
-     */
-    ContractUserDeleteBuilder&
-    setComputationAllowance(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfComputationAllowance] = value;
+        object_[sfGas] = value;
         return *this;
     }
 

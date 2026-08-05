@@ -16,7 +16,7 @@ public:
     using key_type = ReadView::key_type;
 
     OpenViewSandbox(OpenView& parent)
-        : parent_(parent), sandbox_(std::make_unique<OpenView>(batch_view, parent))
+        : parent_(parent), sandbox_(std::make_unique<OpenView>(kBatchView, parent))
     {
     }
 
@@ -57,13 +57,13 @@ public:
     commit()
     {
         sandbox_->apply(parent_);
-        sandbox_ = std::make_unique<OpenView>(batch_view, parent_);
+        sandbox_ = std::make_unique<OpenView>(kBatchView, parent_);
     }
 
     void
     discard()
     {
-        sandbox_ = std::make_unique<OpenView>(batch_view, parent_);
+        sandbox_ = std::make_unique<OpenView>(kBatchView, parent_);
     }
 
     OpenView const&

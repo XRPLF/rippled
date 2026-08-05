@@ -1,8 +1,9 @@
+#include <xrpl/tx/transactors/contract/ContractDelete.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/DeleteUtils.h>
-#include <xrpl/tx/transactors/contract/ContractDelete.h>
 
 namespace xrpl {
 
@@ -92,7 +93,7 @@ ContractDelete::deleteContract(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    decreaseOwnerCount(view, sleOwner, {}, 1, j);
     view.erase(sle);
     return tesSUCCESS;
 }
@@ -144,6 +145,24 @@ ContractDelete::doApply()
         return res;
 
     return tesSUCCESS;
+}
+
+void
+ContractDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+ContractDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

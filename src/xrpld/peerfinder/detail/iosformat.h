@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <ios>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -9,16 +12,18 @@ namespace beast {
 // A collection of handy stream manipulators and
 // functions to produce nice looking log output.
 
-/** Left justifies a field at the specified width. */
-struct leftw
+/**
+ * Left justifies a field at the specified width.
+ */
+struct Leftw
 {
-    explicit leftw(int width_) : width(width_)
+    explicit Leftw(int width) : width(width)
     {
     }
     int const width;
     template <class CharT, class Traits>
     friend std::basic_ios<CharT, Traits>&
-    operator<<(std::basic_ios<CharT, Traits>& ios, leftw const& p)
+    operator<<(std::basic_ios<CharT, Traits>& ios, Leftw const& p)
     {
         ios.setf(std::ios_base::left, std::ios_base::adjustfield);
         ios.width(p.width);
@@ -26,7 +31,9 @@ struct leftw
     }
 };
 
-/** Produce a section heading and fill the rest of the line with dashes. */
+/**
+ * Produce a section heading and fill the rest of the line with dashes.
+ */
 template <class CharT, class Traits, class Allocator>
 std::basic_string<CharT, Traits, Allocator>
 heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT fill = CharT('-'))
@@ -37,35 +44,39 @@ heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT
     return title;
 }
 
-/** Produce a dashed line separator, with a specified or default size. */
-struct divider
+/**
+ * Produce a dashed line separator, with a specified or default size.
+ */
+struct Divider
 {
     using CharT = char;
-    explicit divider(int width_ = 80, CharT fill_ = CharT('-')) : width(width_), fill(fill_)
+    explicit Divider(int width = 80, CharT fill = CharT('-')) : width(width), fill(fill)
     {
     }
     int const width;
     CharT const fill;
     template <class CharT, class Traits>
     friend std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& os, divider const& d)
+    operator<<(std::basic_ostream<CharT, Traits>& os, Divider const& d)
     {
         os << std::basic_string<CharT, Traits>(d.width, d.fill);
         return os;
     }
 };
 
-/** Creates a padded field with an optional fill character. */
-struct fpad
+/**
+ * Creates a padded field with an optional fill character.
+ */
+struct Fpad
 {
-    explicit fpad(int width_, int pad_ = 0, char fill_ = ' ') : width(width_ + pad_), fill(fill_)
+    explicit Fpad(int width, int pad = 0, char fill = ' ') : width(width + pad), fill(fill)
     {
     }
     int const width;
     char const fill;
     template <class CharT, class Traits>
     friend std::basic_ostream<CharT, Traits>&
-    operator<<(std::basic_ostream<CharT, Traits>& os, fpad const& f)
+    operator<<(std::basic_ostream<CharT, Traits>& os, Fpad const& f)
     {
         os << std::basic_string<CharT, Traits>(f.width, f.fill);
         return os;
@@ -87,18 +98,20 @@ to_string(T const& t)
 
 }  // namespace detail
 
-/** Justifies a field at the specified width. */
+/**
+ * Justifies a field at the specified width.
+ */
 /** @{ */
 template <
     class CharT,
     class Traits = std::char_traits<CharT>,
     class Allocator = std::allocator<CharT>>
-class field_t
+class FieldT
 {
 public:
     using string_t = std::basic_string<CharT, Traits, Allocator>;
-    field_t(string_t const& text_, int width_, int pad_, bool right_)
-        : text(text_), width(width_), pad(pad_), right(right_)
+    FieldT(string_t const& text, int width, int pad, bool right)
+        : text(text), width(width), pad(pad), right(right)
     {
     }
     string_t const text;
@@ -107,7 +120,7 @@ public:
     bool const right;
     template <class CharT2, class Traits2>
     friend std::basic_ostream<CharT2, Traits2>&
-    operator<<(std::basic_ostream<CharT2, Traits2>& os, field_t<CharT, Traits, Allocator> const& f)
+    operator<<(std::basic_ostream<CharT2, Traits2>& os, FieldT<CharT, Traits, Allocator> const& f)
     {
         std::size_t const length(f.text.length());
         if (f.right)
@@ -129,21 +142,21 @@ public:
 };
 
 template <class CharT, class Traits, class Allocator>
-field_t<CharT, Traits, Allocator>
+FieldT<CharT, Traits, Allocator>
 field(
     std::basic_string<CharT, Traits, Allocator> const& text,
     int width = 8,
     int pad = 0,
     bool right = false)
 {
-    return field_t<CharT, Traits, Allocator>(text, width, pad, right);
+    return FieldT<CharT, Traits, Allocator>(text, width, pad, right);
 }
 
 template <class CharT>
-field_t<CharT>
+FieldT<CharT>
 field(CharT const* text, int width = 8, int pad = 0, bool right = false)
 {
-    return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
+    return FieldT<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
         std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
         width,
         pad,
@@ -151,7 +164,7 @@ field(CharT const* text, int width = 8, int pad = 0, bool right = false)
 }
 
 template <typename T>
-field_t<char>
+FieldT<char>
 field(T const& t, int width = 8, int pad = 0, bool right = false)
 {
     std::string const text(detail::to_string(t));
@@ -159,17 +172,17 @@ field(T const& t, int width = 8, int pad = 0, bool right = false)
 }
 
 template <class CharT, class Traits, class Allocator>
-field_t<CharT, Traits, Allocator>
+FieldT<CharT, Traits, Allocator>
 rField(std::basic_string<CharT, Traits, Allocator> const& text, int width = 8, int pad = 0)
 {
-    return field_t<CharT, Traits, Allocator>(text, width, pad, true);
+    return FieldT<CharT, Traits, Allocator>(text, width, pad, true);
 }
 
 template <class CharT>
-field_t<CharT>
+FieldT<CharT>
 rField(CharT const* text, int width = 8, int pad = 0)
 {
-    return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
+    return FieldT<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
         std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
         width,
         pad,
@@ -177,7 +190,7 @@ rField(CharT const* text, int width = 8, int pad = 0)
 }
 
 template <typename T>
-field_t<char>
+FieldT<char>
 rField(T const& t, int width = 8, int pad = 0)
 {
     std::string const text(detail::to_string(t));

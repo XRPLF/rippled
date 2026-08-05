@@ -38,7 +38,7 @@ public:
     std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
@@ -82,6 +82,6 @@ STDataType::getInnerSType() const noexcept
 //------------------------------------------------------------------------------
 
 STDataType
-dataTypeFromJson(SField const& field, Json::Value const& value);
+dataTypeFromJson(SField const& field, json::Value const& value);
 
 }  // namespace xrpl

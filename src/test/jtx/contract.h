@@ -2,14 +2,13 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/SignerUtils.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/utility.h>
 
 #include <xrpl/protocol/TxFlags.h>
-
-#include "test/jtx/SignerUtils.h"
 
 #include <concepts>
 #include <cstdint>
@@ -19,43 +18,47 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-/** Contract operations */
+/**
+ * Contract operations
+ */
 namespace contract {
 
-Json::Value
+json::Value
 create(jtx::Account const& account, std::string const& contractCode);
 
-Json::Value
+json::Value
 create(jtx::Account const& account, uint256 const& contractHash);
 
-Json::Value
+json::Value
 modify(
     jtx::Account const& account,
     jtx::Account const& contractAccount,
     std::string const& contractCode);
 
-Json::Value
+json::Value
 modify(
     jtx::Account const& account,
     jtx::Account const& contractAccount,
     uint256 const& contractHash);
 
-Json::Value
+json::Value
 modify(jtx::Account const& account, jtx::Account const& contractAccount, jtx::Account const& owner);
 
-Json::Value
+json::Value
 del(jtx::Account const& account, jtx::Account const& contractAccount);
 
-Json::Value
+json::Value
 call(
     jtx::Account const& account,
     jtx::Account const& contractAccount,
     std::string const& functionName);
 
-Json::Value
+json::Value
 userDelete(jtx::Account const& account, jtx::Account const& contractAccount);
 
-/** Add Function on a JTx. */
+/**
+ * Add Function on a JTx.
+ */
 class add_function
 {
 private:
@@ -74,7 +77,9 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Add Instance Parameter on a JTx. */
+/**
+ * Add Instance Parameter on a JTx.
+ */
 template <typename T>
 class add_instance_param
 {
@@ -102,9 +107,9 @@ public:
             // Add instance Parameters
             if (!jtx.jv.isMember(sfInstanceParameters.fieldName))
             {
-                jtx.jv[sfInstanceParameters.fieldName] = Json::Value(Json::arrayValue);
+                jtx.jv[sfInstanceParameters.fieldName] = json::Value(json::ValueType::Array);
             }
-            Json::Value param = Json::Value(Json::objectValue);
+            json::Value param = json::Value(json::ValueType::Object);
             param[sfInstanceParameter.fieldName][sfParameterFlag.fieldName] = flags_;
             param[sfInstanceParameter.fieldName][sfParameterType.fieldName][jss::type] = type_;
             jtx.jv[sfInstanceParameters.fieldName].append(param);
@@ -113,9 +118,9 @@ public:
         // Add instance Parameter Values
         if (!jtx.jv.isMember(sfInstanceParameterValues.fieldName))
         {
-            jtx.jv[sfInstanceParameterValues.fieldName] = Json::Value(Json::arrayValue);
+            jtx.jv[sfInstanceParameterValues.fieldName] = json::Value(json::ValueType::Array);
         }
-        Json::Value param = Json::Value(Json::objectValue);
+        json::Value param = json::Value(json::ValueType::Object);
         param[sfInstanceParameterValue.fieldName][sfParameterFlag.fieldName] = flags_;
         param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName][jss::type] = type_;
         param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName][jss::value] = value_;
@@ -123,7 +128,9 @@ public:
     }
 };
 
-/** Add Parameter Value on a JTx. */
+/**
+ * Add Parameter Value on a JTx.
+ */
 template <typename T>
 class add_param
 {
@@ -146,10 +153,10 @@ public:
     void
     operator()(Env&, JTx& jtx) const
     {
-        Json::Value param = Json::Value(Json::objectValue);
-        param[sfParameter] = Json::Value(Json::objectValue);
+        json::Value param = json::Value(json::ValueType::Object);
+        param[sfParameter] = json::Value(json::ValueType::Object);
         param[sfParameter][sfParameterFlag] = flags_;
-        param[sfParameter][sfParameterValue] = Json::Value(Json::objectValue);
+        param[sfParameter][sfParameterValue] = json::Value(json::ValueType::Object);
         param[sfParameter][sfParameterValue][jss::type] = type_;
         param[sfParameter][sfParameterValue][jss::value] = value_;
         jtx.jv[sfParameters].append(param);

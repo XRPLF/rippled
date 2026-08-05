@@ -3,12 +3,12 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 
-#include <functional>
 #include <memory>
+#include <optional>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl {
 
@@ -24,30 +24,29 @@ struct JsonContext;
 struct Context;
 
 /**
-   Add a `delivered_amount` field to the `meta` input/output parameter.
-   The field is only added to successful payment and check cash transactions.
-   If a delivered amount field is available in the TxMeta parameter, that value
-   is used. Otherwise, the transaction's `Amount` field is used. If neither is
-   available, then the delivered amount is set to "unavailable".
-
-   @{
+ * Add a `delivered_amount` field to the `meta` input/output parameter.
+ * The field is only added to successful payment and check cash transactions.
+ * If a delivered amount field is available in the TxMeta parameter, that value
+ * is used. Otherwise, the transaction's `Amount` field is used. If neither is
+ * available, then the delivered amount is set to "unavailable".
  */
+/** @{ */
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     ReadView const&,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const&);
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const&,
     std::shared_ptr<Transaction> const&,
     TxMeta const&);
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);

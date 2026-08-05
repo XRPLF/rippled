@@ -6,7 +6,7 @@
 
 namespace xrpl {
 
-struct STData_test : public beast::unit_test::suite
+struct STData_test : public beast::unit_test::Suite
 {
     void
     testConstructors()
@@ -422,7 +422,7 @@ struct STData_test : public beast::unit_test::suite
         {
             // UINT8
             STData const data_u8(sf, static_cast<unsigned char>(8));
-            Json::Value json_u8 = data_u8.getJson(JsonOptions::none);
+            json::Value json_u8 = data_u8.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u8[jss::type].asString() == "UINT8");
             BEAST_EXPECT(json_u8[jss::value].asUInt() == 8);
         }
@@ -430,7 +430,7 @@ struct STData_test : public beast::unit_test::suite
         {
             // UINT16
             STData const data_u16(sf, static_cast<std::uint16_t>(16));
-            Json::Value json_u16 = data_u16.getJson(JsonOptions::none);
+            json::Value json_u16 = data_u16.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u16[jss::type].asString() == "UINT16");
             BEAST_EXPECT(json_u16[jss::value].asUInt() == 16);
         }
@@ -438,7 +438,7 @@ struct STData_test : public beast::unit_test::suite
         {
             // UINT32
             STData const data_u32(sf, static_cast<std::uint32_t>(32));
-            Json::Value json_u32 = data_u32.getJson(JsonOptions::none);
+            json::Value json_u32 = data_u32.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u32[jss::type].asString() == "UINT32");
             BEAST_EXPECT(json_u32[jss::value].asUInt() == 32);
         }
@@ -446,7 +446,7 @@ struct STData_test : public beast::unit_test::suite
         {
             // UINT64
             STData const data_u64(sf, static_cast<std::uint64_t>(64));
-            Json::Value json_u64 = data_u64.getJson(JsonOptions::none);
+            json::Value json_u64 = data_u64.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u64[jss::type].asString() == "UINT64");
             BEAST_EXPECT(json_u64[jss::value].asString() == "40");
         }
@@ -455,7 +455,7 @@ struct STData_test : public beast::unit_test::suite
             // UINT128
             uint128 const val_u128 = uint128(1);
             STData const data_u128(sf, val_u128);
-            Json::Value json_u128 = data_u128.getJson(JsonOptions::none);
+            json::Value json_u128 = data_u128.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u128[jss::type].asString() == "UINT128");
             BEAST_EXPECT(json_u128[jss::value].asString() == "00000000000000000000000000000001");
         }
@@ -464,7 +464,7 @@ struct STData_test : public beast::unit_test::suite
             // UINT160
             uint160 const val_u160 = uint160(1);
             STData const data_u160(sf, val_u160);
-            Json::Value json_u160 = data_u160.getJson(JsonOptions::none);
+            json::Value json_u160 = data_u160.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u160[jss::type].asString() == "UINT160");
             BEAST_EXPECT(
                 json_u160[jss::value].asString() == "0000000000000000000000000000000000000001");
@@ -474,7 +474,7 @@ struct STData_test : public beast::unit_test::suite
             // UINT192
             uint192 const val_u192 = uint192(1);
             STData const data_u192(sf, val_u192);
-            Json::Value json_u192 = data_u192.getJson(JsonOptions::none);
+            json::Value json_u192 = data_u192.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u192[jss::type].asString() == "UINT192");
             BEAST_EXPECT(
                 json_u192[jss::value].asString() ==
@@ -485,7 +485,7 @@ struct STData_test : public beast::unit_test::suite
             // UINT256
             uint256 const val_u256 = uint256(1);
             STData const data_u256(sf, val_u256);
-            Json::Value json_u256 = data_u256.getJson(JsonOptions::none);
+            json::Value json_u256 = data_u256.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_u256[jss::type].asString() == "UINT256");
             BEAST_EXPECT(
                 json_u256[jss::value].asString() ==
@@ -497,7 +497,7 @@ struct STData_test : public beast::unit_test::suite
             // VL
             Blob const blob = strUnHex("DEADBEEF").value();
             STData const data_vl(sf, blob);
-            Json::Value json_vl = data_vl.getJson(JsonOptions::none);
+            json::Value json_vl = data_vl.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_vl[jss::type].asString() == "VL");
             BEAST_EXPECT(json_vl[jss::value].asString() == "DEADBEEF");
         }
@@ -506,7 +506,7 @@ struct STData_test : public beast::unit_test::suite
             // ACCOUNT
             AccountID const account(0x123456789ABCDEF0);
             STData const data_account(sf, account);
-            Json::Value json_account = data_account.getJson(JsonOptions::none);
+            json::Value json_account = data_account.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_account[jss::type].asString() == "ACCOUNT");
             BEAST_EXPECT(json_account[jss::value].asString() == "rrrrrrrrrrrrrLveWzSkxhcH3hGw6");
         }
@@ -515,7 +515,7 @@ struct STData_test : public beast::unit_test::suite
             // AMOUNT
             STAmount const amount(1000);
             STData const data_amount(sf, amount);
-            Json::Value json_amount = data_amount.getJson(JsonOptions::none);
+            json::Value json_amount = data_amount.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json_amount[jss::type].asString() == "AMOUNT");
             BEAST_EXPECT(json_amount[jss::value].asString() == "1000");
         }
@@ -543,7 +543,7 @@ struct STData_test : public beast::unit_test::suite
         // Test JSON deserialization for each type
         {
             // UINT8
-            Json::Value json_u8(Json::objectValue);
+            json::Value json_u8(json::ValueType::Object);
             json_u8[jss::type] = "UINT8";
             json_u8[jss::value] = 8;
 
@@ -554,7 +554,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT16
-            Json::Value json_u16(Json::objectValue);
+            json::Value json_u16(json::ValueType::Object);
             json_u16[jss::type] = "UINT16";
             json_u16[jss::value] = 16;
 
@@ -565,7 +565,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT32
-            Json::Value json_u32(Json::objectValue);
+            json::Value json_u32(json::ValueType::Object);
             json_u32[jss::type] = "UINT32";
             json_u32[jss::value] = 32;
 
@@ -576,7 +576,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT64
-            Json::Value json_u64(Json::objectValue);
+            json::Value json_u64(json::ValueType::Object);
             json_u64[jss::type] = "UINT64";
             json_u64[jss::value] = 64;
             STData const data_u64 = dataFromJson(sf, json_u64);
@@ -586,7 +586,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT128
-            Json::Value json_u128(Json::objectValue);
+            json::Value json_u128(json::ValueType::Object);
             json_u128[jss::type] = "UINT128";
             json_u128[jss::value] = "00000000000000000000000000000001";
             STData const data_u128 = dataFromJson(sf, json_u128);
@@ -599,7 +599,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT160
-            Json::Value json_u160(Json::objectValue);
+            json::Value json_u160(json::ValueType::Object);
             json_u160[jss::type] = "UINT160";
             json_u160[jss::value] = "0000000000000000000000000000000000000001";
             STData const data_u160 = dataFromJson(sf, json_u160);
@@ -612,7 +612,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT192
-            Json::Value json_u192(Json::objectValue);
+            json::Value json_u192(json::ValueType::Object);
             json_u192[jss::type] = "UINT192";
             json_u192[jss::value] = "000000000000000000000000000000000000000000000001";
             STData const data_u192 = dataFromJson(sf, json_u192);
@@ -625,7 +625,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // UINT256
-            Json::Value json_u256(Json::objectValue);
+            json::Value json_u256(json::ValueType::Object);
             json_u256[jss::type] = "UINT256";
             json_u256[jss::value] =
                 "00000000000000000000000000000000000000000000000000000000000000"
@@ -642,7 +642,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // VL
-            Json::Value json_vl(Json::objectValue);
+            json::Value json_vl(json::ValueType::Object);
             json_vl[jss::type] = "VL";
             json_vl[jss::value] = "DEADBEEFCAFEBABE";
 
@@ -654,7 +654,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // ACCOUNT
-            Json::Value json_account(Json::objectValue);
+            json::Value json_account(json::ValueType::Object);
             json_account[jss::type] = "ACCOUNT";
             json_account[jss::value] = "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn";
 
@@ -667,7 +667,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // AMOUNT
-            Json::Value json_amount(Json::objectValue);
+            json::Value json_amount(json::ValueType::Object);
             json_amount[jss::type] = "AMOUNT";
             json_amount[jss::value] = "1000";
 
@@ -700,7 +700,7 @@ struct STData_test : public beast::unit_test::suite
     //     // Test JSON parsing errors
     //     {
     //         // Missing type
-    //         Json::Value json_no_type(Json::objectValue);
+    //         json::Value json_no_type(json::ValueType::Object);
     //         json_no_type[jss::value] = 123;
 
     //         try {
@@ -713,7 +713,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Missing value
-    //         Json::Value json_no_value(Json::objectValue);
+    //         json::Value json_no_value(json::ValueType::Object);
     //         json_no_value[jss::type] = "UINT8";
 
     //         try {
@@ -726,7 +726,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Invalid type string
-    //         Json::Value json_invalid_type(Json::objectValue);
+    //         json::Value json_invalid_type(json::ValueType::Object);
     //         json_invalid_type[jss::type] = "INVALID_TYPE";
     //         json_invalid_type[jss::value] = 123;
 
@@ -740,7 +740,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Invalid UINT256 hex
-    //         Json::Value json_invalid_hex(Json::objectValue);
+    //         json::Value json_invalid_hex(json::ValueType::Object);
     //         json_invalid_hex[jss::type] = "UINT256";
     //         json_invalid_hex[jss::value] = "INVALID_HEX_STRING";
 
@@ -754,7 +754,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Invalid VL hex
-    //         Json::Value json_invalid_vl(Json::objectValue);
+    //         json::Value json_invalid_vl(json::ValueType::Object);
     //         json_invalid_vl[jss::type] = "VL";
     //         json_invalid_vl[jss::value] = "INVALID_HEX";
 
@@ -768,7 +768,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Invalid account
-    //         Json::Value json_invalid_account(Json::objectValue);
+    //         json::Value json_invalid_account(json::ValueType::Object);
     //         json_invalid_account[jss::type] = "ACCOUNT";
     //         json_invalid_account[jss::value] = "INVALID_ACCOUNT_STRING";
 
@@ -782,7 +782,7 @@ struct STData_test : public beast::unit_test::suite
 
     //     {
     //         // Non-object JSON
-    //         Json::Value json_not_object = "not an object";
+    //         json::Value json_not_object = "not an object";
 
     //         try {
     //             STData data = dataFromJson(sf, json_not_object);
@@ -1160,7 +1160,7 @@ struct STData_test : public beast::unit_test::suite
     //     {
     //         // UINT8
     //         STData original_u8(sf, static_cast<unsigned char>(123));
-    //         Json::Value json_u8 = original_u8.getJson(JsonOptions::none);
+    //         json::Value json_u8 = original_u8.getJson(JsonOptions::Values::None);
     //         STData restored_u8 = dataFromJson(sf, json_u8);
     //         BEAST_EXPECT(original_u8.isEquivalent(restored_u8));
     //     }
@@ -1170,7 +1170,7 @@ struct STData_test : public beast::unit_test::suite
     //         uint256 val;
     //         val.parseHex("FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210");
     //         STData original_u256(sf, val);
-    //         Json::Value json_u256 = original_u256.getJson(JsonOptions::none);
+    //         json::Value json_u256 = original_u256.getJson(JsonOptions::Values::None);
     //         STData restored_u256 = dataFromJson(sf, json_u256);
     //         BEAST_EXPECT(original_u256.isEquivalent(restored_u256));
     //     }
@@ -1179,7 +1179,7 @@ struct STData_test : public beast::unit_test::suite
     //         // VL
     //         Blob blob = strUnHex("0123456789ABCDEF").value();
     //         STData original_vl(sf, blob);
-    //         Json::Value json_vl = original_vl.getJson(JsonOptions::none);
+    //         json::Value json_vl = original_vl.getJson(JsonOptions::Values::None);
     //         STData restored_vl = dataFromJson(sf, json_vl);
     //         BEAST_EXPECT(original_vl.isEquivalent(restored_vl));
     //     }
@@ -1189,8 +1189,8 @@ struct STData_test : public beast::unit_test::suite
     //         AccountID account_id =
     //         parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value();
     //         STData original_account(sf, account_id);
-    //         Json::Value json_account =
-    //         original_account.getJson(JsonOptions::none); STData
+    //         json::Value json_account =
+    //         original_account.getJson(JsonOptions::Values::None); STData
     //         restored_account = dataFromJson(sf, json_account);
     //         BEAST_EXPECT(original_account.isEquivalent(restored_account));
     //     }

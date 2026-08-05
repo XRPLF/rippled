@@ -2,14 +2,15 @@
 
 #include <xrpld/consensus/LedgerTrie.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <cstdint>
+#include <optional>
 #include <random>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class LedgerTrie_test : public beast::unit_test::suite
+class LedgerTrie_test : public beast::unit_test::Suite
 {
     void
     testInsert()
@@ -518,17 +519,18 @@ class LedgerTrie_test : public beast::unit_test::suite
 
         // Changing largestSeq perspective changes preferred branch
         {
-            /** Build the tree below with initial tip support annotated
-                   A
-                  / \
-               B(1)  C(1)
-              /  |   |
-             H   D   F(1)
-                 |
-                 E(2)
-                 |
-                 G
-            */
+            /**
+             * Build the tree below with initial tip support annotated
+             *       A
+             *      / \
+             *   B(1)  C(1)
+             *  /  |   |
+             * H   D   F(1)
+             *     |
+             *     E(2)
+             *     |
+             *     G
+             */
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["ab"]);
@@ -547,17 +549,18 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** One of E advancing to G doesn't change anything
-                   A
-                  / \
-               B(1)  C(1)
-              /  |   |
-             H   D   F(1)
-                 |
-                 E(1)
-                 |
-                 G(1)
-            */
+            /**
+             * One of E advancing to G doesn't change anything
+             *       A
+             *      / \
+             *   B(1)  C(1)
+             *  /  |   |
+             * H   D   F(1)
+             *     |
+             *     E(1)
+             *     |
+             *     G(1)
+             */
             t.remove(h["abde"]);
             t.insert(h["abdeg"]);
 
@@ -569,17 +572,18 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** C advancing to H does advance the seq 3 preferred ledger
-                   A
-                  / \
-               B(1)  C
-              /  |   |
-             H(1)D   F(1)
-                 |
-                 E(1)
-                 |
-                 G(1)
-            */
+            /**
+             * C advancing to H does advance the seq 3 preferred ledger
+             *       A
+             *      / \
+             *   B(1)  C
+             *  /  |   |
+             * H(1)D   F(1)
+             *     |
+             *     E(1)
+             *     |
+             *     G(1)
+             */
             t.remove(h["ac"]);
             t.insert(h["abh"]);
 
@@ -591,17 +595,18 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** F advancing to E also moves the preferred ledger forward
-                   A
-                  / \
-               B(1)  C
-              /  |   |
-             H(1)D   F
-                 |
-                 E(2)
-                 |
-                 G(1)
-            */
+            /**
+             * F advancing to E also moves the preferred ledger forward
+             *       A
+             *      / \
+             *   B(1)  C
+             *  /  |   |
+             * H(1)D   F
+             *     |
+             *     E(2)
+             *     |
+             *     G(1)
+             */
             t.remove(h["acf"]);
             t.insert(h["abde"]);
 
@@ -662,6 +667,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         std::uint32_t const iterations = 10000;
 
         // Use explicit seed to have same results for CI
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen{42};
         std::uniform_int_distribution<> depthDist(0, depthConst - 1);
         std::uniform_int_distribution<> widthDist(0, width - 1);
@@ -707,5 +713,4 @@ class LedgerTrie_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

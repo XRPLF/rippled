@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <utility>
 
 namespace beast {
 
@@ -16,5 +17,6 @@ template <
     class KeyEqual = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, T>>>
 using aged_unordered_multimap =
-    detail::aged_unordered_container<true, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
+    detail::AgedUnorderedContainer<true, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
+
 }  // namespace beast

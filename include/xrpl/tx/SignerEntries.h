@@ -1,13 +1,15 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>        //
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>  // beast::Journal
-#include <xrpl/protocol/TER.h>           // temMALFORMED
-#include <xrpl/protocol/UintTypes.h>     // AccountID
-#include <xrpl/tx/Transactor.h>          // NotTEC
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/TER.h>  // temMALFORMED
 
+#include <cstdint>
+#include <expected>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace xrpl {
 
@@ -42,10 +44,10 @@ public:
         }
 
         // For sorting to look for duplicate accounts
-        friend bool
-        operator<(SignerEntry const& lhs, SignerEntry const& rhs)
+        friend auto
+        operator<=>(SignerEntry const& lhs, SignerEntry const& rhs)
         {
-            return lhs.account < rhs.account;
+            return lhs.account <=> rhs.account;
         }
 
         friend bool
@@ -60,7 +62,7 @@ public:
     // obj Contains a SignerEntries field that is an STArray.
     // journal For reporting error conditions.
     // annotation Source of SignerEntries, like "ledger" or "transaction".
-    static Expected<std::vector<SignerEntry>, NotTEC>
+    static std::expected<std::vector<SignerEntry>, NotTEC>
     deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation);
 };
 

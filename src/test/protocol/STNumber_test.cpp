@@ -1,18 +1,25 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
+#include <exception>
+#include <initializer_list>
 #include <limits>
-#include <ostream>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 
 namespace xrpl {
 
-struct STNumber_test : public beast::unit_test::suite
+struct STNumber_test : public beast::unit_test::Suite
 {
     void
     testCombo(Number number)
@@ -49,7 +56,7 @@ struct STNumber_test : public beast::unit_test::suite
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
+            Number::kMinExponent, -1, 0, 1, Number::kMaxExponent - 1};
         for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
@@ -58,15 +65,15 @@ struct STNumber_test : public beast::unit_test::suite
             STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
             IOUAmount const totalValue{iouValue * factor};
-            STAmount const totalAmount{totalValue, strikePrice.issue()};
+            STAmount const totalAmount{totalValue, strikePrice.get<Issue>()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
 
         {
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(42)) == STNumber(sfNumber, 42));
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(-42)) == STNumber(sfNumber, -42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(-42)) == STNumber(sfNumber, -42));
 
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::UInt(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::UInt(42)) == STNumber(sfNumber, 42));
 
             BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
 
@@ -95,50 +102,79 @@ struct STNumber_test : public beast::unit_test::suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
-                NumberRoundModeGuard const mg(Number::towards_zero);
-                // maxint64 9,223,372,036,854,775,807
-                auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
-                // minint64 -9,223,372,036,854,775,808
-                auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
-                if (Number::getMantissaScale() == MantissaRange::small)
+                auto const parseNumber = [](std::string const& boundary) {
+                    return numberFromJson(sfNumber, boundary);
+                };
+                auto const expectParseThrows = [this, &parseNumber](std::string const& boundary) {
+                    try
+                    {
+                        parseNumber(boundary);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number cannot be represented");
+                    }
+                };
+
+                // Small rejects this; large scales parse it as 9223372036854775800e-1.
+                auto constexpr positiveBoundary = "922337203685477580";
+                auto constexpr negativeBoundary = "-922337203685477580";
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
                 {
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) ==
-                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                    expectParseThrows(positiveBoundary);
+                    expectParseThrows(negativeBoundary);
                 }
                 else
                 {
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) ==
-                        STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                        parseNumber(positiveBoundary) ==
+                        STNumber(sfNumber, Number{922'337'203'685'477'580, 0}));
                     BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(
-                            sfNumber,
-                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::normalized{}}));
+                        parseNumber(negativeBoundary) ==
+                        STNumber(sfNumber, Number{-922'337'203'685'477'580, 0}));
+                }
+
+                NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+                // maxint64 9,223,372,036,854,775,807
+                auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
+                // minint64 -9,223,372,036,854,775,808
+                auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
+                {
+                    // min/maxInt can't be exactly represented with the small mantissa, so they
+                    // don't parse, and are expected to throw.
+                    expectParseThrows(maxInt);
+                    expectParseThrows(minInt);
+                }
+                else
+                {
+                    // with large mantissas, maxint is fine
+                    BEAST_EXPECT(
+                        parseNumber(maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                    // but minint's mantissa is > kMaxRep, and so rounds, and thus can't be parsed
+                    expectParseThrows(minInt);
                 }
             }
 
-            constexpr auto imin = std::numeric_limits<int>::min();
-            BEAST_EXPECT(numberFromJson(sfNumber, imin) == STNumber(sfNumber, Number(imin, 0)));
+            constexpr auto kIMin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMin) == STNumber(sfNumber, Number(kIMin, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(imin)) ==
-                STNumber(sfNumber, Number(imin, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMin)) ==
+                STNumber(sfNumber, Number(kIMin, 0)));
 
-            constexpr auto imax = std::numeric_limits<int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, imax) == STNumber(sfNumber, Number(imax, 0)));
+            constexpr auto kIMax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMax) == STNumber(sfNumber, Number(kIMax, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(imax)) ==
-                STNumber(sfNumber, Number(imax, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMax)) ==
+                STNumber(sfNumber, Number(kIMax, 0)));
 
-            constexpr auto umax = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, umax) == STNumber(sfNumber, Number(umax, 0)));
+            constexpr auto kUMax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kUMax) == STNumber(sfNumber, Number(kUMax, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(umax)) ==
-                STNumber(sfNumber, Number(umax, 0)));
+                numberFromJson(sfNumber, std::to_string(kUMax)) ==
+                STNumber(sfNumber, Number(kUMax, 0)));
 
             // Obvious non-numbers tested here
             try
@@ -187,7 +223,7 @@ struct STNumber_test : public beast::unit_test::suite
 
             try
             {
-                auto _ = numberFromJson(sfNumber, Json::Value());
+                auto _ = numberFromJson(sfNumber, json::Value());
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -274,7 +310,7 @@ struct STNumber_test : public beast::unit_test::suite
     {
         static_assert(!std::is_convertible_v<STNumber*, Number*>);
 
-        for (auto const scale : {MantissaRange::small, MantissaRange::large})
+        for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());

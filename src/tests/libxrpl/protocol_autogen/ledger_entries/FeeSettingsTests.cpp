@@ -27,8 +27,8 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
-    auto const extensionComputeLimitValue = canonical_UINT32();
-    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
     auto const gasPriceValue = canonical_UINT32();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -43,8 +43,8 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     builder.setBaseFeeDrops(baseFeeDropsValue);
     builder.setReserveBaseDrops(reserveBaseDropsValue);
     builder.setReserveIncrementDrops(reserveIncrementDropsValue);
-    builder.setExtensionComputeLimit(extensionComputeLimitValue);
-    builder.setExtensionSizeLimit(extensionSizeLimitValue);
+    builder.setGasLimit(gasLimitValue);
+    builder.setBytecodeSizeLimit(bytecodeSizeLimitValue);
     builder.setGasPrice(gasPriceValue);
     builder.setPreviousTxnID(previousTxnIDValue);
     builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
@@ -115,19 +115,19 @@ TEST(FeeSettingsTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = extensionComputeLimitValue;
-        auto const actualOpt = entry.getExtensionComputeLimit();
+        auto const& expected = gasLimitValue;
+        auto const actualOpt = entry.getGasLimit();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfExtensionComputeLimit");
-        EXPECT_TRUE(entry.hasExtensionComputeLimit());
+        expectEqualField(expected, *actualOpt, "sfGasLimit");
+        EXPECT_TRUE(entry.hasGasLimit());
     }
 
     {
-        auto const& expected = extensionSizeLimitValue;
-        auto const actualOpt = entry.getExtensionSizeLimit();
+        auto const& expected = bytecodeSizeLimitValue;
+        auto const actualOpt = entry.getBytecodeSizeLimit();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfExtensionSizeLimit");
-        EXPECT_TRUE(entry.hasExtensionSizeLimit());
+        expectEqualField(expected, *actualOpt, "sfBytecodeSizeLimit");
+        EXPECT_TRUE(entry.hasBytecodeSizeLimit());
     }
 
     {
@@ -174,8 +174,8 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
-    auto const extensionComputeLimitValue = canonical_UINT32();
-    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
     auto const gasPriceValue = canonical_UINT32();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -189,8 +189,8 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     sle->at(sfBaseFeeDrops) = baseFeeDropsValue;
     sle->at(sfReserveBaseDrops) = reserveBaseDropsValue;
     sle->at(sfReserveIncrementDrops) = reserveIncrementDropsValue;
-    sle->at(sfExtensionComputeLimit) = extensionComputeLimitValue;
-    sle->at(sfExtensionSizeLimit) = extensionSizeLimitValue;
+    sle->at(sfGasLimit) = gasLimitValue;
+    sle->at(sfBytecodeSizeLimit) = bytecodeSizeLimitValue;
     sle->at(sfGasPrice) = gasPriceValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
@@ -296,29 +296,29 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = extensionComputeLimitValue;
+        auto const& expected = gasLimitValue;
 
-        auto const fromSleOpt = entryFromSle.getExtensionComputeLimit();
-        auto const fromBuilderOpt = entryFromBuilder.getExtensionComputeLimit();
+        auto const fromSleOpt = entryFromSle.getGasLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getGasLimit();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfExtensionComputeLimit");
-        expectEqualField(expected, *fromBuilderOpt, "sfExtensionComputeLimit");
+        expectEqualField(expected, *fromSleOpt, "sfGasLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfGasLimit");
     }
 
     {
-        auto const& expected = extensionSizeLimitValue;
+        auto const& expected = bytecodeSizeLimitValue;
 
-        auto const fromSleOpt = entryFromSle.getExtensionSizeLimit();
-        auto const fromBuilderOpt = entryFromBuilder.getExtensionSizeLimit();
+        auto const fromSleOpt = entryFromSle.getBytecodeSizeLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getBytecodeSizeLimit();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfExtensionSizeLimit");
-        expectEqualField(expected, *fromBuilderOpt, "sfExtensionSizeLimit");
+        expectEqualField(expected, *fromSleOpt, "sfBytecodeSizeLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfBytecodeSizeLimit");
     }
 
     {
@@ -426,10 +426,10 @@ TEST(FeeSettingsTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getReserveBaseDrops().has_value());
     EXPECT_FALSE(entry.hasReserveIncrementDrops());
     EXPECT_FALSE(entry.getReserveIncrementDrops().has_value());
-    EXPECT_FALSE(entry.hasExtensionComputeLimit());
-    EXPECT_FALSE(entry.getExtensionComputeLimit().has_value());
-    EXPECT_FALSE(entry.hasExtensionSizeLimit());
-    EXPECT_FALSE(entry.getExtensionSizeLimit().has_value());
+    EXPECT_FALSE(entry.hasGasLimit());
+    EXPECT_FALSE(entry.getGasLimit().has_value());
+    EXPECT_FALSE(entry.hasBytecodeSizeLimit());
+    EXPECT_FALSE(entry.getBytecodeSizeLimit().has_value());
     EXPECT_FALSE(entry.hasGasPrice());
     EXPECT_FALSE(entry.getGasPrice().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnID());

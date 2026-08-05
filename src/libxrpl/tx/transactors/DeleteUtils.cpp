@@ -1,10 +1,11 @@
+#include <xrpl/tx/transactors/DeleteUtils.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenUtils.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/DeleteUtils.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/contract/ContractDelete.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
@@ -125,7 +126,7 @@ removeDelegateFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+    return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
 TER
@@ -217,8 +218,8 @@ deletePreclaim(
             return tecHAS_OBLIGATIONS;
 
         // If the account owns any NFTs it cannot be deleted.
-        Keylet const first = keylet::nftpage_min(account);
-        Keylet const last = keylet::nftpage_max(account);
+        Keylet const first = keylet::nftokenPageMin(account);
+        Keylet const last = keylet::nftokenPageMax(account);
 
         auto const cp = ctx.view.read(
             Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
@@ -259,7 +260,7 @@ deletePreclaim(
 
     std::shared_ptr<SLE const> sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZero};
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
@@ -280,14 +281,14 @@ deletePreclaim(
             return tefBAD_LEDGER;
         }
 
-        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (!nonObligationDeleter(nodeType))
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
         // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > maxDeletableDirEntries)
+        if (++deletableDirEntryCount > kMaxDeletableDirEntries)
             return tefTOO_BIG;
 
     } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));

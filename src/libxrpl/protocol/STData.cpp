@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STData.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
-#include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/detail/STVar.h>
@@ -43,7 +44,7 @@ STData::STData(SField const& n) : STBase(n), inner_type_(STI_NOTPRESENT), data_(
 STData::STData(SField const& n, unsigned char v)
     : STBase(n)
     , inner_type_(STI_UINT8)
-    , data_(detail::STVar(detail::defaultObject, sfCloseResolution))
+    , data_(detail::STVar(detail::gDefaultObject, sfCloseResolution))
 {
     setFieldUsingSetValue<STUInt8>(v);
 }
@@ -51,25 +52,25 @@ STData::STData(SField const& n, unsigned char v)
 STData::STData(SField const& n, std::uint16_t v)
     : STBase(n)
     , inner_type_(STI_UINT16)
-    , data_(detail::STVar(detail::defaultObject, sfSignerWeight))
+    , data_(detail::STVar(detail::gDefaultObject, sfSignerWeight))
 {
     setFieldUsingSetValue<STUInt16>(v);
 }
 
 STData::STData(SField const& n, std::uint32_t v)
-    : STBase(n), inner_type_(STI_UINT32), data_(detail::STVar(detail::defaultObject, sfNetworkID))
+    : STBase(n), inner_type_(STI_UINT32), data_(detail::STVar(detail::gDefaultObject, sfNetworkID))
 {
     setFieldUsingSetValue<STUInt32>(v);
 }
 
 STData::STData(SField const& n, std::uint64_t v)
-    : STBase(n), inner_type_(STI_UINT64), data_(detail::STVar(detail::defaultObject, sfIndexNext))
+    : STBase(n), inner_type_(STI_UINT64), data_(detail::STVar(detail::gDefaultObject, sfIndexNext))
 {
     setFieldUsingSetValue<STUInt64>(v);
 }
 
 STData::STData(SField const& n, uint128 const& v)
-    : STBase(n), inner_type_(STI_UINT128), data_(detail::STVar(detail::defaultObject, sfEmailHash))
+    : STBase(n), inner_type_(STI_UINT128), data_(detail::STVar(detail::gDefaultObject, sfEmailHash))
 {
     setFieldUsingSetValue<STUInt128>(v);
 }
@@ -77,7 +78,7 @@ STData::STData(SField const& n, uint128 const& v)
 STData::STData(SField const& n, uint160 const& v)
     : STBase(n)
     , inner_type_(STI_UINT160)
-    , data_(detail::STVar(detail::defaultObject, sfTakerPaysCurrency))
+    , data_(detail::STVar(detail::gDefaultObject, sfTakerPaysCurrency))
 {
     setFieldUsingSetValue<STUInt160>(v);
 }
@@ -85,55 +86,59 @@ STData::STData(SField const& n, uint160 const& v)
 STData::STData(SField const& n, uint192 const& v)
     : STBase(n)
     , inner_type_(STI_UINT192)
-    , data_(detail::STVar(detail::defaultObject, sfMPTokenIssuanceID))
+    , data_(detail::STVar(detail::gDefaultObject, sfMPTokenIssuanceID))
 {
     setFieldUsingSetValue<STUInt192>(v);
 }
 
 STData::STData(SField const& n, uint256 const& v)
-    : STBase(n), inner_type_(STI_UINT256), data_(detail::STVar(detail::defaultObject, sfLedgerHash))
+    : STBase(n)
+    , inner_type_(STI_UINT256)
+    , data_(detail::STVar(detail::gDefaultObject, sfLedgerHash))
 {
     setFieldUsingSetValue<STUInt256>(v);
 }
 
 STData::STData(SField const& n, Blob const& v)
-    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::defaultObject, sfURI))
+    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::gDefaultObject, sfURI))
 {
     setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
 }
 
 STData::STData(SField const& n, Slice const& v)
-    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::defaultObject, sfURI))
+    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::gDefaultObject, sfURI))
 {
     setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
 }
 
 STData::STData(SField const& n, STAmount const& v)
-    : STBase(n), inner_type_(STI_AMOUNT), data_(detail::STVar(detail::defaultObject, sfAmount))
+    : STBase(n), inner_type_(STI_AMOUNT), data_(detail::STVar(detail::gDefaultObject, sfAmount))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, AccountID const& v)
-    : STBase(n), inner_type_(STI_ACCOUNT), data_(detail::STVar(detail::defaultObject, sfAccount))
+    : STBase(n), inner_type_(STI_ACCOUNT), data_(detail::STVar(detail::gDefaultObject, sfAccount))
 {
     setFieldUsingSetValue<STAccount>(v);
 }
 
 STData::STData(SField const& n, STIssue const& v)
-    : STBase(n), inner_type_(STI_ISSUE), data_(detail::STVar(detail::defaultObject, sfAsset))
+    : STBase(n), inner_type_(STI_ISSUE), data_(detail::STVar(detail::gDefaultObject, sfAsset))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, STCurrency const& v)
-    : STBase(n), inner_type_(STI_CURRENCY), data_(detail::STVar(detail::defaultObject, sfBaseAsset))
+    : STBase(n)
+    , inner_type_(STI_CURRENCY)
+    , data_(detail::STVar(detail::gDefaultObject, sfBaseAsset))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, STNumber const& v)
-    : STBase(n), inner_type_(STI_NUMBER), data_(detail::STVar(detail::defaultObject, sfNumber))
+    : STBase(n), inner_type_(STI_NUMBER), data_(detail::STVar(detail::gDefaultObject, sfNumber))
 {
     setFieldUsingAssignment(v);
 }
@@ -441,10 +446,10 @@ STData::getText() const
     return "STData{InnerType: " + inner_type_str + ", Data: " + data_.get().getText() + "}";
 }
 
-Json::Value
+json::Value
 STData::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
     ret[jss::type] = getInnerTypeString();
     ret[jss::value] = data_.get().getJson(options);
     return ret;
@@ -458,7 +463,7 @@ STData::makeFieldPresent()
     if (f->getSType() != STI_NOTPRESENT)
         return f;
 
-    data_ = detail::STVar(detail::nonPresentObject, f->getFName());
+    data_ = detail::STVar(detail::gNonPresentObject, f->getFName());
     return &data_.get();
 }
 
@@ -466,7 +471,7 @@ void
 STData::setFieldU8(unsigned char v)
 {
     inner_type_ = STI_UINT8;
-    data_ = detail::STVar(detail::defaultObject, sfCloseResolution);
+    data_ = detail::STVar(detail::gDefaultObject, sfCloseResolution);
     setFieldUsingSetValue<STUInt8>(v);
 }
 
@@ -474,7 +479,7 @@ void
 STData::setFieldU16(std::uint16_t v)
 {
     inner_type_ = STI_UINT16;
-    data_ = detail::STVar(detail::defaultObject, sfSignerWeight);
+    data_ = detail::STVar(detail::gDefaultObject, sfSignerWeight);
     setFieldUsingSetValue<STUInt16>(v);
 }
 
@@ -482,7 +487,7 @@ void
 STData::setFieldU32(std::uint32_t v)
 {
     inner_type_ = STI_UINT32;
-    data_ = detail::STVar(detail::defaultObject, sfNetworkID);
+    data_ = detail::STVar(detail::gDefaultObject, sfNetworkID);
     setFieldUsingSetValue<STUInt32>(v);
 }
 
@@ -490,7 +495,7 @@ void
 STData::setFieldU64(std::uint64_t v)
 {
     inner_type_ = STI_UINT64;
-    data_ = detail::STVar(detail::defaultObject, sfIndexNext);
+    data_ = detail::STVar(detail::gDefaultObject, sfIndexNext);
     setFieldUsingSetValue<STUInt64>(v);
 }
 
@@ -498,7 +503,7 @@ void
 STData::setFieldH128(uint128 const& v)
 {
     inner_type_ = STI_UINT128;
-    data_ = detail::STVar(detail::defaultObject, sfEmailHash);
+    data_ = detail::STVar(detail::gDefaultObject, sfEmailHash);
     setFieldUsingSetValue<STUInt128>(v);
 }
 
@@ -506,7 +511,7 @@ void
 STData::setFieldH160(uint160 const& v)
 {
     inner_type_ = STI_UINT160;
-    data_ = detail::STVar(detail::defaultObject, sfTakerPaysCurrency);
+    data_ = detail::STVar(detail::gDefaultObject, sfTakerPaysCurrency);
     setFieldUsingSetValue<STUInt160>(v);
 }
 
@@ -514,7 +519,7 @@ void
 STData::setFieldH192(uint192 const& v)
 {
     inner_type_ = STI_UINT192;
-    data_ = detail::STVar(detail::defaultObject, sfMPTokenIssuanceID);
+    data_ = detail::STVar(detail::gDefaultObject, sfMPTokenIssuanceID);
     setFieldUsingSetValue<STUInt192>(v);
 }
 
@@ -522,7 +527,7 @@ void
 STData::setFieldH256(uint256 const& v)
 {
     inner_type_ = STI_UINT256;
-    data_ = detail::STVar(detail::defaultObject, sfLedgerHash);
+    data_ = detail::STVar(detail::gDefaultObject, sfLedgerHash);
     setFieldUsingSetValue<STUInt256>(v);
 }
 
@@ -530,7 +535,7 @@ void
 STData::setFieldVL(Blob const& v)
 {
     inner_type_ = STI_VL;
-    data_ = detail::STVar(detail::defaultObject, sfData);
+    data_ = detail::STVar(detail::gDefaultObject, sfData);
     setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
 }
 
@@ -538,7 +543,7 @@ void
 STData::setFieldVL(Slice const& s)
 {
     inner_type_ = STI_VL;
-    data_ = detail::STVar(detail::defaultObject, sfData);
+    data_ = detail::STVar(detail::gDefaultObject, sfData);
     setFieldUsingSetValue<STBlob>(Buffer(s.data(), s.size()));
 }
 
@@ -546,7 +551,7 @@ void
 STData::setAccountID(AccountID const& v)
 {
     inner_type_ = STI_ACCOUNT;
-    data_ = detail::STVar(detail::defaultObject, sfAccount);
+    data_ = detail::STVar(detail::gDefaultObject, sfAccount);
     setFieldUsingSetValue<STAccount>(v);
 }
 
@@ -554,7 +559,7 @@ void
 STData::setFieldAmount(STAmount const& v)
 {
     inner_type_ = STI_AMOUNT;
-    data_ = detail::STVar(detail::defaultObject, sfAmount);
+    data_ = detail::STVar(detail::gDefaultObject, sfAmount);
     setFieldUsingAssignment(v);
 }
 
@@ -562,7 +567,7 @@ void
 STData::setIssue(STIssue const& v)
 {
     inner_type_ = STI_ISSUE;
-    data_ = detail::STVar(detail::defaultObject, sfAsset);
+    data_ = detail::STVar(detail::gDefaultObject, sfAsset);
     setFieldUsingAssignment(v);
 }
 
@@ -570,7 +575,7 @@ void
 STData::setCurrency(STCurrency const& v)
 {
     inner_type_ = STI_CURRENCY;
-    data_ = detail::STVar(detail::defaultObject, sfBaseAsset);
+    data_ = detail::STVar(detail::gDefaultObject, sfBaseAsset);
     setFieldUsingAssignment(v);
 }
 
@@ -578,7 +583,7 @@ void
 STData::setFieldNumber(STNumber const& v)
 {
     inner_type_ = STI_NUMBER;
-    data_ = detail::STVar(detail::defaultObject, sfNumber);
+    data_ = detail::STVar(detail::gDefaultObject, sfNumber);
     setFieldUsingAssignment(v);
 }
 
@@ -673,10 +678,10 @@ STData::getFieldNumber() const
 }
 
 STData
-dataFromJson(SField const& field, Json::Value const& v)
+dataFromJson(SField const& field, json::Value const& v)
 {
-    Json::Value type;
-    Json::Value value;
+    json::Value type;
+    json::Value value;
 
     if (!v.isObject())
         Throw<std::runtime_error>("STData: expected object");
@@ -717,7 +722,7 @@ dataFromJson(SField const& field, Json::Value const& v)
             }
             else if (value.isUInt())
             {
-                STData data(field, safe_cast<std::uint32_t>(value.asUInt()));
+                STData data(field, safeCast<std::uint32_t>(value.asUInt()));
                 return data;
             }
             else
@@ -740,7 +745,7 @@ dataFromJson(SField const& field, Json::Value const& v)
 
                 std::uint64_t val = 0;
 
-                bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
+                bool const useBase10 = field.shouldMeta(SField::kSmdBaseTen);
 
                 // if the field is amount, serialize as base 10
                 auto [p, ec] =
@@ -759,7 +764,7 @@ dataFromJson(SField const& field, Json::Value const& v)
             }
             else if (value.isUInt())
             {
-                STData data(field, safe_cast<std::uint64_t>(value.asUInt()));
+                STData data(field, safeCast<std::uint64_t>(value.asUInt()));
                 return data;
             }
             else

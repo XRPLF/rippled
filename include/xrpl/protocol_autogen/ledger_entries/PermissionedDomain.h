@@ -33,7 +33,7 @@ public:
      * @brief Construct a PermissionedDomain ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit PermissionedDomain(std::shared_ptr<SLE const> sle)
+    explicit PermissionedDomain(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfAcceptedCredentials (soeREQUIRED)
+     * @brief Get sfAcceptedCredentials (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -80,7 +80,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -102,7 +102,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -117,7 +117,7 @@ public:
  * @brief Builder for PermissionedDomain ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class PermissionedDomainBuilder : public LedgerEntryBuilderBase<PermissionedDomainBuilder>
@@ -148,7 +148,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    PermissionedDomainBuilder(std::shared_ptr<SLE const> sle)
+    PermissionedDomainBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltPERMISSIONED_DOMAIN)
         {
@@ -157,10 +157,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -171,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -182,7 +184,7 @@ public:
     }
 
     /**
-     * @brief Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -193,7 +195,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -204,7 +206,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -215,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&

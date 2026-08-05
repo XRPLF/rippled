@@ -7,7 +7,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
-#include <test/jtx/tags.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -17,41 +16,54 @@
 #include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
-#include <functional>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <future>
+#include <initializer_list>
+#include <memory>
+#include <optional>
 #include <source_location>
+#include <stdexcept>
 #include <string>
-#include <tuple>
-#include <type_traits>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-/** Wrapper that captures std::source_location when implicitly constructed.
-    This solves the problem of combining std::source_location with variadic
-    templates. The std::source_location default argument is evaluated at the
-    call site when the wrapper is constructed via implicit conversion.
-
-    This is a template struct that holds the value directly, allowing implicit
-    conversion without template argument deduction issues via CTAD.
-*/
+/**
+ * Wrapper that captures std::source_location when implicitly constructed.
+ * This solves the problem of combining std::source_location with variadic
+ * templates. The std::source_location default argument is evaluated at the
+ * call site when the wrapper is constructed via implicit conversion.
+ *
+ * This is a template struct that holds the value directly, allowing implicit
+ * conversion without template argument deduction issues via CTAD.
+ */
 template <class T>
 struct WithSourceLocation
 {
@@ -66,7 +78,9 @@ struct WithSourceLocation
     }
 };
 
-/** Designate accounts as no-ripple in Env::fund */
+/**
+ * Designate accounts as no-ripple in Env::fund
+ */
 template <class... Args>
 std::array<Account, 1 + sizeof...(Args)>
 noripple(Account const& account, Args const&... args)
@@ -75,9 +89,9 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-testable_amendments()
+testableAmendments()
 {
-    static FeatureBitset const ids = [] {
+    static FeatureBitset const kIds = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -85,31 +99,54 @@ testable_amendments()
         {
             (void)vote;
             if (auto const f = getRegisteredFeature(s))
+            {
                 feats.push_back(*f);
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
+            }
         }
         return FeatureBitset(feats);
     }();
-    return ids;
+    return kIds;
+}
+
+/**
+ * Returns all 2^N permutations of a seed FeatureBitset with each subset of
+ * the given features excluded.  The seed is included as the first element.
+ *
+ * Useful for running a test over every combination of optional amendments
+ * so that each case is exercised both with and without each feature.
+ */
+inline std::vector<FeatureBitset>
+amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
+{
+    std::vector<FeatureBitset> result{seed};
+    for (auto const& f : features)
+    {
+        auto const n = result.size();
+        for (std::size_t i = 0; i < n; ++i)
+            result.push_back(result[i] - f);
+    }
+    return result;
 }
 
 //------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
 {
-    beast::unit_test::suite& suite_;
+    beast::unit_test::Suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::Suite& suite) : Logs(beast::Severity::Error), suite_(suite)
     {
     }
 
     ~SuiteLogs() override = default;
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::Severity threshold) override
     {
         return std::make_unique<SuiteJournalSink>(partition, threshold, suite_);
     }
@@ -117,23 +154,27 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** A transaction testing environment. */
+/**
+ * A transaction testing environment.
+ */
 class Env
 {
 public:
-    beast::unit_test::suite& test;
+    beast::unit_test::Suite& test;
 
-    Account const& master = Account::master;
+    Account const& master = Account::kMaster;
 
-    /// Used by parseResult() and postConditions()
+    /**
+     * Used by parseResult() and postConditions()
+     */
     struct ParsedResult
     {
-        std::optional<TER> ter{};
+        std::optional<TER> ter;
         // RPC errors tend to return either a "code" and a "message" (sometimes
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode{};
+        std::optional<ErrorCodeI> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -150,10 +191,10 @@ private:
 
         AppBundle() = default;
         AppBundle(
-            beast::unit_test::suite& suite,
+            beast::unit_test::Suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
-            beast::severities::Severity thresh);
+            beast::Severity thresh);
         ~AppBundle();
     };
 
@@ -174,7 +215,7 @@ public:
      * and takes ownership the passed Config pointer. Features will be enabled
      * according to rules described below (see next constructor).
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
@@ -182,16 +223,16 @@ public:
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : test(suite_)
-        , bundle_(suite_, std::move(config), std::move(logs), thresh)
+        beast::Severity thresh = beast::Severity::Error)
+        : test(suite)
+        , bundle_(suite, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->getJournal("Env")}
     {
-        memoize(Account::master);
+        memoize(Account::kMaster);
         Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
@@ -207,14 +248,14 @@ public:
      * with_only_features(...) or supported_features_except(...) to create a
      * collection of features appropriate for passing here.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, envconfig(), features, std::move(logs))
+        : Env(suite, envconfig(), features, std::move(logs))
     {
     }
 
@@ -225,16 +266,16 @@ public:
      * and takes ownership the passed Config pointer. All supported amendments
      * are enabled by this version of the constructor.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, std::move(config), testable_amendments(), std::move(logs), thresh)
+        beast::Severity thresh = beast::Severity::Error)
+        : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh)
     {
     }
 
@@ -245,133 +286,143 @@ public:
      * test Env configuration (from envconfig()) and all supported
      * amendments enabled.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, envconfig(), nullptr, thresh)
+    Env(beast::unit_test::Suite& suite, beast::Severity thresh = beast::Severity::Error)
+        : Env(suite, envconfig(), nullptr, thresh)
     {
     }
 
     virtual ~Env() = default;
 
     Application&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     app()
     {
         return *bundle_.app;
     }
 
-    Application const&
+    [[nodiscard]] Application const&
     app() const
     {
         return *bundle_.app;
     }
 
     ManualTimeKeeper&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     timeKeeper()
     {
         return *bundle_.timeKeeper;
     }
 
-    /** Returns the current network time
-
-        @note This is manually advanced when ledgers
-              close or by callers.
-    */
+    /**
+     * Returns the current network time
+     *
+     * @note This is manually advanced when ledgers
+     *       close or by callers.
+     */
     NetClock::time_point
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
     {
         return timeKeeper().now();
     }
 
-    /** Returns the connected client. */
+    /**
+     * Returns the connected client.
+     */
     AbstractClient&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     client()
     {
         return *bundle_.client;
     }
 
-    /** Execute an RPC command.
-
-        The command is examined and used to build
-        the correct JSON as per the arguments.
-    */
+    /**
+     * Execute an RPC command.
+     *
+     * The command is examined and used to build
+     * the correct JSON as per the arguments.
+     */
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::string const& cmd, Args&&... args);
 
-    /** Returns the current ledger.
-
-        This is a non-modifiable snapshot of the
-        open ledger at the moment of the call.
-        Transactions applied after the call to open()
-        will not be visible.
-
-    */
-    std::shared_ptr<OpenView const>
+    /**
+     * Returns the current ledger.
+     *
+     * This is a non-modifiable snapshot of the
+     * open ledger at the moment of the call.
+     * Transactions applied after the call to open()
+     * will not be visible.
+     */
+    [[nodiscard]] std::shared_ptr<OpenView const>
     current() const
     {
         return app().getOpenLedger().current();
     }
 
-    /** Returns the last closed ledger.
-
-        The open ledger is built on top of the
-        last closed ledger. When the open ledger
-        is closed, it becomes the new closed ledger
-        and a new open ledger takes its place.
-    */
+    /**
+     * Returns the last closed ledger.
+     *
+     * The open ledger is built on top of the
+     * last closed ledger. When the open ledger
+     * is closed, it becomes the new closed ledger
+     * and a new open ledger takes its place.
+     */
     std::shared_ptr<ReadView const>
     closed();
 
-    /** Close and advance the ledger.
-
-        The resulting close time will be different and
-        greater than the previous close time, and at or
-        after the passed-in close time.
-
-        Effects:
-
-            Creates a new closed ledger from the last
-            closed ledger.
-
-            All transactions that made it into the open
-            ledger are applied to the closed ledger.
-
-            The Application network time is set to
-            the close time of the resulting ledger.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The resulting close time will be different and
+     * greater than the previous close time, and at or
+     * after the passed-in close time.
+     *
+     * Effects:
+     *
+     *     Creates a new closed ledger from the last
+     *     closed ledger.
+     *
+     *     All transactions that made it into the open
+     *     ledger are applied to the closed ledger.
+     *
+     *     The Application network time is set to
+     *     the close time of the resulting ledger.
+     *
+     * @return true if no error, false if error
+     */
     bool
     close(
         NetClock::time_point closeTime,
         std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
-    /** Close and advance the ledger.
-
-        The time is calculated as the duration from
-        the previous ledger closing time.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The time is calculated as the duration from
+     * the previous ledger closing time.
+     *
+     * @return true if no error, false if error
+     */
     template <class Rep, class Period>
     bool
     close(std::chrono::duration<Rep, Period> const& elapsed)
@@ -380,13 +431,14 @@ public:
         return close(now() + elapsed);
     }
 
-    /** Close and advance the ledger.
-
-        The time is calculated as five seconds from
-        the previous ledger closing time.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The time is calculated as five seconds from
+     * the previous ledger closing time.
+     *
+     * @return true if no error, false if error
+     */
     bool
     close()
     {
@@ -394,34 +446,35 @@ public:
         return close(std::chrono::seconds(5));
     }
 
-    /** Close and advance the ledger, then synchronize with the server's
-        io_context to ensure all async operations initiated by the close have
-        been started.
-
-        This function performs the same ledger close as close(), but additionally
-        ensures that all tasks posted to the server's io_context (such as
-        WebSocket subscription message sends) have been initiated before returning.
-
-        What it guarantees:
-        - All async operations posted before syncClose() have been STARTED
-        - For WebSocket sends: async_write_some() has been called
-        - The actual I/O completion may still be pending (async)
-
-        What it does NOT guarantee:
-        - Async operations have COMPLETED
-        - WebSocket messages have been received by clients
-        - However, for localhost connections, the remaining latency is typically
-          microseconds, making tests reliable
-
-        Use this instead of close() when:
-        - Test code immediately checks for subscription messages
-        - Race conditions between test and worker threads must be avoided
-        - Deterministic test behavior is required
-
-        @param timeout Maximum time to wait for the barrier task to execute
-        @return true if close succeeded and barrier executed within timeout,
-                false otherwise
-    */
+    /**
+     * Close and advance the ledger, then synchronize with the server's
+     * io_context to ensure all async operations initiated by the close have
+     * been started.
+     *
+     * This function performs the same ledger close as close(), but additionally
+     * ensures that all tasks posted to the server's io_context (such as
+     * WebSocket subscription message sends) have been initiated before returning.
+     *
+     * What it guarantees:
+     * - All async operations posted before syncClose() have been STARTED
+     * - For WebSocket sends: async_write_some() has been called
+     * - The actual I/O completion may still be pending (async)
+     *
+     * What it does NOT guarantee:
+     * - Async operations have COMPLETED
+     * - WebSocket messages have been received by clients
+     * - However, for localhost connections, the remaining latency is typically
+     *   microseconds, making tests reliable
+     *
+     * Use this instead of close() when:
+     * - Test code immediately checks for subscription messages
+     * - Race conditions between test and worker threads must be avoided
+     * - Deterministic test behavior is required
+     *
+     * @param timeout Maximum time to wait for the barrier task to execute
+     * @return true if close succeeded and barrier executed within timeout,
+     *         false otherwise
+     */
     [[nodiscard]] bool
     syncClose(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
     {
@@ -436,16 +489,19 @@ public:
         return result && status == std::future_status::ready;
     }
 
-    /** Turn on JSON tracing.
-        With no arguments, trace all
-    */
+    /**
+     * Turn on JSON tracing.
+     * With no arguments, trace all
+     */
     void
     trace(int howMany = -1)
     {
         trace_ = howMany;
     }
 
-    /** Turn off JSON tracing. */
+    /**
+     * Turn off JSON tracing.
+     */
     void
     notrace()
     {
@@ -453,97 +509,129 @@ public:
     }
 
     void
-    set_parse_failure_expected(bool b)
+    setParseFailureExpected(bool b)
     {
         parseFailureExpected_ = b;
     }
 
-    /** Turn off signature checks. */
+    /**
+     * Turn off signature checks.
+     */
     void
-    disable_sigs()
+    disableSigs()
     {
         app().checkSigs(false);
     }
 
     // set rpc retries
     void
-    set_retries(unsigned r = 5)
+    setRetries(unsigned r = 5)
     {
         retries_ = r;
     }
 
     // get rpc retries
-    unsigned
+    [[nodiscard]] unsigned
     retries() const
     {
         return retries_;
     }
 
-    /** Associate AccountID with account. */
+    /**
+     * Associate AccountID with account.
+     */
     void
     memoize(Account const& account);
 
-    /** Returns the Account given the AccountID. */
+    /**
+     * Returns the Account given the AccountID.
+     */
     /** @{ */
-    Account const&
+    [[nodiscard]] Account const&
     lookup(AccountID const& id) const;
 
-    Account const&
+    [[nodiscard]] Account const&
     lookup(std::string const& base58ID) const;
     /** @} */
 
-    /** Returns the XRP balance on an account.
-        Returns 0 if the account does not exist.
-    */
-    PrettyAmount
-    balance(Account const& account) const;
-
-    /** Returns the next sequence number on account.
-        Exceptions:
-            Throws if the account does not exist
-    */
-    std::uint32_t
-    seq(Account const& account) const;
-
-    /** Return the balance on an account.
-        Returns 0 if the trust line does not exist.
-    */
-    // VFALCO NOTE This should return a unit-less amount
-    PrettyAmount
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    balance(Account const& account, Asset const& asset) const;
-
-    PrettyAmount
-    balance(Account const& account, Issue const& issue) const;
-
-    PrettyAmount
-    balance(Account const& account, MPTIssue const& mptIssue) const;
-
-    /** Returns the IOU limit on an account.
-        Returns 0 if the trust line does not exist.
-    */
-    PrettyAmount
-    limit(Account const& account, Issue const& issue) const;
-
-    /** Return the number of objects owned by an account.
+    /**
+     * Returns the XRP balance on an account.
      * Returns 0 if the account does not exist.
      */
-    std::uint32_t
+    [[nodiscard]] PrettyAmount
+    balance(Account const& account) const;
+
+    /**
+     * Returns the next sequence number on account.
+     *
+     * @throws if the account does not exist
+     */
+    [[nodiscard]] std::uint32_t
+    seq(Account const& account) const;
+
+    /**
+     * Return the balance on an account.
+     * Returns 0 if the trust line does not exist.
+     */
+    // VFALCO NOTE This should return a unit-less amount
+    [[nodiscard]] PrettyAmount
+    balance(Account const& account, Asset const& asset) const;
+
+    /**
+     * Returns the IOU limit on an account.
+     * Returns 0 if the trust line does not exist.
+     */
+    [[nodiscard]] PrettyAmount
+    limit(Account const& account, Issue const& issue) const;
+
+    /**
+     * Return the number of objects owned by an account.
+     * Returns 0 if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
     ownerCount(Account const& account) const;
 
-    /** Return an account root.
-        @return empty if the account does not exist.
-    */
-    std::shared_ptr<SLE const>
+    /**
+     * Return the number of sponsored objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoredOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring accounts owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringAccountCount(Account const& account) const;
+
+    /**
+     * Return an account root.
+     * @return empty if the account does not exist.
+     */
+    [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
 
-    /** Return a ledger entry.
-        @return empty if the ledger entry does not exist
-    */
-    std::shared_ptr<SLE const>
+    /**
+     * Return a ledger entry.
+     * @return empty if the ledger entry does not exist
+     */
+    [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
 
-    /** Create a JTx from parameters. */
+    /**
+     * Create a JTx from parameters.
+     */
     template <class JsonValue, class... FN>
     JTx
     jt(JsonValue&& jv, FN const&... fN)
@@ -555,34 +643,38 @@ public:
         return jt;
     }
 
-    /** Create a JTx from parameters. */
+    /**
+     * Create a JTx from parameters.
+     */
     template <class JsonValue, class... FN>
     JTx
     jtnofill(JsonValue&& jv, FN const&... fN)
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
-        autofill_sig(jt);
+        autofillSig(jt);
         jt.stx = st(jt);
         return jt;
     }
 
-    /** Create JSON from parameters.
-        This will apply funclets and autofill.
-    */
+    /**
+     * Create JSON from parameters.
+     * This will apply funclets and autofill.
+     */
     template <class JsonValue, class... FN>
-    Json::Value
+    json::Value
     json(JsonValue&& jv, FN const&... fN)
     {
         auto tj = jt(std::forward<JsonValue>(jv), fN...);
         return std::move(tj.jv);
     }
 
-    /** Check a set of requirements.
-
-        The requirements are formed
-        from condition functors.
-    */
+    /**
+     * Check a set of requirements.
+     *
+     * The requirements are formed
+     * from condition functors.
+     */
     template <class... Args>
     void
     require(Args const&... args)
@@ -590,41 +682,47 @@ public:
         jtx::required(args...)(*this);
     }
 
-    /** Gets the TER result and `didApply` flag from a RPC Json result object.
+    /**
+     * Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr);
+    parseResult(json::Value const& jr);
 
-    /** Submit an existing JTx.
-        This calls postconditions.
-    */
+    /**
+     * Submit an existing JTx.
+     * This calls postconditions.
+     */
     virtual void
     submit(JTx const& jt, std::source_location const& loc = std::source_location::current());
 
-    /** Use the submit RPC command with a provided JTx object.
-        This calls postconditions.
-    */
+    /**
+     * Use the submit RPC command with a provided JTx object.
+     * This calls postconditions.
+     */
     void
-    sign_and_submit(
+    signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::nullValue,
+        json::Value params = json::ValueType::Null,
         std::source_location const& loc = std::source_location::current());
 
-    /** Check expected postconditions
-        of JTx submission.
-    */
+    /**
+     * Check expected postconditions
+     * of JTx submission.
+     */
     void
     postconditions(
         JTx const& jt,
         ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value(),
+        json::Value const& jr = json::Value(),
         std::source_location const& loc = std::source_location::current());
 
-    /** Apply funclets and submit. */
+    /**
+     * Apply funclets and submit.
+     */
     /** @{ */
     template <class... FN>
     Env&
-    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    apply(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -640,7 +738,7 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         return apply(std::move(jv), fN...);
     }
@@ -653,39 +751,43 @@ public:
     }
     /** @} */
 
-    /** Return the TER for the last JTx. */
-    TER
+    /**
+     * Return the TER for the last JTx.
+     */
+    [[nodiscard]] TER
     ter() const
     {
         return ter_;
     }
 
-    /** Return metadata for the last JTx.
+    /**
+     * Return metadata for the last JTx.
      *
-     *  NOTE: this has a side effect of closing the open ledger.
-     *  The ledger will only be closed if it includes transactions.
+     * NOTE: this has a side effect of closing the open ledger.
+     * The ledger will only be closed if it includes transactions.
      *
-     *  Effects:
+     * Effects:
      *
-     *      The open ledger is closed as if by a call
-     *      to close(). The metadata for the last
-     *      transaction ID, if any, is returned.
+     *     The open ledger is closed as if by a call
+     *     to close(). The metadata for the last
+     *     transaction ID, if any, is returned.
      */
     std::shared_ptr<STObject const>
     meta();
 
-    /** Return the tx data for the last JTx.
-
-        Effects:
-
-            The tx data for the last transaction
-            ID, if any, is returned. No side
-            effects.
-
-        @note Only necessary for JTx submitted
-            with via sign-and-submit method.
-    */
-    std::shared_ptr<STTx const>
+    /**
+     * Return the tx data for the last JTx.
+     *
+     * Effects:
+     *
+     *     The tx data for the last transaction
+     *     ID, if any, is returned. No side
+     *     effects.
+     *
+     * @note Only necessary for JTx submitted
+     *     with via sign-and-submit method.
+     */
+    [[nodiscard]] std::shared_ptr<STTx const>
     tx() const;
 
     void
@@ -694,7 +796,7 @@ public:
     void
     disableFeature(uint256 const feature);
 
-    bool
+    [[nodiscard]] bool
     enabled(uint256 feature) const
     {
         return current()->rules().enabled(feature);
@@ -705,72 +807,74 @@ private:
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
     void
-    fund_arg(STAmount const& amount, Account const& account)
+    fundArg(STAmount const& amount, Account const& account)
     {
         fund(true, amount, account);
     }
 
     template <std::size_t N>
     void
-    fund_arg(STAmount const& amount, std::array<Account, N> const& list)
+    fundArg(STAmount const& amount, std::array<Account, N> const& list)
     {
         for (auto const& account : list)
             fund(false, amount, account);
     }
 
 public:
-    /** Create a new account with some XRP.
-
-        These convenience functions are for easy set-up
-        of the environment, they bypass fee, seq, and sig
-        settings. The XRP is transferred from the master
-        account.
-
-        Preconditions:
-            The account must not already exist
-
-        Effects:
-            The asfDefaultRipple on the account is set,
-            and the sequence number is incremented, unless
-            the account is wrapped with a call to noripple.
-
-            The account's XRP balance is set to amount.
-
-            Generates a test that the balance is set.
-
-        @param amount The amount of XRP to transfer to
-                      each account.
-
-        @param args A heterogeneous list of accounts to fund
-                    or calls to noripple with lists of accounts
-                    to fund.
-    */
+    /**
+     * Create a new account with some XRP.
+     *
+     * These convenience functions are for easy set-up
+     * of the environment, they bypass fee, seq, and sig
+     * settings. The XRP is transferred from the master
+     * account.
+     *
+     * Preconditions:
+     *     The account must not already exist
+     *
+     * Effects:
+     *     The asfDefaultRipple on the account is set,
+     *     and the sequence number is incremented, unless
+     *     the account is wrapped with a call to noripple.
+     *
+     *     The account's XRP balance is set to amount.
+     *
+     *     Generates a test that the balance is set.
+     *
+     * @param amount The amount of XRP to transfer to
+     *               each account.
+     *
+     * @param args A heterogeneous list of accounts to fund
+     *             or calls to noripple with lists of accounts
+     *             to fund.
+     */
     template <class Arg, class... Args>
     void
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        fund_arg(amount, arg);
+        fundArg(amount, arg);
         if constexpr (sizeof...(args) > 0)
             fund(amount, args...);
     }
 
-    /** Establish trust lines.
-
-        These convenience functions are for easy set-up
-        of the environment, they bypass fee, seq, and sig
-        settings.
-
-        Preconditions:
-            The account must already exist
-
-        Effects:
-            A trust line is added for the account.
-            The account's sequence number is incremented.
-            The account is refunded for the transaction fee
-                to set the trust line.
-
-        The refund comes from the master account.
-    */
+    /**
+     * Establish trust lines.
+     *
+     * These convenience functions are for easy set-up
+     * of the environment, they bypass fee, seq, and sig
+     * settings.
+     *
+     * Preconditions:
+     *     The account must already exist
+     *
+     * Effects:
+     *     A trust line is added for the account.
+     *     The account's sequence number is incremented.
+     *     The account is refunded for the transaction fee
+     *         to set the trust line.
+     *
+     * The refund comes from the master account.
+     */
     /** @{ */
     void
     trust(STAmount const& amount, Account const& account);
@@ -780,14 +884,15 @@ public:
     trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
-        trust(amount, to1, toN...);
+        trust(amount, to1, toN...);  // NOLINT(readability-suspicious-call-argument)
     }
     /** @} */
 
-    /** Create a STTx from a JTx without sanitizing
-        Use to inject bogus values into test transactions by first
-        editing the JSON.
-    */
+    /**
+     * Create a STTx from a JTx without sanitizing
+     * Use to inject bogus values into test transactions by first
+     * editing the JSON.
+     */
     std::shared_ptr<STTx const>
     ust(JTx const& jt);
 
@@ -799,25 +904,26 @@ protected:
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;
 
-    Json::Value
-    do_rpc(
+    json::Value
+    doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
-    autofill_sig(JTx& jt);
+    autofillSig(JTx& jt);
 
     virtual void
     autofill(JTx& jt);
 
-    /** Create a STTx from a JTx
-        The framework requires that JSON is valid.
-        On a parse error, the JSON is logged and
-        an exception thrown.
-        Throws:
-            parse_error
-    */
+    /**
+     * Create a STTx from a JTx
+     * The framework requires that JSON is valid.
+     * On a parse error, the JSON is logged and
+     * an exception thrown.
+     *
+     * @throws ParseError
+     */
     std::shared_ptr<STTx const>
     st(JTx const& jt);
 
@@ -843,18 +949,18 @@ protected:
 };
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return doRpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
     return rpc(
@@ -865,25 +971,23 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
-        RPC::apiCommandLineVersion,
+    return doRpc(
+        RPC::kApiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -18,10 +18,10 @@ class ContractCallBuilder;
 /**
  * @brief Transaction: ContractCall
  *
- * Type: ttCONTRACT_CALL (90)
- * Delegable: Delegation::delegable
+ * Type: ttCONTRACT_CALL (97)
+ * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractCallBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfContractAccount (soeREQUIRED)
+     * @brief Get sfContractAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfFunctionName (soeREQUIRED)
+     * @brief Get sfFunctionName (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -69,7 +69,7 @@ public:
         return this->tx_->at(sfFunctionName);
     }
     /**
-     * @brief Get sfParameters (soeOPTIONAL)
+     * @brief Get sfParameters (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -94,14 +94,14 @@ public:
     }
 
     /**
-     * @brief Get sfComputationAllowance (soeREQUIRED)
+     * @brief Get sfGas (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
-    getComputationAllowance() const
+    getGas() const
     {
-        return this->tx_->at(sfComputationAllowance);
+        return this->tx_->at(sfGas);
     }
 };
 
@@ -109,7 +109,7 @@ public:
  * @brief Builder for ContractCall transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ContractCallBuilder : public TransactionBuilderBase<ContractCallBuilder>
@@ -120,19 +120,19 @@ public:
      * @param account The account initiating the transaction.
      * @param contractAccount The sfContractAccount field value.
      * @param functionName The sfFunctionName field value.
-     * @param computationAllowance The sfComputationAllowance field value.
+     * @param gas The sfGas field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     ContractCallBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& contractAccount,                     std::decay_t<typename SF_VL::type::value_type> const& functionName,                     std::decay_t<typename SF_UINT32::type::value_type> const& computationAllowance,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& contractAccount,                     std::decay_t<typename SF_VL::type::value_type> const& functionName,                     std::decay_t<typename SF_UINT32::type::value_type> const& gas,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<ContractCallBuilder>(ttCONTRACT_CALL, account, sequence, fee)
     {
         setContractAccount(contractAccount);
         setFunctionName(functionName);
-        setComputationAllowance(computationAllowance);
+        setGas(gas);
     }
 
     /**
@@ -149,10 +149,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfContractAccount (soeREQUIRED)
+     * @brief Set sfContractAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractCallBuilder&
@@ -163,7 +165,7 @@ public:
     }
 
     /**
-     * @brief Set sfFunctionName (soeREQUIRED)
+     * @brief Set sfFunctionName (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractCallBuilder&
@@ -174,7 +176,7 @@ public:
     }
 
     /**
-     * @brief Set sfParameters (soeOPTIONAL)
+     * @brief Set sfParameters (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractCallBuilder&
@@ -185,13 +187,13 @@ public:
     }
 
     /**
-     * @brief Set sfComputationAllowance (soeREQUIRED)
+     * @brief Set sfGas (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractCallBuilder&
-    setComputationAllowance(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGas(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfComputationAllowance] = value;
+        object_[sfGas] = value;
         return *this;
     }
 

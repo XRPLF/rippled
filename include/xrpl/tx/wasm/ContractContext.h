@@ -2,7 +2,11 @@
 
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/ApplyContext.h>
 
 #include <queue>
@@ -68,17 +72,22 @@ struct ContractContext
     uint64_t burden = 0;                   // computational burden used
     ContractResult result;
 
-    /// Persistent view used to track cumulative state from emitted
-    /// transactions so that successive emits within the same WASM
-    /// execution see the correct sequence numbers, balances, etc.
+    /**
+     * Persistent view used to track cumulative state from emitted
+     * transactions so that successive emits within the same WASM
+     * execution see the correct sequence numbers, balances, etc.
+     */
     std::optional<OpenView> emitView;
 
-    /// Return the emit view, lazily creating it on first use.
-    /// The view is layered on top of the transactor's ApplyViewImpl
-    /// (applyCtx.view()) so that reads automatically fall through to
-    /// the transactor's pending state (e.g. the tfSendAmount balance
-    /// transfer, consumed sequence number, paid fee) without needing
-    /// to manually copy SLE changes.
+    /**
+     * Return the emit view, lazily creating it on first use.
+     *
+     * The view is layered on top of the transactor's ApplyViewImpl
+     * (applyCtx.view()) so that reads automatically fall through to
+     * the transactor's pending state (e.g. the tfSendAmount balance
+     * transfer, consumed sequence number, paid fee) without needing
+     * to manually copy SLE changes.
+     */
     OpenView&
     getEmitView()
     {

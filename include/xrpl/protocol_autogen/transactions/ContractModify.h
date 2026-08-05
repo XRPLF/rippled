@@ -18,10 +18,10 @@ class ContractModifyBuilder;
 /**
  * @brief Transaction: ContractModify
  *
- * Type: ttCONTRACT_MODIFY (86)
- * Delegable: Delegation::delegable
+ * Type: ttCONTRACT_MODIFY (93)
+ * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractModifyBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfContractAccount (soeOPTIONAL)
+     * @brief Get sfContractAccount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractCode (soeOPTIONAL)
+     * @brief Get sfContractCode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractHash (soeOPTIONAL)
+     * @brief Get sfContractHash (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -151,7 +151,7 @@ public:
         return this->tx_->isFieldPresent(sfContractHash);
     }
     /**
-     * @brief Get sfFunctions (soeOPTIONAL)
+     * @brief Get sfFunctions (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -175,7 +175,7 @@ public:
         return this->tx_->isFieldPresent(sfFunctions);
     }
     /**
-     * @brief Get sfInstanceParameters (soeOPTIONAL)
+     * @brief Get sfInstanceParameters (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -199,7 +199,7 @@ public:
         return this->tx_->isFieldPresent(sfInstanceParameters);
     }
     /**
-     * @brief Get sfInstanceParameterValues (soeOPTIONAL)
+     * @brief Get sfInstanceParameterValues (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -224,7 +224,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -254,7 +254,7 @@ public:
  * @brief Builder for ContractModify transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ContractModifyBuilder : public TransactionBuilderBase<ContractModifyBuilder>
@@ -288,10 +288,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfContractAccount (soeOPTIONAL)
+     * @brief Set sfContractAccount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -302,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -313,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractCode (soeOPTIONAL)
+     * @brief Set sfContractCode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -324,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractHash (soeOPTIONAL)
+     * @brief Set sfContractHash (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -335,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfFunctions (soeOPTIONAL)
+     * @brief Set sfFunctions (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -346,7 +348,7 @@ public:
     }
 
     /**
-     * @brief Set sfInstanceParameters (soeOPTIONAL)
+     * @brief Set sfInstanceParameters (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -357,7 +359,7 @@ public:
     }
 
     /**
-     * @brief Set sfInstanceParameterValues (soeOPTIONAL)
+     * @brief Set sfInstanceParameterValues (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&
@@ -368,7 +370,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractModifyBuilder&

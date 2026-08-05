@@ -1,8 +1,11 @@
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -10,14 +13,17 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <cmath>
 #include <map>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
 double
-estimate_entropy(std::string const& input)
+estimateEntropy(std::string const& input)
 {
     // First, we calculate the Shannon entropy. This gives
     // the average number of bits per symbol that we would
@@ -33,7 +39,7 @@ estimate_entropy(std::string const& input)
     {
         (void)_;
         auto x = f / input.length();
-        se += (x)*log2(x);
+        se += x * log2(x);
     }
 
     // We multiply it by the length, to get an estimate of
@@ -45,55 +51,55 @@ estimate_entropy(std::string const& input)
 // {
 //  passphrase: <string>
 // }
-Json::Value
+json::Value
 doWalletPropose(RPC::JsonContext& context)
 {
     return walletPropose(context.params);
 }
 
-Json::Value
-walletPropose(Json::Value const& params)
+json::Value
+walletPropose(json::Value const& params)
 {
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
-    bool rippleLibSeed = false;
+    bool libSeed = false;
 
     if (params.isMember(jss::key_type))
     {
         if (!params[jss::key_type].isString())
         {
-            return RPC::expected_field_error(jss::key_type, "string");
+            return RPC::expectedFieldError(jss::key_type, "string");
         }
 
         keyType = keyTypeFromString(params[jss::key_type].asString());
 
         if (!keyType)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
     {
         if (params.isMember(jss::passphrase))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+            seed = RPC::parseXrplLibSeed(params[jss::passphrase]);
         }
         else if (params.isMember(jss::seed))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::seed]);
+            seed = RPC::parseXrplLibSeed(params[jss::seed]);
         }
 
         if (seed)
         {
-            rippleLibSeed = true;
+            libSeed = true;
 
             // If the user *explicitly* requests a key type other than
             // Ed25519 we return an error.
-            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
-                return rpcError(rpcBAD_SEED);
+            if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
+                return rpcError(RpcBadSeed);
 
-            keyType = KeyType::ed25519;
+            keyType = KeyType::Ed25519;
         }
     }
 
@@ -102,7 +108,7 @@ walletPropose(Json::Value const& params)
         if (params.isMember(jss::passphrase) || params.isMember(jss::seed) ||
             params.isMember(jss::seed_hex))
         {
-            Json::Value err;
+            json::Value err;
 
             seed = RPC::getSeedFromRPC(params, err);
 
@@ -116,11 +122,11 @@ walletPropose(Json::Value const& params)
     }
 
     if (!keyType)
-        keyType = KeyType::secp256k1;
+        keyType = KeyType::Secp256k1;
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    Json::Value obj(Json::objectValue);
+    json::Value obj(json::ValueType::Object);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);
@@ -137,7 +143,7 @@ walletPropose(Json::Value const& params)
     // If a passphrase was specified, and it was hashed and used as a seed
     // run a quick entropy check and add an appropriate warning, because
     // "brain wallets" can be easily attacked.
-    if (!rippleLibSeed && params.isMember(jss::passphrase))
+    if (!libSeed && params.isMember(jss::passphrase))
     {
         auto const passphrase = params[jss::passphrase].asString();
 
@@ -145,7 +151,7 @@ walletPropose(Json::Value const& params)
         {
             // 80 bits of entropy isn't bad, but it's better to
             // err on the side of caution and be conservative.
-            if (estimate_entropy(passphrase) < 80.0)
+            if (estimateEntropy(passphrase) < 80.0)
             {
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "

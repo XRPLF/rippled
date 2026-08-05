@@ -1,11 +1,17 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Fees.h>
 
 #include <boost/asio.hpp>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -78,17 +84,17 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
 
 using NodeCache = TaggedCache<SHAMapHash, Blob>;
 
-/** Service registry for dependency injection.
-
-    This abstract interface provides access to various services and components
-    used throughout the application. It separates the service locator pattern
-    from the Application lifecycle management.
-
-    Components that need access to services can hold a reference to
-    ServiceRegistry rather than Application when they only need service
-    access and not lifecycle management.
-
-*/
+/**
+ * Service registry for dependency injection.
+ *
+ * This abstract interface provides access to various services and components
+ * used throughout the application. It separates the service locator pattern
+ * from the Application lifecycle management.
+ *
+ * Components that need access to services can hold a reference to
+ * ServiceRegistry rather than Application when they only need service
+ * access and not lifecycle management.
+ */
 class ServiceRegistry
 {
 public:
@@ -193,7 +199,7 @@ public:
     virtual OpenLedger&
     getOpenLedger() = 0;
 
-    virtual OpenLedger const&
+    [[nodiscard]] virtual OpenLedger const&
     getOpenLedger() const = 0;
 
     // Transaction and operation services
@@ -220,7 +226,7 @@ public:
     getPerfLog() = 0;
 
     // Configuration and state
-    virtual bool
+    [[nodiscard]] virtual bool
     isStopping() const = 0;
 
     virtual beast::Journal
@@ -232,14 +238,16 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<uint256> const&
     getTrapTxID() const = 0;
 
-    /** Retrieve the "wallet database" */
+    /**
+     * Retrieve the "wallet database"
+     */
     virtual DatabaseCon&
     getWalletDB() = 0;
 
-    virtual Fees
+    [[nodiscard]] virtual Fees
     getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't

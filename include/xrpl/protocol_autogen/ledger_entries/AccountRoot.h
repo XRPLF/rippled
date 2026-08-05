@@ -33,7 +33,7 @@ public:
      * @brief Construct a AccountRoot ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit AccountRoot(std::shared_ptr<SLE const> sle)
+    explicit AccountRoot(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerCount (soeREQUIRED)
+     * @brief Get sfOwnerCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfAccountTxnID (soeOPTIONAL)
+     * @brief Get sfAccountTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Get sfRegularKey (soeOPTIONAL)
+     * @brief Get sfRegularKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -160,7 +160,7 @@ public:
     }
 
     /**
-     * @brief Get sfEmailHash (soeOPTIONAL)
+     * @brief Get sfEmailHash (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -184,7 +184,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletLocator (soeOPTIONAL)
+     * @brief Get sfWalletLocator (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -208,7 +208,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletSize (soeOPTIONAL)
+     * @brief Get sfWalletSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -232,7 +232,7 @@ public:
     }
 
     /**
-     * @brief Get sfMessageKey (soeOPTIONAL)
+     * @brief Get sfMessageKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferRate (soeOPTIONAL)
+     * @brief Get sfTransferRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -280,7 +280,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomain (soeOPTIONAL)
+     * @brief Get sfDomain (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Get sfTickSize (soeOPTIONAL)
+     * @brief Get sfTickSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -328,7 +328,7 @@ public:
     }
 
     /**
-     * @brief Get sfTicketCount (soeOPTIONAL)
+     * @brief Get sfTicketCount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -352,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenMinter (soeOPTIONAL)
+     * @brief Get sfNFTokenMinter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -376,7 +376,7 @@ public:
     }
 
     /**
-     * @brief Get sfMintedNFTokens (soeDEFAULT)
+     * @brief Get sfMintedNFTokens (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -400,7 +400,7 @@ public:
     }
 
     /**
-     * @brief Get sfBurnedNFTokens (soeDEFAULT)
+     * @brief Get sfBurnedNFTokens (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -424,7 +424,7 @@ public:
     }
 
     /**
-     * @brief Get sfFirstNFTokenSequence (soeOPTIONAL)
+     * @brief Get sfFirstNFTokenSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -448,7 +448,79 @@ public:
     }
 
     /**
-     * @brief Get sfAMMID (soeOPTIONAL)
+     * @brief Get sfSponsoredOwnerCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoredOwnerCount() const
+    {
+        if (hasSponsoredOwnerCount())
+            return this->sle_->at(sfSponsoredOwnerCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoredOwnerCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoredOwnerCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoredOwnerCount);
+    }
+
+    /**
+     * @brief Get sfSponsoringOwnerCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoringOwnerCount() const
+    {
+        if (hasSponsoringOwnerCount())
+            return this->sle_->at(sfSponsoringOwnerCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoringOwnerCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoringOwnerCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoringOwnerCount);
+    }
+
+    /**
+     * @brief Get sfSponsoringAccountCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSponsoringAccountCount() const
+    {
+        if (hasSponsoringAccountCount())
+            return this->sle_->at(sfSponsoringAccountCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSponsoringAccountCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSponsoringAccountCount() const
+    {
+        return this->sle_->isFieldPresent(sfSponsoringAccountCount);
+    }
+
+    /**
+     * @brief Get sfAMMID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -472,7 +544,7 @@ public:
     }
 
     /**
-     * @brief Get sfVaultID (soeOPTIONAL)
+     * @brief Get sfVaultID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -496,7 +568,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Get sfLoanBrokerID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -520,7 +592,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractID (soeOPTIONAL)
+     * @brief Get sfContractID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -548,7 +620,7 @@ public:
  * @brief Builder for AccountRoot ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class AccountRootBuilder : public LedgerEntryBuilderBase<AccountRootBuilder>
@@ -579,7 +651,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    AccountRootBuilder(std::shared_ptr<SLE const> sle)
+    AccountRootBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltACCOUNT_ROOT)
         {
@@ -588,10 +660,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -602,7 +676,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -613,7 +687,7 @@ public:
     }
 
     /**
-     * @brief Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -624,7 +698,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerCount (soeREQUIRED)
+     * @brief Set sfOwnerCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -635,7 +709,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -646,7 +720,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -657,7 +731,7 @@ public:
     }
 
     /**
-     * @brief Set sfAccountTxnID (soeOPTIONAL)
+     * @brief Set sfAccountTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -668,7 +742,7 @@ public:
     }
 
     /**
-     * @brief Set sfRegularKey (soeOPTIONAL)
+     * @brief Set sfRegularKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -679,7 +753,7 @@ public:
     }
 
     /**
-     * @brief Set sfEmailHash (soeOPTIONAL)
+     * @brief Set sfEmailHash (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -690,7 +764,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletLocator (soeOPTIONAL)
+     * @brief Set sfWalletLocator (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -701,7 +775,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletSize (soeOPTIONAL)
+     * @brief Set sfWalletSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -712,7 +786,7 @@ public:
     }
 
     /**
-     * @brief Set sfMessageKey (soeOPTIONAL)
+     * @brief Set sfMessageKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -723,7 +797,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferRate (soeOPTIONAL)
+     * @brief Set sfTransferRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -734,7 +808,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomain (soeOPTIONAL)
+     * @brief Set sfDomain (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -745,7 +819,7 @@ public:
     }
 
     /**
-     * @brief Set sfTickSize (soeOPTIONAL)
+     * @brief Set sfTickSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -756,7 +830,7 @@ public:
     }
 
     /**
-     * @brief Set sfTicketCount (soeOPTIONAL)
+     * @brief Set sfTicketCount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -767,7 +841,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenMinter (soeOPTIONAL)
+     * @brief Set sfNFTokenMinter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -778,7 +852,7 @@ public:
     }
 
     /**
-     * @brief Set sfMintedNFTokens (soeDEFAULT)
+     * @brief Set sfMintedNFTokens (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -789,7 +863,7 @@ public:
     }
 
     /**
-     * @brief Set sfBurnedNFTokens (soeDEFAULT)
+     * @brief Set sfBurnedNFTokens (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -800,7 +874,7 @@ public:
     }
 
     /**
-     * @brief Set sfFirstNFTokenSequence (soeOPTIONAL)
+     * @brief Set sfFirstNFTokenSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -811,7 +885,40 @@ public:
     }
 
     /**
-     * @brief Set sfAMMID (soeOPTIONAL)
+     * @brief Set sfSponsoredOwnerCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoredOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoredOwnerCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSponsoringOwnerCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoringOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoringOwnerCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSponsoringAccountCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setSponsoringAccountCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSponsoringAccountCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAMMID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -822,7 +929,7 @@ public:
     }
 
     /**
-     * @brief Set sfVaultID (soeOPTIONAL)
+     * @brief Set sfVaultID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -833,7 +940,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -844,7 +951,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractID (soeOPTIONAL)
+     * @brief Set sfContractID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&

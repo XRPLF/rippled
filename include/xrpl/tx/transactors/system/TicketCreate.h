@@ -1,15 +1,24 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
 class TicketCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
-    constexpr static std::uint32_t minValidCount = 1;
+    static constexpr std::uint32_t kMinValidCount = 1;
 
     // A note on how the maxValidCount was determined.  The goal is for
     // a single TicketCreate transaction to not use more compute power than
@@ -31,7 +40,7 @@ public:
     // about the same compute time as a single compute-intensive payment.
     //
     // October 2018.
-    constexpr static std::uint32_t maxValidCount = 250;
+    static constexpr std::uint32_t kMaxValidCount = 250;
 
     // The maximum number of Tickets an account may hold.  If a
     // TicketCreate would cause an account to own more than this many
@@ -39,7 +48,7 @@ public:
     //
     // The number was chosen arbitrarily and is an effort toward avoiding
     // ledger-stuffing with Tickets.
-    constexpr static std::uint32_t maxTicketThreshold = 250;
+    static constexpr std::uint32_t kMaxTicketThreshold = 250;
 
     explicit TicketCreate(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -48,17 +57,34 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Precondition: fee collection is likely.  Attempt to create ticket(s). */
+    /**
+     * Precondition: fee collection is likely.  Attempt to create ticket(s).
+     */
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

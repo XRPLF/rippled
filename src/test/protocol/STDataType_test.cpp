@@ -5,7 +5,7 @@
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
-struct STDataType_test : public beast::unit_test::suite
+struct STDataType_test : public beast::unit_test::Suite
 {
     void
     testConstructors()
@@ -320,21 +320,21 @@ struct STDataType_test : public beast::unit_test::suite
         // Test JSON output for various types
         {
             STDataType const dt(sf, STI_UINT32);
-            Json::Value json = dt.getJson(JsonOptions::none);
+            json::Value json = dt.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "UINT32");
         }
 
         {
             STDataType const dt(sf, STI_AMOUNT);
-            Json::Value json = dt.getJson(JsonOptions::none);
+            json::Value json = dt.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "AMOUNT");
         }
 
         {
             STDataType const dt(sf, STI_ACCOUNT);
-            Json::Value json = dt.getJson(JsonOptions::none);
+            json::Value json = dt.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "ACCOUNT");
         }
@@ -342,7 +342,7 @@ struct STDataType_test : public beast::unit_test::suite
         // Test unknown type
         {
             STDataType const dt(sf, static_cast<SerializedTypeID>(999));
-            Json::Value json = dt.getJson(JsonOptions::none);
+            json::Value json = dt.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "999");
         }
@@ -357,98 +357,98 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test all valid type strings
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT8";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT8);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT16";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT16);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT32";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT32);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT64";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT64);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT128";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT128);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT160";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT160);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT192";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT192);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UINT256";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT256);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "VL";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_VL);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "ACCOUNT";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_ACCOUNT);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "AMOUNT";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_AMOUNT);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "ISSUE";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_ISSUE);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "CURRENCY";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_CURRENCY);
         }
 
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "NUMBER";
             STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_NUMBER);
@@ -458,7 +458,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Non-object JSON should throw
         {
-            Json::Value const v = "not an object";
+            json::Value const v = "not an object";
             try
             {
                 STDataType const dt = dataTypeFromJson(sf, v);
@@ -472,7 +472,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Unknown type string should throw
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "UNKNOWN_TYPE";
             try
             {
@@ -488,7 +488,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Empty type string should throw
         {
-            Json::Value v;
+            json::Value v;
             v[jss::type] = "";
             try
             {
@@ -569,12 +569,12 @@ struct STDataType_test : public beast::unit_test::suite
         for (auto const& typeStr : typeStrings)
         {
             // Create from JSON
-            Json::Value input;
+            json::Value input;
             input[jss::type] = typeStr;
             STDataType const dt = dataTypeFromJson(sf, input);
 
             // Convert back to JSON
-            Json::Value output = dt.getJson(JsonOptions::none);
+            json::Value output = dt.getJson(JsonOptions::Values::None);
 
             // Verify
             BEAST_EXPECT(output[jss::type].asString() == typeStr);

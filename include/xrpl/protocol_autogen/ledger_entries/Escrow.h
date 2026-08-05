@@ -33,7 +33,7 @@ public:
      * @brief Construct a Escrow ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Escrow(std::shared_ptr<SLE const> sle)
+    explicit Escrow(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeOPTIONAL)
+     * @brief Get sfSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfCondition (soeOPTIONAL)
+     * @brief Get sfCondition (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -151,7 +151,7 @@ public:
     }
 
     /**
-     * @brief Get sfFinishAfter (soeOPTIONAL)
+     * @brief Get sfFinishAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -175,31 +175,31 @@ public:
     }
 
     /**
-     * @brief Get sfFinishFunction (soeOPTIONAL)
+     * @brief Get sfBytecode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_VL::type::value_type>
-    getFinishFunction() const
+    getBytecode() const
     {
-        if (hasFinishFunction())
-            return this->sle_->at(sfFinishFunction);
+        if (hasBytecode())
+            return this->sle_->at(sfBytecode);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfFinishFunction is present.
+     * @brief Check if sfBytecode is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasFinishFunction() const
+    hasBytecode() const
     {
-        return this->sle_->isFieldPresent(sfFinishFunction);
+        return this->sle_->isFieldPresent(sfBytecode);
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -223,7 +223,7 @@ public:
     }
 
     /**
-     * @brief Get sfSourceTag (soeOPTIONAL)
+     * @brief Get sfSourceTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -247,7 +247,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -271,7 +271,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -293,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationNode (soeOPTIONAL)
+     * @brief Get sfDestinationNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -328,7 +328,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferRate (soeOPTIONAL)
+     * @brief Get sfTransferRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -352,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerNode (soeOPTIONAL)
+     * @brief Get sfIssuerNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -380,7 +380,7 @@ public:
  * @brief Builder for Escrow ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class EscrowBuilder : public LedgerEntryBuilderBase<EscrowBuilder>
@@ -411,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    EscrowBuilder(std::shared_ptr<SLE const> sle)
+    EscrowBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltESCROW)
         {
@@ -420,10 +420,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -434,7 +436,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeOPTIONAL)
+     * @brief Set sfSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -445,7 +447,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -456,7 +458,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -467,7 +469,7 @@ public:
     }
 
     /**
-     * @brief Set sfCondition (soeOPTIONAL)
+     * @brief Set sfCondition (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -478,7 +480,7 @@ public:
     }
 
     /**
-     * @brief Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -489,7 +491,7 @@ public:
     }
 
     /**
-     * @brief Set sfFinishAfter (soeOPTIONAL)
+     * @brief Set sfFinishAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -500,18 +502,18 @@ public:
     }
 
     /**
-     * @brief Set sfFinishFunction (soeOPTIONAL)
+     * @brief Set sfBytecode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setFinishFunction(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
-        object_[sfFinishFunction] = value;
+        object_[sfBytecode] = value;
         return *this;
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -522,7 +524,7 @@ public:
     }
 
     /**
-     * @brief Set sfSourceTag (soeOPTIONAL)
+     * @brief Set sfSourceTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -533,7 +535,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -544,7 +546,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -555,7 +557,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -566,7 +568,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -577,7 +579,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationNode (soeOPTIONAL)
+     * @brief Set sfDestinationNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -588,7 +590,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferRate (soeOPTIONAL)
+     * @brief Set sfTransferRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
@@ -599,7 +601,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerNode (soeOPTIONAL)
+     * @brief Set sfIssuerNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&

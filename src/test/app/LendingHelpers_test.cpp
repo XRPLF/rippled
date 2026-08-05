@@ -1,82 +1,37 @@
 #include <xrpl/beast/unit_test/suite.h>
 // DO NOT REMOVE
-#include <test/jtx.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/mpt.h>
 
-#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
-#include <xrpl/tx/transactors/lending/LoanSet.h>
-#include <xrpl/tx/transactors/system/Batch.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class LendingHelpers_test : public beast::unit_test::suite
+class LendingHelpers_test : public beast::unit_test::Suite
 {
-    void
-    testComputeRaisedRate()
-    {
-        using namespace jtx;
-        using namespace xrpl::detail;
-        struct TestCase
-        {
-            std::string name;
-            Number periodicRate;
-            std::uint32_t paymentsRemaining;
-            Number expectedRaisedRate;
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "Zero payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 0,
-                .expectedRaisedRate = Number{1},  // (1 + r)^0 = 1
-            },
-            {
-                .name = "One payment remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 1,
-                .expectedRaisedRate = Number{105, -2},
-            },  // 1.05^1
-            {
-                .name = "Multiple payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 3,
-                .expectedRaisedRate = Number{1157625, -6},
-            },  // 1.05^3
-            {
-                .name = "Zero periodic rate",
-                .periodicRate = Number{0},
-                .paymentsRemaining = 5,
-                .expectedRaisedRate = Number{1},  // (1 + 0)^5 = 1
-            }};
-
-        for (auto const& tc : testCases)
-        {
-            testcase("computeRaisedRate: " + tc.name);
-
-            auto const computedRaisedRate =
-                computeRaisedRate(tc.periodicRate, tc.paymentsRemaining);
-            BEAST_EXPECTS(
-                computedRaisedRate == tc.expectedRaisedRate,
-                "Raised rate mismatch: expected " + to_string(tc.expectedRaisedRate) + ", got " +
-                    to_string(computedRaisedRate));
-        }
-    }
-
     void
     testComputePaymentFactor()
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
         struct TestCase
         {
             std::string name;
@@ -117,7 +72,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("computePaymentFactor: " + tc.name);
 
             auto const computedPaymentFactor =
-                computePaymentFactor(tc.periodicRate, tc.paymentsRemaining);
+                computePaymentFactor(rules, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPaymentFactor == tc.expectedPaymentFactor,
                 "Payment factor mismatch: expected " + to_string(tc.expectedPaymentFactor) +
@@ -130,6 +85,8 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -175,8 +132,8 @@ class LendingHelpers_test : public beast::unit_test::suite
         {
             testcase("loanPeriodicPayment: " + tc.name);
 
-            auto const computedPeriodicPayment =
-                loanPeriodicPayment(tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
+            auto const computedPeriodicPayment = loanPeriodicPayment(
+                rules, tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPeriodicPayment == tc.expectedPeriodicPayment,
                 "Periodic payment mismatch: expected " + to_string(tc.expectedPeriodicPayment) +
@@ -189,6 +146,8 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -235,13 +194,303 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("loanPrincipalFromPeriodicPayment: " + tc.name);
 
             auto const computedPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
-                tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
+                rules, tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPrincipalOutstanding == tc.expectedPrincipalOutstanding,
                 "Principal outstanding mismatch: expected " +
                     to_string(tc.expectedPrincipalOutstanding) + ", got " +
                     to_string(computedPrincipalOutstanding));
         }
+    }
+
+    void
+    testComputePowerMinusOne()
+    {
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        // Edge cases.
+        {
+            testcase("computePowerMinusOne: zero rate returns zero");
+            BEAST_EXPECT(computePowerMinusOne(0, 5) == 0);
+        }
+        {
+            testcase("computePowerMinusOne: zero paymentsRemaining returns zero");
+            Number const fivePercent{5, -2};
+            BEAST_EXPECT(computePowerMinusOne(fivePercent, 0) == 0);
+        }
+        // (1.05)^3 - 1 = 0.157625, computed independently by hand.
+        {
+            testcase("computePowerMinusOne: standard case (1.05)^3 - 1 = 0.157625");
+            Number const r{5, -2};
+            Number const expected{157625, -6};
+            BEAST_EXPECT(computePowerMinusOne(r, 3) == expected);
+        }
+        // (1+1)^1 - 1 = 1.
+        {
+            testcase("computePowerMinusOne: r=1, n=1");
+            BEAST_EXPECT(computePowerMinusOne(1, 1) == 1);
+        }
+
+        // Property check at near-zero rate (the bug regime): for n=2 the
+        // mathematical identity is `(1+r)^2 - 1 = 2r + r^2`. We compute
+        // `2r + r^2` by direct multiplication in Number arithmetic — a
+        // path that doesn't share any code with the binomial loop — and
+        // assert the two paths agree.
+        {
+            testcase("computePowerMinusOne: near-zero rate matches independent 2r + r^2");
+            // r = 1 TenthBips32 over 600s payment interval, computed
+            // independently below using xrpl::detail::loanPeriodicRate.
+            Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+            Number const independentExpected = 2 * r + r * r;  // (1+r)^2 - 1
+            BEAST_EXPECT(computePowerMinusOne(r, 2) == independentExpected);
+        }
+        // Same property at n=3: (1+r)^3 - 1 = 3r + 3r^2 + r^3.
+        {
+            testcase("computePowerMinusOne: near-zero rate matches independent 3r + 3r^2 + r^3");
+            Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+            Number const independentExpected = 3 * r + 3 * r * r + r * r * r;
+            BEAST_EXPECT(computePowerMinusOne(r, 3) == independentExpected);
+        }
+
+        // Larger-n stress test for the loop's early-termination logic.
+        // At very small r the binomial terms decrease by a factor of
+        // ~r*(n-k)/(k+1) per step, so even at n=1000 the loop should
+        // terminate in a small handful of iterations. Cross-check the
+        // result against the hybrid (which dispatches to this same
+        // binomial path when r*n < 1e-9).
+        {
+            testcase("computePowerMinusOne: large n, early termination matches hybrid output");
+            // r*n = 1e-10 and 1e-12 — both clearly below the 1e-9 threshold.
+            Number const r1{1, -13};
+            std::uint32_t const n1 = 1'000;
+            Number const r2{1, -15};
+            std::uint32_t const n2 = 1'000;
+            BEAST_EXPECT(computePowerMinusOne(r1, n1) == computePowerMinusOneHybrid(r1, n1));
+            BEAST_EXPECT(computePowerMinusOne(r2, n2) == computePowerMinusOneHybrid(r2, n2));
+            BEAST_EXPECT(computePowerMinusOne(r1, n1) > 0);
+            BEAST_EXPECT(computePowerMinusOne(r2, n2) > 0);
+        }
+    }
+
+    // Direct tests of `computePowerMinusOneHybrid`. Verifies the dispatcher
+    // picks the right branch and produces the right result on each side
+    // of the threshold.
+    void
+    testComputePowerMinusOneHybrid()
+    {
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        // Above threshold (r * n >= 1e-9): hybrid must agree with the closed
+        // form `power(1+r, n) - 1` exactly (it is the closed form).
+        {
+            testcase("computePowerMinusOneHybrid: r*n >= 1e-9 uses closed form (bit-exact match)");
+
+            struct AboveThreshold
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<AboveThreshold>{
+                {.name = "r=5%, n=3", .r = Number{5, -2}, .n = 3},
+                {.name = "r=0.1%, n=1000", .r = Number{1, -3}, .n = 1'000},
+                {.name = "r=1e-7, n=100 (above threshold by 10x)", .r = Number{1, -7}, .n = 100},
+            };
+            for (auto const& tc : cases)
+            {
+                Number const closed = power(1 + tc.r, tc.n) - 1;
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                BEAST_EXPECTS(
+                    hybrid == closed,
+                    tc.name + ": closed=" + to_string(closed) + ", hybrid=" + to_string(hybrid));
+            }
+        }
+
+        // Below threshold (r * n < 1e-9): hybrid must agree with
+        // `computePowerMinusOne` (the binomial expansion). At this regime
+        // the closed form is provably wrong (cancellation); we verify the
+        // dispatcher routes to the binomial path.
+        {
+            testcase(
+                "computePowerMinusOneHybrid: r*n < 1e-9 uses binomial expansion (bit-exact match)");
+
+            struct BelowThreshold
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<BelowThreshold>{
+                // bug regime: r = 1 TenthBips32 over 600s payment interval
+                // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
+                {.name = "bug regime: r~1.9e-10, n=2",
+                 .r = loanPeriodicRate(TenthBips32{1}, 600),
+                 .n = 2},
+                {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
+            };
+            for (auto const& tc : cases)
+            {
+                Number const binom = computePowerMinusOne(tc.r, tc.n);
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                BEAST_EXPECTS(
+                    hybrid == binom,
+                    tc.name + ": binom=" + to_string(binom) + ", hybrid=" + to_string(hybrid));
+            }
+        }
+
+        // Edge cases.
+        {
+            testcase("computePowerMinusOneHybrid: edge cases");
+            Number const fivePercent{5, -2};
+            BEAST_EXPECT(computePowerMinusOneHybrid(0, 100) == 0);
+            BEAST_EXPECT(computePowerMinusOneHybrid(fivePercent, 0) == 0);
+            BEAST_EXPECT(computePowerMinusOneHybrid(0, 0) == 0);
+        }
+
+        // Threshold boundary: r*n = 1e-9 exactly. Hybrid uses `>=` against
+        // the threshold, so this case must take the closed-form branch.
+        // We also verify that the binomial path agrees with the closed
+        // form to high precision at this crossover — confirming the
+        // threshold is placed where both paths give "adequate" answers.
+        {
+            testcase("computePowerMinusOneHybrid: threshold boundary r*n = 1e-9");
+
+            // Construct exactly r*n = 1e-9 with two distinct (r, n) pairs.
+            struct Boundary
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<Boundary>{
+                {.name = "r=1e-9, n=1", .r = Number{1, -9}, .n = 1},
+                {.name = "r=1e-12, n=1000", .r = Number{1, -12}, .n = 1'000},
+            };
+
+            for (auto const& tc : cases)
+            {
+                Number const closed = power(1 + tc.r, tc.n) - 1;
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                Number const binom = computePowerMinusOne(tc.r, tc.n);
+
+                // At exact threshold, hybrid must take closed-form path:
+                // bit-exact match with closed.
+                BEAST_EXPECTS(
+                    hybrid == closed,
+                    tc.name + ": hybrid should equal closed at threshold; got hybrid=" +
+                        to_string(hybrid) + ", closed=" + to_string(closed));
+
+                // Closed-form and binomial must agree at the threshold to
+                // within Number's post-subtraction precision (~10 sig
+                // digits of `r*n = 1e-9`, i.e. ~1e-19 absolute error).
+                Number const tolerance{1, -18};
+                Number const diff = abs(closed - binom);
+                BEAST_EXPECTS(
+                    diff < tolerance,
+                    tc.name + ": closed and binomial diverge at threshold by " + to_string(diff));
+            }
+        }
+    }
+
+    // Regression: at near-zero rate, `loanPrincipalFromPeriodicPayment`
+    // must satisfy `principal <= periodicPayment * paymentsRemaining` for
+    // any non-negative rate. The naive closed-form path violated this
+    // bound due to catastrophic cancellation in `(1+r)^n - 1`.
+    void
+    testLoanPrincipalFromPeriodicPaymentNearZeroRate()
+    {
+        testcase("loanPrincipalFromPeriodicPayment: principal <= payment*n at near-zero rate");
+        using namespace jtx;
+        using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
+
+        // Inputs from the bug reproduction in Loan_test.cpp:
+        //   InterestRate = 1 TenthBips32 (0.001 % per year),
+        //   PaymentInterval = 600 s, principal = 100, 3 payments.
+        // periodicRate is ~1.9e-10.
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
+
+        for (auto const n : {3u, 2u, 1u})
+        {
+            auto const computed =
+                loanPrincipalFromPeriodicPayment(rules, periodicPayment, periodicRate, n);
+            auto const upperBound = periodicPayment * Number{n};
+            BEAST_EXPECTS(
+                computed <= upperBound,
+                "n=" + std::to_string(n) + ": payment*n=" + to_string(upperBound) +
+                    ", principal=" + to_string(computed));
+        }
+    }
+
+    // Regression: `computeTheoreticalLoanState` must produce a non-negative
+    // `interestDue` for any non-negative rate. Pre-fix, near-zero rates
+    // produced a negative `interestDue` because `(1+r)^n - 1` lost most of
+    // its precision to cancellation.
+    void
+    testComputeTheoreticalLoanStateNearZeroRate()
+    {
+        testcase("computeTheoreticalLoanState: non-negative interestDue at near-zero rate");
+        using namespace jtx;
+        using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
+
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
+
+        auto const state =
+            computeTheoreticalLoanState(rules, periodicPayment, periodicRate, 2, TenthBips32{0});
+
+        BEAST_EXPECT(state.principalOutstanding <= state.valueOutstanding);
+        BEAST_EXPECT(state.interestDue >= 0);
+        BEAST_EXPECT(state.managementFeeDue == 0);
+    }
+
+    // Direct gating proof: at near-zero rate, `computePaymentFactor` must
+    // return different values with `fixCleanup3_2_0` disabled vs enabled.
+    // The enabled path agrees with an independent polynomial reference;
+    // the disabled path diverges by a measurable amount due to the
+    // catastrophic cancellation in `(1+r)^n - 1`.
+    void
+    testComputePaymentFactorNearZeroRate()
+    {
+        testcase("computePaymentFactor: near-zero rate, amendment disabled vs enabled");
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+        std::uint32_t const n = 3;
+
+        // Independent reference: expand F(r,3) = r*(1+r)^3/((1+r)^3-1)
+        // algebraically for n=3, dividing numerator and denominator by r:
+        //   F(r,3) = (1 + 3r + 3r^2 + r^3) / (3 + 3r + r^2)
+        // No power(), no binomial series — pure polynomial arithmetic in
+        // Number.
+        Number const reference = (1 + 3 * r + 3 * r * r + r * r * r) / (3 + 3 * r + r * r);
+
+        // Pre-fix: closed form power(1+r, n) - 1 suffers catastrophic
+        // cancellation when r*n ~ 5.7e-10.
+        Env const envBug{*this, testableAmendments() - fixCleanup3_2_0};
+        Number const buggyFactor = computePaymentFactor(envBug.current()->rules(), r, n);
+
+        // Post-fix: hybrid binomial path avoids cancellation.
+        Env const envFix{*this};
+        Number const correctFactor = computePaymentFactor(envFix.current()->rules(), r, n);
+
+        // The amendment must change the computed factor in this regime.
+        BEAST_EXPECT(buggyFactor != correctFactor);
+
+        // The fixed factor must agree with the polynomial reference to
+        // within a few ULPs of Number's 19-digit precision.
+        BEAST_EXPECT(abs(correctFactor - reference) < Number(1, -15));
+
+        // The buggy factor must diverge from the reference by a measurable
+        // amount — empirically ~1e-10 in this regime.
+        BEAST_EXPECT(abs(buggyFactor - reference) > Number(1, -12));
     }
 
     void
@@ -252,7 +501,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace xrpl::detail;
 
         Account const issuer{"issuer"};
-        PrettyAsset const IOU = issuer["IOU"];
+        PrettyAsset const iou = issuer["IOU"];
         int32_t const loanScale = 1;
         auto const overpayment = Number{1'000};
         auto const overpaymentInterestRate = TenthBips32{10'000};  // 10%
@@ -265,8 +514,10 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
-        auto const components = detail::computeOverpaymentComponents(
-            IOU,
+        Env const env{*this};
+        auto const components = xrpl::detail::computeOverpaymentComponents(
+            env.current()->rules(),
+            iou,
             loanScale,
             overpayment,
             overpaymentInterestRate,
@@ -307,7 +558,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         };
 
         Account const issuer{"issuer"};
-        PrettyAsset const IOU = issuer["IOU"];
+        PrettyAsset const iou = issuer["IOU"];
         std::int32_t const loanScale = 1;
 
         auto const testCases = std::vector<TestCase>{
@@ -333,7 +584,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("computeInterestAndFeeParts: " + tc.name);
 
             auto const [computedInterestPart, computedFeePart] =
-                computeInterestAndFeeParts(IOU, tc.interest, tc.managementFeeRate, loanScale);
+                computeInterestAndFeeParts(iou, tc.interest, tc.managementFeeRate, loanScale);
             BEAST_EXPECTS(
                 computedInterestPart == tc.expectedInterestPart,
                 "Interest part mismatch: expected " + to_string(tc.expectedInterestPart) +
@@ -606,9 +857,16 @@ class LendingHelpers_test : public beast::unit_test::suite
         Number const overpaymentAmount{50};
 
         auto const overpaymentComponents = computeOverpaymentComponents(
-            asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
+            env.current()->rules(),
+            asset,
+            loanScale,
+            overpaymentAmount,
+            TenthBips32(0),
+            TenthBips32(0),
+            managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -618,6 +876,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -692,6 +951,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -700,6 +960,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -709,6 +970,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -785,6 +1047,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -793,6 +1056,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -802,6 +1066,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -884,6 +1149,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -892,6 +1158,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -901,6 +1168,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -991,6 +1259,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -999,6 +1268,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1008,6 +1278,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1086,7 +1357,6 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1097,7 +1367,9 @@ class LendingHelpers_test : public beast::unit_test::suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
+        Env const env{*this};
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1105,88 +1377,178 @@ class LendingHelpers_test : public beast::unit_test::suite
             TenthBips32(10'000),  // 10% overpayment fee
             managementFeeRate);
 
-        auto const loanProperties = computeLoanProperties(
-            asset,
-            loanPrincipal,
-            loanInterestRate,
-            paymentInterval,
-            paymentsRemaining,
-            managementFeeRate,
-            loanScale);
+        struct Outcome
+        {
+            LoanPaymentParts parts;
+            LoanState oldState;
+            LoanState newState;
+        };
 
-        auto const ret = tryOverpayment(
-            asset,
-            loanScale,
-            overpaymentComponents,
-            loanProperties.loanState,
-            loanProperties.periodicPayment,
-            periodicRate,
-            paymentsRemaining,
-            managementFeeRate,
-            env.journal);
+        // Run tryOverpayment under a given amendment set. At this (non-near-zero)
+        // rate computeLoanProperties is amendment-independent, so the loan state
+        // is identical across the amendment; only tryOverpayment's fixCleanup3_2_0
+        // behaviour (the exact-principal pin and the management-fee re-derivation
+        // from that principal) differs.
+        auto run = [&](FeatureBitset features) -> std::optional<Outcome> {
+            Env const env{*this, features};
+            auto const loanProperties = computeLoanProperties(
+                env.current()->rules(),
+                asset,
+                loanPrincipal,
+                loanInterestRate,
+                paymentInterval,
+                paymentsRemaining,
+                managementFeeRate,
+                loanScale);
+            auto const ret = tryOverpayment(
+                env.current()->rules(),
+                asset,
+                loanScale,
+                overpaymentComponents,
+                loanProperties.loanState,
+                loanProperties.periodicPayment,
+                periodicRate,
+                paymentsRemaining,
+                managementFeeRate,
+                env.journal);
+            if (!BEAST_EXPECT(ret))
+                return std::nullopt;
+            return Outcome{
+                .parts = ret->first,
+                .oldState = loanProperties.loanState,
+                .newState = ret->second.loanState};
+        };
 
-        BEAST_EXPECT(ret);
+        auto const fixedOpt = run(testableAmendments());
+        auto const legacyOpt = run(testableAmendments() - fixCleanup3_2_0);
+        if (!fixedOpt || !legacyOpt)
+        {
+            BEAST_EXPECT(fixedOpt.has_value());
+            BEAST_EXPECT(legacyOpt.has_value());
+            return;
+        }
+        Outcome const& fixed = *fixedOpt;
+        Outcome const& legacy = *legacyOpt;
 
-        auto const& [actualPaymentParts, newLoanProperties] = *ret;
-        auto const& newState = newLoanProperties.loanState;
+        // Components that the amendment does not change. The management fee is
+        // charged against the overpayment interest portion first, so interest
+        // paid stays 4.5 and fee paid 5.5; the principal repaid is 40 in both.
+        auto checkCommon = [&](Outcome const& o, char const* tag) {
+            BEAST_EXPECTS(
+                (o.parts.interestPaid == Number{45, -1}),
+                std::string(tag) + " interestPaid " + to_string(o.parts.interestPaid));
+            BEAST_EXPECTS(
+                (o.parts.feePaid == Number{55, -1}),
+                std::string(tag) + " feePaid " + to_string(o.parts.feePaid));
+            BEAST_EXPECTS(
+                o.parts.principalPaid == 40,
+                std::string(tag) + " principalPaid " + to_string(o.parts.principalPaid));
+            BEAST_EXPECT(
+                o.parts.principalPaid ==
+                o.oldState.principalOutstanding - o.newState.principalOutstanding);
+            // v = p + i + m identity: the non-interest part of valueChange equals
+            // the interest-due change.
+            BEAST_EXPECT(
+                o.parts.valueChange - o.parts.interestPaid ==
+                o.newState.interestDue - o.oldState.interestDue);
+        };
+        checkCommon(fixed, "fixed");
+        checkCommon(legacy, "legacy");
 
-        // =========== VALIDATE PAYMENT PARTS ===========
-
-        // Since there is loan management fee, the fee is charged against
-        // overpayment interest portion first, so interest paid remains 4.5
-        BEAST_EXPECTS(
-            (actualPaymentParts.interestPaid == Number{45, -1}),
-            " interestPaid mismatch: expected 4.5, got " +
-                to_string(actualPaymentParts.interestPaid));
-
-        // With overpayment interest portion, value change should equal the
-        // interest decrease plus overpayment interest portion
-        BEAST_EXPECTS(
-            (actualPaymentParts.valueChange ==
-             Number{-164737, -5} + actualPaymentParts.interestPaid),
-            " valueChange mismatch: expected " +
-                to_string(Number{-164737, -5} + actualPaymentParts.interestPaid) + ", got " +
-                to_string(actualPaymentParts.valueChange));
-
-        // While there is no overpayment fee, fee paid should equal the
-        // management fee charged against the overpayment interest portion
-        BEAST_EXPECTS(
-            (actualPaymentParts.feePaid == Number{55, -1}),
-            " feePaid mismatch: expected 5.5, got " + to_string(actualPaymentParts.feePaid));
-
-        BEAST_EXPECTS(
-            actualPaymentParts.principalPaid == 40,
-            " principalPaid mismatch: expected 40, got `" +
-                to_string(actualPaymentParts.principalPaid));
-
-        // =========== VALIDATE STATE CHANGES ===========
-
-        BEAST_EXPECTS(
-            actualPaymentParts.principalPaid ==
-                loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
-            " principalPaid mismatch: expected " +
-                to_string(
-                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
-                ", got " + to_string(actualPaymentParts.principalPaid));
-
-        // Note that the management fee value change is not captured, as this
-        // value is not needed to correctly update the Vault state.
-        BEAST_EXPECTS(
-            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue ==
-             Number{-18304, -5}),
-            " management fee change mismatch: expected " + to_string(Number{-18304, -5}) +
-                ", got " +
-                to_string(newState.managementFeeDue - loanProperties.loanState.managementFeeDue));
-
-        BEAST_EXPECTS(
-            actualPaymentParts.valueChange - actualPaymentParts.interestPaid ==
-                newState.interestDue - loanProperties.loanState.interestDue,
-            " valueChange mismatch: expected " +
-                to_string(newState.interestDue - loanProperties.loanState.interestDue) + ", got " +
-                to_string(actualPaymentParts.valueChange - actualPaymentParts.interestPaid));
+        // With fixCleanup3_2_0 the management fee is re-derived from the exact
+        // principal; without it, from the one-scale-unit-high round-trip
+        // principal. So the management fee outstanding (and hence the value
+        // change, via v = p + i + m) differ by exactly one scale-unit (1e-5 at
+        // loanScale -5) between the two paths.
+        BEAST_EXPECT((fixed.parts.valueChange == Number{-164738, -5} + fixed.parts.interestPaid));
+        BEAST_EXPECT(
+            (fixed.newState.managementFeeDue - fixed.oldState.managementFeeDue ==
+             Number{-18303, -5}));
+        BEAST_EXPECT((legacy.parts.valueChange == Number{-164737, -5} + legacy.parts.interestPaid));
+        BEAST_EXPECT(
+            (legacy.newState.managementFeeDue - legacy.oldState.managementFeeDue ==
+             Number{-18304, -5}));
     }
 
 public:
+    void
+    testCanApplyToBrokerCover()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const iou = issuer["IOU"];
+
+        // sfCoverAvailable = Number{10} on an IOU → STAmount exponent = -14,
+        // so coverScale = -14.  The ULP boundary is 5e-15; anything below
+        // that rounds to zero at cover scale.  Number{1,-16} = 1e-16 is our
+        // representative sub-ULP probe.
+        struct TestCase
+        {
+            std::string name;
+            Number coverAvailable;
+            STAmount amount;
+            TER expected;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "Zero amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{0}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Rounds to zero at cover scale",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -16}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Zero coverAvailable, whole-unit amount",
+                // coverScale = 0 (zero STAmount exponent); 1 IOU is not
+                // zero at integer scale → tesSUCCESS.
+                .coverAvailable = Number{0},
+                .amount = STAmount{iou, Number{1}},
+                .expected = tesSUCCESS,
+            },
+            {
+                .name = "Supra-ULP amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -13}},
+                .expected = tesSUCCESS,
+            },
+        };
+
+        Env const env{*this};
+
+        for (auto const& tc : testCases)
+        {
+            testcase("canApplyToBrokerCover: " + tc.name);
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = tc.coverAvailable;
+            BEAST_EXPECT(
+                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
+                tc.expected);
+        }
+
+        // Amendment off → guard is bypassed regardless of amount.
+        {
+            testcase("canApplyToBrokerCover: amendment disabled");
+            Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = Number{10};
+            BEAST_EXPECT(
+                canApplyToBrokerCover(
+                    *envOff.current(),
+                    sle,
+                    iou,
+                    STAmount{iou, Number{0}},
+                    envOff.journal,
+                    "test") == tesSUCCESS);
+        }
+    }
+
     void
     run() override
     {
@@ -1202,14 +1564,18 @@ public:
         testLoanLatePaymentInterest();
         testLoanPeriodicPayment();
         testLoanPrincipalFromPeriodicPayment();
-        testComputeRaisedRate();
+        testLoanPrincipalFromPeriodicPaymentNearZeroRate();
         testComputePaymentFactor();
+        testComputePowerMinusOne();
+        testComputePowerMinusOneHybrid();
+        testComputeTheoreticalLoanStateNearZeroRate();
+        testComputePaymentFactorNearZeroRate();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
+        testCanApplyToBrokerCover();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(LendingHelpers, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -18,10 +18,10 @@ class ContractClawbackBuilder;
 /**
  * @brief Transaction: ContractClawback
  *
- * Type: ttCONTRACT_CLAWBACK (88)
- * Delegable: Delegation::delegable
+ * Type: ttCONTRACT_CLAWBACK (95)
+ * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfContractAccount (soeOPTIONAL)
+     * @brief Get sfContractAccount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -90,7 +90,7 @@ public:
  * @brief Builder for ContractClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ContractClawbackBuilder : public TransactionBuilderBase<ContractClawbackBuilder>
@@ -126,10 +126,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfContractAccount (soeOPTIONAL)
+     * @brief Set sfContractAccount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractClawbackBuilder&
@@ -140,7 +142,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */

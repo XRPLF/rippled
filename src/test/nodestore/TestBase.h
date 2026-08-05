@@ -1,28 +1,33 @@
 #pragma once
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <boost/algorithm/string.hpp>
 
-#include <iomanip>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
-/** Binary function that satisfies the strict-weak-ordering requirement.
-
-    This compares the hashes of both objects and returns true if
-    the first hash is considered to go before the second.
-
-    @see std::sort
-*/
+/**
+ * Binary function that satisfies the strict-weak-ordering requirement.
+ *
+ * This compares the hashes of both objects and returns true if
+ * the first hash is considered to go before the second.
+ *
+ * @see std::sort
+ */
 struct LessThan
 {
     bool
@@ -33,7 +38,9 @@ struct LessThan
     }
 };
 
-/** Returns `true` if objects are identical. */
+/**
+ * Returns `true` if objects are identical.
+ */
 inline bool
 isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
 {
@@ -43,14 +50,14 @@ isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const
 
 // Some common code for the unit tests
 //
-class TestBase : public beast::unit_test::suite
+class TestBase : public beast::unit_test::Suite
 {
 public:
     // Tunable parameters
     //
-    static std::size_t const minPayloadBytes = 1;
-    static std::size_t const maxPayloadBytes = 2000;
-    static int const numObjectsToTest = 2000;
+    static std::size_t const kMinPayloadBytes = 1;
+    static std::size_t const kMaxPayloadBytes = 2000;
+    static int const kNumObjectsToTest = 2000;
 
 public:
     // Create a predictable batch of objects
@@ -65,25 +72,24 @@ public:
         for (int i = 0; i < numObjects; ++i)
         {
             NodeObjectType const type = [&] {
-                switch (rand_int(rng, 3))
+                switch (randInt(rng, 3))
                 {
                     case 0:
-                        return hotLEDGER;
+                        return NodeObjectType::Ledger;
                     case 1:
-                        return hotACCOUNT_NODE;
+                        return NodeObjectType::AccountNode;
                     case 2:
-                        return hotTRANSACTION_NODE;
+                        return NodeObjectType::TransactionNode;
                     case 3:
-                        return hotUNKNOWN;
+                    default:
+                        return NodeObjectType::Unknown;
                 }
-                // will never happen, but make static analysis tool happy.
-                return hotUNKNOWN;
             }();
 
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);
 
-            Blob blob(rand_int(rng, minPayloadBytes, maxPayloadBytes));
+            Blob blob(randInt(rng, kMinPayloadBytes, kMaxPayloadBytes));
             beast::rngfill(blob.data(), blob.size(), rng);
 
             batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
@@ -118,12 +124,12 @@ public:
     }
 
     // Store a batch in a backend
-    void
+    static void
     storeBatch(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            backend.store(batch[i]);
+            backend.store(object);
         }
     }
 
@@ -134,15 +140,15 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
-            BEAST_EXPECT(status == ok);
+            BEAST_EXPECT(status == Status::Ok);
 
-            if (status == ok)
+            if (status == Status::Ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -154,13 +160,13 @@ public:
     void
     fetchMissing(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
-            BEAST_EXPECT(status == notFound);
+            BEAST_EXPECT(status == Status::NotFound);
         }
     }
 
@@ -168,10 +174,8 @@ public:
     static void
     storeBatch(Database& db, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            std::shared_ptr<NodeObject> const object(batch[i]);
-
             Blob data(object->getData());
 
             db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
@@ -185,9 +189,9 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
-            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(expected->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);
@@ -195,5 +199,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

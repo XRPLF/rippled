@@ -19,9 +19,9 @@ class VaultDeleteBuilder;
  * @brief Transaction: VaultDelete
  *
  * Type: ttVAULT_DELETE (67)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mustDeleteAcct | destroyMPTIssuance | mustModifyVault
+ * Privileges: MustDeleteAcct | DestroyMptIssuance | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,13 +57,39 @@ public:
     {
         return this->tx_->at(sfVaultID);
     }
+
+    /**
+     * @brief Get sfMemoData (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getMemoData() const
+    {
+        if (hasMemoData())
+        {
+            return this->tx_->at(sfMemoData);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfMemoData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasMemoData() const
+    {
+        return this->tx_->isFieldPresent(sfMemoData);
+    }
 };
 
 /**
  * @brief Builder for VaultDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultDeleteBuilder : public TransactionBuilderBase<VaultDeleteBuilder>
@@ -99,16 +125,29 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&
     setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfVaultID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfMemoData (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultDeleteBuilder&
+    setMemoData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfMemoData] = value;
         return *this;
     }
 

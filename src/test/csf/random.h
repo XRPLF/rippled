@@ -1,24 +1,26 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <random>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
-/** Return a randomly shuffled copy of vector based on weights w.
-
-    @param v  The set of values
-    @param w  The set of weights of each value
-    @param g  A pseudo-random number generator
-    @return A vector with entries randomly sampled without replacement
-            from the original vector based on the provided weights.
-            I.e.  res[0] comes from sample v[i] with weight w[i]/sum_k w[k]
-*/
+/**
+ * Return a randomly shuffled copy of vector based on weights w.
+ *
+ * @param v  The set of values
+ * @param w  The set of weights of each value
+ * @param g  A pseudo-random number generator
+ * @return A vector with entries randomly sampled without replacement
+ *         from the original vector based on the provided weights.
+ *         I.e.  res[0] comes from sample v[i] with weight w[i]/suk_ w[k]
+ */
 template <class T, class G>
 std::vector<T>
-random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
+randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 
@@ -33,30 +35,32 @@ random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
     return v;
 }
 
-/** Generate a vector of random samples
-
-    @param size the size of the sample
-    @param dist the distribution to sample
-    @param g the pseudo-random number generator
-
-    @return vector of samples
-*/
+/**
+ * Generate a vector of random samples
+ *
+ * @param size the size of the sample
+ * @param dist the distribution to sample
+ * @param g the pseudo-random number generator
+ *
+ * @return vector of samples
+ */
 template <class RandomNumberDistribution, class Generator>
 std::vector<typename RandomNumberDistribution::result_type>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
     std::vector<typename RandomNumberDistribution::result_type> res(size);
-    std::generate(res.begin(), res.end(), [&dist, &g]() { return dist(g); });
+    std::ranges::generate(res, [&dist, &g]() { return dist(g); });
     return res;
 }
 
-/** Invocable that returns random samples from a range according to a discrete
-    distribution
-
-    Given a pair of random access iterators begin and end, each call to the
-    instance of Selector returns a random entry in the range (begin,end)
-    according to the weights provided at construction.
-*/
+/**
+ * Invocable that returns random samples from a range according to a discrete
+ * distribution
+ *
+ * Given a pair of random access iterators begin and end, each call to the
+ * instance of Selector returns a random entry in the range (begin,end)
+ * according to the weights provided at construction.
+ */
 template <class RAIter, class Generator>
 class Selector
 {
@@ -65,23 +69,24 @@ class Selector
     Generator g_;
 
 public:
-    /** Constructor
-        @param first Random access iterator to the start of the range
-        @param last Random access iterator to the end of the range
-        @param w Vector of weights of size list-first
-        @param g the pseudo-random number generator
-    */
+    /**
+     * Constructor
+     * @param first Random access iterator to the start of the range
+     * @param last Random access iterator to the end of the range
+     * @param w Vector of weights of size list-first
+     * @param g the pseudo-random number generator
+     */
     Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
-        using tag = typename std::iterator_traits<RAIter>::iterator_category;
+        using tag = std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same<tag, std::random_access_iterator_tag>::value,
+            std::is_same_v<tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
 
-    typename std::iterator_traits<RAIter>::value_type
+    std::iterator_traits<RAIter>::value_type
     operator()()
     {
         auto idx = dd_(g_);
@@ -99,7 +104,8 @@ makeSelector(Iter first, Iter last, std::vector<double> const& w, Generator& g)
 //------------------------------------------------------------------------------
 // Additional distributions of interest not defined in <random>
 
-/** Constant "distribution" that always returns the same value
+/**
+ * Constant "distribution" that always returns the same value
  */
 class ConstantDistribution
 {
@@ -111,18 +117,19 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
     }
 };
 
-/** Power-law distribution with PDF
-
-        P(x) = (x/xmin)^-a
-
-    for a >= 1 and xmin >= 1
+/**
+ * Power-law distribution with PDF
+ *
+ *     P(x) = (x/xmin)^-a
+ *
+ * for a >= 1 and xmin >= 1
  */
 class PowerLawDistribution
 {
@@ -134,13 +141,12 @@ class PowerLawDistribution
 public:
     using result_type = double;
 
-    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
+    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}, inv_(1.0 / (1.0 - a_))
     {
-        inv_ = 1.0 / (1.0 - a_);
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample
@@ -149,6 +155,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

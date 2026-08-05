@@ -22,7 +22,7 @@ namespace xrpl {
 //   ledger_index : <ledger_index>
 // }
 
-Json::Value
+json::Value
 doContractInfo(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -31,17 +31,17 @@ doContractInfo(RPC::JsonContext& context)
     if (params.isMember(jss::contract_account))
     {
         if (!params[jss::contract_account].isString())
-            return RPC::invalid_field_error(jss::contract_account);
+            return RPC::invalidFieldError(jss::contract_account);
         contractAccount = params[jss::contract_account].asString();
     }
     else
-        return RPC::missing_field_error(jss::contract_account);
+        return RPC::missingFieldError(jss::contract_account);
 
     std::string functionName;
     if (params.isMember(jss::function))
     {
         if (!params[jss::function].isString())
-            return RPC::invalid_field_error(jss::function);
+            return RPC::invalidFieldError(jss::function);
         functionName = params[jss::function].asString();
     }
 
@@ -49,7 +49,7 @@ doContractInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalid_field_error(jss::account);
+            return RPC::invalidFieldError(jss::account);
         account = params[jss::account].asString();
     }
 
@@ -63,7 +63,7 @@ doContractInfo(RPC::JsonContext& context)
     auto caid = parseBase58<AccountID>(contractAccount);
     if (!caid)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const caID{caid.value()};
@@ -71,7 +71,7 @@ doContractInfo(RPC::JsonContext& context)
     if (!caSle)
     {
         result[jss::contract_account] = toBase58(caID);
-        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        RPC::injectError(RpcActNotFound, result);
     }
 
     uint256 const contractID = caSle->getFieldH256(sfContractID);
@@ -79,21 +79,21 @@ doContractInfo(RPC::JsonContext& context)
     if (!contractSle)
     {
         result[jss::contract_account] = toBase58(caID);
-        RPC::inject_error(rpcOBJECT_NOT_FOUND, result);
+        RPC::injectError(RpcObjectNotFound, result);
     }
 
     // contract source
     if (!contractSle->at(sfContractHash))
     {
         result[jss::contract_account] = toBase58(caID);
-        RPC::inject_error(rpcUNKNOWN, result);
+        RPC::injectError(RpcUnknown, result);
     }
 
     auto const sourceSle = ledger->read(keylet::contractSource(contractSle->at(sfContractHash)));
     if (!sourceSle)
     {
         result[jss::contract_account] = toBase58(caID);
-        RPC::inject_error(rpcOBJECT_NOT_FOUND, result);
+        RPC::injectError(RpcObjectNotFound, result);
     }
 
     result[jss::contract_account] = toBase58(caID);
@@ -103,18 +103,18 @@ doContractInfo(RPC::JsonContext& context)
     // lambda to format the functions response:
     // name: <string>
     // params: [<flag>: <string>, <type>: <string>, <name>: <string>]
-    auto formatFunctions = [](Json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
+    auto formatFunctions = [](json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
         if (slePtr && slePtr->isFieldPresent(sfFunctions))
         {
             auto const& functions = slePtr->getFieldArray(sfFunctions);
             for (auto const& function : functions)
             {
-                Json::Value jvFunction(Json::objectValue);
+                json::Value jvFunction(json::ValueType::Object);
                 jvFunction[jss::name] = strHex(function.getFieldVL(sfFunctionName));
-                Json::Value jvParams(Json::arrayValue);
+                json::Value jvParams(json::ValueType::Array);
                 for (auto const& param : function.getFieldArray(sfParameters))
                 {
-                    Json::Value jvParam(Json::objectValue);
+                    json::Value jvParam(json::ValueType::Object);
                     jvParam[jss::flags] = param.getFieldU32(sfParameterFlag);
                     jvParam[jss::type] =
                         param.getFieldDataType(sfParameterType).getInnerTypeString();
@@ -130,21 +130,21 @@ doContractInfo(RPC::JsonContext& context)
     if (contractSle->isFieldPresent(sfURI))
         result[jss::source_code_uri] = strHex(contractSle->at(sfURI));
 
-    Json::Value jvAccepted(Json::objectValue);
+    json::Value jvAccepted(json::ValueType::Object);
     RPC::injectSLE(jvAccepted, *caSle);
     result[jss::account_data] = jvAccepted;
 
     auto const dataSle = ledger->read(keylet::contractData(caID, caID));
     if (dataSle)
         result[jss::contract_data] =
-            dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::none);
+            dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::Values::None);
 
     if (!account.empty())
     {
         auto id = parseBase58<AccountID>(account);
         if (!id)
         {
-            RPC::inject_error(rpcACT_MALFORMED, result);
+            RPC::injectError(RpcActMalformed, result);
             return result;
         }
         auto const accountID = id.value();
@@ -152,7 +152,7 @@ doContractInfo(RPC::JsonContext& context)
         {
             if (auto dataSle = ledger->read(keylet::contractData(accountID, caID)))
                 result[jss::user_data] =
-                    dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::none);
+                    dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::Values::None);
         }
     }
 

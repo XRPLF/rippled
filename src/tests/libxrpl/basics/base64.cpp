@@ -9,9 +9,9 @@ using namespace xrpl;
 static void
 check(std::string const& in, std::string const& out)
 {
-    auto const encoded = base64_encode(in);
+    auto const encoded = base64Encode(in);
     EXPECT_EQ(encoded, out);
-    EXPECT_EQ(base64_decode(encoded), in);
+    EXPECT_EQ(base64Decode(encoded), in);
 }
 
 TEST(base64, base64)
@@ -46,5 +46,5 @@ TEST(base64, base64)
 
     std::string const notBase64 = "not_base64!!";
     std::string const truncated = "not";
-    EXPECT_EQ(base64_decode(notBase64), base64_decode(truncated));
+    EXPECT_EQ(base64Decode(notBase64), base64Decode(truncated));
 }

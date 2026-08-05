@@ -1,6 +1,13 @@
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <cstdint>
+#include <expected>
 
 namespace xrpl {
 
@@ -8,13 +15,12 @@ namespace xrpl {
 // SECTION: WRITE FUNCTION
 // =========================================================
 
-Expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::updateData(Slice const& data)
 {
-    if (data.size() > maxWasmDataLength)
-    {
-        return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
+    if (data.size() > kMaxWasmDataLength)
+        return std::unexpected(HostFunctionError::DataFieldTooLarge);
+
     data_ = Bytes(data.begin(), data.end());
     return data_->size();
 }
@@ -23,20 +29,20 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
 // SECTION: UTILS
 // =========================================================
 
-Expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::checkSignature(
     Slice const& message,
     Slice const& signature,
     Slice const& pubkey) const
 {
     if (!publicKeyType(pubkey))
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     PublicKey const pk(pubkey);
     return verify(pk, message, signature);
 }
 
-Expected<Hash, HostFunctionError>
+std::expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data) const
 {
     auto const hash = sha512Half(data);

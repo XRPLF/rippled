@@ -1,19 +1,20 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPeerReservationsList(RPC::JsonContext& context)
 {
     auto const& reservations = context.app.getPeerReservations().list();
     // Enumerate the reservations in context.app.getPeerReservations()
-    // as a Json::Value.
-    Json::Value result{Json::objectValue};
-    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
+    // as a json::Value.
+    json::Value result{json::ValueType::Object};
+    json::Value& jaReservations = result[jss::reservations] = json::ValueType::Array;
     for (auto const& reservation : reservations)
     {
         jaReservations.append(reservation.toJson());

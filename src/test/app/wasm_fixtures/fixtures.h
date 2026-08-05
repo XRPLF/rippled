@@ -10,7 +10,7 @@
 namespace wasm_constants {
 
 // Magic + version header
-uint8_t const WASM_HEADER[] = {
+uint8_t const kWasmHeader[] = {
     0x00,
     0x61,
     0x73,
@@ -22,117 +22,136 @@ uint8_t const WASM_HEADER[] = {
 };
 
 // Type section: () -> ()
-uint8_t const TYPE_EMPTY_FUNC[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
+uint8_t const kTypeEmptyFunc[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
 
 // Function section: one function using type 0
-uint8_t const FUNC_TYPE0[] = {0x03, 0x02, 0x01, 0x00};
+uint8_t const kFuncTypE0[] = {0x03, 0x02, 0x01, 0x00};
 
-// Export section: export func 0 as "finish"
-uint8_t const EXPORT_FINISH[] = {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
+// Export section: export func 0 as "escrow_finish"
+uint8_t const kExportFinish[] = {
+    0x07,
+    0x11,
+    0x01,
+    0x0d,
+    'e',
+    's',
+    'c',
+    'r',
+    'o',
+    'w',
+    '_',
+    'f',
+    'i',
+    'n',
+    'i',
+    's',
+    'h',
+    0x00,
+    0x00};
 
 // Empty function body: 0 locals, end
-uint8_t const EMPTY_BODY[] = {0x00, 0x0b};
+uint8_t const kEmptyBody[] = {0x00, 0x0b};
 
 // Data segment offset: i32.const 0, end
-uint8_t const DATA_OFFSET_ZERO[] = {0x41, 0x00, 0x0b};
+uint8_t const kDataOffsetZero[] = {0x41, 0x00, 0x0b};
 
 // Section IDs
-uint8_t const SECTION_MEMORY = 0x05;
-uint8_t const SECTION_CODE = 0x0a;
-uint8_t const SECTION_DATA = 0x0b;
+uint8_t const kSectionMemory = 0x05;
+uint8_t const kSectionCode = 0x0a;
+uint8_t const kSectionData = 0x0b;
 
 // Instructions
-uint8_t const INSTR_NOP = 0x01;
-uint8_t const INSTR_END = 0x0b;
+uint8_t const kInstrNop = 0x01;
+uint8_t const kInstrEnd = 0x0b;
 
 // Fill byte for data section bloat
-uint8_t const DATA_FILL_BYTE = 0xEE;
+uint8_t const kDataFillByte = 0xEE;
 
 // Generator for WASM module with large code section (many NOPs)
 std::vector<uint8_t>
-generateCodeBlob(uint32_t num_instructions);
+generateCodeBlob(uint32_t numInstructions);
 
 // Generator for WASM module with large data section
 std::vector<uint8_t>
-generateDataBlob(uint32_t data_size);
+generateDataBlob(uint32_t dataSize);
 
 }  // namespace wasm_constants
 
-extern std::string const ledgerSqnWasmHex;
-extern std::string const allHostFunctionsWasmHex;
-extern std::string const allKeyletsWasmHex;
-extern std::string const codecovTestsWasmHex;
+extern std::string const kLedgerSqnWasmHex;
+extern std::string const kAllHostFunctionsWasmHex;
+extern std::string const kAllKeyletsWasmHex;
+extern std::string const kCodecovTestsWasmHex;
 
-extern std::string const fibWasmHex;
+extern std::string const kFibWasmHex;
 
-extern std::string const floatTestsWasmHex;
-extern std::string const float0Hex;
-extern std::string const disabledFloatHex;
+extern std::string const kFloatTestsWasmHex;
+extern std::string const kFloat0Hex;
+extern std::string const kDisabledFloatHex;
 
-extern std::string const memoryPointerAtLimitHex;
-extern std::string const memoryPointerOverLimitHex;
-extern std::string const memoryOffsetOverLimitHex;
-extern std::string const memoryEndOfWordOverLimitHex;
-extern std::string const memoryGrow0To1PageHex;
-extern std::string const memoryGrow1To0PageHex;
-extern std::string const memoryLastByteOf8MBHex;
-extern std::string const memoryGrow1MoreThan8MBHex;
-extern std::string const memoryGrow0MoreThan8MBHex;
-extern std::string const memoryInit1MoreThan8MBHex;
-extern std::string const memoryNegativeAddressHex;
+extern std::string const kMemoryPointerAtLimitHex;
+extern std::string const kMemoryPointerOverLimitHex;
+extern std::string const kMemoryOffsetOverLimitHex;
+extern std::string const kMemoryEndOfWordOverLimitHex;
+extern std::string const kMemoryGrow0To1PageHex;
+extern std::string const kMemoryGrow1To0PageHex;
+extern std::string const kMemoryLastByteOf8MbHex;
+extern std::string const kMemoryGrow1MoreThan8MbHex;
+extern std::string const kMemoryGrow0MoreThan8MbHex;
+extern std::string const kMemoryInit1MoreThan8MbHex;
+extern std::string const kMemoryNegativeAddressHex;
 
-extern std::string const table64ElementsHex;
-extern std::string const table65ElementsHex;
-extern std::string const table2TablesHex;
-extern std::string const table0ElementsHex;
-extern std::string const tableUintMaxHex;
+extern std::string const kTable64ElementsHex;
+extern std::string const kTable65ElementsHex;
+extern std::string const kTable2TablesHex;
+extern std::string const kTable0ElementsHex;
+extern std::string const kTableUintMaxHex;
 
-extern std::string const proposalMutableGlobalHex;
-extern std::string const proposalGcStructNewHex;
-extern std::string const proposalMultiValueHex;
-extern std::string const proposalSignExtHex;
-extern std::string const proposalFloatToIntHex;
-extern std::string const proposalBulkMemoryHex;
-extern std::string const proposalRefTypesHex;
-extern std::string const proposalTailCallHex;
-extern std::string const proposalExtendedConstHex;
-extern std::string const proposalMultiMemoryHex;
-extern std::string const proposalCustomPageSizesHex;
-extern std::string const proposalMemory64Hex;
-extern std::string const proposalWideArithmeticHex;
+extern std::string const kProposalMutableGlobalHex;
+extern std::string const kProposalGcStructNewHex;
+extern std::string const kProposalMultiValueHex;
+extern std::string const kProposalSignExtHex;
+extern std::string const kProposalFloatToIntHex;
+extern std::string const kProposalBulkMemoryHex;
+extern std::string const kProposalRefTypesHex;
+extern std::string const kProposalTailCallHex;
+extern std::string const kProposalExtendedConstHex;
+extern std::string const kProposalMultiMemoryHex;
+extern std::string const kProposalCustomPageSizesHex;
+extern std::string const kProposalMemory64Hex;
+extern std::string const kProposalWideArithmeticHex;
 
-extern std::string const trapDivideBy0Hex;
-extern std::string const trapIntOverflowHex;
-extern std::string const trapUnreachableHex;
-extern std::string const trapNullCallHex;
-extern std::string const trapFuncSigMismatchHex;
+extern std::string const kTrapDivideBy0Hex;
+extern std::string const kTrapIntOverflowHex;
+extern std::string const kTrapUnreachableHex;
+extern std::string const kTrapNullCallHex;
+extern std::string const kTrapFuncSigMismatchHex;
 
-extern std::string const wasiGetTimeHex;
-extern std::string const wasiPrintHex;
+extern std::string const kWasiGetTimeHex;
+extern std::string const kWasiPrintHex;
 
-extern std::string const badMagicNumberHex;
-extern std::string const badVersionNumberHex;
-extern std::string const lyingHeaderHex;
-extern std::string const neverEndingNumberHex;
-extern std::string const vectorLieHex;
-extern std::string const sectionOrderingHex;
-extern std::string const ghostPayloadHex;
-extern std::string const junkAfterSectionHex;
-extern std::string const invalidSectionIdHex;
-extern std::string const localVariableBombHex;
+extern std::string const kBadMagicNumberHex;
+extern std::string const kBadVersionNumberHex;
+extern std::string const kLyingHeaderHex;
+extern std::string const kNeverEndingNumberHex;
+extern std::string const kVectorLieHex;
+extern std::string const kSectionOrderingHex;
+extern std::string const kGhostPayloadHex;
+extern std::string const kJunkAfterSectionHex;
+extern std::string const kInvalidSectionIdHex;
+extern std::string const kLocalVariableBombHex;
 
-extern std::string const deepRecursionHex;
-extern std::string const infiniteLoopWasmHex;
-extern std::string const startLoopHex;
+extern std::string const kDeepRecursionHex;
+extern std::string const kInfiniteLoopWasmHex;
+extern std::string const kStartLoopHex;
 
-extern std::string const badAlignWasmHex;
+extern std::string const kBadAlignWasmHex;
 
-extern std::string const thousandParamsHex;
-extern std::string const thousand1ParamsHex;
-extern std::string const locals10kHex;
-extern std::string const functions5kHex;
+extern std::string const kThousandParamsHex;
+extern std::string const kThousand1ParamsHex;
+extern std::string const kLocals10kHex;
+extern std::string const kFunctions5kHex;
 
-extern std::string const opcReservedHex;
+extern std::string const kOpcReservedHex;
 
-extern std::string const impExpHex;
-extern std::string const updateDataWasmHex;
+extern std::string const kImpExpHex;
+extern std::string const kUpdateDataWasmHex;

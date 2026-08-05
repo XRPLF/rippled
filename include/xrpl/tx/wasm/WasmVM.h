@@ -1,24 +1,33 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace xrpl {
 
-static std::string_view const W_ENV = "env";
-static std::string_view const W_HOST_LIB = "host_lib";
-static std::string_view const W_MEM = "memory";
-static std::string_view const W_STORE = "store";
-static std::string_view const W_LOAD = "load";
-static std::string_view const W_SIZE = "size";
-static std::string_view const W_ALLOC = "allocate";
-static std::string_view const W_DEALLOC = "deallocate";
-static std::string_view const W_PROC_EXIT = "proc_exit";
+std::string_view inline constexpr wEnv = "env";
+std::string_view inline constexpr wHostLib = "host_lib";
+std::string_view inline constexpr wMem = "memory";
+std::string_view inline constexpr wStore = "store";
+std::string_view inline constexpr wLoad = "load";
+std::string_view inline constexpr wSize = "size";
+std::string_view inline constexpr wAlloc = "allocate";
+std::string_view inline constexpr wDealloc = "deallocate";
+std::string_view inline constexpr wProcExit = "proc_exit";
 
-static std::string_view const ESCROW_FUNCTION_NAME = "finish";
+std::string_view inline constexpr escrowFunctionName = "escrow_finish";
 
-uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
+uint32_t inline constexpr maxPages = 128;  // 8MB = 64KB*128
 
 class WasmiEngine;
 
@@ -28,6 +37,7 @@ class WasmEngine
 
     WasmEngine();
 
+public:
     WasmEngine(WasmEngine const&) = delete;
     WasmEngine(WasmEngine&&) = delete;
     WasmEngine&
@@ -35,13 +45,10 @@ class WasmEngine
     WasmEngine&
     operator=(WasmEngine&&) = delete;
 
-public:
-    ~WasmEngine() = default;
-
     static WasmEngine&
     instance();
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gasLimit,
@@ -63,7 +70,7 @@ public:
     void*
     newTrap(std::string const& txt = std::string());
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     getJournal() const;
 };
 
@@ -72,19 +79,19 @@ public:
 ImportVec
 createWasmImport(HostFunctions& hfs);
 
-Expected<EscrowResult, TER>
+std::expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
     int64_t gasLimit,
-    std::string_view funcName = ESCROW_FUNCTION_NAME,
+    std::string_view funcName = escrowFunctionName,
     std::vector<WasmParam> const& params = {});
 
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
-    std::string_view funcName = ESCROW_FUNCTION_NAME,
+    std::string_view funcName = escrowFunctionName,
     std::vector<WasmParam> const& params = {});
 
 }  // namespace xrpl

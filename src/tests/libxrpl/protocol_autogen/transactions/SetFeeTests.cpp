@@ -21,7 +21,7 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFee"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFee"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -37,8 +37,8 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
-    auto const extensionComputeLimitValue = canonical_UINT32();
-    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
     auto const gasPriceValue = canonical_UINT32();
 
     SetFeeBuilder builder{
@@ -56,8 +56,8 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     builder.setBaseFeeDrops(baseFeeDropsValue);
     builder.setReserveBaseDrops(reserveBaseDropsValue);
     builder.setReserveIncrementDrops(reserveIncrementDropsValue);
-    builder.setExtensionComputeLimit(extensionComputeLimitValue);
-    builder.setExtensionSizeLimit(extensionSizeLimitValue);
+    builder.setGasLimit(gasLimitValue);
+    builder.setBytecodeSizeLimit(bytecodeSizeLimitValue);
     builder.setGasPrice(gasPriceValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -141,19 +141,19 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = extensionComputeLimitValue;
-        auto const actualOpt = tx.getExtensionComputeLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionComputeLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfExtensionComputeLimit");
-        EXPECT_TRUE(tx.hasExtensionComputeLimit());
+        auto const& expected = gasLimitValue;
+        auto const actualOpt = tx.getGasLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGasLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfGasLimit");
+        EXPECT_TRUE(tx.hasGasLimit());
     }
 
     {
-        auto const& expected = extensionSizeLimitValue;
-        auto const actualOpt = tx.getExtensionSizeLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionSizeLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfExtensionSizeLimit");
-        EXPECT_TRUE(tx.hasExtensionSizeLimit());
+        auto const& expected = bytecodeSizeLimitValue;
+        auto const actualOpt = tx.getBytecodeSizeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBytecodeSizeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfBytecodeSizeLimit");
+        EXPECT_TRUE(tx.hasBytecodeSizeLimit());
     }
 
     {
@@ -172,7 +172,7 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFeeFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFeeFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -188,8 +188,8 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
-    auto const extensionComputeLimitValue = canonical_UINT32();
-    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasLimitValue = canonical_UINT32();
+    auto const bytecodeSizeLimitValue = canonical_UINT32();
     auto const gasPriceValue = canonical_UINT32();
 
     // Build an initial transaction
@@ -207,8 +207,8 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     initialBuilder.setBaseFeeDrops(baseFeeDropsValue);
     initialBuilder.setReserveBaseDrops(reserveBaseDropsValue);
     initialBuilder.setReserveIncrementDrops(reserveIncrementDropsValue);
-    initialBuilder.setExtensionComputeLimit(extensionComputeLimitValue);
-    initialBuilder.setExtensionSizeLimit(extensionSizeLimitValue);
+    initialBuilder.setGasLimit(gasLimitValue);
+    initialBuilder.setBytecodeSizeLimit(bytecodeSizeLimitValue);
     initialBuilder.setGasPrice(gasPriceValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -285,17 +285,17 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = extensionComputeLimitValue;
-        auto const actualOpt = rebuiltTx.getExtensionComputeLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionComputeLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfExtensionComputeLimit");
+        auto const& expected = gasLimitValue;
+        auto const actualOpt = rebuiltTx.getGasLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGasLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfGasLimit");
     }
 
     {
-        auto const& expected = extensionSizeLimitValue;
-        auto const actualOpt = rebuiltTx.getExtensionSizeLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionSizeLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfExtensionSizeLimit");
+        auto const& expected = bytecodeSizeLimitValue;
+        auto const actualOpt = rebuiltTx.getBytecodeSizeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBytecodeSizeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfBytecodeSizeLimit");
     }
 
     {
@@ -312,7 +312,7 @@ TEST(TransactionsSetFeeTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -326,7 +326,7 @@ TEST(TransactionsSetFeeTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -340,7 +340,7 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFeeNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFeeNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -376,10 +376,10 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getReserveBaseDrops().has_value());
     EXPECT_FALSE(tx.hasReserveIncrementDrops());
     EXPECT_FALSE(tx.getReserveIncrementDrops().has_value());
-    EXPECT_FALSE(tx.hasExtensionComputeLimit());
-    EXPECT_FALSE(tx.getExtensionComputeLimit().has_value());
-    EXPECT_FALSE(tx.hasExtensionSizeLimit());
-    EXPECT_FALSE(tx.getExtensionSizeLimit().has_value());
+    EXPECT_FALSE(tx.hasGasLimit());
+    EXPECT_FALSE(tx.getGasLimit().has_value());
+    EXPECT_FALSE(tx.hasBytecodeSizeLimit());
+    EXPECT_FALSE(tx.getBytecodeSizeLimit().has_value());
     EXPECT_FALSE(tx.hasGasPrice());
     EXPECT_FALSE(tx.getGasPrice().has_value());
 }

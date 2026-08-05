@@ -1,22 +1,33 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/apply.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-struct PseudoTx_test : public beast::unit_test::suite
+struct PseudoTx_test : public beast::unit_test::Suite
 {
     static std::vector<STTx>
     getPseudoTxs(Rules const& rules, std::uint32_t seq)
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(ttFEE, [&](auto& obj) {
+        res.emplace_back(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
@@ -34,17 +45,17 @@ struct PseudoTx_test : public beast::unit_test::suite
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj[sfExtensionComputeLimit] = 0;
-                obj[sfExtensionSizeLimit] = 0;
+                obj[sfGasLimit] = 0;
+                obj[sfBytecodeSizeLimit] = 0;
                 obj[sfGasPrice] = 0;
             }
-        }));
+        });
 
-        res.emplace_back(STTx(ttAMENDMENT, [&](auto& obj) {
+        res.emplace_back(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
             obj.setFieldH256(sfAmendment, uint256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
-        }));
+        });
 
         return res;
     }
@@ -54,12 +65,12 @@ struct PseudoTx_test : public beast::unit_test::suite
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); }));
+        res.emplace_back(ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); });
 
-        res.emplace_back(STTx(ttPAYMENT, [&](auto& obj) {
+        res.emplace_back(ttPAYMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID(2));
             obj.setAccountID(sfDestination, AccountID(3));
-        }));
+        });
 
         return res;
     }
@@ -77,7 +88,7 @@ struct PseudoTx_test : public beast::unit_test::suite
             BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
                 BEAST_EXPECT(!result.applied && result.ter == temINVALID);
                 return result.applied;
             });
@@ -99,7 +110,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testPrevented(all - featureXRPFees - featureSmartEscrow);
@@ -112,5 +123,4 @@ struct PseudoTx_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PseudoTx, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

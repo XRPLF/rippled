@@ -21,7 +21,7 @@ TEST(TransactionsContractUserDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractUserDelete"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testContractUserDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -30,21 +30,17 @@ TEST(TransactionsContractUserDeleteTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const contractAccountValue = canonical_ACCOUNT();
-    auto const functionNameValue = canonical_VL();
-    auto const parametersValue = canonical_ARRAY();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     ContractUserDeleteBuilder builder{
         accountValue,
         contractAccountValue,
-        functionNameValue,
-        computationAllowanceValue,
+        gasValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setParameters(parametersValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -68,26 +64,12 @@ TEST(TransactionsContractUserDeleteTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = functionNameValue;
-        auto const actual = tx.getFunctionName();
-        expectEqualField(expected, actual, "sfFunctionName");
-    }
-
-    {
-        auto const& expected = computationAllowanceValue;
-        auto const actual = tx.getComputationAllowance();
-        expectEqualField(expected, actual, "sfComputationAllowance");
+        auto const& expected = gasValue;
+        auto const actual = tx.getGas();
+        expectEqualField(expected, actual, "sfGas");
     }
 
     // Verify optional fields
-    {
-        auto const& expected = parametersValue;
-        auto const actualOpt = tx.getParameters();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfParameters should be present";
-        expectEqualField(expected, *actualOpt, "sfParameters");
-        EXPECT_TRUE(tx.hasParameters());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -96,7 +78,7 @@ TEST(TransactionsContractUserDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractUserDeleteFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testContractUserDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -105,21 +87,17 @@ TEST(TransactionsContractUserDeleteTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const contractAccountValue = canonical_ACCOUNT();
-    auto const functionNameValue = canonical_VL();
-    auto const parametersValue = canonical_ARRAY();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     // Build an initial transaction
     ContractUserDeleteBuilder initialBuilder{
         accountValue,
         contractAccountValue,
-        functionNameValue,
-        computationAllowanceValue,
+        gasValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setParameters(parametersValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -144,25 +122,12 @@ TEST(TransactionsContractUserDeleteTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = functionNameValue;
-        auto const actual = rebuiltTx.getFunctionName();
-        expectEqualField(expected, actual, "sfFunctionName");
-    }
-
-    {
-        auto const& expected = computationAllowanceValue;
-        auto const actual = rebuiltTx.getComputationAllowance();
-        expectEqualField(expected, actual, "sfComputationAllowance");
+        auto const& expected = gasValue;
+        auto const actual = rebuiltTx.getGas();
+        expectEqualField(expected, actual, "sfGas");
     }
 
     // Verify optional fields
-    {
-        auto const& expected = parametersValue;
-        auto const actualOpt = rebuiltTx.getParameters();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfParameters should be present";
-        expectEqualField(expected, *actualOpt, "sfParameters");
-    }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -170,7 +135,7 @@ TEST(TransactionsContractUserDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -184,7 +149,7 @@ TEST(TransactionsContractUserDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -193,39 +158,5 @@ TEST(TransactionsContractUserDeleteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(ContractUserDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsContractUserDeleteTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractUserDeleteNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-    auto const contractAccountValue = canonical_ACCOUNT();
-    auto const functionNameValue = canonical_VL();
-    auto const computationAllowanceValue = canonical_UINT32();
-
-    ContractUserDeleteBuilder builder{
-        accountValue,
-        contractAccountValue,
-        functionNameValue,
-        computationAllowanceValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasParameters());
-    EXPECT_FALSE(tx.getParameters().has_value());
-}
 
 }

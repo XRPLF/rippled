@@ -1,13 +1,24 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
 class LoanManage : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LoanManage(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -25,7 +36,8 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
@@ -36,7 +48,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
@@ -46,7 +59,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(
@@ -58,6 +72,17 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 //------------------------------------------------------------------------------

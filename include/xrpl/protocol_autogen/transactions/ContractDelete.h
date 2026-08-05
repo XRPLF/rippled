@@ -18,10 +18,10 @@ class ContractDeleteBuilder;
 /**
  * @brief Transaction: ContractDelete
  *
- * Type: ttCONTRACT_DELETE (87)
- * Delegable: Delegation::delegable
+ * Type: ttCONTRACT_DELETE (94)
+ * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
- * Privileges: mustDeleteAcct
+ * Privileges: MustDeleteAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ContractDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfContractAccount (soeREQUIRED)
+     * @brief Get sfContractAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for ContractDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ContractDeleteBuilder : public TransactionBuilderBase<ContractDeleteBuilder>
@@ -99,10 +99,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfContractAccount (soeREQUIRED)
+     * @brief Set sfContractAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractDeleteBuilder&

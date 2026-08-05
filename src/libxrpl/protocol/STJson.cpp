@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STJson.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
@@ -10,7 +12,6 @@
 #include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
-#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -683,25 +684,25 @@ STJson::add(Serializer& s) const
     s.addVL(inner.peekData().data(), inner.peekData().size());
 }
 
-Json::Value
+json::Value
 STJson::getJson(JsonOptions options) const
 {
     if (isArray())
     {
-        Json::Value arr(Json::arrayValue);
+        json::Value arr(json::ValueType::Array);
         auto const& array = std::get<Array>(data_);
         for (auto const& value : array)
         {
             if (value)
                 arr.append(value->getJson(options));
             else
-                arr.append(Json::nullValue);
+                arr.append(json::ValueType::Null);
         }
         return arr;
     }
     else  // isObject()
     {
-        Json::Value obj(Json::objectValue);
+        json::Value obj(json::ValueType::Object);
         auto const& map = std::get<Map>(data_);
         for (auto const& [key, value] : map)
         {
@@ -709,7 +710,7 @@ STJson::getJson(JsonOptions options) const
             if (value)
                 obj[hexKey] = value->getJson(options);
             else
-                obj[hexKey] = Json::nullValue;
+                obj[hexKey] = json::ValueType::Null;
         }
         return obj;
     }

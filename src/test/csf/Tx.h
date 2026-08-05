@@ -7,17 +7,19 @@
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
-//! A single transaction
+/**
+ * A single transaction
+ */
 class Tx
 {
 public:
@@ -27,12 +29,14 @@ public:
     {
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_same_v<T, Tx>>>
-    Tx(T const* t) : id_{t->id_}
+    template <typename T>
+    Tx(T const* t)
+        requires(std::is_same_v<T, Tx>)
+        : id_{t->id_}
     {
     }
 
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return id_;
@@ -54,21 +58,25 @@ private:
     ID id_;
 };
 
-//!-------------------------------------------------------------------------
-//! All sets of Tx are represented as a flat_set for performance.
+/**
+ * -------------------------------------------------------------------------
+ * All sets of Tx are represented as a flat_set for performance.
+ */
 using TxSetType = boost::container::flat_set<Tx>;
 
-//! TxSet is a set of transactions to consider including in the ledger
+/**
+ * TxSet is a set of transactions to consider including in the ledger
+ */
 class TxSet
 {
 public:
-    using ID = beast::uhash<>::result_type;
+    using ID = beast::Uhash<>::result_type;
     using Tx = csf::Tx;
 
     static ID
     calcID(TxSetType const& txs)
     {
-        return beast::uhash<>{}(txs);
+        return beast::Uhash<>{}(txs);
     }
 
     class MutableTxSet
@@ -96,7 +104,7 @@ public:
     };
 
     TxSet() = default;
-    TxSet(TxSetType const& s) : txs_{s}, id_{calcID(txs_)}
+    TxSet(TxSetType s) : txs_{std::move(s)}, id_{calcID(txs_)}
     {
     }
 
@@ -105,14 +113,14 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const txId) const
     {
         auto it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
-    Tx const*
+    [[nodiscard]] Tx const*
     find(Tx::ID const& txId) const
     {
         auto it = txs_.find(Tx{txId});
@@ -121,28 +129,29 @@ public:
         return nullptr;
     }
 
-    TxSetType const&
+    [[nodiscard]] TxSetType const&
     txs() const
     {
         return txs_;
     }
 
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return id_;
     }
 
-    /** @return Map of Tx::ID that are missing. True means
-                    it was in this set and not other. False means
-                    it was in the other set and not this
-    */
-    std::map<Tx::ID, bool>
+    /**
+     * @return Map of Tx::ID that are missing. True means
+     * it was in this set and not other. False means
+     * it was in the other set and not this
+     */
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {
         std::map<Tx::ID, bool> res;
 
-        auto populate_diffs = [&res](auto const& a, auto const& b, bool s) {
+        auto populateDiffs = [&res](auto const& a, auto const& b, bool s) {
             auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
                 a.begin(),
@@ -152,16 +161,20 @@ public:
                 boost::make_function_output_iterator(std::ref(populator)));
         };
 
-        populate_diffs(txs_, other.txs_, true);
-        populate_diffs(other.txs_, txs_, false);
+        populateDiffs(txs_, other.txs_, true);
+        populateDiffs(other.txs_, txs_, false);
         return res;
     }
 
 private:
-    //! The set contains the actual transactions
+    /**
+     * The set contains the actual transactions
+     */
     TxSetType txs_;
 
-    //! The unique ID of this tx set
+    /**
+     * The unique ID of this tx set
+     */
     ID id_{};
 };
 
@@ -179,13 +192,17 @@ inline std::ostream&
 operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
 {
     o << "{ ";
-    bool do_comma = false;
+    bool doComma = false;
     for (auto const& t : ts)
     {
-        if (do_comma)
+        if (doComma)
+        {
             o << ", ";
+        }
         else
-            do_comma = true;
+        {
+            doComma = true;
+        }
         o << t;
     }
     o << " }";
@@ -208,6 +225,4 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

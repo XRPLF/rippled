@@ -3,11 +3,14 @@
 #include <xrpld/peerfinder/detail/Source.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
-/** Provides addresses from a static set of strings. */
+/**
+ * Provides addresses from a static set of strings.
+ */
 class SourceStrings : public Source
 {
 public:
@@ -16,8 +19,7 @@ public:
     using Strings = std::vector<std::string>;
 
     static std::shared_ptr<Source>
-    New(std::string const& name, Strings const& strings);
+    make(std::string const& name, Strings const& strings);
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

@@ -27,7 +27,7 @@
 
 namespace xrpl {
 
-struct STJson_test : public beast::unit_test::suite
+struct STJson_test : public beast::unit_test::Suite
 {
     void
     testDefaultConstructor()
@@ -472,7 +472,7 @@ struct STJson_test : public beast::unit_test::suite
         json.setObjectField("bar", nullptr);  // test null value
         json.setNestedObjectField("meta", "version", std::make_shared<STUInt32>(sfNetworkID, 2));
 
-        Json::Value jv = json.getJson(JsonOptions::none);
+        json::Value jv = json.getJson(JsonOptions::Values::None);
         BEAST_EXPECT(jv.isObject());
         BEAST_EXPECT(jv[strHex(std::string{"foo"})].asUInt() == 65535);
         BEAST_EXPECT(jv[strHex(std::string{"bar"})].isNull());
@@ -488,12 +488,12 @@ struct STJson_test : public beast::unit_test::suite
         json.pushArrayElement(std::make_shared<STUInt32>(sfNetworkID, 200));
         json.pushArrayElement(nullptr);  // null element
 
-        Json::Value jv = json.getJson(JsonOptions::none);
+        json::Value jv = json.getJson(JsonOptions::Values::None);
         BEAST_EXPECT(jv.isArray());
         BEAST_EXPECT(jv.size() == 3);
-        BEAST_EXPECT(jv[Json::UInt(0)].asUInt() == 100);
-        BEAST_EXPECT(jv[Json::UInt(1)].asUInt() == 200);
-        BEAST_EXPECT(jv[Json::UInt(2)].isNull());
+        BEAST_EXPECT(jv[json::UInt(0)].asUInt() == 100);
+        BEAST_EXPECT(jv[json::UInt(1)].asUInt() == 200);
+        BEAST_EXPECT(jv[json::UInt(2)].isNull());
     }
 
     void
@@ -642,7 +642,7 @@ struct STJson_test : public beast::unit_test::suite
             auto amount = parsed->getObjectField("amount");
             auto parsedAmt = std::dynamic_pointer_cast<STAmount>(*amount);
             BEAST_EXPECT(parsedAmt->mantissa() == 123456789u);
-            BEAST_EXPECT(parsedAmt->issue() == xrp.issue());
+            BEAST_EXPECT(parsedAmt->asset() == xrp.asset());
         }
 
         // STI_VL (STBlob)

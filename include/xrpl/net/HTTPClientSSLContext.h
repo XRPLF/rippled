@@ -10,6 +10,13 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
+#include <openssl/err.h>
+#include <openssl/tls1.h>
+
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 namespace xrpl {
 
 class HTTPClientSSLContext
@@ -21,40 +28,44 @@ public:
         bool sslVerify,
         beast::Journal j,
         boost::asio::ssl::context_base::method method = boost::asio::ssl::context::sslv23)
-        : ssl_context_{method}, j_(j), verify_{sslVerify}
+        : sslContext_{method}, j_(j), verify_{sslVerify}
     {
         boost::system::error_code ec;
 
         if (sslVerifyFile.empty())
         {
-            registerSSLCerts(ssl_context_, ec, j_);
+            registerSSLCerts(sslContext_, ec, j_);
 
             if (ec && sslVerifyDir.empty())
+            {
                 Throw<std::runtime_error>(boost::str(
                     boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+            }
         }
         else
         {
-            ssl_context_.load_verify_file(sslVerifyFile);
+            sslContext_.load_verify_file(sslVerifyFile);
         }
 
         if (!sslVerifyDir.empty())
         {
-            ssl_context_.add_verify_path(sslVerifyDir, ec);
+            sslContext_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
+            {
                 Throw<std::runtime_error>(
                     boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+            }
         }
     }
 
     boost::asio::ssl::context&
     context()
     {
-        return ssl_context_;
+        return sslContext_;
     }
 
-    bool
+    [[nodiscard]] bool
     sslVerify() const
     {
         return verify_;
@@ -72,13 +83,12 @@ public:
      *
      * @return error_code indicating failures, if any
      */
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
+    template <class T>
     boost::system::error_code
     preConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
@@ -92,11 +102,7 @@ public:
         return ec;
     }
 
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
+    template <class T>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.
@@ -106,6 +112,9 @@ public:
      */
     boost::system::error_code
     postConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
 
@@ -115,8 +124,9 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    std::bind(
-                        &rfc6125_verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                    [host, j = j_](bool preverified, boost::asio::ssl::verify_context& ctx) {
+                        return rfc6125Verify(host, preverified, ctx, j);
+                    },
                     ec);
             }
         }
@@ -134,7 +144,7 @@ public:
      * @param j journal for logging
      */
     static bool
-    rfc6125_verify(
+    rfc6125Verify(
         std::string const& domain,
         bool preverified,
         boost::asio::ssl::verify_context& ctx,
@@ -149,7 +159,7 @@ public:
     }
 
 private:
-    boost::asio::ssl::context ssl_context_;
+    boost::asio::ssl::context sslContext_;
     beast::Journal const j_;
     bool const verify_;
 };

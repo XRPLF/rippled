@@ -14,5 +14,5 @@
     i32.eq
   )
 
-  (export "finish" (func $test_saturation))
+  (export "escrow_finish" (func $test_saturation))
 )

@@ -1,51 +1,62 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** Describes how an account was found in a path, and how to find the next set
-of paths. "Outgoing" is defined as the source account, or an account found via a
-trustline that has rippling enabled on the account's side.
-"Incoming" is defined as an account found via a trustline that has rippling
-disabled on the account's side. Any trust lines for an incoming account that
-have rippling disabled are unusable in paths.
-*/
-enum class LineDirection : bool { incoming = false, outgoing = true };
+/**
+ * Describes how an account was found in a path, and how to find the next set
+ * of paths. "Outgoing" is defined as the source account, or an account found via a
+ * trustline that has rippling enabled on the account's side.
+ * "Incoming" is defined as an account found via a trustline that has rippling
+ * disabled on the account's side. Any trust lines for an incoming account that
+ * have rippling disabled are unusable in paths.
+ */
+enum class LineDirection : bool { Incoming = false, Outgoing = true };
 
-/** Wraps a trust line SLE for convenience.
-    The complication of trust lines is that there is a
-    "low" account and a "high" account. This wraps the
-    SLE and expresses its data from the perspective of
-    a chosen account on the line.
-
-    This wrapper is primarily used in the path finder and there can easily be
-    tens of millions of instances of this class. When modifying this class think
-    carefully about the memory implications.
-*/
+/**
+ * Wraps a trust line SLE for convenience.
+ * The complication of trust lines is that there is a
+ * "low" account and a "high" account. This wraps the
+ * SLE and expresses its data from the perspective of
+ * a chosen account on the line.
+ *
+ * This wrapper is primarily used in the path finder and there can easily be
+ * tens of millions of instances of this class. When modifying this class think
+ * carefully about the memory implications.
+ */
 class TrustLineBase
 {
+public:
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
+
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
-    TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
+    TrustLineBase(SLE::const_ref sle, AccountID const& viewAccount);
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
-    TrustLineBase&
-    operator=(TrustLineBase const&) = delete;
     TrustLineBase(TrustLineBase&&) = default;
 
 public:
-    /** Returns the state map key for the ledger entry. */
-    uint256 const&
+    /**
+     * Returns the state map key for the ledger entry.
+     */
+    [[nodiscard]] uint256 const&
     key() const
     {
         return key_;
@@ -53,115 +64,123 @@ public:
 
     // VFALCO Take off the "get" from each function name
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountID() const
     {
-        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return !viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     // True, Provided auth to peer.
-    bool
+    [[nodiscard]] bool
     getAuth() const
     {
-        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (flags_ & (viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getAuthPeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (flags_ & (!viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipple() const
     {
-        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (flags_ & (viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipplePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (flags_ & (!viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirection() const
     {
-        return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipple() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
-        return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
-    /** Have we set the freeze flag on our peer */
-    bool
+    /**
+     * Have we set the freeze flag on our peer
+     */
+    [[nodiscard]] bool
     getFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
-    /** Have we set the deep freeze flag on our peer */
-    bool
+    /**
+     * Have we set the deep freeze flag on our peer
+     */
+    [[nodiscard]] bool
     getDeepFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
-    /** Has the peer set the freeze flag on us */
-    bool
+    /**
+     * Has the peer set the freeze flag on us
+     */
+    [[nodiscard]] bool
     getFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
-    /** Has the peer set the deep freeze flag on us */
-    bool
+    /**
+     * Has the peer set the deep freeze flag on us
+     */
+    [[nodiscard]] bool
     getDeepFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (flags_ & (!viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getBalance() const
     {
-        return mBalance;
+        return balance_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimit() const
     {
-        return mViewLowest ? mLowLimit : mHighLimit;
+        return viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
-        return !mViewLowest ? mLowLimit : mHighLimit;
+        return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    Json::Value
+    json::Value
     getJson(int);
 
 protected:
     uint256 key_;
 
-    STAmount const mLowLimit;
-    STAmount const mHighLimit;
+    STAmount const lowLimit_;
+    STAmount const highLimit_;
 
-    STAmount mBalance;
+    STAmount balance_;
 
-    std::uint32_t mFlags;
+    std::uint32_t flags_;
 
-    bool mViewLowest;
+    bool viewLowest_;
 };
 
 // This wrapper is used for the path finder
@@ -173,7 +192,7 @@ public:
     PathFindTrustLine() = delete;
 
     static std::optional<PathFindTrustLine>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+    makeItem(AccountID const& accountID, SLE::const_ref sle);
 
     static std::vector<PathFindTrustLine>
     getItems(AccountID const& accountID, ReadView const& view, LineDirection direction);
@@ -188,22 +207,22 @@ class RPCTrustLine final : public TrustLineBase, public CountedObject<RPCTrustLi
 public:
     RPCTrustLine() = delete;
 
-    RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
+    RPCTrustLine(SLE::const_ref sle, AccountID const& viewAccount);
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityIn() const
     {
-        return mViewLowest ? lowQualityIn_ : highQualityIn_;
+        return viewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityOut() const
     {
-        return mViewLowest ? lowQualityOut_ : highQualityOut_;
+        return viewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 
     static std::optional<RPCTrustLine>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+    makeItem(AccountID const& accountID, SLE::const_ref sle);
 
     static std::vector<RPCTrustLine>
     getItems(AccountID const& accountID, ReadView const& view);

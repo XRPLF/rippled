@@ -1,26 +1,40 @@
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-#include <type_traits>
-#include <variant>
+#include <cstdint>
+#include <optional>
+#include <set>
 
 namespace xrpl {
 
@@ -44,19 +58,45 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth)
+    std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
-    if (depth >= maxAssetCheckDepth)
-        return true;  // LCOV_EXCL_LINE
+    if (depth >= kMaxAssetCheckDepth)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
+    auto const mptIssuance = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying.
+    // Read it to derive the underlying asset and recurse, skipping the
+    // issuer-account-then-vault chain. Pre-amendment shares (no field)
+    // fall back to the chain lookup below.
+    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    {
+        auto const sleHolding =
+            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+        return isAnyFrozen(
+            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+    }
+
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {
@@ -84,11 +124,10 @@ bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2)
+    Asset const& asset,
+    Asset const& asset2)
 {
-    return isFrozen(view, account, asset.currency, asset.account) ||
-        isFrozen(view, account, asset2.currency, asset2.account);
+    return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
 bool
@@ -293,11 +332,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -334,22 +369,19 @@ withdrawToDestExceedsLimit(
     if (from == to || to == issuer || isXRP(issuer))
         return tesSUCCESS;
 
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            if constexpr (std::is_same_v<TIss, Issue>)
+    return amount.asset().visit(
+        [&](Issue const& issue) -> TER {
+            auto const& currency = issue.currency;
+            auto const owed = creditBalance(view, to, issuer, currency);
+            if (owed <= beast::kZero)
             {
-                auto const& currency = issue.currency;
-                auto const owed = creditBalance(view, to, issuer, currency);
-                if (owed <= beast::zero)
-                {
-                    auto const limit = creditLimit(view, to, issuer, currency);
-                    if (-owed >= limit || amount > (limit + owed))
-                        return tecNO_LINE;
-                }
+                auto const limit = creditLimit(view, to, issuer, currency);
+                if (-owed >= limit || amount > (limit + owed))
+                    return tecNO_LINE;
             }
             return tesSUCCESS;
         },
-        amount.asset().value());
+        [](MPTIssue const&) -> TER { return tesSUCCESS; });
 }
 
 [[nodiscard]] TER
@@ -400,8 +432,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
 
 TER
 doWithdraw(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -409,27 +440,28 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
+    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
     else
     {
-        auto dstSle = view.read(keylet::account(dstAcct));
-        if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
+        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
 
     // Sanity check
     if (accountHolds(
-            view,
+            ctx.view,
             sourceAcct,
             amount.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j) < amount)
     {
         // LCOV_EXCL_START
@@ -438,9 +470,18 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
+    // A reserve sponsor only covers tx.Account's own objects, so resolve the
+    // sponsor against the destination. accountSend can auto-create a holding
+    // for dstAcct; keying on the destination ensures a third-party destination's
+    // holding is never stamped with the tx's reserve sponsor.
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
+    return accountSend(
+        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 static TER
@@ -481,7 +522,8 @@ canTransferIOU(
         return tecNO_PERMISSION;
 
     // If the sender does not have a trustline to the issuer
-    auto const sleRippleState = view.read(keylet::line(sender, issuer, amount.getCurrency()));
+    auto const sleRippleState =
+        view.read(keylet::trustLine(sender, issuer, amount.get<Issue>().currency));
 
     if (!sleRippleState)
         return tecNO_LINE;
@@ -489,11 +531,11 @@ canTransferIOU(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than sender
-    if (balance > beast::zero && issuer < sender)
+    if (balance > beast::kZero && issuer < sender)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If balance is negative, issuer must have lower address than sender
-    if (balance < beast::zero && issuer > sender)
+    if (balance < beast::kZero && issuer > sender)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // // If the account trustline has no-ripple set for the issuer
@@ -510,7 +552,7 @@ canTransferIOU(
     if (authHandling == SendAuthHandling::ahCHECK_SENDER ||
         authHandling == SendAuthHandling::ahBOTH)
     {
-        if (auto const ter = requireAuth(view, amount.issue(), sender); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view, amount.asset(), sender); ter != tesSUCCESS)
             return ter;
     }
 
@@ -518,20 +560,20 @@ canTransferIOU(
     if (authHandling == SendAuthHandling::ahCHECK_RECEIVER ||
         authHandling == SendAuthHandling::ahBOTH)
     {
-        if (auto const ter = requireAuth(view, amount.issue(), receiver); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view, amount.asset(), receiver); ter != tesSUCCESS)
             return ter;
     }
 
     // If the issuer has frozen the sender
     if ((freezeHandling == SendFreezeHandling::fhCHECK_SENDER ||
          freezeHandling == SendFreezeHandling::fhBOTH) &&
-        isFrozen(view, sender, amount.issue()))
+        isFrozen(view, sender, amount.asset()))
         return tecFROZEN;
 
     // If the issuer has frozen the receiver
     if ((freezeHandling == SendFreezeHandling::fhCHECK_RECEIVER ||
          freezeHandling == SendFreezeHandling::fhBOTH) &&
-        isFrozen(view, receiver, amount.issue()))
+        isFrozen(view, receiver, amount.asset()))
         return tecFROZEN;
 
     if (balanceHandling == SendBalanceHandling::bhIGNORE)
@@ -541,12 +583,11 @@ canTransferIOU(
         view,
         sender,
         amount.get<Issue>(),
-        fhIGNORE_FREEZE,  // already checked freeze above
-        ahIGNORE_AUTH,    // already checked auth above
+        FreezeHandling::IgnoreFreeze,  // already checked freeze above
         j);
 
     // If the balance is less than or equal to 0
-    if (spendableAmount <= beast::zero)
+    if (spendableAmount <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount
@@ -584,7 +625,7 @@ canTransferMPT(
         return tecNO_PERMISSION;
 
     // If the mpt does not exist
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -647,12 +688,12 @@ canTransferMPT(
         view,
         sender,
         amount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,  // already checked freeze above
-        ahIGNORE_AUTH,    // already checked auth above
+        FreezeHandling::IgnoreFreeze,  // already checked freeze above
+        AuthHandling::IgnoreAuth,      // already checked auth above
         j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::zero)
+    if (spendableAmount <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount, return
@@ -717,9 +758,9 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    std::shared_ptr<SLE> sleDirNode{};
+    SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&
@@ -743,7 +784,7 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safe_cast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
 
             // Deleter handles the details of specific account-owned object
             // deletion

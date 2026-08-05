@@ -1,9 +1,11 @@
+#include <xrpl/tx/transactors/contract/ContractModify.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/contract/ContractModify.h>
 
 namespace xrpl {
 
@@ -19,14 +21,14 @@ ContractModify::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (createFee > maxAmount - view.fees().increment)
     {
         JLOG(debugLog().trace()) << "ContractModify: Create fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kInitialXrp};
     }
 
     auto baseFee = Transactor::calculateBaseFee(view, tx);
     if (baseFee > maxAmount - createFee)
     {
         JLOG(debugLog().trace()) << "ContractModify: Total fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kInitialXrp};
     }
 
     return createFee + baseFee;
@@ -159,7 +161,7 @@ ContractModify::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        contractHash = xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
 
@@ -254,7 +256,7 @@ ContractModify::doApply()
         JLOG(ctx_.journal.trace()) << "ContractModify: Modifying ContractCode/ContractHash.";
         xrpl::Blob wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
         auto const contractHash =
-            xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+            xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         auto const sourceKeylet = keylet::contractSource(contractHash);
         auto sourceSle = ctx_.view().peek(sourceKeylet);
         if (!sourceSle)
@@ -347,6 +349,24 @@ ContractModify::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+ContractModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+ContractModify::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

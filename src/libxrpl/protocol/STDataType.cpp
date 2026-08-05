@@ -1,10 +1,11 @@
+#include <xrpl/protocol/STDataType.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBlob.h>
-#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
 
@@ -138,20 +139,20 @@ STDataType::getText() const
     return "STDataType{InnerType: " + inner_type_str + "}";
 }
 
-Json::Value
+json::Value
 STDataType::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
     ret[jss::type] = getInnerTypeString();
     return ret;
 }
 
 STDataType
-dataTypeFromJson(SField const& field, Json::Value const& v)
+dataTypeFromJson(SField const& field, json::Value const& v)
 {
     SerializedTypeID typeId = STI_NOTPRESENT;
-    Json::Value type;
-    Json::Value const value;
+    json::Value type;
+    json::Value const value;
 
     if (!v.isObject())
     {

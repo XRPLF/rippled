@@ -79,7 +79,7 @@ public:
     add(Serializer& s) const override;
 
     // JSON representation
-    Json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
     bool

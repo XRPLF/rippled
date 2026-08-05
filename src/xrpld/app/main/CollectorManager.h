@@ -1,11 +1,18 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Group.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
-/** Provides the beast::insight::Collector service. */
+/**
+ * Provides the beast::insight::Collector service.
+ */
 class CollectorManager
 {
 public:
@@ -19,6 +26,6 @@ public:
 };
 
 std::unique_ptr<CollectorManager>
-make_CollectorManager(Section const& params, beast::Journal journal);
+makeCollectorManager(Section const& params, beast::Journal journal);
 
 }  // namespace xrpl

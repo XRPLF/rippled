@@ -21,7 +21,7 @@ TEST(TransactionsContractCallTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractCall"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testContractCall"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -32,13 +32,13 @@ TEST(TransactionsContractCallTests, BuilderSettersRoundTrip)
     auto const contractAccountValue = canonical_ACCOUNT();
     auto const functionNameValue = canonical_VL();
     auto const parametersValue = canonical_ARRAY();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     ContractCallBuilder builder{
         accountValue,
         contractAccountValue,
         functionNameValue,
-        computationAllowanceValue,
+        gasValue,
         sequenceValue,
         feeValue
     };
@@ -74,9 +74,9 @@ TEST(TransactionsContractCallTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = computationAllowanceValue;
-        auto const actual = tx.getComputationAllowance();
-        expectEqualField(expected, actual, "sfComputationAllowance");
+        auto const& expected = gasValue;
+        auto const actual = tx.getGas();
+        expectEqualField(expected, actual, "sfGas");
     }
 
     // Verify optional fields
@@ -96,7 +96,7 @@ TEST(TransactionsContractCallTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractCallFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testContractCallFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,14 +107,14 @@ TEST(TransactionsContractCallTests, BuilderFromStTxRoundTrip)
     auto const contractAccountValue = canonical_ACCOUNT();
     auto const functionNameValue = canonical_VL();
     auto const parametersValue = canonical_ARRAY();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     // Build an initial transaction
     ContractCallBuilder initialBuilder{
         accountValue,
         contractAccountValue,
         functionNameValue,
-        computationAllowanceValue,
+        gasValue,
         sequenceValue,
         feeValue
     };
@@ -150,9 +150,9 @@ TEST(TransactionsContractCallTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = computationAllowanceValue;
-        auto const actual = rebuiltTx.getComputationAllowance();
-        expectEqualField(expected, actual, "sfComputationAllowance");
+        auto const& expected = gasValue;
+        auto const actual = rebuiltTx.getGas();
+        expectEqualField(expected, actual, "sfGas");
     }
 
     // Verify optional fields
@@ -170,7 +170,7 @@ TEST(TransactionsContractCallTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -184,7 +184,7 @@ TEST(TransactionsContractCallTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -198,7 +198,7 @@ TEST(TransactionsContractCallTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testContractCallNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testContractCallNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -208,13 +208,13 @@ TEST(TransactionsContractCallTests, OptionalFieldsReturnNullopt)
     // Transaction-specific required field values
     auto const contractAccountValue = canonical_ACCOUNT();
     auto const functionNameValue = canonical_VL();
-    auto const computationAllowanceValue = canonical_UINT32();
+    auto const gasValue = canonical_UINT32();
 
     ContractCallBuilder builder{
         accountValue,
         contractAccountValue,
         functionNameValue,
-        computationAllowanceValue,
+        gasValue,
         sequenceValue,
         feeValue
     };

@@ -1,29 +1,42 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
+#include <chrono>
+#include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace xrpl {
 
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
-class RippleLineCache;
+class AssetCache;
 class PathRequestManager;
 
 // Return values from parseJson <0 = invalid, >0 = valid
-#define PFR_PJ_INVALID -1
+#define PFR_PJ_INVALID (-1)
 #define PFR_PJ_NOCHANGE 0
 
 class PathRequest final : public InfoSubRequest,
@@ -50,13 +63,13 @@ public:
     // Completion function is called after path update is complete
     PathRequest(
         Application& app,
-        std::function<void(void)> const& completion,
+        std::function<void(void)> completion,
         Resource::Consumer& consumer,
         int id,
         PathRequestManager&,
         beast::Journal journal);
 
-    ~PathRequest();
+    ~PathRequest() override;
 
     bool
     isNew();
@@ -67,20 +80,20 @@ public:
     void
     updateComplete();
 
-    std::pair<bool, Json::Value>
-    doCreate(std::shared_ptr<RippleLineCache> const&, Json::Value const&);
+    std::pair<bool, json::Value>
+    doCreate(std::shared_ptr<AssetCache> const&, json::Value const&);
 
-    Json::Value
+    json::Value
     doClose() override;
-    Json::Value
-    doStatus(Json::Value const&) override;
+    json::Value
+    doStatus(json::Value const&) override;
     void
     doAborting() const;
 
     // update jvStatus
-    Json::Value
+    json::Value
     doUpdate(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<AssetCache> const&,
         bool fast,
         std::function<bool(void)> const& continueCallback = {});
     InfoSub::pointer
@@ -90,71 +103,72 @@ public:
 
 private:
     bool
-    isValid(std::shared_ptr<RippleLineCache> const& crCache);
+    isValid(std::shared_ptr<AssetCache> const& crCache);
 
     std::unique_ptr<Pathfinder> const&
     getPathFinder(
-        std::shared_ptr<RippleLineCache> const&,
-        hash_map<Currency, std::unique_ptr<Pathfinder>>&,
-        Currency const&,
+        std::shared_ptr<AssetCache> const&,
+        hash_map<PathAsset, std::unique_ptr<Pathfinder>>&,
+        PathAsset const&,
         STAmount const&,
         int const,
         std::function<bool(void)> const&);
 
-    /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are invalid.
-    */
+    /**
+     * Finds and sets a PathSet in the JSON argument.
+     * Returns false if the source currencies are invalid.
+     */
     bool
     findPaths(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<AssetCache> const&,
         int const,
-        Json::Value&,
+        json::Value&,
         std::function<bool(void)> const&);
 
     int
-    parseJson(Json::Value const&);
+    parseJson(json::Value const&);
 
     Application& app_;
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
-    PathRequestManager& mOwner;
+    PathRequestManager& owner_;
 
-    std::weak_ptr<InfoSub> wpSubscriber;  // Who this request came from
-    std::function<void(void)> fCompletion;
+    std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
+    std::function<void(void)> fCompletion_;
     Resource::Consumer& consumer_;  // Charge according to source currencies
 
-    Json::Value jvId;
-    Json::Value jvStatus;  // Last result
+    json::Value jvId_;
+    json::Value jvStatus_;  // Last result
 
     // Client request parameters
-    std::optional<AccountID> raSrcAccount;
-    std::optional<AccountID> raDstAccount;
-    STAmount saDstAmount;
-    std::optional<STAmount> saSendMax;
+    std::optional<AccountID> raSrcAccount_;
+    std::optional<AccountID> raDstAccount_;
+    STAmount saDstAmount_;
+    std::optional<STAmount> saSendMax_;
 
-    std::set<Issue> sciSourceCurrencies;
-    std::map<Issue, STPathSet> mContext;
+    std::set<Asset> sciSourceAssets_;
+    std::map<Asset, STPathSet> context_;
 
-    std::optional<uint256> domain;
+    std::optional<uint256> domain_;
 
-    bool convert_all_{};
+    bool convertAll_{};
 
-    std::recursive_mutex mIndexLock;
-    LedgerIndex mLastIndex;
-    bool mInProgress;
+    std::recursive_mutex indexLock_;
+    LedgerIndex lastIndex_;
+    bool inProgress_;
 
-    int iLevel;
-    bool bLastSuccess;
+    int iLevel_;
+    bool bLastSuccess_;
 
-    int const iIdentifier;
+    int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
-    std::chrono::steady_clock::time_point quick_reply_;
-    std::chrono::steady_clock::time_point full_reply_;
+    std::chrono::steady_clock::time_point quickReply_;
+    std::chrono::steady_clock::time_point fullReply_;
 
-    static unsigned int const max_paths_ = 4;
+    static unsigned int const kMaxPaths = 4;
 };
 
 }  // namespace xrpl

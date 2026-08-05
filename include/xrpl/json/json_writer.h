@@ -3,40 +3,41 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
+#include <cstddef>
 #include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
-namespace Json {
+namespace json {
 
 class Value;
 
-/** \brief Abstract class for writers.
+/**
+ * @brief Abstract class for writers.
  */
 class WriterBase
 {
 public:
-    virtual ~WriterBase()
-    {
-    }
+    virtual ~WriterBase() = default;
     virtual std::string
     write(Value const& root) = 0;
 };
 
-/** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
+/**
+ * @brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
  * without formatting (not human friendly).
  *
  * The JSON document is written in a single line. It is not intended for 'human'
  * consumption, but may be useful to support feature such as RPC where bandwidth
- * is limited. \sa Reader, Value
+ * is limited. @see Reader, Value
  */
 
 class FastWriter : public WriterBase
 {
 public:
     FastWriter() = default;
-    virtual ~FastWriter()
-    {
-    }
+    ~FastWriter() override = default;
 
 public:  // overridden from Writer
     std::string
@@ -49,7 +50,8 @@ private:
     std::string document_;
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+/**
+ * @brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
  * human friendly way.
  *
  * The rules for line break and indent are as follow:
@@ -65,19 +67,18 @@ private:
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * \sa Reader, Value
+ * @see Reader, Value
  */
 class StyledWriter : public WriterBase
 {
 public:
     StyledWriter();
-    virtual ~StyledWriter()
-    {
-    }
+    ~StyledWriter() override = default;
 
 public:  // overridden from Writer
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
-     * format. \param root Value to serialize. \return String containing the
+    /**
+     * @brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. @param root Value to serialize. @return String containing the
      * JSON document that represents the root value.
      */
     std::string
@@ -111,40 +112,40 @@ private:
     bool addChildValues_{};
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
- human friendly way, to a stream rather than to a string.
+/**
+ * @brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+ * human friendly way, to a stream rather than to a string.
  *
  * The rules for line break and indent are as follow:
  * - Object value:
  *     - if empty then print {} without indent and line break
  *     - if not empty the print '{', line break & indent, print one value per
- line
+ * line
  *       and then unindent and line break and print '}'.
  * - Array value:
  *     - if empty then print [] without indent and line break
  *     - if the array contains no object value, empty array or some other value
- types,
+ * types,
  *       and all the values fit on one lines, then print the array on a single
- line.
+ * line.
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * \param indentation Each level will be indented by this amount extra.
- * \sa Reader, Value
+ * @param indentation Each level will be indented by this amount extra.
+ * @see Reader, Value
  */
 class StyledStreamWriter
 {
 public:
     StyledStreamWriter(std::string indentation = "\t");
-    ~StyledStreamWriter()
-    {
-    }
+    ~StyledStreamWriter() = default;
 
 public:
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
-     * format. \param out Stream to write to. (Can be ostringstream, e.g.)
-     * \param root Value to serialize.
-     * \note There is no point in deriving from Writer, since write() should not
+    /**
+     * @brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. @param out Stream to write to. (Can be ostringstream, e.g.)
+     * @param root Value to serialize.
+     * @note There is no point in deriving from Writer, since write() should not
      * return a value.
      */
     void
@@ -189,8 +190,10 @@ valueToString(bool value);
 std::string
 valueToQuotedString(char const* value);
 
-/// \brief Output using the StyledStreamWriter.
-/// \see Json::operator>>()
+/**
+ * @brief Output using the StyledStreamWriter.
+ * @see json::operator>>()
+ */
 std::ostream&
 operator<<(std::ostream&, Value const& root);
 
@@ -201,55 +204,55 @@ namespace detail {
 
 template <class Write>
 void
-write_string(Write const& write, std::string const& s)
+writeString(Write const& write, std::string const& s)
 {
     write(s.data(), s.size());
 }
 
 template <class Write>
 void
-write_value(Write const& write, Value const& value)
+writeValue(Write const& write, Value const& value)
 {
     switch (value.type())
     {
-        case nullValue:
+        case ValueType::Null:
             write("null", 4);
             break;
 
-        case intValue:
-            write_string(write, valueToString(value.asInt()));
+        case ValueType::Int:
+            writeString(write, valueToString(value.asInt()));
             break;
 
-        case uintValue:
-            write_string(write, valueToString(value.asUInt()));
+        case ValueType::UInt:
+            writeString(write, valueToString(value.asUInt()));
             break;
 
-        case realValue:
-            write_string(write, valueToString(value.asDouble()));
+        case ValueType::Real:
+            writeString(write, valueToString(value.asDouble()));
             break;
 
-        case stringValue:
-            write_string(write, valueToQuotedString(value.asCString()));
+        case ValueType::String:
+            writeString(write, valueToQuotedString(value.asCString()));
             break;
 
-        case booleanValue:
-            write_string(write, valueToString(value.asBool()));
+        case ValueType::Boolean:
+            writeString(write, valueToString(value.asBool()));
             break;
 
-        case arrayValue: {
+        case ValueType::Array: {
             write("[", 1);
             int const size = value.size();
             for (int index = 0; index < size; ++index)
             {
                 if (index > 0)
                     write(",", 1);
-                write_value(write, value[index]);
+                writeValue(write, value[index]);
             }
             write("]", 1);
             break;
         }
 
-        case objectValue: {
+        case ValueType::Object: {
             Value::Members const members = value.getMemberNames();
             write("{", 1);
             for (auto it = members.begin(); it != members.end(); ++it)
@@ -258,9 +261,9 @@ write_value(Write const& write, Value const& value)
                 if (it != members.begin())
                     write(",", 1);
 
-                write_string(write, valueToQuotedString(name.c_str()));
+                writeString(write, valueToQuotedString(name.c_str()));
                 write(":", 1);
-                write_value(write, value[name]);
+                writeValue(write, value[name]);
             }
             write("}", 1);
             break;
@@ -270,55 +273,58 @@ write_value(Write const& write, Value const& value)
 
 }  // namespace detail
 
-/** Stream compact JSON to the specified function.
-
-    @param jv The Json::Value to write
-    @param write Invocable with signature void(void const*, std::size_t) that
-                 is called when output should be written to the stream.
-*/
+/**
+ * Stream compact JSON to the specified function.
+ *
+ * @param jv The json::Value to write
+ * @param write Invocable with signature void(void const*, std::size_t) that
+ *              is called when output should be written to the stream.
+ */
 template <class Write>
 void
-stream(Json::Value const& jv, Write const& write)
+stream(json::Value const& jv, Write const& write)
 {
-    detail::write_value(write, jv);
+    detail::writeValue(write, jv);
     write("\n", 1);
 }
 
-/** Decorator for streaming out compact json
-
-    Use
-
-        Json::Value jv;
-        out << Json::Compact{jv}
-
-    to write a single-line, compact version of `jv` to the stream, rather
-    than the styled format that comes from undecorated streaming.
-*/
+/**
+ * Decorator for streaming out compact json
+ *
+ * Use
+ *
+ *     json::Value jv;
+ *     out << json::Compact{jv}
+ *
+ * to write a single-line, compact version of `jv` to the stream, rather
+ * than the styled format that comes from undecorated streaming.
+ */
 class Compact
 {
-    Json::Value jv_;
+    json::Value jv_;
 
 public:
-    /** Wrap a Json::Value for compact streaming
-
-        @param jv The Json::Value to stream
-
-        @note For now, we do not support wrapping lvalues to avoid
-              potentially costly copies. If we find a need, we can consider
-              adding support for compact lvalue streaming in the future.
-    */
-    Compact(Json::Value&& jv) : jv_{std::move(jv)}
+    /**
+     * Wrap a json::Value for compact streaming
+     *
+     * @param jv The json::Value to stream
+     *
+     * @note For now, we do not support wrapping lvalues to avoid
+     *       potentially costly copies. If we find a need, we can consider
+     *       adding support for compact lvalue streaming in the future.
+     */
+    Compact(json::Value&& jv) : jv_{std::move(jv)}
     {
     }
 
     friend std::ostream&
     operator<<(std::ostream& o, Compact const& cJv)
     {
-        detail::write_value(
+        detail::writeValue(
             [&o](void const* data, std::size_t n) { o.write(static_cast<char const*>(data), n); },
             cJv.jv_);
         return o;
     }
 };
 
-}  // namespace Json
+}  // namespace json

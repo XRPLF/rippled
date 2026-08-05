@@ -1,4 +1,58 @@
-#include <test/jtx.h>
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/account_txn_id.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/check.h>
+#include <test/jtx/contract.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/delivermin.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/did.h>
+#include <test/jtx/directory.h>
+#include <test/jtx/domain.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/invoice_id.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/ledgerStateFix.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/prop.h>
+#include <test/jtx/quality.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/requires.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tag.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
 
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -21,11 +75,11 @@ createApplyContext(
     STTx const& tx = STTx(ttCONTRACT_CALL, [](STObject&) {}))
 {
     ApplyContext ac{
-        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, env.journal};
+        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, env.journal};
     return ac;
 }
 
-struct ContractHostFuncImpl_test : public beast::unit_test::suite
+struct ContractHostFuncImpl_test : public beast::unit_test::Suite
 {
     ContractContext
     createContractContext(
@@ -372,7 +426,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(16, STI_UINT32);
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(result.error() == HostFunctionError::INDEX_OUT_OF_BOUNDS);
+                BEAST_EXPECT(result.error() == HostFunctionError::IndexOutOfBounds);
         }
 
         // Test type mismatch
@@ -380,7 +434,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(0, STI_UINT64);  // Index 0 is UINT8
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+                BEAST_EXPECT(result.error() == HostFunctionError::InvalidParams);
         }
 
         // Test unsupported types
@@ -388,7 +442,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(2, STI_PATHSET);
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+                BEAST_EXPECT(result.error() == HostFunctionError::InvalidParams);
         }
     }
 
@@ -446,10 +500,18 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 s.addVL(Blob{0x61, 0x62, 0x63});  // "abc"
             });
 
-            auto setResult = cfs.setDataObjectField(alice.id(), "name", value);
-            BEAST_EXPECT(!setResult.has_value());
-            if (!setResult.has_value())
-                BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
+            // An internal fault is signalled by a trap, not an error code.
+            bool trapped = false;
+            try
+            {
+                auto setResult = cfs.setDataObjectField(alice.id(), "name", value);
+                BEAST_EXPECT(setResult.has_value());
+            }
+            catch (std::runtime_error const&)
+            {
+                trapped = true;
+            }
+            BEAST_EXPECT(!trapped);
 
             // Verify data was cached and can be retrieved
             auto getResult = cfs.getDataObjectField(alice.id(), "name");
@@ -465,10 +527,18 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
         {
             auto value = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(30); });
 
-            auto setResult = cfs.setDataObjectField(alice.id(), "age", value);
-            BEAST_EXPECT(!setResult.has_value());
-            if (!setResult.has_value())
-                BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
+            // An internal fault is signalled by a trap, not an error code.
+            bool trapped = false;
+            try
+            {
+                auto setResult = cfs.setDataObjectField(alice.id(), "age", value);
+                BEAST_EXPECT(setResult.has_value());
+            }
+            catch (std::runtime_error const&)
+            {
+                trapped = true;
+            }
+            BEAST_EXPECT(!trapped);
 
             auto getResult = cfs.getDataObjectField(alice.id(), "age");
             BEAST_EXPECT(getResult.has_value());
@@ -480,10 +550,18 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 s.add8(1);  // true
             });
 
-            auto setResult = cfs.setDataObjectField(alice.id(), "verified", value);
-            BEAST_EXPECT(!setResult.has_value());
-            if (!setResult.has_value())
-                BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
+            // An internal fault is signalled by a trap, not an error code.
+            bool trapped = false;
+            try
+            {
+                auto setResult = cfs.setDataObjectField(alice.id(), "verified", value);
+                BEAST_EXPECT(setResult.has_value());
+            }
+            catch (std::runtime_error const&)
+            {
+                trapped = true;
+            }
+            BEAST_EXPECT(!trapped);
 
             auto getResult = cfs.getDataObjectField(alice.id(), "verified");
             BEAST_EXPECT(getResult.has_value());
@@ -494,7 +572,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto getResult = cfs.getDataObjectField(alice.id(), "nonexistent");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::InvalidField);
         }
 
         // Test updating existing key
@@ -639,12 +717,12 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto getResult = cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::InvalidField);
 
             auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "nonexistent");
             BEAST_EXPECT(!getResult2.has_value());
             if (!getResult2.has_value())
-                BEAST_EXPECT(getResult2.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult2.error() == HostFunctionError::InvalidField);
         }
 
         // Test updating existing nested key
@@ -758,12 +836,12 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto getResult = cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::InvalidField);
 
             auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "nonexistent");
             BEAST_EXPECT(!getResult2.has_value());
             if (!getResult2.has_value())
-                BEAST_EXPECT(getResult2.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult2.error() == HostFunctionError::InvalidField);
         }
 
         // Test updating existing nested key
@@ -1250,7 +1328,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
         //     {
         //         BEAST_EXPECT(
         //             emitResult.error() ==
-        //             HostFunctionError::INDEX_OUT_OF_BOUNDS);
+        //             HostFunctionError::IndexOutOfBounds);
         //     }
         // }
 

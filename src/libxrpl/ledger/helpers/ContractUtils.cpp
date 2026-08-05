@@ -1,9 +1,15 @@
+#include <xrpl/ledger/helpers/ContractUtils.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenUtils.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
@@ -284,21 +290,21 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
                 // Preflight Transfer Amount
                 if (isXRP(amount))
                 {
-                    if (amount <= beast::zero)
+                    if (amount <= beast::kZero)
                         return temBAD_AMOUNT;
                 }
                 else if (amount.holds<Issue>())
                 {
-                    if (amount.native() || amount <= beast::zero)
+                    if (amount.native() || amount <= beast::kZero)
                         return temBAD_AMOUNT;
 
-                    if (badCurrency() == amount.getCurrency())
+                    if (badCurrency() == amount.get<Issue>().currency)
                         return temBAD_CURRENCY;
                 }
                 else if (amount.holds<MPTIssue>())
                 {
-                    if (amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} ||
-                        amount <= beast::zero)
+                    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} ||
+                        amount <= beast::kZero)
                         return temBAD_AMOUNT;
                 }
                 break;
@@ -418,7 +424,7 @@ doApplyFlagParameters(
                 auto const& value = param.getFieldData(sfParameterValue);
                 STAmount const amount = value.getFieldAmount();
                 if (auto ter = accountSend(
-                        view, sourceAccount, contractAccount, amount, j, WaiveTransferFee::No);
+                        view, sourceAccount, contractAccount, amount, j, {}, WaiveTransferFee::No);
                     !isTesSuccess(ter))
                 {
                     JLOG(j.trace()) << "doApplyFlagParameters: Failed to send amount: " << amount;
@@ -432,7 +438,7 @@ doApplyFlagParameters(
                 auto const& value = param.getFieldData(sfParameterValue);
                 auto const& nftokenID = value.getFieldH256();
                 if (auto ter =
-                        nft::transferNFToken(view, sourceAccount, contractAccount, nftokenID);
+                        nft::transferNFToken(view, sourceAccount, contractAccount, nftokenID, j);
                     !isTesSuccess(ter))
                 {
                     JLOG(j.trace())
@@ -522,7 +528,7 @@ setContractData(
         view.erase(dataSle);
 
         // reduce the owner count
-        adjustOwnerCount(view, sleAccount, -oldDataReserve, j);
+        decreaseOwnerCount(view, sleAccount, {}, oldDataReserve, j);
         return tesSUCCESS;
     }
 
@@ -533,11 +539,11 @@ setContractData(
         // CREATE
         uint32_t const dataReserve = contractDataReserve(data.size());
         uint32_t const newReserve = ownerCount + dataReserve;
-        XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
+        XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve, 1)};
         if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
             return tecINSUFFICIENT_RESERVE;
 
-        adjustOwnerCount(view, sleAccount, dataReserve, j);
+        increaseOwnerCount(view, sleAccount, {}, dataReserve, j);
         // create an entry
         dataSle = std::make_shared<SLE>(dataKeylet);
         dataSle->setFieldJson(sfContractJson, data);
@@ -564,11 +570,11 @@ setContractData(
         {
             // if the reserve changes, we need to adjust the owner count
             uint32_t const newReserve = ownerCount - oldDataReserve + newDataReserve;
-            XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
+            XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve, 1)};
             if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
                 return tecINSUFFICIENT_RESERVE;
 
-            adjustOwnerCount(view, sleAccount, newReserve, j);
+            increaseOwnerCount(view, sleAccount, {}, newReserve, j);
         }
 
         // update the data
@@ -607,7 +613,7 @@ finalizeContractData(
                 // overflow
                 JLOG(j.trace()) << "ContractError[TX:" << txnID
                                 << "]: SetContractData failed: Too many data changes";
-                return tecWASM_REJECTED;
+                return tecBYTECODE_REJECTED;
             }
 
             TER result = setContractData(registry, view, acc, contractAccount, jsonData);

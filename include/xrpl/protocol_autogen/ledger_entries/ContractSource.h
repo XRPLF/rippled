@@ -33,7 +33,7 @@ public:
      * @brief Construct a ContractSource ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit ContractSource(std::shared_ptr<SLE const> sle)
+    explicit ContractSource(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractHash (soeREQUIRED)
+     * @brief Get sfContractHash (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfContractCode (soeREQUIRED)
+     * @brief Get sfContractCode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfFunctions (soeREQUIRED)
+     * @brief Get sfFunctions (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -102,7 +102,7 @@ public:
     }
 
     /**
-     * @brief Get sfInstanceParameters (soeOPTIONAL)
+     * @brief Get sfInstanceParameters (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Get sfReferenceCount (soeREQUIRED)
+     * @brief Get sfReferenceCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -142,7 +142,7 @@ public:
  * @brief Builder for ContractSource ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class ContractSourceBuilder : public LedgerEntryBuilderBase<ContractSourceBuilder>
@@ -173,7 +173,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    ContractSourceBuilder(std::shared_ptr<SLE const> sle)
+    ContractSourceBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCONTRACT_SOURCE)
         {
@@ -182,10 +182,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -196,7 +198,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -207,7 +209,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractHash (soeREQUIRED)
+     * @brief Set sfContractHash (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -218,7 +220,7 @@ public:
     }
 
     /**
-     * @brief Set sfContractCode (soeREQUIRED)
+     * @brief Set sfContractCode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -229,7 +231,7 @@ public:
     }
 
     /**
-     * @brief Set sfFunctions (soeREQUIRED)
+     * @brief Set sfFunctions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -240,7 +242,7 @@ public:
     }
 
     /**
-     * @brief Set sfInstanceParameters (soeOPTIONAL)
+     * @brief Set sfInstanceParameters (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&
@@ -251,7 +253,7 @@ public:
     }
 
     /**
-     * @brief Set sfReferenceCount (soeREQUIRED)
+     * @brief Set sfReferenceCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ContractSourceBuilder&

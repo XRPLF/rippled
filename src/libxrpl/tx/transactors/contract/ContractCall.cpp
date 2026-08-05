@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/contract/ContractCall.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
@@ -7,7 +9,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/contract/ContractCall.h>
 #include <xrpl/tx/wasm/ContractHostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
@@ -17,9 +18,9 @@ XRPAmount
 ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     XRPAmount extraFee{0};
-    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    if (auto const allowance = tx[~sfGas]; allowance)
     {
-        extraFee += (*allowance) * view.fees().gasPrice / MICRO_DROPS_PER_DROP;
+        extraFee += (*allowance) * view.fees().gasPrice / microDropsPerDrop;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -132,7 +133,7 @@ ContractCall::doApply()
         return tefINTERNAL;
     }
 
-    auto const accountSle = ctx_.view().read(keylet::account(account_));
+    auto const accountSle = ctx_.view().read(keylet::account(accountID_));
     if (!accountSle)
     {
         JLOG(j_.trace()) << "ContractCall: Account does not exist.";
@@ -164,7 +165,7 @@ ContractCall::doApply()
         if (auto ter = contract::doApplyFlagParameters(
                 ctx_.view(),
                 ctx_.tx,
-                account_,
+                accountID_,
                 contractAccount,
                 params,
                 preFeeBalance_,
@@ -247,7 +248,7 @@ ContractCall::doApply()
                 .contractAccountKeylet = k,
                 .contractAccount = contractAccount,
                 .nextSequence = caSle->getFieldU32(sfSequence),
-                .otxnAccount = account_,
+                .otxnAccount = accountID_,
                 .otxnId = ctx_.tx.getTransactionID(),
                 .exitReason = "",
                 .exitCode = -1,
@@ -260,13 +261,13 @@ ContractCall::doApply()
 
     ContractHostFunctionsImpl ledgerDataProvider(contractCtx);
 
-    if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
+    if (!ctx_.tx.isFieldPresent(sfGas))
     {
         JLOG(j_.trace()) << "ContractCall: Computation allowance is not set.";
         return tefINTERNAL;
     }
 
-    std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
+    std::uint32_t const allowance = ctx_.tx[sfGas];
     auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, funcName, {});
 
     // Wasm Result
@@ -293,9 +294,9 @@ ContractCall::doApply()
         if (ret < 0)
         {
             JLOG(j_.trace()) << "WASM Execution Failed: " << ret;
-            ctx_.setWasmReturnCode(ret);
+            ctx_.setVMReturnCode(ret);
             // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
-            return tecWASM_REJECTED;
+            return tecBYTECODE_REJECTED;
         }
 
         if (auto res = contract::finalizeContractData(
@@ -311,20 +312,38 @@ ContractCall::doApply()
             return res;
         }
 
-        ctx_.setWasmReturnCode(ret);
+        ctx_.setVMReturnCode(ret);
         // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
         ctx_.setEmittedTxns(contractCtx.result.emittedTxns);
         return tesSUCCESS;
     }
     else
     {
-        JLOG(j_.trace()) << "WASM Failure: " + transHuman(re.error());
-        auto const errorCode = TERtoInt(re.error());
-        ctx_.setWasmReturnCode(errorCode);
+        JLOG(j_.trace()) << "WASM Failure: " + transHuman(re.error().ter);
+        auto const errorCode = TERtoInt(re.error().ter);
+        ctx_.setVMReturnCode(errorCode);
         // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
-        return re.error();
+        return re.error().ter;
     }
     return tesSUCCESS;
+}
+
+void
+ContractCall::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+ContractCall::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

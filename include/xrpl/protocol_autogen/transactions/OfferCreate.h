@@ -19,9 +19,9 @@ class OfferCreateBuilder;
  * @brief Transaction: OfferCreate
  *
  * Type: ttOFFER_CREATE (7)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OfferCreateBuilder to construct new transactions.
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfTakerPays (soeREQUIRED)
+     * @brief Get sfTakerPays (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +60,8 @@ public:
     }
 
     /**
-     * @brief Get sfTakerGets (soeREQUIRED)
+     * @brief Get sfTakerGets (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +72,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +98,7 @@ public:
     }
 
     /**
-     * @brief Get sfOfferSequence (soeOPTIONAL)
+     * @brief Get sfOfferSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -122,7 +124,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +154,7 @@ public:
  * @brief Builder for OfferCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class OfferCreateBuilder : public TransactionBuilderBase<OfferCreateBuilder>
@@ -190,10 +192,13 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfTakerPays (soeREQUIRED)
+     * @brief Set sfTakerPays (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -204,7 +209,8 @@ public:
     }
 
     /**
-     * @brief Set sfTakerGets (soeREQUIRED)
+     * @brief Set sfTakerGets (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -215,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -226,7 +232,7 @@ public:
     }
 
     /**
-     * @brief Set sfOfferSequence (soeOPTIONAL)
+     * @brief Set sfOfferSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -237,7 +243,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&

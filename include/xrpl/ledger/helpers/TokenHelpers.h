@@ -1,15 +1,23 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -20,16 +28,37 @@ namespace xrpl {
 //
 //------------------------------------------------------------------------------
 
-/** Controls the treatment of frozen account balances */
-enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
+/**
+ * Controls the treatment of frozen account balances
+ */
+enum class FreezeHandling { IgnoreFreeze, ZeroIfFrozen };
 
-/** Controls the treatment of unauthorized MPT balances */
-enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
+/**
+ * Controls the treatment of unauthorized MPT balances
+ */
+enum class AuthHandling { IgnoreAuth, ZeroIfUnauthorized };
 
-/** Controls whether to include the account's full spendable balance */
-enum SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
+/**
+ * Controls whether to include the account's full spendable balance
+ */
+enum class SpendableHandling { SimpleBalance, FullBalance };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
+
+/**
+ * Controls whether accountSend is allowed to overflow OutstandingAmount *
+ */
+enum class AllowMPTOverflow : bool { No = false, Yes };
+
+/**
+ * Controls whether canTransfer enforces lsfMPTCanTransfer on MPTs.
+ *
+ *  Default is No (enforce). Use Yes at call sites that must remain available
+ *  even when an MPT issuer has cleared lsfMPTCanTransfer - for example,
+ *  unwinding existing positions in SAV or the Lending Protocol. Has no
+ *  effect on the IOU branch of canTransfer.
+ */
+enum class WaiveMPTCanTransfer : bool { No = false, Yes };
 
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
@@ -51,16 +80,26 @@ enum class AuthType { StrongAuth, WeakAuth, Legacy };
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+[[nodiscard]] TER
+checkGlobalFrozen(ReadView const& view, Asset const& asset);
+
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
+[[nodiscard]] TER
+checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
 /**
- *   isFrozen check is recursive for MPT shares in a vault, descending to
- *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
- *   purely defensive, as we currently do not allow such vaults to be created.
+ * isFrozen check is recursive for MPT shares in a vault, descending to
+ * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ * purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue);
@@ -82,28 +121,97 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /**
- *   isFrozen check is recursive for MPT shares in a vault, descending to
- *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
- *   purely defensive, as we currently do not allow such vaults to be created.
+ * isFrozen check is recursive for MPT shares in a vault, descending to
+ * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ * purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
+/**
+ * Checks freeze compliance for withdrawing an asset from a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker) to a destination account.
+ *
+ * Asserts that sourceAcct is a pseudo-account and that submitterAcct and dstAcct are not.
+ *
+ * Issuer exemption: returns tesSUCCESS immediately when dstAcct is the asset issuer — the issuer
+ * can always receive their own token, even when the pool is frozen.  Callers that need to block
+ * withdrawals from a frozen pool even for the issuer (e.g. because the pool math cannot handle it)
+ * must check checkFrozen(sourceAcct, asset) separately before calling this function.
+ *
+ * Otherwise checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. The pseudo-account's trustline / MPToken must not be individually frozen for sending.
+ *   3. The submitter's trustline / MPToken must not be individually frozen. Skipped when
+ * submitter == dst (self-withdrawal) so a regular freeze does not prevent recovering one's own
+ * funds. (Enforced as defensive code; no current caller exercises a frozen submitter ≠ dst.)
+ *   4. The destination must not be deep-frozen.
+ *
+ * For IOUs a regular individual freeze on the submitter does NOT block self-withdrawal; only deep
+ * freeze does. For MPTs "locked" is equivalent to deep-frozen, so locked MPT holders are always
+ * blocked.
+ *
+ * @param view          Ledger view to read freeze state from.
+ * @param pseudoAcct       Pseudo-account the funds are withdrawn from (sender).
+ * @param submitterAcct Account that submitted the withdrawal transaction.
+ * @param dstAcct       Account receiving the withdrawn funds.
+ * @param asset         Asset being withdrawn.
+ * @return tesSUCCESS if the withdrawal is permitted, otherwise a freeze
+ *         result (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkWithdrawFreeze(
+    ReadView const& view,
+    AccountID const& pseudoAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
+/**
+ * Checks freeze compliance for depositing an asset into a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker).
+ *
+ * Checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. The depositor must not be individually frozen for the asset. Skipped when srcAcct is the
+ * asset issuer, since the issuer can always send its own asset.
+ *   3. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
+ * pseudo-accounts cannot receive deposits under a regular freeze because the deposited funds
+ * could not later be withdrawn.
+ *
+ * @param view    Ledger view to read freeze state from.
+ * @param srcAcct Depositor sending the funds.
+ * @param pseudoAcct Pseudo-account receiving the deposit.
+ * @param asset   Asset being deposited.
+ * @return tesSUCCESS if the deposit is permitted, otherwise a freeze result
+ *         (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& pseudoAcct,
+    Asset const& asset);
 
 //------------------------------------------------------------------------------
 //
@@ -132,7 +240,7 @@ accountHolds(
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -141,7 +249,7 @@ accountHolds(
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -151,7 +259,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -161,7 +269,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
@@ -176,7 +284,18 @@ accountFunds(
     FreezeHandling freezeHandling,
     beast::Journal j);
 
-/** Returns the transfer fee as Rate based on the type of token
+// Overload with AuthHandling to support IOU and MPT.
+[[nodiscard]] STAmount
+accountFunds(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
+    beast::Journal j);
+
+/**
+ * Returns the transfer fee as Rate based on the type of token
  * @param view The ledger view
  * @param amount The amount to transfer
  */
@@ -194,7 +313,7 @@ canAddHolding(ReadView const& view, Asset const& asset);
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -202,7 +321,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal);
@@ -221,7 +340,13 @@ requireAuth(
     AuthType authType = AuthType::Legacy);
 
 [[nodiscard]] TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to);
+canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //
@@ -235,11 +360,12 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // --> bCheckIssuer : normally require issuer to be involved.
 // [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
 
-/** Calls static rippleCreditIOU if saAmount represents Issue.
- * Calls static rippleCreditMPT if saAmount represents MPTIssue.
+/**
+ * Calls static directSendNoFeeIOU if saAmount represents Issue.
+ * Calls static directSendNoFeeMPT if saAmount represents MPTIssue.
  */
 TER
-rippleCredit(
+directSendNoFee(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -247,7 +373,8 @@ rippleCredit(
     bool bCheckIssuer,
     beast::Journal j);
 
-/** Calls static accountSendIOU if saAmount represents Issue.
+/**
+ * Calls static accountSendIOU if saAmount represents Issue.
  * Calls static accountSendMPT if saAmount represents MPTIssue.
  */
 [[nodiscard]] TER
@@ -257,10 +384,13 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    SLE::ref sponsorSle = {},
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
-/** Like accountSend, except one account is sending multiple payments (with the
+/**
+ * Like accountSend, except one account is sending multiple payments (with the
  *  same asset!) simultaneously
  *
  * Calls static accountSendMultiIOU if saAmount represents Issue.

@@ -1,19 +1,20 @@
 #pragma once
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
-/** Derived classes perform scheduled tasks. */
+/**
+ * Derived classes perform scheduled tasks.
+ */
 struct Task
 {
     virtual ~Task() = default;
 
-    /** Performs the task.
-        The call may take place on a foreign thread.
-    */
+    /**
+     * Performs the task.
+     * The call may take place on a foreign thread.
+     */
     virtual void
     performScheduledTask() = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

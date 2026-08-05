@@ -21,7 +21,7 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,7 +35,7 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const finishFunctionValue = canonical_VL();
+    auto const bytecodeValue = canonical_VL();
     auto const dataValue = canonical_VL();
 
     EscrowCreateBuilder builder{
@@ -51,7 +51,7 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
-    builder.setFinishFunction(finishFunctionValue);
+    builder.setBytecode(bytecodeValue);
     builder.setData(dataValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -115,11 +115,11 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = finishFunctionValue;
-        auto const actualOpt = tx.getFinishFunction();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFinishFunction should be present";
-        expectEqualField(expected, *actualOpt, "sfFinishFunction");
-        EXPECT_TRUE(tx.hasFinishFunction());
+        auto const& expected = bytecodeValue;
+        auto const actualOpt = tx.getBytecode();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBytecode should be present";
+        expectEqualField(expected, *actualOpt, "sfBytecode");
+        EXPECT_TRUE(tx.hasBytecode());
     }
 
     {
@@ -138,7 +138,7 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -152,7 +152,7 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const finishFunctionValue = canonical_VL();
+    auto const bytecodeValue = canonical_VL();
     auto const dataValue = canonical_VL();
 
     // Build an initial transaction
@@ -168,7 +168,7 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCancelAfter(cancelAfterValue);
     initialBuilder.setFinishAfter(finishAfterValue);
-    initialBuilder.setFinishFunction(finishFunctionValue);
+    initialBuilder.setBytecode(bytecodeValue);
     initialBuilder.setData(dataValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -229,10 +229,10 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = finishFunctionValue;
-        auto const actualOpt = rebuiltTx.getFinishFunction();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFinishFunction should be present";
-        expectEqualField(expected, *actualOpt, "sfFinishFunction");
+        auto const& expected = bytecodeValue;
+        auto const actualOpt = rebuiltTx.getBytecode();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBytecode should be present";
+        expectEqualField(expected, *actualOpt, "sfBytecode");
     }
 
     {
@@ -249,7 +249,7 @@ TEST(TransactionsEscrowCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -263,7 +263,7 @@ TEST(TransactionsEscrowCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -277,7 +277,7 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -309,8 +309,8 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCancelAfter().has_value());
     EXPECT_FALSE(tx.hasFinishAfter());
     EXPECT_FALSE(tx.getFinishAfter().has_value());
-    EXPECT_FALSE(tx.hasFinishFunction());
-    EXPECT_FALSE(tx.getFinishFunction().has_value());
+    EXPECT_FALSE(tx.hasBytecode());
+    EXPECT_FALSE(tx.getBytecode().has_value());
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
 }

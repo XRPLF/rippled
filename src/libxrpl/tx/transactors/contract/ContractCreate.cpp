@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/contract/ContractCreate.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/contract/ContractCreate.h>
 
 namespace xrpl {
 
@@ -27,7 +28,7 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (createFee > maxAmount - view.fees().increment)
     {
         JLOG(debugLog().trace()) << "ContractCreate: Create fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kInitialXrp};
     }
 
     createFee += view.fees().increment;
@@ -36,7 +37,7 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - createFee)
     {
         JLOG(debugLog().trace()) << "ContractCreate: Total fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kInitialXrp};
     }
 
     return createFee + baseFee;
@@ -119,7 +120,7 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        contractHash = xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
 
@@ -162,7 +163,7 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
 TER
 ContractCreate::doApply()
 {
-    auto const accountSle = ctx_.view().peek(keylet::account(account_));
+    auto const accountSle = ctx_.view().peek(keylet::account(accountID_));
     if (!accountSle)
     {
         JLOG(j_.trace()) << "ContractCreate: Account not found.";
@@ -176,7 +177,7 @@ ContractCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfContractCode))
     {
         wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
-        contractHash = xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx_.view().exists(keylet::contractSource(*contractHash)))
             isInstall = true;
     }
@@ -205,7 +206,7 @@ ContractCreate::doApply()
     }
 
     std::uint32_t const seq = ctx_.tx.getSeqValue();
-    auto const contractKeylet = keylet::contract(*contractHash, account_, seq);
+    auto const contractKeylet = keylet::contract(*contractHash, accountID_, seq);
     auto contractSle = std::make_shared<SLE>(contractKeylet);
 
     auto maybePseudo = createPseudoAccount(view(), contractSle->key(), sfContractID);
@@ -216,7 +217,7 @@ ContractCreate::doApply()
     auto pseudoAccount = pseudoSle->at(sfAccount);
 
     contractSle->at(sfContractAccount) = pseudoAccount;
-    contractSle->at(sfOwner) = account_;
+    contractSle->at(sfOwner) = accountID_;
     contractSle->at(sfFlags) = ctx_.tx.getFlags();
     contractSle->at(sfSequence) = seq;
     contractSle->at(sfContractHash) = *contractHash;
@@ -236,8 +237,8 @@ ContractCreate::doApply()
 
         // Note: We have to do preclaim and apply here because we will only have
         // the pseudo account after the contract is created.
-        if (auto ter =
-                contract::preclaimFlagParameters(ctx_.view(), account_, pseudoAccount, params, j_);
+        if (auto ter = contract::preclaimFlagParameters(
+                ctx_.view(), accountID_, pseudoAccount, params, j_);
             !isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "ContractCreate: Failed to preclaim flag parameters.";
@@ -245,7 +246,7 @@ ContractCreate::doApply()
         }
 
         if (auto ter = contract::doApplyFlagParameters(
-                ctx_.view(), ctx_.tx, account_, pseudoAccount, params, preFeeBalance_, j_);
+                ctx_.view(), ctx_.tx, accountID_, pseudoAccount, params, preFeeBalance_, j_);
             !isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "ContractCreate: Failed to apply flag parameters.";
@@ -263,10 +264,28 @@ ContractCreate::doApply()
             return tecDIR_FULL;
 
         contractSle->setFieldU64(sfOwnerNode, *page);
-        adjustOwnerCount(ctx_.view(), pseudoSle, 1, j_);
+        increaseOwnerCount(ctx_.view(), pseudoSle, {}, 1, j_);
     }
 
     return tesSUCCESS;
+}
+
+void
+ContractCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+ContractCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

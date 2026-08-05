@@ -41,13 +41,13 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-3122de8
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: false
 
@@ -57,19 +57,11 @@ jobs:
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}
 
-      - name: Check configuration
-        run: |
-          echo 'Checking path.'
-          echo ${PATH} | tr ':' '\n'
+      - name: Print build environment
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
-          echo 'Checking environment variables.'
-          env | sort
-
-          echo 'Checking CMake version.'
-          cmake --version
-
-          echo 'Checking Doxygen version.'
-          doxygen --version
+      - name: Check Doxygen version
+        run: doxygen --version
 
       - name: Build documentation
         env:
@@ -81,13 +73,13 @@ jobs:
           cmake --build . --target docs --parallel ${BUILD_NPROC}
 
       - name: Create documentation artifact
-        if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        if: ${{ github.event.repository.visibility == 'public' && github.event_name == 'push' }}
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ env.BUILD_DIR }}/docs/html
 
   deploy:
-    if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
+    if: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     permissions:

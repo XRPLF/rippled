@@ -14,5 +14,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $test_ref_types))
+  (export "escrow_finish" (func $test_ref_types))
 )

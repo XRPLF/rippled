@@ -1,23 +1,24 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/jss.h>
 
-namespace Json {
+#include <memory>
+#include <vector>
+
+namespace json {
 class Object;
-}  // namespace Json
+}  // namespace json
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 struct JsonContext;
 
@@ -36,25 +37,26 @@ public:
     check();
 
     void
-    writeResult(Json::Value&);
+    writeResult(json::Value&);
 
+    // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char name[] = "ledger";
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NO_CONDITION;
+    static constexpr Condition condition = Condition::NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     JsonContext& context_;
     std::shared_ptr<ReadView const> ledger_;
     std::vector<TxQ::TxDetails> queueTxs_;
-    Json::Value result_;
+    json::Value result_;
     int options_ = 0;
 };
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

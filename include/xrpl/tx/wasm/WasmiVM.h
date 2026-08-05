@@ -1,17 +1,38 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasm.h>
-#include <wasmi.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
-struct WasmVec
+class WasmVec
 {
+    using TD = std::remove_pointer_t<decltype(T::data)>;
     T vec_;
 
+public:
     WasmVec(size_t s = 0) : vec_ WASM_EMPTY_VEC
     {
         if (s > 0)
@@ -58,6 +79,46 @@ struct WasmVec
         vec_ = WASM_EMPTY_VEC;
         return result;
     }
+
+    T*
+    get()
+    {
+        return &vec_;
+    }
+
+    [[nodiscard]] T const*
+    get() const
+    {
+        return &vec_;
+    }
+
+    TD&
+    operator[](size_t i)
+    {
+        if (i >= vec_.size)
+            Throw<std::runtime_error>("Out of bound");
+        return vec_.data[i];
+    }
+
+    TD const&
+    operator[](size_t i) const
+    {
+        if (i >= vec_.size)
+            Throw<std::runtime_error>("Out of bound");
+        return vec_.data[i];
+    }
+
+    [[nodiscard]] size_t
+    size() const
+    {
+        return vec_.size;
+    }
+
+    [[nodiscard]] bool
+    empty() const
+    {
+        return vec_.size == 0u;
+    }
 };
 
 using WasmValtypeVec =
@@ -77,12 +138,16 @@ using WasmImporttypeVec = WasmVec<
 struct WasmiResult
 {
     WasmValVec r;
-    bool f{false};  // failure flag
+    // Set iff the call trapped. Holds the TER the trap was classified into
+    // (tecINTERNAL / tecOUT_OF_GAS / tecFAILED_PROCESSING); see
+    // WasmiEngine::call. std::nullopt means the call returned normally.
+    std::optional<TER> ter;
 
-    WasmiResult(unsigned N = 0) : r(N)
+    WasmiResult(unsigned n = 0) : r(n)
     {
     }
 
+    WasmiResult() = delete;
     ~WasmiResult() = default;
     WasmiResult(WasmiResult&& o) = default;
     WasmiResult&
@@ -96,13 +161,14 @@ using StorePtr = std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)>;
 
 using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
 
-struct InstanceWrapper
+class InstanceWrapper
 {
     wasm_store_t* store_ = nullptr;
     WasmExternVec exports_;
     mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 private:
     static InstancePtr
@@ -114,23 +180,35 @@ private:
         beast::Journal j);
 
 public:
-    InstanceWrapper();
+    InstanceWrapper() : instance_(nullptr, &wasm_instance_delete) {};
 
-    InstanceWrapper(InstanceWrapper&& o);
+    InstanceWrapper(InstanceWrapper const&) = delete;
+
+    InstanceWrapper(InstanceWrapper&& o) : instance_(nullptr, &wasm_instance_delete)
+    {
+        *this = std::move(o);  // LCOV_EXCL_LINE
+    }
+
+    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j)
+        : store_(s.get()), instance_(init(s, m, exports_, imports, j)), j_(j)
+    {
+    }
 
     InstanceWrapper&
     operator=(InstanceWrapper&& o);
 
-    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j);
+    InstanceWrapper&
+    operator=(InstanceWrapper const&) = delete;
 
-    ~InstanceWrapper() = default;
-
-    operator bool() const;
+    operator bool() const
+    {
+        return static_cast<bool>(instance_);
+    }
 
     FuncInfo
     getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes) const;
 
-    wmem
+    Wmem
     getMem() const;
 
     std::int64_t
@@ -138,22 +216,33 @@ public:
 
     std::int64_t
     setGas(std::int64_t) const;
+
+    std::int64_t
+    getTransferLimit() const;
+
+    std::int64_t
+    setTransferLimit(std::int64_t);
 };
 
-struct ModuleWrapper
+class ModuleWrapper
 {
     ModulePtr module_;
     InstanceWrapper instanceWrap_;
     WasmExporttypeVec exportTypes_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
-private:
-    static ModulePtr
-    init(StorePtr& s, Bytes const& wasmBin, beast::Journal j);
-
 public:
-    ModuleWrapper();
-    ModuleWrapper(ModuleWrapper&& o);
+    // LCOV_EXCL_START
+    ModuleWrapper() : module_(nullptr, &wasm_module_delete)
+    {
+    }
+
+    ModuleWrapper(ModuleWrapper&& o) : module_(nullptr, &wasm_module_delete)
+    {
+        *this = std::move(o);
+    }
+    // LCOV_EXCL_STOP
+
     ModuleWrapper&
     operator=(ModuleWrapper&& o);
     ModuleWrapper(
@@ -164,27 +253,55 @@ public:
         beast::Journal j);
     ~ModuleWrapper() = default;
 
-    operator bool() const;
+    operator bool() const
+    {
+        return instanceWrap_;
+    }
 
     FuncInfo
-    getFunc(std::string_view funcName) const;
+    getFunc(std::string_view funcName) const
+    {
+        return instanceWrap_.getFunc(funcName, exportTypes_);
+    }
 
-    wasm_functype_t*
+    wasm_functype_t const*
     getFuncType(std::string_view funcName) const;
 
-    wmem
-    getMem() const;
+    Wmem
+    getMem() const
+    {
+        return instanceWrap_.getMem();
+    }
+
+    InstanceWrapper&
+    getInstance(int i = 0)
+    {
+        return instanceWrap_;
+    }
 
     InstanceWrapper const&
-    getInstance(int i = 0) const;
+    getInstance(int i = 0) const
+    {
+        return instanceWrap_;
+    }
 
     int
-    addInstance(StorePtr& s, WasmExternVec const& imports);
+    addInstance(StorePtr& s, WasmExternVec const& imports)
+    {
+        instanceWrap_ = {s, module_, imports, j_};
+        return 0;
+    }
 
     std::int64_t
-    getGas() const;
+    getGas() const
+    {
+        return instanceWrap_ ? instanceWrap_.getGas() : -1;
+    }
 
 private:
+    static ModulePtr
+    init(StorePtr& s, Bytes const& wasmBin, beast::Journal j);
+
     WasmExternVec
     buildImports(StorePtr& s, ImportVec const& imports) const;
 };
@@ -199,13 +316,16 @@ class WasmiEngine
     std::mutex m_;  // 1 instance mutex
 
 public:
-    WasmiEngine();
+    WasmiEngine() : engine_(init()), store_(nullptr, &wasm_store_delete)
+    {
+    }
+
     ~WasmiEngine() = default;
 
     static EnginePtr
     init();
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gas,
@@ -223,31 +343,48 @@ public:
         ImportVec const& imports,
         beast::Journal j);
 
-    std::int64_t
-    getGas() const;
+    [[nodiscard]] std::int64_t
+    getGas() const
+    {
+        return moduleWrap_ ? moduleWrap_->getGas() : -1;  // LCOV_EXCL_LINE
+    }
 
     // Host functions helper functionality
     wasm_trap_t*
     newTrap(std::string const& msg);
 
-    beast::Journal
-    getJournal() const;
+    // LCOV_EXCL_START
+    [[nodiscard]] beast::Journal
+    getJournal() const
+    {
+        return j_;
+    }
+    // LCOV_EXCL_STOP
 
 private:
-    InstanceWrapper const&
-    getRT(int m = 0, int i = 0) const;
+    [[nodiscard]] InstanceWrapper&
+    getRT(int m = 0, int i = 0) const
+    {
+        if (!moduleWrap_)
+            Throw<std::runtime_error>("no module");
+        return moduleWrap_->getInstance(i);
+    }
 
-    wmem
-    getMem() const;
+    [[nodiscard]] Wmem
+    getMem() const
+    {
+        return moduleWrap_ ? moduleWrap_->getMem() : Wmem();
+    }
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     runHlp(
         Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gas,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+        ImportVec const& imports,
+        beast::Journal j);
 
     NotTEC
     checkHlp(
@@ -255,7 +392,8 @@ private:
         HostFunctions& hfs,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+        ImportVec const& imports,
+        beast::Journal j);
 
     int
     addModule(Bytes const& wasmCode, bool instantiate, ImportVec const& imports, int64_t gas);
@@ -270,8 +408,11 @@ private:
     int32_t
     makeModule(Bytes const& wasmCode, WasmExternVec const& imports = {});
 
-    FuncInfo
-    getFunc(std::string_view funcName) const;
+    [[nodiscard]] FuncInfo
+    getFunc(std::string_view funcName) const
+    {
+        return moduleWrap_->getFunc(funcName);
+    }
 
     static std::vector<wasm_val_t>
     convertParams(std::vector<WasmParam> const& params);
@@ -280,9 +421,9 @@ private:
     compareParamTypes(wasm_valtype_vec_t const* ftp, std::vector<wasm_val_t> const& p);
 
     static void
-    add_param(std::vector<wasm_val_t>& in, int32_t p);
+    addParam(std::vector<wasm_val_t>& in, int32_t p);
     static void
-    add_param(std::vector<wasm_val_t>& in, int64_t p);
+    addParam(std::vector<wasm_val_t>& in, int64_t p);
 
     template <int NR, class... Types>
     inline WasmiResult

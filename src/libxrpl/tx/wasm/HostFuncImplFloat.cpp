@@ -1,6 +1,20 @@
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <boost/algorithm/hex.hpp>
+
+#include <cstdint>
+#include <expected>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <utility>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -12,179 +26,75 @@ namespace wasm_float {
 
 namespace detail {
 
-class Number2 : public Number
+// Decode a serialized STNumber float payload. Returns nullopt if the data is
+// not a well-formed encoding.
+std::optional<Number>
+floatDecode(Slice const& data)
 {
-protected:
-    static Bytes const floatNull;
-    static unsigned constexpr encodedFloatSize = 8;
-    static int32_t constexpr encodedMantissaBits = 54;
-    static int32_t constexpr encodedExponentBits = 8;
-
-    static_assert(wasmMinExponent < 0);
-
-    static uint64_t constexpr maxEncodedMantissa = (1ull << (encodedMantissaBits + 1)) - 1;
-
-    bool good_;
-
-public:
-    Number2(Slice const& data) : good_(false)
+    static unsigned constexpr encodedFloatSize = 12;
+    if (data.size() != encodedFloatSize)
+        return std::nullopt;
+    try
     {
-        if (data.size() != encodedFloatSize)
-            return;
-
-        if (std::ranges::equal(floatNull, data))
-        {
-            good_ = true;
-            return;
-        }
-
-        uint64_t const v = SerialIter(data).get64();
-        if ((v & STAmount::cIssuedCurrency) == 0u)
-            return;
-
-        int32_t const e = static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
-        int32_t const decodedExponent = e + wasmMinExponent - 1;  // e - 97
-        if (decodedExponent < wasmMinExponent || decodedExponent > wasmMaxExponent)
-            return;
-
-        int64_t const neg = ((v & STAmount::cPositive) != 0u) ? 1 : -1;
-        int64_t const m = neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
-        if (m == 0)
-            return;
-
-        Number const x(makeNumber(m, decodedExponent));
-        if (m != x.mantissa() || decodedExponent != x.exponent())
-            return;  // not canonical
-        *static_cast<Number*>(this) = x;
-
-        good_ = true;
+        SerialIter it(data);
+        return STNumber(it, sfNumber).value();
     }
-
-    template <class T>
-    Number2(T mantissa = 0, int32_t exponent = 0) : Number(), good_(false)
+    catch (...)
     {
-        if (!mantissa)
-        {
-            good_ = true;
-            return;
-        }
-
-        auto const n = makeNumber(mantissa, exponent);
-        auto const e = n.exponent();
-        if (e < wasmMinExponent)
-        {
-            good_ = true;  // value is zero(as in Numbers behavior)
-            return;
-        }
-
-        if (e > wasmMaxExponent)
-            return;
-
-        *static_cast<Number*>(this) = n;
-        good_ = true;
+        return std::nullopt;
     }
+}
 
-    Number2(Number const& n) : Number2(n.mantissa(), n.exponent())  // ensure Number canonized
+// Build a Number from a raw mantissa/exponent pair. Returns nullopt if the
+// value cannot be represented, e.g. the exponent is out of range.
+std::optional<Number>
+numberFromMantExp(int64_t mantissa, int32_t exponent)
+{
+    try
     {
+        return Number(mantissa, exponent);
     }
-
-    static Number
-    makeNumber(int64_t mantissa, int32_t exponent)
+    catch (...)
     {
-        if (mantissa < 0)
-            return Number(true, -static_cast<uint64_t>(mantissa), exponent, Number::normalized());
-        return Number(false, mantissa, exponent, Number::normalized());
+        return std::nullopt;
     }
+}
 
-    static Number
-    makeNumber(uint64_t mantissa, int32_t exponent)
-    {
-        return Number(false, mantissa, exponent, Number::normalized());
-    }
-
-    operator bool() const
-    {
-        return good_;
-    }
-
-    Expected<Bytes, HostFunctionError>
-    toBytes() const
-    {
-        if (!good_)
-            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-
-        auto const m = mantissa();
-        auto const e = exponent();
-
-        uint64_t v = m >= 0 ? STAmount::cPositive : 0;
-        v |= STAmount::cIssuedCurrency;
-
-        uint64_t const absM = std::abs(m);
-        if (absM == 0u)
-        {
-            return floatNull;
-        }
-        if (absM > maxEncodedMantissa)
-        {
-            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
-        }
-        v |= absM;
-
-        if (e > wasmMaxExponent)
-        {
-            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        }
-        if (e < wasmMinExponent)
-        {
-            return floatNull;
-        }
-        uint64_t const normExp = e - wasmMinExponent + 1;  //+97
-        v |= normExp << encodedMantissaBits;
-
-        Serializer msg;
-        msg.add64(v);
-        auto data = msg.getData();
+// Serialize a Number to the STNumber float encoding.
+std::expected<Bytes, HostFunctionError>
+floatEncode(Number const& n)
+{
+    Serializer msg;
+    STNumber(sfNumber, n).add(msg);
+    auto data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
-        std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent()
-                  << ", hex: ";
-        std::cout << std::hex << std::uppercase << std::setfill('0');
-        for (auto const& c : data)
-            std::cout << std::setw(2) << (unsigned)c << " ";
-        std::cout << std::dec << std::setfill(' ') << std::endl;
+    std::cout << "m: " << std::setw(20) << n.mantissa() << ", e: " << std::setw(12) << n.exponent()
+              << ", hex: ";
+    std::cout << std::hex << std::uppercase << std::setfill('0');
+    for (auto const& c : data)
+        std::cout << std::setw(2) << (unsigned)c << " ";
+    std::cout << std::dec << std::setfill(' ') << std::endl;
 #endif
-
-        return data;
-    }
-};
-
-Bytes const Number2::floatNull = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    return std::expected<Bytes, HostFunctionError>(std::move(data));
+}
 
 struct FloatState
 {
-    Number::rounding_mode oldMode_;
-    MantissaRange::mantissa_scale oldScale_;
-    bool good_{false};
+    // Set only when the requested mode is valid; sets the rounding mode on
+    // construction and restores the previous mode on destruction.
+    std::optional<NumberRoundModeGuard> guard;
 
-    FloatState(int32_t mode) : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale())
+    explicit FloatState(int32_t mode)
     {
-        if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
-            return;
-
-        Number::setround(static_cast<Number::rounding_mode>(mode));
-        Number::setMantissaScale(MantissaRange::mantissa_scale::small);
-        good_ = true;
+        if (auto const rm = Number::checkedRoundingMode(mode))
+            guard.emplace(*rm);
     }
 
-    ~FloatState()
-    {
-        Number::setround(oldMode_);
-        Number::setMantissaScale(oldScale_);
-    }
-
+    explicit
     operator bool() const
     {
-        return good_;
+        return guard.has_value();
     }
 };
 
@@ -194,8 +104,8 @@ std::string
 floatToString(Slice const& data)
 {
     // set default mode as we don't expect it will be used here
-    detail::FloatState const rm(Number::rounding_mode::to_nearest);
-    detail::Number2 const num(data);
+    detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
+    auto const num = detail::floatDecode(data);
     if (!num)
     {
         std::string hex;
@@ -203,292 +113,327 @@ floatToString(Slice const& data)
         boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
         return "Invalid data: " + hex;
     }
-
-    auto const s = to_string(num);
-    return s;
+    return to_string(*num);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const num(x);
-        return num.toBytes();
+        return detail::floatEncode(Number(x));
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const num(x);
-        auto r = num.toBytes();
-        return r;
+        return detail::floatEncode(Number(x, 0, Number::Normalized{}));
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
-floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+std::expected<Bytes, HostFunctionError>
+floatFromSTAmountImpl(STAmount const& x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const num(mantissa, exponent);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+
+        return detail::floatEncode(static_cast<Number>(x));
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return std::unexpected(HostFunctionError::FloatComputationError);
+    }
+    // LCOV_EXCL_STOP
+}
+
+std::expected<Bytes, HostFunctionError>
+floatFromSTNumberImpl(STNumber const& x, int32_t mode)
+{
+    try
+    {
+        detail::FloatState const rm(mode);
+        if (!rm)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+
+        return detail::floatEncode(x.value());
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return std::unexpected(HostFunctionError::FloatComputationError);
+    }
+    // LCOV_EXCL_STOP
+}
+
+std::expected<int64_t, HostFunctionError>
+floatToIntImpl(Slice const& x, int32_t mode)
+{
+    try
+    {
+        detail::FloatState const rm(mode);
+        if (!rm)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+
+        auto const num = detail::floatDecode(x);
         if (!num)
-            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        return num.toBytes();
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+        return static_cast<int64_t>(*num);
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return std::unexpected(HostFunctionError::FloatComputationError);
+    }
+    // LCOV_EXCL_STOP
+}
+
+std::expected<FloatPair, HostFunctionError>
+floatToMantExpImpl(Slice const& x)
+{
+    try
+    {
+        detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
+        if (!rm)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+
+        auto const num = detail::floatDecode(x);
+        if (!num)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+
+        return FloatPair(num->mantissa(), num->exponent());
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return std::unexpected(HostFunctionError::FloatComputationError);
+    }
+    // LCOV_EXCL_STOP
+}
+
+std::expected<Bytes, HostFunctionError>
+floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+{
+    try
+    {
+        detail::FloatState const rm(mode);
+        if (!rm)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const num = detail::numberFromMantExp(mantissa, exponent);
+        if (!num)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        return detail::floatEncode(*num);
     }
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
     {
         // set default mode as we don't expect it will be used here
-        detail::FloatState const rm(Number::rounding_mode::to_nearest);
-        detail::Number2 const xx(x);
+        detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
+
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const yy(y);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const yy = detail::floatDecode(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        if (xx < yy)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        if (*xx < *yy)
             return 2;
-        if (xx == yy)
+        if (*xx == *yy)
             return 0;
         return 1;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const xx(x);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const yy(y);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const yy = detail::floatDecode(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const res = xx + yy;
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        return res.toBytes();
+        return detail::floatEncode(*xx + *yy);
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const xx(x);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const yy(y);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const yy = detail::floatDecode(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const res = xx - yy;
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        return res.toBytes();
+        return detail::floatEncode(*xx - *yy);
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const xx(x);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const yy(y);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const yy = detail::floatDecode(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const res = xx * yy;
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        return res.toBytes();
+        return detail::floatEncode(*xx * *yy);
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const xx(x);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const yy(y);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        auto const yy = detail::floatDecode(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 const res = xx / yy;
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        return res.toBytes();
+        return detail::floatEncode(*xx / *yy);
     }
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatRootImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
         if (n < 1)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const xx(x);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const res(root(xx, n));
-
-        return res.toBytes();
+        return detail::floatEncode(root(*xx, n));
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
-        if ((n < 0) || (n > wasmMaxExponent))
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        if ((n < 0) || (n > Number::kMaxExponent))
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
-        detail::Number2 const xx(x);
+        auto const xx = detail::floatDecode(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        if (xx == Number() && (n == 0))
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        if (*xx == Number() && (n == 0))
+            return std::unexpected(HostFunctionError::InvalidParams);
 
-        detail::Number2 const res(power(xx, n, 1));
-
-        return res.toBytes();
+        return detail::floatEncode(power(*xx, n, 1));
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-    // LCOV_EXCL_STOP
-}
-
-Expected<Bytes, HostFunctionError>
-floatLogImpl(Slice const& x, int32_t mode)
-{
-    try
-    {
-        detail::FloatState const rm(mode);
-        if (!rm)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        detail::Number2 const xx(x);
-        if (!xx)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        detail::Number2 const res(log10(xx));
-
-        return res.toBytes();
-    }
-    // LCOV_EXCL_START
-    catch (...)
-    {
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-    }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
 }
 
@@ -498,70 +443,88 @@ floatLogImpl(Slice const& x, int32_t mode)
 // ACTUAL HOST FUNCTIONS
 // =========================================================
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode) const
 {
     return wasm_float::floatFromIntImpl(x, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode) const
 {
     return wasm_float::floatFromUintImpl(x, mode);
 }
 
-Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromSTAmount(STAmount const& x, int32_t mode) const
 {
-    return wasm_float::floatSetImpl(mantissa, exponent, mode);
+    return wasm_float::floatFromSTAmountImpl(x, mode);
 }
 
-Expected<int32_t, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromSTNumber(STNumber const& x, int32_t mode) const
+{
+    return wasm_float::floatFromSTNumberImpl(x, mode);
+}
+
+std::expected<int64_t, HostFunctionError>
+WasmHostFunctionsImpl::floatToInt(Slice const& x, int32_t mode) const
+{
+    return wasm_float::floatToIntImpl(x, mode);
+}
+
+std::expected<FloatPair, HostFunctionError>
+WasmHostFunctionsImpl::floatToMantExp(Slice const& x) const
+{
+    return wasm_float::floatToMantExpImpl(x);
+}
+
+std::expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
+{
+    return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
+}
+
+std::expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y) const
 {
     return wasm_float::floatCompareImpl(x, y);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatAddImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatMultiplyImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatDivideImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatRootImpl(x, n, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatPowerImpl(x, n, mode);
-}
-
-Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode) const
-{
-    return wasm_float::floatLogImpl(x, mode);
 }
 
 }  // namespace xrpl

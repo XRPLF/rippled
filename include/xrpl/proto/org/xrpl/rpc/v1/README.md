@@ -1,8 +1,8 @@
 # Protocol buffer definitions for gRPC
 
-This folder contains the protocol buffer definitions used by the rippled gRPC API.
+This folder contains the protocol buffer definitions used by the xrpld gRPC API.
 The gRPC API attempts to mimic the JSON/Websocket API as much as possible.
-As of April 2020, the gRPC API supports a subset of the full rippled API:
+As of April 2020, the gRPC API supports a subset of the full xrpld API:
 tx, account_tx, account_info, fee and submit.
 
 ### Making Changes
@@ -63,16 +63,16 @@ templated `CallData` class in GRPCServerImpl::setupListeners(). The template
 parameters should be the request type and the response type.
 
 Finally, define the handler itself in the appropriate file under the
-src/ripple/rpc/handlers folder. If the method already has a JSON/Websocket
+src/xrpld/rpc/handlers folder. If the method already has a JSON/Websocket
 equivalent, write the gRPC handler in the same file, and abstract common logic
 into helper functions (see Tx.cpp or AccountTx.cpp for an example).
 
 #### Testing
 
 When modifying an existing gRPC method, be sure to test that modification in the
-corresponding, existing unit test. When creating a new gRPC method, implement a class that
-derives from GRPCTestClientBase, and use the newly created class to call the new
-method. See the class `GrpcTxClient` in the file Tx_test.cpp for an example.
+corresponding, existing unit test. When creating a new gRPC method, create a
+client stub with `XRPLedgerAPIService::NewStub` and `grpc::CreateChannel`, and
+use it to call the new method. See `GRPCServerTLS_test.cpp` for an example.
 The gRPC tests are paired with their JSON counterpart, and the tests should
 mirror the JSON test as much as possible.
 
