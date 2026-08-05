@@ -3,7 +3,7 @@ members = ["hello_world"]
 resolver = "3"
 
 [workspace.dependencies]
-cxx = { version = "1.0.194", features = ["c++20"] }
+cxx = { version = "1.0.198", features = ["c++20"] }
 
 [workspace.package]
 edition = "2024"
