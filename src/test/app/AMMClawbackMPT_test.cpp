@@ -543,10 +543,10 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             auto const bobLpBefore = amm.getLPTokensBalance(bob.id());
 
             // Attempt to clawback 1/6th of the BTC pool. When the zero-rounding
-            // guard is active (gated by fixCleanup3_3_0) the rounded amount
+            // guard is active (gated by fixCleanup3_4_0) the rounded amount
             // drops to 0 and should trigger tecAMM_FAILED.
             env(amm::ammClawback(gw, alice, btc, XRP, btc(1)),
-                Ter(features[fixCleanup3_3_0] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
+                Ter(features[fixCleanup3_4_0] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
             env.close();
 
             auto const [poolBtcAfter, poolXrpAfter, lptAfter] = amm.balances();
@@ -554,9 +554,9 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             auto const aliceLpAfter = amm.getLPTokensBalance(alice.id());
             auto const bobLpAfter = amm.getLPTokensBalance(bob.id());
 
-            if (features[fixCleanup3_3_0])
+            if (features[fixCleanup3_4_0])
             {
-                // Post-fixCleanup3_3_0: Clawback fails because the BTC balance
+                // Post-fixCleanup3_4_0: Clawback fails because the BTC balance
                 // would round to zero. All balances must remain untouched.
                 BEAST_EXPECT(poolBtcAfter == poolBtcBefore);
                 BEAST_EXPECT(poolXrpAfter == poolXrpBefore);
@@ -566,7 +566,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             }
             else
             {
-                // Pre-fixCleanup3_3_0: BTC rounds to zero and the clawback
+                // Pre-fixCleanup3_4_0: BTC rounds to zero and the clawback
                 // silently burns alice's LP without clawing back any BTC.
                 BEAST_EXPECT(poolBtcAfter == poolBtcBefore);
                 BEAST_EXPECT(issuerOAAfter == issuerOABefore);
@@ -615,16 +615,16 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             auto const danLpBefore = amm.getLPTokensBalance(dan.id());
 
             env(amm::ammClawback(gw, carol, btc, eth, btc(500)),
-                Ter(features[fixCleanup3_3_0] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
+                Ter(features[fixCleanup3_4_0] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
             env.close();
 
             auto const [poolBtcAfter, poolEthAfter, lptAfter] = amm.balances();
             auto const carolLpAfter = amm.getLPTokensBalance(carol.id());
             auto const danLpAfter = amm.getLPTokensBalance(dan.id());
 
-            if (features[fixCleanup3_3_0])
+            if (features[fixCleanup3_4_0])
             {
-                // Post-fixCleanup3_3_0: clawback fails because the ETH (Asset2)
+                // Post-fixCleanup3_4_0: clawback fails because the ETH (Asset2)
                 // balance would round to zero (guard fires via
                 // amount2Rounded == 0). All balances must remain untouched.
                 BEAST_EXPECT(poolBtcAfter == poolBtcBefore);
@@ -634,7 +634,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             }
             else
             {
-                // Pre-fixCleanup3_3_0: the asymmetric round-off goes through.
+                // Pre-fixCleanup3_4_0: the asymmetric round-off goes through.
                 // btc is clawed (non-zero) but eth rounds to zero, so the eth
                 // pool is untouched while carol's LP is burned. This asymmetry
                 // proves amount2Rounded == 0 is the trigger.
@@ -1962,9 +1962,9 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testInvalidRequest(all);
         testFeatureDisabled(all);
         testAMMClawbackAmount(all);
-        testAMMClawbackAmount(all - fixCleanup3_3_0);
+        testAMMClawbackAmount(all - fixCleanup3_4_0);
         testAMMClawbackAmountRoundsToZero(all);
-        testAMMClawbackAmountRoundsToZero(all - fixCleanup3_3_0);
+        testAMMClawbackAmountRoundsToZero(all - fixCleanup3_4_0);
         testAMMClawbackAll(all);
         testAMMClawbackAmountSameIssuer(all);
         testAMMClawbackAllSameIssuer(all);

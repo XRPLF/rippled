@@ -356,7 +356,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         // The requested clawback amount is likely too small and results in
         // one-sided pool withdrawal due to round off. Fail so the issuer can
         // clawback a larger amount.
-        if (rules.enabled(fixCleanup3_3_0) &&
+        if (rules.enabled(fixCleanup3_4_0) &&
             (amountRounded == beast::kZero || amount2Rounded == beast::kZero))
             return {tecAMM_FAILED, STAmount{}, STAmount{}, STAmount{}};
 
