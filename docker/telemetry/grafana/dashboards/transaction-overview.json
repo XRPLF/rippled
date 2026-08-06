@@ -530,7 +530,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 48
       },
@@ -556,47 +556,6 @@
           "unit": "suffix: enqueues/s",
           "custom": {
             "axisLabel": "Enqueues / Sec",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
-      "description": "**What:** Fraction of transactions that applied straight to the open ledger versus those that had to be queued.\n**How it's computed:** Ratio of direct applies to direct-plus-queued over a 5-minute window, per node.\n**Reading it:** A high fraction means the network is keeping up without escalation.\n**Healthy range:** Near 1.0 in normal conditions.\n**Watch for:** A falling fraction is the cleanest single signal the network has entered sustained fee escalation.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::tryDirectApply, TxQ::apply",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 600
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[$__rate_interval])) / clamp_min(sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[$__rate_interval])) + sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[$__rate_interval])), 1)",
-          "interval": "15s",
-          "legendFormat": "Direct-Apply Fraction [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "custom": {
-            "axisLabel": "Bypass Fraction",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
