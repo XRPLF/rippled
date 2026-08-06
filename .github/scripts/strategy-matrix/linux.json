@@ -14,7 +14,8 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": true
+        "minimal": true,
+        "benchmark": true
       },
 
       {
