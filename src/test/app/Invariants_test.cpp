@@ -2426,7 +2426,7 @@ class Invariants_test : public beast::unit_test::Suite
         vaultID = vKeylet.key;
 
         // Create Loan Broker
-        using namespace loanBroker;
+        using namespace loan_broker;
 
         auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
@@ -2735,7 +2735,7 @@ class Invariants_test : public beast::unit_test::Suite
                         brokerKeylet = this->createLoanBroker(alice, env, asset);
                         if (!BEAST_EXPECT(env.le(brokerKeylet)))
                             return false;
-                        env(loanBroker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env(loan_broker::coverDeposit(alice, brokerKeylet.key, asset(10)));
                         env.close();
                         return BEAST_EXPECT(env.le(brokerKeylet));
                     };
@@ -3385,6 +3385,41 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{
                 ttVAULT_DEPOSIT, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // A negative loss unrealized must trip the invariant. ttLOAN_MANAGE is
+        // allowed to change loss unrealized, so it isolates this check from the
+        // "must not change loss unrealized" invariant. Gated behind
+        // fixCleanup3_4_0 (see below).
+        doInvariantCheck(
+            {"loss unrealized must not be negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Without fixCleanup3_4_0 the same state must NOT trip the invariant,
+        // preserving pre-amendment behavior (no fork risk).
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - fixCleanup3_4_0),
+            {},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.lossUnrealized = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
             precloseXrp,
             TxAccount::A2);
 
