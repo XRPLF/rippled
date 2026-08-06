@@ -34,13 +34,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
