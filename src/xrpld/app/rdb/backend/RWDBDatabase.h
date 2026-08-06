@@ -488,6 +488,11 @@ public:
 
         if (range)
         {
+            // Inverted ranges (first > last) can appear via CTID + ledgerRange
+            // when ledgerSeq >> txnIndex. Do not wrap uint32_t and spin.
+            if (range->first() > range->last())
+                return TxSearched::Some;
+
             std::size_t count = 0;
             for (LedgerIndex seq = range->first();; ++seq)
             {

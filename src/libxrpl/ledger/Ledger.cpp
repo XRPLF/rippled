@@ -1,6 +1,7 @@
 #include <xrpl/ledger/Ledger.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -49,17 +50,6 @@ namespace xrpl {
 CreateGenesisT const kCreateGenesis{};
 
 namespace {
-
-// Local mirror — libxrpl cannot depend on xrpld.core.Config.
-bool
-isNullBackend()
-{
-    static bool const kV = [] {
-        char const* e = std::getenv("XRPL_RWDB_NULL");
-        return e && *e && std::string_view{e} != "0";
-    }();
-    return kV;
-}
 
 template <class Map>
 std::size_t

@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -129,10 +130,11 @@ SHAMapStoreImp::SHAMapStoreImp(
     isNullBackend_ = boost::iequals(get(section, Keys::kType), "rwdb");
 
     // RWDB is always null-backend: the in-memory node store never
-    // persists or retrieves objects.  Set the env var so that libxrpl
-    // helpers (which cannot access Config) can detect null mode.
+    // persists or retrieves objects.  Publish via a process-wide atomic
+    // so libxrpl helpers (which cannot access Config) can detect null mode
+    // without setenv/getenv races.
     if (isNullBackend_)
-        ::setenv("XRPL_RWDB_NULL", "1", 1);
+        setNullBackend(true);
 
     if (isNullBackend_)
     {

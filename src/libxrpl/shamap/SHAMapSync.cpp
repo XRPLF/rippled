@@ -1,6 +1,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
@@ -19,14 +20,12 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <cstdint>
-#include <cstdlib>
 #include <exception>
 #include <functional>
 #include <iterator>
 #include <mutex>
 #include <optional>
 #include <stack>
-#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -45,11 +44,9 @@ namespace {
 bool
 useFullBelowCache()
 {
-    static bool const kUse = [] {
-        char const* e = std::getenv("XRPL_RWDB_NULL");
-        return !(e && *e && std::string_view{e} != "0");
-    }();
-    return kUse;
+    // Shared FullBelowCache is unsafe in null-backend mode: cache hits
+    // skip subtrees that were never pinned into another SHAMap.
+    return !isNullBackend();
 }
 
 }  // namespace

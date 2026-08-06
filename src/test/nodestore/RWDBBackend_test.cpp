@@ -1,21 +1,18 @@
 /**
  * @file
- * @brief Tests for RWDBBackend - null mode, fetchBatch, and environment variable parsing.
+ * @brief Tests for RWDB null-backend flag and mode helpers.
  */
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/unit_test.h>
-
-#include <cstdlib>
-#include <string>
-#include <string_view>
 
 namespace xrpl::test {
 
 /**
- * Test RWDBBackend null mode and environment variable parsing.
+ * Test null-backend flag used by RWDBBackend / SHAMap / Config.
  *
- * These tests verify the XRPL_RWDB_NULL environment variable behavior
- * which short-circuits fetch/store operations in null mode.
+ * Replaces the former XRPL_RWDB_NULL env-var path with the thread-safe
+ * process-wide atomic flag.
  */
 class RWDBBackend_test : public beast::unit_test::Suite
 {
@@ -23,114 +20,47 @@ public:
     void
     run() override
     {
-        testNullModeEnvVarParsing();
-        testNullModeCleanupRegression();
+        testNullBackendFlag();
+        testNullBackendCleanupRegression();
     }
 
     void
-    testNullModeEnvVarParsing()
+    testNullBackendFlag()
     {
-        testcase("nullMode env var parsing");
+        testcase("nullBackend flag");
 
-        // Save current state
-        char* original = std::getenv("XRPL_RWDB_NULL");
-        std::string originalValue;
-        bool hadOriginal = original != nullptr;
-        if (hadOriginal)
-            originalValue = original;
+        bool const original = isNullBackend();
 
-        // Test unset -> should be false (we can't call the actual function here
-        // without including the implementation, so we test the logic directly)
-        unsetenv("XRPL_RWDB_NULL");
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(!result);
-        }
+        setNullBackend(false);
+        BEAST_EXPECT(!isNullBackend());
 
-        // Test set to "1" -> should be true
-        setenv("XRPL_RWDB_NULL", "1", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(result);
-        }
+        setNullBackend(true);
+        BEAST_EXPECT(isNullBackend());
 
-        // Test set to "true" -> should be true
-        setenv("XRPL_RWDB_NULL", "true", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(result);
-        }
+        setNullBackend(false);
+        BEAST_EXPECT(!isNullBackend());
 
-        // Test set to "0" -> should be false (explicit disable)
-        setenv("XRPL_RWDB_NULL", "0", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(!result);
-        }
-
-        // Test set to empty string -> should be false
-        setenv("XRPL_RWDB_NULL", "", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(!result);
-        }
-
-        // Restore original state
-        if (hadOriginal)
-            setenv("XRPL_RWDB_NULL", originalValue.c_str(), 1);
-        else
-            unsetenv("XRPL_RWDB_NULL");
+        setNullBackend(original);
     }
 
     void
-    testNullModeCleanupRegression()
+    testNullBackendCleanupRegression()
     {
-        testcase("nullMode cleanup regression");
+        testcase("nullBackend cleanup regression");
 
-        // Verify that setting and unsetting the env var works correctly
-        // This tests for potential test pollution between unit tests
+        bool const original = isNullBackend();
 
-        // Save current state
-        char* original = std::getenv("XRPL_RWDB_NULL");
-        std::string originalValue;
-        bool hadOriginal = original != nullptr;
-        if (hadOriginal)
-            originalValue = original;
+        setNullBackend(true);
+        BEAST_EXPECT(isNullBackend());
 
-        // Set null mode
-        setenv("XRPL_RWDB_NULL", "1", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(result);
-        }
+        // Simulate destructor / test cleanup
+        setNullBackend(false);
+        BEAST_EXPECT(!isNullBackend());
 
-        // Unset - simulating test cleanup
-        unsetenv("XRPL_RWDB_NULL");
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(!result);
-        }
+        setNullBackend(true);
+        BEAST_EXPECT(isNullBackend());
 
-        // Set again - should work after unset
-        setenv("XRPL_RWDB_NULL", "1", 1);
-        {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            bool result = e && *e && std::string_view{e} != "0";
-            BEAST_EXPECT(result);
-        }
-
-        // Restore original state
-        if (hadOriginal)
-            setenv("XRPL_RWDB_NULL", originalValue.c_str(), 1);
-        else
-            unsetenv("XRPL_RWDB_NULL");
+        setNullBackend(original);
     }
 };
 

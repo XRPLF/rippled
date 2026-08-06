@@ -4,6 +4,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/ledger/Ledger.h>
@@ -124,10 +125,10 @@ public:
 
     ~SHAMapStoreImp()
     {
-        // Clean up environment variable set in constructor to avoid polluting
-        // subsequent tests when run in the same process
+        // Clear the process-wide flag so subsequent unit tests in the same
+        // process are not left in null-backend mode.
         if (isNullBackend_)
-            ::unsetenv("XRPL_RWDB_NULL");
+            setNullBackend(false);
     }
 
     std::uint32_t

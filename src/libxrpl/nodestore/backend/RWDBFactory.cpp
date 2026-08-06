@@ -1,3 +1,4 @@
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/ReaderPreferringSharedMutex.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
@@ -10,11 +11,9 @@
 #include <boost/core/ignore_unused.hpp>
 
 #include <cstdint>
-#include <cstdlib>
 #include <map>
 #include <memory>
 #include <shared_mutex>
-#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -90,11 +89,7 @@ public:
     static bool
     nullMode()
     {
-        static bool const kV = [] {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            return e && *e && std::string_view{e} != "0";
-        }();
-        return kV;
+        return isNullBackend();
     }
 
     Status

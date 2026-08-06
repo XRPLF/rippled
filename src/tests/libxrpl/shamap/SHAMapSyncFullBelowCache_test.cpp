@@ -3,19 +3,16 @@
  * @brief Tests for SHAMapSync FullBelowCache disable in null mode.
  */
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/unit_test.h>
-
-#include <cstdlib>
-#include <string>
-#include <string_view>
 
 namespace xrpl::test {
 
 /**
- * Test SHAMapSync useFullBelowCache behavior with XRPL_RWDB_NULL.
+ * Test SHAMapSync useFullBelowCache behavior with null-backend mode.
  *
- * When null mode is enabled, the FullBelowCache should be disabled
- * because nodes are not persisted to disk.
+ * When null mode is enabled, the shared FullBelowCache should be disabled
+ * because nodes are not persisted and cache hits would skip unpinned subtrees.
  */
 class SHAMapSyncFullBelowCache_test : public beast::unit_test::Suite
 {
@@ -32,30 +29,16 @@ public:
     {
         testcase("useFullBelowCache null mode");
 
-        // Save current state
-        char* original = std::getenv("XRPL_RWDB_NULL");
-        std::string originalValue;
-        bool hadOriginal = original != nullptr;
-        if (hadOriginal)
-            originalValue = original;
+        bool const original = isNullBackend();
+        setNullBackend(true);
 
-        // Set null mode
-        setenv("XRPL_RWDB_NULL", "1", 1);
-
-        // The useFullBelowCache logic checks the same environment variable
-        // as RWDBBackend::nullMode(), so we verify the logic directly
-        char const* e = std::getenv("XRPL_RWDB_NULL");
-        bool nullMode = e && *e && std::string_view{e} != "0";
-        bool useFullBelowCache = !nullMode;
+        bool const nullMode = isNullBackend();
+        bool const useFullBelowCache = !nullMode;
 
         BEAST_EXPECT(nullMode);
         BEAST_EXPECT(!useFullBelowCache);
 
-        // Restore original state
-        if (hadOriginal)
-            setenv("XRPL_RWDB_NULL", originalValue.c_str(), 1);
-        else
-            unsetenv("XRPL_RWDB_NULL");
+        setNullBackend(original);
     }
 
     void
@@ -63,29 +46,16 @@ public:
     {
         testcase("useFullBelowCache normal mode");
 
-        // Save current state
-        char* original = std::getenv("XRPL_RWDB_NULL");
-        std::string originalValue;
-        bool hadOriginal = original != nullptr;
-        if (hadOriginal)
-            originalValue = original;
+        bool const original = isNullBackend();
+        setNullBackend(false);
 
-        // Unset null mode
-        unsetenv("XRPL_RWDB_NULL");
-
-        // In normal mode, FullBelowCache should be enabled
-        char const* e = std::getenv("XRPL_RWDB_NULL");
-        bool nullMode = e && *e && std::string_view{e} != "0";
-        bool useFullBelowCache = !nullMode;
+        bool const nullMode = isNullBackend();
+        bool const useFullBelowCache = !nullMode;
 
         BEAST_EXPECT(!nullMode);
         BEAST_EXPECT(useFullBelowCache);
 
-        // Restore original state
-        if (hadOriginal)
-            setenv("XRPL_RWDB_NULL", originalValue.c_str(), 1);
-        else
-            unsetenv("XRPL_RWDB_NULL");
+        setNullBackend(original);
     }
 };
 

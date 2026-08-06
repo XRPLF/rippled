@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -345,21 +346,17 @@ public:
         return useTxTables_;
     }
 
-    /** Returns true when the RWDB backend is running in null mode.
-
-        In null mode the in-memory node store never persists or retrieves
-        objects — nodes are retained purely through the Ledger -> SHAMap
-        shared_ptr retention chain.  Activated via the XRPL_RWDB_NULL
-        environment variable.
-    */
+    /**
+     * Returns true when the RWDB backend is running in null mode.
+     *
+     * In null mode the in-memory node store never persists or retrieves
+     * objects — nodes are retained purely through the Ledger -> SHAMap
+     * shared_ptr retention chain.  Set via setNullBackend() when type=rwdb.
+     */
     static bool
     nullBackend()
     {
-        static bool const kV = [] {
-            char const* e = std::getenv("XRPL_RWDB_NULL");
-            return e && *e && std::string_view(e) != "0";
-        }();
-        return kV;
+        return isNullBackend();
     }
 
     [[nodiscard]] bool
