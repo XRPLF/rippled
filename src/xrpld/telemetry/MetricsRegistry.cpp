@@ -80,7 +80,10 @@
 
 namespace metric_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
-namespace resource = opentelemetry::sdk::resource;
+// Not `resource`: that would collide with xrpl::resource (the resource-accounting
+// namespace), which encloses every use site below. Inner-scope lookup would find
+// that namespace instead of this file-scope alias.
+namespace otel_resource = opentelemetry::sdk::resource;
 
 namespace {
 
@@ -290,7 +293,7 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
 
     // Configure resource attributes so Prometheus service_instance_id labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
-    resource::ResourceAttributes attrs;
+    otel_resource::ResourceAttributes attrs;
     // Use std::string, not a string literal: ResourceAttributes stores an
     // OTel AttributeValue variant whose char-const* overload binds to bool,
     // so "xrpld" would be recorded as the boolean true. std::string selects
@@ -298,7 +301,7 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
     if (!instanceId.empty())
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
-    auto resourceAttrs = resource::Resource::Create(attrs);
+    auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit microsecond buckets for the
     // duration histograms. Without this they use the SDK default buckets
