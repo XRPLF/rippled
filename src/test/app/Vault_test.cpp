@@ -6955,6 +6955,11 @@ class Vault_test : public beast::unit_test::Suite
     //
     // Fix (fixCleanup3_4_0): reject upfront with tecPRECISION_LOSS if the debit would
     // canonicalize back to the prior stored value.
+    //
+    // With a single depositor AssetsTotal == AssetsAvailable, so both
+    // debitRoundsToNoOp operands trip together here. LoanRounding_test's
+    // "dust debit vs AssetsTotal only" case isolates the AssetsTotal operand
+    // via a heavily-loaned vault.
     void
     testBugVaultDustDebitCanonicalizesToNoOp()
     {
