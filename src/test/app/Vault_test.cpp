@@ -1150,9 +1150,10 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx, Ter{temDISABLED});
             });
 
-        // Valid closed-ended creation with a comfortably interior gap
-        // (well above MIN_INVESTMENT_PERIOD and well below
-        // MAX_INVESTMENT_PERIOD).
+        /*
+         * Valid closed-ended creation with a comfortably interior gap
+         * (well above MIN_INVESTMENT_PERIOD and well below MAX_INVESTMENT_PERIOD).
+         */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + 86400;
@@ -1173,8 +1174,7 @@ class Vault_test : public beast::unit_test::Suite
             }
         });
 
-        // ClosedEnded missing one of SubscriptionDate / RedemptionDate =>
-        // temMALFORMED.
+        // ClosedEnded missing one of SubscriptionDate / RedemptionDate => temMALFORMED.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto [tx, keylet] = vault.create(
@@ -1194,8 +1194,18 @@ class Vault_test : public beast::unit_test::Suite
             env(tx, Ter{temMALFORMED});
         });
 
-        // SubscriptionDate not strictly after parent close time (preclaim,
-        // state-dependent - returns tecEXPIRED).
+        /*
+         * SubscriptionDate not strictly after parent close time (preclaim,
+         * state-dependent - returns tecEXPIRED). This is the only reachable
+         * path to tecEXPIRED in VaultCreate; see the note below the next case.
+         * Note: there is no separate "expired RedemptionDate" test case here.
+         * preflight enforces red >= sub + kMinInvestmentPeriod, so any past
+         * RedemptionDate implies a strictly-earlier, equally-past
+         * SubscriptionDate; the SubscriptionDate check above short-circuits
+         * first. The RedemptionDate arm of the hasExpired check in
+         * VaultCreate::preclaim is defensive and unreachable as the sole cause
+         * of tecEXPIRED.
+         */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const nowSec = env.now().time_since_epoch().count();
             auto [tx, keylet] = vault.create(
@@ -1207,25 +1217,13 @@ class Vault_test : public beast::unit_test::Suite
             env(tx, Ter{tecEXPIRED});
         });
 
-        // RedemptionDate not strictly after parent close time => tecEXPIRED.
-        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
-            using namespace std::chrono_literals;
-            // nowSec - minPeriod is std::uint32_t subtraction; advance the
-            // ledger clock past MIN_INVESTMENT_PERIOD so the subtraction
-            // cannot underflow.
-            env.close(std::chrono::seconds{minPeriod});
-            auto const nowSec = env.now().time_since_epoch().count();
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = nowSec - minPeriod,
-                 .redemptionDate = nowSec});
-            env(tx, Ter{tecEXPIRED});
-        });
-
-        // Gap smaller than MIN_INVESTMENT_PERIOD => temMALFORMED. Includes
-        // the SubscriptionDate >= RedemptionDate degenerate case.
+        /*
+         * Gap smaller than MIN_INVESTMENT_PERIOD => temMALFORMED. Includes
+         * the SubscriptionDate >= RedemptionDate degenerate cases: the
+         * red == sub boundary and the strictly-reversed red < sub case,
+         * the latter exercising the red <= sub short-circuit that guards
+         * the unsigned red - sub subtraction against wrap-around.
+         */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto [tx, keylet] = vault.create(
@@ -1244,6 +1242,16 @@ class Vault_test : public beast::unit_test::Suite
                  .vaultKind = closedEnded,
                  .subscriptionDate = sub,
                  .redemptionDate = sub});
+            env(tx, Ter{temMALFORMED});
+        });
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub - 1});
             env(tx, Ter{temMALFORMED});
         });
 
@@ -1388,6 +1396,11 @@ class Vault_test : public beast::unit_test::Suite
         env(tx);
         env.close();
 
+        // Pre-seed shares during Subscription so the depositor has capital to
+        // withdraw at the Redemption boundary below.
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10).value()}));
+        env.close();
+
         auto const deposit =
             [&](TER expected, std::source_location const& loc = std::source_location::current()) {
                 env(
@@ -1398,33 +1411,52 @@ class Vault_test : public beast::unit_test::Suite
                     Ter{expected});
                 env.close();
             };
+        auto const withdraw =
+            [&](TER expected, std::source_location const& loc = std::source_location::current()) {
+                env(
+                    WithSourceLocation{
+                        vault.withdraw(
+                            {.depositor = depositor, .id = keylet.key, .amount = XRP(1).value()}),
+                        loc},
+                    Ter{expected});
+                env.close();
+            };
 
         using d = NetClock::duration;
         using tp = NetClock::time_point;
 
-        // Deposit at ledger time comfortably before SubscriptionDate: allowed
-        // (Subscription).
-        deposit(tesSUCCESS);
+        // Assert both deposit and withdraw return codes at each point so the
+        // active phase is uniquely identified:
+        //   Subscription: deposit tesSUCCESS, withdraw tesSUCCESS (LP cancel)
+        //   Investment:   deposit tecNO_PERMISSION, withdraw tecTOO_SOON
+        //   Redemption:   deposit tecNO_PERMISSION, withdraw tesSUCCESS
 
-        // auto timeTo = [&] { return sub - env.now().time_since_epoch().count(); };
+        // Ledger time comfortably before SubscriptionDate: Subscription.
+        deposit(tesSUCCESS);
+        withdraw(tesSUCCESS);
+
         // Boundary: parent close time exactly at SubscriptionDate must still
-        // be Subscription (deposit still allowed).
+        // be Subscription.
         closeToTime(env, tp{d{sub}});
         deposit(tesSUCCESS);
+        withdraw(tesSUCCESS);
 
-        // One second past SubscriptionDate: Investment (deposit rejected).
+        // One second past SubscriptionDate: Investment.
         closeToTime(env, tp{d{sub + 1}});
         deposit(tecNO_PERMISSION);
+        withdraw(tecTOO_SOON);
 
         // Any point strictly before RedemptionDate remains Investment.
         closeToTime(env, tp{d{red - 1}});
         deposit(tecNO_PERMISSION);
+        withdraw(tecTOO_SOON);
 
         // Boundary: parent close time == RedemptionDate is Redemption (per
-        // spec table: now >= RedemptionDate). Deposits still rejected in
-        // Redemption.
+        // spec table: now >= RedemptionDate). Deposits are rejected but
+        // withdrawals succeed.
         closeToTime(env, tp{d{red}});
         deposit(tecNO_PERMISSION);
+        withdraw(tesSUCCESS);
     }
 
     // Spec 13.3: VaultDeposit is allowed only during Subscription
@@ -1479,23 +1511,29 @@ class Vault_test : public beast::unit_test::Suite
 
     // Spec 13.4: VaultWithdraw is allowed in Subscription and
     // Redemption; rejected in Investment. The AssetsAvailable cap continues
-    // to apply and is exercised in Redemption.
+    // to apply and is exercised in Redemption against a vault with capital
+    // deployed as an outstanding loan.
     void
     testVaultWithdrawClosedEnded()
     {
         testcase("closed-ended VaultWithdraw phase gating");
         using namespace test::jtx;
+        using namespace loanBroker;
+        using namespace loan;
 
         Env env{*this, testableAmendments()};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
-        env.fund(XRP(1000), owner, depositor);
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), owner, depositor, borrower);
         env.close();
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
         Asset const asset = xrpIssue();
         auto const sub = env.now().time_since_epoch().count() + 60;
-        auto const red = sub + kMinInvestmentPeriod + 60;
+        // Widen the Investment window so a single-payment loan (min payment
+        // interval kMinPaymentInterval = 60s) fits before RedemptionDate.
+        auto const red = sub + kMinInvestmentPeriod + 3600;
 
         Vault vault{env};
         auto [tx, keylet] = vault.create(
@@ -1507,8 +1545,17 @@ class Vault_test : public beast::unit_test::Suite
         env(tx);
         env.close();
 
-        // Deposit in Subscription so there is capital to withdraw later.
-        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10).value()}));
+        // Deposit XRP(100) in Subscription so the depositor's shares are
+        // worth XRP(100). The vault holds XRP(100) with
+        // AssetsAvailable == AssetsTotal.
+        env(vault.deposit(
+            {.depositor = depositor, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        // Create a loan broker backed by this vault. LoanBrokerSet has no
+        // phase gate, so this is fine to do in Subscription.
+        auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+        env(loanBroker::set(owner, keylet.key));
         env.close();
 
         auto const withdraw = [&](STAmount const& amount,
@@ -1530,15 +1577,30 @@ class Vault_test : public beast::unit_test::Suite
         withdraw(XRP(1).value(), tesSUCCESS);
 
         // Investment: rejected.
-        closeToTime(env, tp{d{sub}});
-        env.close();
+        closeToTime(env, tp{d{sub + 1}});
         withdraw(XRP(1).value(), tecTOO_SOON);
 
-        // Redemption: allowed. AssetsAvailable cap: attempting to withdraw
-        // more than the vault holds must still fail with tecINSUFFICIENT_FUNDS.
+        // Deploy capital: borrower takes a loan of XRP(60) against the
+        // vault, dropping AssetsAvailable to ~XRP(39) while AssetsTotal
+        // remains ~XRP(99).
+        env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+            loan::kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        // Redemption: withdrawals are allowed but subject to the
+        // AssetsAvailable cap. A small withdrawal within AssetsAvailable
+        // succeeds. A withdrawal within the depositor's share value but
+        // exceeding the vault's liquid balance fails with
+        // tecINSUFFICIENT_FUNDS from the vault-shortage guard (not the
+        // insufficient-shares guard).
         closeToTime(env, tp{d{red}});
-        withdraw(XRP(1).value(), tesSUCCESS);
-        withdraw(XRP(1'000'000).value(), tecINSUFFICIENT_FUNDS);
+        withdraw(XRP(10).value(), tesSUCCESS);
+        withdraw(XRP(80).value(), tecINSUFFICIENT_FUNDS);
     }
 
     // Spec 13.10: end-to-end lifecycle of a closed-ended vault

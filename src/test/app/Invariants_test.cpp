@@ -4467,6 +4467,7 @@ class Invariants_test : public beast::unit_test::Suite
             sleVault->at(sfFlags) = 0;
             sleVault->at(sfSequence) = sequence;
             sleVault->at(sfOwner) = owner.id();
+            sleVault->setFieldIssue(sfAsset, STIssue{sfAsset, Asset{xrpIssue()}});
             sleVault->at(sfAssetsTotal) = Number(0);
             sleVault->at(sfAssetsAvailable) = Number(0);
             sleVault->at(sfLossUnrealized) = Number(0);
@@ -4496,16 +4497,30 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        // 4.4: gap must lie in [MIN_INVESTMENT_PERIOD,
-        // MAX_INVESTMENT_PERIOD); covers the sub-minimum and degenerate
-        // RedemptionDate <= SubscriptionDate cases in one branch of the
-        // invariant.
+        // 4.4: gap smaller than MIN_INVESTMENT_PERIOD but with
+        // RedemptionDate > SubscriptionDate; exercises the sub-minimum
+        // branch of the gap check.
         doInvariantCheck(
             {"closed-ended vault RedemptionDate - SubscriptionDate must be "
              "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMinInvestmentPeriod - 1;
+                return insertBareClosedEndedVault(ac, a1, sub, red);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        // 4.4: RedemptionDate strictly before SubscriptionDate;
+        // exercises the red <= sub short-circuit that guards the
+        // unsigned red - sub subtraction against wrap-around.
+        doInvariantCheck(
+            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
+             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                std::uint32_t const sub = 1'000'000'000;
+                std::uint32_t const red = sub - 1;
                 return insertBareClosedEndedVault(ac, a1, sub, red);
             },
             XRPAmount{},
@@ -4577,6 +4592,79 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttLOAN_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
+
+        testcase << "Vault loan set - closed-ended final payment past "
+                    "RedemptionDate";
+
+        // XLS-103 7.4 (ValidLoan): a newly-created loan against a
+        // closed-ended vault must satisfy
+        // StartDate + PaymentInterval * PaymentRemaining < RedemptionDate.
+        // LoanSet::preclaim enforces the same bound; this test synthesises
+        // an invalid loan directly in the ApplyView so the invariant catches
+        // it even when preclaim is bypassed.
+        Keylet closedEndedBrokerKeylet = keylet::amendments();
+        std::uint32_t closedEndedRed = 0;
+        doInvariantCheck(
+            {"closed-ended loan final payment must precede RedemptionDate"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                // Touch the vault so ValidVault::finalizeLoanSet sees an
+                // entry in afterVault_; the vault is in Investment, so
+                // finalizeLoanSet itself passes.
+                auto sleVault = ac.view().peek(closedEndedKeylet);
+                if (!sleVault)
+                    return false;
+                ac.view().update(sleVault);
+
+                // Read the broker's next loan sequence to build the loan
+                // keylet the same way LoanSet::doApply would.
+                auto sleBroker = ac.view().peek(closedEndedBrokerKeylet);
+                if (!sleBroker)
+                    return false;
+                std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
+
+                // Synthesise a Loan whose final scheduled payment lands
+                // exactly at RedemptionDate: StartDate = red, interval = 60,
+                // remaining = 1 => red + 60 >= red.
+                auto sleLoan = std::make_shared<SLE>(
+                    keylet::loan(closedEndedBrokerKeylet.key, loanSeq));
+                sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
+                sleLoan->at(sfLoanSequence) = loanSeq;
+                sleLoan->at(sfBorrower) = a1.id();
+                sleLoan->at(sfStartDate) = closedEndedRed;
+                sleLoan->at(sfPaymentInterval) = 60;
+                sleLoan->at(sfPaymentRemaining) = 1;
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                ac.view().insert(sleLoan);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const&, Env& env) -> bool {
+                auto const sub = env.now().time_since_epoch().count() + 60;
+                auto const red = sub + kMinInvestmentPeriod + 1'000'000;
+                closedEndedRed = red;
+
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create(
+                    {.owner = a1,
+                     .asset = xrpIssue(),
+                     .vaultKind = closedEnded,
+                     .subscriptionDate = sub,
+                     .redemptionDate = red});
+                env(tx);
+                closedEndedKeylet = keylet;
+
+                // Create the loan broker; LoanBrokerSet has no phase gate.
+                closedEndedBrokerKeylet =
+                    keylet::loanBroker(a1.id(), env.seq(a1));
+                env(loanBroker::set(a1, keylet.key));
+
+                // Advance parent close time into Investment so
+                // ValidVault::finalizeLoanSet is satisfied.
+                env.close(tp{d{sub + 1}});
+                return true;
+            });
     }
 
     void

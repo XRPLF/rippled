@@ -321,7 +321,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         {
             auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
             auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
-            auto const finalPayment = getStartDate(ctx.view) + (interval * total);
+            auto const finalPayment = std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
             if (finalPayment >= vault->at(sfRedemptionDate))
                 return tecNO_PERMISSION;
         }

@@ -57,7 +57,7 @@ ValidLoan::finalize(
                     std::uint32_t const interval = after->at(sfPaymentInterval);
                     std::uint32_t const remaining = after->at(sfPaymentRemaining);
                     std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (startDate + (interval * remaining) >= redemption)
+                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >= redemption)
                     {
                         JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
                                            "must precede RedemptionDate";

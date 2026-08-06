@@ -32,9 +32,11 @@ namespace xrpl {
 
 namespace {
 
-// True iff the recorded sfVaultKind identifies a closed-ended vault.
-// Centralizes the presence + enum-value check used by the phase-gate
-// invariants below.
+/*
+ * True iff the recorded sfVaultKind identifies a closed-ended vault.
+ * Centralizes the presence + enum-value check used by the phase-gate
+ * invariants below.
+ */
 [[nodiscard]] bool
 isClosedEnded(std::optional<std::uint8_t> const& vaultKind)
 {
@@ -274,6 +276,14 @@ ValidVault::isVaultEmpty(Vault const& vault)
 bool
 ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
 {
+    if (afterVault_.empty())
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ValidVault::finalizeLoanSet : vault exists");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
     auto const& afterVault = afterVault_[0];
 
     // XLS-103 3.5.4: loan origination against a closed-ended vault is only
