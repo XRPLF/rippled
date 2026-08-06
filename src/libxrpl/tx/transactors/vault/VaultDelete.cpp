@@ -193,6 +193,50 @@ VaultDelete::doApply()
 
     view().erase(vaultPseudoSLE);
 
+    // Solution A (plan A §8.3): destroy the dust pseudo-account too, if this
+    // Vault has one. preclaim needs no change for this — plan A §8.1
+    // guarantees dust custody is already zero by the time
+    // sfAssetsAvailable and sfAssetsTotal are (closeVaultAssets pays out
+    // the whole dust balance at the terminal withdrawal) — but, mirroring
+    // this file's existing defensive style for the main pseudo-account,
+    // re-verify rather than trusting that.
+    bool dustAccountExisted = false;
+    if (auto const dustId = vault->at(~sfDustAccount))
+    {
+        dustAccountExisted = true;
+
+        if (auto ter = removeEmptyHolding(applyViewContext, *dustId, asset, j_); !isTesSuccess(ter))
+            return ter;
+
+        auto const dustAcctSLE = view().peek(keylet::account(*dustId));
+        if (!dustAcctSLE || dustAcctSLE->at(~sfVaultDustID) != vault->key())
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        if (*dustAcctSLE->at(sfBalance))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDelete: dust account has a balance";
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_STOP
+        }
+        if (dustAcctSLE->at(sfOwnerCount) != 0)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDelete: dust account still owns objects";
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_STOP
+        }
+        if (view().exists(keylet::ownerDir(*dustId)))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDelete: dust account has a directory";
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_STOP
+        }
+
+        view().erase(dustAcctSLE);
+    }
+
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
     if (!view().dirRemove(keylet::ownerDir(ownerID), vault->at(sfOwnerNode), vault->key(), false))
@@ -212,8 +256,17 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // We are destroying Vault and PseudoAccount, hence decrease by 2
-    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
+    // We are destroying the Vault and its main PseudoAccount, hence
+    // decrease by 2, plus 1 more if this Vault also had a dust
+    // pseudo-account. Deliberately keyed off dustAccountExisted (i.e.
+    // presence of sfDustAccount, recorded above before erasing the vault),
+    // NOT off the amendment and NOT off getVaultVersion (plan A §8.3): a
+    // Vault created before activation and deleted after would otherwise
+    // decrement 3 having incremented 2, corrupting the owner's reserve —
+    // and an XRP/MPT version-1 Vault would do the same, since sfLEVersion
+    // is set for every asset type but sfDustAccount only for IOU Vaults.
+    // The field records what was actually charged; the version does not.
+    decreaseOwnerCountForObject(view(), owner, vault, dustAccountExisted ? 3 : 2, j_);
 
     // Destroy the vault.
     view().erase(vault);
