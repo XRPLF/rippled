@@ -6,7 +6,8 @@
 
 namespace xrpl {
 
-/** Calculate one number divided by another number in percentage.
+/**
+ * Calculate one number divided by another number in percentage.
  * The result is rounded up to the next integer, and capped in the range [0,100]
  * E.g. calculatePercent(1, 100) = 1 because 1/100 = 0.010000
  *      calculatePercent(1, 99) = 2 because 1/99 = 0.010101
@@ -19,7 +20,7 @@ namespace xrpl {
  * @return the percentage, in [0, 100]
  *
  * @note total cannot be zero.
- * */
+ */
 constexpr std::size_t
 calculatePercent(std::size_t count, std::size_t total)
 {

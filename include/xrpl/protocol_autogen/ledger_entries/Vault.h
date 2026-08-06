@@ -33,7 +33,7 @@ public:
      * @brief Construct a Vault ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Vault(std::shared_ptr<SLE const> sle)
+    explicit Vault(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -287,6 +287,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfScale);
     }
+
+    /**
+     * @brief Get sfLEVersion (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getLEVersion() const
+    {
+        if (hasLEVersion())
+            return this->sle_->at(sfLEVersion);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLEVersion is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLEVersion() const
+    {
+        return this->sle_->isFieldPresent(sfLEVersion);
+    }
 };
 
 /**
@@ -330,7 +354,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    VaultBuilder(std::shared_ptr<SLE const> sle)
+    VaultBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltVAULT)
         {
@@ -339,7 +363,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfPreviousTxnID (SoeRequired)
@@ -503,6 +529,17 @@ public:
     setScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfScale] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLEVersion (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setLEVersion(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfLEVersion] = value;
         return *this;
     }
 

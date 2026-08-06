@@ -32,17 +32,17 @@ namespace xrpl {
 // }
 
 json::Value
-doDepositAuthorized(RPC::JsonContext& context)
+doDepositAuthorized(rpc::JsonContext& context)
 {
     json::Value const& params = context.params;
 
     // Validate source_account.
     if (!params.isMember(jss::source_account))
-        return RPC::missingFieldError(jss::source_account);
+        return rpc::missingFieldError(jss::source_account);
     if (!params[jss::source_account].isString())
     {
-        return RPC::makeError(
-            RpcInvalidParams, RPC::expectedFieldMessage(jss::source_account, "a string"));
+        return rpc::makeError(
+            RpcInvalidParams, rpc::expectedFieldMessage(jss::source_account, "a string"));
     }
 
     auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
@@ -52,11 +52,11 @@ doDepositAuthorized(RPC::JsonContext& context)
 
     // Validate destination_account.
     if (!params.isMember(jss::destination_account))
-        return RPC::missingFieldError(jss::destination_account);
+        return rpc::missingFieldError(jss::destination_account);
     if (!params[jss::destination_account].isString())
     {
-        return RPC::makeError(
-            RpcInvalidParams, RPC::expectedFieldMessage(jss::destination_account, "a string"));
+        return rpc::makeError(
+            RpcInvalidParams, rpc::expectedFieldMessage(jss::destination_account, "a string"));
     }
 
     auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
@@ -66,7 +66,7 @@ doDepositAuthorized(RPC::JsonContext& context)
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
-    json::Value result = RPC::lookupLedger(ledger, context);
+    json::Value result = rpc::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
@@ -74,7 +74,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     // If source account is not in the ledger it can't be authorized.
     if (!ledger->exists(keylet::account(srcAcct)))
     {
-        RPC::injectError(RpcSrcActNotFound, result);
+        rpc::injectError(RpcSrcActNotFound, result);
         return result;
     }
 
@@ -82,7 +82,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     auto const sleDest = ledger->read(keylet::account(dstAcct));
     if (!sleDest)
     {
-        RPC::injectError(RpcDstActNotFound, result);
+        rpc::injectError(RpcDstActNotFound, result);
         return result;
     }
 
@@ -90,21 +90,21 @@ doDepositAuthorized(RPC::JsonContext& context)
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<std::shared_ptr<SLE const>> lifeExtender;
+    std::vector<SLE::const_pointer> lifeExtender;
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
         if (!creds.isArray() || !creds)
         {
-            return RPC::makeError(
+            return rpc::makeError(
                 RpcInvalidParams,
-                RPC::expectedFieldMessage(
+                rpc::expectedFieldMessage(
                     jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
         if (creds.size() > kMaxCredentialsArraySize)
         {
-            return RPC::makeError(
-                RpcInvalidParams, RPC::expectedFieldMessage(jss::credentials, "array too long"));
+            return rpc::makeError(
+                RpcInvalidParams, rpc::expectedFieldMessage(jss::credentials, "array too long"));
         }
 
         lifeExtender.reserve(creds.size());
@@ -112,9 +112,9 @@ doDepositAuthorized(RPC::JsonContext& context)
         {
             if (!jo.isString())
             {
-                return RPC::makeError(
+                return rpc::makeError(
                     RpcInvalidParams,
-                    RPC::expectedFieldMessage(
+                    rpc::expectedFieldMessage(
                         jss::credentials, "an array of CredentialID(hash256)"));
             }
 
@@ -122,34 +122,34 @@ doDepositAuthorized(RPC::JsonContext& context)
             auto const credS = jo.asString();
             if (!credH.parseHex(credS))
             {
-                return RPC::makeError(
+                return rpc::makeError(
                     RpcInvalidParams,
-                    RPC::expectedFieldMessage(
+                    rpc::expectedFieldMessage(
                         jss::credentials, "an array of CredentialID(hash256)"));
             }
 
-            std::shared_ptr<SLE const> sleCred = ledger->read(keylet::credential(credH));
+            SLE::const_pointer sleCred = ledger->read(keylet::credential(credH));
             if (!sleCred)
             {
-                RPC::injectError(RpcBadCredentials, "credentials don't exist", result);
+                rpc::injectError(RpcBadCredentials, "credentials don't exist", result);
                 return result;
             }
 
             if (!sleCred->isFlag(lsfAccepted))
             {
-                RPC::injectError(RpcBadCredentials, "credentials aren't accepted", result);
+                rpc::injectError(RpcBadCredentials, "credentials aren't accepted", result);
                 return result;
             }
 
             if (credentials::checkExpired(*sleCred, ledger->header().parentCloseTime))
             {
-                RPC::injectError(RpcBadCredentials, "credentials are expired", result);
+                rpc::injectError(RpcBadCredentials, "credentials are expired", result);
                 return result;
             }
 
             if ((*sleCred)[sfSubject] != srcAcct)
             {
-                RPC::injectError(
+                rpc::injectError(
                     RpcBadCredentials, "credentials doesn't belong to the root account", result);
                 return result;
             }
@@ -157,7 +157,7 @@ doDepositAuthorized(RPC::JsonContext& context)
             auto [it, ins] = sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
             if (!ins)
             {
-                RPC::injectError(RpcBadCredentials, "duplicates in credentials", result);
+                rpc::injectError(RpcBadCredentials, "duplicates in credentials", result);
                 return result;
             }
             lifeExtender.push_back(std::move(sleCred));

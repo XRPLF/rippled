@@ -23,6 +23,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -74,7 +75,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            txJson = STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
         BEAST_EXPECT(txJson[jss::TransactionType] == tx[jss::TransactionType]);
         BEAST_EXPECT(txJson[jss::Account] == tx[jss::Account]);
@@ -170,7 +171,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            return STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
+            return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
 
         return txResult[jss::meta];
@@ -372,6 +373,37 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Signers[0]'.");
         }
         {
+            // Non-object SponsorSignature field
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            txJson[sfSponsorSignature] = "";
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'SponsorSignature', not object.");
+        }
+        {
+            // Invalid SponsorSignature.Signers field
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            json::Value sponsorSignature = json::ValueType::Object;
+            sponsorSignature[sfSigners] = "1";
+            txJson[sfSponsorSignature] = sponsorSignature;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] ==
+                    "Invalid field 'tx.SponsorSignature.Signers'.",
+                resp.toStyledString());
+        }
+        {
             // Invalid transaction
             json::Value params;
             json::Value txJson = json::ValueType::Object;
@@ -427,6 +459,20 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Transaction should not be signed.");
         }
+        {
+            // tfInnerBatchTxn flag on top-level transaction
+            json::Value params;
+            json::Value txJson{json::ValueType::Object};
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            txJson[jss::Flags] = tfInnerBatchTxn;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+        }
     }
 
     void
@@ -437,7 +483,7 @@ class Simulate_test : public beast::unit_test::Suite
         using namespace jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+            cfg->section(Sections::kTransactionQueue).set(Keys::kMinimumTxnInLedgerStandalone, "3");
             return cfg;
         }));
 
@@ -483,7 +529,7 @@ class Simulate_test : public beast::unit_test::Suite
         auto jt = env.jtnofill(
             batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
             batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
-            batch::Inner(pay(alice, bob, XRP(10)), seq + 1));
+            batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
 
         jt.jv.removeMember(jss::TxnSignature);
         json::Value params;
@@ -500,7 +546,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 0;
+                    cfg->networkId = 0;
                     return cfg;
                 })};
         static auto const kNewDomain = "123ABC";
@@ -550,6 +596,75 @@ class Simulate_test : public beast::unit_test::Suite
             tx[sfTxnSignature] = "";
             tx[sfSequence] = 1;
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+
+            // test without autofill
+            testTx(env, tx, validateOutput);
+        }
+
+        {
+            // autofill sponsor signature
+
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(
+                    result, tx, env.seq(env.master), env.current()->fees().base);
+
+                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
+                {
+                    json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(metadata[sfAffectedNodes.jsonName].size() == 2);
+
+                        auto node = metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(node.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = node[sfModifiedNode];
+                            BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
+                            auto previousFields = modifiedNode[sfPreviousFields];
+                            BEAST_EXPECT(!previousFields.isMember(sfBalance.jsonName));
+                        }
+
+                        auto node2 = metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(node2.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = node2[sfModifiedNode];
+                            BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
+
+                            auto previousFields = modifiedNode[sfPreviousFields];
+                            BEAST_EXPECT(previousFields.isMember(sfBalance.jsonName));
+                        }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            };
+
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), sponsor);
+            env.close();
+
+            json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain.jsonName] = kNewDomain;
+            tx[sfSponsor.jsonName] = sponsor.human();
+            tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+            tx[sfSponsorSignature.jsonName] = json::ValueType::Object;
+
+            // test with autofill
+            testTx(env, tx, validateOutput);
+
+            tx[sfSponsorSignature.jsonName][sfTxnSignature.jsonName] = "";
+            tx[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
 
             // test without autofill
             testTx(env, tx, validateOutput);
@@ -754,6 +869,58 @@ class Simulate_test : public beast::unit_test::Suite
             // test without autofill
             testTx(env, tx, validateOutput);
         }
+    }
+
+    void
+    testSuccessfulSponsoredTransactionMultisigned()
+    {
+        testcase("Successful sponsored multi-signed transaction");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const sponsor("sponsor");
+        Account const signer("signer");
+        env.fund(XRP(10000), sponsor, signer);
+        env.close();
+
+        env(signers(sponsor, 1, {{signer, 1}}));
+        env.close();
+
+        auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const result = resp[jss::result];
+            // Verifies Fee autofill counts nested sponsor-signature signers.
+            auto const expectedFee = env.current()->fees().base * 2;
+            checkBasicReturnValidity(result, tx, env.seq(env.master), expectedFee);
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(result[jss::engine_result_code] == 0);
+            BEAST_EXPECT(
+                result[jss::engine_result_message] ==
+                "The simulated transaction would have been applied.");
+
+            if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
+            {
+                json::Value const metadata = getJsonMetadata(result);
+                BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+            }
+        };
+
+        json::Value tx;
+        tx[jss::Account] = env.master.human();
+        tx[jss::TransactionType] = jss::AccountSet;
+        tx[sfDomain] = "123ABC";
+        tx[sfSponsor.jsonName] = sponsor.human();
+        tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+        tx[sfSponsorSignature.jsonName] = json::ValueType::Object;
+        tx[sfSponsorSignature.jsonName][sfSigners.jsonName] = json::ValueType::Array;
+
+        json::Value signerObj;
+        signerObj[sfSigner][jss::Account] = signer.human();
+        tx[sfSponsorSignature.jsonName][sfSigners.jsonName].append(signerObj);
+
+        // Leave Fee unset so simulate must autofill it after sponsor signer normalization.
+        BEAST_EXPECT(!tx.isMember(jss::Fee));
+        testTx(env, tx, validateOutput, false);
     }
 
     void
@@ -1040,7 +1207,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
         static auto const kNewDomain = "123ABC";
@@ -1105,7 +1272,7 @@ class Simulate_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
 
@@ -1181,10 +1348,10 @@ class Simulate_test : public beast::unit_test::Suite
     testLoadType()
     {
         // Regression test for issue #6801:
-        // doSimulate must charge feeHeavyBurdenRPC, not feeMediumBurdenRPC,
+        // doSimulate must charge kFeeHeavyBurdenRpc, not kFeeMediumBurdenRpc,
         // because it performs full transaction execution (autofill, STTx parse,
-        // OpenView copy, TxQ::apply with preclaim/doclaim/apply).
-        testcase("simulate load type is feeHeavyBurdenRPC");
+        // OpenView copy, TxQ::apply with preclaim/apply).
+        testcase("simulate load type is kFeeHeavyBurdenRpc");
         using namespace jtx;
 
         Env env(*this);
@@ -1196,36 +1363,36 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         // Build a minimal payment tx_json
-        Json::Value tx = Json::objectValue;
+        json::Value tx = json::ValueType::Object;
         tx[jss::TransactionType] = jss::Payment;
         tx[jss::Account] = alice.human();
         tx[jss::Destination] = bob.human();
         tx[jss::Amount] = "1000000";
 
-        Json::Value params = Json::objectValue;
+        json::Value params = json::ValueType::Object;
         params[jss::command] = jss::simulate;
         params[jss::tx_json] = tx;
 
-        // Invoke doSimulate via RPC::doCommand so we can inspect loadType
+        // Invoke doSimulate via rpc::doCommand so we can inspect loadType
         auto& app = env.app();
-        Resource::Charge loadType = Resource::feeReferenceRPC;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+        rpc::JsonContext context{
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
 
-        Json::Value result;
+        json::Value result;
 
         class gate
         {
@@ -1252,19 +1419,18 @@ class Simulate_test : public beast::unit_test::Suite
         };
 
         gate g;
-        app.getJobQueue().postCoro(
-            jtCLIENT, "RPC-Client", [&](auto const& coro) {
-                context.params = params;
-                context.coro = coro;
-                RPC::doCommand(context, result);
-                g.signal();
-            });
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = params;
+            context.coro = coro;
+            rpc::doCommand(context, result);
+            g.signal();
+        });
 
         using namespace std::chrono_literals;
         BEAST_EXPECT(g.wait_for(5s));
 
-        // The handler must have set loadType to feeHeavyBurdenRPC
-        BEAST_EXPECT(loadType == Resource::feeHeavyBurdenRPC);
+        // The handler must have set loadType to kFeeHeavyBurdenRpc
+        BEAST_EXPECT(loadType == resource::kFeeHeavyBurdenRpc);
     }
 
 public:
@@ -1278,6 +1444,7 @@ public:
         testTransactionNonTecFailure();
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
+        testSuccessfulSponsoredTransactionMultisigned();
         testTransactionSigningFailure();
         testInvalidSingleAndMultiSigningTransaction();
         testMultisignedBadPubKey();

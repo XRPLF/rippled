@@ -12,8 +12,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -44,7 +42,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to delete the Permissioned Domain. */
+/**
+ * Attempt to delete the Permissioned Domain.
+ */
 TER
 PermissionedDomainDelete::doApply()
 {
@@ -67,17 +67,14 @@ PermissionedDomainDelete::doApply()
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
+    decreaseOwnerCountForObject(view(), ownerSle, slePd, 1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;
 }
 
 void
-PermissionedDomainDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PermissionedDomainDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

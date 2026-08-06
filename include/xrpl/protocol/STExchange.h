@@ -1,14 +1,15 @@
 #pragma once
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -17,7 +18,9 @@
 
 namespace xrpl {
 
-/** Convert between serialized type U and C++ type T. */
+/**
+ * Convert between serialized type U and C++ type T.
+ */
 template <class U, class T>
 struct STExchange;
 
@@ -89,7 +92,9 @@ struct STExchange<STBlob, Buffer>
 
 //------------------------------------------------------------------------------
 
-/** Return the value of a field in an STObject as a given type. */
+/**
+ * Return the value of a field in an STObject as a given type.
+ */
 /** @{ */
 template <class T, class U>
 std::optional<T>
@@ -118,7 +123,9 @@ get(STObject const& st, TypedField<U> const& f)
 }
 /** @} */
 
-/** Set a field value in an STObject. */
+/**
+ * Set a field value in an STObject.
+ */
 template <class U, class T>
 void
 set(STObject& st, TypedField<U> const& f, T&& t)
@@ -126,7 +133,9 @@ set(STObject& st, TypedField<U> const& f, T&& t)
     st.set(STExchange<U, std::decay_t<T>>::set(f, std::forward<T>(t)));
 }
 
-/** Set a blob field using an init function. */
+/**
+ * Set a blob field using an init function.
+ */
 template <class Init>
 void
 set(STObject& st, TypedField<STBlob> const& f, std::size_t size, Init&& init)
@@ -134,7 +143,9 @@ set(STObject& st, TypedField<STBlob> const& f, std::size_t size, Init&& init)
     st.set(std::make_unique<STBlob>(f, size, init));
 }
 
-/** Set a blob field from data. */
+/**
+ * Set a blob field from data.
+ */
 template <class = void>
 void
 set(STObject& st, TypedField<STBlob> const& f, void const* data, std::size_t size)
@@ -142,7 +153,9 @@ set(STObject& st, TypedField<STBlob> const& f, void const* data, std::size_t siz
     st.set(std::make_unique<STBlob>(f, data, size));
 }
 
-/** Remove a field in an STObject. */
+/**
+ * Remove a field in an STObject.
+ */
 template <class U>
 void
 erase(STObject& st, TypedField<U> const& f)
