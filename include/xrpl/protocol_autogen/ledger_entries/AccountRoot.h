@@ -590,6 +590,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfVaultDustID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getVaultDustID() const
+    {
+        if (hasVaultDustID())
+            return this->sle_->at(sfVaultDustID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVaultDustID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultDustID() const
+    {
+        return this->sle_->isFieldPresent(sfVaultDustID);
+    }
 };
 
 /**
@@ -923,6 +947,17 @@ public:
     setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfLoanBrokerID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVaultDustID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setVaultDustID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfVaultDustID] = value;
         return *this;
     }
 

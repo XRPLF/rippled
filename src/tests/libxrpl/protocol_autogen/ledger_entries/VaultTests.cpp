@@ -36,6 +36,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
+    auto const dustAccountValue = canonical_ACCOUNT();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -56,6 +57,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setScale(scaleValue);
     builder.setLEVersion(lEVersionValue);
+    builder.setDustAccount(dustAccountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -176,6 +178,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLEVersion());
     }
 
+    {
+        auto const& expected = dustAccountValue;
+        auto const actualOpt = entry.getDustAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDustAccount");
+        EXPECT_TRUE(entry.hasDustAccount());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -205,6 +215,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
+    auto const dustAccountValue = canonical_ACCOUNT();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -224,6 +235,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
     sle->at(sfLEVersion) = lEVersionValue;
+    sle->at(sfDustAccount) = dustAccountValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -415,6 +427,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLEVersion");
     }
 
+    {
+        auto const& expected = dustAccountValue;
+
+        auto const fromSleOpt = entryFromSle.getDustAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getDustAccount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDustAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfDustAccount");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -499,5 +524,7 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasLEVersion());
     EXPECT_FALSE(entry.getLEVersion().has_value());
+    EXPECT_FALSE(entry.hasDustAccount());
+    EXPECT_FALSE(entry.getDustAccount().has_value());
 }
 }

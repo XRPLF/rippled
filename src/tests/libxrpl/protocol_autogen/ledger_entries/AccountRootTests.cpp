@@ -46,6 +46,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const vaultDustIDValue = canonical_UINT256();
 
     AccountRootBuilder builder{
         accountValue,
@@ -76,6 +77,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setAMMID(aMMIDValue);
     builder.setVaultID(vaultIDValue);
     builder.setLoanBrokerID(loanBrokerIDValue);
+    builder.setVaultDustID(vaultDustIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -282,6 +284,14 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLoanBrokerID());
     }
 
+    {
+        auto const& expected = vaultDustIDValue;
+        auto const actualOpt = entry.getVaultDustID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVaultDustID");
+        EXPECT_TRUE(entry.hasVaultDustID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -321,6 +331,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const vaultDustIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(AccountRoot::entryType, index);
 
@@ -350,6 +361,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     sle->at(sfAMMID) = aMMIDValue;
     sle->at(sfVaultID) = vaultIDValue;
     sle->at(sfLoanBrokerID) = loanBrokerIDValue;
+    sle->at(sfVaultDustID) = vaultDustIDValue;
 
     AccountRootBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -680,6 +692,19 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLoanBrokerID");
     }
 
+    {
+        auto const& expected = vaultDustIDValue;
+
+        auto const fromSleOpt = entryFromSle.getVaultDustID();
+        auto const fromBuilderOpt = entryFromBuilder.getVaultDustID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVaultDustID");
+        expectEqualField(expected, *fromBuilderOpt, "sfVaultDustID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -784,5 +809,7 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getVaultID().has_value());
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
+    EXPECT_FALSE(entry.hasVaultDustID());
+    EXPECT_FALSE(entry.getVaultDustID().has_value());
 }
 }

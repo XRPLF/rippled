@@ -311,6 +311,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLEVersion);
     }
+
+    /**
+     * @brief Get sfDustAccount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getDustAccount() const
+    {
+        if (hasDustAccount())
+            return this->sle_->at(sfDustAccount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDustAccount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDustAccount() const
+    {
+        return this->sle_->isFieldPresent(sfDustAccount);
+    }
 };
 
 /**
@@ -540,6 +564,17 @@ public:
     setLEVersion(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfLEVersion] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDustAccount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setDustAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfDustAccount] = value;
         return *this;
     }
 
