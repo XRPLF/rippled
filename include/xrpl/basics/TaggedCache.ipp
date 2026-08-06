@@ -901,7 +901,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             evictForHardCap(*it.ait, it.mit);
     }
     else
+    {
         it->second.touch(clock_.now());
+    }
     return it->second.ptr.getStrong();
 }
 // End CachedSLEs functions.

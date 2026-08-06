@@ -13,6 +13,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <cstdint>
@@ -138,6 +139,17 @@ public:
 
     void
     sweep() override;
+
+    void
+    getCountsJson(json::Value& obj) override
+    {
+        Database::getCountsJson(obj);
+        if (cache_)
+        {
+            obj[jss::node_cache_size] = static_cast<json::UInt>(cache_->getCacheSize());
+            obj[jss::node_cache_bytes] = std::to_string(cache_->getCacheBytes());
+        }
+    }
 
 private:
     // Cache for database objects. This cache is not always initialized. Check
