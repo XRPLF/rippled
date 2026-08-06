@@ -967,7 +967,7 @@ Bidirectional linking between logs and traces is configured via Grafana datasour
 
 ### Loki Backend
 
-Grafana Loki (v3.4.2) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
+Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
 
 ### LogQL Query Examples
 

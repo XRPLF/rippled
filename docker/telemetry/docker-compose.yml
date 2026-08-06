@@ -69,7 +69,7 @@ services:
   # Collector exports via otlphttp to Loki's /otlp endpoint.
   # Query logs via Grafana Explore -> Loki at http://localhost:3000.
   loki:
-    image: grafana/loki:3.4.2
+    image: grafana/loki:3.7.6
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
