@@ -17,9 +17,12 @@
 // implementation-specific field anywhere else in a test — route every such
 // read through readVaultDust() below.
 //
-// Both symbols below MUST be redefined identically in spirit, but
-// differently in body, on each solution branch; the shared suite never
-// changes.
+// readVaultDust() below is the whole seam: each solution branch reimplements
+// its body and changes nothing else. There is deliberately no "does this
+// build have a reservoir?" flag — the shared suite asserts the post-fix
+// oracles unconditionally, so on the base branch it fails, and that failure
+// is the bug's demonstration (see the RED/GREEN CONTRACT note in
+// VaultRounding_test.cpp).
 
 #include <test/jtx/Env.h>
 
@@ -27,14 +30,6 @@
 #include <xrpl/protocol/Keylet.h>
 
 namespace xrpl::test {
-
-// Build-level capability: does this branch implement a dust reservoir at
-// all? This is a *build* capability, not a per-Vault fact: it stays `true`
-// on a solution branch even when reading a Vault that happens to hold no
-// dust (e.g. an XRP/MPT Vault, a Legacy Vault, or simply one that has never
-// produced any). Per-Vault absence is expressed by readVaultDust() below
-// returning zero, not by this flag.
-inline constexpr bool kHasDustReservoir = false;  // base branch: no reservoir exists yet.
 
 // Per-Vault: how much dust does this Vault currently hold, normalized to
 // Vault-pseudo-account terms (i.e. a positive Number means "the Vault is

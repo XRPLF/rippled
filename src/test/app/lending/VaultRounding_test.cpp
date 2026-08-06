@@ -43,7 +43,19 @@
 // (the base branch, …-pseudo-account, …-trustline-dust). The only
 // file that may differ between branches is VaultDustProbe.h. Do not
 // reference sfDustAccount, sfDust, or any other implementation-specific
-// field here — go through readVaultDust() / kHasDustReservoir instead.
+// field here — go through readVaultDust() instead.
+//
+// RED/GREEN CONTRACT. The Tier 2 tests below FAIL on the base branch, by
+// design: they assert the dust oracles, and the base branch has no dust
+// mechanism, so the value it loses shows up as a failure. That failure IS
+// the bug's demonstration. Each solution branch makes them pass by giving
+// the dust a home. Tier 1 passes everywhere — it is the regression net for
+// behaviour that is already correct, so a Tier 1 failure is a real problem
+// on any branch.
+//
+// Consequently: do NOT "fix" a Tier 2 failure by weakening an assertion.
+// On the base branch it is expected; on a solution branch it is that
+// branch's bug, or a finding about the suite — report it, never edit it.
 // ============================================================================
 
 namespace xrpl::test {
@@ -248,6 +260,62 @@ private:
     }
 
     //--------------------------------------------------------------------
+    // THE BUG, IN ONE TEST. Start here.
+    //--------------------------------------------------------------------
+
+    // Vault -> loan at a fine scale -> big deposit (which coarsens the
+    // Vault's scale, while the loan's stays frozen) -> repay the loan.
+    //
+    // The Vault's books should always satisfy
+    //
+    //     AssetsTotal == AssetsAvailable + principal outstanding
+    //
+    // i.e. total value = cash on hand + what borrowers still owe. Nothing
+    // else can legitimately live in the difference.
+    //
+    // Before the repayment that identity holds. After it, on unfixed code,
+    // it does not: the loan's receivable falls by the full amount owed, but
+    // only the part representable at the Vault's now-coarser scale reaches
+    // AssetsAvailable. The remainder — the dust — is simply gone, and the
+    // books are left claiming value nobody holds or owes.
+    //
+    // Under either solution the dust has a home, so the identity still
+    // holds after the repayment and this test passes unchanged. That is the
+    // whole fix, and this is the whole test for it: no dust probe, no
+    // interest/principal decomposition, one identity.
+    void
+    testDustDisappears(FeatureBitset features)
+    {
+        testcase("The dust disappears from the Vault's books");
+
+        withDustSetup(features, [&](jtx::Env& env, DustCtx const& ctx) {
+            // AssetsTotal - AssetsAvailable - (principal still owed).
+            // Zero when the books balance; positive when they claim value
+            // that no longer exists anywhere.
+            auto const unaccounted = [&]() -> Number {
+                auto const vaultSle = env.le(ctx.broker.vaultKeylet());
+                if (!BEAST_EXPECT(vaultSle))
+                    return Number{};
+                return Number{vaultSle->at(sfAssetsTotal)} -
+                    Number{vaultSle->at(sfAssetsAvailable)} - principalOutstanding(env, ctx);
+            };
+
+            Number const before = unaccounted();
+            payLoanInFull(env, ctx.borrower, ctx.asset.raw(), ctx.tinyLoanKeylet);
+            Number const after = unaccounted();
+
+            log << "  unaccounted (AssetsTotal - AssetsAvailable - principalOwed): " << before
+                << " -> " << after << std::endl;
+
+            // The books balance before the repayment either way.
+            BEAST_EXPECT(before == beast::kZero);
+
+            // Fixed: the dust is accounted for, wherever it lives.
+            BEAST_EXPECT(after == beast::kZero);
+        });
+    }
+
+    //--------------------------------------------------------------------
     // Tier 1 — regression net. Identical assertions on all three branches.
     //--------------------------------------------------------------------
 
@@ -399,12 +467,34 @@ private:
             if (!BEAST_EXPECT(vaultSleAfter) || !BEAST_EXPECT(loanSleAfter))
                 return;
 
-            // Not a strong claim of "unaffected by dust handling" (this
-            // branch has none to compare against) — see PR notes. Under
-            // accrual, a regular on-schedule payment's assetsTotalDelta is
-            // 0 (interest was recognized up front, at origination), so
-            // AssetsTotal legitimately does not move here; AssetsAvailable
-            // always does, since cash is credited on every repayment.
+            // PINNED LITERALS, harvested from a real run on this branch.
+            //
+            // These are the contract for the new-Vaults-only scope decision
+            // (common §2.5): a Legacy Vault must produce EXACTLY these
+            // numbers on both solution branches too. Neither solution may
+            // touch a Vault without sfLEVersion == CashBasis, so any
+            // deviation here means the version gate leaked.
+            //
+            // Do not "re-baseline" these if they fail on a solution branch.
+            // A failure here is that branch's bug, or a finding about the
+            // gate — never a stale expectation. Legacy uses accrual, so the
+            // values legitimately differ from §4.3's cash-basis set.
+            BEAST_EXPECT(poBefore == Number(1, -2));  // 0.01
+            BEAST_EXPECT(
+                loanSleAfter->at(sfPrincipalOutstanding) ==
+                Number(5047592635, -12));                                // 0.005047592635
+            BEAST_EXPECT(totalBefore == Number(2000000982550614, -11));  // 20000.00982550614
+            BEAST_EXPECT(availBefore == Number(999998999953915, -11));   // 9999.98999953915
+            BEAST_EXPECT(
+                vaultSleAfter->at(sfAssetsAvailable) ==
+                Number(999999514414651, -11));  // 9999.99514414651
+
+            // Under accrual a regular on-schedule payment's
+            // assetsTotalDelta is 0 (interest was recognized up front, at
+            // origination), so AssetsTotal legitimately does not move;
+            // AssetsAvailable always does, since cash is credited on every
+            // repayment. Keep these as the statements of *why* the literals
+            // above look the way they do.
             BEAST_EXPECT(loanSleAfter->at(sfPrincipalOutstanding) < poBefore);
             BEAST_EXPECT(poBefore > 0);
             BEAST_EXPECT(vaultSleAfter->at(sfAssetsAvailable) != availBefore);
@@ -413,7 +503,7 @@ private:
     }
 
     // O2: the reservoir never exceeds one quantum. Trivially true here
-    // (kHasDustReservoir == false), but check every scale-refining
+    // (no reservoir exists here), but check every scale-refining
     // operation anyway, so the assertion shape is exercised.
     void
     testBoundedDust(FeatureBitset features)
@@ -445,7 +535,8 @@ private:
     }
 
     //--------------------------------------------------------------------
-    // Tier 2 — the dust behaviour. Branches on kHasDustReservoir.
+    // Tier 2 — the dust behaviour. These FAIL on the base branch and pass
+    // on both solution branches; see the RED/GREEN CONTRACT note at the top.
     //--------------------------------------------------------------------
 
     // Common repayment scenario used by several tier-2 tests: pays off the
@@ -512,19 +603,6 @@ private:
         Number const feeRecipientAfter = env.balance(brokerPseudo, ctx.asset).number() +
             env.balance(ctx.lender, ctx.asset).number();
 
-        if constexpr (!kHasDustReservoir)
-        {
-            // testsuite doc §5 item 3: the fixture must assert the dust it
-            // produces is non-zero, or everything downstream is vacuous.
-            // Valid ONLY here — see the struct comment above for why ΔT is
-            // a safe stand-in for r on this branch and nowhere else.
-            Number const p = poBefore - poAfter;
-            Number const r = totalAfter - totalBefore;
-            Number const raw = p + r;
-            Number const rounded = availAfter - availBefore;
-            BEAST_EXPECT((raw - rounded) != beast::kZero);
-        }
-
         return RepaymentResult{
             .totalBefore = totalBefore,
             .totalAfter = totalAfter,
@@ -555,34 +633,17 @@ private:
             Number const dD = r->dustAfter - r->dustBefore;
             Number const p = r->poBefore - r->poAfter;
 
-            if constexpr (!kHasDustReservoir)
-            {
-                // Pre-fix, valid ONLY here: ΔT ≡ assetsTotalDelta exactly,
-                // so recognitionDelta and raw can be read straight off the
-                // accounting fields themselves (see RepaymentResult's
-                // comment). This is exactly the bug (common §1): T
-                // recognizes the full interest, A only the rounded cash,
-                // and nothing accounts for the difference.
-                Number const recognitionDelta = dT;
-                Number const raw = p + recognitionDelta;
-                BEAST_EXPECT(dT == recognitionDelta);
-                BEAST_EXPECT(dA <= raw);
-                BEAST_EXPECT(dD == beast::kZero);
-            }
-            else
-            {
-                // Post-fix, branch-independent: raw is read off REAL
-                // balances — what the borrower actually parted with, minus
-                // whatever the fee recipient actually received — never off
-                // a Vault accounting field, so this holds regardless of
-                // which dust mechanism is in force.
-                Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
-                    (r->feeRecipientAfter - r->feeRecipientBefore);
-                Number const recognitionDelta = raw - p;
-                BEAST_EXPECT((dT + dD) == recognitionDelta);          // O4
-                BEAST_EXPECT((dA + dD) == raw);                       // O5
-                BEAST_EXPECT((dT - dA) == (recognitionDelta - raw));  // O6
-            }
+            // Post-fix, branch-independent: raw is read off REAL
+            // balances — what the borrower actually parted with, minus
+            // whatever the fee recipient actually received — never off
+            // a Vault accounting field, so this holds regardless of
+            // which dust mechanism is in force.
+            Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
+                (r->feeRecipientAfter - r->feeRecipientBefore);
+            Number const recognitionDelta = raw - p;
+            BEAST_EXPECT((dT + dD) == recognitionDelta);          // O4
+            BEAST_EXPECT((dA + dD) == raw);                       // O5
+            BEAST_EXPECT((dT - dA) == (recognitionDelta - raw));  // O6
 
             // O8 corroboration (testsuite doc §3): needs no probe and no
             // r/raw derivation at all — T, A, and PO are read directly, so
@@ -591,19 +652,7 @@ private:
             // because this test's whole point is exercising O4/O5/O6.
             Number const po = principalOutstanding(env, ctx);
             Number const gap = r->totalAfter - r->availAfter - po;
-            if constexpr (!kHasDustReservoir)
-            {
-                auto const vaultSle = env.le(ctx.broker.vaultKeylet());
-                if (!BEAST_EXPECT(vaultSle))
-                    return;
-                Number const q{1, getAssetsTotalScale(vaultSle)};
-                BEAST_EXPECT(gap >= beast::kZero);
-                BEAST_EXPECT(gap < q);
-            }
-            else
-            {
-                BEAST_EXPECT(gap == beast::kZero);
-            }
+            BEAST_EXPECT(gap == beast::kZero);
         });
     }
 
@@ -624,22 +673,15 @@ private:
                 return;
 
             Number const p = r->poBefore - r->poAfter;
-            if constexpr (!kHasDustReservoir)
-            {
-                BEAST_EXPECT(readVaultDust(env, ctx.broker.vaultKeylet()) == beast::kZero);
-            }
-            else
-            {
-                // Branch-independent derivation — see testDustCreatedOnRepayment.
-                Number const dT = r->totalAfter - r->totalBefore;
-                Number const dA = r->availAfter - r->availBefore;
-                Number const dD = r->dustAfter - r->dustBefore;
-                Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
-                    (r->feeRecipientAfter - r->feeRecipientBefore);
-                Number const recognitionDelta = raw - p;
-                BEAST_EXPECT((dT + dD) == recognitionDelta);
-                BEAST_EXPECT((dA + dD) == raw);
-            }
+            // Branch-independent derivation — see testDustCreatedOnRepayment.
+            Number const dT = r->totalAfter - r->totalBefore;
+            Number const dA = r->availAfter - r->availBefore;
+            Number const dD = r->dustAfter - r->dustBefore;
+            Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
+                (r->feeRecipientAfter - r->feeRecipientBefore);
+            Number const recognitionDelta = raw - p;
+            BEAST_EXPECT((dT + dD) == recognitionDelta);
+            BEAST_EXPECT((dA + dD) == raw);
         });
     }
 
@@ -667,27 +709,14 @@ private:
                 return;
             Number const dT = r->totalAfter - r->totalBefore;
             Number const p = r->poBefore - r->poAfter;
-            if constexpr (!kHasDustReservoir)
-            {
-                // Pre-fix, valid ONLY here (see RepaymentResult's comment):
-                // unadjusted, T rises by exactly recognitionDelta even
-                // though cash routed nowhere accounts for the gap — this is
-                // the forbidden-variant risk stated in common §1.1, already
-                // present today because there is no dust home at all yet.
-                Number const recognitionDelta = dT;
-                BEAST_EXPECT(dT == recognitionDelta);
-            }
-            else
-            {
-                // Branch-independent derivation — see testDustCreatedOnRepayment.
-                Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
-                    (r->feeRecipientAfter - r->feeRecipientBefore);
-                Number const recognitionDelta = raw - p;
-                Number const dD = r->dustAfter - r->dustBefore;
-                if (dD > beast::kZero)  // pure deferral, no promotion
-                    BEAST_EXPECT(dT < recognitionDelta);
-                BEAST_EXPECT((dT + dD) == recognitionDelta);
-            }
+            // Branch-independent derivation — see testDustCreatedOnRepayment.
+            Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
+                (r->feeRecipientAfter - r->feeRecipientBefore);
+            Number const recognitionDelta = raw - p;
+            Number const dD = r->dustAfter - r->dustBefore;
+            if (dD > beast::kZero)  // pure deferral, no promotion
+                BEAST_EXPECT(dT < recognitionDelta);
+            BEAST_EXPECT((dT + dD) == recognitionDelta);
         });
     }
 
@@ -851,7 +880,7 @@ private:
 
                 check(/*exact=*/true);  // holds from creation, before any dust-producing op
                 payLoanInFull(env, ctx.borrower, ctx.asset.raw(), ctx.tinyLoanKeylet);
-                check(/*exact=*/kHasDustReservoir);
+                check(/*exact=*/true);
             });
     }
 
@@ -931,40 +960,15 @@ private:
             // asked to mean anything on a solution branch — see
             // RepaymentResult's comment for why a ΔAssetsTotal-based `raw`
             // is valid here and nowhere else.
-            if constexpr (!kHasDustReservoir)
-            {
-                Number const principalPaid = principalBefore - principalAfter;
-                Number const interestPaid = assetsTotalAfter - assetsTotalBefore;
-                Number const raw = principalPaid + interestPaid;
-                Number const rounded = assetsAvailAfter - assetsAvailBefore;
-                Number const dust = raw - rounded;
-                log << "  raw (=principalPaid+interestPaid): " << raw << std::endl;
-                log << "  rounded (credited to vault):       " << rounded << std::endl;
-                log << "  dust (raw - rounded), the leak:    " << dust << std::endl;
-
-                // The leak, demonstrated: the Loan's receivable falls by
-                // the full `raw` figure, but AssetsTotal only recognizes
-                // `interestPaid` and AssetsAvailable only receives
-                // `rounded` (< raw whenever dust > 0) — Vault custody and
-                // the borrower's debt move by different amounts. See
-                // base-branch plan §4: "stop and report immediately" if
-                // dust is not strictly positive here; it is.
-                BEAST_EXPECT(dust > beast::kZero);
-                BEAST_EXPECT(assetsAvailAfter - assetsAvailBefore == rounded);
-                BEAST_EXPECT(assetsTotalAfter - assetsTotalBefore == interestPaid);
-            }
-            else
-            {
-                // Post-fix, branch-independent (O8, testsuite doc §3): once
-                // the dust mechanism exists, the leak this test pins
-                // pre-fix must be gone — T should equal A plus every Loan's
-                // own outstanding principal, exactly, with no probe and no
-                // r/raw derivation needed at all.
-                Number const po = principalOutstanding(env, ctx);
-                log << "  T - A - PO (should be exactly 0 post-fix): "
-                    << (assetsTotalAfter - assetsAvailAfter - po) << std::endl;
-                BEAST_EXPECT(assetsTotalAfter == assetsAvailAfter + po);
-            }
+            // Post-fix, branch-independent (O8, testsuite doc §3): once
+            // the dust mechanism exists, the leak this test pins
+            // pre-fix must be gone — T should equal A plus every Loan's
+            // own outstanding principal, exactly, with no probe and no
+            // r/raw derivation needed at all.
+            Number const po = principalOutstanding(env, ctx);
+            log << "  T - A - PO (should be exactly 0 post-fix): "
+                << (assetsTotalAfter - assetsAvailAfter - po) << std::endl;
+            BEAST_EXPECT(assetsTotalAfter == assetsAvailAfter + po);
         });
     }
 
@@ -982,6 +986,9 @@ private:
         // except testLegacyVaultUnchanged, whose entire point is to
         // exercise the *other* model.
         FeatureBitset const cashBasis = features | featureLendingProtocolV1_1;
+
+        // The bug in one test — read this one first.
+        testDustDisappears(cashBasis);
 
         testMirrorHoldsAcrossLoanLifecycle(cashBasis);
         testFundsConserved(cashBasis);
