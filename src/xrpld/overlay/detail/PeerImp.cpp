@@ -3722,7 +3722,7 @@ PeerImp::finishServeSpan(
     auto const served = ledgerData.nodes_size();
     span.setAttribute(ledger_span::attr::servedNodes, static_cast<std::int64_t>(served));
     span.setAttribute(
-        ledger_span::attr::outcome, ledger_span::serveOutcome(served, Tuning::kSoftMaxReplyNodes));
+        ledger_span::attr::outcome, ledger_span::serveOutcome(served, tuning::kSoftMaxReplyNodes));
     // Which ledger was served. Known only once getLedger() succeeded, so it is
     // read here rather than at span start. Span-only: a per-ledger value as a
     // metric dimension would mint one series per ledger.

@@ -332,7 +332,7 @@ public:
      *
      * @return One consistent snapshot of all nine fields.
      */
-    [[nodiscard]] virtual PeerFinder::SlotCensus
+    [[nodiscard]] virtual peer_finder::SlotCensus
     getSlotCensus() = 0;
 };
 

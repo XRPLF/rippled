@@ -27,7 +27,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
-#include <string>
+#include <string>  // IWYU pragma: keep
 #include <string_view>
 #include <utility>
 #include <vector>

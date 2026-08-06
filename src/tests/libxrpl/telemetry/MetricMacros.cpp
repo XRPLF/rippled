@@ -1719,7 +1719,7 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
 // meter, mirroring the production callback shape, because the real
 // MetricsRegistry's enabled path cannot be linked into this standalone binary
 // (see the file header). The snapshot types are the REAL xrpl::PeerLedgerSupply
-// and xrpl::PeerFinder::SlotCensus aggregates, so a field rename or a reorder on
+// and xrpl::peer_finder::SlotCensus aggregates, so a field rename or a reorder on
 // either side breaks these tests instead of silently drifting from production.
 // Both are plain header-only aggregates with no out-of-line members, so using
 // them here adds no xrpld link dependency.
@@ -1889,7 +1889,7 @@ TEST(MetricMacros, slot_census_gauge_names_each_bootstrap_fault_exactly)
 
     // The real snapshot type the production callback consumes. Outbound is 2 of
     // 10 with 6 dials in flight; one configured fixed peer is missing.
-    PeerFinder::SlotCensus observed{
+    peer_finder::SlotCensus observed{
         .outActive = 2,
         .outMax = 10,
         .inActive = 0,
@@ -1905,7 +1905,7 @@ TEST(MetricMacros, slot_census_gauge_names_each_bootstrap_fault_exactly)
         "PeerFinder slots, connection attempts and address caches");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
+            auto const* self = static_cast<peer_finder::SlotCensus const*>(state);
             // Same single-label Observe() form the production callback uses.
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
@@ -1973,7 +1973,7 @@ TEST(MetricMacros, slot_census_gauge_reports_every_field_even_when_idle)
 
     // A fresh node with no seed addresses at all: nothing dialled because there
     // is nothing to dial. Distinct from fault (a), where dials are attempted.
-    PeerFinder::SlotCensus observed{
+    peer_finder::SlotCensus observed{
         .outActive = 0,
         .outMax = 10,
         .inActive = 0,
@@ -1989,7 +1989,7 @@ TEST(MetricMacros, slot_census_gauge_reports_every_field_even_when_idle)
         "PeerFinder slots, connection attempts and address caches");
     gauge->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
+            auto const* self = static_cast<peer_finder::SlotCensus const*>(state);
             auto observe = [&](char const* field, std::int64_t value) {
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
@@ -2022,7 +2022,7 @@ TEST(MetricMacros, slot_census_gauge_reports_every_field_even_when_idle)
     // NEGATIVE: an idle-but-healthy node still reports EVERY field. A zero-valued
     // field must be a present series, never an absent one -- absence would be
     // indistinguishable from a dead exporter or a crashed callback.
-    observed = PeerFinder::SlotCensus{
+    observed = peer_finder::SlotCensus{
         .outActive = 10,
         .outMax = 10,
         .inActive = 5,

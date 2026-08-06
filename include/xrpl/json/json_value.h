@@ -629,7 +629,6 @@ public:
     // this as a Cpp17InputIterator; without them it defaults to output-only,
     // which breaks standard algorithms (e.g. std::all_of). The iterator walks a
     // map both ways via ++/--, so it is bidirectional.
-    using value_type = Value;
     using iterator_category = std::bidirectional_iterator_tag;
     using reference = Value const&;
     using pointer = Value const*;

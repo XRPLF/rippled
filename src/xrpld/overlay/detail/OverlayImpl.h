@@ -452,7 +452,7 @@ public:
      *
      * @return One consistent snapshot of all nine slot/cache fields.
      */
-    [[nodiscard]] PeerFinder::SlotCensus
+    [[nodiscard]] peer_finder::SlotCensus
     getSlotCensus() override
     {
         return peerFinder_->getSlotCensus();
