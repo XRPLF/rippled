@@ -242,19 +242,7 @@ public:
     getNFTSequence(uint256 const& nftId) const override;
 
     void
-    trace(std::string_view const& msg, Slice const& data, bool asHex) const override;
-
-    void
-    traceNum(std::string_view const& msg, int64_t data) const override;
-
-    void
-    traceAccount(std::string_view const& msg, AccountID const& account) const override;
-
-    void
-    traceFloat(std::string_view const& msg, Slice const& data) const override;
-
-    void
-    traceAmount(std::string_view const& msg, STAmount const& amount) const override;
+    trace(std::string_view const& msg, std::string_view const& data) const override;
 
     std::expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) const override;

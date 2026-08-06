@@ -383,47 +383,9 @@ public:
     }
 
     void
-    trace(std::string_view const& msg, Slice const& data, bool asHex) const override
+    trace(std::string_view const& msg, std::string_view const& data) const override
     {
-        if (!asHex)
-        {
-            log(msg, [&data] {
-                return std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
-            });
-        }
-        else
-        {
-            log(msg, [&data] {
-                std::string hex;
-                hex.reserve(data.size() * 2);
-                boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
-                return hex;
-            });
-        }
-    }
-
-    void
-    traceNum(std::string_view const& msg, int64_t data) const override
-    {
-        log(msg, [data] { return data; });
-    }
-
-    void
-    traceAccount(std::string_view const& msg, AccountID const& account) const override
-    {
-        log(msg, [&account] { return toBase58(account); });
-    }
-
-    void
-    traceFloat(std::string_view const& msg, Slice const& data) const override
-    {
-        log(msg, [&data] { return wasm_float::floatToString(data); });
-    }
-
-    void
-    traceAmount(std::string_view const& msg, STAmount const& amount) const override
-    {
-        log(msg, [&amount] { return amount.getFullText(); });
+        log(msg, [&data] { return data; });
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>

@@ -1269,10 +1269,7 @@ getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     return returnResult(runtime, params, results, hf.getNFTSequence(*nftId), index);
 }
 
-// Whether the trace_* wrappers should do any work at all. In DEBUG_OUTPUT
-// builds WasmHostFunctionsImpl::log() writes straight to std::cerr and ignores
-// the journal, so gating on the journal there would silence the very output
-// the flag exists to produce.
+// log() ignores the journal under DEBUG_OUTPUT, so the gate must not either.
 static inline bool
 traceActive([[maybe_unused]] HostFunctions const& hf)
 {
@@ -1283,13 +1280,72 @@ traceActive([[maybe_unused]] HostFunctions const& hf)
 #endif
 }
 
-// The trace_* host functions return nothing and charge a flat 30 gas (in
-// mainCheck, before these run). Their ONLY effect is this node's local log, so
-// a node's log level must not change gas, the transfer limit, the (absent)
-// return value, or ledger state -- otherwise nodes would diverge and break
-// consensus. Hence: gate on the log level first (skip all work if inactive),
-// charge no transfer limit, and never let an error escape as a trap -- log it
-// briefly instead.
+// Not getDataUnsigned: that branches on pointer alignment, and trace must cost
+// the same regardless of how the guest laid out its buffer.
+template <class T>
+static std::optional<T>
+traceInt(Slice const& data)
+{
+    static_assert(std::is_integral_v<T>);
+    if (data.size() != sizeof(T))
+        return std::nullopt;
+
+    T x;
+    memcpy(&x, data.data(), sizeof(T));
+    return adjustWasmEndianess(x);
+}
+
+// std::nullopt means the buffer does not match the type. May throw.
+static std::optional<std::string>
+traceFormat(TraceDataType type, Slice const& data)
+{
+    switch (type)
+    {
+        case TraceDataType::Int64:
+            if (auto const x = traceInt<std::int64_t>(data))
+                return std::to_string(*x);
+            return std::nullopt;
+
+        case TraceDataType::Uint64:
+            if (auto const x = traceInt<std::uint64_t>(data))
+                return std::to_string(*x);
+            return std::nullopt;
+
+        case TraceDataType::Xfloat:
+            return wasm_float::floatToString(data);
+
+        case TraceDataType::Account:
+            // Not getDataAccountID: it charges the transfer limit.
+            if (data.size() != AccountID::size())
+                return std::nullopt;
+            return toBase58(AccountID::fromVoid(data.data()));
+
+        case TraceDataType::Amount: {
+            auto serialIter = SerialIter(data);
+            STAmount const amount(serialIter, sfGeneric);  // may throw
+            return amount.getFullText();
+        }
+
+        case TraceDataType::AsHex: {
+            std::string hex;
+            hex.reserve(data.size() * 2);
+            boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
+            return hex;
+        }
+
+        case TraceDataType::AsText:
+            // An empty Slice has a null data(), which std::string may not take.
+            if (data.empty())
+                return std::string();
+            return std::string(reinterpret_cast<char const*>(data.data()), data.size());
+    }
+
+    return std::nullopt;  // unknown data_type
+}
+
+// trace's only effect is this node's local log, so nothing observable may depend
+// on the log level: gas is charged in mainCheck before this runs, no transfer
+// limit is charged, and errors are logged rather than trapped.
 wasm_trap_t*
 trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
@@ -1301,124 +1357,21 @@ trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         int index = 0;
         WasmRuntimeWrapper& runtime = hf.getRT();
         auto const msg = getDataString(runtime, params, index);
+        auto const type = getDataInt32(runtime, params, index);
         auto const data = getDataSlice(runtime, params, index);
-        auto const asHex = getDataInt32(runtime, params, index);
-        if (!msg || !data || !asHex || (*asHex != 0 && *asHex != 1) ||
-            msg->size() + data->size() > kMaxWasmDataLength)
+        if (!msg || !type || !data || msg->size() + data->size() > kMaxWasmDataLength)
         {
             hf.getJournal().trace() << "WasmTrace: invalid arguments";
             return nullptr;
         }
-        hf.trace(*msg, *data, *asHex != 0);
-    }
-    catch (std::exception const& e)
-    {
-        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
-    }
-    return nullptr;
-}
 
-wasm_trap_t*
-traceNum_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
-{
-    if (!traceActive(hf))
-        return nullptr;
-
-    try
-    {
-        int index = 0;
-        WasmRuntimeWrapper& runtime = hf.getRT();
-        auto const msg = getDataString(runtime, params, index);
-        auto const number = getDataInt64(runtime, params, index);
-        if (!msg || !number)
+        auto const text = traceFormat(static_cast<TraceDataType>(*type), *data);
+        if (!text)
         {
             hf.getJournal().trace() << "WasmTrace: invalid arguments";
             return nullptr;
         }
-        hf.traceNum(*msg, *number);
-    }
-    catch (std::exception const& e)
-    {
-        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
-    }
-    return nullptr;
-}
-
-wasm_trap_t*
-traceAccount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
-{
-    if (!traceActive(hf))
-        return nullptr;
-
-    try
-    {
-        int i = 0;
-        WasmRuntimeWrapper& runtime = hf.getRT();
-        auto const msg = getDataString(runtime, params, i);
-        // Read the account bytes directly via getDataSlice -- NOT
-        // getDataAccountID, which would charge the transfer limit (a
-        // consensus-observable effect that must not depend on log level).
-        auto const accSlice = getDataSlice(runtime, params, i);
-        if (!msg || !accSlice || accSlice->size() != AccountID::size())
-        {
-            hf.getJournal().trace() << "WasmTrace: invalid arguments";
-            return nullptr;
-        }
-        hf.traceAccount(*msg, AccountID::fromVoid(accSlice->data()));
-    }
-    catch (std::exception const& e)
-    {
-        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
-    }
-    return nullptr;
-}
-
-wasm_trap_t*
-traceFloat_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
-{
-    if (!traceActive(hf))
-        return nullptr;
-
-    try
-    {
-        int i = 0;
-        WasmRuntimeWrapper& runtime = hf.getRT();
-        auto const msg = getDataString(runtime, params, i);
-        auto const number = getDataSlice(runtime, params, i);
-        if (!msg || !number)
-        {
-            hf.getJournal().trace() << "WasmTrace: invalid arguments";
-            return nullptr;
-        }
-        hf.traceFloat(*msg, *number);
-    }
-    catch (std::exception const& e)
-    {
-        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
-    }
-    return nullptr;
-}
-
-wasm_trap_t*
-traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
-{
-    if (!traceActive(hf))
-        return nullptr;
-
-    try
-    {
-        int i = 0;
-        WasmRuntimeWrapper& runtime = hf.getRT();
-        auto const msg = getDataString(runtime, params, i);
-        auto const amountSlice = getDataSlice(runtime, params, i);
-        if (!msg || !amountSlice)
-        {
-            hf.getJournal().trace() << "WasmTrace: invalid arguments";
-            return nullptr;
-        }
-        auto serialIter = SerialIter(*amountSlice);
-        STAmount const amount(serialIter, sfGeneric);  // may throw on bad input
-        hf.traceAmount(*msg, amount);
+        hf.trace(*msg, *text);
     }
     catch (std::exception const& e)
     {

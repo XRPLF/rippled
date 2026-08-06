@@ -6,7 +6,8 @@ version = 4
 name = "all_host_functions"
 version = "0.1.0"
 dependencies = [
- "xrpl-wasm-stdlib",
+ "xrpl-common-stdlib",
+ "xrpl-escrow-stdlib",
 ]
 
 [[package]]
@@ -114,9 +115,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.117"
+version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e665b8803e7b1d2a727f4023456bbbbe74da67099c585258af0ad9c5013b9b99"
+checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -151,21 +152,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "xrpl-common-stdlib"
+version = "0.8.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
+dependencies = [
+ "xrpl-macros",
+]
+
+[[package]]
+name = "xrpl-escrow-stdlib"
+version = "0.1.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
+dependencies = [
+ "xrpl-common-stdlib",
+]
+
+[[package]]
 name = "xrpl-macros"
 version = "0.1.0"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=renames_error_code_trace#060da5a0dd8522d94dd008aefd61f35143e421ed"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
 dependencies = [
  "bs58",
  "proc-macro2",
  "quote",
  "sha2",
  "syn",
-]
-
-[[package]]
-name = "xrpl-wasm-stdlib"
-version = "0.8.0"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=renames_error_code_trace#060da5a0dd8522d94dd008aefd61f35143e421ed"
-dependencies = [
- "xrpl-macros",
 ]

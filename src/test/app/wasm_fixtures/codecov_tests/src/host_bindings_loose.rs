@@ -43,7 +43,14 @@ unsafe extern "C" {
         out_buff_len: usize,
     ) -> i32;
 
-    // Returns nothing, matching the host's void trace_* ABI. The i32 pointer/len
-    // params stay deliberately loose so the out-of-bounds path can be exercised.
-    pub fn trace_num(msg_read_ptr: i32, msg_read_len: i32, number: i64);
+    // Same wasm functype as the real binding, so this is not a second import of
+    // host_lib.trace. Loose i32 pointers exercise the out-of-bounds path.
+    #[link_name = "trace"]
+    pub fn trace_loose(
+        msg_read_ptr: i32,
+        msg_read_len: i32,
+        data_type: i32,
+        data_read_ptr: i32,
+        data_read_len: i32,
+    );
 }

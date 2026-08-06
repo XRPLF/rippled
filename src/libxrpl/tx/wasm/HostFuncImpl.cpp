@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <string_view>
 
 namespace xrpl {
 
@@ -47,6 +48,12 @@ WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data) const
 {
     auto const hash = sha512Half(data);
     return hash;
+}
+
+void
+WasmHostFunctionsImpl::trace(std::string_view const& msg, std::string_view const& data) const
+{
+    log(msg, [&data] { return data; });
 }
 
 }  // namespace xrpl
