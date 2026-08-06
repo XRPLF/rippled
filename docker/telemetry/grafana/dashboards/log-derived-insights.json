@@ -12,7 +12,7 @@
   },
   "title": "Log-Derived Insights",
   "uid": "log-derived-insights",
-  "refresh": "30s",
+  "refresh": "60s",
   "annotations": {
     "list": []
   },
