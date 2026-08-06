@@ -11,7 +11,7 @@
 
 #include <set>
 
-namespace xrpl::PeerFinder::test {
+namespace xrpl::peer_finder::test {
 
 /**
  * Test InMemoryStore load/save semantics.
@@ -169,4 +169,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(InMemoryStore, peerfinder, xrpl);
 
-}  // namespace xrpl::PeerFinder::test
+}  // namespace xrpl::peer_finder::test

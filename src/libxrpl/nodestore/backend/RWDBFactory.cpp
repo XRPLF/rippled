@@ -17,7 +17,7 @@
 #include <vector>
 
 namespace xrpl {
-namespace NodeStore {
+namespace node_store {
 
 class RWDBBackend : public Backend
 {
@@ -220,5 +220,5 @@ registerRWDBFactory(Manager& manager)
     static RWDBFactory instance{manager};
 }
 
-}  // namespace NodeStore
+}  // namespace node_store
 }  // namespace xrpl

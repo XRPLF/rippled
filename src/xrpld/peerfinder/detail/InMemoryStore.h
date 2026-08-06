@@ -1,9 +1,14 @@
 #pragma once
 
-#include <xrpld/peerfinder/detail/Store.h>
+#include <xrpl/peerfinder/detail/Store.h>
 
-namespace xrpl::PeerFinder {
+#include <vector>
 
+namespace xrpl::peer_finder {
+
+/**
+ * In-memory PeerFinder store used when relational_db backend is RWDB.
+ */
 class InMemoryStore : public Store
 {
 private:
@@ -26,4 +31,4 @@ public:
     }
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

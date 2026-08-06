@@ -278,7 +278,7 @@ public:
     std::size_t txRelayPercentage = 25;
 
     // These override the command line client settings
-    std::optional<beast::IP::Endpoint> rpcIp;
+    std::optional<beast::ip::Endpoint> rpcIp;
 
     std::unordered_set<uint256, beast::Uhash<>> features;
 

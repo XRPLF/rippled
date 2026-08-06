@@ -96,7 +96,7 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 SHAMapStoreImp::SHAMapStoreImp(
     Application& app,
-    NodeStore::Scheduler& scheduler,
+    node_store::Scheduler& scheduler,
     beast::Journal journal)
     : app_(app)
     , scheduler_(scheduler)
@@ -196,7 +196,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 }
 
-std::unique_ptr<NodeStore::Database>
+std::unique_ptr<node_store::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
@@ -216,14 +216,14 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
     }
 
-    std::unique_ptr<NodeStore::Database> db;
+    std::unique_ptr<node_store::Database> db;
 
     if (isNullBackend_)
     {
         // Null mode: create a plain (non-rotating) Database with a
         // single NullBackend.  No DatabaseRotatingImp, no rotation
         // thread artifacts.  dbRotating_ stays nullptr.
-        db = NodeStore::Manager::instance().makeDatabase(
+        db = node_store::Manager::instance().makeDatabase(
             megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
@@ -245,7 +245,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
         // Create NodeStore with two backends to allow online deletion of
         // data
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler_,
             readThreads,
             std::move(writableBackend),
@@ -254,11 +254,11 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
-        db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
+        db.reset(dynamic_cast<node_store::Database*>(dbr.release()));
     }
     else
     {
-        db = NodeStore::Manager::instance().makeDatabase(
+        db = node_store::Manager::instance().makeDatabase(
             megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
@@ -301,7 +301,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     auto obj = dbRotating_->fetchNodeObject(
-        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
         XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
@@ -411,11 +411,9 @@ SHAMapStoreImp::run()
                 try
                 {
                     validatedLedger->stateMap().snapShot(false)->visitNodes(
-                        std::bind(
-                            &SHAMapStoreImp::copyNode,
-                            this,
-                            std::ref(nodeCount),
-                            std::placeholders::_1));
+                        [this, &nodeCount](SHAMapTreeNode const& node) {
+                            return copyNode(nodeCount, node);
+                        });
                 }
                 catch (SHAMapMissingNode const& e)
                 {
@@ -438,7 +436,7 @@ SHAMapStoreImp::run()
                 // exception) also clear the flag.
                 struct RotationExposureGuard
                 {
-                    NodeStore::DatabaseRotating& db;
+                    node_store::DatabaseRotating& db;
                     ~RotationExposureGuard()
                     {
                         db.setRotationInFlight(false);
@@ -582,7 +580,7 @@ SHAMapStoreImp::dbPaths()
         boost::filesystem::remove_all(p);
 }
 
-std::unique_ptr<NodeStore::Backend>
+std::unique_ptr<node_store::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
     Section section{app_.config().section(Sections::kNodeDatabase)};
@@ -601,7 +599,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     section.set(Keys::kPath, newPath.string());
 
-    auto backend{NodeStore::Manager::instance().makeBackend(
+    auto backend{node_store::Manager::instance().makeBackend(
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
@@ -777,7 +775,7 @@ SHAMapStoreImp::minimumOnline() const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
+makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal)
 {
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }

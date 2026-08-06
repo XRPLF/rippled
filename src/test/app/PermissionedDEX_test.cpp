@@ -1816,7 +1816,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.fund(XRP(1000), carol);
             env.close();
 
-            env(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+            env(ledger_state_fix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
         }
 
         {
@@ -1829,13 +1829,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             // BookExchangeRate fixes require sfBookDirectory.
-            auto missingBookDirectory = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto missingBookDirectory = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             missingBookDirectory.removeMember(sfBookDirectory.jsonName);
             env(missingBookDirectory, Ter(temINVALID));
 
             // BookExchangeRate fixes reject fields that belong to other
             // LedgerStateFix types.
-            auto extraOwner = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto extraOwner = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             extraOwner[sfOwner.jsonName] = carol.human();
             env(extraOwner, Ter(temINVALID));
         }
@@ -1847,7 +1847,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             {
                 // Preclaim check: the target directory must exist.
-                env(ledgerStateFix::bookExchangeRate(setup.carol, uint256{1}),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, uint256{1}),
                     Fee(fixFee),
                     Ter(tecOBJECT_NOT_FOUND));
             }
@@ -1861,7 +1861,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 BEAST_EXPECT(ownerDirSle);
                 BEAST_EXPECT(!ownerDirSle->isFieldPresent(sfExchangeRate));
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, ownerDir.key),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, ownerDir.key),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1885,7 +1885,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                     BEAST_EXPECT(exchangeRate == quality);
                 }
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, dirKey),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1932,7 +1932,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             auto const fixFee = drops(env.current()->fees().increment);
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
             env.close();
 
             // Confirm sfExchangeRate now matches the key quality.
@@ -1947,7 +1947,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             }
 
             // Submitting again should fail — nothing to fix.
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey),
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey),
                 Fee(fixFee),
                 Ter(tecNO_PERMISSION));
         }
@@ -2001,6 +2001,61 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testReplaceDomainOfferWithOtherDomainOffer(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Replace domain offer via OfferCreate"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainA, credType] =
+            PermissionedDEX(env);
+
+        Account const domainOwnerB("permdex-domainOwnerB");
+        auto const domainB =
+            setupDomain(env, {alice, bob, carol, gw}, domainOwnerB, "permdex-other-domain");
+        BEAST_EXPECT(domainA != domainB);
+
+        auto const oldSeq = env.seq(alice);
+        env(offer(alice, USD(100), XRP(1)), Domain(domainA));
+        env.close();
+
+        BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+        auto const oldOffer = env.le(keylet::offer(alice.id(), oldSeq));
+        if (!BEAST_EXPECT(oldOffer))
+            return;
+        BEAST_EXPECT(oldOffer->getFieldH256(sfDomainID) == domainA);
+
+        auto const newSeq = env.seq(alice);
+        // The invariant should reject mixing active Permissioned DEX domains,
+        // not a domain that is only touched because its offer is being deleted.
+        if (fixEnabled)
+        {
+            env(offer(alice, USD(100), XRP(2)), Domain(domainB), Json(jss::OfferSequence, oldSeq));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, alice, oldSeq));
+            BEAST_EXPECT(checkOffer(env, alice, newSeq, USD(100), XRP(2), 0, true));
+            auto const newOffer = env.le(keylet::offer(alice.id(), newSeq));
+            if (!BEAST_EXPECT(newOffer))
+                return;
+            BEAST_EXPECT(newOffer->getFieldH256(sfDomainID) == domainB);
+        }
+        else
+        {
+            env(offer(alice, USD(100), XRP(2)),
+                Domain(domainB),
+                Json(jss::OfferSequence, oldSeq),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+            BEAST_EXPECT(!offerExists(env, alice, newSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -2038,6 +2093,8 @@ public:
         // only after fixCleanup3_2_0.
         testCancelRegularOfferWithDomainCreate(all);
         testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
+        testReplaceDomainOfferWithOtherDomainOffer(all);
+        testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_4_0);
     }
 };
 

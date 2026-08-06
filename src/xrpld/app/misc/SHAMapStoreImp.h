@@ -82,9 +82,9 @@ private:
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
-    NodeStore::Scheduler& scheduler_;
+    node_store::Scheduler& scheduler_;
     beast::Journal const journal_;
-    NodeStore::DatabaseRotating* dbRotating_ = nullptr;
+    node_store::DatabaseRotating* dbRotating_ = nullptr;
     SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
@@ -121,7 +121,7 @@ private:
     static constexpr auto kNodeStoreName = "NodeStore";
 
 public:
-    SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+    SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 
     ~SHAMapStoreImp()
     {
@@ -137,7 +137,7 @@ public:
         return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
-    std::unique_ptr<NodeStore::Database>
+    std::unique_ptr<node_store::Database>
     makeNodeStore(int readThreads) override;
 
     LedgerIndex
@@ -190,7 +190,7 @@ private:
     void
     dbPaths();
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(std::string path = std::string());
 
     template <class CacheInstance>
@@ -201,7 +201,7 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
+            dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
             if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
                 return true;
         }

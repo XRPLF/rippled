@@ -10,8 +10,8 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/make_Manager.h>
+#include <xrpld/peerfinder/detail/InMemoryStore.h>
+#include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
@@ -39,6 +39,9 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -92,13 +95,13 @@
 
 namespace xrpl {
 
-namespace CrawlOptions {
+namespace crawl_options {
 static constexpr auto kDisabled = 0;
 static constexpr auto kOverlay = (1 << 0);
 static constexpr auto kServerInfo = (1 << 1);
 static constexpr auto kServerCounts = (1 << 2);
 static constexpr auto kUnl = (1 << 3);
-}  // namespace CrawlOptions
+}  // namespace crawl_options
 
 bool
 useSqlitePeerFinderStore(Config const& config)
@@ -162,7 +165,7 @@ OverlayImpl::Timer::onTimer(error_code ec)
     if (overlay_.app_.config().txReduceRelayEnable)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timerCount_ % Tuning::kCheckIdlePeers) == 0)
+    if ((++overlay_.timerCount_ % tuning::kCheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -174,7 +177,7 @@ OverlayImpl::OverlayImpl(
     Application& app,
     Setup setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
@@ -187,12 +190,21 @@ OverlayImpl::OverlayImpl(
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , resourceManager_(resourceManager)
+    , store_([&]() -> std::unique_ptr<peer_finder::Store> {
+        if (useSqlitePeerFinderStore(app.config()))
+        {
+            auto sqdb = std::make_unique<peer_finder::StoreSqdb>(app.getJournal("PeerFinder"));
+            sqdb->open(config);
+            return sqdb;
+        }
+        return std::make_unique<peer_finder::InMemoryStore>();
+    }())
     , peerFinder_(
-          PeerFinder::makeManager(
+          peer_finder::makeManager(
               ioContext,
               stopwatch(),
               app_.getJournal("PeerFinder"),
-              config,
+              *store_,
               collector))
     , resolver_(resolver)
     , nextId_(1)
@@ -313,7 +325,7 @@ OverlayImpl::onHandoff(
             bool const reserved = static_cast<bool>(app_.getCluster().member(publicKey)) ||
                 app_.getPeerReservations().contains(publicKey);
             auto const result = peerFinder_->activate(slot, publicKey, reserved);
-            if (result != PeerFinder::Result::Success)
+            if (result != peer_finder::Result::Success)
             {
                 peerFinder_->onClosed(slot);
                 JLOG(journal.debug())
@@ -386,14 +398,14 @@ OverlayImpl::makePrefix(std::uint32_t id)
 
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse(
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress)
 {
     boost::beast::http::response<JsonBody> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::service_unavailable);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     {
         std::ostringstream ostr;
         ostr << remoteAddress;
@@ -413,7 +425,7 @@ OverlayImpl::makeRedirectResponse(
 
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse(
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress,
     std::string const& text)
@@ -422,7 +434,7 @@ OverlayImpl::makeErrorResponse(
     msg.version(request.version());
     msg.result(boost::beast::http::status::bad_request);
     msg.reason("Bad Request (" + text + ")");
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Remote-Address", remoteAddress.to_string());
     msg.insert(boost::beast::http::field::connection, "close");
     msg.prepare_payload();
@@ -432,7 +444,7 @@ OverlayImpl::makeErrorResponse(
 //------------------------------------------------------------------------------
 
 void
-OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
+OverlayImpl::connect(beast::ip::Endpoint const& remoteEndpoint)
 {
     XRPL_ASSERT(work_, "xrpl::OverlayImpl::connect : work is set");
 
@@ -502,7 +514,7 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 }
 
 void
-OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
+OverlayImpl::remove(std::shared_ptr<peer_finder::Slot> const& slot)
 {
     std::scoped_lock const lock(mutex_);
     auto const iter = peers_.find(slot);
@@ -513,7 +525,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
+    peer_finder::Config const config = peer_finder::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
@@ -546,7 +558,7 @@ OverlayImpl::start()
 
     resolver_.resolve(
         bootstrapIps,
-        [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+        [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
             std::vector<std::string> ips;
             ips.reserve(addresses.size());
             for (auto const& addr : addresses)
@@ -571,8 +583,8 @@ OverlayImpl::start()
     {
         resolver_.resolve(
             app_.config().ipsFixed,
-            [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
-                std::vector<beast::IP::Endpoint> ips;
+            [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+                std::vector<beast::ip::Endpoint> ips;
                 ips.reserve(addresses.size());
 
                 for (auto& addr : addresses)
@@ -873,30 +885,30 @@ OverlayImpl::json()
 bool
 OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 {
-    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::kDisabled)
+    if (req.target() != "/crawl" || setup_.crawlOptions == crawl_options::kDisabled)
         return false;
 
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
     msg.result(boost::beast::http::status::ok);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
     msg.body()["version"] = json::Value(2u);
 
-    if ((setup_.crawlOptions & CrawlOptions::kOverlay) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kOverlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kServerInfo) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kServerCounts) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kUnl) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kUnl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -920,7 +932,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
@@ -977,7 +989,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
         return false;
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
@@ -1540,7 +1552,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
         {
             boost::system::error_code ec;
             setup.publicIp = boost::asio::ip::make_address(ip, ec);
-            if (ec || !beast::IP::isPublic(setup.publicIp))
+            if (ec || !beast::ip::isPublic(setup.publicIp))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
 
@@ -1582,19 +1594,19 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
         {
             if (get<bool>(section, Keys::kOverlay, true))
             {
-                setup.crawlOptions |= CrawlOptions::kOverlay;
+                setup.crawlOptions |= crawl_options::kOverlay;
             }
             if (get<bool>(section, Keys::kServer, true))
             {
-                setup.crawlOptions |= CrawlOptions::kServerInfo;
+                setup.crawlOptions |= crawl_options::kServerInfo;
             }
             if (get<bool>(section, Keys::kCounts, false))
             {
-                setup.crawlOptions |= CrawlOptions::kServerCounts;
+                setup.crawlOptions |= crawl_options::kServerCounts;
             }
             if (get<bool>(section, Keys::kUnl, true))
             {
-                setup.crawlOptions |= CrawlOptions::kUnl;
+                setup.crawlOptions |= crawl_options::kUnl;
             }
         }
     }
@@ -1637,7 +1649,7 @@ makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
