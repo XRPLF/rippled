@@ -154,11 +154,26 @@ VaultCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    auto const asset = tx[sfAsset];
+
+    // Solution A (docs/plan-vault-dust-a-second-account.md §4): give the
+    // Vault a second pseudo-account to hold un-representable repayment
+    // remainder ("dust"), but only for IOU Vaults created after the
+    // amendment activates. sfLEVersion is set for every asset type, but
+    // XRP/MPT amounts are integral so those Vaults can never produce dust
+    // (common §2.4) and must not pay for an account they cannot use. A
+    // Vault that already exists at activation gets nothing: there is no
+    // migration, and the new-Vaults-only scope decision (common §2.5) is
+    // implemented by tying dust-account creation to the very same
+    // condition that sets sfLEVersion below, so the two can never diverge.
+    bool const createsDustAccount = view().rules().enabled(featureLendingProtocolV1_1) &&
+        !asset.holds<MPTIssue>() && !asset.native();
 
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
-    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    increaseOwnerCount(view(), owner, {}, 2, j_);
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by
+    // 2, or by 3 if this Vault also gets a dust pseudo-account.
+    increaseOwnerCount(view(), owner, {}, createsDustAccount ? 3 : 2, j_);
     if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 
@@ -167,11 +182,28 @@ VaultCreate::doApply()
         return maybePseudo.error();  // LCOV_EXCL_LINE
     auto const& pseudo = *maybePseudo;
     AccountID const pseudoId = pseudo->at(sfAccount);
-    auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
         !isTesSuccess(ter))
         return ter;
+
+    std::optional<AccountID> dustId;
+    if (createsDustAccount)
+    {
+        // Same pseudoOwnerKey as the main account, so the address-retry
+        // loop lands on the next free address; both accounts are created
+        // inside this one atomic transaction, so there is no window
+        // between the seed becoming known and either address being
+        // claimed.
+        auto maybeDust = createPseudoAccount(view(), vault->key(), sfVaultDustID);
+        if (!maybeDust)
+            return maybeDust.error();
+        dustId = (*maybeDust)->at(sfAccount);
+
+        if (auto ter = addEmptyHolding(applyViewContext, *dustId, preFeeBalance_, asset, j_);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
@@ -249,6 +281,8 @@ VaultCreate::doApply()
         vault->at(sfScale) = scale;
     if (view().rules().enabled(featureLendingProtocolV1_1))
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    if (dustId)
+        vault->at(sfDustAccount) = *dustId;
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
