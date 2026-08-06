@@ -766,6 +766,42 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
+    if (getSingleSection(secConfig, Sections::kTreeCacheAge, strTemp, j_))
+    {
+        treeCacheAge = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*treeCacheAge < 10 || *treeCacheAge > 3600)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kTreeCacheAge +
+                ": must be between 10 and 3600 inclusive");
+        }
+    }
+
+    if (getSingleSection(secConfig, Sections::kLedgerCacheAge, strTemp, j_))
+    {
+        ledgerCacheAge = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*ledgerCacheAge < 10 || *ledgerCacheAge > 3600)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kLedgerCacheAge +
+                ": must be between 10 and 3600 inclusive");
+        }
+    }
+
+    if (getSingleSection(secConfig, Sections::kLedgerFetch, strTemp, j_))
+    {
+        ledgerFetch = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*ledgerFetch < 1 || *ledgerFetch > 16)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kLedgerFetch +
+                ": must be between 1 and 16 inclusive");
+        }
+    }
+
     if (getSingleSection(secConfig, Sections::kWorkers, strTemp, j_))
     {
         workers = beast::lexicalCastThrow<int>(strTemp);
@@ -1232,13 +1268,13 @@ Config::getValueFor(SizedItem item) const
             // 1 GiB / 2 / 8 KiB = 65536 entries per budget GB.
             return std::max(16384, gb * 65536);
         case SizedItem::TreeCacheAge:
-            return 300;
+            return treeCacheAge.value_or(300);
         case SizedItem::LedgerSize:
             return std::clamp(gb * 6, 32, 384);
         case SizedItem::LedgerAge:
-            return 180;
+            return ledgerCacheAge.value_or(180);
         case SizedItem::LedgerFetch:
-            return 4;
+            return ledgerFetch.value_or(4);
         case SizedItem::HashNodeDbCache:
         case SizedItem::TxnDbCache:
         case SizedItem::LgrDbCache:

@@ -22,6 +22,8 @@ struct Sections
     static constexpr auto kIoWorkers = "io_workers";
     static constexpr auto kIps = "ips";
     static constexpr auto kIpsFixed = "ips_fixed";
+    static constexpr auto kLedgerCacheAge = "ledger_cache_age";
+    static constexpr auto kLedgerFetch = "ledger_fetch";
     static constexpr auto kLedgerHistory = "ledger_history";
     static constexpr auto kLedgerReplay = "ledger_replay";
     static constexpr auto kLedgerTxTables = "ledger_tx_tables";
@@ -64,6 +66,7 @@ struct Sections
     static constexpr auto kSslVerifyFile = "ssl_verify_file";
     static constexpr auto kSweepInterval = "sweep_interval";
     static constexpr auto kTransactionQueue = "transaction_queue";
+    static constexpr auto kTreeCacheAge = "tree_cache_age";
     static constexpr auto kValidationSeed = "validation_seed";
     static constexpr auto kValidatorKeys = "validator_keys";
     static constexpr auto kValidatorKeyRevocation = "validator_key_revocation";

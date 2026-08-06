@@ -243,6 +243,11 @@ public:
     // size, but we allow admins to explicitly set it in the config.
     std::optional<int> sweepInterval;
 
+    // Optional overrides for the fixed cache policy values.
+    std::optional<int> treeCacheAge;    // [tree_cache_age], seconds
+    std::optional<int> ledgerCacheAge;  // [ledger_cache_age], seconds
+    std::optional<int> ledgerFetch;     // [ledger_fetch], ledgers per fetch pass
+
     // Reduce-relay - Experimental parameters to control p2p routing algorithms
 
     // Enable base squelching of duplicate validation/proposal messages
