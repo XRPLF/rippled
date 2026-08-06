@@ -306,6 +306,18 @@ LoanPay::doApply()
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
     auto const asset = *vaultSle->at(sfAsset);
 
+    // Solution A (docs/plan-vault-dust-a-second-account.md §6): test
+    // presence of the dust account, not the version and not the amendment
+    // directly — both are equivalent by construction (VaultCreate sets
+    // sfDustAccount under the same condition that sets sfLEVersion), but
+    // presence is the durable fact about this Vault, and the account id is
+    // needed anyway. When useDust is false (Legacy Vault, or an XRP/MPT
+    // Vault, or the amendment never having activated for this Vault) every
+    // dust-specific step below is skipped and the pre-existing arithmetic
+    // runs verbatim. There is no third path.
+    auto const dustAccount = vaultSle->at(~sfDustAccount);
+    bool const useDust = static_cast<bool>(dustAccount);
+
     // Determine where to send the broker's fee
     auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -437,12 +449,47 @@ LoanPay::doApply()
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+
+    // Solution A / common §4.2a: on the dust path the rounding scale is the
+    // POSTERIOR one (derived like VaultDeposit::roundToVaultScale), not the
+    // anterior getAssetsTotalScale used by vaultScale above. This is a
+    // behaviour change, so it is confined to useDust — the dust-less path
+    // keeps today's anterior arithmetic bit-identical.
+    // assetsTotalDelta is an upper bound on sfAssetsTotal's own increase
+    // here, which is what makes this scale conservative (maths doc §2):
+    // the true posterior AssetsTotal + assetsTotalDelta - dustToVault is
+    // coarser-or-equal.
+    auto const totalPaidToVaultRounded = useDust
+        ? [&]() {
+              std::int32_t const postScale = [&]() {
+                  NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+                  return scale(vaultSle->at(sfAssetsTotal) + assetsTotalDelta, asset);
+              }();
+              return roundToAsset(
+                  asset, totalPaidToVaultRaw, postScale, Number::RoundingMode::Downward);
+          }()
+        : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
+
+    // The dust: what the borrower owes the vault beyond what the vault's
+    // current scale can represent. Always >= 0 because the rounding above
+    // is Downward. MUST be forced to zero when !useDust: on that path there
+    // is no dust account to collect it, totalPaidToVaultRaw ==
+    // totalPaidToVaultRounded is not guaranteed (a Legacy/pre-amendment
+    // Vault can still see a sub-quantum remainder from the anterior-scale
+    // rounding), and the borrower is never actually charged that remainder
+    // (accountSendMulti below only ever moves totalPaidToVaultRounded on
+    // this path) — so treating it as real dust would shrink sfAssetsTotal's
+    // recognition increment for cash that was never collected, which is
+    // exactly the forbidden variant common §1.1 warns against, just
+    // reached from the opposite (never-useDust) direction.
+    Number const dustToVault = useDust ? (totalPaidToVaultRaw - totalPaidToVaultRounded) : Number{};
+    XRPL_ASSERT_PARTS(
+        dustToVault >= beast::kZero, "xrpl::LoanPay::doApply", "dust is never negative");
+
     auto const totalPaidToBroker = paymentParts->feePaid;
 
     XRPL_ASSERT_PARTS(
@@ -486,10 +533,16 @@ LoanPay::doApply()
     }
 #endif
 
-    // NOTE: totalPaidToVaultRounded, not totalPaidToVaultRaw — the switch to
-    // raw belongs to the dust-mechanism amendment, not this refactor.
-    if (auto const result =
-            addAssetsToVault(view, vaultSle, totalPaidToVaultRounded, assetsTotalDelta, j_);
+    // cashIn is always totalPaidToVaultRounded — the mirror with the vault
+    // pseudo-account's real balance is unaffected by dust, which lives
+    // elsewhere. The recognition delta, however, must be reduced by
+    // whatever cash was deferred to the dust account (common §1.1's law):
+    // leaving it at the unadjusted assetsTotalDelta would make sfAssetsTotal
+    // already contain the dust's value, and the later sweep would then
+    // double-count it. dustToVault is zero when !useDust, so this is
+    // byte-identical to the pre-dust arithmetic on that path.
+    if (auto const result = addAssetsToVault(
+            view, vaultSle, totalPaidToVaultRounded, assetsTotalDelta - dustToVault, j_);
         !result)
         return result.error();  // LCOV_EXCL_LINE
 
@@ -503,9 +556,12 @@ LoanPay::doApply()
                      << ", total paid to broker: " << totalPaidToBroker
                      << ", amount from transaction: " << amount;
 
-    // Move funds
+    // Move funds. The borrower is now debited totalPaidToVaultRaw (rounded
+    // + dust) rather than just the rounded figure, so the sufficiency
+    // check must be restated against the raw total on the dust path;
+    // totalPaidToVaultRounded + dustToVault == totalPaidToVaultRaw exactly.
     XRPL_ASSERT_PARTS(
-        totalPaidToVaultRounded + totalPaidToBroker <= amount,
+        (totalPaidToVaultRounded + dustToVault) + totalPaidToBroker <= amount,
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
@@ -621,6 +677,16 @@ LoanPay::doApply()
             return ter;
     }
 
+    if (dustToVault != beast::kZero)
+    {
+        // The dust account is a freshly created pseudo-account holding
+        // (VaultCreate / addEmptyHolding), so this should never fail; a
+        // failure here is an internal error, same treatment as the main
+        // custody requireAuth just above.
+        if (auto const ter = requireAuth(view, asset, *dustAccount, AuthType::StrongAuth))
+            return ter;
+    }
+
     if (totalPaidToBroker != beast::kZero)
     {
         if (brokerPayee == accountID_)
@@ -643,13 +709,19 @@ LoanPay::doApply()
             return ter;
     }
 
+    // Solution A (docs/plan-vault-dust-a-second-account.md §6 step 5): a
+    // third destination for the dust leg. Zero-valued legs are skipped
+    // inside accountSendMultiIOU, so when useDust is false — or dustToVault
+    // happens to be zero even though a dust account exists — this either
+    // degenerates to or is byte-identical in effect to the pre-existing
+    // two-destination call.
+    auto const paymentDestinations = useDust
+        ? MultiplePaymentDestinations{{vaultPseudoAccount, totalPaidToVaultRounded}, {*dustAccount, dustToVault}, {brokerPayee, totalPaidToBroker}}
+        : MultiplePaymentDestinations{
+              {vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}};
+
     if (auto const ter = accountSendMulti(
-            view,
-            accountID_,
-            asset,
-            {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
-            j_,
-            WaiveTransferFee::Yes))
+            view, accountID_, asset, paymentDestinations, j_, WaiveTransferFee::Yes))
         return ter;
 
 #if !NDEBUG
@@ -831,6 +903,19 @@ LoanPay::doApply()
         vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore,
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
+
+    // Solution A (docs/plan-vault-dust-a-second-account.md §6 step 7): the
+    // sweep is placed at the very end, after every assertion above,
+    // deliberately. It must run after the "pseudo balance agrees after"
+    // check (which validates the un-swept state — the state the
+    // accounting above was computed for), and it must run after the
+    // funds-conservation checks just above: those sum only the borrower's,
+    // the vault's, and the broker's real balances, and a sweep moves cash
+    // from the dust account — untracked by that heuristic — into the
+    // vault's, which would look like value appearing from nowhere. tesSUCCESS
+    // when there is no dust account, or nothing yet reaches a whole quantum.
+    if (auto const ter = maybeSweepVaultDust(view, vaultSle, j_))
+        return ter;
 
     return tesSUCCESS;
 }
