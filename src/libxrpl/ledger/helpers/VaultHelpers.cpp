@@ -2,9 +2,11 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -199,17 +201,82 @@ removeAssetsFromVault(
 }
 
 [[nodiscard]] std::expected<Number, TER>
-closeVaultAssets(ApplyView& view, SLE::ref vault, beast::Journal j)
+closeVaultAssets(ApplyView& view, SLE::ref vault, AccountID const& to, beast::Journal j)
 {
-    (void)j;
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::closeVaultAssets : valid Vault sle");
 
     Number const assetsAvailable = vault->at(sfAssetsAvailable);
+
+    // Solution A: pay out the whole dust-account balance too, with no
+    // rounding — see the header comment for why this is safe only here.
+    if (auto const dustId = vault->at(~sfDustAccount))
+    {
+        Asset const asset = vault->at(sfAsset);
+        Number const dustBalance = accountHolds(
+            view, *dustId, asset, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j);
+        if (dustBalance > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    view, *dustId, to, STAmount{asset, dustBalance}, j, {}, WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return std::unexpected(ter);
+        }
+    }
+
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     view.update(vault);
 
     return assetsAvailable;
+}
+
+[[nodiscard]] TER
+maybeSweepVaultDust(ApplyView& view, SLE::ref vault, beast::Journal j)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::maybeSweepVaultDust : valid Vault sle");
+
+    auto const dustId = vault->at(~sfDustAccount);
+    if (!dustId)
+        return tesSUCCESS;
+
+    Asset const asset = vault->at(sfAsset);
+    Number const dustBalance = accountHolds(
+        view, *dustId, asset, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j);
+    if (dustBalance <= beast::kZero)
+        return tesSUCCESS;
+
+    // Posterior scale (common §4.2a): the scale that will be in force
+    // after the sweep lands, computed pessimistically (ToNearest) so a
+    // value just under a decade boundary reports the coarser exponent.
+    Number const assetsTotal = vault->at(sfAssetsTotal);
+    std::int32_t const postScale = [&]() {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return scale(assetsTotal + dustBalance, asset);
+    }();
+    Number const sweepable =
+        roundToAsset(asset, dustBalance, postScale, Number::RoundingMode::Downward);
+    if (sweepable <= beast::kZero)
+        return tesSUCCESS;  // not a whole quantum yet
+
+    if (auto const ter = accountSend(
+            view,
+            *dustId,
+            vault->at(sfAccount),
+            STAmount{asset, sweepable},
+            j,
+            {},
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return ter;
+
+    // Both fields move by the same figure — this IS the promotion of the
+    // deferral applied at the repayment site (common §1.1), and it is the
+    // whole reason AssetsTotal - AssetsAvailable is unaffected by a sweep.
+    if (auto const result = addAssetsToVault(view, vault, sweepable, sweepable, j); !result)
+        return result.error();  // LCOV_EXCL_LINE
+
+    return tesSUCCESS;
 }
 
 }  // namespace xrpl

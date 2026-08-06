@@ -190,10 +190,55 @@ removeAssetsFromVault(
  * function rather than a degenerate call to removeAssetsFromVault
  * (VaultWithdraw.cpp's "Do not let dust accumulate in the Vault" branch).
  *
+ * Solution A (docs/plan-vault-dust-a-second-account.md §8.1): if the Vault
+ * has a dust pseudo-account (sfDustAccount) with a non-zero balance, its
+ * entire balance is paid to `to` as well, with no rounding — this is the
+ * terminal case, there is no other shareholder to divide the remainder
+ * with, and the whole point is to leave dust custody at exactly zero so
+ * VaultDelete can proceed. The dust holding itself is left in place; only
+ * VaultDelete removes it.
+ *
+ * @param to The departing (sole remaining) shareholder, who receives both
+ *           the residual main-custody balance (via the caller's own
+ *           transfer) and, if any, the whole dust-account balance (paid
+ *           directly by this function).
+ *
  * @return sfAssetsAvailable's value immediately before it was zeroed (i.e.
- *         what the caller still owes the departing shareholder).
+ *         what the caller still owes the departing shareholder from main
+ *         custody — this does NOT include the dust amount, which this
+ *         function has already paid out itself).
  */
 [[nodiscard]] std::expected<Number, TER>
-closeVaultAssets(ApplyView& view, SLE::ref vault, beast::Journal j);
+closeVaultAssets(ApplyView& view, SLE::ref vault, AccountID const& to, beast::Journal j);
+
+/**
+ * Solution A (docs/plan-vault-dust-a-second-account.md §5.1): moves whole
+ * quanta of dust, if any, from the Vault's dust pseudo-account back to its
+ * main custody, recognizing the same amount in both sfAssetsAvailable and
+ * sfAssetsTotal (the promotion half of the deferred-recognition law, common
+ * §1.1: a sweep converts dust-cash into main-cash, never receivable into
+ * cash, so AssetsTotal - AssetsAvailable is unchanged by it).
+ *
+ * A no-op, returning tesSUCCESS, when:
+ *   - the Vault has no dust account (Legacy Vault, or an XRP/MPT Vault); or
+ *   - the dust account's balance is zero; or
+ *   - the dust account's balance is below one quantum at the posterior
+ *     scale (scale(AssetsTotal + dustBalance, asset)) and so nothing is
+ *     sweepable yet.
+ *
+ * Never rejects for any other reason: this function either improves the
+ * situation or leaves it unchanged. A non-tesSUCCESS return means the
+ * inner transfer itself failed, which is a real problem the caller must
+ * propagate.
+ *
+ * Must be called after every operation that can reduce sfAssetsTotal
+ * (VaultWithdraw's non-terminal branch, VaultClawback, LoanManage's
+ * default settlement) as well as after LoanPay: a removal refines the
+ * Vault's scale, which can strand previously sub-quantum dust at or above
+ * one *new*, smaller quantum with no accompanying credit to promote it
+ * (common §2.1).
+ */
+[[nodiscard]] TER
+maybeSweepVaultDust(ApplyView& view, SLE::ref vault, beast::Journal j);
 
 }  // namespace xrpl
