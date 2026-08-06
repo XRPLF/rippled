@@ -3179,7 +3179,7 @@ class Batch_test : public beast::unit_test::Suite
         auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
 
         {
-            using namespace loanBroker;
+            using namespace loan_broker;
             env(set(lender, vaultKeylet.key),
                 kManagementFeeRate(TenthBips16(100)),
                 kDebtMaximum(debtMaximumValue),

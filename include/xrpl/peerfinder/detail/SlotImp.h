@@ -12,7 +12,7 @@
 #include <optional>
 #include <string>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 class SlotImp : public Slot
 {
@@ -21,13 +21,13 @@ public:
 
     // inbound
     SlotImp(
-        beast::IP::Endpoint const& localEndpoint,
-        beast::IP::Endpoint remoteEndpoint,
+        beast::ip::Endpoint const& localEndpoint,
+        beast::ip::Endpoint remoteEndpoint,
         bool fixed,
         clock_type& clock);
 
     // outbound
-    SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock);
+    SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
@@ -53,13 +53,13 @@ public:
         return state_;
     }
 
-    beast::IP::Endpoint const&
+    beast::ip::Endpoint const&
     remoteEndpoint() const override
     {
         return remoteEndpoint_;
     }
 
-    std::optional<beast::IP::Endpoint> const&
+    std::optional<beast::ip::Endpoint> const&
     localEndpoint() const override
     {
         return localEndpoint_;
@@ -93,13 +93,13 @@ public:
     }
 
     void
-    localEndpoint(beast::IP::Endpoint const& endpoint)
+    localEndpoint(beast::ip::Endpoint const& endpoint)
     {
         localEndpoint_ = endpoint;
     }
 
     void
-    remoteEndpoint(beast::IP::Endpoint const& endpoint)
+    remoteEndpoint(beast::ip::Endpoint const& endpoint)
     {
         remoteEndpoint_ = endpoint;
     }
@@ -140,20 +140,20 @@ public:
          * sending a slot the same address too frequently.
          */
         void
-        insert(beast::IP::Endpoint const& ep, std::uint32_t hops);
+        insert(beast::ip::Endpoint const& ep, std::uint32_t hops);
 
         /**
          * Returns `true` if we should not send endpoint to the slot.
          */
         bool
-        filter(beast::IP::Endpoint const& ep, std::uint32_t hops);
+        filter(beast::ip::Endpoint const& ep, std::uint32_t hops);
 
     private:
         void
         expire();
 
         friend class SlotImp;
-        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache_;
+        beast::aged_unordered_map<beast::ip::Endpoint, std::uint32_t> cache_;
     } recent;
 
     void
@@ -167,8 +167,8 @@ private:
     bool const fixed_;
     bool reserved_;
     State state_;
-    beast::IP::Endpoint remoteEndpoint_;
-    std::optional<beast::IP::Endpoint> localEndpoint_;
+    beast::ip::Endpoint remoteEndpoint_;
+    std::optional<beast::ip::Endpoint> localEndpoint_;
     std::optional<PublicKey> publicKey_;
 
     static std::int32_t constexpr kUnknownPort = -1;
@@ -196,4 +196,4 @@ public:
     clock_type::time_point whenAcceptEndpoints;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

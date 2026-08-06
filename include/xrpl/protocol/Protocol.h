@@ -140,7 +140,7 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / kTenthBipsPerUnity.value();
 }
 
-namespace Lending {
+namespace lending {
 /**
  * The maximum management fee rate allowed by a loan broker in 1/10 bips.
  *
@@ -237,7 +237,7 @@ static constexpr int kLoanPaymentsPerFeeIncrement = 5;
  * without an amendment
  */
 static constexpr int kLoanMaximumPaymentsPerTransaction = 100;
-}  // namespace Lending
+}  // namespace lending
 
 /**
  * The maximum length of a URI inside an NFT
