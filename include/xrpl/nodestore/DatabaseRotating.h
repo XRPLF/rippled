@@ -6,6 +6,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

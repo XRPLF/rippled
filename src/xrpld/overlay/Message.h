@@ -4,7 +4,6 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/messages.h>
 #include <xrpl/server/Manifest.h>
 
 #include <google/protobuf/message.h>
