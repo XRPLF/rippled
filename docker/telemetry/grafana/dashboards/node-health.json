@@ -632,7 +632,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.8
               }
             ]
           },
@@ -1320,7 +1320,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Object-store read, found and write operation rates. The found series is `node_reads_hit`, which counts fetches that returned an object whatever served them, so it is not a cache-hit count.*\n\n###### How it's computed:\n*Per-second rates of the read, found and write counters, plotted as lines.*\n\n###### Reading it:\n*Steadily rising lines are normal; the slope reflects store activity.*\n\n###### Healthy range:\n*Reads and writes rising smoothly, with found tracking almost all reads on a node that has the data.*\n\n###### Watch for:\n*A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "description": "###### What this is:\n*Fraction of object-store reads that returned an object. `node_reads_hit` counts fetches that found the object whatever served them, so this is not a cache-hit rate.*\n\n###### How it's computed:\n*Per-second rate of `node_reads_hit` divided by the per-second rate of `node_reads_total`, as a single ratio per node.*\n\n###### Reading it:\n*A value near 1.0 means almost every read finds its object; dips mean reads are missing.*\n\n###### Healthy range:\n*Close to 1.0 on a node that holds the data it is being asked for.*\n\n###### Watch for:\n*A sustained drop means the node is repeatedly asked for objects it does not have, which usually accompanies backfill or a gap in history.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1365,12 +1365,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": 0
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "green",
+                "value": 0.8
               }
             ]
           },
@@ -1768,7 +1768,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Read-thread utilization, bundled read count, and cumulative read time for the object store.*\n\n###### How it's computed:\n*Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.*\n\n###### Reading it:\n*Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.*\n\n###### Healthy range:\n*Running threads below the total count most of the time.*\n\n###### Watch for:\n*Running threads pinned at the total for long periods means read I/O is saturated.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* \u2014 NodeStore back-end I/O internals \u2014 worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
+      "description": "###### What this is:\n*Share of wall-clock time the object store spent inside read I/O.*\n\n###### How it's computed:\n*Per-second rate of the cumulative `node_reads_duration_us` counter, converted from microseconds to seconds, as a single ratio per node.*\n\n###### Reading it:\n*1.0 means the store spent a full second per second in reads; well below 1.0 means spare read capacity.*\n\n###### Healthy range:\n*Below roughly 0.8 in steady state.*\n\n###### Watch for:\n*Sustained values at or above 1.0 mean read I/O is saturated and reads are queueing.*\n\n###### Keywords:\n- **Read threads / read queue / write load** *(per node)* \u2014 NodeStore back-end I/O internals \u2014 worker threads reading, their queue depth, and write pressure.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerNodeStoreGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#read-threads-read-queue-write-load)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1818,7 +1818,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.8
               }
             ]
           },
