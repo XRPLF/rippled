@@ -2286,6 +2286,33 @@ Three traps worth knowing before you edit this file:
 To add a third destination (PagerDuty, Opsgenie, a custom webhook), add a receiver
 to the relevant contact point.
 
+#### Panel screenshots on alerts need a matching render token
+
+Alert notifications that carry a panel image are rendered by the `renderer`
+sidecar, not by Grafana itself. Grafana 13 enables the `renderAuthJWT` feature
+toggle by default, so the renderer rejects any request whose token is missing or
+still the `-` default — notifications then arrive with no image.
+
+`docker-compose.yml` feeds both sides from one variable, so they cannot drift:
+`GF_RENDERING_RENDERER_TOKEN` on the `grafana` service and `AUTH_TOKEN` on the
+`renderer` service both read `${GF_RENDERING_RENDERER_TOKEN}`, defaulting to a
+local development value. Override it in the environment to use your own:
+
+```bash
+GF_RENDERING_RENDERER_TOKEN=$(openssl rand -hex 16) \
+    docker compose -f docker/telemetry/docker-compose.yml up -d grafana renderer
+```
+
+If images stop appearing, check that the two containers agree — a token set on
+only one side fails exactly this way:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml exec grafana \
+    printenv GF_RENDERING_RENDERER_TOKEN
+docker compose -f docker/telemetry/docker-compose.yml exec renderer \
+    printenv AUTH_TOKEN
+```
+
 #### Deploying alerts to Grafana Cloud
 
 Grafana Cloud has **no provisioning filesystem**, so these `apiVersion: 1` files
