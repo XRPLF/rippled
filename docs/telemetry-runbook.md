@@ -1929,32 +1929,33 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health -- System Metrics (`node-health`)
 
-| Panel                                  | Type       | PromQL                                                     | Labels Used      |
-| -------------------------------------- | ---------- | ---------------------------------------------------------- | ---------------- |
-| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                        | —                |
-| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                        | —                |
-| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))` | —                |
-| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                           | —                |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`             | —                |
-| Job Queue Depth                        | timeseries | `jobq_job_count`                                           | —                |
-| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                 | —                |
-| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                        | —                |
-| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)  | `quantile`       |
-| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)         | `quantile`       |
-| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                        | —                |
-| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                    | —                |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`              | —                |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`       | —                |
-| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`           | `quantile`       |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`         | `quantile`       |
-| Server State                           | stat       | `server_info{metric="server_state"}`                       | `metric`         |
-| Uptime                                 | stat       | `server_info{metric="uptime"}`                             | `metric`         |
-| Peer Count                             | stat       | `server_info{metric="peers"}`                              | `metric`         |
-| Validated Ledger Seq                   | stat       | `server_info{metric="validated_ledger_seq"}`               | `metric`         |
-| Build Version                          | stat       | `build_info`                                               | `version`        |
-| Complete Ledger Ranges                 | table      | `complete_ledgers`                                         | `bound`, `index` |
-| Database Sizes                         | timeseries | `db_metrics{metric=~"db_kb_.*"}`                           | `metric`         |
-| Historical Fetch Rate                  | stat       | `db_metrics{metric="historical_perminute"}`                | `metric`         |
+| Panel                                                        | Type       | PromQL                                                                                                                                                     | Labels Used      |
+| ------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Validated Ledger Age                                         | stat       | `ledgermaster_validated_ledger_age`                                                                                                                        | —                |
+| Published Ledger Age                                         | stat       | `ledgermaster_published_ledger_age`                                                                                                                        | —                |
+| Operating Mode (Time Share)                                  | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                                                                                                 | —                |
+| Operating Mode Transitions                                   | timeseries | `state_accounting_*_transitions`                                                                                                                           | —                |
+| I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                                                                                             | —                |
+| Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
+| Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches[5m])`                                                                                                                                 | —                |
+| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch[5m])`                                                                                                                        | —                |
+| Key Jobs Execution Time                                      | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                                                                                                  | `quantile`       |
+| Key Jobs Dequeue Wait Time                                   | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)                                                                                                         | `quantile`       |
+| FullBelowCache Size                                          | timeseries | `node_family_full_below_cache_size`                                                                                                                        | —                |
+| FullBelowCache Hit Rate                                      | gauge      | `node_family_full_below_cache_hit_rate`                                                                                                                    | —                |
+| Ledger Publish Gap                                           | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                                                                                              | —                |
+| State Duration Rate (Full vs Tracking)                       | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                                                                                                       | —                |
+| All Jobs Execution Time (Detail)                             | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`                                                                                                           | `quantile`       |
+| All Jobs Dequeue Wait (Detail)                               | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`                                                                                                         | `quantile`       |
+| Server State                                                 | stat       | `server_info{metric="server_state"}`                                                                                                                       | `metric`         |
+| Uptime                                                       | stat       | `server_info{metric="uptime"}`                                                                                                                             | `metric`         |
+| Peer Count                                                   | stat       | `server_info{metric="peers"}`                                                                                                                              | `metric`         |
+| Validated Ledger Seq -- Lag Behind Network Tip               | stat       | `max by (xrpl_network_type) (server_info{metric="validated_ledger_seq"}) - on(xrpl_network_type) group_right() server_info{metric="validated_ledger_seq"}` | `metric`         |
+| Validated Ledger Seq -- Convergence (Max - Min, per network) | stat       | `max by (xrpl_network_type) (server_info{metric="validated_ledger_seq"}) - min by (xrpl_network_type) (server_info{metric="validated_ledger_seq"})`        | `metric`         |
+| Build Version                                                | stat       | `build_info`                                                                                                                                               | `version`        |
+| Complete Ledger Ranges                                       | table      | `complete_ledgers`                                                                                                                                         | `bound`, `index` |
+| Database Sizes                                               | timeseries | `db_metrics{metric=~"db_kb_.*"}`                                                                                                                           | `metric`         |
+| Historical Fetch Rate                                        | stat       | `db_metrics{metric="historical_perminute"}`                                                                                                                | `metric`         |
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 

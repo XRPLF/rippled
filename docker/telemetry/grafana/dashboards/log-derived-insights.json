@@ -312,10 +312,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Errors [{{service_instance_id}}]"
+          "legendFormat": "Errors [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 3
@@ -383,10 +383,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Charges [{{service_instance_id}}]"
+          "legendFormat": "Charges [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 4
@@ -454,10 +454,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Fee Charged [{{service_instance_id}}]"
+          "legendFormat": "Fee Charged [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 5
@@ -525,10 +525,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Rejections [{{service_instance_id}}]"
+          "legendFormat": "Rejections [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 6
@@ -596,10 +596,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Consensus Events [{{service_instance_id}}]"
+          "legendFormat": "Consensus Events [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 7
@@ -667,10 +667,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Breaches [{{service_instance_id}}]"
+          "legendFormat": "Breaches [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 8
@@ -738,10 +738,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Transitions [{{service_instance_id}}]"
+          "legendFormat": "Transitions [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 9
@@ -809,10 +809,10 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Duplicates [{{service_instance_id}}]"
+          "legendFormat": "Duplicates [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
       "id": 10
@@ -1199,8 +1199,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Accepted [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: Accepted` [$__auto])) or vector(0)"
+          "legendFormat": "Accepted [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: Accepted` [$__auto])) or vector(0)"
         },
         {
           "datasource": {
@@ -1208,8 +1208,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Rejected [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__auto])) or vector(0)"
+          "legendFormat": "Rejected [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__auto])) or vector(0)"
         }
       ],
       "id": 19,
@@ -1716,8 +1716,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Duplicate Ratio [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto])))"
+          "legendFormat": "Duplicate Ratio [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto])))"
         }
       ],
       "id": 26,
@@ -1775,8 +1775,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Good [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
+          "legendFormat": "Good [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
         },
         {
           "datasource": {
@@ -1784,8 +1784,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Duplicate [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
+          "legendFormat": "Duplicate [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
         },
         {
           "datasource": {
@@ -1793,8 +1793,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "C",
-          "legendFormat": "Acquire Timeouts [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `Acquire \\S+ timeouts:(?P<timeouts>[0-9]+)` | unwrap timeouts [$__auto]))"
+          "legendFormat": "Acquire Timeouts [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `Acquire \\S+ timeouts:(?P<timeouts>[0-9]+)` | unwrap timeouts [$__auto]))"
         }
       ],
       "id": 27,
@@ -1924,8 +1924,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Handshake [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic handshake` [$__auto]))"
+          "legendFormat": "Handshake [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic handshake` [$__auto]))"
         },
         {
           "datasource": {
@@ -1933,8 +1933,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Accept [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic accept` [$__auto]))"
+          "legendFormat": "Accept [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic accept` [$__auto]))"
         }
       ],
       "id": 30,
@@ -2124,8 +2124,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Quorum [{{service_instance_id}}]",
-          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap quorum [$__auto]))"
+          "legendFormat": "Quorum [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "max by (service_instance_id, xrpl_network_type) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap quorum [$__auto]))"
         },
         {
           "datasource": {
@@ -2133,8 +2133,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Trusted Validators [{{service_instance_id}}]",
-          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap total [$__auto]))"
+          "legendFormat": "Trusted Validators [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "max by (service_instance_id, xrpl_network_type) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap total [$__auto]))"
         }
       ],
       "id": 34,

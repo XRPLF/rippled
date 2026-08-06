@@ -474,9 +474,9 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=\"applied\"}[$__rate_interval]))\n/\nsum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=~\"applied|failed\"}[$__rate_interval]))",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=\"applied\"}[$__rate_interval]))\n/\nsum by (service_instance_id, xrpl_network_type) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=~\"applied|failed\"}[$__rate_interval]))",
           "interval": "15s",
-          "legendFormat": "{{service_instance_id}}"
+          "legendFormat": "{{service_instance_id}} [{{xrpl_network_type}}]"
         }
       ],
       "fieldConfig": {

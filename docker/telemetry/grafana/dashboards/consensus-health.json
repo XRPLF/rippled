@@ -279,7 +279,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.round_time_ms, .5)",
+          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | quantile_over_time(span.round_time_ms, .5)",
           "legendFormat": "P50 Time to Consensus [{{resource.service.instance.id}}]",
           "refId": "A"
         },
@@ -290,7 +290,7 @@
           },
           "queryType": "traceql",
           "refId": "B",
-          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.round_time_ms, .95)",
+          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | quantile_over_time(span.round_time_ms, .95)",
           "legendFormat": "P95 Time to Consensus [{{resource.service.instance.id}}]"
         }
       ],
@@ -333,7 +333,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.round_time_ms)",
+          "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | avg_over_time(span.round_time_ms)",
           "legendFormat": "Avg Time to Consensus [{{resource.service.instance.id}}]",
           "refId": "A"
         }
@@ -383,7 +383,7 @@
           },
           "queryType": "traceql",
           "refId": "A",
-          "query": "{name=\"consensus.establish\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.establish_count)",
+          "query": "{name=\"consensus.establish\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | count_over_time() by (span.establish_count)",
           "legendFormat": "{{span.establish_count}} Rounds"
         }
       ],
@@ -427,7 +427,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.round\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.previous_round_time_ms, .95)",
+          "query": "{name=\"consensus.round\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | quantile_over_time(span.previous_round_time_ms, .95)",
           "legendFormat": "P95 Previous Round [{{resource.service.instance.id}}]",
           "refId": "A"
         }
@@ -730,7 +730,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | avg_over_time(span.close_time_vote_bins)",
           "legendFormat": "Avg Vote Bins",
           "refId": "A"
         },
@@ -740,7 +740,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_resolution_ms)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | avg_over_time(span.close_resolution_ms)",
           "legendFormat": "Avg Resolution (ms)",
           "refId": "B"
         }
@@ -789,7 +789,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
           "legendFormat": "{{span.resolution_direction}}",
           "refId": "A"
         }
@@ -861,7 +861,7 @@
             "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | count_over_time() by (span.close_time_vote_bins)",
           "legendFormat": "{{span.close_time_vote_bins}} Distinct Position(s)",
           "refId": "A"
         }
