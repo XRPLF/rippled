@@ -309,6 +309,15 @@ getLineIfUsable(
                 }
             }
         }
+
+        // An LPToken whose AMM pool contains an MPT that forbids transfers is not
+        // spendable. Issuer is the LPToken's AMM account; canTransferLPToken is
+        // a no-op for non-AMM issuers and non-MPT pool assets, so this is implicitly
+        // gated by featureMPTokensV2.
+        if (!isTesSuccess(canTransferLPToken(view, account, account, issuer)))
+        {
+            return nullptr;
+        }
     }
 
     return sle;
@@ -377,19 +386,8 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
-
-    // An LPToken whose AMM pool contains an MPT that forbids transfers is not
-    // spendable, mirroring the pool-asset freeze handling in getLineIfUsable so
-    // that frozen and non-transferable LPTokens behave identically. issuer is
-    // the LPToken's AMM account; canTransferLPToken is a no-op for non-AMM
-    // issuers and non-MPT pool assets, so this is implicitly gated by
-    // featureMPTokensV2.
-    if (sle && zeroIfFrozen == FreezeHandling::ZeroIfFrozen &&
-        !isTesSuccess(canTransferLPToken(view, account, account, issuer)))
-    {
-        sle = nullptr;
-    }
+    SLE::const_pointer const sle =
+        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
 }
