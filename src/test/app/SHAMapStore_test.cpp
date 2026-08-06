@@ -502,7 +502,7 @@ public:
 
         auto backend{node_store::Manager::instance().makeBackend(
             section,
-            megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+            megabytes(env.app().config().getValueFor(SizedItem::BurstSize)),
             scheduler,
             env.app().getJournal("NodeStoreTest"))};
         backend->open();
@@ -524,22 +524,12 @@ public:
         // Normally, SHAMapStoreImp handles all these details.
         auto nscfg = env.app().config().section(Sections::kNodeDatabase);
 
-        // Provide default values.
+        // Provide default values (mirrors SHAMapStoreImp::makeNodeStore).
         if (!nscfg.exists(Keys::kCacheSize))
-        {
-            nscfg.set(
-                Keys::kCacheSize,
-                std::to_string(
-                    env.app().config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
-        }
+            nscfg.set(Keys::kCacheSize, "16384");
 
         if (!nscfg.exists(Keys::kCacheAge))
-        {
-            nscfg.set(
-                Keys::kCacheAge,
-                std::to_string(
-                    env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
-        }
+            nscfg.set(Keys::kCacheAge, "5");
 
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 

@@ -2703,27 +2703,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
-        // Note: By default the node size is "tiny". When parsing it's an error if the final
-        // NODE_SIZE is over 4 so below code should be safe.
-        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-        switch (registry_.get().getApp().config().nodeSize)
-        {
-            case 0:
-                info[jss::node_size] = "tiny";
-                break;
-            case 1:
-                info[jss::node_size] = "small";
-                break;
-            case 2:
-                info[jss::node_size] = "medium";
-                break;
-            case 3:
-                info[jss::node_size] = "large";
-                break;
-            case 4:
-                info[jss::node_size] = "huge";
-                break;
-        }
+        // The cache memory budget in GB; 0 means enforcement is disabled.
+        info[jss::memory_limit] =
+            static_cast<json::UInt>(registry_.get().getApp().config().cacheMemoryBudget() >> 30);
 
         auto when = registry_.get().getValidators().expires();
 

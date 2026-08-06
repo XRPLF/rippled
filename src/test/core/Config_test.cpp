@@ -597,6 +597,73 @@ main
     }
 
     void
+    testMemoryLimit()
+    {
+        testcase("memory limit");
+
+        {
+            Config c;
+            c.loadFromString("");
+            BEAST_EXPECT(!c.memoryLimit);
+        }
+
+        auto const parse = [](std::string const& value) {
+            Config c;
+            c.loadFromString("[memory_limit]\n" + value + "\n");
+            return c;
+        };
+
+        BEAST_EXPECT(parse("16").memoryLimit == std::uint64_t{16} << 30);
+        BEAST_EXPECT(parse("0").memoryLimit == std::uint64_t{0});
+        BEAST_EXPECT(parse("0").cacheMemoryBudget() == 0);
+
+        // Garbage and out-of-range values are rejected.
+        expectException([&parse] { parse("banana"); });
+        expectException([&parse] { parse("2000"); });
+
+        // Standalone servers default to a minimal budget.
+        {
+            Config c;
+            c.setupControl(true, true, true);
+            c.loadFromString("");
+            BEAST_EXPECT(c.cacheMemoryBudget() == std::uint64_t{4} << 30);
+        }
+
+        // Values derive from the budget: half of it at 8 KiB per entry for
+        // the tree cache; 0 yields the floors.
+        BEAST_EXPECT(parse("16").getValueFor(SizedItem::TreeCacheSize) == 1048576);
+        BEAST_EXPECT(parse("64").getValueFor(SizedItem::TreeCacheSize) == 4194304);
+        BEAST_EXPECT(parse("0").getValueFor(SizedItem::TreeCacheSize) == 16384);
+        BEAST_EXPECT(parse("16").getValueFor(SizedItem::TxnDbCache) == 32);
+        BEAST_EXPECT(parse("0").getValueFor(SizedItem::TxnDbCache) == 4);
+        BEAST_EXPECT(parse("16").getValueFor(SizedItem::SweepInterval) == 30);
+        BEAST_EXPECT(parse("16").getValueFor(SizedItem::LedgerSize) == 96);
+        BEAST_EXPECT(parse("16").getValueFor(SizedItem::BurstSize) == 16);
+        BEAST_EXPECT(parse("1024").getValueFor(SizedItem::BurstSize) == 48);
+
+        // Deprecated [node_size] tiers are aliases for budgets (by name,
+        // case-insensitively, or legacy 0-4 index); an explicit
+        // [memory_limit] wins.
+        auto const alias = [](std::string const& value) {
+            Config c;
+            c.loadFromString("[node_size]\n" + value + "\n");
+            return c;
+        };
+
+        BEAST_EXPECT(alias("large").cacheMemoryBudget() == std::uint64_t{64} << 30);
+        BEAST_EXPECT(alias("large").getValueFor(SizedItem::TreeCacheSize) == 4194304);
+        BEAST_EXPECT(alias("HUGE").cacheMemoryBudget() == std::uint64_t{128} << 30);
+        BEAST_EXPECT(alias("3").cacheMemoryBudget() == std::uint64_t{64} << 30);
+        BEAST_EXPECT(alias("9").cacheMemoryBudget() == std::uint64_t{128} << 30);
+
+        {
+            Config c;
+            c.loadFromString("[node_size]\nsmall\n\n[memory_limit]\n100\n");
+            BEAST_EXPECT(c.cacheMemoryBudget() == std::uint64_t{100} << 30);
+        }
+    }
+
+    void
     testValidatorsFile()
     {
         testcase("validators_file");
@@ -1596,6 +1663,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testMemoryLimit();
     }
 };
 

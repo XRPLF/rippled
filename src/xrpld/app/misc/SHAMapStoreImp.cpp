@@ -120,7 +120,7 @@ SHAMapStoreImp::SHAMapStoreImp(
                 Keys::kCacheMb, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists(Keys::kFilterBits) && (config.nodeSize >= 2))
+        if (!section.exists(Keys::kFilterBits))
             section.set(Keys::kFilterBits, "10");
     }
 
@@ -170,20 +170,13 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
 
-    // Provide default values.
+    // Documented defaults: 16384 records, 5 minutes (DatabaseNodeImp reads
+    // cache_age in minutes).
     if (!nscfg.exists(Keys::kCacheSize))
-    {
-        nscfg.set(
-            Keys::kCacheSize,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
-    }
+        nscfg.set(Keys::kCacheSize, "16384");
 
     if (!nscfg.exists(Keys::kCacheAge))
-    {
-        nscfg.set(
-            Keys::kCacheAge,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
-    }
+        nscfg.set(Keys::kCacheAge, "5");
 
     std::unique_ptr<node_store::Database> db;
 
@@ -215,7 +208,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     else
     {
         db = node_store::Manager::instance().makeDatabase(
-            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize)),
             scheduler_,
             readThreads,
             nscfg,
@@ -537,7 +530,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 
     auto backend{node_store::Manager::instance().makeBackend(
         section,
-        megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+        megabytes(app_.config().getValueFor(SizedItem::BurstSize)),
         scheduler_,
         app_.getJournal(kNodeStoreName))};
     backend->open();

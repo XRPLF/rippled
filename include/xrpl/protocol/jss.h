@@ -395,6 +395,7 @@ JSS(mean);                        // out: get_aggregate_price
 JSS(median);                      // out: get_aggregate_price
 JSS(median_fee);                  // out: TxQ
 JSS(median_level);                // out: TxQ
+JSS(memory_limit);                // out: server_info
 JSS(message);                     // error.
 JSS(meta);                        // out: NetworkOPs, AccountTx*, Tx
 JSS(meta_blob);                   // out: NetworkOPs, AccountTx*, Tx
@@ -435,7 +436,6 @@ JSS(node_read_retries);           // out: GetCounts
 JSS(node_reads_hit);              // out: GetCounts
 JSS(node_reads_total);            // out: GetCounts
 JSS(node_reads_duration_us);      // out: GetCounts
-JSS(node_size);                   // out: server_info
 JSS(nodes);                       // out: VaultInfo
 JSS(nodestore);                   // out: GetCounts
 JSS(node_writes);                 // out: GetCounts
