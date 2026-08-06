@@ -201,110 +201,6 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
-    // A proposal carries a transaction of any type: what the proposal requires
-    // of the payload — unsigned, ticket-based, fee fixed — is independent of
-    // the transaction being proposed, so anything a target account's signer
-    // list could authorize can be proposed for it.
-    void
-    testOtherTransactionTypes(FeatureBitset features)
-    {
-        testcase("proposals for other transaction types");
-
-        using namespace jtx;
-        using namespace std::chrono_literals;
-
-        Env env{*this, features};
-
-        Account const alice{"alice"};    // the proposer
-        Account const target{"target"};  // the account the proposals are for
-        Account const bob{"bob"};
-        Account const gw{"gw"};
-        // NOLINTNEXTLINE(readability-identifier-naming)
-        auto const USD = gw["USD"];
-        env.fund(XRP(10000), alice, target, bob, gw);
-        env.close();
-
-        // One payload per transaction type, each straight from the generator
-        // the ordinary tests for that type use.
-        std::vector<json::Value> const payloads{
-            noop(target),                    // AccountSet
-            offer(target, USD(1), XRP(1)),   // OfferCreate
-            trust(target, USD(1000)),        // TrustSet
-            signers(target, 1, {{bob, 1}}),  // SignerListSet
-            deposit::auth(target, bob),      // DepositPreauth
-            token::mint(target, 0),          // NFTokenMint
-        };
-
-        // A proposal is keyed by target and ticket, so each payload needs its
-        // own ticket.
-        std::uint32_t const firstTicketSeq =
-            proposal::createTicket(env, target, static_cast<std::uint32_t>(payloads.size()));
-        std::uint32_t const expiration = proposal::expiration(env, 100s);
-
-        for (std::size_t i = 0; i < payloads.size(); ++i)
-        {
-            std::uint32_t const ticketSeq = firstTicketSeq + static_cast<std::uint32_t>(i);
-            env(proposal::create(
-                alice, proposal::unsignedPayload(env, payloads[i], ticketSeq), expiration));
-            env.close();
-            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
-        }
-
-        BEAST_EXPECT(ownerCount(env, alice) == payloads.size() * proposal::kProposalOwnerCount);
-    }
-
-    // A proposed transaction may itself require an auxiliary co-signer beyond
-    // its own Account: a LoanSet's Counterparty, or the Sponsor of an
-    // account-level SponsorshipTransfer (On-Chain Cosigner spec §6.1, §6.6.3). That co-signature
-    // field is collected later via TransactionProposalSign, so — just like
-    // the ordinary signature fields — it must be absent, not required, at
-    // creation time.
-    void
-    testAuxiliaryCoSignatureTypes(FeatureBitset features)
-    {
-        testcase("proposal for a transaction type with an auxiliary co-signature");
-
-        using namespace jtx;
-        using namespace std::chrono_literals;
-
-        Env env{*this, features};
-
-        Account const alice{"alice"};        // the proposer
-        Account const borrower{"borrower"};  // the target account
-
-        env.fund(XRP(10000), alice, borrower);
-        env.close();
-
-        std::uint32_t const expiration = proposal::expiration(env, 100s);
-
-        // LoanSet: the Counterparty's signature is collected later; it must
-        // not be required up front.
-        {
-            std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
-
-            json::Value const tx =
-                proposal::unsignedPayload(env, loan::set(borrower, uint256{1}, 1'000), ticketSeq);
-
-            env(proposal::create(alice, tx, expiration));
-            env.close();
-            BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
-        }
-
-        // SponsorshipTransfer (account-level reserve sponsorship): the
-        // Sponsor's signature is likewise collected later.
-        {
-            std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
-
-            json::Value tx = sponsor::transfer(borrower, tfSponsorshipCreate);
-            tx[sfSponsor.getJsonName()] = alice.human();
-            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
-
-            env(proposal::create(alice, proposal::unsignedPayload(env, tx, ticketSeq), expiration));
-            env.close();
-            BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
-        }
-    }
-
     // A proposal that could never be completed must not be stored, and a
     // target-and-ticket pair may hold at most one proposal.
     void
@@ -489,6 +385,110 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, target) == 1);
     }
 
+    // A proposal carries a transaction of any type: what the proposal requires
+    // of the payload — unsigned, ticket-based, fee fixed — is independent of
+    // the transaction being proposed, so anything a target account's signer
+    // list could authorize can be proposed for it.
+    void
+    testOtherTransactionTypes(FeatureBitset features)
+    {
+        testcase("proposals for other transaction types");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposals are for
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        // NOLINTNEXTLINE(readability-identifier-naming)
+        auto const USD = gw["USD"];
+        env.fund(XRP(10000), alice, target, bob, gw);
+        env.close();
+
+        // One payload per transaction type, each straight from the generator
+        // the ordinary tests for that type use.
+        std::vector<json::Value> const payloads{
+            noop(target),                    // AccountSet
+            offer(target, USD(1), XRP(1)),   // OfferCreate
+            trust(target, USD(1000)),        // TrustSet
+            signers(target, 1, {{bob, 1}}),  // SignerListSet
+            deposit::auth(target, bob),      // DepositPreauth
+            token::mint(target, 0),          // NFTokenMint
+        };
+
+        // A proposal is keyed by target and ticket, so each payload needs its
+        // own ticket.
+        std::uint32_t const firstTicketSeq =
+            proposal::createTicket(env, target, static_cast<std::uint32_t>(payloads.size()));
+        std::uint32_t const expiration = proposal::expiration(env, 100s);
+
+        for (std::size_t i = 0; i < payloads.size(); ++i)
+        {
+            std::uint32_t const ticketSeq = firstTicketSeq + static_cast<std::uint32_t>(i);
+            env(proposal::create(
+                alice, proposal::unsignedPayload(env, payloads[i], ticketSeq), expiration));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        BEAST_EXPECT(ownerCount(env, alice) == payloads.size() * proposal::kProposalOwnerCount);
+    }
+
+    // A proposed transaction may itself require an auxiliary co-signer beyond
+    // its own Account: a LoanSet's Counterparty, or the Sponsor of an
+    // account-level SponsorshipTransfer (On-Chain Cosigner spec §6.1, §6.6.3). That co-signature
+    // field is collected later via TransactionProposalSign, so — just like
+    // the ordinary signature fields — it must be absent, not required, at
+    // creation time.
+    void
+    testAuxiliaryCoSignatureTypes(FeatureBitset features)
+    {
+        testcase("proposal for a transaction type with an auxiliary co-signature");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};        // the proposer
+        Account const borrower{"borrower"};  // the target account
+
+        env.fund(XRP(10000), alice, borrower);
+        env.close();
+
+        std::uint32_t const expiration = proposal::expiration(env, 100s);
+
+        // LoanSet: the Counterparty's signature is collected later; it must
+        // not be required up front.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
+
+            json::Value const tx =
+                proposal::unsignedPayload(env, loan::set(borrower, uint256{1}, 1'000), ticketSeq);
+
+            env(proposal::create(alice, tx, expiration));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
+        }
+
+        // SponsorshipTransfer (account-level reserve sponsorship): the
+        // Sponsor's signature is likewise collected later.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
+
+            json::Value tx = sponsor::transfer(borrower, tfSponsorshipCreate);
+            tx[sfSponsor.getJsonName()] = alice.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+
+            env(proposal::create(alice, proposal::unsignedPayload(env, tx, ticketSeq), expiration));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
+        }
+    }
+
     // The proposer holds the proposal's reserve until it is resolved.
     void
     testReserve(FeatureBitset features)
@@ -626,8 +626,6 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preflight
         testDisabled(all);
         testRejectedPayload(all);
-        testOtherTransactionTypes(all);
-        testAuxiliaryCoSignatureTypes(all);
 
         // Preclaim
         testPreclaim(all);
@@ -635,6 +633,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // Apply
         testCreate(all);
+        testOtherTransactionTypes(all);
+        testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
         testBatchReserve(all);
         testMultiAccountBatch(all);
