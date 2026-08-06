@@ -28,6 +28,8 @@
 #include <chrono>  // IWYU pragma: keep
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <string>
 #include <vector>
 
 namespace xrpl::test {
@@ -65,9 +67,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
-    // The proposed transaction must be storable in unsigned canonical form and
-    // must be a transaction that could be submitted on its own. Each case below
-    // takes an otherwise valid payload and breaks exactly one of those rules.
+    // The proposed transaction must be a transaction that could be submitted on
+    // its own. Each case below takes an otherwise valid payload and breaks
+    // exactly one of those rules; the rules about its signature fields are
+    // covered by testRejectedSignatureFields.
     void
     testRejectedPayload(FeatureBitset features)
     {
@@ -100,34 +103,6 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 0);
         };
 
-        // Signatures may only ever arrive through TransactionProposalSign.
-        {
-            json::Value tx = payload();
-            tx[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
-        }
-        {
-            json::Value tx = payload();
-            auto& signer = tx[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
-            signer[jss::Account] = bob.human();
-            signer[jss::SigningPubKey] = strHex(bob.pk().slice());
-            signer[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
-        }
-
-        // SigningPubKey must be present and empty: absent is not the same as
-        // empty, and a set key means the payload was signed for single-signing.
-        {
-            json::Value tx = payload();
-            tx.removeMember(jss::SigningPubKey);
-            reject(tx, temBAD_SIGNER);
-        }
-        {
-            json::Value tx = payload();
-            tx[jss::SigningPubKey] = strHex(target.pk().slice());
-            reject(tx, temBAD_SIGNER);
-        }
-
         // A pseudo-transaction is never submittable by an account.
         {
             json::Value tx = payload();
@@ -147,28 +122,6 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
             reject(tx, temINVALID);
-        }
-
-        // The remaining signature containers are just as forbidden as a bare
-        // TxnSignature or Signers array.
-        {
-            json::Value tx = payload();
-            auto& bs = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
-            bs[jss::Account] = bob.human();
-            bs[jss::SigningPubKey] = strHex(bob.pk().slice());
-            bs[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
-        }
-        {
-            json::Value tx = payload();
-            tx[sfCounterpartySignature.getJsonName()][jss::SigningPubKey] =
-                strHex(bob.pk().slice());
-            reject(tx, temBAD_SIGNER);
-        }
-        {
-            json::Value tx = payload();
-            tx[sfSponsorSignature.getJsonName()][jss::SigningPubKey] = strHex(bob.pk().slice());
-            reject(tx, temBAD_SIGNER);
         }
 
         // The proposed transaction must be ticket-based: a missing
@@ -198,6 +151,185 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+    }
+
+    // A proposal is stored in unsigned canonical form: an empty SigningPubKey
+    // and no signature field whatsoever. Signatures may only ever arrive
+    // through TransactionProposalSign, so a payload is rejected for carrying a
+    // signature container at all — whatever that container happens to hold.
+    // Each container below is therefore filled every way it could be,
+    // including combinations that could never verify: an empty container, a
+    // key with no signature, a signature with no key, and a signature next to
+    // the empty SigningPubKey the canonical form requires.
+    void
+    testRejectedSignatureFields(FeatureBitset features)
+    {
+        testcase("reject payload carrying a signature");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+
+        std::uint32_t const expiration = proposal::expiration(env, 100s);
+
+        std::string const key = strHex(bob.pk().slice());
+        std::string const sig = "DEADBEEF";
+
+        // The payloads every case starts from, each accepted as-is. Two cases
+        // below would otherwise build the same payload, and the same proposal
+        // cannot be submitted twice — the second is turned away as a duplicate
+        // rather than judged again — so each call pays a different amount.
+        // Nothing here turns on the amount.
+        std::uint32_t paid = 0;
+        auto payment = [&]() {
+            return proposal::unsignedPayload(env, pay(target, bob, drops(++paid)), targetTicketSeq);
+        };
+        auto sponsoredPayment = [&]() {
+            json::Value tx = pay(target, bob, drops(++paid));
+            tx[sfSponsor.getJsonName()] = alice.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
+            return proposal::unsignedPayload(env, tx, targetTicketSeq);
+        };
+        auto loanSet = [&]() {
+            json::Value tx = loan::set(target, uint256{1}, 1'000 + ++paid);
+            tx[sfCounterparty.getJsonName()] = bob.human();
+            return proposal::unsignedPayload(env, tx, targetTicketSeq);
+        };
+        auto batchTx = [&]() {
+            return proposal::unsignedBatch(
+                env,
+                target,
+                targetTicketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target)),
+                 proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target) + 1)});
+        };
+
+        auto reject = [&](json::Value const& proposedTx) {
+            env(proposal::create(alice, proposedTx, expiration), Ter(temBAD_SIGNER));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        };
+
+        // Every way of filling in a signature. The payload's own signature
+        // fields and a co-signature object hold the same three members, so the
+        // same fills apply to both.
+        std::vector<std::function<void(json::Value&)>> const fills{
+            [&](json::Value& o) { o[jss::SigningPubKey] = key; },
+            [&](json::Value& o) { o[sfTxnSignature.getJsonName()] = sig; },
+            [&](json::Value& o) {
+                o[jss::SigningPubKey] = "";
+                o[sfTxnSignature.getJsonName()] = sig;
+            },
+            // Signed the ordinary way, which is the likeliest way one of these
+            // arrives here.
+            [&](json::Value& o) {
+                o[jss::SigningPubKey] = key;
+                o[sfTxnSignature.getJsonName()] = sig;
+            },
+            // Multi-signed: the signer's own key is empty and the signatures
+            // sit in a nested Signers array. Each entry needs all three of
+            // Account, SigningPubKey and TxnSignature to parse at all, so only
+            // their values can vary.
+            [&](json::Value& o) {
+                o[jss::SigningPubKey] = "";
+                auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                signer[jss::Account] = bob.human();
+                signer[jss::SigningPubKey] = key;
+                signer[sfTxnSignature.getJsonName()] = sig;
+            },
+            [&](json::Value& o) {
+                o[jss::SigningPubKey] = "";
+                auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                signer[jss::Account] = bob.human();
+                signer[jss::SigningPubKey] = "";
+                signer[sfTxnSignature.getJsonName()] = sig;
+            },
+        };
+
+        // Every place a signature could sit, on a payload of a type that
+        // carries it: a Counterparty's signature belongs to a LoanSet and
+        // BatchSigners to a Batch, while a Sponsor's signature and the
+        // payload's own signature fields sit on any transaction. A signature
+        // is no more storable for being a field its transaction type expects
+        // (On-Chain Cosigner spec §6.1, §6.6.3).
+        struct Place
+        {
+            std::function<json::Value()> payload;
+            std::function<json::Value&(json::Value&)> at;
+        };
+
+        std::vector<Place> const places{
+            {payment, [](json::Value& tx) -> json::Value& { return tx; }},
+            {loanSet,
+             [](json::Value& tx) -> json::Value& {
+                 auto& o = tx[sfCounterpartySignature.getJsonName()];
+                 o = json::Value{json::ValueType::Object};
+                 return o;
+             }},
+            {sponsoredPayment,
+             [](json::Value& tx) -> json::Value& {
+                 auto& o = tx[sfSponsorSignature.getJsonName()];
+                 o = json::Value{json::ValueType::Object};
+                 return o;
+             }},
+            // A BatchSigners entry names the account it speaks for; the other
+            // two co-signatures are fixed by the transaction they belong to and
+            // do not.
+            {batchTx,
+             [&](json::Value& tx) -> json::Value& {
+                 auto& o = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
+                 o[jss::Account] = bob.human();
+                 return o;
+             }},
+        };
+
+        for (auto const& place : places)
+        {
+            for (auto const& fill : fills)
+            {
+                json::Value tx = place.payload();
+                fill(place.at(tx));
+                reject(tx);
+            }
+        }
+
+        // Every place but the payload itself: a co-signature object is
+        // disqualifying by its presence alone, so each is rejected left empty
+        // too. The payload's own fields have no such case — left alone they are
+        // the canonical form.
+        for (std::size_t i = 1; i < places.size(); ++i)
+        {
+            json::Value tx = places[i].payload();
+            places[i].at(tx);
+            reject(tx);
+        }
+
+        // Nor does the payload have a counterpart for an absent SigningPubKey:
+        // in a co-signature object an absent member is just an unfilled one,
+        // but at the top level it is not the same as an empty one, with or
+        // without a signature beside it.
+        {
+            json::Value tx = payment();
+            tx.removeMember(jss::SigningPubKey);
+            reject(tx);
+        }
+        {
+            json::Value tx = payment();
+            tx.removeMember(jss::SigningPubKey);
+            tx[sfTxnSignature.getJsonName()] = sig;
+            reject(tx);
         }
     }
 
@@ -626,6 +758,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preflight
         testDisabled(all);
         testRejectedPayload(all);
+        testRejectedSignatureFields(all);
 
         // Preclaim
         testPreclaim(all);
