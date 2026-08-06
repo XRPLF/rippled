@@ -754,7 +754,7 @@ OverlayImpl::onManifests(
         // The sender exceeded the untrusted per-message cap. Charge it (once,
         // here) so a flood of untrusted manifests is penalized, while an honest
         // message of trusted manifests never is.
-        from->charge(Resource::kFeeMalformedRequest, "too many untrusted manifests");
+        from->charge(resource::kFeeMalformedRequest, "too many untrusted manifests");
 
         JLOG(journal.warn()) << "Manifests: message had " << total
                              << " entries; processed all trusted plus the first "
