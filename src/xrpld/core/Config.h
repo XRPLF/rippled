@@ -244,9 +244,9 @@ public:
     std::optional<int> sweepInterval;
 
     // Optional overrides for the fixed cache policy values.
-    std::optional<int> treeCacheAge;    // [tree_cache_age], seconds
-    std::optional<int> ledgerCacheAge;  // [ledger_cache_age], seconds
-    std::optional<int> ledgerFetch;     // [ledger_fetch], ledgers per fetch pass
+    std::optional<int> treeCacheAge;     // [tree_cache_age], seconds
+    std::optional<int> ledgerCacheAge;   // [ledger_cache_age], seconds
+    std::optional<int> ledgerFetchSize;  // [ledger_fetch_size], ledgers per fetch pass
 
     // Reduce-relay - Experimental parameters to control p2p routing algorithms
 

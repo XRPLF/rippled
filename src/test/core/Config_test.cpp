@@ -621,12 +621,13 @@ main
         expectException([&parse] { parse("banana"); });
         expectException([&parse] { parse("2000"); });
 
-        // Standalone servers default to a minimal budget.
+        // Standalone mode does not change the budget: detected RAM unless
+        // a limit is configured.
         {
             Config c;
             c.setupControl(true, true, true);
-            c.loadFromString("");
-            BEAST_EXPECT(c.cacheMemoryBudget() == std::uint64_t{4} << 30);
+            c.loadFromString("[memory_limit]\n8\n");
+            BEAST_EXPECT(c.cacheMemoryBudget() == std::uint64_t{8} << 30);
         }
 
         // Values derive from the budget: half of it at 8 KiB per entry for
@@ -665,14 +666,14 @@ main
         // Policy values are fixed but individually overridable.
         {
             Config c;
-            c.loadFromString("[tree_cache_age]\n900\n\n[ledger_fetch]\n8\n");
+            c.loadFromString("[tree_cache_age]\n900\n\n[ledger_fetch_size]\n8\n");
             BEAST_EXPECT(c.getValueFor(SizedItem::TreeCacheAge) == 900);
             BEAST_EXPECT(c.getValueFor(SizedItem::LedgerFetch) == 8);
             BEAST_EXPECT(c.getValueFor(SizedItem::LedgerAge) == 180);
         }
         expectException([] {
             Config c;
-            c.loadFromString("[ledger_fetch]\n100\n");
+            c.loadFromString("[ledger_fetch_size]\n100\n");
         });
     }
 

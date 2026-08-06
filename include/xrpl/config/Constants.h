@@ -23,7 +23,7 @@ struct Sections
     static constexpr auto kIps = "ips";
     static constexpr auto kIpsFixed = "ips_fixed";
     static constexpr auto kLedgerCacheAge = "ledger_cache_age";
-    static constexpr auto kLedgerFetch = "ledger_fetch";
+    static constexpr auto kLedgerFetchSize = "ledger_fetch_size";
     static constexpr auto kLedgerHistory = "ledger_history";
     static constexpr auto kLedgerReplay = "ledger_replay";
     static constexpr auto kLedgerTxTables = "ledger_tx_tables";

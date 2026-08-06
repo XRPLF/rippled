@@ -70,6 +70,8 @@ getMemorySize()
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>  // IWYU pragma: keep
 
+#include <unistd.h>
+
 #include <fstream>
 
 namespace xrpl::detail {
@@ -90,9 +92,16 @@ getOwnCgroupPath(std::string_view controller)
             continue;
 
         std::string_view const controllers(line.data() + first + 1, second - first - 1);
-        if ((controller.empty() && controllers.empty()) ||
-            (!controller.empty() && controllers.find(controller) != std::string_view::npos))
+        if (controller.empty())
+        {
+            // The v2 entry is exactly "0::<path>".
+            if (first == 1 && line[0] == '0' && controllers.empty())
+                return line.substr(second + 1);
+        }
+        else if (controllers.find(controller) != std::string_view::npos)
+        {
             return line.substr(second + 1);
+        }
     }
 
     return {};
@@ -112,15 +121,65 @@ readCgroupLimit(std::string const& path)
     return 0;
 }
 
+// Whether the cgroup directory contains this process. /proc/self/cgroup
+// paths are namespace-relative, so a resolved directory can name-collide
+// with a different cgroup when the cgroup mount shows another view; only
+// trust a directory this process is actually in.
+[[nodiscard]] bool
+cgroupContainsSelf(std::string const& dir)
+{
+    std::ifstream in(dir + "/cgroup.procs");
+    pid_t const self = ::getpid();
+    pid_t pid = 0;
+
+    while (in >> pid)
+    {
+        if (pid == self)
+            return true;
+    }
+
+    return false;
+}
+
+// The smallest numeric limit in `file` from the leaf cgroup up through its
+// ancestors (the effective limit is the minimum over the hierarchy); 0 when
+// none is set or the leaf does not belong to this process.
+[[nodiscard]] std::uint64_t
+minCgroupLimit(std::string const& mount, std::string path, char const* file)
+{
+    if (!cgroupContainsSelf(mount + path))
+        return 0;
+
+    std::uint64_t best = 0;
+    auto const consider = [&best](std::uint64_t limit) {
+        if (limit != 0 && (best == 0 || limit < best))
+            best = limit;
+    };
+
+    while (!path.empty() && path != "/")
+    {
+        consider(readCgroupLimit(mount + path + "/" + file));
+
+        auto const slash = path.find_last_of('/');
+        if (slash == std::string::npos)
+            break;
+        path.resize(slash);
+    }
+    consider(readCgroupLimit(mount + "/" + file));
+
+    return best;
+}
+
 // The cgroup (v2, then v1) memory limit in bytes; 0 when absent or
-// unlimited. Checks this process's own cgroup (covering nested limits such
-// as systemd MemoryMax=) before the root-level files containers expose.
+// unlimited. Checks this process's own cgroup and its ancestors (covering
+// nested limits such as systemd MemoryMax=) before the root-level files
+// containers expose.
 [[nodiscard]] std::uint64_t
 getCgroupMemoryLimit()
 {
     if (auto const path = getOwnCgroupPath(""); !path.empty() && path != "/")
     {
-        if (auto const limit = readCgroupLimit("/sys/fs/cgroup" + path + "/memory.max"))
+        if (auto const limit = minCgroupLimit("/sys/fs/cgroup", path, "memory.max"))
             return limit;
     }
 
@@ -130,7 +189,7 @@ getCgroupMemoryLimit()
     if (auto const path = getOwnCgroupPath("memory"); !path.empty() && path != "/")
     {
         if (auto const limit =
-                readCgroupLimit("/sys/fs/cgroup/memory" + path + "/memory.limit_in_bytes"))
+                minCgroupLimit("/sys/fs/cgroup/memory", path, "memory.limit_in_bytes"))
             return limit;
     }
 
@@ -790,14 +849,14 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kLedgerFetch, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kLedgerFetchSize, strTemp, j_))
     {
-        ledgerFetch = beast::lexicalCastThrow<int>(strTemp);
+        ledgerFetchSize = beast::lexicalCastThrow<int>(strTemp);
 
-        if (*ledgerFetch < 1 || *ledgerFetch > 16)
+        if (*ledgerFetchSize < 1 || *ledgerFetchSize > 16)
         {
             Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kLedgerFetch +
+                std::string("Invalid ") + Sections::kLedgerFetchSize +
                 ": must be between 1 and 16 inclusive");
         }
     }
@@ -1274,7 +1333,7 @@ Config::getValueFor(SizedItem item) const
         case SizedItem::LedgerAge:
             return ledgerCacheAge.value_or(180);
         case SizedItem::LedgerFetch:
-            return ledgerFetch.value_or(4);
+            return ledgerFetchSize.value_or(4);
         case SizedItem::HashNodeDbCache:
         case SizedItem::TxnDbCache:
         case SizedItem::LgrDbCache:
@@ -1296,10 +1355,6 @@ Config::cacheMemoryBudget() const
 {
     if (memoryLimit)
         return *memoryLimit;
-
-    // Standalone servers (including unit tests) get minimal sizing.
-    if (runStandalone_)
-        return std::uint64_t{4} << 30;
 
     // ramSize_ is in GiB; 0 when detection failed, which disables enforcement.
     return ramSize_ << 30;
