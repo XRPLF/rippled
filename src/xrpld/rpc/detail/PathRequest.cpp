@@ -226,7 +226,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
         for (auto const& asset : destAssets)
             jvDestCur.append(to_string(asset));
 
-        jvStatus_[jss::destination_tag] = ((sleDest->getFlags() & lsfRequireDestTag) != 0u);
+        jvStatus_[jss::destination_tag] = sleDest->isFlag(lsfRequireDestTag);
     }
 
     jvStatus_[jss::ledger_hash] = to_string(lrLedger->header().hash);

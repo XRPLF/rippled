@@ -42,6 +42,7 @@ This section contains changes targeting a future version.
 
 ### Bugfixes
 
+- `path_find`, `ripple_path_find`: The `destination_tag` field is now a boolean (`true`/`false`) instead of the raw flag bitmask (`131072`/`0`). [#6837](https://github.com/XRPLF/rippled/pull/6837)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 - gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
