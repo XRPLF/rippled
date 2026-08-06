@@ -383,9 +383,10 @@ VaultClawback::doApply()
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
 
-    assetsTotal -= assetsRecovered;
-    assetsAvailable -= assetsRecovered;
-    view().update(vault);
+    if (auto const result =
+            removeAssetsFromVault(view(), vault, assetsRecovered, -assetsRecovered, j_);
+        !result)
+        return result.error();  // LCOV_EXCL_LINE
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.

@@ -222,6 +222,11 @@ VaultCreate::doApply()
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
+    // Deliberate exception to "every write to sfAssetsTotal /
+    // sfAssetsAvailable goes through VaultHelpers.h's addAssetsToVault /
+    // removeAssetsFromVault / closeVaultAssets" (base-branch plan §5.5):
+    // these are literal zero initializations on a brand-new object, with no
+    // rounding discipline to get wrong.
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);

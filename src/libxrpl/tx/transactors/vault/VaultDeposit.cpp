@@ -314,9 +314,9 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
-    view().update(vault);
+    if (auto const result = addAssetsToVault(view(), vault, assetsDeposited, assetsDeposited, j_);
+        !result)
+        return result.error();  // LCOV_EXCL_LINE
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);

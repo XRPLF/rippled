@@ -9,6 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -485,8 +486,12 @@ LoanPay::doApply()
     }
 #endif
 
-    assetsAvailableProxy += totalPaidToVaultRounded;
-    assetsTotalProxy += assetsTotalDelta;
+    // NOTE: totalPaidToVaultRounded, not totalPaidToVaultRaw — the switch to
+    // raw belongs to the dust-mechanism amendment, not this refactor.
+    if (auto const result =
+            addAssetsToVault(view, vaultSle, totalPaidToVaultRounded, assetsTotalDelta, j_);
+        !result)
+        return result.error();  // LCOV_EXCL_LINE
 
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,

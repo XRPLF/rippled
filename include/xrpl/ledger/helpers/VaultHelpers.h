@@ -1,11 +1,16 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
+#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -122,5 +127,73 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  */
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault);
+
+/**
+ * The single owner of every write to a Vault's two accounting fields,
+ * sfAssetsAvailable and sfAssetsTotal, for a cash-moving-in operation
+ * (deposit, repayment, or default settlement).
+ *
+ * On this branch this is a pure bookkeeping refactor with no behaviour
+ * change: it performs exactly
+ *   sfAssetsAvailable += cashIn
+ *   sfAssetsTotal     += recognitionDelta
+ *   view.update(vault)
+ * and nothing else. In particular it does NOT enforce
+ * sfAssetsAvailable <= sfAssetsTotal — callers keep their own guard exactly
+ * where it is today, because that guard is order-sensitive and, at at least
+ * one call site (LoanManage::defaultLoan), the fields legitimately cross
+ * transiently before an existing post-write correction runs.
+ *
+ * @param view The ApplyView to mutate.
+ * @param vault The vault SLE (mutated in place; caller retains ownership).
+ * @param cashIn The amount of cash arriving at the vault's main custody.
+ *               Must already be rounded to whatever scale the caller's
+ *               transactor uses; this function performs no rounding.
+ * @param recognitionDelta The signed amount sfAssetsTotal should recognise,
+ *                          independently of cashIn.
+ * @param j Journal (currently unused; reserved for the dust-mechanism
+ *          amendment gate that lands on the solution branches).
+ *
+ * @return What sfAssetsAvailable actually moved by. On this branch that is
+ *         always exactly cashIn.
+ */
+[[nodiscard]] std::expected<Number, TER>
+addAssetsToVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& cashIn,
+    Number const& recognitionDelta,
+    beast::Journal j);
+
+/**
+ * The counterpart of addAssetsToVault for a cash-moving-out operation
+ * (withdrawal, clawback, or loan funding). Performs
+ *   sfAssetsAvailable -= cashOut
+ *   sfAssetsTotal     += recognitionDelta
+ *   view.update(vault)
+ * See addAssetsToVault for the guard-placement rationale.
+ *
+ * @return What sfAssetsAvailable actually moved by (as a negative number).
+ *         On this branch that is always exactly -cashOut.
+ */
+[[nodiscard]] std::expected<Number, TER>
+removeAssetsFromVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& cashOut,
+    Number const& recognitionDelta,
+    beast::Journal j);
+
+/**
+ * The terminal-withdrawal entry point: assigns both accounting fields to
+ * zero. This is an assignment, not a delta, which is why it is a separate
+ * function rather than a degenerate call to removeAssetsFromVault
+ * (VaultWithdraw.cpp's "Do not let dust accumulate in the Vault" branch).
+ *
+ * @return sfAssetsAvailable's value immediately before it was zeroed (i.e.
+ *         what the caller still owes the departing shareholder).
+ */
+[[nodiscard]] std::expected<Number, TER>
+closeVaultAssets(ApplyView& view, SLE::ref vault, beast::Journal j);
 
 }  // namespace xrpl

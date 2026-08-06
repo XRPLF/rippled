@@ -157,4 +157,55 @@ getVaultVersion(SLE::const_ref vault)
     return static_cast<VaultVersion>(version);
 }
 
+[[nodiscard]] std::expected<Number, TER>
+addAssetsToVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& cashIn,
+    Number const& recognitionDelta,
+    beast::Journal j)
+{
+    (void)j;
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::addAssetsToVault : valid Vault sle");
+
+    vault->at(sfAssetsAvailable) += cashIn;
+    vault->at(sfAssetsTotal) += recognitionDelta;
+    view.update(vault);
+
+    return cashIn;
+}
+
+[[nodiscard]] std::expected<Number, TER>
+removeAssetsFromVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& cashOut,
+    Number const& recognitionDelta,
+    beast::Journal j)
+{
+    (void)j;
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::removeAssetsFromVault : valid Vault sle");
+
+    vault->at(sfAssetsAvailable) -= cashOut;
+    vault->at(sfAssetsTotal) += recognitionDelta;
+    view.update(vault);
+
+    return -cashOut;
+}
+
+[[nodiscard]] std::expected<Number, TER>
+closeVaultAssets(ApplyView& view, SLE::ref vault, beast::Journal j)
+{
+    (void)j;
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::closeVaultAssets : valid Vault sle");
+
+    Number const assetsAvailable = vault->at(sfAssetsAvailable);
+    vault->at(sfAssetsTotal) = Number(0);
+    vault->at(sfAssetsAvailable) = Number(0);
+    view.update(vault);
+
+    return assetsAvailable;
+}
+
 }  // namespace xrpl

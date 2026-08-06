@@ -339,15 +339,16 @@ VaultWithdraw::doApply()
         assetsWithdrawn = allAvailable;
 
         // Do not let dust accumulate in the Vault.
-        assetsTotal = 0;
-        assetsAvailable = 0;
+        if (auto const result = closeVaultAssets(view(), vault, j_); !result)
+            return result.error();  // LCOV_EXCL_LINE
     }
     else
     {
-        assetsTotal -= assetsWithdrawn;
-        assetsAvailable -= assetsWithdrawn;
+        if (auto const result =
+                removeAssetsFromVault(view(), vault, assetsWithdrawn, -assetsWithdrawn, j_);
+            !result)
+            return result.error();  // LCOV_EXCL_LINE
     }
-    view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
 

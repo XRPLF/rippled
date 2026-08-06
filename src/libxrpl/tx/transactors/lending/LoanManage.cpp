@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -189,10 +190,19 @@ LoanManage::defaultLoan(
 
         auto const vaultDefaultRounded = roundToAsset(
             vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
-        vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
-        // Capital and any unclaimed funds amount:
-        vaultAvailableProxy += defaultCovered;
+        // Capital and any unclaimed funds amount, and decrease the Total
+        // Value by the (rounded) default amount. The snap-to-match
+        // workaround and the tecINTERNAL guard immediately below MUST stay
+        // here, after the helper call, re-reading the fields it wrote —
+        // see VaultHelpers.h's addAssetsToVault doc comment and base-branch
+        // plan §5.2: this is the one call site where AssetsAvailable can
+        // transiently exceed AssetsTotal, and an in-helper guard would fire
+        // before this code gets a chance to repair it.
+        if (auto const result =
+                addAssetsToVault(view, vaultSle, defaultCovered, -vaultDefaultRounded, j);
+            !result)
+            return result.error();  // LCOV_EXCL_LINE
         if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
         {
             auto const difference = vaultAvailableProxy - vaultTotalProxy;
