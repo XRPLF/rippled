@@ -9,7 +9,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 class VersionHandler
 {
@@ -34,9 +34,9 @@ public:
     // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
-    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
@@ -48,4 +48,4 @@ private:
     bool betaEnabled_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 /**
  * Database persistence for PeerFinder using SQLite
@@ -50,7 +50,7 @@ public:
         std::size_t n(0);
 
         readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::fromString(s));
+            beast::ip::Endpoint const endpoint(beast::ip::Endpoint::fromString(s));
 
             if (!isUnspecified(endpoint))
             {
@@ -90,4 +90,4 @@ private:
     }
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

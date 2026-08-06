@@ -42,6 +42,8 @@ Our Linux CI tooling is distro-independent and uses a Nix-based environment, so 
 ### macOS
 
 Many `xrpld` engineers use macOS for development.
+The minimum supported version is macOS 15 (Sequoia).
+CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
 
 ### Windows
 
