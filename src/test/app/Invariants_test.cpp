@@ -6275,7 +6275,10 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            // Second pass is tef, not tec: the bumped holder MPTAmount also trips
+            // ValidMPTTransfer's on-failure "balance changed" check (fixCleanup3_4_0),
+            // which fires on the pass-2 tec input and escalates it to tef.
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseConfidential);
 
         // badVersion
