@@ -279,14 +279,31 @@ LoanManage::defaultLoan(
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
-    return accountSend(
-        view,
-        brokerSle->at(sfAccount),
-        vaultSle->at(sfAccount),
-        STAmount{vaultAsset, defaultCovered},
-        j,
-        {},
-        WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view,
+            brokerSle->at(sfAccount),
+            vaultSle->at(sfAccount),
+            STAmount{vaultAsset, defaultCovered},
+            j,
+            {},
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return ter;
+
+    // Solution A (plan A §7 / §8.2): the default settlement above reduces
+    // sfAssetsTotal, refining the Vault's scale, which can strand
+    // previously sub-quantum dust above the new, smaller quantum with no
+    // accompanying credit to promote it (common §2.1). This is the third
+    // AssetsTotal-reducing site (alongside VaultWithdraw and
+    // VaultClawback) that must sweep. Note that this site's own cash-in
+    // leg (defaultCovered, above) is NOT itself split against the dust
+    // account: defaultCovered is bounded to the Loan's own loanScale
+    // rather than the Vault's scale, and this branch's pre-existing
+    // exponent-gap-> 13 workaround a few lines above already absorbs the
+    // resulting drift by snapping sfAssetsTotal up to sfAssetsAvailable.
+    // See the PR description for a characterization of this site (common
+    // §2.2) and why it was left as-is.
+    return maybeSweepVaultDust(view, vaultSle, j);
 }
 
 TER

@@ -449,6 +449,14 @@ VaultClawback::doApply()
 
     associateAsset(*vault, vaultAsset);
 
+    // Solution A (plan A §8.2): a clawback, like a non-terminal withdrawal,
+    // refines the Vault's scale and can strand previously sub-quantum dust
+    // above the new, smaller quantum with no accompanying credit to
+    // promote it (common §2.1). Not optional — see VaultWithdraw.cpp's
+    // non-terminal branch for the same call and rationale.
+    if (auto const ter = maybeSweepVaultDust(view(), vault, j_))
+        return ter;
+
     return tesSUCCESS;
 }
 

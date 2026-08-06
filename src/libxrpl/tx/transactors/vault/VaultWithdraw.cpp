@@ -338,8 +338,13 @@ VaultWithdraw::doApply()
         }
         assetsWithdrawn = allAvailable;
 
-        // Do not let dust accumulate in the Vault.
-        if (auto const result = closeVaultAssets(view(), vault, j_); !result)
+        // Do not let dust accumulate in the Vault. Solution A: this also
+        // pays out the whole dust-account balance (if any) directly to the
+        // departing shareholder's destination and leaves dust custody at
+        // exactly zero, so a subsequent VaultDelete can proceed (common
+        // §4.5 / plan A §8.1).
+        auto const dustDstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
+        if (auto const result = closeVaultAssets(view(), vault, dustDstAcct, j_); !result)
             return result.error();  // LCOV_EXCL_LINE
     }
     else
@@ -348,6 +353,15 @@ VaultWithdraw::doApply()
                 removeAssetsFromVault(view(), vault, assetsWithdrawn, -assetsWithdrawn, j_);
             !result)
             return result.error();  // LCOV_EXCL_LINE
+
+        // Solution A (plan A §8.2): a non-terminal withdrawal refines the
+        // Vault's scale, which can strand previously sub-quantum dust at
+        // or above one new, smaller quantum with no accompanying credit to
+        // promote it (common §2.1). Not optional: without this, dust can
+        // legitimately exceed one quantum and trip the boundedness
+        // invariant, rejecting an otherwise-valid withdrawal.
+        if (auto const ter = maybeSweepVaultDust(view(), vault, j_))
+            return ter;
     }
 
     auto const& vaultAccount = vault->at(sfAccount);
