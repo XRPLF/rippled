@@ -38,15 +38,15 @@ public:
         InMemoryStore store;
 
         Store::Entry e1;
-        e1.endpoint = beast::IP::randomEP(true);
+        e1.endpoint = beast::ip::randomEP(true);
         e1.valence = 100;
 
         Store::Entry e2;
-        e2.endpoint = beast::IP::randomEP(true);
+        e2.endpoint = beast::ip::randomEP(true);
         e2.valence = 200;
 
         Store::Entry e3;
-        e3.endpoint = beast::IP::randomEP(true);
+        e3.endpoint = beast::ip::randomEP(true);
         e3.valence = 150;
 
         std::vector<Store::Entry> inputs = {e1, e2, e3};
@@ -54,7 +54,7 @@ public:
         store.save(inputs);
 
         std::vector<Store::Entry> loaded;
-        std::size_t count = store.load([&loaded](beast::IP::Endpoint endpoint, int valence) {
+        std::size_t count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
             Store::Entry e;
             e.endpoint = endpoint;
             e.valence = valence;
@@ -79,7 +79,7 @@ public:
         InMemoryStore store;
 
         std::size_t callCount = 0;
-        std::size_t count = store.load([&callCount](beast::IP::Endpoint, int) { ++callCount; });
+        std::size_t count = store.load([&callCount](beast::ip::Endpoint, int) { ++callCount; });
 
         BEAST_EXPECT(count == 0);
         BEAST_EXPECT(callCount == 0);
@@ -93,7 +93,7 @@ public:
         InMemoryStore store;
 
         Store::Entry e1;
-        e1.endpoint = beast::IP::randomEP(true);
+        e1.endpoint = beast::ip::randomEP(true);
         e1.valence = 100;
 
         std::vector<Store::Entry> first = {e1};
@@ -101,11 +101,11 @@ public:
         store.save(first);
 
         Store::Entry e2;
-        e2.endpoint = beast::IP::randomEP(true);
+        e2.endpoint = beast::ip::randomEP(true);
         e2.valence = 200;
 
         Store::Entry e3;
-        e3.endpoint = beast::IP::randomEP(true);
+        e3.endpoint = beast::ip::randomEP(true);
         e3.valence = 300;
 
         std::vector<Store::Entry> second = {e2, e3};
@@ -113,7 +113,7 @@ public:
         store.save(second);
 
         std::vector<Store::Entry> loaded;
-        std::size_t count = store.load([&loaded](beast::IP::Endpoint endpoint, int valence) {
+        std::size_t count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
             Store::Entry e;
             e.endpoint = endpoint;
             e.valence = valence;
@@ -138,8 +138,8 @@ public:
 
         InMemoryStore store;
 
-        beast::IP::Endpoint ep1 = beast::IP::randomEP(true);
-        beast::IP::Endpoint ep2 = beast::IP::randomEP(true);
+        beast::ip::Endpoint ep1 = beast::ip::randomEP(true);
+        beast::ip::Endpoint ep2 = beast::ip::randomEP(true);
 
         Store::Entry e1;
         e1.endpoint = ep1;
@@ -158,7 +158,7 @@ public:
         {
             std::set<int> valences;
             std::size_t count = store.load(
-                [&valences](beast::IP::Endpoint, int valence) { valences.insert(valence); });
+                [&valences](beast::ip::Endpoint, int valence) { valences.insert(valence); });
 
             BEAST_EXPECT(count == inputs.size());
             BEAST_EXPECT(valences.count(100) == 1);

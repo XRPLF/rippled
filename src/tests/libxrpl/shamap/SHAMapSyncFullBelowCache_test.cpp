@@ -4,61 +4,41 @@
  */
 
 #include <xrpl/basics/NullBackendFlag.h>
-#include <xrpl/beast/unit_test.h>
 
-namespace xrpl::test {
+#include <gtest/gtest.h>
+
+namespace xrpl::tests {
 
 /**
- * Test SHAMapSync useFullBelowCache behavior with null-backend mode.
- *
  * When null mode is enabled, the shared FullBelowCache should be disabled
  * because nodes are not persisted and cache hits would skip unpinned subtrees.
  */
-class SHAMapSyncFullBelowCache_test : public beast::unit_test::Suite
+TEST(SHAMapSyncFullBelowCache, nullModeDisablesSharedCache)
 {
-public:
-    void
-    run() override
-    {
-        testUseFullBelowCacheNullMode();
-        testUseFullBelowCacheNormalMode();
-    }
+    bool const original = isNullBackend();
+    setNullBackend(true);
 
-    void
-    testUseFullBelowCacheNullMode()
-    {
-        testcase("useFullBelowCache null mode");
+    bool const nullMode = isNullBackend();
+    bool const useFullBelowCache = !nullMode;
 
-        bool const original = isNullBackend();
-        setNullBackend(true);
+    EXPECT_TRUE(nullMode);
+    EXPECT_FALSE(useFullBelowCache);
 
-        bool const nullMode = isNullBackend();
-        bool const useFullBelowCache = !nullMode;
+    setNullBackend(original);
+}
 
-        BEAST_EXPECT(nullMode);
-        BEAST_EXPECT(!useFullBelowCache);
+TEST(SHAMapSyncFullBelowCache, normalModeEnablesSharedCache)
+{
+    bool const original = isNullBackend();
+    setNullBackend(false);
 
-        setNullBackend(original);
-    }
+    bool const nullMode = isNullBackend();
+    bool const useFullBelowCache = !nullMode;
 
-    void
-    testUseFullBelowCacheNormalMode()
-    {
-        testcase("useFullBelowCache normal mode");
+    EXPECT_FALSE(nullMode);
+    EXPECT_TRUE(useFullBelowCache);
 
-        bool const original = isNullBackend();
-        setNullBackend(false);
+    setNullBackend(original);
+}
 
-        bool const nullMode = isNullBackend();
-        bool const useFullBelowCache = !nullMode;
-
-        BEAST_EXPECT(!nullMode);
-        BEAST_EXPECT(useFullBelowCache);
-
-        setNullBackend(original);
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(SHAMapSyncFullBelowCache, shamap, xrpl);
-
-}  // namespace xrpl::test
+}  // namespace xrpl::tests

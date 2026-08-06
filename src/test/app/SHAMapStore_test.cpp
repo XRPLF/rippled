@@ -668,20 +668,20 @@ public:
         BEAST_EXPECT(initialRotated > 0);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const requested = ledgerSeq + (kDeleteInterval / 2);
         canDelete = env.rpc("can_delete", std::to_string(requested));
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == requested);
 
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
@@ -689,7 +689,7 @@ public:
         store.rendezvous();
 
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete].asUInt() > 0);
         BEAST_EXPECT(store.getLastRotated() >= initialRotated);
     }

@@ -24,6 +24,7 @@
 
 #include <cerrno>
 #include <stdexcept>
+#include <system_error>
 
 namespace xrpl {
 
