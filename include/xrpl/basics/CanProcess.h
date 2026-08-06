@@ -4,7 +4,8 @@
 #include <mutex>
 #include <set>
 
-/** RAII class to check if an Item is already being processed on another thread,
+/**
+ * RAII class to check if an Item is already being processed on another thread,
  * as indicated by it's presence in a Collection.
  *
  * If the Item is not in the Collection, it will be added under lock in the
