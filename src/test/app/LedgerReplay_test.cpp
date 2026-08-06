@@ -28,7 +28,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -53,6 +52,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -443,17 +443,16 @@ struct TestPeerSet : public PeerSet
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override
     {
-        int dropRate = 0;
-        if (behavior == PeerSetBehavior::Drop50)
-        {
-            dropRate = 50;
-        }
-        else if (behavior == PeerSetBehavior::DropAll)
-        {
-            dropRate = 100;
-        }
+        if (behavior == PeerSetBehavior::DropAll)
+            return;
 
-        if (randInt(1, 100) <= dropRate)
+        // Drop every other message deterministically. A random 50% drop
+        // could drop all (1 + kSubTaskMaxTimeouts) sends of a subtask
+        // (probability (1/2)^11 per subtask), failing the whole task and
+        // making the test flaky. Alternating drops still exercise the
+        // timeout/retry path while guaranteeing every subtask eventually
+        // gets a reply.
+        if (behavior == PeerSetBehavior::Drop50 && sendCount++ % 2 == 0)
             return;
 
         switch (type)
@@ -498,6 +497,7 @@ struct TestPeerSet : public PeerSet
     LedgerReplayMsgHandler& remote;
     std::shared_ptr<TestPeer> dummyPeer;
     PeerSetBehavior behavior;
+    std::atomic<int> sendCount{0};
 };
 
 /**
