@@ -421,7 +421,7 @@ void
 AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_++;
+        deletedPseudoAccount_.push_back(isPseudoAccount(before));
 }
 
 bool
@@ -429,7 +429,7 @@ AccountRootsNotDeleted::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& view,
     beast::Journal const& j) const
 {
     // AMM account root can be deleted as the result of AMM withdraw/delete
@@ -438,10 +438,23 @@ AccountRootsNotDeleted::finalize(
     // one account root.
     if (hasPrivilege(tx, MustDeleteAcct) && isTesSuccess(result))
     {
-        if (accountsDeleted_ == 1)
+        if (deletedPseudoAccount_.size() == 1)
             return true;
 
-        if (accountsDeleted_ == 0)
+        // Solution A (docs/plan-vault-dust-a-second-account.md §8.3):
+        // VaultDelete removes a Vault's main and dust pseudo-account
+        // together, in one transaction — the deletion-side counterpart of
+        // ValidNewAccountRoot's creation-side relaxation above, kept
+        // exactly as narrow: amendment-gated (pre-activation behaviour is
+        // the unmodified single-deletion rule), capped at exactly two, and
+        // BOTH deleted accounts must themselves be pseudo-accounts. An
+        // ordinary account deleted alongside a pseudo-account, or two
+        // ordinary accounts, still falls through to the failure below.
+        if (deletedPseudoAccount_.size() == 2 && view.rules().enabled(featureLendingProtocolV1_1) &&
+            deletedPseudoAccount_[0] && deletedPseudoAccount_[1])
+            return true;
+
+        if (deletedPseudoAccount_.empty())
         {
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded without deleting an account";
@@ -456,11 +469,13 @@ AccountRootsNotDeleted::finalize(
 
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
-    // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
+    // deletes the AMM account, deletedPseudoAccount_ records it if it is
+    // deleted.
+    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) &&
+        deletedPseudoAccount_.size() == 1)
         return true;
 
-    if (accountsDeleted_ == 0)
+    if (deletedPseudoAccount_.empty())
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an account root was deleted";
@@ -734,12 +749,64 @@ ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref afte
 {
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
-        accountsCreated_++;
-        accountSeq_ = (*after)[sfSequence];
-        pseudoAccount_ = isPseudoAccount(after);
-        flags_ = after->getFlags();
+        accountsCreated_.push_back(
+            CreatedAccount{
+                .seq = (*after)[sfSequence],
+                .pseudoAccount = isPseudoAccount(after),
+                .flags = after->getFlags()});
     }
 }
+
+namespace {
+
+// Validates ONE created account against the rules that used to be checked
+// only for "the" (singular) created account. Applied to every element of
+// accountsCreated_ now, not just the last one visitEntry happened to see —
+// see the class comment for why that distinction matters: relaxing the
+// count check without this would leave the first of two created accounts
+// completely unvalidated.
+bool
+checkOneCreatedAccount(
+    ValidNewAccountRoot::CreatedAccount const& acct,
+    STTx const& tx,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const pseudoAccount = acct.pseudoAccount &&
+        (view.rules().enabled(featureSingleAssetVault) ||
+         view.rules().enabled(featureLendingProtocol));
+
+    if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+    {
+        JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
+                           "wrong transaction type";
+        return false;
+    }
+
+    std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
+
+    if (acct.seq != startingSeq)
+    {
+        JLOG(j.fatal()) << "Invariant failed: account created with "
+                           "wrong starting sequence number";
+        return false;
+    }
+
+    if (pseudoAccount)
+    {
+        std::uint32_t const expected = (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+        if (acct.flags != expected)
+        {
+            JLOG(j.fatal()) << "Invariant failed: pseudo-account created with "
+                               "wrong flags";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+}  // namespace
 
 bool
 ValidNewAccountRoot::finalize(
@@ -749,53 +816,63 @@ ValidNewAccountRoot::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    if (accountsCreated_ == 0)
+    if (accountsCreated_.empty())
         return true;
 
-    if (accountsCreated_ > 1)
+    if (accountsCreated_.size() > 2)
     {
         JLOG(j.fatal()) << "Invariant failed: multiple accounts "
                            "created in a single transaction";
         return false;
     }
 
-    // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+    if (accountsCreated_.size() == 2)
     {
-        bool const pseudoAccount =
-            (pseudoAccount_ &&
-             (view.rules().enabled(featureSingleAssetVault) ||
-              view.rules().enabled(featureLendingProtocol)));
-
-        if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+        // Solution A (docs/plan-vault-dust-a-second-account.md §4):
+        // VaultCreate provisions a Vault's main and dust pseudo-accounts
+        // together, atomically, so this is the one place two new
+        // ACCOUNT_ROOTs in a single transaction is legitimate. Kept as
+        // narrow as the two-account case allows:
+        //   - amendment-gated, so pre-activation behaviour (a hard cap of
+        //     one new account) is unchanged bit-for-bit;
+        //   - keyed off the CreatePseudoAcct PRIVILEGE, not a hardcoded
+        //     transaction type, so this expresses "a transaction
+        //     authorised to create pseudo-accounts may create the pair a
+        //     Vault needs" rather than naming ttVAULT_CREATE here;
+        //   - both created accounts must themselves be pseudo-accounts —
+        //     two ordinary accounts, or one pseudo plus one ordinary,
+        //     stays a failure;
+        //   - the transaction must have actually succeeded;
+        //   - three or more accounts is STILL an unconditional failure,
+        //     above, regardless of amendment or privilege;
+        //   - and every created account is independently checked against
+        //     the starting-sequence / pseudo-account-flags rules via
+        //     checkOneCreatedAccount, not just one of them.
+        // What this can never allow: an ordinary (non-pseudo) account
+        // created alongside another account in one transaction, a third
+        // account of any kind, or any of this before the amendment
+        // activates.
+        if (!view.rules().enabled(featureLendingProtocolV1_1) || !isTesSuccess(result) ||
+            !hasPrivilege(tx, CreatePseudoAcct) || !accountsCreated_[0].pseudoAccount ||
+            !accountsCreated_[1].pseudoAccount)
         {
-            JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
-                               "wrong transaction type";
+            JLOG(j.fatal()) << "Invariant failed: multiple accounts "
+                               "created in a single transaction";
             return false;
         }
 
-        std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
-
-        if (accountSeq_ != startingSeq)
+        for (auto const& acct : accountsCreated_)
         {
-            JLOG(j.fatal()) << "Invariant failed: account created with "
-                               "wrong starting sequence number";
-            return false;
-        }
-
-        if (pseudoAccount)
-        {
-            std::uint32_t const expected = (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
-            if (flags_ != expected)
-            {
-                JLOG(j.fatal()) << "Invariant failed: pseudo-account created with "
-                                   "wrong flags";
+            if (!checkOneCreatedAccount(acct, tx, view, j))
                 return false;
-            }
         }
 
         return true;
     }
+
+    // From this point on we know exactly one account was created.
+    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+        return checkOneCreatedAccount(accountsCreated_[0], tx, view, j);
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;

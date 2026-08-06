@@ -159,7 +159,12 @@ public:
  */
 class AccountRootsNotDeleted
 {
-    std::uint32_t accountsDeleted_ = 0;
+    // Whether each deleted ACCOUNT_ROOT was itself a pseudo-account, in
+    // deletion order. A plain count would not be enough once two deletions
+    // are ever allowed (solution A / VaultDelete): the relaxation below
+    // must know that BOTH deleted accounts are pseudo-accounts, not merely
+    // that two accounts were deleted.
+    std::vector<bool> deletedPseudoAccount_;
 
 public:
     void
@@ -306,15 +311,32 @@ public:
 
 /**
  * @brief Invariant: a new account root must be the consequence of a payment,
- *                   must have the right starting sequence, and the payment
- *                   may not create more than one new account root.
+ *                   must have the right starting sequence, and the
+ *                   transaction may not create more than one new account
+ *                   root — except, once featureLendingProtocolV1_1 is
+ *                   enabled, a transaction holding the CreatePseudoAcct
+ *                   privilege (e.g. VaultCreate, provisioning a Vault's main
+ *                   and dust pseudo-accounts together) may create exactly
+ *                   two, and only if both are pseudo-accounts. Three or more
+ *                   created accounts is a failure unconditionally, and every
+ *                   created account — not just one of them — is validated
+ *                   against the starting-sequence and pseudo-account-flags
+ *                   rules below.
  */
 class ValidNewAccountRoot
 {
-    std::uint32_t accountsCreated_ = 0;
-    std::uint32_t accountSeq_ = 0;
-    bool pseudoAccount_ = false;
-    std::uint32_t flags_ = 0;
+public:
+    // Public so the free helper checkOneCreatedAccount (InvariantCheck.cpp)
+    // can validate each one independently.
+    struct CreatedAccount
+    {
+        std::uint32_t seq = 0;
+        bool pseudoAccount = false;
+        std::uint32_t flags = 0;
+    };
+
+private:
+    std::vector<CreatedAccount> accountsCreated_;
 
 public:
     void
