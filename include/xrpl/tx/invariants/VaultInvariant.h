@@ -55,6 +55,10 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        // Solution A (docs/plan-vault-dust-a-second-account.md §9): present
+        // only for a version-1 IOU Vault created after the amendment
+        // activated (common §2.5/§2.6).
+        std::optional<AccountID> dustAccount;
 
         Vault static make(SLE const&);
     };

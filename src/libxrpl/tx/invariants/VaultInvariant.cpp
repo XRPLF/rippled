@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -44,6 +45,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.dustAccount = from.at(~sfDustAccount);
     return self;
 }
 
@@ -1063,6 +1065,44 @@ ValidVault::finalize(
                 // LCOV_EXCL_STOP
         }
     }();
+
+    // Solution A (docs/plan-vault-dust-a-second-account.md §9): checks 1 and
+    // 3. Deliberately placed here, outside the per-transaction-type switch
+    // above, so they run uniformly for every vault-touching transaction
+    // type that can leave a Vault with a dust account, loan transactions
+    // included (whose case in the switch above is a no-op today).
+    if (afterVault.dustAccount)
+    {
+        auto const dustSle = view.read(keylet::account(*afterVault.dustAccount));
+        if (!dustSle || dustSle->at(~sfVaultDustID) != afterVault.key)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: vault dust account must be a valid "
+                "pseudo-account of this vault";
+            result = false;
+        }
+        else
+        {
+            Number const dustBalance = accountHolds(
+                view,
+                *afterVault.dustAccount,
+                vaultAsset,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                j);
+            Number const q = [&]() {
+                NumberRoundModeGuard const roundGuard(Number::RoundingMode::ToNearest);
+                return Number(1, xrpl::scale(afterVault.assetsTotal, vaultAsset));
+            }();
+            if (dustBalance < kZero || dustBalance >= q)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: vault dust must be bounded by one "
+                    "quantum";
+                result = false;
+            }
+        }
+    }
 
     if (!result)
     {
