@@ -471,8 +471,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         auto const sle = proposal::entry(env, target, targetTicketSeq);
-        BEAST_EXPECT(sle);
-        if (!sle)
+        if (!BEAST_EXPECT(sle))
             return;
 
         BEAST_EXPECT(sle->getAccountID(sfOwner) == alice.id());
@@ -607,8 +606,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         auto const sle = proposal::entry(env, target, targetTicketSeq);
-        BEAST_EXPECT(sle);
-        if (!sle)
+        if (!BEAST_EXPECT(sle))
             return;
 
         // The proposal is stored without any BatchSigners: the participants'
