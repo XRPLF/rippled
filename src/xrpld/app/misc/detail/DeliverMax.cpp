@@ -3,7 +3,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 void
 insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
@@ -19,4 +19,4 @@ insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
     }
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

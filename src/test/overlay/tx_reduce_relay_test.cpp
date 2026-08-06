@@ -121,11 +121,11 @@ private:
     public:
         PeerTest(
             Application& app,
-            std::shared_ptr<PeerFinder::Slot> const& slot,
+            std::shared_ptr<peer_finder::Slot> const& slot,
             http_request_type&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
-            Resource::Consumer consumer,
+            resource::Consumer consumer,
             std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
@@ -192,9 +192,9 @@ private:
         auto streamPtr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
-        beast::IP::Endpoint const local(
+        beast::ip::Endpoint const local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
-        beast::IP::Endpoint const remote(
+        beast::ip::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
