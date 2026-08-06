@@ -27,10 +27,18 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
 
 namespace xrpl::test {
 
+// Solution A (docs/plan-vault-dust-a-second-account.md): the dust reservoir
+// is the balance of a second pseudo-account, sfDustAccount, addressed by
+// the ~sfDustAccount field on the Vault. Absent for a Legacy Vault, an
+// XRP/MPT Vault, or a Vault created before the amendment activated.
+//
 // Per-Vault: how much dust does this Vault currently hold, normalized to
 // Vault-pseudo-account terms (i.e. a positive Number means "the Vault is
 // carrying this much unrecognized value on the borrower's behalf").
@@ -46,9 +54,21 @@ namespace xrpl::test {
 [[nodiscard]] inline Number
 readVaultDust(jtx::Env const& env, Keylet const& vaultKeylet)
 {
-    (void)env;
-    (void)vaultKeylet;
-    return Number{};
+    auto const vaultSle = env.current()->read(vaultKeylet);
+    if (!vaultSle)
+        return Number{};
+
+    auto const dustId = vaultSle->at(~sfDustAccount);
+    if (!dustId)
+        return Number{};
+
+    return accountHolds(
+        *env.current(),
+        *dustId,
+        vaultSle->at(sfAsset),
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        beast::Journal{beast::Journal::getNullSink()});
 }
 
 }  // namespace xrpl::test
