@@ -1,13 +1,16 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
 
-#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class PathFind_test : public beast::unit_test::suite
+class PathFind_test : public beast::unit_test::Suite
 {
     void
     testCreatePreservesSessionOnError()
@@ -36,37 +39,39 @@ class PathFind_test : public beast::unit_test::suite
 
         auto wsc = makeWSClient(env.app().config());
 
-        // Step 1 – establish a valid path_find session
+        // Step 1 - establish a valid path_find session
         {
-            Json::Value req;
+            json::Value req;
             req[jss::subcommand] = "create";
             req[jss::source_account] = alice.human();
             req[jss::destination_account] = bob.human();
-            req[jss::destination_amount] = bob["USD"](10).value().getJson(JsonOptions::none);
+            req[jss::destination_amount] =
+                bob["USD"](10).value().getJson(JsonOptions::Values::None);
             auto const jr = wsc->invoke("path_find", req)[jss::result];
-            BEAST_EXPECT(!RPC::contains_error(jr));
+            BEAST_EXPECT(!jr.isMember(jss::error));
             BEAST_EXPECT(jr.isMember(jss::alternatives));
         }
 
-        // Step 2 – send a malformed create (bad source_account)
+        // Step 2 - send a malformed create (bad source_account)
         {
-            Json::Value req;
+            json::Value req;
             req[jss::subcommand] = "create";
             req[jss::source_account] = "not_a_valid_address";
             req[jss::destination_account] = bob.human();
-            req[jss::destination_amount] = bob["USD"](10).value().getJson(JsonOptions::none);
+            req[jss::destination_amount] =
+                bob["USD"](10).value().getJson(JsonOptions::Values::None);
             auto const jr = wsc->invoke("path_find", req)[jss::result];
-            BEAST_EXPECT(RPC::contains_error(jr));
+            BEAST_EXPECT(jr.isMember(jss::error));
         }
 
-        // Step 3 – original session must still be alive
+        // Step 3 - original session must still be alive
         // Before the fix this would return rpcNO_PF_REQUEST (error 33)
         // because clearRequest() had already destroyed the old session.
         {
-            Json::Value req;
+            json::Value req;
             req[jss::subcommand] = "status";
             auto const jr = wsc->invoke("path_find", req)[jss::result];
-            BEAST_EXPECT(!RPC::contains_error(jr));
+            BEAST_EXPECT(!jr.isMember(jss::error));
         }
     }
 
@@ -79,5 +84,4 @@ class PathFind_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PathFind, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
