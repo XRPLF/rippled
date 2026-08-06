@@ -365,17 +365,26 @@ private:
             // pseudo-account or the broker's owner (LoanPay.cpp's
             // sendBrokerFeeToOwner), depending on cover sufficiency. Track
             // every account real cash could land on.
+            //
+            // The dust reservoir must be included too: the payer parts with
+            // the raw (unrounded) amount, and every unit of that raw amount
+            // has to land *somewhere* on the ledger — either in main
+            // custody (the four balances above) or in the reservoir. Without
+            // it, this sum only balances on branches where the borrower is
+            // debited the rounded amount instead of the raw one.
             auto const before = env.balance(ctx.borrower, ctx.asset).number() +
                 env.balance(pseudo, ctx.asset).number() +
                 env.balance(brokerPseudo, ctx.asset).number() +
-                env.balance(ctx.lender, ctx.asset).number();
+                env.balance(ctx.lender, ctx.asset).number() +
+                readVaultDust(env, ctx.broker.vaultKeylet());
 
             payLoanInFull(env, ctx.borrower, ctx.asset.raw(), ctx.tinyLoanKeylet);
 
             auto const after = env.balance(ctx.borrower, ctx.asset).number() +
                 env.balance(pseudo, ctx.asset).number() +
                 env.balance(brokerPseudo, ctx.asset).number() +
-                env.balance(ctx.lender, ctx.asset).number();
+                env.balance(ctx.lender, ctx.asset).number() +
+                readVaultDust(env, ctx.broker.vaultKeylet());
 
             BEAST_EXPECT(before == after);
         });
