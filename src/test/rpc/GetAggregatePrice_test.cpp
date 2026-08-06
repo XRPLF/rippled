@@ -340,8 +340,7 @@ public:
 
             // Query with both oracles listed once
             OraclesData const single = {
-                {owner1, oracle1.documentID()},
-                {owner2, oracle2.documentID()}};
+                {owner1, oracle1.documentID()}, {owner2, oracle2.documentID()}};
             auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
 
             // Query with oracle1 listed twice
