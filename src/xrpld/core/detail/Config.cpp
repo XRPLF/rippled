@@ -74,24 +74,67 @@ getMemorySize()
 
 namespace xrpl::detail {
 
-// The cgroup (v2, then v1) memory limit in bytes; 0 when absent or unlimited.
-// Reads the root-level files, which cover containers (Docker, Kubernetes)
-// but not limits on a nested slice such as systemd MemoryMax=.
+// This process's cgroup path from /proc/self/cgroup: the v2 line is
+// "0::<path>"; a v1 line is "<id>:<controllers>:<path>". Empty when absent.
+[[nodiscard]] std::string
+getOwnCgroupPath(std::string_view controller)
+{
+    std::ifstream in("/proc/self/cgroup");
+    std::string line;
+
+    while (std::getline(in, line))
+    {
+        auto const first = line.find(':');
+        auto const second = line.find(':', first + 1);
+        if (first == std::string::npos || second == std::string::npos)
+            continue;
+
+        std::string_view const controllers(line.data() + first + 1, second - first - 1);
+        if ((controller.empty() && controllers.empty()) ||
+            (!controller.empty() && controllers.find(controller) != std::string_view::npos))
+            return line.substr(second + 1);
+    }
+
+    return {};
+}
+
+// The value in a cgroup limit file; 0 when absent or unlimited. "max" (v2)
+// fails the read, and the page-counter maximum (v1) both mean unlimited.
+[[nodiscard]] std::uint64_t
+readCgroupLimit(std::string const& path)
+{
+    std::ifstream in(path);
+    std::uint64_t limit = 0;
+
+    if (in >> limit && limit < (std::uint64_t{1} << 62))
+        return limit;
+
+    return 0;
+}
+
+// The cgroup (v2, then v1) memory limit in bytes; 0 when absent or
+// unlimited. Checks this process's own cgroup (covering nested limits such
+// as systemd MemoryMax=) before the root-level files containers expose.
 [[nodiscard]] std::uint64_t
 getCgroupMemoryLimit()
 {
-    for (char const* path :
-         {"/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"})
+    if (auto const path = getOwnCgroupPath(""); !path.empty() && path != "/")
     {
-        std::ifstream in(path);
-        std::uint64_t limit = 0;
-
-        // "max" (v2) and the page-counter maximum (v1) both mean unlimited.
-        if (in >> limit && limit < (std::uint64_t{1} << 62))
+        if (auto const limit = readCgroupLimit("/sys/fs/cgroup" + path + "/memory.max"))
             return limit;
     }
 
-    return 0;
+    if (auto const limit = readCgroupLimit("/sys/fs/cgroup/memory.max"))
+        return limit;
+
+    if (auto const path = getOwnCgroupPath("memory"); !path.empty() && path != "/")
+    {
+        if (auto const limit =
+                readCgroupLimit("/sys/fs/cgroup/memory" + path + "/memory.limit_in_bytes"))
+            return limit;
+    }
+
+    return readCgroupLimit("/sys/fs/cgroup/memory/memory.limit_in_bytes");
 }
 
 [[nodiscard]] std::uint64_t
