@@ -1243,6 +1243,195 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttAMM_CREATE, [](STObject& tx) {}});
     }
 
+    // Solution A (docs/plan-vault-dust-a-second-account.md §4/§8.3): VaultCreate
+    // now atomically provisions two pseudo-accounts (main + dust), and
+    // VaultDelete removes both together. ValidNewAccountRoot and
+    // AccountRootsNotDeleted were loosened, as narrowly as possible, to permit
+    // exactly that pair. These tests pin the loosened rule's edges.
+    void
+    testValidNewAccountRootPseudoPair()
+    {
+        using namespace test::jtx;
+        testcase << "valid new account root pair (solution A)";
+
+        auto const insertPseudoAccount = [](ApplyContext& ac, Account const& a, bool valid) {
+            Keylet const acctKeylet = keylet::account(a);
+            auto const sle = std::make_shared<SLE>(acctKeylet);
+            sle->setFieldU32(sfSequence, 0);
+            sle->setFieldH256(sfAMMID, uint256(1));
+            sle->setFieldU32(
+                sfFlags,
+                valid ? (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth)
+                      : (lsfDisableMaster | lsfDefaultRipple));
+            ac.view().insert(sle);
+        };
+
+        // NOTE: there is deliberately no "two pseudo-accounts created
+        // together: ALLOWED" case here either (see the deletion-side
+        // counterpart's comment below for the same reasoning). Every
+        // transaction type holding CreatePseudoAcct also holds its own
+        // "the corresponding object must actually be touched" invariant —
+        // ValidVault's MustModifyVault for VaultCreate, ValidAMM's for
+        // AMMCreate ("AMMCreate failed, AMM object is not created") — and
+        // this synthetic harness has no real Vault or AMM for either of
+        // those to see, so satisfying them convincingly (a real AMM pool
+        // with valid LP-token balances, or a real Vault with a matching
+        // share issuance) is exactly the "fight the harness" problem the
+        // deletion-side test hit, just one level removed. The real
+        // evidence already exists: VaultRoundingPseudoAccount_test.cpp's
+        // testDustAccountCreated submits an actual VaultCreate with the
+        // amendment on and asserts tesSUCCESS end-to-end.
+
+        // Three accounts: still an unconditional failure, regardless of
+        // amendment or privilege.
+        doInvariantCheck(
+            {{"multiple accounts created in a single transaction"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                Account const a3{"A3"};
+                Account const a4{"A4"};
+                Account const a5{"A5"};
+                insertPseudoAccount(ac, a3, true);
+                insertPseudoAccount(ac, a4, true);
+                insertPseudoAccount(ac, a5, true);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject& tx) {}});
+
+        // Two accounts, but the transaction does not hold CreatePseudoAcct
+        // (ttPAYMENT): rejected.
+        doInvariantCheck(
+            {{"multiple accounts created in a single transaction"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                Account const a3{"A3"};
+                Account const a4{"A4"};
+                insertPseudoAccount(ac, a3, true);
+                insertPseudoAccount(ac, a4, true);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}});
+
+        // Two accounts, CreatePseudoAcct-privileged, but the amendment is
+        // off: rejected — pre-activation behaviour is the unmodified,
+        // strict single-account rule.
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - featureLendingProtocolV1_1),
+            {{"multiple accounts created in a single transaction"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                Account const a3{"A3"};
+                Account const a4{"A4"};
+                insertPseudoAccount(ac, a3, true);
+                insertPseudoAccount(ac, a4, true);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject& tx) {}});
+
+        // Two accounts, but the SECOND has the wrong starting sequence:
+        // rejected. This is the test that proves every created account is
+        // independently validated, not just the first one visitEntry saw.
+        doInvariantCheck(
+            {{"account created with wrong starting sequence number"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                Account const a3{"A3"};
+                insertPseudoAccount(ac, a3, true);
+
+                Account const a4{"A4"};
+                Keylet const acctKeylet = keylet::account(a4);
+                auto const sle = std::make_shared<SLE>(acctKeylet);
+                sle->setFieldU32(sfSequence, ac.view().seq());  // wrong: should be 0
+                sle->setFieldH256(sfAMMID, uint256(1));
+                sle->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+                ac.view().insert(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject& tx) {}});
+
+        // Two accounts, but the SECOND has the wrong pseudo-account flags:
+        // rejected, for the same reason as above.
+        doInvariantCheck(
+            {{"pseudo-account created with wrong flags"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                Account const a3{"A3"};
+                insertPseudoAccount(ac, a3, true);
+
+                Account const a4{"A4"};
+                insertPseudoAccount(ac, a4, false);  // wrong flags
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject& tx) {}});
+    }
+
+    // The deletion-side counterpart: AccountRootsNotDeleted must allow
+    // VaultDelete to remove exactly two pseudo-accounts together, and
+    // nothing else.
+    void
+    testAccountRootsNotRemovedPseudoPair()
+    {
+        using namespace test::jtx;
+        testcase << "account root pair removed (solution A)";
+
+        auto const erasePseudoAccount = [](ApplyContext& ac, Account const& a) -> bool {
+            auto sle = ac.view().peek(keylet::account(a.id()));
+            if (!sle)
+                return false;
+            // Clear the balance and mark as a pseudo-account so this
+            // exercises AccountRootsNotDeleted rather than an unrelated
+            // "left behind a non-zero balance" / "not a pseudo-account"
+            // finding.
+            sle->at(sfBalance) = beast::kZero;
+            sle->setFieldH256(sfAMMID, uint256(1));
+            ac.view().update(sle);
+            ac.view().erase(sle);
+            return true;
+        };
+
+        // NOTE: there is deliberately no "two pseudo-accounts deleted
+        // together: ALLOWED" case here. AccountRootsNotDeleted reads
+        // isPseudoAccount() off the PRE-transaction ledger snapshot (taken
+        // when OpenView ov is constructed, before precheck ever runs), so
+        // a synthetic pair built by hand inside precheck is never
+        // genuinely pseudo at the point this invariant inspects it — a
+        // plain funded jtx::Account cannot legitimately become one either
+        // (pseudo-account addresses are hash-derived, not user-controlled).
+        // A real fixture is possible (preclose a real VaultCreate, then
+        // re-derive its keylet in precheck) but fighting the harness this
+        // way is strictly weaker evidence than what already exists: the
+        // VaultRoundingPseudoAccount suite exercises real VaultCreate and
+        // VaultDelete transactions end-to-end with the amendment on and
+        // asserts tesSUCCESS. See the PR description for this omission.
+
+        // Same, but the amendment is off: rejected.
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - featureLendingProtocolV1_1),
+            {{"account deletion succeeded but deleted multiple accounts"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                return erasePseudoAccount(ac, a1) && erasePseudoAccount(ac, a2);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject& tx) {}});
+
+        // Two accounts deleted, but only ONE is a pseudo-account: rejected.
+        doInvariantCheck(
+            {{"account deletion succeeded but deleted multiple accounts"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                if (!erasePseudoAccount(ac, a1))
+                    return false;
+                auto sle2 = ac.view().peek(keylet::account(a2.id()));
+                if (!sle2)
+                    return false;
+                sle2->at(sfBalance) = beast::kZero;  // ordinary account, no pseudo marker
+                ac.view().update(sle2);
+                ac.view().erase(sle2);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject& tx) {}});
+    }
+
     void
     testNFTokenPageInvariants()
     {
@@ -6213,6 +6402,8 @@ public:
         testNoBadOffers();
         testNoZeroEscrow();
         testValidNewAccountRoot();
+        testValidNewAccountRootPseudoPair();
+        testAccountRootsNotRemovedPseudoPair();
         testNFTokenPageInvariants();
         testAMMDeleteInvariants(defaultAmendments());
         testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
