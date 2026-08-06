@@ -148,11 +148,15 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 0);
         };
 
-        // Signatures may only ever arrive through TransactionProposalSign.
+        // Signatures may only ever arrive through TransactionProposalSign. A
+        // non-empty TxnSignature or Signers array is rejected by the proposed
+        // transaction's own preflight simulation check (it looks like an
+        // attempt to both single- and multi-sign a dry-run payload) before
+        // ever reaching our own hasSignatureField check.
         {
             json::Value tx = payload();
             tx[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temINVALID);
         }
         {
             json::Value tx = payload();
@@ -160,16 +164,23 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             signer[jss::Account] = bob.human();
             signer[jss::SigningPubKey] = strHex(bob.pk().slice());
             signer[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temINVALID);
         }
 
         // SigningPubKey must be present and empty: absent is not the same as
-        // empty, and a set key means the payload was signed for single-signing.
+        // empty. SigningPubKey is a required common field, so an absent one
+        // means proposedTx isn't even a valid instance of its own type;
+        // that's caught while constructing it as an STTx, before reaching our
+        // own hasEmptySigningPubKey check.
         {
             json::Value tx = payload();
             tx.removeMember(jss::SigningPubKey);
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temMALFORMED);
         }
+        // A set key means the payload was signed for single-signing. Unlike
+        // the absent case, a populated SigningPubKey is a perfectly valid
+        // field value as far as STTx construction and the proposed type's
+        // own preflight are concerned, so this one does reach our own check.
         {
             json::Value tx = payload();
             tx[jss::SigningPubKey] = strHex(target.pk().slice());
@@ -185,47 +196,62 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temMALFORMED);
         }
 
-        // A pseudo-transaction is never submittable by an account.
+        // A pseudo-transaction is never submittable by an account. This
+        // payload also carries Payment-shaped fields (Amount, Destination)
+        // that aren't part of EnableAmendment's own template, so it fails
+        // STTx construction before ever reaching our own isPseudoTx check.
         {
             json::Value tx = payload();
             tx[jss::TransactionType] = jss::EnableAmendment;
-            reject(tx, temINVALID);
+            reject(tx, temMALFORMED);
         }
 
         // An inner batch transaction bypasses the ordinary signature checks.
+        // The proposed transaction's own preflight rejects a standalone
+        // tfInnerBatchTxn (no enclosing Batch, no parentBatchId) with its own
+        // more specific code before reaching our own tfInnerBatchTxn check.
         {
             json::Value tx = payload();
             tx[jss::Flags] = tfInnerBatchTxn;
-            reject(tx, temINVALID);
+            reject(tx, temINVALID_INNER_BATCH);
         }
 
-        // Proposals do not nest.
+        // Proposals do not nest. This payload also isn't a valid instance of
+        // TransactionProposalCreate's own template (it lacks Expiration and
+        // ProposedTransaction), so it fails STTx construction before ever
+        // reaching our own isProposalTx check.
         {
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
-            reject(tx, temINVALID);
+            reject(tx, temMALFORMED);
         }
 
         // The remaining signature containers are just as forbidden as a bare
-        // TxnSignature or Signers array.
+        // TxnSignature or Signers array. BatchSigners and CounterpartySignature
+        // aren't part of Payment's own template, so they fail STTx
+        // construction before ever reaching our own hasSignatureField check.
         {
             json::Value tx = payload();
             auto& bs = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
             bs[jss::Account] = bob.human();
             bs[jss::SigningPubKey] = strHex(bob.pk().slice());
             bs[sfTxnSignature.getJsonName()] = "DEADBEEF";
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temMALFORMED);
         }
         {
             json::Value tx = payload();
             tx[sfCounterpartySignature.getJsonName()][jss::SigningPubKey] =
                 strHex(bob.pk().slice());
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temMALFORMED);
         }
+        // SponsorSignature, unlike the two above, is a common field (used by
+        // the fee-sponsorship feature), so it doesn't fail STTx construction;
+        // instead the proposed transaction's own preflight rejects a
+        // SponsorSignature without an accompanying Sponsor/SponsorFlags pair.
         {
             json::Value tx = payload();
             tx[sfSponsorSignature.getJsonName()][jss::SigningPubKey] = strHex(bob.pk().slice());
-            reject(tx, temBAD_SIGNER);
+            reject(tx, temMALFORMED);
         }
 
         // The proposed transaction must be ticket-based: a missing
