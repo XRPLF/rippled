@@ -56,8 +56,8 @@ services:
       - xrpld-telemetry
 
   prometheus:
-    # Pinned to the v2.53 LTS line for reproducible, config-stable runs.
-    image: prom/prometheus:v2.53.3
+    # Pinned to an exact patch release for reproducible, config-stable runs.
+    image: prom/prometheus:v3.13.2
     ports:
       - "9090:9090"
     volumes:
