@@ -30,7 +30,9 @@ ignoreRegExpList:
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
-  - filename: "**/*_test.cpp" # all test files
+  - filename:
+      - "**/*_test.cpp" # legacy boost.test files
+      - "src/tests/**/*.cpp" # gtest test files
     ignoreRegExpList:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
@@ -172,7 +174,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -216,6 +217,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - oxalica
   - pargs
   - partitioner
   - paychan
@@ -262,6 +264,8 @@ words:
   - Rohrs
   - roundings
   - rustc
+  - rustfmt
+  - rustup
   - sahyadri
   - Satoshi
   - scons
@@ -305,6 +309,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - toolchain
   - tparam
   - trixie
   - tx
@@ -337,6 +342,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unsuffixed
   - unvalidated
   - unveto
   - unvetoed

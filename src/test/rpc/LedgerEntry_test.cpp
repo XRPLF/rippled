@@ -349,7 +349,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 auto const expectedErrMsg =
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID));
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID));
                 checkErrorValue(jrr, expectedError, expectedErrMsg, location);
             };
 
@@ -383,13 +383,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
 
                 correctRequest[parentFieldName][fieldName] = json::ValueType::Null;
                 json::Value const jrr2 = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr2, "malformedRequest", RPC::missingFieldMessage(fieldName.cStr()), location);
+                    jrr2, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
             }
             auto tryField = [&](json::Value fieldValue) -> void {
                 correctRequest[parentFieldName][fieldName] = fieldValue;
@@ -399,7 +399,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     expectedError,
-                    RPC::expectedFieldMessage(fieldName, getTypeName(typeID)),
+                    rpc::expectedFieldMessage(fieldName, getTypeName(typeID)),
                     location);
             };
 
@@ -1083,8 +1083,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::issuer.cStr())
-                    : RPC::expectedFieldMessage(jss::issuer, "AccountID");
+                    ? rpc::missingFieldMessage(jss::issuer.cStr())
+                    : rpc::expectedFieldMessage(jss::issuer, "AccountID");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1114,7 +1114,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                RPC::expectedFieldMessage(jss::authorized_credentials, "array"));
+                rpc::expectedFieldMessage(jss::authorized_credentials, "array"));
         }
 
         {
@@ -1134,8 +1134,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
                 auto const expectedErrMsg = fieldValue.isNull()
-                    ? RPC::missingFieldMessage(jss::credential_type.cStr())
-                    : RPC::expectedFieldMessage(jss::credential_type, "hex string");
+                    ? rpc::missingFieldMessage(jss::credential_type.cStr())
+                    : rpc::expectedFieldMessage(jss::credential_type, "hex string");
                 checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
@@ -1836,7 +1836,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
 
                     {
@@ -1851,7 +1851,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
-                            RPC::expectedFieldMessage(jss::accounts, "array of Accounts"));
+                            rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
                 };
 
