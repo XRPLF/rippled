@@ -28,19 +28,19 @@ bool
 passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
-        !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
+        !(port.adminNetsV4.empty() && port.adminNetsV6.empty()),
         "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
-    bool const passwordRequired = (!port.admin_user.empty() || !port.admin_password.empty());
+    bool const passwordRequired = (!port.adminUser.empty() || !port.adminPassword.empty());
 
     return !passwordRequired ||
         ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() && params["admin_user"].asString() == port.admin_user));
+          params["admin_password"].asString() == port.adminPassword) &&
+         (params["admin_user"].isString() && params["admin_user"].asString() == port.adminUser));
 }
 
 bool
 ipAllowed(
-    beast::IP::Address const& remoteIp,
+    beast::ip::Address const& remoteIp,
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6)
 {
@@ -78,9 +78,9 @@ ipAllowed(
 }
 
 bool
-isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::ip::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
+    return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -89,7 +89,7 @@ requestRole(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string_view user)
 {
     if (isAdmin(port, params, remoteIp.address()))
@@ -98,7 +98,7 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
+    if (ipAllowed(remoteIp.address(), port.secureGatewayNetsV4, port.secureGatewayNetsV6))
     {
         if (!user.empty())
             return Role::IDENTIFIED;
@@ -122,16 +122,16 @@ isUnlimited(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string const& user)
 {
     return isUnlimited(requestRole(required, port, params, remoteIp, user));
 }
 
-Resource::Consumer
+resource::Consumer
 requestInboundEndpoint(
-    Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
+    resource::Manager& manager,
+    beast::ip::Endpoint const& remoteAddress,
     Role const& role,
     std::string_view user,
     std::string_view forwardedFor)

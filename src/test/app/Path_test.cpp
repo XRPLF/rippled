@@ -101,9 +101,9 @@ class Path_test : public beast::unit_test::Suite
         // with the search parameters that the tests were written for.
         using namespace jtx;
         return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->PATH_SEARCH_OLD = 7;
-            cfg->PATH_SEARCH = 7;
-            cfg->PATH_SEARCH_MAX = 10;
+            cfg->pathSearchOld = 7;
+            cfg->pathSearch = 7;
+            cfg->pathSearchMax = 10;
             return cfg;
         }));
     }
@@ -151,10 +151,10 @@ public:
         using namespace jtx;
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -164,7 +164,7 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
 
@@ -190,7 +190,7 @@ public:
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = std::move(params);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
 
@@ -216,7 +216,7 @@ public:
 
         STAmount da;
         if (result.isMember(jss::destination_amount))
-            da = amountFromJson(kSfGeneric, result[jss::destination_amount]);
+            da = amountFromJson(sfGeneric, result[jss::destination_amount]);
 
         STAmount sa;
         STPathSet paths;
@@ -228,10 +228,10 @@ public:
                 auto const& path = alts[0u];
 
                 if (path.isMember(jss::source_amount))
-                    sa = amountFromJson(kSfGeneric, path[jss::source_amount]);
+                    sa = amountFromJson(sfGeneric, path[jss::source_amount]);
 
                 if (path.isMember(jss::destination_amount))
-                    da = amountFromJson(kSfGeneric, path[jss::destination_amount]);
+                    da = amountFromJson(sfGeneric, path[jss::destination_amount]);
 
                 if (path.isMember(jss::paths_computed))
                 {
@@ -262,10 +262,10 @@ public:
         env.close();
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -275,49 +275,49 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
-        // Test RPC::Tuning::max_src_cur source currencies.
+        // Test rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_src_cur source currencies.
+        // Test more than rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur + 1);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur + 1);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
-        // Test RPC::Tuning::max_auto_src_cur source currencies.
-        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
+        // Test rpc::tuning::max_auto_src_cur source currencies.
+        for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
             env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_auto_src_cur source currencies.
+        // Test more than rpc::tuning::max_auto_src_cur source currencies.
         env.trust(Account("alice")["AUD"](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
@@ -880,7 +880,7 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
@@ -922,14 +922,15 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"])) == nullptr);
     }
 
     void
@@ -972,13 +973,14 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("alice").id(), Account("bob")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::trustLine(Account("alice").id(), Account("bob")["USD"])) == nullptr);
     }
 
     void

@@ -1,5 +1,6 @@
 #include <xrpld/rpc/RPCHandler.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>  // IWYU pragma: keep
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
@@ -23,88 +24,87 @@
 #include <exception>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 namespace {
 
 /**
-   This code is called from both the HTTP RPC handler and Websockets.
-
-   The form of the Json returned is somewhat different between the two services.
-
-   HTML:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false,
-              "status" : "success"  # Status is inside the result.
-           }
-        }
-
-     Failure:
-        {
-           "result" : {
-              // api_version == 1
-              "error" : "noNetwork",
-              "error_code" : 17,
-              "error_message" : "Not synced to the network.",
-
-              // api_version == 2
-              "error" : "notSynced",
-              "error_code" : 18,
-              "error_message" : "Not synced to the network.",
-
-              "request" : {
-                 "command" : "ledger",
-                 "ledger_index" : 10300865
-              },
-              "status" : "error"
-           }
-        }
-
-   Websocket:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false
-           }
-           "type": "response",
-           "status": "success",   # Status is OUTside the result!
-           "id": "client's ID",   # Optional
-           "warning": 3.14        # Optional
-        }
-
-     Failure:
-        {
-          // api_version == 1
-          "error" : "noNetwork",
-          "error_code" : 17,
-          "error_message" : "Not synced to the network.",
-
-          // api_version == 2
-          "error" : "notSynced",
-          "error_code" : 18,
-          "error_message" : "Not synced to the network.",
-
-          "request" : {
-             "command" : "ledger",
-             "ledger_index" : 10300865
-          },
-          "type": "response",
-          "status" : "error",
-          "id": "client's ID"   # Optional
-        }
-
+ * This code is called from both the HTTP RPC handler and Websockets.
+ *
+ * The form of the Json returned is somewhat different between the two services.
+ *
+ * HTML:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false,
+ *            "status" : "success"  # Status is inside the result.
+ *         }
+ *      }
+ *
+ *   Failure:
+ *      {
+ *         "result" : {
+ *            // api_version == 1
+ *            "error" : "noNetwork",
+ *            "error_code" : 17,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            // api_version == 2
+ *            "error" : "notSynced",
+ *            "error_code" : 18,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            "request" : {
+ *               "command" : "ledger",
+ *               "ledger_index" : 10300865
+ *            },
+ *            "status" : "error"
+ *         }
+ *      }
+ *
+ * Websocket:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false
+ *         }
+ *         "type": "response",
+ *         "status": "success",   # Status is OUTside the result!
+ *         "id": "client's ID",   # Optional
+ *         "warning": 3.14        # Optional
+ *      }
+ *
+ *   Failure:
+ *      {
+ *        // api_version == 1
+ *        "error" : "noNetwork",
+ *        "error_code" : 17,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        // api_version == 2
+ *        "error" : "notSynced",
+ *        "error_code" : 18,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        "request" : {
+ *           "command" : "ledger",
+ *           "ledger_index" : 10300865
+ *        },
+ *        "type": "response",
+ *        "status" : "error",
+ *        "id": "client's ID"   # Optional
+ *      }
  */
 
 ErrorCodeI
@@ -114,7 +114,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     {
         // Count all jobs at jtCLIENT priority or higher.
         int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
-        if (jobCount > Tuning::kMaxJobQueueClients)
+        if (jobCount > tuning::kMaxJobQueueClients)
         {
             JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return RpcTooBusy;
@@ -135,7 +135,7 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
+    auto handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, strCommand);
 
     if (handler == nullptr)
         return RpcUnknownCommand;
@@ -179,8 +179,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
 
-        if (context.loadType == Resource::kFeeReferenceRpc)
-            context.loadType = Resource::kFeeExceptionRpc;
+        if (context.loadType == resource::kFeeReferenceRpc)
+            context.loadType = resource::kFeeExceptionRpc;
 
         injectError(RpcInternal, result);
         return RpcInternal;
@@ -190,7 +190,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
 }  // namespace
 
 Status
-doCommand(RPC::JsonContext& context, json::Value& result)
+doCommand(rpc::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
@@ -226,7 +226,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
-    auto handler = RPC::getHandler(version, betaEnabled, method);
+    auto handler = rpc::getHandler(version, betaEnabled, method);
 
     if (handler == nullptr)
         return Role::FORBID;
@@ -234,4 +234,4 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

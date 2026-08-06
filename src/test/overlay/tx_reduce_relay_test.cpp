@@ -9,12 +9,12 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -81,10 +81,10 @@ private:
                 {
                     c.loadFromString(str.str());
 
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_ENABLE == enable);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_METRICS == metrics);
-                    BEAST_EXPECT(c.TX_REDUCE_RELAY_MIN_PEERS == min);
-                    BEAST_EXPECT(c.TX_RELAY_PERCENTAGE == pct);
+                    BEAST_EXPECT(c.txReduceRelayEnable == enable);
+                    BEAST_EXPECT(c.txReduceRelayMetrics == metrics);
+                    BEAST_EXPECT(c.txReduceRelayMinPeers == min);
+                    BEAST_EXPECT(c.txRelayPercentage == pct);
                     if (success)
                     {
                         pass();
@@ -121,11 +121,11 @@ private:
     public:
         PeerTest(
             Application& app,
-            std::shared_ptr<PeerFinder::Slot> const& slot,
+            std::shared_ptr<peer_finder::Slot> const& slot,
             http_request_type&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
-            Resource::Consumer consumer,
+            resource::Consumer consumer,
             std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
@@ -173,7 +173,7 @@ private:
     std::uint16_t rid_{1};
     shared_context context_;
     ProtocolVersion protocolVersion_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
 
 public:
     tx_reduce_relay_test() : context_(makeSslContext("")), protocolVersion_{1, 7}
@@ -192,9 +192,9 @@ private:
         auto streamPtr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
-        beast::IP::Endpoint const local(
+        beast::ip::Endpoint const local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
-        beast::IP::Endpoint const remote(
+        beast::ip::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
@@ -232,9 +232,9 @@ private:
         testcase(test);
         jtx::Env env(*this);
         std::vector<std::shared_ptr<PeerTest>> peers;
-        env.app().config().TX_REDUCE_RELAY_ENABLE = txRREnabled;
-        env.app().config().TX_REDUCE_RELAY_MIN_PEERS = minPeers;
-        env.app().config().TX_RELAY_PERCENTAGE = relayPercentage;
+        env.app().config().txReduceRelayEnable = txRREnabled;
+        env.app().config().txReduceRelayMinPeers = minPeers;
+        env.app().config().txRelayPercentage = relayPercentage;
         PeerTest::init();
         lid_ = 0;
         rid_ = 0;

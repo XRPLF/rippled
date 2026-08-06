@@ -2,6 +2,8 @@
 
 #include <xrpl/json/json_value.h>
 
+#include <string>
+
 namespace xrpl::test {
 
 /* Abstract XRPL client interface.
@@ -18,23 +20,37 @@ public:
     AbstractClient&
     operator=(AbstractClient const&) = delete;
 
-    /** Submit a command synchronously.
-
-        The arguments to the function and the returned JSON
-        are in a normalized format, the same whether the client
-        is using the JSON-RPC over HTTP/S or WebSocket transport.
-
-        @param cmd The command to execute
-        @param params json::Value of null or object type
-                      with zero or more key/value pairs.
-        @return The server response in normalized format.
-    */
+    /**
+     * Submit a command synchronously.
+     *
+     * The arguments to the function and the returned JSON
+     * are in a normalized format, the same whether the client
+     * is using the JSON-RPC over HTTP/S or WebSocket transport.
+     *
+     * @param cmd The command to execute
+     * @param params json::Value of null or object type
+     *               with zero or more key/value pairs.
+     * @return The server response in normalized format.
+     */
     virtual json::Value
     invoke(std::string const& cmd, json::Value const& params = {}) = 0;
 
-    /// Get RPC 1.0 or RPC 2.0
+    /**
+     * Get RPC 1.0 or RPC 2.0
+     */
     [[nodiscard]] virtual unsigned
     version() const = 0;
+
+    /**
+     * Close the client's connection to the server.
+     *
+     * Releases the connection the client holds against the server's per-port
+     * connection limit. After this call the client must not be used to
+     * invoke() again. Tests use this to deterministically free the slot
+     * rather than waiting for the server's idle timeout to drop it.
+     */
+    virtual void
+    disconnect() = 0;
 };
 
 }  // namespace xrpl::test

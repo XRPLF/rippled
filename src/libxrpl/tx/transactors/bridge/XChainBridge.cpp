@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -39,7 +38,9 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -186,7 +187,7 @@ checkAttestationPublicKey(
 
 enum class CheckDst { Check, Ignore };
 template <class TAttestation>
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 claimHelper(
     XChainAttestationsBase<TAttestation>& attestations,
     ReadView const& view,
@@ -233,39 +234,39 @@ claimHelper(
     if (weight >= quorum)
         return rewardAccounts;
 
-    return Unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
+    return std::unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
 }
 
 /**
- Handle a new attestation event.
-
- Attempt to add the given attestation and reconcile with the current
- signer's list. Attestations that are not part of the current signer's
- list will be removed.
-
- @param claimAtt New attestation to add. It will be added if it is not
- already part of the collection, or attests to a larger value.
-
- @param quorum Min weight required for a quorum
-
- @param signersList Map from signer's account id (derived from public keys)
- to the weight of that key.
-
- @return optional reward accounts. If after handling the new attestation
- there is a quorum for the amount specified on the new attestation, then
- return the reward accounts for that amount, otherwise return a nullopt.
- Note that if the signer's list changes and there have been `commit`
- transactions of different amounts then there may be a different subset that
- has reached quorum. However, to "trigger" that subset would require adding
- (or re-adding) an attestation that supports that subset.
-
- The reason for using a nullopt instead of an empty vector when a quorum is
- not reached is to allow for an interface where a quorum is reached but no
- rewards are distributed.
-
- @note This function is not called `add` because it does more than just
-       add the new attestation (in fact, it may not add the attestation at
-       all). Instead, it handles the event of a new attestation.
+ * Handle a new attestation event.
+ *
+ * Attempt to add the given attestation and reconcile with the current
+ * signer's list. Attestations that are not part of the current signer's
+ * list will be removed.
+ *
+ * @param claimAtt New attestation to add. It will be added if it is not
+ * already part of the collection, or attests to a larger value.
+ *
+ * @param quorum Min weight required for a quorum
+ *
+ * @param signersList Map from signer's account id (derived from public keys)
+ * to the weight of that key.
+ *
+ * @return optional reward accounts. If after handling the new attestation
+ * there is a quorum for the amount specified on the new attestation, then
+ * return the reward accounts for that amount, otherwise return a nullopt.
+ * Note that if the signer's list changes and there have been `commit`
+ * transactions of different amounts then there may be a different subset that
+ * has reached quorum. However, to "trigger" that subset would require adding
+ * (or re-adding) an attestation that supports that subset.
+ *
+ * The reason for using a nullopt instead of an empty vector when a quorum is
+ * not reached is to allow for an interface where a quorum is reached but no
+ * rewards are distributed.
+ *
+ * @note This function is not called `add` because it does more than just
+ *       add the new attestation (in fact, it may not add the attestation at
+ *       all). Instead, it handles the event of a new attestation.
  */
 struct OnNewAttestationResult
 {
@@ -301,10 +302,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
-                [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
+        if (auto i = std::ranges::find_if(
+                attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
             // existing attestation
@@ -337,7 +336,7 @@ onNewAttestations(
 // Check if there is a quorum of attestations for the given amount and
 // chain. If so return the reward accounts, if not return the tec code (most
 // likely tecXCHAIN_CLAIM_NO_QUORUM)
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 onClaim(
     XChainClaimAttestations& attestations,
     ReadView const& view,
@@ -365,26 +364,27 @@ struct TransferHelperSubmittingAccountInfo
     STAmount postFeeBalance;
 };
 
-/** Transfer funds from the src account to the dst account
-
-    @param psb The payment sandbox.
-    @param src The source of funds.
-    @param dst The destination for funds.
-    @param dstTag Integer destination tag. Used to check if funds should be
-           transferred to an account with a `RequireDstTag` flag set.
-    @param claimOwner Owner of the claim ledger object.
-    @param amt Amount to transfer from the src account to the dst account.
-    @param canCreate Flag to determine if accounts may be created using this
-           transfer.
-    @param depositAuthPolicy Flag to determine if dst can bypass deposit auth if
-           it is also the claim owner.
-    @param submittingAccountInfo If the transaction is allowed to dip into the
-           reserve to pay fees, then this optional will be seated ("commit"
-           transactions support this, other transactions should not).
-    @param j Log
-
-    @return tesSUCCESS if payment succeeds, otherwise the error code for the
-            failure reason.
+/**
+ * Transfer funds from the src account to the dst account
+ *
+ * @param psb The payment sandbox.
+ * @param src The source of funds.
+ * @param dst The destination for funds.
+ * @param dstTag Integer destination tag. Used to check if funds should be
+ *        transferred to an account with a `RequireDstTag` flag set.
+ * @param claimOwner Owner of the claim ledger object.
+ * @param amt Amount to transfer from the src account to the dst account.
+ * @param canCreate Flag to determine if accounts may be created using this
+ *        transfer.
+ * @param depositAuthPolicy Flag to determine if dst can bypass deposit auth if
+ *        it is also the claim owner.
+ * @param submittingAccountInfo If the transaction is allowed to dip into the
+ *        reserve to pay fees, then this optional will be seated ("commit"
+ *        transactions support this, other transactions should not).
+ * @param j Log
+ *
+ * @return tesSUCCESS if payment succeeds, otherwise the error code for the
+ *         failure reason.
  */
 
 TER
@@ -436,8 +436,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            auto const reserve = psb.fees().accountReserve(ownerCount);
+            auto const reserve = accountReserve(psb, sleSrc, j);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -506,21 +505,28 @@ transferHelper(
     return tecXCHAIN_PAYMENT_FAILED;
 }
 
-/**  Action to take when the transfer from the door account to the dst fails
-
-     @note This is useful to prevent a failed "create account" transaction from
-           blocking subsequent "create account" transactions.
-*/
+/**
+ * Action to take when the transfer from the door account to the dst fails
+ *
+ * @note This is useful to prevent a failed "create account" transaction from
+ *       blocking subsequent "create account" transactions.
+ */
 enum class OnTransferFail {
-    /** Remove the claim even if the transfer fails */
+    /**
+     * Remove the claim even if the transfer fails
+     */
     RemoveClaim,
-    /**  Keep the claim if the transfer fails */
+    /**
+     * Keep the claim if the transfer fails
+     */
     KeepClaim
 };
 
 struct FinalizeClaimHelperResult
 {
-    /// TER for transfering the payment funds
+    /**
+     * TER for transfering the payment funds
+     */
     std::optional<TER> mainFundsTer;
     // TER for transfering the reward funds
     std::optional<TER> rewardTer;
@@ -564,33 +570,34 @@ struct FinalizeClaimHelperResult
     }
 };
 
-/** Transfer funds from the door account to the dst and distribute rewards
-
-    @param psb The payment sandbox.
-    @param bridgeSpc Bridge
-    @param dst The destination for funds.
-    @param dstTag Integer destination tag. Used to check if funds should be
-           transferred to an account with a `RequireDstTag` flag set.
-    @param claimOwner Owner of the claim ledger object.
-    @param sendingAmount Amount that was committed on the source chain.
-    @param rewardPoolSrc Source of the funds for the reward pool (claim owner).
-    @param rewardPool Amount to split among the rewardAccounts.
-    @param rewardAccounts Account to receive the reward pool.
-    @param srcChain Chain where the commit event occurred.
-    @param sleClaimID sle for the claim id (may be NULL or XChainClaimID or
-           XChainCreateAccountClaimID). Don't read fields that aren't in common
-           with those two types and always check for NULL. Remove on success (if
-           not null). Remove on fail if the onTransferFail flag is removeClaim.
-    @param onTransferFail Flag to determine if the claim is removed on transfer
-           failure. This is used for create account transactions where claims
-           are removed so they don't block future txns.
-    @param j Log
-
-    @return FinalizeClaimHelperResult. See the comments in this struct for what
-            the fields mean. The individual ters need to be returned instead of
-            an overall ter because the caller needs this information if the
-            attestation list changed or not.
-*/
+/**
+ * Transfer funds from the door account to the dst and distribute rewards
+ *
+ * @param psb The payment sandbox.
+ * @param bridgeSpc Bridge
+ * @param dst The destination for funds.
+ * @param dstTag Integer destination tag. Used to check if funds should be
+ *        transferred to an account with a `RequireDstTag` flag set.
+ * @param claimOwner Owner of the claim ledger object.
+ * @param sendingAmount Amount that was committed on the source chain.
+ * @param rewardPoolSrc Source of the funds for the reward pool (claim owner).
+ * @param rewardPool Amount to split among the rewardAccounts.
+ * @param rewardAccounts Account to receive the reward pool.
+ * @param srcChain Chain where the commit event occurred.
+ * @param sleClaimID sle for the claim id (may be NULL or XChainClaimID or
+ *        XChainCreateAccountClaimID). Don't read fields that aren't in common
+ *        with those two types and always check for NULL. Remove on success (if
+ *        not null). Remove on fail if the onTransferFail flag is removeClaim.
+ * @param onTransferFail Flag to determine if the claim is removed on transfer
+ *        failure. This is used for create account transactions where claims
+ *        are removed so they don't block future txns.
+ * @param j Log
+ *
+ * @return FinalizeClaimHelperResult. See the comments in this struct for what
+ *         the fields mean. The individual ters need to be returned instead of
+ *         an overall ter because the caller needs this information if the
+ *         attestation list changed or not.
+ */
 
 FinalizeClaimHelperResult
 finalizeClaimHelper(
@@ -727,24 +734,24 @@ finalizeClaimHelper(
             }
 
             // Remove the claim id from the ledger
+            decreaseOwnerCountForObject(outerSb, sleOwner, sleClaimID, 1, j);
             outerSb.erase(sleClaimID);
-
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
         }
     }
 
     return result;
 }
 
-/** Get signers list corresponding to the account that owns the bridge
-
-    @param view View to read the signer's list from.
-    @param sleBridge Sle of the bridge.
-    @param j Log
-
-    @return map of the signer's list (AccountIDs and weights), the quorum, and
-            error code
-*/
+/**
+ * Get signers list corresponding to the account that owns the bridge
+ *
+ * @param view View to read the signer's list from.
+ * @param sleBridge Sle of the bridge.
+ * @param j Log
+ *
+ * @return map of the signer's list (AccountIDs and weights), the quorum, and
+ *         error code
+ */
 std::tuple<std::unordered_map<AccountID, std::uint32_t>, std::uint32_t, TER>
 getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journal j)
 {
@@ -759,7 +766,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
         return {r, q, tecINTERNAL};
     }
 
-    auto const sleS = view.read(keylet::signers(sleBridge[sfAccount]));
+    auto const sleS = view.read(keylet::signerList(sleBridge[sfAccount]));
     if (!sleS)
     {
         return {r, q, tecXCHAIN_NO_SIGNERS_LIST};
@@ -798,21 +805,21 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
             return v.peek(keylet::bridge(b, ct));
         },
         bridgeSpec);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
             return v.read(keylet::bridge(b, ct));
         },
         bridgeSpec);
@@ -847,17 +854,17 @@ applyClaimAttestations(
         AccountID cidOwner;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
         auto const sleClaimID = psb.peek(claimIDKeylet);
         if (!sleClaimID)
-            return Unexpected(tecXCHAIN_NO_CLAIM_ID);
+            return std::unexpected(tecXCHAIN_NO_CLAIM_ID);
 
         // Add claims that are part of the signer's list to the "claims" vector
-        std::vector<Attestations::AttestationClaim> atts;
+        std::vector<attestations::AttestationClaim> atts;
         atts.reserve(std::distance(attBegin, attEnd));
         for (auto att = attBegin; att != attEnd; ++att)
         {
@@ -868,13 +875,13 @@ applyClaimAttestations(
 
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         AccountID const otherChainSource = (*sleClaimID)[sfOtherChainSource];
         if (attBegin->sendingAccount != otherChainSource)
         {
-            return Unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
+            return std::unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
         }
 
         {
@@ -885,7 +892,7 @@ applyClaimAttestations(
 
             if (attDstChain != dstChain)
             {
-                return Unexpected(tecXCHAIN_WRONG_CHAIN);
+                return std::unexpected(tecXCHAIN_WRONG_CHAIN);
             }
         }
 
@@ -964,10 +971,10 @@ applyCreateAccountAttestations(
 
     PaymentSandbox psb(&view);
 
-    auto const claimCountResult = [&]() -> Expected<std::uint64_t, TER> {
+    auto const claimCountResult = [&]() -> std::expected<std::uint64_t, TER> {
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         return (*sleBridge)[sfXChainAccountClaimCount];
     }();
@@ -1009,7 +1016,7 @@ applyCreateAccountAttestations(
         XChainCreateAccountAttestations curAtts;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1025,17 +1032,17 @@ applyCreateAccountAttestations(
 
             auto const sleDoor = psb.peek(doorK);
             if (!sleDoor)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
+            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+                return std::unexpected(tecINSUFFICIENT_RESERVE);
         }
 
-        std::vector<Attestations::AttestationCreateAccount> atts;
+        std::vector<attestations::AttestationCreateAccount> atts;
         atts.reserve(std::distance(attBegin, attEnd));
         for (auto att = attBegin; att != attEnd; ++att)
         {
@@ -1045,7 +1052,7 @@ applyCreateAccountAttestations(
         }
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         XChainCreateAccountAttestations curAtts = [&] {
@@ -1071,7 +1078,7 @@ applyCreateAccountAttestations(
             // Modify the object before it's potentially deleted, so the meta
             // data will include the new attestations
             if (!sleClaimID)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             sleClaimID->setFieldArray(sfXChainCreateAccountAttestations, curAtts.toSTArray());
             psb.update(sleClaimID);
         }
@@ -1138,7 +1145,7 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        increaseOwnerCount(psb, sleDoor, {}, 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1153,12 +1160,16 @@ std::optional<TAttestation>
 toClaim(STTx const& tx)
 {
     static_assert(
-        std::is_same_v<TAttestation, Attestations::AttestationClaim> ||
-        std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>);
+        std::is_same_v<TAttestation, attestations::AttestationClaim> ||
+        std::is_same_v<TAttestation, attestations::AttestationCreateAccount>);
 
     try
     {
-        STObject o{tx};
+        // Copy just the field bag out of the transaction (explicitly, via the
+        // STObject base) so it can be reinterpreted as a cross-chain attestation
+        // below, with sfAccount replaced by sfOtherChainSource. STTx-specific
+        // state (txType_, tid_) is intentionally not needed here.
+        STObject o{static_cast<STObject const&>(tx)};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);
     }
@@ -1244,7 +1255,7 @@ attestationDoApply(ApplyContext& ctx)
         Keylet bridgeK;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1252,7 +1263,7 @@ attestationDoApply(ApplyContext& ctx)
         auto sleBridge = readBridge(ctx.view(), bridgeSpec);
         if (!sleBridge)
         {
-            return Unexpected(tecNO_ENTRY);
+            return std::unexpected(tecNO_ENTRY);
         }
         Keylet const bridgeK{ltBRIDGE, sleBridge->key()};
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1269,7 +1280,7 @@ attestationDoApply(ApplyContext& ctx)
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1279,7 +1290,7 @@ attestationDoApply(ApplyContext& ctx)
             getSignersListAndQuorum(ctx.view(), *sleBridge, ctx.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         return ScopeResult{srcChain, std::move(signersList), quorum, thisDoor, bridgeK};
     }();
@@ -1290,10 +1301,10 @@ attestationDoApply(ApplyContext& ctx)
     auto const& [srcChain, signersList, quorum, thisDoor, bridgeK] = scopeResult.value();
 
     static_assert(
-        std::is_same_v<TAttestation, Attestations::AttestationClaim> ||
-        std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>);
+        std::is_same_v<TAttestation, attestations::AttestationClaim> ||
+        std::is_same_v<TAttestation, attestations::AttestationCreateAccount>);
 
-    if constexpr (std::is_same_v<TAttestation, Attestations::AttestationClaim>)
+    if constexpr (std::is_same_v<TAttestation, attestations::AttestationClaim>)
     {
         return applyClaimAttestations(
             ctx.view(),
@@ -1306,7 +1317,7 @@ attestationDoApply(ApplyContext& ctx)
             quorum,
             ctx.journal);
     }
-    else if constexpr (std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>)
+    else if constexpr (std::is_same_v<TAttestation, attestations::AttestationCreateAccount>)
     {
         return applyCreateAccountAttestations(
             ctx.view(),
@@ -1436,7 +1447,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1481,7 +1492,7 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1721,7 +1732,7 @@ XChainClaim::doApply()
         STAmount signatureReward;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1732,7 +1743,7 @@ XChainClaim::doApply()
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
         if (!(sleBridge && sleClaimID && sleAcct))
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
@@ -1748,7 +1759,7 @@ XChainClaim::doApply()
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1763,7 +1774,7 @@ XChainClaim::doApply()
             getSignersListAndQuorum(ctx_.view(), *sleBridge, ctx_.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         XChainClaimAttestations curAtts{sleClaimID->getFieldArray(sfXChainClaimAttestations)};
 
@@ -1776,7 +1787,7 @@ XChainClaim::doApply()
             signersList,
             ctx_.journal);
         if (!claimR.has_value())
-            return Unexpected(claimR.error());
+            return std::unexpected(claimR.error());
 
         return ScopeResult{
             .rewardAccounts = claimR.value(),
@@ -1984,8 +1995,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -2043,7 +2053,7 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);
@@ -2057,19 +2067,19 @@ XChainCreateClaimID::doApply()
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationPreflight<Attestations::AttestationClaim>(ctx);
+    return attestationPreflight<attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::preclaim(PreclaimContext const& ctx)
 {
-    return attestationPreclaim<Attestations::AttestationClaim>(ctx);
+    return attestationPreclaim<attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::doApply()
 {
-    return attestationDoApply<Attestations::AttestationClaim>(ctx_);
+    return attestationDoApply<attestations::AttestationClaim>(ctx_);
 }
 
 //------------------------------------------------------------------------------
@@ -2077,19 +2087,19 @@ XChainAddClaimAttestation::doApply()
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreflight<attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::preclaim(PreclaimContext const& ctx)
 {
-    return attestationPreclaim<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreclaim<attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::doApply()
 {
-    return attestationDoApply<Attestations::AttestationCreateAccount>(ctx_);
+    return attestationDoApply<attestations::AttestationCreateAccount>(ctx_);
 }
 
 //------------------------------------------------------------------------------
@@ -2225,10 +2235,7 @@ XChainCreateAccountCommit::doApply()
 }
 
 void
-XChainCreateBridge::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2246,10 +2253,7 @@ XChainCreateBridge::finalizeInvariants(
 }
 
 void
-BridgeModify::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2267,10 +2271,7 @@ BridgeModify::finalizeInvariants(
 }
 
 void
-XChainClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2283,10 +2284,7 @@ XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, be
 }
 
 void
-XChainCommit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2304,10 +2302,7 @@ XChainCommit::finalizeInvariants(
 }
 
 void
-XChainCreateClaimID::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2325,10 +2320,7 @@ XChainCreateClaimID::finalizeInvariants(
 }
 
 void
-XChainAddClaimAttestation::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2346,10 +2338,7 @@ XChainAddClaimAttestation::finalizeInvariants(
 }
 
 void
-XChainAddAccountCreateAttestation::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2367,10 +2356,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
 }
 
 void
-XChainCreateAccountCommit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

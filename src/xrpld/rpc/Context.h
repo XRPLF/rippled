@@ -4,7 +4,13 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
+
+#include <memory>
+#include <string_view>
 
 namespace xrpl {
 
@@ -12,17 +18,19 @@ class Application;
 class NetworkOPs;
 class LedgerMaster;
 
-namespace RPC {
+namespace rpc {
 
-/** The context of information needed to call an RPC. */
+/**
+ * The context of information needed to call an RPC.
+ */
 struct Context
 {
     beast::Journal const j;
     Application& app;
-    Resource::Charge& loadType;
+    resource::Charge& loadType;
     NetworkOPs& netOps;
     LedgerMaster& ledgerMaster;
-    Resource::Consumer& consumer;
+    resource::Consumer& consumer;
     Role role;
     std::shared_ptr<JobQueue::Coro> coro;
     InfoSub::pointer infoSub;
@@ -51,5 +59,5 @@ struct GRPCContext : public Context
     RequestType params;
 };
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

@@ -33,10 +33,11 @@
 
 namespace xrpl {
 
-/** Mix-in to track when all pending I/O is complete.
-    Derived classes must be callable with this signature:
-        void asyncHandlersComplete()
-*/
+/**
+ * Mix-in to track when all pending I/O is complete.
+ * Derived classes must be callable with this signature:
+ *     void asyncHandlersComplete()
+ */
 template <class Derived>
 class AsyncObject
 {
@@ -51,10 +52,11 @@ public:
         XRPL_ASSERT(pending_.load() == 0, "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
 
-    /** RAII container that maintains the count of pending I/O.
-        Bind this into the argument list of every handler passed
-        to an initiating function.
-    */
+    /**
+     * RAII container that maintains the count of pending I/O.
+     * Bind this into the argument list of every handler passed
+     * to an initiating function.
+     */
     class CompletionCounter
     {
     public:
@@ -108,7 +110,7 @@ public:
 
     beast::Journal journal;
 
-    boost::asio::io_context& io_context;
+    boost::asio::io_context& ioContext;
     boost::asio::strand<boost::asio::io_context::executor_type> strand;
     boost::asio::ip::tcp::resolver resolver;
 
@@ -116,7 +118,7 @@ public:
     std::mutex mut;
     bool asyncHandlersCompleted{true};
 
-    std::atomic<bool> stop_called;
+    std::atomic<bool> stopCalled;
     std::atomic<bool> stopped;
 
     // Represents a unit of work for the resolver to do
@@ -138,10 +140,10 @@ public:
 
     ResolverAsioImpl(boost::asio::io_context& ioContext, beast::Journal journal)
         : journal(journal)
-        , io_context(ioContext)
+        , ioContext(ioContext)
         , strand(boost::asio::make_strand(ioContext))
         , resolver(ioContext)
-        , stop_called(false)
+        , stopCalled(false)
         , stopped(true)
     {
     }
@@ -172,7 +174,7 @@ public:
     start() override
     {
         XRPL_ASSERT(stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
-        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
+        XRPL_ASSERT(stopCalled == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
         if (stopped.exchange(false))
         {
@@ -187,12 +189,12 @@ public:
     void
     stopAsync() override
     {
-        if (!stop_called.exchange(true))
+        if (!stopCalled.exchange(true))
         {
             boost::asio::dispatch(
-                io_context,
+                ioContext,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::doStop, this, CompletionCounter(this))));
+                    strand, [this, counter = CompletionCounter(this)] { doStop(counter); }));
 
             JLOG(journal.debug()) << "Queued a stop request";
         }
@@ -213,17 +215,17 @@ public:
     void
     resolve(std::vector<std::string> const& names, HandlerType const& handler) override
     {
-        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
+        XRPL_ASSERT(stopCalled == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
         boost::asio::dispatch(
-            io_context,
+            ioContext,
             boost::asio::bind_executor(
-                strand,
-                std::bind(
-                    &ResolverAsioImpl::doResolve, this, names, handler, CompletionCounter(this))));
+                strand, [this, names, handler, counter = CompletionCounter(this)] {
+                    doResolve(names, handler, counter);
+                }));
     }
 
     //-------------------------------------------------------------------------
@@ -231,7 +233,7 @@ public:
     void
     doStop(CompletionCounter)
     {
-        XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::doStop : stopping");
+        XRPL_ASSERT(stopCalled == true, "xrpl::ResolverAsioImpl::doStop : stopping");
 
         if (!stopped.exchange(true))
         {
@@ -253,7 +255,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector<beast::IP::Endpoint> addresses;
+        std::vector<beast::ip::Endpoint> addresses;
         auto iter = results.begin();
 
         // If we get an error message back, we don't return any
@@ -270,9 +272,9 @@ public:
         handler(name, addresses);
 
         boost::asio::post(
-            io_context,
+            ioContext,
             boost::asio::bind_executor(
-                strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
     }
 
     static HostAndPort
@@ -281,7 +283,7 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        if (auto const result = beast::IP::Endpoint::fromStringChecked(str))
+        if (auto const result = beast::ip::Endpoint::fromStringChecked(str))
         {
             return make_pair(result->address().to_string(), std::to_string(result->port()));
         }
@@ -291,8 +293,10 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const findWhitespace =
-            std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
+        std::locale const loc;
+        auto const findWhitespace = [&loc](std::string::value_type c) {
+            return std::isspace<std::string::value_type>(c, loc);
+        };
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
@@ -324,7 +328,7 @@ public:
     void
     doWork(CompletionCounter)
     {
-        if (stop_called)
+        if (stopCalled)
             return;
 
         // We don't have any work to do at this time
@@ -346,9 +350,9 @@ public:
             JLOG(journal.error()) << "Unable to parse '" << name << "'";
 
             boost::asio::post(
-                io_context,
+                ioContext,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                    strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
 
             return;
         }
@@ -356,14 +360,11 @@ public:
         resolver.async_resolve(
             host,
             port,
-            std::bind(
-                &ResolverAsioImpl::doFinish,
-                this,
-                name,
-                std::placeholders::_1,
-                handler,
-                std::placeholders::_2,
-                CompletionCounter(this)));
+            [this, name, handler, counter = CompletionCounter(this)](
+                boost::system::error_code const& ec,
+                boost::asio::ip::tcp::resolver::results_type results) {
+                doFinish(name, ec, handler, results, counter);
+            });
     }
 
     void
@@ -371,7 +372,7 @@ public:
     {
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::doResolve : names non-empty");
 
-        if (!stop_called)
+        if (!stopCalled)
         {
             work.emplace_back(names, handler);
 
@@ -381,10 +382,9 @@ public:
             if (!work.empty())
             {
                 boost::asio::post(
-                    io_context,
+                    ioContext,
                     boost::asio::bind_executor(
-                        strand,
-                        std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
+                        strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
             }
         }
     }

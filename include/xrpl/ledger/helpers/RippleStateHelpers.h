@@ -1,14 +1,21 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <optional>
 
 //------------------------------------------------------------------------------
 //
@@ -24,13 +31,14 @@ namespace xrpl {
 //
 //------------------------------------------------------------------------------
 
-/** Calculate the maximum amount of IOUs that an account can hold
-    @param view the ledger to check against.
-    @param account the account of interest.
-    @param issuer the issuer of the IOU.
-    @param currency the IOU to check.
-    @return The maximum amount that can be held.
-*/
+/**
+ * Calculate the maximum amount of IOUs that an account can hold
+ * @param view the ledger to check against.
+ * @param account the account of interest.
+ * @param issuer the issuer of the IOU.
+ * @param currency the IOU to check.
+ * @return The maximum amount that can be held.
+ */
 /** @{ */
 STAmount
 creditLimit(
@@ -43,12 +51,13 @@ IOUAmount
 creditLimit2(ReadView const& v, AccountID const& acc, AccountID const& iss, Currency const& cur);
 /** @} */
 
-/** Returns the amount of IOUs issued by issuer that are held by an account
-    @param view the ledger to check against.
-    @param account the account of interest.
-    @param issuer the issuer of the IOU.
-    @param currency the IOU to check.
-*/
+/**
+ * Returns the amount of IOUs issued by issuer that are held by an account
+ * @param view the ledger to check against.
+ * @param account the account of interest.
+ * @param issuer the issuer of the IOU.
+ * @param currency the IOU to check.
+ */
 /** @{ */
 STAmount
 creditBalance(
@@ -93,7 +102,7 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 // Overload with depth parameter for uniformity with MPTIssue version.
 // The depth parameter is ignored for IOUs since they don't have vault recursion.
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int /*depth*/)
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, std::uint8_t /*depth*/)
 {
     return isFrozen(view, account, issue);
 }
@@ -110,7 +119,7 @@ isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
-    int = 0 /*ignored*/)
+    std::uint8_t = 0 /*ignored*/)
 {
     return isDeepFrozen(view, account, issue.currency, issue.account);
 }
@@ -127,10 +136,11 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Issue const& iss
 //
 //------------------------------------------------------------------------------
 
-/** Create a trust line
-
-    This can set an initial balance.
-*/
+/**
+ * Create a trust line
+ *
+ * This can set an initial balance.
+ */
 [[nodiscard]] TER
 trustCreate(
     ApplyView& view,
@@ -149,12 +159,13 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
+    SLE::ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
@@ -171,6 +182,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -187,7 +199,8 @@ redeemIOU(
 //
 //------------------------------------------------------------------------------
 
-/** Check if the account lacks required authorization.
+/**
+ * Check if the account lacks required authorization.
  *
  * Return tecNO_AUTH or tecNO_LINE if it does
  * and tesSUCCESS otherwise.
@@ -211,7 +224,8 @@ requireAuth(
     AccountID const& account,
     AuthType authType = AuthType::Legacy);
 
-/** Check if the destination account is allowed
+/**
+ * Check if the destination account is allowed
  *  to receive IOU. Return terNO_RIPPLE if rippling is
  *  disabled on both sides and tesSUCCESS otherwise.
  */
@@ -224,11 +238,13 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //
 //------------------------------------------------------------------------------
 
-/// Any transactors that call addEmptyHolding() in doApply must call
-/// canAddHolding() in preflight with the same View and Asset
+/**
+ * Any transactors that call addEmptyHolding() in doApply must call
+ * canAddHolding() in preflight with the same View and Asset
+ */
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -236,29 +252,31 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);
 
-/** Delete trustline to AMM. The passed `sle` must be obtained from a prior
+/**
+ * Delete trustline to AMM. The passed `sle` must be obtained from a prior
  * call to view.peek(). Fail if neither side of the trustline is AMM or
  * if ammAccountID is seated and is not one of the trustline's side.
  */
 [[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
-    std::shared_ptr<SLE> sleState,
+    SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
-/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+/**
+ * Delete AMMs MPToken. The passed `sle` must be obtained from a prior
  * call to view.peek().
  */
 [[nodiscard]] TER
 deleteAMMMPToken(
     ApplyView& view,
-    std::shared_ptr<SLE> sleMPT,
+    SLE::pointer sleMPT,
     AccountID const& ammAccountID,
     beast::Journal j);
 

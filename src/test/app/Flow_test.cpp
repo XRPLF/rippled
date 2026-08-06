@@ -43,7 +43,6 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -58,7 +57,7 @@ getNoRippleFlag(
     jtx::Account const& dst,
     Currency const& cur)
 {
-    if (auto sle = env.le(keylet::line(src, dst, cur)))
+    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const flag = (src.id() > dst.id()) ? lsfHighNoRipple : lsfLowNoRipple;
         return sle->isFlag(flag);
@@ -572,7 +571,7 @@ struct Flow_test : public beast::unit_test::Suite
                 env.require(Balance(bob, eur(999)));
 
                 // Show that bob's USD offer is now a blocker.
-                std::shared_ptr<SLE const> const usdOffer = env.le(bobUsdOffer);
+                SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
                     std::uint64_t const bookRate = [&usdOffer]() {
@@ -707,15 +706,15 @@ struct Flow_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });

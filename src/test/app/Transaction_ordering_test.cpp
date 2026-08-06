@@ -64,7 +64,7 @@ struct Transaction_ordering_test : public beast::unit_test::Suite
         testcase("Incorrect order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = false;
+            cfg->forceMultiThread = false;
             return cfg;
         }));
 
@@ -102,7 +102,7 @@ struct Transaction_ordering_test : public beast::unit_test::Suite
         testcase("Incorrect order multiple intermediaries");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 

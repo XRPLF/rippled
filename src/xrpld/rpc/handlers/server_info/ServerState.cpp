@@ -8,15 +8,14 @@
 namespace xrpl {
 
 json::Value
-doServerState(RPC::JsonContext& context)
+doServerState(rpc::JsonContext& context)
 {
     json::Value ret(json::ValueType::Object);
 
     ret[jss::state] = context.netOps.getServerInfo(
         false,
         context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) &&
-            context.params[jss::counters].isBool() &&
+        context.params.isMember(jss::counters) && context.params[jss::counters].isBool() &&
             context.params[jss::counters].asBool());
 
     return ret;

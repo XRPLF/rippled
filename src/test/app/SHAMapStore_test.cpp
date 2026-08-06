@@ -7,13 +7,15 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -41,9 +43,9 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        cfg->LEDGER_HISTORY = kDeleteInterval;
-        auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", std::to_string(kDeleteInterval));
+        cfg->ledgerHistory = kDeleteInterval;
+        auto& section = cfg->section(Sections::kNodeDatabase);
+        section.set(Keys::kOnlineDelete, std::to_string(kDeleteInterval));
         return cfg;
     }
 
@@ -51,14 +53,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(ConfigSection::nodeDatabase()).set("advisory_delete", "1");
+        cfg->section(Sections::kNodeDatabase).set(Keys::kAdvisoryDelete, "1");
         return cfg;
     }
 
     static bool
     goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
+        auto good = json.isMember(jss::result) && !rpc::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
@@ -97,7 +99,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static bool
     bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
-        return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
+        return json.isMember(jss::result) && rpc::containsError(json[jss::result]) &&
             json[jss::result][jss::error_code] == error;
     }
 
@@ -345,11 +347,11 @@ public:
         BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const firstBatch = kDeleteInterval + ledgerSeq;
@@ -368,7 +370,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (kDeleteInterval / 2)));
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
         store.rendezvous();
@@ -421,7 +423,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
@@ -455,7 +457,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
 
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
@@ -487,18 +489,18 @@ public:
         lastRotated = ledgerSeq - 1;
     }
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(ConfigSection::nodeDatabase())};
+        Section section{env.app().config().section(Sections::kNodeDatabase)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set("path", newPath.string());
+        section.set(Keys::kPath, newPath.string());
 
-        auto backend{NodeStore::Manager::instance().makeBackend(
+        auto backend{node_store::Manager::instance().makeBackend(
             section,
             megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler,
@@ -520,6 +522,25 @@ public:
         /////////////////////////////////////////////////////////////
         // Create NodeStore with two backends to allow online deletion of data.
         // Normally, SHAMapStoreImp handles all these details.
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+
+        // Provide default values.
+        if (!nscfg.exists(Keys::kCacheSize))
+        {
+            nscfg.set(
+                Keys::kCacheSize,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        }
+
+        if (!nscfg.exists(Keys::kCacheAge))
+        {
+            nscfg.set(
+                Keys::kCacheAge,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        }
+
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 
         std::string const writableDb = "write";
@@ -528,8 +549,7 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         static constexpr int kReadThreads = 4;
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler,
             kReadThreads,
             std::move(writableBackend),

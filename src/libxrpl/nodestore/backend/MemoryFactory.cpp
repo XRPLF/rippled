@@ -1,8 +1,9 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -22,9 +23,8 @@
 #include <string>
 #include <tuple>
 #include <utility>
-#include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 struct MemoryDB
 {
@@ -91,7 +91,7 @@ private:
 
 public:
     MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
-        : name_(get(keyValues, "path")), journal_(journal)
+        : name_(get(keyValues, Keys::kPath)), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
         if (name_.empty())
@@ -132,11 +132,11 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
+        XRPL_ASSERT(db_, "xrpl::node_store::MemoryBackend::fetch : non-null database");
 
         std::scoped_lock const _(db_->mutex);
 
-        Map::iterator const iter = db_->table.find(hash);
+        auto const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();
@@ -146,32 +146,10 @@ public:
         return Status::Ok;
     }
 
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
-        {
-            std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h, &nObj);
-            if (status != Status::Ok)
-            {
-                results.push_back({});
-            }
-            else
-            {
-                results.push_back(nObj);
-            }
-        }
-
-        return {results, Status::Ok};
-    }
-
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
+        XRPL_ASSERT(db_, "xrpl::node_store::MemoryBackend::store : non-null database");
         std::scoped_lock const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
@@ -191,7 +169,7 @@ public:
     void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::forEach : non-null database");
+        XRPL_ASSERT(db_, "xrpl::node_store::MemoryBackend::forEach : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
     }
@@ -238,4 +216,4 @@ MemoryFactory::createInstance(
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

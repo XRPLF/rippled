@@ -18,7 +18,7 @@
 namespace xrpl {
 
 json::Value
-doUnsubscribe(RPC::JsonContext& context)
+doUnsubscribe(rpc::JsonContext& context)
 {
     InfoSub::pointer ispSub;
     json::Value jvResult(json::ValueType::Object);
@@ -106,7 +106,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (!context.params[accountsProposed].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
+        auto ids = rpc::parseAccountIds(context.params[accountsProposed]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, true);
@@ -117,7 +117,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (!context.params[jss::accounts].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
+        auto ids = rpc::parseAccountIds(context.params[jss::accounts]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, false);
@@ -161,11 +161,11 @@ doUnsubscribe(RPC::JsonContext& context)
 
             Book book;
 
-            if (auto const err = RPC::parseSubUnsubJson(book.in, jv, jss::taker_pays, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.in, jv, jss::taker_pays, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 
-            if (auto const err = RPC::parseSubUnsubJson(book.out, jv, jss::taker_gets, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.out, jv, jss::taker_gets, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 
@@ -186,13 +186,23 @@ doUnsubscribe(RPC::JsonContext& context)
                 book.domain = domain;
             }
 
-            context.netOps.unsubBook(ispSub->getSeq(), book);
+            if (!context.netOps.unsubBook(ispSub, book))
+            {
+                JLOG(context.j.debug())
+                    << "doUnsubscribe: book not subscribed (no-op for seq=" << ispSub->getSeq()
+                    << ")";
+            }
 
             // both_sides is deprecated.
             if ((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
                 (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool()))
             {
-                context.netOps.unsubBook(ispSub->getSeq(), reversed(book));
+                if (!context.netOps.unsubBook(ispSub, reversed(book)))
+                {
+                    JLOG(context.j.debug())
+                        << "doUnsubscribe: reversed book not subscribed (no-op for seq="
+                        << ispSub->getSeq() << ")";
+                }
             }
         }
     }

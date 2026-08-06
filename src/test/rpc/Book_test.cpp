@@ -1548,7 +1548,7 @@ public:
 
         auto usd = gw["USD"];
 
-        for (auto i = 0; i <= RPC::Tuning::kBookOffers.rmax; i++)
+        for (auto i = 0; i <= rpc::tuning::kBookOffers.rmax; i++)
             env(offer(gw, XRP(50 + (1 * i)), usd(1.0 + (0.1 * i))));
 
         if (asAdmin)
@@ -1565,15 +1565,15 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
 
-        jvParams[jss::limit] = RPC::Tuning::kBookOffers.rmax + 1;
+        jvParams[jss::limit] = rpc::tuning::kBookOffers.rmax + 1;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? RPC::Tuning::kBookOffers.rmax + 1 : 0u));
+        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? rpc::tuning::kBookOffers.rmax + 1 : 0u));
 
         jvParams[jss::limit] = json::ValueType::Null;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? RPC::Tuning::kBookOffers.rDefault : 0u));
+        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? rpc::tuning::kBookOffers.rDefault : 0u));
     }
 
     void
@@ -1593,7 +1593,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 
@@ -1718,7 +1718,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 

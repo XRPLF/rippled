@@ -1,14 +1,21 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>  // IWYU pragma: keep
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/Handler.h>
+
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 class VersionHandler
 {
 public:
     explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().betaRpcApi)
     {
     }
 
@@ -27,9 +34,9 @@ public:
     // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
-    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 
@@ -41,4 +48,4 @@ private:
     bool betaEnabled_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

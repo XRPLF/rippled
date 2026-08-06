@@ -2,6 +2,7 @@
 
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
@@ -127,16 +128,16 @@ LedgerMaster::LedgerMaster(
     , journal_(journal)
     , ledgerHistory_(collector, app)
     , standalone_(app_.config().standalone())
-    , fetch_depth_(app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
-    , ledger_history_(app_.config().LEDGER_HISTORY)
-    , ledger_fetch_size_(app_.config().getValueFor(SizedItem::LedgerFetch))
-    , fetch_packs_(
+    , fetchDepth_(app_.getSHAMapStore().clampFetchDepth(app_.config().fetchDepth))
+    , ledgerHistorySize_(app_.config().ledgerHistory)
+    , ledgerFetchSize_(app_.config().getValueFor(SizedItem::LedgerFetch))
+    , fetchPacks_(
           "FetchPack",
           65536,
           std::chrono::seconds{45},
           stopwatch,
           app_.getJournal("TaggedCache"))
-    , stats_(std::bind(&LedgerMaster::collectMetrics, this), collector)
+    , stats_([this] { collectMetrics(); }, collector)
 {
 }
 
@@ -286,9 +287,9 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     validLedgerSign_ = signTime.time_since_epoch().count();
     XRPL_ASSERT(
         validLedgerSeq_ || !app_.getMaxDisallowedLedger() ||
-            l->header().seq + max_ledger_difference_ > app_.getMaxDisallowedLedger(),
+            l->header().seq + maxLedgerDifference_ > app_.getMaxDisallowedLedger(),
         "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
-    (void)max_ledger_difference_;
+    (void)maxLedgerDifference_;
     validLedgerSeq_ = l->header().seq;
 
     app_.getOPs().updateLocalTx(*l);
@@ -454,11 +455,12 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
     return ledgerHistory_.insert(ledger, validated);
 }
 
-/** Apply held transactions to the open ledger
-    This is normally called as we close the ledger.
-    The open ledger remains open to handle new transactions
-    until a new open ledger is built.
-*/
+/**
+ * Apply held transactions to the open ledger
+ * This is normally called as we close the ledger.
+ * The open ledger remains open to handle new transactions
+ * until a new open ledger is built.
+ */
 void
 LedgerMaster::applyHeldTransactions()
 {
@@ -629,9 +631,9 @@ LedgerMaster::getEarliestFetch()
     // unless that creates a larger range than allowed
     std::uint32_t e = getClosedLedger()->header().seq;
 
-    if (e > fetch_depth_)
+    if (e > fetchDepth_)
     {
-        e -= fetch_depth_;
+        e -= fetchDepth_;
     }
     else
     {
@@ -651,7 +653,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     std::uint32_t minHas = seq;
     std::uint32_t maxHas = seq;
 
-    NodeStore::Database& nodeStore{app_.getNodeStore()};
+    node_store::Database& nodeStore{app_.getNodeStore()};
     while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
@@ -709,7 +711,8 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     }
 }
 
-/** Request a fetch pack to get to the specified ledger
+/**
+ * Request a fetch pack to get to the specified ledger
  */
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
@@ -755,7 +758,9 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
         JLOG(journal_.trace()) << "Requested fetch pack for " << missing;
     }
     else
+    {
         JLOG(journal_.debug()) << "No peer for fetch pack";
+    }
 }
 
 void
@@ -1037,8 +1042,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
-                    higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
+                    higherVersionCount += build_info::isNewerVersion(version) ? 1 : 0;
+                    xrpldCount += build_info::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
@@ -1078,7 +1083,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 }
 
-/** Report that the consensus process built a particular ledger */
+/**
+ * Report that the consensus process built a particular ledger
+ */
 void
 LedgerMaster::consensusBuilt(
     std::shared_ptr<Ledger const> const& ledger,
@@ -1277,10 +1284,10 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                 ledger = ledgerHistory_.getLedgerByHash(*hash);
             }
 
-            if (!app_.config().LEDGER_REPLAY)
+            if (!app_.config().ledgerReplay)
             {
                 // Can we try to acquire the ledger we need?
-                if (!ledger && (++acqCount < ledger_fetch_size_))
+                if (!ledger && (++acqCount < ledgerFetchSize_))
                 {
                     ledger = app_.getInboundLedgers().acquire(
                         *hash, seq, InboundLedger::Reason::GENERIC);
@@ -1304,7 +1311,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                                << ex.what();
     }
 
-    if (app_.config().LEDGER_REPLAY)
+    if (app_.config().ledgerReplay)
     {
         /* Narrow down the gap of ledgers, and try to replay them.
          * When replaying a ledger gap, if the local node has
@@ -1508,7 +1515,8 @@ LedgerMaster::newOrderBookDB()
     return newPFWork("PthFindOBDB", ml);
 }
 
-/** A thread needs to be dispatched to handle pathfinding work of some kind.
+/**
+ * A thread needs to be dispatched to handle pathfinding work of some kind.
  */
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
@@ -1737,7 +1745,7 @@ void
 LedgerMaster::sweep()
 {
     ledgerHistory_.sweep();
-    fetch_packs_.sweep();
+    fetchPacks_.sweep();
 }
 
 float
@@ -1789,18 +1797,22 @@ LedgerMaster::fetchForHistory(
             if (!app_.getInboundLedgers().isFailure(*hash))
             {
                 ledger = app_.getInboundLedgers().acquire(*hash, missing, reason);
-                if (!ledger && missing != fetch_seq_ &&
+                if (!ledger && missing != fetchSeq_ &&
                     missing > app_.getNodeStore().earliestLedgerSeq())
                 {
                     JLOG(journal_.trace()) << "fetchForHistory want fetch pack " << missing;
-                    fetch_seq_ = missing;
+                    fetchSeq_ = missing;
                     getFetchPack(missing, reason);
                 }
                 else
+                {
                     JLOG(journal_.trace()) << "fetchForHistory no fetch pack for " << missing;
+                }
             }
             else
+            {
                 JLOG(journal_.debug()) << "fetchForHistory found failed acquire";
+            }
         }
         if (ledger)
         {
@@ -1833,8 +1845,7 @@ LedgerMaster::fetchForHistory(
             // Do not fetch ledger sequences lower
             // than the earliest ledger sequence
             fetchSz = app_.getNodeStore().earliestLedgerSeq();
-            fetchSz =
-                missing >= fetchSz ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1) : 0;
+            fetchSz = missing >= fetchSz ? std::min(ledgerFetchSize_, (missing - fetchSz) + 1) : 0;
             try
             {
                 for (std::uint32_t i = 0; i < fetchSz; ++i)
@@ -1903,7 +1914,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                     if ((fillInProgress_ == 0 || *missing > fillInProgress_) &&
                         shouldAcquire(
                             validLedgerSeq_,
-                            ledger_history_,
+                            ledgerHistorySize_,
                             app_.getSHAMapStore().minimumOnline(),
                             *missing,
                             journal_))
@@ -1962,16 +1973,16 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 void
 LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
-    fetch_packs_.canonicalizeReplaceClient(hash, data);
+    fetchPacks_.canonicalizeReplaceClient(hash, data);
 }
 
 std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
     Blob data;
-    if (fetch_packs_.retrieve(hash, data))
+    if (fetchPacks_.retrieve(hash, data))
     {
-        fetch_packs_.del(hash, false);
+        fetchPacks_.del(hash, false);
         if (hash == sha512Half(makeSlice(data)))
             return data;
     }
@@ -1990,30 +2001,31 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
     }
 }
 
-/** Populate a fetch pack with data from the map the recipient wants.
-
-    A recipient may or may not have the map that they are asking for. If
-    they do, we can optimize the transfer by not including parts of the
-    map that they are already have.
-
-    @param have The map that the recipient already has (if any).
-    @param cnt The maximum number of nodes to return.
-    @param into The protocol object into which we add information.
-    @param seq The sequence number of the ledger the map is a part of.
-    @param withLeaves True if leaf nodes should be included.
-
-    @note: The withLeaves parameter is configurable even though the
-           code, so far, only ever sets the parameter to true.
-
-           The rationale is that for transaction trees, it may make
-           sense to not include the leaves if the fetch pack is being
-           constructed for someone attempting to get a recent ledger
-           for which they already have the transactions.
-
-           However, for historical ledgers, which is the only use we
-           have for fetch packs right now, it makes sense to include
-           the transactions because the caller is unlikely to have
-           them.
+/**
+ * Populate a fetch pack with data from the map the recipient wants.
+ *
+ * A recipient may or may not have the map that they are asking for. If
+ * they do, we can optimize the transfer by not including parts of the
+ * map that they are already have.
+ *
+ * @param have The map that the recipient already has (if any).
+ * @param cnt The maximum number of nodes to return.
+ * @param into The protocol object into which we add information.
+ * @param seq The sequence number of the ledger the map is a part of.
+ * @param withLeaves True if leaf nodes should be included.
+ *
+ * @note: The withLeaves parameter is configurable even though the
+ *        code, so far, only ever sets the parameter to true.
+ *
+ *        The rationale is that for transaction trees, it may make
+ *        sense to not include the leaves if the fetch pack is being
+ *        constructed for someone attempting to get a recent ledger
+ *        for which they already have the transactions.
+ *
+ *        However, for historical ledgers, which is the only use we
+ *        have for fetch packs right now, it makes sense to include
+ *        the transactions because the caller is unlikely to have
+ *        them.
  */
 static void
 populateFetchPack(
@@ -2076,21 +2088,21 @@ LedgerMaster::makeFetchPack(
     if (!have)
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
         JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger open");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->header().seq < getEarliestFetch())
     {
         JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger early");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2100,7 +2112,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
                               << "don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger no parent");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger no parent");
         return;
     }
 
@@ -2170,7 +2182,7 @@ LedgerMaster::makeFetchPack(
 std::size_t
 LedgerMaster::getFetchPackCacheSize() const
 {
-    return fetch_packs_.getCacheSize();
+    return fetchPacks_.getCacheSize();
 }
 
 // Returns the minimum ledger sequence in SQL database, if any.

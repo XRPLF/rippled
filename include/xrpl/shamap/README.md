@@ -231,7 +231,7 @@ The `fetchNodeNT()` method goes through three phases:
     will be 0.
 
 2.  If the node is not in the TreeNodeCache, we attempt to locate the node
-    in the historic data stored by the data base. The call to to
+    in the historic data stored by the data base. The call to
     `fetchNodeFromDB(hash)` does that work for us.
 
 3.  Finally if a filter exists, we check if it can supply the node. This is

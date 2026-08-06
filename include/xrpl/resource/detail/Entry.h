@@ -3,11 +3,16 @@
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/core/List.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/detail/Key.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-namespace xrpl::Resource {
+#include <chrono>
+#include <optional>
+#include <ostream>
+#include <string>
+
+namespace xrpl::resource {
 
 using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
@@ -18,10 +23,10 @@ struct Entry : public beast::List<Entry>::Node
     Entry() = delete;
 
     /**
-       @param now Construction time of Entry.
-    */
+     * @param now Construction time of Entry.
+     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0), local_balance(now), remote_balance(0)
+        : refcount(0), localBalance(now), remoteBalance(0)
     {
     }
 
@@ -46,7 +51,7 @@ struct Entry : public beast::List<Entry>::Node
     int
     balance(clock_type::time_point const now)
     {
-        return local_balance.value(now) + remote_balance;
+        return localBalance.value(now) + remoteBalance;
     }
 
     // Add a charge and return normalized balance
@@ -54,7 +59,7 @@ struct Entry : public beast::List<Entry>::Node
     int
     add(int charge, clock_type::time_point const now)
     {
-        return local_balance.add(charge, now) + remote_balance;
+        return localBalance.add(charge, now) + remoteBalance;
     }
 
     // The public key of the peer
@@ -67,10 +72,10 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<kDecayWindowSeconds, clock_type> local_balance;
+    DecayingSample<kDecayWindowSeconds, clock_type> localBalance;
 
     // Normalized balance contribution from imports
-    int remote_balance;
+    int remoteBalance;
 
     // Time of the last warning
     clock_type::time_point lastWarningTime;
@@ -86,4 +91,4 @@ operator<<(std::ostream& os, Entry const& v)
     return os;
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

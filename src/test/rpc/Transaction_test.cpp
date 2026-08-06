@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
@@ -31,7 +32,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,7 +47,7 @@ class Transaction_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -62,9 +62,9 @@ class Transaction_test : public beast::unit_test::Suite
 
         char const* command = jss::tx.cStr();
         char const* binary = jss::binary.cStr();
-        char const* notFound = RPC::getErrorInfo(RpcTxnNotFound).token;
-        char const* invalid = RPC::getErrorInfo(RpcInvalidLgrRange).token;
-        char const* excessive = RPC::getErrorInfo(RpcExcessiveLgrRange).token;
+        char const* notFound = rpc::getErrorInfo(RpcTxnNotFound).token;
+        char const* invalid = rpc::getErrorInfo(RpcInvalidLgrRange).token;
+        char const* excessive = rpc::getErrorInfo(RpcExcessiveLgrRange).token;
 
         Env env{*this, features};
         auto const alice = Account("alice");
@@ -301,9 +301,9 @@ class Transaction_test : public beast::unit_test::Suite
 
         char const* command = jss::tx.cStr();
         char const* binary = jss::binary.cStr();
-        char const* notFound = RPC::getErrorInfo(RpcTxnNotFound).token;
-        char const* invalid = RPC::getErrorInfo(RpcInvalidLgrRange).token;
-        char const* excessive = RPC::getErrorInfo(RpcExcessiveLgrRange).token;
+        char const* notFound = rpc::getErrorInfo(RpcTxnNotFound).token;
+        char const* invalid = rpc::getErrorInfo(RpcInvalidLgrRange).token;
+        char const* excessive = rpc::getErrorInfo(RpcExcessiveLgrRange).token;
 
         Env env{*this, makeNetworkConfig(11111)};
         uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
@@ -333,7 +333,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto const result = env.rpc(
                 command,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                *RPC::encodeCTID(startLegSeq + i, txnIdx, netID),
+                *rpc::encodeCTID(startLegSeq + i, txnIdx, netID),
                 binary,
                 to_string(startLegSeq),
                 to_string(endLegSeq));
@@ -345,7 +345,7 @@ class Transaction_test : public beast::unit_test::Suite
 
         auto const tx = env.jt(noop(alice), Seq(env.seq(alice))).stx;
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
+        auto const ctid = *rpc::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
             auto const result = env.rpc(
@@ -374,7 +374,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto const result = env.rpc(
                 command,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                *RPC::encodeCTID(startLegSeq + i, txnIdx, netID),
+                *rpc::encodeCTID(startLegSeq + i, txnIdx, netID),
                 binary,
                 to_string(endLegSeq + 1),
                 to_string(endLegSeq + 100));
@@ -434,7 +434,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto const result = env.rpc(
                 command,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                *RPC::encodeCTID(endLegSeq, txnIdx, netID),
+                *rpc::encodeCTID(endLegSeq, txnIdx, netID),
                 to_string(startLegSeq),
                 to_string(deletedLedger - 1));
 
@@ -527,75 +527,75 @@ class Transaction_test : public beast::unit_test::Suite
 
         // Test case 1: Valid input values
         auto const expected11 = std::optional<std::string>("CFFFFFFFFFFFFFFF");
-        BEAST_EXPECT(RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU) == expected11);
+        BEAST_EXPECT(rpc::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU) == expected11);
         auto const expected12 = std::optional<std::string>("C000000000000000");
-        BEAST_EXPECT(RPC::encodeCTID(0, 0, 0) == expected12);
+        BEAST_EXPECT(rpc::encodeCTID(0, 0, 0) == expected12);
         auto const expected13 = std::optional<std::string>("C000000100020003");
-        BEAST_EXPECT(RPC::encodeCTID(1U, 2U, 3U) == expected13);
+        BEAST_EXPECT(rpc::encodeCTID(1U, 2U, 3U) == expected13);
         auto const expected14 = std::optional<std::string>("C0CA2AA7326FFFFF");
-        BEAST_EXPECT(RPC::encodeCTID(13249191UL, 12911U, 65535U) == expected14);
+        BEAST_EXPECT(rpc::encodeCTID(13249191UL, 12911U, 65535U) == expected14);
 
         // Test case 2: ledger_seq greater than 0xFFFFFFF
-        BEAST_EXPECT(!RPC::encodeCTID(0x1000'0000UL, 0xFFFFU, 0xFFFFU));
+        BEAST_EXPECT(!rpc::encodeCTID(0x1000'0000UL, 0xFFFFU, 0xFFFFU));
 
         // Test case 3: txn_index greater than 0xFFFF
-        BEAST_EXPECT(!RPC::encodeCTID(0x0FFF'FFFF, 0x1'0000, 0xFFFF));
+        BEAST_EXPECT(!rpc::encodeCTID(0x0FFF'FFFF, 0x1'0000, 0xFFFF));
 
         // Test case 4: network_id greater than 0xFFFF
-        BEAST_EXPECT(!RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0x1'0000U));
+        BEAST_EXPECT(!rpc::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0x1'0000U));
 
         // Test case 5: Valid input values
         auto const expected51 =
             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0, 0, 0));
-        BEAST_EXPECT(RPC::decodeCTID("C000000000000000") == expected51);
+        BEAST_EXPECT(rpc::decodeCTID("C000000000000000") == expected51);
         auto const expected52 =
             std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1U, 2U, 3U));
-        BEAST_EXPECT(RPC::decodeCTID("C000000100020003") == expected52);
+        BEAST_EXPECT(rpc::decodeCTID("C000000100020003") == expected52);
         auto const expected53 = std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
             std::make_tuple(13249191UL, 12911U, 49221U));
-        BEAST_EXPECT(RPC::decodeCTID("C0CA2AA7326FC045") == expected53);
+        BEAST_EXPECT(rpc::decodeCTID("C0CA2AA7326FC045") == expected53);
 
         // Test case 6: ctid not a string or big int
-        BEAST_EXPECT(!RPC::decodeCTID(0xCFF));
+        BEAST_EXPECT(!rpc::decodeCTID(0xCFF));
 
         // Test case 7: ctid not a hexadecimal string
-        BEAST_EXPECT(!RPC::decodeCTID("C003FFFFFFFFFFFG"));
+        BEAST_EXPECT(!rpc::decodeCTID("C003FFFFFFFFFFFG"));
 
         // Test case 8: ctid not exactly 16 nibbles
-        BEAST_EXPECT(!RPC::decodeCTID("C003FFFFFFFFFFF"));
+        BEAST_EXPECT(!rpc::decodeCTID("C003FFFFFFFFFFF"));
 
         // Test case 9: ctid too large to be a valid CTID value
-        BEAST_EXPECT(!RPC::decodeCTID("CFFFFFFFFFFFFFFFF"));
+        BEAST_EXPECT(!rpc::decodeCTID("CFFFFFFFFFFFFFFFF"));
 
         // Test case 10: ctid doesn't start with a C nibble
-        BEAST_EXPECT(!RPC::decodeCTID("FFFFFFFFFFFFFFFF"));
+        BEAST_EXPECT(!rpc::decodeCTID("FFFFFFFFFFFFFFFF"));
 
         // Test case 11: Valid input values
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xCFFF'FFFF'FFFF'FFFFULL) ==
+            (rpc::decodeCTID(0xCFFF'FFFF'FFFF'FFFFULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC000'0000'0000'0000ULL) ==
+            (rpc::decodeCTID(0xC000'0000'0000'0000ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(0, 0, 0))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC000'0001'0002'0003ULL) ==
+            (rpc::decodeCTID(0xC000'0001'0002'0003ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(std::make_tuple(1U, 2U, 3U))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC0CA'2AA7'326F'C045ULL) ==
+            (rpc::decodeCTID(0xC0CA'2AA7'326F'C045ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(1324'9191UL, 12911U, 49221U))));
 
         // Test case 12: ctid not exactly 16 nibbles
-        BEAST_EXPECT(!RPC::decodeCTID(0xC003'FFFF'FFFF'FFF));
+        BEAST_EXPECT(!rpc::decodeCTID(0xC003'FFFF'FFFF'FFF));
 
         // Test case 13: ctid too large to be a valid CTID value
         // this test case is not possible in c++ because it would overflow the
         // type, left in for completeness
-        // BEAST_EXPECT(!RPC::decodeCTID(0xCFFFFFFFFFFFFFFFFULL));
+        // BEAST_EXPECT(!rpc::decodeCTID(0xCFFFFFFFFFFFFFFFFULL));
 
         // Test case 14: ctid doesn't start with a C nibble
-        BEAST_EXPECT(!RPC::decodeCTID(0xFFFF'FFFF'FFFF'FFFFULL));
+        BEAST_EXPECT(!rpc::decodeCTID(0xFFFF'FFFF'FFFF'FFFFULL));
     }
 
     void
@@ -619,7 +619,7 @@ class Transaction_test : public beast::unit_test::Suite
             env(pay(alice, bob, XRP(10)));
             env.close();
 
-            auto const ctid = RPC::encodeCTID(startLegSeq, 0, netID);
+            auto const ctid = rpc::encodeCTID(startLegSeq, 0, netID);
             if (netID > 0xFFFF)
             {
                 // Concise transaction IDs do not support a network ID > 0xFFFF.
@@ -650,7 +650,7 @@ class Transaction_test : public beast::unit_test::Suite
             env.close();
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            std::string const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
+            std::string const ctid = *rpc::encodeCTID(startLegSeq, 0, netID);
             auto isUpper = [](char c) { return std::isupper(c) != 0; };
 
             // Verify that there are at least two upper case letters in ctid and
@@ -705,7 +705,7 @@ class Transaction_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr.isMember(jss::ctid) == (netID <= 0xFFFF));
             if (jrr.isMember(jss::ctid))
             {
-                auto const ctid = RPC::encodeCTID(ledgerSeq, 0, netID);
+                auto const ctid = rpc::encodeCTID(ledgerSeq, 0, netID);
                 BEAST_EXPECT(
                     jrr[jss::ctid] == *ctid);  // NOLINT(bugprone-unchecked-optional-access)
             }
@@ -725,7 +725,7 @@ class Transaction_test : public beast::unit_test::Suite
             env.close();
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            auto const ctid = *RPC::encodeCTID(startLegSeq, 0, netID + 1);
+            auto const ctid = *rpc::encodeCTID(startLegSeq, 0, netID + 1);
             json::Value jsonTx;
             jsonTx[jss::binary] = false;
             jsonTx[jss::ctid] = ctid;
@@ -749,7 +749,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -827,7 +827,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -881,15 +881,136 @@ class Transaction_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testSignForNetworkIDValidation()
+    {
+        testcase("SignFor NetworkID validation");
+        using namespace test::jtx;
+
+        Account const owner{"owner"};
+        Account const signer{"signer"};
+
+        auto makeConfig = [](std::uint32_t networkID) {
+            return envconfig([networkID](std::unique_ptr<Config> cfg) {
+                cfg->networkId = networkID;
+                return cfg;
+            });
+        };
+
+        auto setupEnv = [&](Env& env) {
+            env.fund(XRP(10'000), owner, signer);
+            env.close();
+            env(signers(owner, 1, {{signer, 1}}));
+            env.close();
+        };
+
+        auto makeTx = [&](Env& env) {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[jss::Account] = owner.human();
+            tx[jss::Sequence] = env.seq(owner);
+            tx[jss::Fee] = "100";
+            tx[jss::SigningPubKey] = "";
+            return tx;
+        };
+
+        auto signFor = [&](Env& env, json::Value const& tx) {
+            json::Value signReq;
+            signReq[jss::tx_json] = tx;
+            signReq[jss::account] = signer.human();
+            signReq[jss::secret] = signer.name();
+            return env.rpc("json", "sign_for", to_string(signReq))[jss::result];
+        };
+
+        // Test case: NetworkID < 1024 - field is not required
+        {
+            Env env{*this, makeConfig(500)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(!result[jss::tx_json].isMember(jss::NetworkID));
+        }
+
+        // Test case: NetworkID > 1024 - missing NetworkID field
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Missing field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is not a number
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = "not_a_number";
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is not integral
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 2040.1;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is different from
+        // actual NetworkID
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 9999;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
+        }
+
+        // Test case: NetworkID > 1024 - NetworkID field is correct
+        {
+            Env env{*this, makeConfig(2040)};
+            setupEnv(env);
+
+            auto tx = makeTx(env);
+            tx[jss::NetworkID] = 2040;
+            auto result = signFor(env, tx);
+
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::tx_json][jss::NetworkID].asUInt() == 2040);
+        }
+    }
+
 public:
     void
     run() override
     {
         using namespace test::jtx;
-        forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBinaryRequest(apiVersion); });
 
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
+
+        testSignForNetworkIDValidation();
     }
 
     void
@@ -899,7 +1020,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testRPCsForCTID(features);
-        forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            [this, features](unsigned apiVersion) { testRequest(features, apiVersion); });
     }
 };
 
