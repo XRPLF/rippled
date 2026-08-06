@@ -297,4 +297,43 @@ TEST(TaggedCacheTest, hard_cap_disabled)
     EXPECT_EQ(uncapped.getCacheSize(), 1000);
 }
 
+TEST(TaggedCacheTest, byte_budget_enforced_on_insert)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // Each 100-byte value is charged exactly; the 4 KiB budget holds ~40
+    // entries, enforced as the cache grows, with the sweep unable to fire.
+    Cache::ByteBudget budget{
+        4096, [](std::shared_ptr<Value> const& v) { return v ? v->size() : 0; }};
+    Cache capped(
+        "bytes",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        0,
+        budget);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 200; ++k)
+    {
+        capped.insert(k, std::string(100, 'x'));
+        if (capped.getCacheBytes() > 4096)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheBytes(), std::size_t{4096});
+    EXPECT_GT(capped.getCacheSize(), 0);
+    EXPECT_LT(capped.getCacheSize(), 50);
+}
+
 }  // namespace xrpl

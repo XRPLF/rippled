@@ -58,12 +58,31 @@ public:
 
         if (cacheSize.has_value() || cacheAge.has_value())
         {
-            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+            using Cache = TaggedCache<uint256, NodeObject>;
+
+            // Serialized sizes are exact, so bound this cache by bytes when
+            // cache_bytes is set; the count target remains advisory.
+            std::optional<Cache::ByteBudget> byteBudget;
+            if (auto const bytes = config.exists(Keys::kCacheBytes)
+                    ? get<std::uint64_t>(config, Keys::kCacheBytes)
+                    : 0)
+            {
+                // Charge the blob plus per-entry overhead (map node, weak
+                // tracking, control block).
+                byteBudget = Cache::ByteBudget{bytes, [](std::shared_ptr<NodeObject> const& obj) {
+                                                   return (obj ? obj->getData().size() : 0) + 160;
+                                               }};
+            }
+
+            cache_ = std::make_shared<Cache>(
                 "DatabaseNodeImp",
                 cacheSize.value_or(0),
                 std::chrono::minutes(cacheAge.value_or(0)),
                 stopwatch(),
-                j);
+                j,
+                beast::insight::NullCollector::make(),
+                0,
+                std::move(byteBudget));
         }
 
         XRPL_ASSERT(

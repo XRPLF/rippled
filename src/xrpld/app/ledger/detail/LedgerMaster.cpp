@@ -136,7 +136,9 @@ LedgerMaster::LedgerMaster(
           65536,
           std::chrono::seconds{45},
           stopwatch,
-          app_.getJournal("TaggedCache"))
+          app_.getJournal("TaggedCache"),
+          beast::insight::NullCollector::make(),
+          65536)
     , stats_([this] { collectMetrics(); }, collector)
 {
 }

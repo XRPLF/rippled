@@ -42,7 +42,11 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
           app_.config().getValueFor(SizedItem::LedgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::LedgerAge)},
           stopwatch(),
-          app_.getJournal("TaggedCache"))
+          app_.getJournal("TaggedCache"),
+          beast::insight::NullCollector::make(),
+          // A ledger byte size is ill-posed (nodes are shared copy-on-write
+          // across ledgers), so bound this cache by count.
+          app_.config().getValueFor(SizedItem::LedgerSize))
     , consensusValidated_(
           "ConsensusValidated",
           64,
