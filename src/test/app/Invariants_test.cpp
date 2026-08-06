@@ -213,7 +213,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (TER const& terExpect : ters)
         {
             terActual =
-                transactor->checkInvariants(terActual, fee, Transactor::CheckTxInvariants::Yes);
+                transactor->checkInvariants(terActual, fee, Transactor::InvariantScope::Full);
             BEAST_EXPECTS(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
@@ -5913,7 +5913,7 @@ class Invariants_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(transactor))
                 return;
             TER const result = transactor->checkInvariants(
-                tesSUCCESS, XRPAmount{}, Transactor::CheckTxInvariants::Yes);
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
         }

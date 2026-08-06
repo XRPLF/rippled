@@ -185,19 +185,20 @@ public:
     }
 
     /**
-     * Whether to run the transaction-specific invariant check.
+     * Which invariant layers to check.
      *
-     * After a fee-claim reset the transaction's effects have been rolled back,
-     * so only the protocol invariants are meaningful; pass @c No to omit the
-     * transaction-specific check in that case.
+     * Full runs the protocol invariants plus the transaction-specific
+     * check.  After a fee-claim reset the transaction's effects have been
+     * rolled back, so only the protocol invariants are meaningful; pass
+     * ProtocolOnly to narrow the scope in that case.
      */
-    enum class CheckTxInvariants : bool { No = false, Yes = true };
+    enum class InvariantScope { Full, ProtocolOnly };
 
     /**
      * Check all invariants for the current transaction.
      *
-     * Delegates to the free @c xrpl::checkInvariants runner.  When @p check is
-     * @c CheckTxInvariants::Yes, this transactor is passed so both layers
+     * Delegates to the free xrpl::checkInvariants runner.  When @p scope is
+     * InvariantScope::Full, this transactor is passed so both layers
      * share a single walk of the modified ledger entries.  A failure in
      * either layer fails the transaction the same way: tecINVARIANT_FAILED on
      * the first pass, escalating to tefINVARIANT_FAILED if invariants are
@@ -205,12 +206,12 @@ public:
      *
      * @param result  the tentative TER from transaction processing.
      * @param fee     the fee consumed by the transaction.
-     * @param check   whether to include the transaction-specific invariant check.
+     * @param scope   which invariant layers to check.
      *
      * @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
-    checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check);
+    checkInvariants(TER result, XRPAmount fee, InvariantScope scope);
 
     /////////////////////////////////////////////////////
     /*
@@ -556,8 +557,8 @@ private:
      * visitInvariantEntry/finalizeInvariants hooks.  Declared private (rather
      * than protected, like the hooks they forward to) so that neither this
      * transactor nor any subclass can call them directly through a
-     * @c Transactor& — only through the @c TxInvariantCheck& that the free
-     * @c xrpl::checkInvariants runner holds, which is where the two-phase
+     * Transactor& — only through the TxInvariantCheck& that the free
+     * xrpl::checkInvariants runner holds, which is where the two-phase
      * ordering is enforced.
      */
     void
