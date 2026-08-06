@@ -84,7 +84,7 @@ injectSLE(json::Value& jv, SLE const& sle)
 
 // TODO(tom): what is that "default"?
 json::Value
-doAccountInfo(RPC::JsonContext& context)
+doAccountInfo(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
@@ -92,22 +92,22 @@ doAccountInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalidFieldError(jss::account);
+            return rpc::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalidFieldError(jss::ident);
+            return rpc::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
     {
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
@@ -116,7 +116,7 @@ doAccountInfo(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -154,7 +154,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // It doesn't make sense to request the queue
             // with any closed or validated ledger.
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -206,7 +206,7 @@ doAccountInfo(RPC::JsonContext& context)
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -331,7 +331,7 @@ doAccountInfo(RPC::JsonContext& context)
     else
     {
         result[jss::account] = toBase58(accountID);
-        RPC::injectError(RpcActNotFound, result);
+        rpc::injectError(RpcActNotFound, result);
     }
 
     return result;
