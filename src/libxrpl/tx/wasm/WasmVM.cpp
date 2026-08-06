@@ -10,11 +10,9 @@
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
 #include <cstdint>
-#include <exception>
 #include <expected>
 #include <optional>
 #include <string_view>
-#include <type_traits>
 
 namespace xrpl {
 
@@ -45,7 +43,7 @@ outcome(rs::wasm_vm::RunResult const& run)
         // The cost is the whole limit: XLS-0102 halts the guest the instant the meter runs
         // out, and the run is charged for all of it.
         case RunStatus::OutOfGas:
-            return std::unexpected(WasmTER{.ter = tecOUT_OF_GAS, .cost = cost});
+            return std::unexpected{WasmTER{.ter = tecOUT_OF_GAS, .cost = cost}};
 
         // The contract's own fault - it trapped, or it never exported the linear memory
         // its host calls need - so it is charged for what it burned reaching that point.
@@ -57,7 +55,7 @@ outcome(rs::wasm_vm::RunResult const& run)
         // refused here. It is a deterministic property of the code either way, and one
         // this node's own conduct had no part in.
         case RunStatus::Instantiate:
-            return std::unexpected(WasmTER{.ter = tecFAILED_PROCESSING, .cost = cost});
+            return std::unexpected{WasmTER{.ter = tecFAILED_PROCESSING, .cost = cost}};
 
         // A module that will not compile, or does not expose the entry point, should have
         // been refused at preflight with `temBAD_WASM`: screening decides both from the
@@ -71,40 +69,9 @@ outcome(rs::wasm_vm::RunResult const& run)
         // The engine panicked: a defect in the engine, reported rather than fatal to the
         // node.
         case RunStatus::Panic:
-            return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+            return std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
     }
-    std::unreachable();
-}
-
-// Call into the engine, answering `onThrow` if the call throws.
-//
-// The engine reports every outcome as a status rather than an exception, so anything
-// caught here is xrpld's own: a bad allocation, or a `funcName` that is not valid UTF-8
-// and so cannot become a `rust::Str`. Both entry points answer such a failure the way
-// they answer a defect in the engine itself.
-//
-// The counterpart of the engine's own `guarded`, which stops a Rust panic on the other
-// side of the bridge. Neither side may unwind into the other, and this is this side's
-// half. `HostContext`'s methods are `noexcept` rather than leaving this to cxx because
-// cxx's own `trycatch` catches only `std::exception`, and only for `Result` returns.
-template <class Call>
-std::invoke_result_t<Call>
-guarded(beast::Journal j, std::invoke_result_t<Call> onThrow, Call&& call)
-{
-    try
-    {
-        return call();
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j.error()) << "wasm: engine call threw: " << e.what();
-    }
-    catch (...)
-    {
-        JLOG(j.error()) << "wasm: engine call threw a non-exception";
-    }
-
-    return onThrow;
+    UNREACHABLE("Unexpected RunStatus value");
 }
 
 // A screening verdict as a TER.
@@ -137,7 +104,7 @@ verdict(CheckStatus status)
         case CheckStatus::Panic:
             return telFAILED_PROCESSING;
     }
-    std::unreachable();
+    UNREACHABLE("Unexpected CheckStatus value");
 }
 
 }  // namespace
@@ -153,9 +120,9 @@ runEscrowWasm(
     // non-positive limit means is a transaction-validity rule; the engine's own budget is
     // therefore an unsigned quantity with no invalid value to represent.
     if (gasLimit <= 0)
-        return std::unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
+        return std::unexpected{WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt}};
 
-    auto const nodeSideFault = std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+    auto const nodeSideFault = std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
 
     return guarded(hfs.getJournal(), nodeSideFault, [&]() -> std::expected<EscrowResult, WasmTER> {
         // The host caches the current ledger object, the slot table and the
@@ -170,15 +137,15 @@ runEscrowWasm(
         HostContext ctx{hfs};
         auto const run = rs::wasm_vm::run_escrow(
             ctx,
-            rust::Slice<std::uint8_t const>(wasmCode.data(), wasmCode.size()),
+            rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},
             static_cast<std::uint64_t>(gasLimit),
-            rust::Str(funcName.data(), funcName.size()));
+            rust::Str{funcName.data(), funcName.size()});
 
         auto const result = outcome(run);
         if (!result)
         {
             JLOG(hfs.getJournal().warn())
-                << "wasm: " << std::string_view(run.detail.data(), run.detail.size())
+                << "wasm: " << std::string_view{run.detail.data(), run.detail.size()}
                 << ", ter: " << transToken(result.error().ter);
         }
         return result;
@@ -190,14 +157,14 @@ preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view fu
 {
     return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
         auto const checked = rs::wasm_vm::check_escrow(
-            rust::Slice<std::uint8_t const>(wasmCode.data(), wasmCode.size()),
-            rust::Str(funcName.data(), funcName.size()));
+            rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},
+            rust::Str{funcName.data(), funcName.size()});
 
         auto const ter = verdict(checked.status);
         if (!isTesSuccess(ter))
         {
             JLOG(j.warn()) << "wasm: "
-                           << std::string_view(checked.detail.data(), checked.detail.size())
+                           << std::string_view{checked.detail.data(), checked.detail.size()}
                            << ", ter: " << transToken(ter);
         }
         return ter;

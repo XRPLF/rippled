@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <helpers/CaptureSink.h>
 #include <tx/wasm/MockHostFunctions.h>
 #include <xrpl_wasm_testkit_cxxbridge/lib.h>
 
@@ -16,37 +17,6 @@
 
 namespace xrpl::test {
 
-// Keeps what a run logged. The host's default journal is a null sink, which would let a
-// swallowed condition pass a test that only checks the TER.
-class CapturingSink : public beast::Journal::Sink
-{
-    std::string text_;
-
-public:
-    CapturingSink() : Sink(beast::Severity::Warning, false)
-    {
-    }
-
-    void
-    write(beast::Severity level, std::string const& text) override
-    {
-        writeAlways(level, text);
-    }
-
-    void
-    writeAlways(beast::Severity, std::string const& text) override
-    {
-        text_ += text;
-        text_ += '\n';
-    }
-
-    [[nodiscard]] std::string const&
-    text() const
-    {
-        return text_;
-    }
-};
-
 // Assemble `wat`. Throws `rust::Error` on a typo, which gtest reports against the test that
 // holds it.
 //
@@ -55,7 +25,7 @@ public:
 inline Bytes
 assembleWat(std::string_view wat)
 {
-    auto const wasm = rs::wasm_testkit::compile_wat(rust::Str(wat.data(), wat.size()));
+    auto const wasm = rs::wasm_testkit::compile_wat(rust::Str{wat.data(), wat.size()});
     return Bytes{wasm.begin(), wasm.end()};
 }
 
@@ -66,18 +36,19 @@ assembleWat(std::string_view wat)
 // a test-only crate: the engine itself refuses text
 // (`the_vm_refuses_a_text_format_module`), because a text assembler on the consensus path
 // would make a transaction's validity a build flag.
-class WasmTest : public testing::Test
+struct WasmTest : testing::Test
 {
-protected:
     // Enough for every module here to run to completion; a test about budgets passes its own.
     static constexpr std::int64_t kAmpleGas = 100'000;
 
-    CapturingSink sink_;
+    // Keeps what a run logged. The host's default journal is a null sink, which would let a
+    // swallowed condition pass a test that only checks the TER.
+    CaptureSink sink{beast::Severity::Warning};
 
     // Strict: a host call no test asked for is a failure, not a warning. These modules import
     // exactly what they mean to exercise, so an unplanned call means the engine reached for
     // something on its own — which is the kind of surprise a test suite exists to catch.
-    testing::StrictMock<MockHostFunctions> host_{beast::Journal{sink_}};
+    testing::StrictMock<MockHostFunctions> host{beast::Journal{sink}};
 
     WasmTest()
     {
@@ -85,7 +56,7 @@ protected:
         // every test would have to say so. Declared once here, and any number of times
         // (including none, for the runs refused before the engine is reached). A test that
         // cares says otherwise and its own expectation wins.
-        EXPECT_CALL(host_, checkSelf()).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(host, checkSelf()).WillRepeatedly(testing::Return(true));
     }
 
     static Bytes
@@ -99,7 +70,7 @@ protected:
         std::int64_t gas = kAmpleGas,
         std::string_view entryPoint = escrowFunctionName)
     {
-        return runEscrowWasm(assemble(wat), host_, gas, entryPoint);
+        return runEscrowWasm(assemble(wat), host, gas, entryPoint);
     }
 
     std::expected<EscrowResult, WasmTER>
@@ -108,22 +79,21 @@ protected:
         std::int64_t gas = kAmpleGas,
         std::string_view entryPoint = escrowFunctionName)
     {
-        return runEscrowWasm(wasm, host_, gas, entryPoint);
+        return runEscrowWasm(wasm, host, gas, entryPoint);
     }
 
-    [[nodiscard]] std::string const&
+    [[nodiscard]] std::string
     logged() const
     {
-        return sink_.text();
+        return sink.messages();
     }
 };
 
 // Base for the per-host-function fixtures. Each derives, supplies the module that exercises
 // its own import, and runs it through `callHost()` — so a test says only what the host was
 // asked and what came back.
-class HostCallTest : public WasmTest
+struct HostCallTest : WasmTest
 {
-protected:
     // The module under test. One import, one `escrow_finish` that calls it.
     [[nodiscard]] virtual std::string
     wat() const = 0;

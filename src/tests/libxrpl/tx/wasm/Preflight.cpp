@@ -27,27 +27,26 @@ constexpr std::string_view kRunnableWat = R"wat(
 // `preflightEscrowWasm` takes no host, so this fixture holds none - which is the point of
 // the signature, and what deriving from `WasmTest` would hide. Only a journal, to read the
 // refusal out of.
-class PreflightTest : public testing::Test
+struct PreflightTest : testing::Test
 {
-protected:
-    CapturingSink sink_;
+    CaptureSink sink{beast::Severity::Warning};
 
     NotTEC
     preflight(std::string_view wat, std::string_view funcName = escrowFunctionName)
     {
-        return preflightEscrowWasm(assembleWat(wat), beast::Journal{sink_}, funcName);
+        return preflightEscrowWasm(assembleWat(wat), beast::Journal{sink}, funcName);
     }
 
     NotTEC
     preflightBytes(Bytes const& wasm, std::string_view funcName = escrowFunctionName)
     {
-        return preflightEscrowWasm(wasm, beast::Journal{sink_}, funcName);
+        return preflightEscrowWasm(wasm, beast::Journal{sink}, funcName);
     }
 
-    [[nodiscard]] std::string const&
+    [[nodiscard]] std::string
     logged() const
     {
-        return sink_.text();
+        return sink.messages();
     }
 };
 
@@ -208,7 +207,7 @@ TEST_F(PreflightTest, ScreeningAgreesWithARun)
         // The run's own verdict on the same bytes. A refused module must not reach the
         // contract's first instruction; an accepted one must get past the entry-point
         // lookup, whatever it then does.
-        testing::StrictMock<MockHostFunctions> host{beast::Journal{sink_}};
+        testing::StrictMock<MockHostFunctions> host{beast::Journal{sink}};
         EXPECT_CALL(host, checkSelf()).WillRepeatedly(testing::Return(true));
         EXPECT_CALL(host, getLedgerSqn()).WillRepeatedly(testing::Return(7u));
 

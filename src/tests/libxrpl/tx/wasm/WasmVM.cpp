@@ -99,7 +99,7 @@ TEST_F(WasmVMTest, BudgetTooSmallToRunIsOutOfGas)
 // asked to run anything.
 TEST_F(WasmVMTest, NoGasIsRefusedAsMalformedRatherThanRun)
 {
-    for (std::int64_t const gas : {std::int64_t{0}, std::int64_t{-1}})
+    for (auto const gas : {std::int64_t{0}, std::int64_t{-1}})
     {
         auto const outcome = run(kEngineWat, gas);
 
@@ -126,13 +126,13 @@ TEST_F(WasmVMTest, HostCallWithNoExportedMemoryFails)
 TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
 {
     // 129 pages, not exported, so nothing outside the module declares it.
-    constexpr std::string_view wat = R"wat(
+    static constexpr std::string_view wat = R"wat(
     (module
       (memory 129)
       (func (export "escrow_finish") (result i32) (i32.const 0)))
     )wat";
 
-    EXPECT_EQ(preflightEscrowWasm(assembleWat(wat), beast::Journal{sink_}), tesSUCCESS)
+    EXPECT_EQ(preflightEscrowWasm(assembleWat(wat), beast::Journal{sink}), tesSUCCESS)
         << "screening cannot see an unexported memory";
 
     auto const outcome = run(wat);
@@ -147,7 +147,7 @@ TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
 // have screened.
 TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
 {
-    constexpr std::string_view wat = R"wat(
+    static constexpr std::string_view wat = R"wat(
     (module
       (memory (export "memory") 1)
       (func $init (unreachable))
@@ -167,21 +167,26 @@ TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
 // did not happen, which is the node's fault and not the transaction's.
 TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
 {
-    struct
+    struct Case
     {
         char const* what;
         Bytes code;
         std::string_view entryPoint;
-    } const cases[] = {
-        {.what = "not wasm at all", .code = Bytes{0, 1, 2, 3}, .entryPoint = escrowFunctionName},
-        {.what = "empty", .code = Bytes{}, .entryPoint = escrowFunctionName},
-        {.what = "no such export", .code = assemble(kEngineWat), .entryPoint = "no_such_export"},
-        {.what = "export is not a function",
-         .code = assemble(kEngineWat),
-         .entryPoint = "not_a_function"},
-        {.what = "export takes a parameter",
-         .code = assemble(kEngineWat),
-         .entryPoint = "wrong_signature"},
+    };
+    std::array const cases = {
+        Case{
+            .what = "not wasm at all", .code = Bytes{0, 1, 2, 3}, .entryPoint = escrowFunctionName},
+        Case{.what = "empty", .code = Bytes{}, .entryPoint = escrowFunctionName},
+        Case{
+            .what = "no such export", .code = assemble(kEngineWat), .entryPoint = "no_such_export"},
+        Case{
+            .what = "export is not a function",
+            .code = assemble(kEngineWat),
+            .entryPoint = "not_a_function"},
+        Case{
+            .what = "export takes a parameter",
+            .code = assemble(kEngineWat),
+            .entryPoint = "wrong_signature"},
     };
 
     for (auto const& c : cases)
@@ -213,7 +218,7 @@ TEST_F(WasmVMTest, TextFormatModuleIsRejected)
 // contract's state.
 TEST_F(WasmVMTest, DirtyHostIsRefusedBeforeContractRuns)
 {
-    EXPECT_CALL(host_, checkSelf()).WillOnce(testing::Return(false));
+    EXPECT_CALL(host, checkSelf()).WillOnce(testing::Return(false));
 
     auto const outcome = run(kEngineWat);
 
@@ -236,7 +241,7 @@ TEST_F(WasmVMTest, DirtyHostIsRefusedBeforeContractRuns)
 // -14 `NoMemExported`.
 TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
 {
-    constexpr HostFunctionError kSoftErrors[] = {
+    static constexpr HostFunctionError kSoftErrors[] = {
         HostFunctionError::FieldNotFound,
         HostFunctionError::BufferTooSmall,
         HostFunctionError::NoArray,
@@ -258,7 +263,7 @@ TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
     };
 
     auto refused = HostFunctionError::FieldNotFound;
-    EXPECT_CALL(host_, getLedgerSqn())
+    EXPECT_CALL(host, getLedgerSqn())
         .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
@@ -279,7 +284,7 @@ TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
 TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 {
     auto refused = HostFunctionError::Unimplemented;
-    EXPECT_CALL(host_, getLedgerSqn())
+    EXPECT_CALL(host, getLedgerSqn())
         .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
@@ -298,7 +303,7 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 // the host, and must not take the node with it.
 TEST_F(WasmVMTest, ThrowingHostFunctionBecomesInternal)
 {
-    EXPECT_CALL(host_, getLedgerSqn())
+    EXPECT_CALL(host, getLedgerSqn())
         .WillOnce([]() -> std::expected<std::uint32_t, HostFunctionError> {
             Throw<std::runtime_error>("the ledger came apart");
         });

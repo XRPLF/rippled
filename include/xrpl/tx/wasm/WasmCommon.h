@@ -1,13 +1,17 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <optional>
+#include <source_location>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -144,6 +148,30 @@ constexpr int32_t
 hfErrorToInt(HostFunctionError e)
 {
     return static_cast<int32_t>(e);
+}
+
+template <class Body>
+std::invoke_result_t<Body>
+guarded(
+    beast::Journal journal,
+    std::invoke_result_t<Body> onThrow,
+    Body&& body,
+    std::source_location const location = std::source_location::current()) noexcept
+{
+    try
+    {
+        return body();
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal.error()) << "wasm: " << location.function_name() << " threw: " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(journal.error()) << "wasm: " << location.function_name() << " threw";
+    }
+
+    return onThrow;
 }
 
 }  // namespace xrpl
