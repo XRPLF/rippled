@@ -75,7 +75,11 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     {
         auto const phase = getVaultPhase(ctx.view, vault);
         if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
-            return tecNO_PERMISSION;
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
+                                   "or redemption phase.";
+            return tecEXPIRED;
+        }
     }
 
     auto const& account = ctx.tx[sfAccount];

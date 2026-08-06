@@ -592,9 +592,7 @@ private:
             nullptr);
     }
 
-    // Spec 13.5: LoanSet in a closed-ended vault — phase gating and
-    // maturity bound. Covers spec 7.2 failure conditions and the boundary
-    // of the finalPayment < RedemptionDate check.
+    // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
     {
@@ -610,11 +608,9 @@ private:
         constexpr std::uint32_t kInterval = 3600u * 24u;  // 1 day
         constexpr std::uint32_t kTotal = 2u;
 
-        // featureLendingProtocolV1_1 is excluded from `all_` by
-        // convention (see the comment on `all_`), so callers must opt
-        // in. Closed-ended vaults are gated on this amendment; without
-        // it VaultCreate returns temDISABLED and every follow-on txn
-        // sees tecNO_ENTRY.
+        // featureLendingProtocolV1_1 is excluded from `all_` by convention (see the comment on
+        // `all_`), so callers must opt in. Closed-ended vaults are gated on this amendment; without
+        // it VaultCreate returns temDISABLED and every follow-on txn sees tecNO_ENTRY.
         auto const withEnv = [&, this](auto&& body) {
             Env env(*this, testableAmendments() | featureLendingProtocolV1_1);
             env.fund(XRP(1'000'000'000), issuer, lender, borrower);
@@ -634,9 +630,8 @@ private:
             env.close();
         };
 
-        // 1. Rejected during Subscription: the broker is created in
-        // Subscription (skipPhaseAdvance = true), then LoanSet is attempted
-        // before advancing past SubscriptionDate.
+        // 1. Rejected during Subscription: the broker is created in Subscription (skipPhaseAdvance
+        // = true), then LoanSet is attempted before advancing past SubscriptionDate.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env,
@@ -646,9 +641,8 @@ private:
             setLoan(env, broker, tecTOO_SOON);
         });
 
-        // 2. Rejected during Redemption: broker is set up normally (which
-        // lands the vault in Investment), then advance the clock past
-        // RedemptionDate before attempting LoanSet.
+        // 2. Rejected during Redemption: broker is set up normally (which lands the vault in
+        // Investment), then advance the clock past RedemptionDate before attempting LoanSet.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
@@ -659,17 +653,16 @@ private:
             setLoan(env, broker, tecEXPIRED);
         });
 
-        // 3. Accepted during Investment when the schedule comfortably fits
-        // before RedemptionDate.
+        // 3. Accepted during Investment when the schedule comfortably fits before RedemptionDate.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             setLoan(env, broker, tesSUCCESS);
         });
 
-        // 4. Rejected during Investment when the loan's final payment would
-        // land on or after RedemptionDate. Use a tight redemptionOffset and
-        // a schedule whose final payment is well past that boundary.
+        // 4. Rejected during Investment when the loan's final payment would land on or after
+        // RedemptionDate. Use a tight redemptionOffset and a schedule whose final payment is well
+        // past that boundary.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             constexpr std::uint32_t kRedemptionOffset = 3u * 24u * 3600u;
             auto const broker = createVaultAndBroker(
@@ -688,10 +681,9 @@ private:
             env.close();
         });
 
-        // 5. Boundary: schedule whose finalPayment lands exactly
-        // (RedemptionDate - 1) is accepted, and one second later
-        // (== RedemptionDate) is rejected. Uses payTotal = 1 so the
-        // arithmetic is simple: finalPayment = startDate + interval.
+        // 5. Boundary: schedule whose finalPayment lands exactly (RedemptionDate - 1) is accepted,
+        // and one second later (== RedemptionDate) is rejected. Uses payTotal = 1 so the arithmetic
+        // is simple: finalPayment = startDate + interval.
         withEnv([&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
@@ -720,6 +712,7 @@ private:
             env.close();
         });
     }
+
 public:
     void
     run() override

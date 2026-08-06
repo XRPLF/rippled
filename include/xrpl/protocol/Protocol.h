@@ -339,7 +339,7 @@ enum class VaultKind : std::uint8_t {
 
 /**
  * Lifecycle phase of a vault. Open-ended vaults are always NoPhase; the other
- * three values are the phases of a closed-ended vault (XLS-103).
+ * three values are the phases of a closed-ended vault.
  */
 enum class VaultPhase : std::uint8_t {
     NoPhase = 0,
@@ -351,7 +351,7 @@ enum class VaultPhase : std::uint8_t {
 /**
  * Bounds on the length of a closed-ended vault's Investment phase
  * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
- * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod (XLS-103 2.4).
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
  */
 constexpr std::uint32_t kMinInvestmentPeriod =
     std::chrono::seconds{std::chrono::minutes{1}}.count();

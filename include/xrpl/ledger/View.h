@@ -36,6 +36,11 @@ enum class SkipEntry : bool { No = false, Yes };
 //------------------------------------------------------------------------------
 
 /**
+ * Whether an expiration check should be inclusive or exclusive.
+ */
+enum class ExpiryComparison { Inclusive, Exclusive };
+
+/**
  * Determines whether the given expiration time has passed.
  *
  * In the XRP Ledger, expiration times are defined as the number of whole
@@ -59,8 +64,6 @@ enum class SkipEntry : bool { No = false, Yes };
  *
  * @return `true` if `exp` is in the past; `false` otherwise.
  */
-enum class ExpiryComparison { Inclusive, Exclusive };
-
 [[nodiscard]] bool
 hasExpired(
     ReadView const& view,

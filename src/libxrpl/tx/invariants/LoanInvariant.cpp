@@ -29,7 +29,7 @@ ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after
 bool
 ValidLoan::finalize(
     STTx const& tx,
-    TER const,
+    TER const result,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
@@ -39,13 +39,11 @@ ValidLoan::finalize(
 
     for (auto const& [before, after] : loans_)
     {
-        // XLS-103 7.4: A closed-ended vault must not accept a loan whose
-        // final scheduled payment falls on or after the vault's
-        // RedemptionDate. This mirrors the LoanSet::preclaim gate and only
-        // fires on loan creation; once the loan exists, its StartDate /
-        // PaymentInterval are immutable and PaymentRemaining only
-        // decreases, so the bound is preserved.
-        if (!before)
+        // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
+        // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
+        // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
+        // PaymentRemaining only decreases, so the bound is preserved.
+        if (!before && isTesSuccess(result))
         {
             auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
             if (broker)
@@ -57,7 +55,8 @@ ValidLoan::finalize(
                     std::uint32_t const interval = after->at(sfPaymentInterval);
                     std::uint32_t const remaining = after->at(sfPaymentRemaining);
                     std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >= redemption)
+                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >=
+                        redemption)
                     {
                         JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
                                            "must precede RedemptionDate";

@@ -134,7 +134,8 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        std::source_location const& loc = std::source_location::current())
     {
         doInvariantCheck(
             makeEnv(defaultAmendments()),
@@ -144,7 +145,8 @@ class Invariants_test : public beast::unit_test::Suite
             tx,
             ters,
             preclose,
-            setTxAccount);
+            setTxAccount,
+            loc);
     }
 
     void
@@ -156,7 +158,8 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        std::source_location const& loc = std::source_location::current())
     {
         using namespace test::jtx;
 
@@ -170,7 +173,7 @@ class Invariants_test : public beast::unit_test::Suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
-        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
+        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc);
     }
 
     void
@@ -183,7 +186,8 @@ class Invariants_test : public beast::unit_test::Suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED})
+        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        std::source_location const& loc = std::source_location::current())
     {
         using namespace test::jtx;
 
@@ -210,23 +214,27 @@ class Invariants_test : public beast::unit_test::Suite
         for (TER const& terExpect : ters)
         {
             terActual = transactor->checkInvariants(terActual, fee);
-            BEAST_EXPECTS(
+            expect(
                 terExpect == terActual,
-                "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
+                "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
+                loc.file_name(),
+                loc.line());
             auto const messages = sink.messages().str();
 
             if (!isTesSuccess(terActual))
             {
-                BEAST_EXPECTS(
+                expect(
                     messages.starts_with("Invariant failed:") ||
                         messages.starts_with("Transaction caused an exception"),
-                    messages);
+                    messages,
+                    loc.file_name(),
+                    loc.line());
             }
 
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.contains(m), m);
+                expect(messages.contains(m), m, loc.file_name(), loc.line());
             }
         }
     }
@@ -2472,9 +2480,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         // TODO: Loan Object
 
-        // XLS-103 3.4: VaultKind, SubscriptionDate and RedemptionDate are
-        // immutable once set at creation. Enforced by
-        // NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
+        // VaultKind, SubscriptionDate and RedemptionDate are immutable once set at creation.
+        // Enforced by NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
         Keylet closedEndedVaultKeylet = keylet::amendments();
         Preclose const createClosedEndedVault = [&, this](
                                                     Account const& a, Account const&, Env& env) {
@@ -2493,11 +2500,9 @@ class Invariants_test : public beast::unit_test::Suite
         };
 
         {
-            // Each mutation must keep the vault otherwise valid (in
-            // particular the 4.4 gap invariant) so that only the
-            // immutability check fires. Shifting both dates by the same
-            // offset preserves the gap; bumping sfVaultKind stays within
-            // the recognised range.
+            // Each mutation must keep the vault otherwise valid so that only the immutability check
+            // fires. Shifting both dates by the same offset preserves the gap; bumping sfVaultKind
+            // stays within the recognised range.
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfVaultKind) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfSubscriptionDate) += 1; },
@@ -4409,27 +4414,23 @@ class Invariants_test : public beast::unit_test::Suite
             precloseMpt);
 
         // ─────────────────────────────────────────────────────────────
-        // XLS-103 closed-ended vault invariants added in
-        // ValidVault::finalize: 4.4 (create must supply both dates and
-        // satisfy the redemption-buffer gap), 5.4 (deposit only in
-        // Subscription / NoPhase), 6.4 (withdraw not in Investment),
-        // 7.4 (loan origination only in Investment).
+        // Closed-ended vault invariants added in ValidVault::finalize (create must supply both
+        // dates and satisfy the redemption-buffer gap), deposit only in Subscription / NoPhase,
+        // withdraw not in Investment, loan origination only in Investment.
 
         using d = NetClock::duration;
         using tp = NetClock::time_point;
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
 
-        // Vault keylet captured by precloseClosedEnded so precheck
-        // does not have to rederive it from ac.view().seq(), which
-        // depends on how many env.close() calls preclose issued.
+        // Vault keylet captured by precloseClosedEnded so precheck does not have to rederive it
+        // from ac.view().seq(), which depends on how many env.close() calls preclose issued.
         Keylet closedEndedKeylet = keylet::amendments();
 
-        // Preclose that creates a closed-ended vault (in Subscription),
-        // optionally seeds it with three deposits (so a1/a2/a3 hold a
-        // share MPToken that kAdjust can then adjust), and optionally
-        // advances parent close time past SubscriptionDate. A negative
-        // @p advanceBySub leaves the vault in Subscription.
+        // Preclose that creates a closed-ended vault (in Subscription), optionally seeds it with
+        // three deposits (so a1/a2/a3 hold a share MPToken that kAdjust can then adjust), and
+        // optionally advances parent close time past SubscriptionDate. A negative @p advanceBySub
+        // leaves the vault in Subscription.
         auto const precloseClosedEnded = [&](std::int32_t advanceBySub, bool doDeposit) {
             return [&, advanceBySub, doDeposit](
                        Account const& a1, Account const& a2, Env& env) -> bool {
@@ -4457,10 +4458,9 @@ class Invariants_test : public beast::unit_test::Suite
             };
         };
 
-        // Manually insert a bare closed-ended vault (+ pseudo-account
-        // + share MPTokenIssuance) directly into the view, bypassing
-        // the transactor path. Used to synthesise ttVAULT_CREATE
-        // states no legitimate transactor would produce (4.4).
+        // Manually insert a bare closed-ended vault (+ pseudo-account + share MPTokenIssuance)
+        // directly into the view, bypassing the transactor path. Used to synthesize ttVAULT_CREATE
+        // states no legitimate transactor would produce.
         auto const insertBareClosedEndedVault =
             [closedEnded](
                 ApplyContext& ac,
@@ -4521,8 +4521,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "Vault create closed-ended";
 
-        // 4.4: a fresh closed-ended vault must carry both
-        // SubscriptionDate and RedemptionDate.
+        // A fresh closed-ended vault must carry both SubscriptionDate and RedemptionDate.
         doInvariantCheck(
             {"closed-ended vault must have SubscriptionDate and RedemptionDate"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
@@ -4532,9 +4531,8 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        // 4.4: gap smaller than MIN_INVESTMENT_PERIOD but with
-        // RedemptionDate > SubscriptionDate; exercises the sub-minimum
-        // branch of the gap check.
+        // Gap smaller than MIN_INVESTMENT_PERIOD but with RedemptionDate > SubscriptionDate;
+        // exercises the sub-minimum branch of the gap check.
         doInvariantCheck(
             {"closed-ended vault RedemptionDate - SubscriptionDate must be "
              "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
@@ -4547,9 +4545,8 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        // 4.4: RedemptionDate strictly before SubscriptionDate;
-        // exercises the red <= sub short-circuit that guards the
-        // unsigned red - sub subtraction against wrap-around.
+        // RedemptionDate strictly before SubscriptionDate; exercises the red <= sub short-circuit
+        // that guards the unsigned red - sub subtraction against wrap-around.
         doInvariantCheck(
             {"closed-ended vault RedemptionDate - SubscriptionDate must be "
              "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
@@ -4562,8 +4559,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        // 4.4: gap exactly MAX_INVESTMENT_PERIOD is out of range (bound
-        // is half-open on the right).
+        // Gap exactly MAX_INVESTMENT_PERIOD is out of range (bound is half-open on the right).
         doInvariantCheck(
             {"closed-ended vault RedemptionDate - SubscriptionDate must be "
              "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
@@ -4578,9 +4574,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "Vault deposit closed-ended";
 
-        // 5.4: a deposit into a closed-ended vault that has advanced
-        // past SubscriptionDate. kArgs simulates an otherwise valid
-        // deposit shape so only the phase invariant fires.
+        // A deposit into a closed-ended vault that has advanced past SubscriptionDate. kArgs
+        // simulates an otherwise valid deposit shape so only the phase invariant fires.
         doInvariantCheck(
             {"deposit only allowed in Subscription or NoPhase"},
             [&](Account const&, Account const& a2, ApplyContext& ac) {
@@ -4595,8 +4590,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "Vault withdrawal closed-ended";
 
-        // 6.4: a withdrawal from a closed-ended vault in the
-        // Investment phase.
+        // A withdrawal from a closed-ended vault in the Investment phase.
         doInvariantCheck(
             {"withdrawal not allowed during Investment phase"},
             [&](Account const&, Account const& a2, ApplyContext& ac) {
@@ -4611,9 +4605,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "Vault loan set";
 
-        // 7.4: ttLOAN_SET against a closed-ended vault that is not in
-        // Investment. finalizeLoanSet fires on any vault mutation;
-        // touching the vault SLE with no field change is sufficient.
+        // ttLOAN_SET against a closed-ended vault that is not in Investment. finalizeLoanSet fires
+        // on any vault mutation; touching the vault SLE with no field change is sufficient.
         doInvariantCheck(
             {"loan origination only allowed in Investment phase"},
             [&](Account const&, Account const&, ApplyContext& ac) {
@@ -4631,12 +4624,10 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "Vault loan set - closed-ended final payment past "
                     "RedemptionDate";
 
-        // XLS-103 7.4 (ValidLoan): a newly-created loan against a
-        // closed-ended vault must satisfy
-        // StartDate + PaymentInterval * PaymentRemaining < RedemptionDate.
-        // LoanSet::preclaim enforces the same bound; this test synthesises
-        // an invalid loan directly in the ApplyView so the invariant catches
-        // it even when preclaim is bypassed.
+        // A newly-created loan against a closed-ended vault must satisfy StartDate +
+        // PaymentInterval * PaymentRemaining < RedemptionDate. LoanSet::preclaim enforces the same
+        // bound; this test synthesises an invalid loan directly in the ApplyView so the invariant
+        // catches it even when preclaim is bypassed.
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
@@ -4657,17 +4648,18 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
 
-                // Synthesise a Loan whose final scheduled payment lands
+                // Synthesize a Loan whose final scheduled payment lands
                 // exactly at RedemptionDate: StartDate = red, interval = 60,
                 // remaining = 1 => red + 60 >= red.
-                auto sleLoan = std::make_shared<SLE>(
-                    keylet::loan(closedEndedBrokerKeylet.key, loanSeq));
+                auto sleLoan =
+                    std::make_shared<SLE>(keylet::loan(closedEndedBrokerKeylet.key, loanSeq));
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
                 sleLoan->at(sfStartDate) = closedEndedRed;
                 sleLoan->at(sfPaymentInterval) = 60;
                 sleLoan->at(sfPaymentRemaining) = 1;
+                sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->at(sfPeriodicPayment) = Number(1);
                 ac.view().insert(sleLoan);
                 return true;
@@ -4691,9 +4683,8 @@ class Invariants_test : public beast::unit_test::Suite
                 closedEndedKeylet = keylet;
 
                 // Create the loan broker; LoanBrokerSet has no phase gate.
-                closedEndedBrokerKeylet =
-                    keylet::loanBroker(a1.id(), env.seq(a1));
-                env(loanBroker::set(a1, keylet.key));
+                closedEndedBrokerKeylet = keylet::loanBroker(a1.id(), env.seq(a1));
+                env(loan_broker::set(a1, keylet.key));
 
                 // Advance parent close time into Investment so
                 // ValidVault::finalizeLoanSet is satisfied.

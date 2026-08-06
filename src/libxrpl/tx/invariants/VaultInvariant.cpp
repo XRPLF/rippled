@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -286,17 +287,15 @@ ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
 
     auto const& afterVault = afterVault_[0];
 
-    // XLS-103 3.5.4: loan origination against a closed-ended vault is only
-    // permitted while the vault is in the Investment phase — strictly past
-    // SubscriptionDate and before RedemptionDate. Open-ended vaults have
-    // NoPhase and are unaffected.
-    if (!isClosedEnded(afterVault.vaultKind))
+    // Loan origination against a closed-ended vault is only permitted while the vault is in the
+    // Investment phase - strictly past SubscriptionDate and before RedemptionDate. Open-ended
+    // vaults have NoPhase and are unaffected.
+    auto const phase = getVaultPhase(
+        view, afterVault.vaultKind, afterVault.subscriptionDate, afterVault.redemptionDate);
+    if (phase == VaultPhase::NoPhase)
         return true;
 
-    bool const inInvestment =
-        hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive) &&
-        !hasExpired(view, afterVault.redemptionDate);
-    if (!inInvestment)
+    if (phase != VaultPhase::Investment)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan origination only allowed in Investment phase";
@@ -572,8 +571,8 @@ ValidVault::finalize(
         result = false;
     }
 
-    // Immutability of VaultKind, SubscriptionDate and RedemptionDate is
-    // enforced by NoModifiedUnmodifiableFields in InvariantCheck.cpp.
+    // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
+    // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
 
     auto const beforeShares = [&]() -> std::optional<Shares> {
         if (beforeVault_.empty())
@@ -746,10 +745,13 @@ ValidVault::finalize(
                 auto const& beforeVault = beforeVault_[0];
 
                 // Deposit is only allowed while the vault is in NoPhase or
-                // Subscription; reject if a closed-ended vault is strictly
-                // past SubscriptionDate.
-                if (isClosedEnded(afterVault.vaultKind) &&
-                    hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive))
+                // Subscription.
+                auto const depositPhase = getVaultPhase(
+                    view,
+                    afterVault.vaultKind,
+                    afterVault.subscriptionDate,
+                    afterVault.redemptionDate);
+                if (depositPhase != VaultPhase::NoPhase && depositPhase != VaultPhase::Subscription)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: deposit only allowed in "
@@ -895,12 +897,13 @@ ValidVault::finalize(
                     "xrpl::ValidVault::finalize : withdrawal updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
-                // Withdrawal from a closed-ended vault is not allowed during
-                // the Investment phase (strictly past SubscriptionDate,
-                // before RedemptionDate).
-                if (isClosedEnded(afterVault.vaultKind) &&
-                    hasExpired(view, afterVault.subscriptionDate, ExpiryComparison::Exclusive) &&
-                    !hasExpired(view, afterVault.redemptionDate))
+                // Withdrawal from a closed-ended vault is not allowed during the Investment phase
+                // (strictly past SubscriptionDate, before RedemptionDate).
+                if (getVaultPhase(
+                        view,
+                        afterVault.vaultKind,
+                        afterVault.subscriptionDate,
+                        afterVault.redemptionDate) == VaultPhase::Investment)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: withdrawal not allowed during "

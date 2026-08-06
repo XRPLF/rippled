@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -104,13 +105,12 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const kindField = ctx.tx[~sfVaultKind];
+    if (!isValidVaultKind(ctx.tx))
+        return temMALFORMED;
+    auto const kind = getVaultKind(ctx.tx);
     auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
     auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
-    auto const isClosedEnded =
-        kindField && *kindField == std::to_underlying(VaultKind::ClosedEnded);
-    if (kindField && *kindField > std::to_underlying(VaultKind::ClosedEnded))
-        return temMALFORMED;
+    auto const isClosedEnded = kind == VaultKind::ClosedEnded;
     if (!isClosedEnded && (hasSubscription || hasRedemption))
         return temMALFORMED;
     if (isClosedEnded && (!hasSubscription || !hasRedemption))
@@ -277,13 +277,16 @@ VaultCreate::doApply()
     if (scale != 0u)
         vault->at(sfScale) = scale;
     if (view().rules().enabled(featureLendingProtocolV1_1))
-        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
-    if (auto const kind = tx[~sfVaultKind];
-        kind && *kind == std::to_underlying(VaultKind::ClosedEnded))
     {
-        vault->at(sfVaultKind) = *kind;
-        vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
-        vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+
+        auto const kind = getVaultKind(tx);
+        vault->at(sfVaultKind) = std::to_underlying(kind);
+        if (kind == VaultKind::ClosedEnded)
+        {
+            vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+            vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+        }
     }
     view().insert(vault);
 

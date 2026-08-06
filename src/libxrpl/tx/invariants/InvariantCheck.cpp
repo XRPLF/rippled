@@ -1178,18 +1178,32 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfLoanScale);
                 break;
             case ltVAULT:
+                // Fallback checks for ltVAULT copied from below
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex);
+
                 /*
                  * The VaultKind, SubscriptionDate and RedemptionDate
                  * fields are introduced by featureLendingProtocolV1_1
                  * and are the only vault fields whose immutability is
                  * enforced here; pre-V1_1 vaults do not carry them.
                  */
-                enforce = view.rules().enabled(featureLendingProtocolV1_1);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfVaultKind) ||
-                    kFieldChanged(before, after, sfSubscriptionDate) ||
-                    kFieldChanged(before, after, sfRedemptionDate);
+                if (view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    // sfAccount, sfAsset, sfShareMPTID are already captured by VaultInvariant
+                    bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                        kFieldChanged(before, after, sfLedgerIndex) ||
+                        kFieldChanged(before, after, sfVaultKind) ||
+                        kFieldChanged(before, after, sfSubscriptionDate) ||
+                        kFieldChanged(before, after, sfRedemptionDate) ||
+                        kFieldChanged(before, after, sfSequence) ||
+                        kFieldChanged(before, after, sfOwnerNode) ||
+                        kFieldChanged(before, after, sfOwner) ||
+                        kFieldChanged(before, after, sfWithdrawalPolicy) ||
+                        kFieldChanged(before, after, sfScale) ||
+                        kFieldChanged(before, after, sfLEVersion);
+                }
                 break;
             default:
                 /*

@@ -169,12 +169,10 @@ private:
     /**
      * @brief Invariant check for @c ttLOAN_SET.
      *
-     * Enforces XLS-103 7.4: for a closed-ended vault, a loan may only be
-     * originated while the vault is in the Investment phase (strictly past
-     * @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults
-     * (@c NoPhase) are unaffected. The complementary maturity bound
-     * (final payment strictly precedes @c RedemptionDate) is enforced by
-     * @c ValidLoan.
+     * For a closed-ended vault, a loan may only be originated while the vault is in the Investment
+     * phase (strictly past @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults (@c
+     * NoPhase) are unaffected. The complementary maturity bound (final payment strictly precedes @c
+     * RedemptionDate) is enforced by @c ValidLoan.
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;

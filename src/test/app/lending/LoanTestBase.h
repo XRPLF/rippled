@@ -94,26 +94,22 @@ protected:
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
-        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets
-        // sfSubscriptionDate / sfRedemptionDate from env.now() using the
-        // offsets below and advances the ledger clock past SubscriptionDate
-        // so the vault is in the Investment phase by the time the broker is
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets sfSubscriptionDate /
+        // sfRedemptionDate from env.now() using the offsets below and advances the ledger clock
+        // past SubscriptionDate so the vault is in the Investment phase by the time the broker is
         // set up. Requires featureLendingProtocolV1_1.
         VaultKind vaultKind = VaultKind::OpenEnded;
-        // Seconds past env.now() at which SubscriptionDate lands. Must be
-        // strictly positive (VaultCreate::preclaim rejects
-        // SubscriptionDate <= parentCloseTime).
+        // Seconds past env.now() at which SubscriptionDate lands. Must be strictly positive
+        // (VaultCreate::preclaim rejects SubscriptionDate <= parentCloseTime).
         std::uint32_t subscriptionOffset = 60;
-        // Seconds between SubscriptionDate and RedemptionDate. Must be
-        // >= kMinInvestmentPeriod, < kMaxInvestmentPeriod, and generous
-        // enough to fit any loan schedule the test runs (finalPayment must
-        // be strictly before RedemptionDate). Default sized to comfortably
+        // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
+        // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
+        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
         // exceed any schedule realistic tests are likely to configure.
         std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
-        // When true, createVaultAndBroker skips its automatic clock advance
-        // past SubscriptionDate. Useful for tests that need to observe the
-        // vault while it is still in the Subscription phase. Ignored for
-        // open-ended vaults.
+        // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
+        // Useful for tests that need to observe the vault while it is still in the Subscription
+        // phase. Ignored for open-ended vaults.
         bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
@@ -152,7 +148,7 @@ protected:
             Keylet const& vaultKeylet,
             BrokerParameters p,
             std::optional<std::uint32_t> subscriptionDate = std::nullopt,
-            std::optional<std::uint32_t> redemptionDate = std::nullopt))
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
@@ -519,9 +515,8 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        // For closed-ended vaults, advance past SubscriptionDate so subsequent
-        // LoanSet operations run in the Investment phase (unless the caller
-        // explicitly asked to stay in Subscription).
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent LoanSet operations
+        // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
         if (subscriptionDate && !params.skipPhaseAdvance)
         {
             using d = NetClock::duration;
