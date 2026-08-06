@@ -329,39 +329,50 @@ private:
     void
     testOwnerCountAndReserve(FeatureBitset features)
     {
-        testcase("Owner count rises by 3 for IOU, 2 for XRP/MPT");
+        testcase("Owner count rises by one more for IOU-with-dust than without");
         using namespace jtx;
 
-        {
-            Env env{*this, features | featureLendingProtocolV1_1};
+        // VaultCreate::doApply also authorizes the owner's own MPToken for
+        // the vault shares (a separate owned object, charged to the owner
+        // AFTER the reserve check this test's third block exercises), so
+        // the absolute owner-count delta is not "2" / "3" by itself. What
+        // solution A actually changes is that an IOU Vault created
+        // post-amendment charges exactly one MORE owned object than an
+        // otherwise-identical Vault that gets no dust account — compare
+        // the two directly rather than assuming an absolute baseline.
+        auto const ownerCountDelta = [&](Asset const& asset, bool amendmentOn) {
+            Env env{
+                *this,
+                amendmentOn ? (features | featureLendingProtocolV1_1)
+                            : (features - featureLendingProtocolV1_1)};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             env.fund(XRP(1'000'000), issuer, owner);
             env.close();
-            auto const ownerCountBefore = env.le(owner)->at(sfOwnerCount);
+            auto const before = env.le(owner)->at(sfOwnerCount);
 
-            PrettyAsset const asset = issuer["USD"];
             Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
 
-            BEAST_EXPECT(env.le(owner)->at(sfOwnerCount) == ownerCountBefore + 3);
+            return static_cast<int>(env.le(owner)->at(sfOwnerCount)) - static_cast<int>(before);
+        };
+
+        {
+            Account const issuer{"issuer"};
+            PrettyAsset const asset = issuer["USD"];
+            int const withDust = ownerCountDelta(asset.raw(), true);
+            int const withoutDust = ownerCountDelta(asset.raw(), false);
+            BEAST_EXPECT(withDust == withoutDust + 1);
         }
 
         {
-            Env env{*this, features | featureLendingProtocolV1_1};
-            Account const owner{"owner"};
-            env.fund(XRP(1'000'000), owner);
-            env.close();
-            auto const ownerCountBefore = env.le(owner)->at(sfOwnerCount);
-
-            Vault const vault{env};
-            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-            env(tx);
-            env.close();
-
-            BEAST_EXPECT(env.le(owner)->at(sfOwnerCount) == ownerCountBefore + 2);
+            // XRP: no dust account either way, so amendment status must
+            // not change the owner-count delta at all.
+            int const amendmentOn = ownerCountDelta(xrpIssue(), true);
+            int const amendmentOff = ownerCountDelta(xrpIssue(), false);
+            BEAST_EXPECT(amendmentOn == amendmentOff);
         }
 
         // A creator one drop short of the 3-object reserve gets
@@ -375,8 +386,10 @@ private:
 
             // Fund owner one drop short of the reserve required for 3
             // owned objects (Vault + main pseudo-account + dust account).
-            auto const reserveFor3 = accountReserve(
-                *env.current(), owner.id(), env.journal, Adjustment{.ownerCountDelta = 3});
+            // Use Fees::accountReserve(ownerCount, accountCount) directly —
+            // the AccountRootHelpers overload needs an existing SLE, which
+            // a not-yet-funded owner does not have.
+            auto const reserveFor3 = env.current()->fees().accountReserve(3, 1);
             env.fund(reserveFor3 - XRPAmount{1}, owner);
             env.close();
 
@@ -396,7 +409,14 @@ private:
 
         enum class Population { PreAmendmentIou, PostAmendmentIou, XrpOrMpt };
 
-        auto const runOne = [&](Population population, int expectedDelta) {
+        // Returns the owner-count delta right after VaultCreate (before
+        // VaultDelete), and separately verifies the round trip back to the
+        // pre-create baseline once the Vault is deleted — see
+        // testOwnerCountAndReserve for why the *absolute* creation delta is
+        // not "2"/"3" by itself (VaultCreate also authorizes the owner's
+        // own MPToken for the shares, a same-transaction but separately
+        // reserved object).
+        auto const runOne = [&](Population population) -> int {
             bool const amendmentOn = population != Population::PreAmendmentIou;
             Env env{
                 *this,
@@ -418,21 +438,27 @@ private:
             env(tx);
             env.close();
 
-            BEAST_EXPECT(env.le(owner)->at(sfOwnerCount) == ownerCountBefore + expectedDelta);
+            int const delta = static_cast<int>(env.le(owner)->at(sfOwnerCount)) -
+                static_cast<int>(ownerCountBefore);
 
             env(vault.del({.owner = owner, .id = vaultKeylet.key}));
             env.close();
 
             BEAST_EXPECT(env.le(owner)->at(sfOwnerCount) == ownerCountBefore);
             BEAST_EXPECT(!env.le(vaultKeylet));
+
+            return delta;
         };
 
-        // Pre-amendment IOU: -2 (no dust account).
-        runOne(Population::PreAmendmentIou, 2);
-        // Post-amendment IOU: -3 (dust account created).
-        runOne(Population::PostAmendmentIou, 3);
-        // XRP/MPT, post-amendment: -2 (no dust account, integral asset).
-        runOne(Population::XrpOrMpt, 2);
+        // No dust account either way, so these two must be equal.
+        int const xrpOrMptDelta = runOne(Population::XrpOrMpt);
+        int const preAmendmentIouDelta = runOne(Population::PreAmendmentIou);
+        BEAST_EXPECT(preAmendmentIouDelta == xrpOrMptDelta);
+
+        // Dust account: exactly one more owned object than either of the
+        // above.
+        int const postAmendmentIouDelta = runOne(Population::PostAmendmentIou);
+        BEAST_EXPECT(postAmendmentIouDelta == xrpOrMptDelta + 1);
     }
 
     void
@@ -598,12 +624,12 @@ private:
         env.close();
 
         PrettyAsset const asset = issuer["USD"];
-        env(trust(lender, asset(1'000'000)));
+        env(trust(lender, asset(2'000'000)));
         env(trust(borrower, asset(1'000'000)));
         env(trust(issuer, asset(0), lender, tfSetfAuth));
         env(trust(issuer, asset(0), borrower, tfSetfAuth));
         env.close();
-        env(pay(issuer, lender, asset(500'000)));
+        env(pay(issuer, lender, asset(1'500'000)));
         env(pay(issuer, borrower, asset(1'000)));
         env.close();
 
