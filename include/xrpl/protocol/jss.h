@@ -482,6 +482,9 @@ JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
 JSS(proof);                       // in: BookOffers
+JSS(proposal);                    // out: TransactionProposal
+JSS(proposal_id);                 // in/out: TransactionProposal
+JSS(proposal_status);             // out: TransactionProposal
 JSS(propose_seq);                 // out: LedgerPropose
 JSS(proposers);                   // out: NetworkOPs, LedgerConsensus
 JSS(protocol);                    // out: NetworkOPs, PeerImp
@@ -502,6 +505,7 @@ JSS(queue);                       // in: AccountInfo
 JSS(queue_data);                  // out: AccountInfo
 JSS(queued);                      // out: SubmitTransaction
 JSS(queued_duration_us);          //
+JSS(quorum);                      // out: TransactionProposal
 JSS(quote_asset);                 // in: get_aggregate_price
 JSS(random);                      // out: Random
 JSS(raw_meta);                    // out: AcceptedLedgerTx
@@ -524,7 +528,7 @@ JSS(result);                      // RPC
 JSS(ripple_lines);                // out: NetworkOPs
 JSS(ripple_state);                // in: LedgerEntr
 JSS(ripplerpc);                   // XRPL RPC version
-JSS(role);                        // out: Ping.cpp
+JSS(role);                        // out: Ping.cpp, TransactionProposal
 JSS(rpc);                         //
 JSS(rt_accounts);                 // in: Subscribe, Unsubscribe
 JSS(running_duration_us);         //
@@ -552,8 +556,10 @@ JSS(shares);                      // out: VaultInfo
 JSS(signature);                   // out: NetworkOPs, ChannelAuthorize
 JSS(signature_target);            // in: TransactionSign
 JSS(signature_verified);          // out: ChannelVerify
+JSS(signed_weight);               // out: TransactionProposal
 JSS(signing_key);                 // out: NetworkOPs
 JSS(signing_keys);                // out: ValidatorList
+JSS(signing_status);              // out: TransactionProposal
 JSS(signing_time);                // out: NetworkOPs
 JSS(signer_lists);                // in/out: AccountInfo
 JSS(size);                        // out: get_aggregate_price

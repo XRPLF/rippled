@@ -129,6 +129,8 @@ doSubscribe(RPC::JsonContext&);
 json::Value
 doTransactionEntry(RPC::JsonContext&);
 json::Value
+doTransactionProposal(RPC::JsonContext&);
+json::Value
 doTxJson(RPC::JsonContext&);
 json::Value
 doTxHistory(RPC::JsonContext&);

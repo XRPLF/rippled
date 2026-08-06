@@ -228,6 +228,25 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+    // Whether sigObject's signature fields currently authorize idAccount on
+    // this view. Public because it answers a pure ledger-state question, so
+    // read-only callers (e.g. the transaction_proposal RPC reporting a
+    // proposal's completeness) share one authorization rule with the
+    // transaction path and the two cannot drift.
+    static NotTEC
+    checkSign(
+        ReadView const& view,
+        ApplyFlags flags,
+        std::optional<uint256 const> const& parentBatchId,
+        AccountID const& idAccount,
+        STObject const& sigObject,
+        beast::Journal const j,
+        // A batch may carry an inner from an account that an earlier inner
+        // creates, so the signer account need not exist yet; when it does not,
+        // only its own master key may authorize it. Normal transactions require
+        // the account to already exist.
+        bool permitUncreatedAccount = false);
+
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -417,20 +436,6 @@ protected:
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
-
-    static NotTEC
-    checkSign(
-        ReadView const& view,
-        ApplyFlags flags,
-        std::optional<uint256 const> const& parentBatchId,
-        AccountID const& idAccount,
-        STObject const& sigObject,
-        beast::Journal const j,
-        // A batch may carry an inner from an account that an earlier inner
-        // creates, so the signer account need not exist yet; when it does not,
-        // only its own master key may authorize it. Normal transactions require
-        // the account to already exist.
-        bool permitUncreatedAccount = false);
 
     // Base class always returns true
     static bool

@@ -2,6 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -9,6 +11,8 @@
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace xrpl::proposal {
 
@@ -98,5 +102,72 @@ proposalOwnerCount(STObject const& proposedTx)
  */
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
+
+/**
+ * The role in which an account's authorization is required on a proposal.
+ */
+enum class SignerRole : std::uint8_t {
+    account,            ///< the proposed transaction's initiator (Account, or Delegate if present)
+    batchParticipant,   ///< an inner transaction's initiator in a proposed Batch
+    counterparty,       ///< a Counterparty of the proposed transaction or of an inner
+    sponsor,            ///< a co-signing Sponsor of the proposed transaction or of an inner
+};
+
+/**
+ * One required authorization on a proposal and whether the signatures
+ * collected so far currently satisfy it.
+ */
+struct SignerStatus
+{
+    AccountID account;
+    SignerRole role;
+    /// Whether the collected signature material authorizes `account` on the
+    /// evaluated ledger (same rule the transaction path applies at preclaim).
+    bool satisfied = false;
+    /// Multi-signature progress: the weight the collected Signers entries
+    /// carry against `account`'s live SignerList. Present only when the
+    /// collected signature object holds a Signers array.
+    std::optional<std::uint32_t> signedWeight;
+    /// `account`'s live SignerQuorum. Present only when the account has a
+    /// SignerList on the evaluated ledger.
+    std::optional<std::uint32_t> quorum;
+};
+
+/**
+ * Completeness state of a proposal (XLS-0103 §8.1.2). Terminal-first: an
+ * expired proposal reports expired even when fully signed.
+ */
+enum class ProposalState : std::uint8_t { pending, complete, expired };
+
+/**
+ * A proposal's completeness state plus the per-account detail it derives
+ * from.
+ */
+struct ProposalStatus
+{
+    ProposalState state = ProposalState::pending;
+    std::vector<SignerStatus> signers;
+};
+
+/**
+ * Evaluate how far a TransactionProposal's collected signatures are from a
+ * submittable transaction on the given ledger.
+ *
+ * Signatures stored on the proposal were cryptographically verified when they
+ * were appended, so this only re-checks their authorization against live
+ * ledger state (SignerList membership and quorum, regular-key rotation,
+ * disabled master keys), mirroring what Transactor::checkSign would decide at
+ * submission time. For a proposed Batch, each inner initiator, counterparty,
+ * and co-signing sponsor other than the outer account is a separate required
+ * authorization collected through BatchSigners, mirroring
+ * Batch::preflightSigValidated. A LoanSet without an explicit Counterparty
+ * requires the owner of its LoanBroker instead, mirroring LoanSet::checkSign.
+ *
+ * @param view The ledger to evaluate against.
+ * @param sleProposal A TransactionProposal ledger entry of that ledger.
+ * @param j Journal for logging.
+ */
+ProposalStatus
+evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j);
 
 }  // namespace xrpl::proposal
