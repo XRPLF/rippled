@@ -296,7 +296,7 @@ struct AccountingDeltas
 
 // Whole-life (pre-LendingProtocolV1_1) recognition model: interest is
 // recognized into AssetsTotal/DebtTotal up front, at origination.
-namespace Accrual {
+namespace accrual {
 
 // LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
 AccountingDeltas
@@ -318,11 +318,11 @@ loanVaultExposure(SLE::const_ref loanSle);
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
 
-}  // namespace Accrual
+}  // namespace accrual
 
 // Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
 // are principal-only, interest is recognized only as it's actually paid.
-namespace CashBasis {
+namespace cash_basis {
 
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested);
@@ -333,11 +333,11 @@ loanVaultExposure(SLE::const_ref loanSle);
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
 
-}  // namespace CashBasis
+}  // namespace cash_basis
 
-// Public dispatchers: pick CashBasis:: if featureLendingProtocolV1_1 is
+// Public dispatchers: pick cash_basis:: if featureLendingProtocolV1_1 is
 // enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
-// VaultVersion::CashBasis, else Accrual::. These are the only entry points
+// VaultVersion::CashBasis, else accrual::. These are the only entry points
 // transactors call.
 AccountingDeltas
 loanOriginationDeltas(
