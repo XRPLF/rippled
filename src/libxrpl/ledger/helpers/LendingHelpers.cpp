@@ -131,7 +131,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
 
-namespace Accrual {
+namespace accrual {
 
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested, Number const& interestDue)
@@ -169,9 +169,9 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
         .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
 }
 
-}  // namespace Accrual
+}  // namespace accrual
 
-namespace CashBasis {
+namespace cash_basis {
 
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested)
@@ -196,7 +196,7 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
     return {.assetsTotalDelta = parts.interestPaid, .debtTotalDelta = parts.principalPaid};
 }
 
-}  // namespace CashBasis
+}  // namespace cash_basis
 
 namespace {
 
@@ -219,8 +219,8 @@ loanOriginationDeltas(
     Number const& interestDue)
 {
     return cashBasisEnabled(vaultSle)
-        ? CashBasis::loanOriginationDeltas(principalRequested)
-        : Accrual::loanOriginationDeltas(principalRequested, interestDue);
+        ? cash_basis::loanOriginationDeltas(principalRequested)
+        : accrual::loanOriginationDeltas(principalRequested, interestDue);
 }
 
 bool
@@ -235,21 +235,21 @@ loanOriginationExceedsVaultMaximum(
         return false;
 
     auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
-    return Accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
+    return accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
 }
 
 Number
 loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
 {
-    return cashBasisEnabled(vaultSle) ? CashBasis::loanVaultExposure(loanSle)
-                                      : Accrual::loanVaultExposure(loanSle);
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
+                                      : accrual::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
 loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
 {
-    return cashBasisEnabled(vaultSle) ? CashBasis::loanPaymentDeltas(parts)
-                                      : Accrual::loanPaymentDeltas(parts);
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
+                                      : accrual::loanPaymentDeltas(parts);
 }
 
 namespace detail {
@@ -1617,7 +1617,7 @@ makeRegularPayment(
     LoanPaymentType const paymentType,
     beast::Journal j)
 {
-    using namespace Lending;
+    using namespace lending;
 
     XRPL_ASSERT_PARTS(
         paymentType == LoanPaymentType::Regular || paymentType == LoanPaymentType::Overpayment,

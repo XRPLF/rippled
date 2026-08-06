@@ -15,7 +15,7 @@
 #include <optional>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct KeyStrings
 {
@@ -800,4 +800,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(WalletPropose, rpc, xrpl);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc
