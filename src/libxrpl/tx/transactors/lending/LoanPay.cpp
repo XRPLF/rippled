@@ -73,7 +73,7 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 

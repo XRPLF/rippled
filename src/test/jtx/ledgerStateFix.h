@@ -8,7 +8,7 @@
 /**
  * LedgerStateFix operations.
  */
-namespace xrpl::test::jtx::ledgerStateFix {
+namespace xrpl::test::jtx::ledger_state_fix {
 
 /**
  * Repair the links in an NFToken directory.
@@ -22,4 +22,4 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 json::Value
 bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir);
 
-}  // namespace xrpl::test::jtx::ledgerStateFix
+}  // namespace xrpl::test::jtx::ledger_state_fix

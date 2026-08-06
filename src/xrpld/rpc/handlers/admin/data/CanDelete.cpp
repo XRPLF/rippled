@@ -19,10 +19,10 @@ namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 json::Value
-doCanDelete(RPC::JsonContext& context)
+doCanDelete(rpc::JsonContext& context)
 {
     if (!context.app.getSHAMapStore().advisoryDelete())
-        return RPC::makeError(RpcNotEnabled);
+        return rpc::makeError(RpcNotEnabled);
 
     json::Value ret(json::ValueType::Object);
 
@@ -63,20 +63,20 @@ doCanDelete(RPC::JsonContext& context)
             {
                 canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
                 if (canDeleteSeq == 0u)
-                    return RPC::makeError(RpcNotReady);
+                    return rpc::makeError(RpcNotReady);
             }
             else if (uint256 lh; lh.parseHex(canDeleteStr))
             {
                 auto ledger = context.ledgerMaster.getLedgerByHash(lh);
 
                 if (!ledger)
-                    return RPC::makeError(RpcLgrNotFound, "ledgerNotFound");
+                    return rpc::makeError(RpcLgrNotFound, "ledgerNotFound");
 
                 canDeleteSeq = ledger->header().seq;
             }
             else
             {
-                return RPC::makeError(RpcInvalidParams);
+                return rpc::makeError(RpcInvalidParams);
             }
         }
         else
