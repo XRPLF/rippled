@@ -1540,10 +1540,10 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
 [[nodiscard]] TER
 Transactor::checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check)
 {
-    if (check == CheckTxInvariants::No)
-        return xrpl::checkInvariants(ctx_, result, fee);
+    if (check == CheckTxInvariants::Yes)
+        return xrpl::checkInvariants(ctx_, result, fee, *this);
 
-    return xrpl::checkInvariants(ctx_, result, fee, *this);
+    return xrpl::checkInvariants(ctx_, result, fee);
 }
 
 //------------------------------------------------------------------------------

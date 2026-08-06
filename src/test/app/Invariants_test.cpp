@@ -5925,45 +5925,69 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "txCheck exception";
         using namespace jtx;
 
-        // A TxInvariantCheck that always throws from finalize, so we can
+        // A TxInvariantCheck that throws from the requested hook, so we can
         // exercise checkInvariantsHelper's catch block via the
         // transaction-specific layer (as opposed to the protocol layer,
         // which testObjectHasPseudoAccount's last case already covers via a
         // real Transactor's finalizeInvariants).
+        enum class ThrowFrom { VisitEntry, Finalize };
+
         struct ThrowingTxInvariantCheck : TxInvariantCheck
         {
+            ThrowFrom const throwFrom;
+
+            explicit ThrowingTxInvariantCheck(ThrowFrom throwFrom) : throwFrom(throwFrom)
+            {
+            }
+
             void
             visitEntry(bool, SLE::const_ref, SLE::const_ref) override
             {
+                if (throwFrom == ThrowFrom::VisitEntry)
+                    throw std::runtime_error("test-injected visitEntry exception");
             }
 
             [[nodiscard]] bool
             finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
             {
-                throw std::runtime_error("test-injected txCheck exception");
+                if (throwFrom == ThrowFrom::Finalize)
+                    throw std::runtime_error("test-injected finalize exception");
+                return true;
             }
         };
 
-        Env env{*this};
-        Account const alice{"alice"};
-        env.fund(XRP(1000), alice);
-        env.close();
-
-        OpenView ov{*env.current()};
-        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-        test::StreamSink sink{beast::Severity::Warning};
-        beast::Journal const jlog{sink};
-        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
-        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
-
-        ThrowingTxInvariantCheck throwing;
-        TER terActual = tesSUCCESS;
-        for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+        for (auto const throwFrom : {ThrowFrom::VisitEntry, ThrowFrom::Finalize})
         {
-            terActual = checkInvariants(ac, terActual, XRPAmount{}, throwing);
-            BEAST_EXPECT(terExpect == terActual);
-            BEAST_EXPECT(sink.messages().str().contains(
-                "Transaction caused an exception during invariant checks"));
+            Env env{*this};
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            OpenView ov{*env.current()};
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // visitEntry only runs for entries the transaction touched, so
+            // make a modification for the traversal to report.
+            auto sle = ac.view().peek(keylet::account(alice.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+            sle->at(sfSequence) = sle->at(sfSequence) + 1;
+            ac.view().update(sle);
+
+            ThrowingTxInvariantCheck throwing{throwFrom};
+            TER terActual = tesSUCCESS;
+            for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+            {
+                terActual = checkInvariants(ac, terActual, XRPAmount{}, throwing);
+                BEAST_EXPECT(terExpect == terActual);
+                BEAST_EXPECT(sink.messages().str().contains(
+                    "Transaction caused an exception during invariant checks"));
+            }
         }
     }
 
