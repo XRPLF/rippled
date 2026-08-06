@@ -4,6 +4,7 @@
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 

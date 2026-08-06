@@ -120,7 +120,7 @@ SHAMapStoreImp::SHAMapStoreImp(
                 Keys::kCacheMb, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists(Keys::kFilterBits))
+        if (!section.exists(Keys::kFilterBits) && config.cacheMemoryBudget() != 0)
             section.set(Keys::kFilterBits, "10");
     }
 

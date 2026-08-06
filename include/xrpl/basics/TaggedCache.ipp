@@ -232,9 +232,7 @@ template <
     class Mutex>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    evictForHardCap(
-        typename cache_type::map_type& partition,
-        typename cache_type::map_type::iterator const& keep)
+    evictForHardCap(cache_type::map_type& partition, cache_type::map_type::iterator const& keep)
 {
     // Caller holds mutex_. Only value caches carry strong/weak entries; key
     // caches never enable the hard cap, so this is a no-op for them.
@@ -295,9 +293,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 return;
 
             if (oldest->second.ptr.useCount() == 1)
-                partition.erase(oldest);  // sole owner: release entirely
+            {
+                // Sole owner: release entirely.
+                partition.erase(oldest);
+            }
             else
-                oldest->second.ptr.convertToWeak();  // others hold it: keep weak
+            {
+                // Others hold it: keep it weakly tracked.
+                oldest->second.ptr.convertToWeak();
+            }
             --cacheCount_;
 
             // First eviction marks saturation onset; then a heartbeat every

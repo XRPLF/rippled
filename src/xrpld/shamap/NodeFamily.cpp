@@ -47,7 +47,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
                   : 0))
 {
     auto const budget = app.config().cacheMemoryBudget();
-    JLOG(j_.warn()) << "TreeNodeCache sizing: target="
+    JLOG(j_.info()) << "TreeNodeCache sizing: target="
                     << app.config().getValueFor(SizedItem::TreeCacheSize) << " entries, budget "
                     << (budget >> 30) << " GB" << (budget == 0 ? " (enforcement disabled)" : "");
 }

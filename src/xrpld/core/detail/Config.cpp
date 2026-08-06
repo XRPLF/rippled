@@ -98,7 +98,7 @@ getOwnCgroupPath(std::string_view controller)
             if (first == 1 && line[0] == '0' && controllers.empty())
                 return line.substr(second + 1);
         }
-        else if (controllers.find(controller) != std::string_view::npos)
+        else if (controllers.contains(controller))
         {
             return line.substr(second + 1);
         }
@@ -1343,6 +1343,8 @@ Config::getValueFor(SizedItem item) const
         case SizedItem::BurstSize:
             return std::clamp(gb, 4, 48);
         case SizedItem::AccountIdCacheSize:
+            // Fixed regardless of budget: ~22 MB at 72 bytes per slot, and
+            // the value stays prime for hash distribution.
             return 300007;
     }
 
