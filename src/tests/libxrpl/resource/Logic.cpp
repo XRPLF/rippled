@@ -17,11 +17,14 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <ranges>
 #include <string>
+#include <utility>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 class ResourceManagerTest : public ::testing::Test
 {
@@ -54,9 +57,10 @@ protected:
 
     //--------------------------------------------------------------------------
 
-    static void
-    populateGossip(Gossip& gossip)
+    static Gossip
+    makeGossip()
     {
+        Gossip gossip;
         std::uint8_t const v(10 + randInt(9));
         std::uint8_t const n(10 + randInt(9));
         gossip.items.reserve(n);
@@ -64,15 +68,16 @@ protected:
         {
             Gossip::Item item;
             item.balance = 100 + randInt(499);
-            beast::IP::AddressV4::bytes_type const d = {{
+            beast::ip::AddressV4::bytes_type const d = {{
                 192,
                 0,
                 2,
                 static_cast<std::uint8_t>(v + i),
             }};
-            item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
-            gossip.items.push_back(item);
+            item.address = beast::ip::Endpoint{beast::ip::AddressV4{d}};
+            gossip.items.push_back(std::move(item));
         }
+        return gossip;
     }
 };
 
@@ -81,14 +86,14 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
     TestLogic logic{j_};
 
     Charge const fee{kDropThreshold + 1};
-    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
+    beast::ip::Endpoint const addr{beast::ip::Endpoint::fromString("192.0.2.2")};
 
     {
         Consumer c{logic.newInboundEndpoint(addr)};
 
         // Create load until we get a warning
-        int n = 10000;
-        bool warned = false;
+        auto n = 10000;
+        auto warned = false;
 
         while (--n >= 0)
         {
@@ -97,7 +102,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
                 warned = true;
                 break;
             }
-            ++logic.clock();
+            logic.advance();
         }
 
         ASSERT_TRUE(warned) << "Loop count exceeded without warning";
@@ -113,7 +118,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
                 EXPECT_TRUE(c.disconnect(j_));
                 break;
             }
-            ++logic.clock();
+            logic.advance();
         }
 
         ASSERT_TRUE(dropped) << "Loop count exceeded without dropping";
@@ -135,7 +140,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
         auto n = kSecondsUntilExpiration + 1s;
         while (--n > 0s)
         {
-            ++logic.clock();
+            logic.advance();
             logic.periodicActivity();
             Consumer const c{logic.newInboundEndpoint(addr)};
             if (c.disposition() != Disposition::Drop)
@@ -153,7 +158,7 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
     TestLogic logic{j_};
 
     Charge const fee{kDropThreshold + 1};
-    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
+    beast::ip::Endpoint const addr{beast::ip::Endpoint::fromString("192.0.2.2")};
     Consumer c{logic.newUnlimitedEndpoint(addr)};
 
     // Create load until we get a warning
@@ -167,7 +172,7 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
             warned = true;
             break;
         }
-        ++logic.clock();
+        logic.advance();
     }
 
     EXPECT_FALSE(warned) << "Should loop forever with no warning";
@@ -175,15 +180,17 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
 
 TEST_F(ResourceManagerTest, charges)
 {
+    static constexpr auto kDecayTicks = 128uz;
+
     TestLogic logic{j_};
 
     {
-        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.1")};
+        beast::ip::Endpoint const address{beast::ip::Endpoint::fromString("192.0.2.1")};
         Consumer c{logic.newInboundEndpoint(address)};
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
         c.charge(fee);
-        for (int i = 0; i < 128; ++i)
+        for (auto tick = 0uz; tick < kDecayTicks; ++tick)
         {
             JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
                             << ", Balance = " << c.balance();
@@ -192,11 +199,11 @@ TEST_F(ResourceManagerTest, charges)
     }
 
     {
-        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.2")};
+        beast::ip::Endpoint const address{beast::ip::Endpoint::fromString("192.0.2.2")};
         Consumer c{logic.newInboundEndpoint(address)};
         Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
-        for (int i = 0; i < 128; ++i)
+        for (auto tick = 0uz; tick < kDecayTicks; ++tick)
         {
             c.charge(fee);
             JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
@@ -210,13 +217,10 @@ TEST_F(ResourceManagerTest, imports)
 {
     TestLogic logic{j_};
 
-    Gossip g[5];
-
-    for (auto& i : g)
-        populateGossip(i);
-
-    for (int i = 0; i < 5; ++i)
-        logic.importConsumers(std::to_string(i), g[i]);
+    static constexpr auto kGossipSources = 5uz;
+    std::ranges::for_each(std::views::iota(0uz, kGossipSources), [&](auto const i) {
+        logic.importConsumers(std::to_string(i), makeGossip());
+    });
 }
 
 TEST_F(ResourceManagerTest, import)
@@ -226,16 +230,16 @@ TEST_F(ResourceManagerTest, import)
     Gossip g;
     Gossip::Item item;
     item.balance = 100;
-    beast::IP::AddressV4::bytes_type const d = {{
+    beast::ip::AddressV4::bytes_type const d = {{
         192,
         0,
         2,
         1,
     }};
-    item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
-    g.items.push_back(item);
+    item.address = beast::ip::Endpoint{beast::ip::AddressV4{d}};
+    g.items.push_back(std::move(item));
 
     logic.importConsumers("g", g);
 }
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

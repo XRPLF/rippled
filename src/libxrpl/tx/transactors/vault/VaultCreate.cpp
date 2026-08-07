@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -209,7 +210,6 @@ VaultCreate::doApply()
             .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
             .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
@@ -241,6 +241,8 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
+    if (view().rules().enabled(featureLendingProtocolV1_1))
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner

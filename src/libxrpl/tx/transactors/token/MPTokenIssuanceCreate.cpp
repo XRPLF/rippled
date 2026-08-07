@@ -35,18 +35,24 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
+    if (ctx.tx.isFieldPresent(sfImmutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
     if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
-    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
-    auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    return !mutableFlags ||
-        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
-        ctx.rules.enabled(featureConfidentialTransfer);
+    // can not set tifMPTCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const immutableFlags = ctx.tx[~sfImmutableFlags];
+    // NOLINTBEGIN(readability-simplify-boolean-expr)
+    if (immutableFlags && ((*immutableFlags & tifMPTCanHoldConfidentialBalance) != 0u) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+    {
+        return false;
+    }
+    // NOLINTEND(readability-simplify-boolean-expr)
+
+    return true;
 }
 
 std::uint32_t
@@ -64,10 +70,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
         return temMALFORMED;
 
-    // If the mutable flags field is included, at least one flag must be
-    // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
-        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
+    // If the immutable flags field is included, at least one flag must be
+    // specified, and undefined flags must not be specified.
+    if (auto const immutableFlags = ctx.tx[~sfImmutableFlags]; immutableFlags &&
+        ((*immutableFlags == 0u) || ((*immutableFlags & tifMPTokenIssuanceImmutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -170,8 +176,8 @@ MPTokenIssuanceCreate::create(
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
-        if (args.mutableFlags)
-            (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+        if (args.immutableFlags)
+            (*mptIssuance)[sfImmutableFlags] = *args.immutableFlags;
 
         if (args.referenceHolding)
         {
@@ -217,7 +223,7 @@ MPTokenIssuanceCreate::doApply()
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = tx[~sfMutableFlags],
+            .immutableFlags = tx[~sfImmutableFlags],
         });
     return result ? tesSUCCESS : result.error();
 }
