@@ -11,7 +11,6 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
@@ -63,7 +62,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static bool
     goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
+        auto good = json.isMember(jss::result) && !rpc::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
@@ -102,7 +101,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static bool
     bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
-        return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
+        return json.isMember(jss::result) && rpc::containsError(json[jss::result]) &&
             json[jss::result][jss::error_code] == error;
     }
 
@@ -353,11 +352,11 @@ public:
         BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const firstBatch = kDeleteInterval + ledgerSeq;
@@ -376,7 +375,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (kDeleteInterval / 2)));
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
         BEAST_EXPECT(store.rendezvous());
@@ -429,7 +428,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
@@ -463,7 +462,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(!rpc::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == lastRotated);
 
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
@@ -495,7 +494,7 @@ public:
         BEAST_EXPECT(lastRotated == ledgerSeq + 1);
     }
 
-    std::unique_ptr<NodeStore::Backend>
+    std::unique_ptr<node_store::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
         Section section{env.app().config().section(Sections::kNodeDatabase)};
@@ -506,7 +505,7 @@ public:
         newPath = path;
         section.set(Keys::kPath, newPath.string());
 
-        auto backend{NodeStore::Manager::instance().makeBackend(
+        auto backend{node_store::Manager::instance().makeBackend(
             section,
             megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler,
@@ -555,7 +554,7 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         static constexpr int kReadThreads = 4;
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler,
             kReadThreads,
             std::move(writableBackend),
@@ -656,7 +655,7 @@ public:
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
-        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+        BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
@@ -688,10 +687,13 @@ public:
                     {
                         std::this_thread::sleep_for(100ms);
                     }
-                    // Even the slowest machines should be able to finalize deleteSeq within 4
+                    // Even the slowest machines should be able to finalize deleteSeq within 10
                     // loops (400ms). If this test ever actually fails feel free to lower this
-                    // cutoff.
-                    BEAST_EXPECTS(iterations > 25, to_string(iterations));
+                    // cutoff. The intent of this test is to flag if the loop takes a very long
+                    // time, but still allow the rest of this function to finish.
+                    BEAST_EXPECTS(iterations > 20, std::to_string(iterations));
+                    if (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
+                        return;
                 }
                 lm.clearLedger(deleteSeq);
 

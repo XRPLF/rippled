@@ -44,7 +44,7 @@ public:
     [[nodiscard]] virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const = 0;
 
-    virtual std::unique_ptr<NodeStore::Database>
+    virtual std::unique_ptr<node_store::Database>
     makeNodeStore(int readThreads) = 0;
 
     /**
@@ -102,5 +102,5 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl

@@ -17,9 +17,11 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -95,7 +97,7 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 SHAMapStoreImp::SHAMapStoreImp(
     Application& app,
-    NodeStore::Scheduler& scheduler,
+    node_store::Scheduler& scheduler,
     beast::Journal journal)
     : app_(app)
     , scheduler_(scheduler)
@@ -166,7 +168,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 }
 
-std::unique_ptr<NodeStore::Database>
+std::unique_ptr<node_store::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
@@ -186,7 +188,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
     }
 
-    std::unique_ptr<NodeStore::Database> db;
+    std::unique_ptr<node_store::Database> db;
 
     if (deleteInterval_ != 0u)
     {
@@ -202,7 +204,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
         // Create NodeStore with two backends to allow online deletion of
         // data
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler_,
             readThreads,
             std::move(writableBackend),
@@ -211,11 +213,11 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
-        db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
+        db.reset(dynamic_cast<node_store::Database*>(dbr.release()));
     }
     else
     {
-        db = NodeStore::Manager::instance().makeDatabase(
+        db = node_store::Manager::instance().makeDatabase(
             megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
@@ -264,8 +266,24 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(
-        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
+    auto obj = dbRotating_->fetchNodeObject(
+        node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
+    if (!obj)
+    {
+        XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
+        // Reachable from the validated state map in memory, but present in
+        // neither backend: its only on-disk copy lived in a backend removed by
+        // an earlier rotation, and it was never rewritten because it is clean
+        // (cowid == 0, so flushDirty skips it). Persist the in-memory body
+        // directly into the writable backend so it survives this rotation
+        // instead of later surfacing as an unresolvable SHAMapMissingNode.
+        auto const hash = node.getHash().asUInt256();
+        Serializer s;
+        node.serializeWithPrefix(s);
+        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
+        JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
+                              << hash << " type=" << static_cast<int>(node.getType());
+    }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == HealthResult::Stopping)
@@ -368,6 +386,23 @@ SHAMapStoreImp::run()
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+
+            // Close the getKeys()->swap exposure window: from here until
+            // rotate() completes, an ordinary read served by the archive is
+            // copied forward into the writable backend, so a node fetched
+            // from the doomed archive cannot be left RAM-only when the
+            // archive is deleted. RAII so the early returns below (and any
+            // exception) also clear the flag.
+            struct RotationExposureGuard
+            {
+                node_store::DatabaseRotating& db;
+                ~RotationExposureGuard()
+                {
+                    db.setRotationInFlight(false);
+                }
+            };
+            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
+            dbRotating_->setRotationInFlight(true);
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
@@ -510,7 +545,7 @@ SHAMapStoreImp::dbPaths()
         boost::filesystem::remove_all(p);
 }
 
-std::unique_ptr<NodeStore::Backend>
+std::unique_ptr<node_store::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
     Section section{app_.config().section(Sections::kNodeDatabase)};
@@ -529,7 +564,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     section.set(Keys::kPath, newPath.string());
 
-    auto backend{NodeStore::Manager::instance().makeBackend(
+    auto backend{node_store::Manager::instance().makeBackend(
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
@@ -712,8 +747,8 @@ SHAMapStoreImp::healthWait()
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(waitTime);
 
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
         lastLedger = index;
+        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
@@ -746,7 +781,7 @@ SHAMapStoreImp::minimumOnline() const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
+makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal)
 {
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }

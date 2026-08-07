@@ -1,4 +1,4 @@
-name: Build packaging Docker images
+name: Build `packaging` Docker images
 
 on:
   push:
@@ -26,7 +26,7 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push packaging-${{ matrix.distro.name }}
+    name: Build and push `packaging-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
@@ -38,7 +38,7 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@ee03d31bcc4501d7599dc1b1ecd7a34af582ad1c
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@9e7e4e80af9e684c116b38369add8eea64451f32
     with:
       image_name: xrpld/packaging-${{ matrix.distro.name }}
       dockerfile: package/Dockerfile
