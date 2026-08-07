@@ -253,96 +253,6 @@
       "id": 6
     },
     {
-      "title": "Pathfinding Fast Duration",
-      "description": "###### What this is:\n*The 95th-percentile time of the fast pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of fast pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; fast mode trades accuracy for speed.*\n\n###### Healthy range:\n*Typically a few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A rising trend, indicating heavy pathfinding demand or an expensive order book.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n- **Order book** *(network-wide)* \u2014 the ledger's list of standing offers to trade a currency pair on the decentralized exchange.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Order book](https://xrpl.org/docs/concepts/tokens/decentralized-exchange) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 22
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Fast Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 7
-    },
-    {
-      "title": "Pathfinding Full Duration",
-      "description": "###### What this is:\n*The 95th-percentile time of the full, exhaustive pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of full pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; full mode is much more expensive than fast mode.*\n\n###### Healthy range:\n*Tens to hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained high durations, consistent with pathfinding-heavy clients straining the node.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 22
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Full Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 8
-    },
-    {
       "title": "Resource Warnings Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How often the resource manager warns a peer or client for excessive usage, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-warning events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.1/sec, red above 1/sec.*\n\n###### Healthy range:\n*Near zero in normal operation.*\n\n###### Watch for:\n*A rising rate, consistent with aggressive clients that may need throttling.*\n\n###### Keywords:\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-drops-warnings)",
       "type": "stat",
@@ -350,7 +260,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -394,7 +304,7 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
-      "id": 9
+      "id": 7
     },
     {
       "title": "Resource Drops Rate [$xrpl_network_type]",
@@ -404,7 +314,7 @@
         "h": 4,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -448,6 +358,96 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
+      "id": 8
+    },
+    {
+      "title": "Pathfinding Fast Duration",
+      "description": "###### What this is:\n*The 95th-percentile time of the fast pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of fast pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; fast mode trades accuracy for speed.*\n\n###### Healthy range:\n*Typically a few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A rising trend, indicating heavy pathfinding demand or an expensive order book.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n- **Order book** *(network-wide)* \u2014 the ledger's list of standing offers to trade a currency pair on the decentralized exchange.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Order book](https://xrpl.org/docs/concepts/tokens/decentralized-exchange) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Fast Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 9
+    },
+    {
+      "title": "Pathfinding Full Duration",
+      "description": "###### What this is:\n*The 95th-percentile time of the full, exhaustive pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of full pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; full mode is much more expensive than fast mode.*\n\n###### Healthy range:\n*Tens to hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained high durations, consistent with pathfinding-heavy clients straining the node.*\n\n###### Keywords:\n- **Pathfinding (fast / full)** *(per node)* \u2014 searching for payment paths through intermediaries; fast mode trades accuracy for speed, full is exhaustive.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`\n\n###### References:\n[Pathfinding (fast / full)](https://xrpl.org/docs/concepts/tokens/fungible-tokens/paths) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#pathfinding-fast-full)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Full Pathfind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
       "id": 10
     },
     {

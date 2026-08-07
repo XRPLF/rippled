@@ -52,96 +52,6 @@
       "panels": []
     },
     {
-      "title": "RPC Request Rate by Command",
-      "description": "###### What this is:\n*How many times each RPC command runs per second.*\n\n###### How it's computed:\n*Per-second rate of command executions over 5 minutes, grouped by command name and node.*\n\n###### Reading it:\n*Compare bars/lines across commands to see which endpoints drive load.*\n\n###### Healthy range:\n*Workload-dependent; dominated by whichever commands clients call most.*\n\n###### Watch for:\n*A single command spiking far above its norm, consistent with a client hammering one endpoint.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 1
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(sum by (command, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval])), \"series\", \"$1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "reqps",
-          "custom": {
-            "axisLabel": "Requests / Sec",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 2
-    },
-    {
-      "title": "RPC Latency P95 by Command",
-      "description": "###### What this is:\n*The 95th-percentile response time for each RPC command.*\n\n###### How it's computed:\n*95th-percentile of per-command execution durations over 5 minutes, grouped by command and node.*\n\n###### Reading it:\n*Lower is better; watch the slowest commands.*\n\n###### Healthy range:\n*Fast lookups a few ms; heavy queries tens to hundreds of ms. Workload-dependent.*\n\n###### Watch for:\n*A command whose latency climbs steadily, pointing to an expensive or degrading query path.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 1
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, command, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))), \"series\", \"P95 $1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Latency (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 3
-    },
-    {
       "title": "RPC Error Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*The percentage of each command's calls that finished with an error.*\n\n###### How it's computed:\n*Error calls divided by total calls per command over 5 minutes, expressed as a percent.*\n\n###### Reading it:\n*Green under 1%, yellow 1-5%, red above 5%.*\n\n###### Healthy range:\n*Below 1% per command in normal operation.*\n\n###### Watch for:\n*A command sitting red, indicating malformed input, overload, or a broken handler.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "bargauge",
@@ -149,7 +59,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -190,10 +100,176 @@
         },
         "overrides": []
       },
+      "id": 2,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Top Commands by Volume [$xrpl_network_type]",
+      "description": "###### What this is:\n*The ten most-called RPC commands over the recent window.*\n\n###### How it's computed:\n*Total invocation counts per command over the last 5 minutes, ranked and capped at ten.*\n\n###### Reading it:\n*The top bars are the hottest endpoints driving node load.*\n\n###### Healthy range:\n*Workload-dependent; typically led by lightweight status queries.*\n\n###### Watch for:\n*An unexpected command dominating the ranking, consistent with automated abuse.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(topk(10, sum by (command, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval]))), \"series\", \"$1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "id": 3,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "WebSocket Message Rate [$xrpl_network_type]",
+      "description": "###### What this is:\n*How many RPC messages arrive over WebSocket connections per second.*\n\n###### How it's computed:\n*Per-second rate of processed WebSocket RPC messages over 5 minutes, per node.*\n\n###### Reading it:\n*Non-zero only when clients use WebSocket; zero is normal for HTTP-only nodes.*\n\n###### Healthy range:\n*Workload-dependent; zero if no WebSocket clients.*\n\n###### Watch for:\n*A sudden surge from a single source, consistent with a chatty or abusive subscription client.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n- **WebSocket** *(per node)* \u2014 a persistent-connection API transport used by subscription clients; zero on HTTP-only nodes.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler::processSession`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [WebSocket](https://xrpl.org/docs/references/http-websocket-apis/api-conventions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=\"rpc.ws_message\"}[$__rate_interval])), \"series\", \"WS Messages / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: messages/s"
+        },
+        "overrides": []
+      },
       "id": 4,
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2
+    },
+    {
+      "title": "RPC Request Rate by Command",
+      "description": "###### What this is:\n*How many times each RPC command runs per second.*\n\n###### How it's computed:\n*Per-second rate of command executions over 5 minutes, grouped by command name and node.*\n\n###### Reading it:\n*Compare bars/lines across commands to see which endpoints drive load.*\n\n###### Healthy range:\n*Workload-dependent; dominated by whichever commands clients call most.*\n\n###### Watch for:\n*A single command spiking far above its norm, consistent with a client hammering one endpoint.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (command, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval])), \"series\", \"$1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "reqps",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 5
+    },
+    {
+      "title": "RPC Latency P95 by Command",
+      "description": "###### What this is:\n*The 95th-percentile response time for each RPC command.*\n\n###### How it's computed:\n*95th-percentile of per-command execution durations over 5 minutes, grouped by command and node.*\n\n###### Reading it:\n*Lower is better; watch the slowest commands.*\n\n###### Healthy range:\n*Fast lookups a few ms; heavy queries tens to hundreds of ms. Workload-dependent.*\n\n###### Watch for:\n*A command whose latency climbs steadily, pointing to an expensive or degrading query path.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, command, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))), \"series\", \"P95 $1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 6
     },
     {
       "title": "RPC Latency Heatmap",
@@ -203,7 +279,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -232,7 +308,7 @@
           "unit": "ms"
         }
       },
-      "id": 5
+      "id": 7
     },
     {
       "title": "Overall RPC Throughput",
@@ -242,7 +318,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -284,7 +360,7 @@
         },
         "overrides": []
       },
-      "id": 6
+      "id": 8
     },
     {
       "title": "RPC Success vs Error",
@@ -294,7 +370,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -336,83 +412,7 @@
         },
         "overrides": []
       },
-      "id": 7
-    },
-    {
-      "title": "Top Commands by Volume [$xrpl_network_type]",
-      "description": "###### What this is:\n*The ten most-called RPC commands over the recent window.*\n\n###### How it's computed:\n*Total invocation counts per command over the last 5 minutes, ranked and capped at ten.*\n\n###### Reading it:\n*The top bars are the hottest endpoints driving node load.*\n\n###### Healthy range:\n*Workload-dependent; typically led by lightweight status queries.*\n\n###### Watch for:\n*An unexpected command dominating the ranking, consistent with automated abuse.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 29
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(topk(10, sum by (command, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=~\"rpc.command.*\"}[$__rate_interval]))), \"series\", \"$1\", \"command\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "id": 8,
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
-    },
-    {
-      "title": "WebSocket Message Rate [$xrpl_network_type]",
-      "description": "###### What this is:\n*How many RPC messages arrive over WebSocket connections per second.*\n\n###### How it's computed:\n*Per-second rate of processed WebSocket RPC messages over 5 minutes, per node.*\n\n###### Reading it:\n*Non-zero only when clients use WebSocket; zero is normal for HTTP-only nodes.*\n\n###### Healthy range:\n*Workload-dependent; zero if no WebSocket clients.*\n\n###### Watch for:\n*A sudden surge from a single source, consistent with a chatty or abusive subscription client.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n- **WebSocket** *(per node)* \u2014 a persistent-connection API transport used by subscription clients; zero on HTTP-only nodes.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler::processSession`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [WebSocket](https://xrpl.org/docs/references/http-websocket-apis/api-conventions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 29
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", command=~\"$command\", span_name=\"rpc.ws_message\"}[$__rate_interval])), \"series\", \"WS Messages / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: messages/s"
-        },
-        "overrides": []
-      },
-      "id": 9,
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
+      "id": 9
     },
     {
       "title": "RPC Resource Cost by Command",
@@ -530,6 +530,66 @@
       "panels": []
     },
     {
+      "title": "Current RPC Latency (p99 Gauge) [$xrpl_network_type]",
+      "description": "###### What this is:\n*Current tail latency (p99) of RPC handling across all methods, as a live gauge.*\n\n###### How it's computed:\n*p99 of the method-duration histogram over the recent window.*\n\n###### Reading it:\n*A single at-a-glance number for current RPC responsiveness.*\n\n###### Healthy range:\n*Low-millisecond under normal load.*\n\n###### Watch for:\n*Sustained elevation, indicating the node is under query pressure.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordRpcFinished`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
+      "type": "gauge",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "tooltip": {}
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.99, sum by (service_instance_id, le, xrpl_branch, xrpl_node_role) (rate(rpc_method_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$method\"}[5m]))), \"series\", \"p99 Latency\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "\u00b5s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "id": 13,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
       "title": "RPC Call Rate (All Methods)",
       "description": "###### What this is:\n*Overall rate of RPC method calls that started, finished, and errored, across all methods.*\n\n###### How it's computed:\n*Per-second rate of each counter over a 5-minute window, summed per node.*\n\n###### Reading it:\n*Started should closely track finished; errored should be a small fraction.*\n\n###### Healthy range:\n*Workload-dependent; started \u2248 finished, errored near zero.*\n\n###### Watch for:\n*A growing gap between started and finished (calls hanging), or an errored line that rises with load.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordRpcStarted / recordRpcFinished / recordRpcErrored`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "timeseries",
@@ -537,7 +597,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 54
       },
       "options": {
         "tooltip": {
@@ -590,7 +650,7 @@
         },
         "overrides": []
       },
-      "id": 13
+      "id": 14
     },
     {
       "title": "Per-Method Call Rate (Top 10)",
@@ -600,7 +660,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 62
       },
       "options": {
         "tooltip": {
@@ -644,7 +704,7 @@
         },
         "overrides": []
       },
-      "id": 14
+      "id": 15
     },
     {
       "title": "Per-Method Error Rate (Top 10)",
@@ -654,7 +714,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -698,7 +758,7 @@
         },
         "overrides": []
       },
-      "id": 15
+      "id": 16
     },
     {
       "title": "RPC Latency - All Methods",
@@ -708,7 +768,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 74
+        "y": 78
       },
       "options": {
         "tooltip": {
@@ -754,7 +814,7 @@
         },
         "overrides": []
       },
-      "id": 16
+      "id": 17
     },
     {
       "title": "Per-Method Latency (p99, Top 10 Slowest)",
@@ -764,7 +824,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 86
       },
       "options": {
         "tooltip": {
@@ -808,7 +868,7 @@
         },
         "overrides": []
       },
-      "id": 17
+      "id": 18
     },
     {
       "title": "RPC Error Ratio by Method",
@@ -818,7 +878,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 90
+        "y": 94
       },
       "options": {
         "tooltip": {
@@ -880,67 +940,7 @@
         },
         "overrides": []
       },
-      "id": 18
-    },
-    {
-      "title": "Current RPC Latency (p99 Gauge) [$xrpl_network_type]",
-      "description": "###### What this is:\n*Current tail latency (p99) of RPC handling across all methods, as a live gauge.*\n\n###### How it's computed:\n*p99 of the method-duration histogram over the recent window.*\n\n###### Reading it:\n*A single at-a-glance number for current RPC responsiveness.*\n\n###### Healthy range:\n*Low-millisecond under normal load.*\n\n###### Watch for:\n*Sustained elevation, indicating the node is under query pressure.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordRpcFinished`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
-      "type": "gauge",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 98
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "tooltip": {}
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.99, sum by (service_instance_id, le, xrpl_branch, xrpl_node_role) (rate(rpc_method_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$method\"}[5m]))), \"series\", \"p99 Latency\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "\u00b5s",
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 100000
-              },
-              {
-                "color": "red",
-                "value": 1000000
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "id": 19,
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
+      "id": 19
     }
   ],
   "schemaVersion": 39,

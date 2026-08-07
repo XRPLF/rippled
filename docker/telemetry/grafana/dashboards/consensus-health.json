@@ -514,6 +514,133 @@
       "id": 12
     },
     {
+      "title": "Close-Time Resolution Change (per Round) [$xrpl_network_type]",
+      "description": "###### What this is:\n*Whether the close-time rounding granularity moved Coarser, Finer, or stayed Steady versus the previous round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by direction of change.*\n\n###### Reading it:\n*Mostly Steady is healthy; Coarser means widening bins (more disagreement), Finer means tightening.*\n\n###### Healthy range:\n*Predominantly Steady.*\n\n###### Watch for:\n*Frequent Coarser shifts indicate the network is repeatedly failing to agree on close time.*\n\n###### Keywords:\n- **Close-time resolution** *(network event)* \u2014 the granularity (in seconds) that close times are rounded to; widens when validators disagree.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Close-time resolution](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#close-time-resolution)",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 55
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        },
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {}
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "${DS_TEMPO}"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
+          "legendFormat": "{{span.resolution_direction}}",
+          "refId": "A"
+        }
+      ],
+      "id": 13,
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "increased",
+            "renamePattern": "Coarser (more disagreement)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "decreased",
+            "renamePattern": "Finer (better agreement)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "unchanged",
+            "renamePattern": "Steady"
+          }
+        }
+      ],
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Close-Time Proposal Spread (Distinct Positions per Round) [$xrpl_network_type]",
+      "description": "###### What this is:\n*How spread out validators' proposed close times were, as the number of distinct positions per round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by their distinct-position count; each bar is one count value.*\n\n###### Reading it:\n*Weight on '1 distinct position' means everyone agreed; weight on 2 or more means the proposals split.*\n\n###### Healthy range:\n*Most rounds at a single distinct position.*\n\n###### Watch for:\n*A shift toward two or more distinct positions signals growing clock drift or latency across validators.*\n\n###### Keywords:\n- **Distinct positions** *(network event)* \u2014 the number of different close-time values validators proposed in a round; one means full agreement.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Clock drift** *(network event)* \u2014 differences between validators' clocks, which spread their proposed close times.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Distinct positions](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#distinct-positions)",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 55
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        },
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {}
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "${DS_TEMPO}"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | count_over_time() by (span.close_time_vote_bins)",
+          "legendFormat": "{{span.close_time_vote_bins}} Distinct Position(s)",
+          "refId": "A"
+        }
+      ],
+      "id": 14,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
       "title": "Position Update Duration",
       "description": "###### What this is:\n*Time this node spends each round tallying disputes and updating its consensus position, at the 95th percentile.*\n\n###### How it's computed:\n*Per-round position-update durations are aggregated to their 95th percentile over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; short, flat durations are normal.*\n\n###### Healthy range:\n*A few milliseconds under normal load.*\n\n###### Watch for:\n*Sustained high durations point to heavy dispute resolution or slow convergence on close time.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Position update** *(per node)* \u2014 the per-round work of tallying disputes and revising the node's own consensus position.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/consensus/Consensus.h)\n\n###### Function:\n`Consensus::updateOurPositions`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Close time](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
@@ -521,7 +648,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 55
+        "y": 59
       },
       "options": {
         "tooltip": {
@@ -556,7 +683,7 @@
         },
         "overrides": []
       },
-      "id": 13
+      "id": 15
     },
     {
       "title": "Ledger Close Duration",
@@ -566,7 +693,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 55
+        "y": 59
       },
       "options": {
         "tooltip": {
@@ -601,7 +728,7 @@
         },
         "overrides": []
       },
-      "id": 14
+      "id": 16
     },
     {
       "title": "Ledger Apply Duration (doAccept)",
@@ -611,7 +738,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 67
       },
       "targets": [
         {
@@ -639,7 +766,7 @@
         },
         "overrides": []
       },
-      "id": 15,
+      "id": 17,
       "options": {
         "tooltip": {
           "mode": "multi",
@@ -656,7 +783,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 67
       },
       "options": {
         "tooltip": {
@@ -685,7 +812,7 @@
           "unit": "ms"
         }
       },
-      "id": 16
+      "id": 18
     },
     {
       "title": "Close-Time Agreement Rate (Agreed vs Disagreed)",
@@ -695,7 +822,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 71
+        "y": 75
       },
       "targets": [
         {
@@ -723,7 +850,7 @@
         },
         "overrides": []
       },
-      "id": 17,
+      "id": 19,
       "options": {
         "tooltip": {
           "mode": "multi",
@@ -740,7 +867,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 71
+        "y": 75
       },
       "fieldConfig": {
         "defaults": {
@@ -826,134 +953,7 @@
           "refId": "B"
         }
       ],
-      "id": 18
-    },
-    {
-      "title": "Close-Time Resolution Change (per Round) [$xrpl_network_type]",
-      "description": "###### What this is:\n*Whether the close-time rounding granularity moved Coarser, Finer, or stayed Steady versus the previous round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by direction of change.*\n\n###### Reading it:\n*Mostly Steady is healthy; Coarser means widening bins (more disagreement), Finer means tightening.*\n\n###### Healthy range:\n*Predominantly Steady.*\n\n###### Watch for:\n*Frequent Coarser shifts indicate the network is repeatedly failing to agree on close time.*\n\n###### Keywords:\n- **Close-time resolution** *(network event)* \u2014 the granularity (in seconds) that close times are rounded to; widens when validators disagree.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Close-time resolution](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#close-time-resolution)",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 79
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "showUnfilled": true,
-        "reduceOptions": {
-          "calcs": ["sum"],
-          "fields": "",
-          "values": false
-        },
-        "legend": {
-          "showLegend": false
-        },
-        "tooltip": {}
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "tempo",
-            "uid": "${DS_TEMPO}"
-          },
-          "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
-          "legendFormat": "{{span.resolution_direction}}",
-          "refId": "A"
-        }
-      ],
-      "id": 19,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "increased",
-            "renamePattern": "Coarser (more disagreement)"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "decreased",
-            "renamePattern": "Finer (better agreement)"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "unchanged",
-            "renamePattern": "Steady"
-          }
-        }
-      ],
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
-    },
-    {
-      "title": "Close-Time Proposal Spread (Distinct Positions per Round) [$xrpl_network_type]",
-      "description": "###### What this is:\n*How spread out validators' proposed close times were, as the number of distinct positions per round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by their distinct-position count; each bar is one count value.*\n\n###### Reading it:\n*Weight on '1 distinct position' means everyone agreed; weight on 2 or more means the proposals split.*\n\n###### Healthy range:\n*Most rounds at a single distinct position.*\n\n###### Watch for:\n*A shift toward two or more distinct positions signals growing clock drift or latency across validators.*\n\n###### Keywords:\n- **Distinct positions** *(network event)* \u2014 the number of different close-time values validators proposed in a round; one means full agreement.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Clock drift** *(network event)* \u2014 differences between validators' clocks, which spread their proposed close times.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Distinct positions](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#distinct-positions)",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 79
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "showUnfilled": true,
-        "reduceOptions": {
-          "calcs": ["sum"],
-          "fields": "",
-          "values": false
-        },
-        "legend": {
-          "showLegend": false
-        },
-        "tooltip": {}
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "tempo",
-            "uid": "${DS_TEMPO}"
-          },
-          "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && resource.service.name=~\"$service_name\" && resource.deployment.environment=~\"$deployment_environment\" && resource.xrpl.network.type=~\"$xrpl_network_type\"} | count_over_time() by (span.close_time_vote_bins)",
-          "legendFormat": "{{span.close_time_vote_bins}} Distinct Position(s)",
-          "refId": "A"
-        }
-      ],
-      "id": 20,
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
+      "id": 20
     },
     {
       "title": "Outcomes & Failures",

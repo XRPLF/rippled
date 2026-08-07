@@ -90,6 +90,44 @@
       "id": 2
     },
     {
+      "title": "Ledger Validation Rate [$xrpl_network_type]",
+      "description": "###### What this is:\n*How often ledgers reach full validation (accepted by the trusted validator quorum) per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-validation events over 5 minutes, per node.*\n\n###### Reading it:\n*Should closely match the build rate under normal, in-sync operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.*\n\n###### Watch for:\n*A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.*\n\n###### Keywords:\n- **Ledger validation** *(network event)* \u2014 the second consensus stage where the node confirms a built ledger matches the trusted validator quorum and marks it final.\n- **Validation quorum** *(network-wide)* \u2014 the minimum number of agreeing trusted validations needed to declare a ledger fully validated.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::checkAccept`\n\n###### References:\n[Ledger validation](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Validation quorum](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-validation)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.validate\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: ledgers/s"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 3
+    },
+    {
       "title": "Ledger Build Duration",
       "description": "###### What this is:\n*The time taken to build a single ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of ledger-build durations over a 5-minute window, per node.*\n\n###### Reading it:\n*Lower is better; the line should stay well under the ledger interval.*\n\n###### Healthy range:\n*Typically tens to low hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained rises approaching the close interval, which indicate heavy transaction sets or disk/I/O pressure.*\n\n###### Keywords:\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`\n\n###### References:\n[Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-build)",
       "type": "timeseries",
@@ -132,44 +170,6 @@
         },
         "overrides": []
       },
-      "id": 3
-    },
-    {
-      "title": "Ledger Validation Rate [$xrpl_network_type]",
-      "description": "###### What this is:\n*How often ledgers reach full validation (accepted by the trusted validator quorum) per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-validation events over 5 minutes, per node.*\n\n###### Reading it:\n*Should closely match the build rate under normal, in-sync operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.*\n\n###### Watch for:\n*A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.*\n\n###### Keywords:\n- **Ledger validation** *(network event)* \u2014 the second consensus stage where the node confirms a built ledger matches the trusted validator quorum and marks it final.\n- **Validation quorum** *(network-wide)* \u2014 the minimum number of agreeing trusted validations needed to declare a ledger fully validated.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::checkAccept`\n\n###### References:\n[Ledger validation](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Validation quorum](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-validation)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 13
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.validate\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "suffix: ledgers/s"
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 4
     },
     {
@@ -179,8 +179,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 17
+        "x": 12,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -218,7 +218,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 13
       },
       "collapsed": false,
       "panels": [],
@@ -232,7 +232,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -277,7 +277,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -321,7 +321,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 22
       },
       "collapsed": false,
       "panels": [],
@@ -335,7 +335,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 23
       },
       "options": {
         "tooltip": {
@@ -373,7 +373,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 27
       },
       "options": {
         "tooltip": {
@@ -425,7 +425,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 27
       },
       "options": {
         "tooltip": {
