@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <exception>
@@ -36,6 +37,8 @@ doChannelAuthorize(rpc::JsonContext& context)
     {
         return rpc::makeError(RpcNotSupported, "Signing is not supported by this server.");
     }
+
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
