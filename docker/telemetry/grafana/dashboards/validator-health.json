@@ -57,7 +57,7 @@
       "description": "###### What this is:\n*Share of ledgers over the last hour where this validator agreed with the network consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 1-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; green at 95%+, yellow from 80%, red below.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*Values below 80%, meaning the validator frequently disagrees with consensus.*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 1
@@ -114,7 +114,7 @@
       "description": "###### What this is:\n*Share of ledgers over the last 24 hours where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 24-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; a smoother, longer-term view than the 1h stat.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A sustained dip below 90%, which can indicate configuration drift or a network partition.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 1
@@ -171,10 +171,10 @@
       "description": "###### What this is:\n*Counts of agreed versus missed validations over the last hour.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 1-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate; missed should be small.*\n\n###### Healthy range:\n*Missed near 0.*\n\n###### Watch for:\n*A high missed count, meaning the validator is skipping consensus rounds.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "bargauge",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 11
       },
       "options": {
         "orientation": "horizontal",
@@ -243,10 +243,10 @@
       "description": "###### What this is:\n*Counts of agreed versus missed validations over the last 24 hours.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 24-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate over the full day.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A growing missed share, signalling longer-term reliability problems.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "bargauge",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 11
       },
       "options": {
         "orientation": "horizontal",
@@ -317,7 +317,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 21
       },
       "collapsed": false,
       "panels": [],
@@ -328,10 +328,10 @@
       "description": "###### What this is:\n*Validations this node sends per minute.*\n\n###### How it's computed:\n*Per-second rate of the sent-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should track the ledger close cadence; roughly one validation per closed ledger.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*A drop toward zero, meaning the validator has stopped participating.*\n\n###### Keywords:\n- **Validations checked vs sent** *(per node)* \u2014 validations this node received from peers and checked, versus validations it issued itself.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsSent (caller RCLConsensus.cpp)`\n\n###### References:\n[Validations checked vs sent](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validations-checked-vs-sent)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -383,10 +383,10 @@
       "description": "###### What this is:\n*Validations received from peers and checked per minute.*\n\n###### How it's computed:\n*Per-second rate of the checked-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Reflects how much validation traffic the network is delivering to this node.*\n\n###### Healthy range:\n*Workload-dependent; scales with trusted validator count.*\n\n###### Watch for:\n*A sudden collapse, which suggests peer connectivity loss or network isolation.*\n\n###### Keywords:\n- **Validations checked vs sent** *(per node)* \u2014 validations this node received from peers and checked, versus validations it issued itself.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsChecked (caller NetworkOPs.cpp)`\n\n###### References:\n[Validations checked vs sent](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validations-checked-vs-sent)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -422,10 +422,10 @@
       "description": "###### What this is:\n*Whether the node is amendment-blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the amendment-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means an enabled amendment is unsupported by this build.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which halts validation and requires a software upgrade.*\n\n###### Keywords:\n- **Amendment blocked** *(per node)* \u2014 the node has halted because the network enabled an amendment its software version does not support.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[Amendment blocked](https://xrpl.org/docs/concepts/networks-and-servers/amendments) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#amendment-blocked)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -493,10 +493,10 @@
       "description": "###### What this is:\n*Days remaining until the current UNL (trusted validator list) expires.*\n\n###### How it's computed:\n*Instantaneous gauge reading of days-to-expiry.*\n\n###### Reading it:\n*Higher is safer; green at 30+, yellow under 7, red at expiry.*\n\n###### Healthy range:\n*30+ days.*\n\n###### Watch for:\n*Fewer than 7 days, after which the node loses its trusted validator set if not renewed.*\n\n###### Keywords:\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-unique-node-list)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -548,10 +548,10 @@
       "description": "###### What this is:\n*Whether the node's UNL is blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the UNL-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means validator trust cannot be established.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which can stop the node participating in consensus.*\n\n###### Keywords:\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n- **UNL blocked** *(per node)* \u2014 the node cannot establish a usable trusted validator list, so it cannot safely validate.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [UNL blocked](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-unique-node-list)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -619,10 +619,10 @@
       "description": "###### What this is:\n*Rate of cumulative agreement and missed-validation counters per minute.*\n\n###### How it's computed:\n*Per-second rate of each monotonic counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Agreements should dominate; the missed line should stay low.*\n\n###### Healthy range:\n*Missed rate near 0.*\n\n###### Watch for:\n*A rising missed rate, complementing the windowed agreement percentages above.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationTotalsCounters`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 22
+        "x": 12,
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -693,7 +693,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 52
       },
       "collapsed": false,
       "panels": [],
@@ -704,10 +704,10 @@
       "description": "###### What this is:\n*Minimum number of trusted validations required to declare a ledger fully validated.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the current quorum requirement.*\n\n###### Reading it:\n*Tracks the quorum derived from the active validator list; changes when the list changes.*\n\n###### Healthy range:\n*Stable at the network-appropriate value.*\n\n###### Watch for:\n*An unexpected drop, which can weaken consensus safety guarantees.*\n\n###### Keywords:\n- **Validation quorum** *(network-wide)* \u2014 the minimum number of agreeing trusted validations needed to declare a ledger fully validated.\n- **Validator list** *(network-wide)* \u2014 signed lists of recommended validators (UNLs) that peers distribute to each other.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[Validation quorum](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Validator list](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-quorum)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -744,10 +744,10 @@
       "description": "###### What this is:\n*How long the server has held its current operating state, in seconds.*\n\n###### How it's computed:\n*Current value of the time-in-state gauge.*\n\n###### Reading it:\n*Not yet wired in the code; the value currently always reads 0.*\n\n###### Healthy range:\n*Not applicable; the value is always 0 today.*\n\n###### Watch for:\n*n/a until implemented.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -783,10 +783,10 @@
       "description": "###### What this is:\n*Rate of server operating-state changes per hour.*\n\n###### How it's computed:\n*Per-hour rate of the state-change counter, averaged over a 1-hour window.*\n\n###### Reading it:\n*Near zero is healthy; each increment is one state transition.*\n\n###### Healthy range:\n*Near 0 changes per hour.*\n\n###### Watch for:\n*Frequent transitions, which point to network instability or configuration problems.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementStateChanges (caller NetworkOPs.cpp)`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 63
       },
       "options": {
         "tooltip": {
@@ -838,10 +838,10 @@
       "description": "###### What this is:\n*Ledgers closed per minute by this node.*\n\n###### How it's computed:\n*Per-second rate of the ledgers-closed counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should match the network's steady close cadence.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*Deviation from the expected cadence, which indicates consensus timing trouble or the node falling behind.*\n\n###### Keywords:\n- **Ledgers closed rate** *(per node)* \u2014 how many ledgers this node closed per minute; should match the network close cadence.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgersClosed (caller RCLConsensus.cpp)`\n\n###### References:\n[Ledgers closed rate](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledgers-closed-rate)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 63
       },
       "options": {
         "tooltip": {
@@ -893,10 +893,10 @@
       "description": "###### What this is:\n*Share of ledgers over the trailing 7 days where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 7-day agreement percentage.*\n\n###### Reading it:\n*The long-term reliability window; higher is better.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A gradual decline, which reflects chronic rather than transient disagreement.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 73
       },
       "options": {
         "tooltip": {
@@ -950,10 +950,10 @@
       "description": "###### What this is:\n*Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full, validating, proposing) over time.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the encoded state value.*\n\n###### Reading it:\n*A flat line at the full-operation state is healthy; steps show transitions.*\n\n###### Healthy range:\n*Steady at the highest (full) state.*\n\n###### Watch for:\n*Frequent transitions, useful for correlating state flapping with other metrics.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 43
+        "x": 12,
+        "y": 73
       },
       "options": {
         "tooltip": {
@@ -999,10 +999,10 @@
       "description": "###### What this is:\n*Agreed versus missed validation counts over the trailing 7 days.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 7-day agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate across the week.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A rising missed trend, signalling sustained validator unreliability.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 43
+        "x": 0,
+        "y": 83
       },
       "options": {
         "tooltip": {
