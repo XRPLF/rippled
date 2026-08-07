@@ -10,11 +10,11 @@
   "links": [],
   "panels": [
     {
-      "title": "RPC Request Rate",
+      "title": "RPC Request Rate [$xrpl_network_type]",
       "description": "**What:** Rate of RPC requests handled, counting every HTTP and WebSocket call.\n**How it's computed:** Per-second rate of the RPC-requests counter over 5 minutes.\n**Reading it:** Tracks client demand on the node.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained spikes (client surge or abusive polling) or a drop to zero (endpoint unavailable).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 0
@@ -40,7 +40,24 @@
           "unit": "reqps"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
+    },
+    {
+      "title": "RPC Response",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 2
     },
     {
       "title": "RPC Response Time",
@@ -49,8 +66,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -85,11 +102,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
       "title": "RPC Response Size",
@@ -98,8 +119,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 24
+        "x": 12,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -134,11 +155,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "RPC Response Time Distribution",
@@ -147,8 +172,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 24
+        "x": 0,
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -199,11 +224,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
+    },
+    {
+      "title": "Pathfinding",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 6
     },
     {
       "title": "Pathfinding Fast Duration",
@@ -213,7 +255,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -248,11 +290,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Pathfinding Full Duration",
@@ -262,7 +308,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -297,21 +343,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
-      "title": "Resource Warnings Rate",
+      "title": "Resource Warnings Rate [$xrpl_network_type]",
       "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over 5 minutes.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -350,17 +400,21 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 9
     },
     {
-      "title": "Resource Drops Rate",
+      "title": "Resource Drops Rate [$xrpl_network_type]",
       "description": "**What:** Rate of resource drops: consumers disconnected or blocked for excessive usage.\n**How it's computed:** Per-second rate of the drop counter over 5 minutes.\n**Reading it:** Non-zero means the node is actively rejecting abusive connections.\n**Healthy range:** at or near zero.\n**Watch for:** Sustained non-zero drops (ongoing abuse or a misbehaving client/peer being throttled).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -399,7 +453,24 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 10
+    },
+    {
+      "title": "gRPC (Spans)",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 11
     },
     {
       "title": "gRPC Request Rate by Method (Spans)",
@@ -409,7 +480,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -436,11 +507,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
       "title": "gRPC Latency P95 by Method (Spans)",
@@ -450,7 +525,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -477,11 +552,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     },
     {
       "title": "gRPC Error Rate by Status (Spans)",
@@ -491,7 +570,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -518,11 +597,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 14
     },
     {
       "title": "Pathfinding Compute Duration (Spans)",
@@ -532,7 +615,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -567,11 +650,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 15
     },
     {
       "title": "Pathfinding Request & Discovery Rate (Spans)",
@@ -579,9 +666,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 48
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -616,11 +703,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 16
     }
   ],
   "schemaVersion": 39,

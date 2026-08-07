@@ -73,11 +73,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
@@ -143,11 +147,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Validator List Traffic",
@@ -201,7 +209,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -222,7 +233,8 @@
             ]
           }
         ]
-      }
+      },
+      "id": 3
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
@@ -276,11 +288,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Have/Requested Transactions (Messages)",
@@ -334,11 +350,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Unknown / Unclassified Traffic",
@@ -392,7 +412,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -413,7 +436,8 @@
             ]
           }
         ]
-      }
+      },
+      "id": 6
     },
     {
       "title": "Proof Path Traffic",
@@ -467,11 +491,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Replay Delta Traffic",
@@ -525,11 +553,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     }
   ],
   "schemaVersion": 39,

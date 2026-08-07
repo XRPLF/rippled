@@ -9,6 +9,19 @@
   "links": [],
   "panels": [
     {
+      "title": "Consensus Rounds",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Consensus Round Duration",
       "description": "**What:** Time to process an accepted ledger, from the moment consensus is reached through applying the transaction set and finalising state.\n**How it's computed:** 95th and 50th percentile of per-round durations over a 5-minute window, per node.\n**Reading it:** Flat p50 with a modest p95 gap is normal; both track network transaction load.\n**Healthy range:** Roughly 3-6 seconds on mainnet.\n**Watch for:** A rising p95 that pulls away from p50 means occasional slow rounds; sustained growth precedes ledger-age alarms.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "timeseries",
@@ -16,7 +29,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -51,11 +64,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
+    },
+    {
+      "title": "Proposals & Validations",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
     },
     {
       "title": "Consensus Proposals Sent Rate",
@@ -64,8 +94,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -92,11 +122,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Ledger Close Duration",
@@ -105,8 +139,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -133,21 +167,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
-      "title": "Validation Send Rate",
+      "title": "Validation Send Rate [$xrpl_network_type]",
       "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 18
       },
       "options": {
         "tooltip": {
@@ -170,7 +208,11 @@
           "unit": "suffix: validations/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 6
     },
     {
       "title": "Ledger Apply Duration (doAccept)",
@@ -180,7 +222,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "targets": [
         {
@@ -215,11 +257,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Close Time Agreement",
@@ -229,7 +275,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 22
       },
       "targets": [
         {
@@ -256,11 +302,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
       "title": "Consensus Mode Over Time",
@@ -270,7 +320,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -297,11 +347,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Accept vs Close Rate",
@@ -311,7 +365,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -346,11 +400,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     },
     {
       "title": "Validation vs Close Rate",
@@ -360,7 +418,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 38
       },
       "options": {
         "tooltip": {
@@ -395,11 +453,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 11
     },
     {
       "title": "Consensus Accept Duration Heatmap",
@@ -409,7 +471,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 38
       },
       "options": {
         "tooltip": {
@@ -440,7 +502,21 @@
             "spanNulls": 1800000
           }
         }
-      }
+      },
+      "id": 12
+    },
+    {
+      "title": "Close Time Analysis",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 13
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
@@ -450,7 +526,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 47
       },
       "fieldConfig": {
         "defaults": {
@@ -458,8 +534,11 @@
           "custom": {
             "spanNulls": 1800000,
             "drawStyle": "points",
-            "pointSize": 6,
-            "showPoints": "always"
+            "pointSize": 5,
+            "showPoints": "always",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -485,7 +564,8 @@
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_self)",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 14
     },
     {
       "title": "Close Time: Effective / Quantized",
@@ -495,7 +575,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 47
       },
       "fieldConfig": {
         "defaults": {
@@ -503,8 +583,11 @@
           "custom": {
             "spanNulls": 1800000,
             "drawStyle": "points",
-            "pointSize": 6,
-            "showPoints": "always"
+            "pointSize": 5,
+            "showPoints": "always",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -530,7 +613,8 @@
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time)",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 15
     },
     {
       "title": "Close Time Vote Bins & Resolution",
@@ -540,7 +624,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 55
       },
       "fieldConfig": {
         "defaults": {
@@ -549,7 +633,10 @@
             "drawStyle": "line",
             "lineInterpolation": "stepAfter",
             "pointSize": 5,
-            "showPoints": "auto"
+            "showPoints": "auto",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -616,7 +703,8 @@
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_resolution_ms)",
           "refId": "B"
         }
-      ]
+      ],
+      "id": 16
     },
     {
       "title": "Close Time Resolution Direction",
@@ -626,16 +714,18 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 55
       },
       "fieldConfig": {
         "defaults": {
           "custom": {
             "spanNulls": 1800000,
             "drawStyle": "bars",
-            "fillOpacity": 40,
+            "fillOpacity": 0,
             "pointSize": 5,
-            "showPoints": "auto"
+            "showPoints": "auto",
+            "lineWidth": 1,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -661,7 +751,8 @@
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | select(span.resolution_direction)",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 17
     },
     {
       "title": "Close Time Bin Distribution",
@@ -669,9 +760,9 @@
       "type": "barchart",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 56
+        "y": 63
       },
       "fieldConfig": {
         "defaults": {
@@ -707,7 +798,21 @@
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time, span.close_time_vote_bins)",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 18
+    },
+    {
+      "title": "Outcomes & Failures",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 71
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 19
     },
     {
       "title": "Consensus Outcome Distribution",
@@ -715,9 +820,9 @@
       "type": "piechart",
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 24,
         "x": 0,
-        "y": 64
+        "y": 72
       },
       "options": {
         "legend": {
@@ -744,7 +849,8 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 20
     },
     {
       "title": "Consensus Failures Over Time",
@@ -752,9 +858,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 16,
-        "x": 8,
-        "y": 64
+        "w": 12,
+        "x": 0,
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -789,11 +895,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 21
     },
     {
       "title": "Consensus Round Duration (Full Round)",
@@ -802,8 +912,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 72
+        "x": 12,
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -838,11 +948,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 22
     },
     {
       "title": "Consensus Phase Duration (Open vs Establish)",
@@ -851,8 +965,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 72
+        "x": 0,
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -887,11 +1001,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 23
+    },
+    {
+      "title": "Timing",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 96
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 24
     },
     {
       "title": "Position Update Duration",
@@ -901,7 +1032,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -936,11 +1067,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 25
     },
     {
       "title": "Consensus Stall Rate",
@@ -950,7 +1085,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -985,11 +1120,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 26
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
@@ -997,9 +1136,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 88
+        "y": 105
       },
       "options": {
         "tooltip": {
@@ -1026,11 +1165,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 27
     }
   ],
   "schemaVersion": 39,

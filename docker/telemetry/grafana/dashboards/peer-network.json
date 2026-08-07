@@ -10,6 +10,19 @@
   "links": [],
   "panels": [
     {
+      "title": "Proposal & Validation Receive",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Peer Proposal Receive Rate",
       "description": "**What:** Rate of consensus proposals arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects how many validators' proposals reach this node each round.\n**Healthy range:** Workload-dependent; scales with peer count and network activity.\n**Watch for:** A sudden drop means loss of proposal flow; a sharp sustained spike from a single peer can indicate flooding.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "timeseries",
@@ -17,7 +30,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -44,11 +57,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Peer Validation Receive Rate",
@@ -58,7 +75,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -85,11 +102,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
+    },
+    {
+      "title": "Trust Split",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 4
     },
     {
       "title": "Proposals Trusted vs Untrusted",
@@ -99,7 +133,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -122,7 +156,8 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Validations Trusted vs Untrusted",
@@ -132,7 +167,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -155,7 +190,8 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 6
     }
   ],
   "schemaVersion": 39,
