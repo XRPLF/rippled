@@ -20,13 +20,41 @@
 namespace xrpl {
 
 constexpr std::size_t kMaximumMessageSize = megabytes(64);
+// Ping messages should be much smaller than the maximum message size,
+// so we define a separate limit for them.
+constexpr std::size_t kMaximumPingMessageSize = kilobytes(1);
 
-// Upper bound on the wire size of a TMManifests message: kMaxManifestsPerMessage entries
-// of at most kMaxManifestBytes each, plus a small allowance for protobuf
-// framing per entry.
+// Allowance for protobuf framing around each manifest in a TMManifests message.
 constexpr std::size_t kManifestFramingBytes = 8;
-constexpr std::size_t kMaximumManifestsMessageSize =
-    kMaxManifestsPerMessage * (kMaxManifestBytes + kManifestFramingBytes);
+
+/**
+ * Upper bound on the wire size of a TMManifests message.
+ *
+ * Allows both counts' worth of entries at @ref kMaxManifestBytes each, plus
+ * framing per entry. Messages larger than this are dropped before parsing,
+ * which bounds the work an oversized message can cause.
+ *
+ * @param trustedCount Trusted manifests per message.
+ *
+ * @param untrustedCount Untrusted manifests per message.
+ *
+ * @note A node that raises either count accepts larger messages than a peer
+ *     running the defaults, and the messages it sends may be dropped by such a
+ *     peer. Lowering either count below what peers send drops their manifest
+ *     messages, including any trusted key rotations they carry, and the drop
+ *     is not recorded on either side.
+ */
+constexpr std::size_t
+maximumManifestsMessageSize(std::size_t const trustedCount, std::size_t const untrustedCount)
+{
+    return (trustedCount + untrustedCount) * (kMaxManifestBytes + kManifestFramingBytes);
+}
+
+// The message size the defaults imply must stay within the overall protocol
+// message limit. The same check for the largest configurable counts lives in
+// OverlayImpl.h, where the configured bound is visible.
+static_assert(
+    maximumManifestsMessageSize(kMaxTrustedCount, kMaxUntrustedCount) < kMaximumMessageSize);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the

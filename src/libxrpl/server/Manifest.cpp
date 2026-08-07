@@ -487,7 +487,7 @@ ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
             lock.owns_lock(), "xrpl::ManifestCache::applyManifest::atUntrustedCap : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
                      // locked when the lambda is called.
-        if (iter == map_.end() && !uncapped && untrustedKeys_.size() >= kMaxUntrustedCount)
+        if (iter == map_.end() && !uncapped && untrustedKeys_.size() >= maxUntrustedCount_)
         {
             // Log each rejection at debug, but warn only once per interval so a
             // flood does not fill the log.

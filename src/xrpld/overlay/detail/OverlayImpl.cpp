@@ -670,7 +670,10 @@ OverlayImpl::onManifests(
     auto const& journal = from->pJournal();
 
     // Process every trusted manifest, but stop processing untrusted ones once
-    // kMaxManifestsPerMessage of them have been handled, so the work stays bounded.
+    // the configured untrusted count has been handled, so the work stays
+    // bounded. Trusted manifests are always processed: dropping one would delay
+    // a validator key rotation reaching this node.
+    auto const maxUntrusted = untrustedManifestCount(app_.config().maxUntrustedCount);
     auto const total = static_cast<std::size_t>(m->list_size());
     std::size_t untrusted = 0;
     bool skippedUntrusted = false;
@@ -689,23 +692,18 @@ OverlayImpl::onManifests(
             // first avoids holding the two locks in opposite orders.
             bool const isTrusted = app_.getValidators().listed(mo->masterKey);
 
-            // Bound untrusted work: process at most kMaxManifestsPerMessage
-            // untrusted manifests, but never skip a trusted one. Trusted
-            // manifests are not counted against the cap.
+            // Bound untrusted work: process at most maxUntrusted untrusted
+            // manifests, but never skip a trusted one. Trusted manifests are
+            // not counted against the cap.
             if (!isTrusted)
             {
-                if (untrusted >= kMaxManifestsPerMessage)
+                if (untrusted >= maxUntrusted)
                 {
                     skippedUntrusted = true;
                     continue;
                 }
                 ++untrusted;
             }
-            // Updates to a known key are relayed even when untrusted. Use
-            // getSequence, not getManifest, to avoid copying the cached payload
-            // on this hot path.
-            bool const isKnown =
-                app_.getValidatorManifests().getSequence(mo->masterKey).has_value();
 
             auto const result = app_.getValidatorManifests().applyManifest(
                 std::move(*mo),
@@ -724,22 +722,17 @@ OverlayImpl::onManifests(
                     "deserialization succeeded");
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
+                // NOLINTEND(bugprone-unchecked-optional-access)
 
-                // Relay only trusted manifests or updates to known keys, so
-                // untrusted gossip for a brand-new key cannot be amplified.
+                relay.add_list()->set_stobject(s);
+
                 // Persist to the wallet DB only for trusted keys, so untrusted
                 // gossip never survives a restart.
-                if (isTrusted || isKnown)
+                if (isTrusted)
                 {
-                    relay.add_list()->set_stobject(s);
-
-                    if (isTrusted)
-                    {
-                        auto db = app_.getWalletDB().checkoutDb();
-                        addValidatorManifest(*db, serialized);
-                    }
+                    auto db = app_.getWalletDB().checkoutDb();
+                    addValidatorManifest(*db, serialized);
                 }
-                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
         else
@@ -752,13 +745,12 @@ OverlayImpl::onManifests(
     if (skippedUntrusted)
     {
         // The sender exceeded the untrusted per-message cap. Charge it (once,
-        // here) so a flood of untrusted manifests is penalized, while an honest
-        // message of trusted manifests never is.
+        // here) so a flood of untrusted manifests is penalized.
         from->charge(resource::kFeeMalformedRequest, "too many untrusted manifests");
 
         JLOG(journal.warn()) << "Manifests: message had " << total
-                             << " entries; processed all trusted plus the first "
-                             << kMaxManifestsPerMessage << " untrusted";
+                             << " entries; processed all trusted plus the first " << maxUntrusted
+                             << " untrusted";
     }
 
     if (!relay.list().empty())
@@ -1286,10 +1278,9 @@ OverlayImpl::getManifestsMessage()
             });
 
         // Phase 2: no cache lock held, so trust checks are safe. Include every
-        // trusted manifest, then fill any remaining headroom up to
-        // kMaxManifestsPerMessage with untrusted gossip, so the whole message
-        // stays within the per-message cap the receiver enforces (trusted
-        // count is tiny in practice, so this effectively never drops trusted).
+        // trusted manifest, then fill any remaining headroom up to the
+        // configured untrusted count with gossip. Trusted manifests are never
+        // dropped; the trusted count only sizes the accepted message.
         std::vector<CachedManifest const*> selected;
         std::vector<CachedManifest const*> untrusted;
         for (auto const& e : cached)
@@ -1305,7 +1296,8 @@ OverlayImpl::getManifestsMessage()
         }
 
         // Cap untrusted only; trusted manifests are all included above.
-        auto const take = std::min(kMaxManifestsPerMessage, untrusted.size());
+        auto const take =
+            std::min(untrustedManifestCount(app_.config().maxUntrustedCount), untrusted.size());
         selected.insert(selected.end(), untrusted.begin(), untrusted.begin() + take);
 
         // Shuffle the order. Cryptographic randomness is not needed here.
