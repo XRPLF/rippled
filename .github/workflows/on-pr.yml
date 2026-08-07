@@ -84,6 +84,7 @@ jobs:
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
             .github/workflows/reusable-package.yml
             .github/workflows/reusable-strategy-matrix.yml
@@ -127,6 +128,11 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
 
   check-levelization:
     needs: should-run
@@ -207,6 +213,7 @@ jobs:
   passed:
     if: failure() || cancelled()
     needs:
+      - check-autogen
       - check-levelization
       - check-otel-naming
       - check-rename
