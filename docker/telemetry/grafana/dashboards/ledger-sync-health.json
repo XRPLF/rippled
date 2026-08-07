@@ -45,9 +45,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 287
       },
-      "id": 1,
+      "id": 71,
       "panels": [],
       "title": "Bootstrap (Domain 0)",
       "type": "row"
@@ -82,7 +82,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 288
       },
       "id": 2,
       "options": {
@@ -155,9 +155,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 11
+        "y": 308
       },
-      "id": 3,
+      "id": 4,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -228,9 +228,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 318
       },
-      "id": 4,
+      "id": 6,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -301,9 +301,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 328
       },
-      "id": 5,
+      "id": 7,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -380,9 +380,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 348
       },
-      "id": 6,
+      "id": 9,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -481,9 +481,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 298
       },
-      "id": 7,
+      "id": 3,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -584,9 +584,9 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 298
       },
-      "id": 8,
+      "id": 5,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -687,9 +687,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 61
+        "y": 338
       },
-      "id": 9,
+      "id": 8,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -802,7 +802,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 61
+        "y": 338
       },
       "id": 10,
       "options": {
@@ -853,9 +853,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 71
+        "y": 61
       },
-      "id": 11,
+      "id": 65,
       "panels": [],
       "title": "Peer supply",
       "type": "row"
@@ -890,9 +890,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 82
       },
-      "id": 12,
+      "id": 16,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -963,9 +963,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 82
+        "y": 92
       },
-      "id": 13,
+      "id": 17,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -1068,9 +1068,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 92
+        "y": 62
       },
-      "id": 14,
+      "id": 12,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1198,9 +1198,9 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 92
+        "y": 62
       },
-      "id": 15,
+      "id": 13,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1305,9 +1305,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 102
+        "y": 72
       },
-      "id": 16,
+      "id": 14,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1404,9 +1404,9 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 102
+        "y": 72
       },
-      "id": 17,
+      "id": 15,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1447,9 +1447,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 112
+        "y": 0
       },
-      "id": 18,
+      "id": 64,
       "panels": [],
       "title": "Sync state",
       "type": "row"
@@ -1490,7 +1490,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 113
+        "y": 1
       },
       "id": 19,
       "options": {
@@ -1557,7 +1557,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 123
+        "y": 11
       },
       "id": 20,
       "options": {
@@ -1624,7 +1624,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 133
+        "y": 21
       },
       "id": 21,
       "options": {
@@ -1689,9 +1689,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 143
+        "y": 41
       },
-      "id": 22,
+      "id": 23,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -1760,9 +1760,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 153
+        "y": 51
       },
-      "id": 23,
+      "id": 24,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -1872,9 +1872,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 163
+        "y": 31
       },
-      "id": 24,
+      "id": 22,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1915,9 +1915,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 173
+        "y": 102
       },
-      "id": 25,
+      "id": 66,
       "panels": [],
       "title": "Ledger acquire & SHAMap fetch",
       "type": "row"
@@ -1952,9 +1952,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 174
+        "y": 113
       },
-      "id": 26,
+      "id": 27,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -2025,9 +2025,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 184
+        "y": 133
       },
-      "id": 27,
+      "id": 30,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -2138,9 +2138,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 194
+        "y": 103
       },
-      "id": 28,
+      "id": 26,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2236,10 +2236,10 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 194
+        "x": 0,
+        "y": 123
       },
-      "id": 29,
+      "id": 28,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2367,10 +2367,10 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 204
+        "x": 12,
+        "y": 123
       },
-      "id": 30,
+      "id": 29,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2475,7 +2475,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 204
+        "y": 103
       },
       "id": 31,
       "options": {
@@ -2518,9 +2518,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 214
+        "y": 225
       },
-      "id": 32,
+      "id": 69,
       "panels": [],
       "title": "Job queue",
       "type": "row"
@@ -2561,7 +2561,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 215
+        "y": 226
       },
       "id": 33,
       "options": {
@@ -2658,7 +2658,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 225
+        "y": 236
       },
       "id": 34,
       "options": {
@@ -2701,9 +2701,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 235
+        "y": 184
       },
-      "id": 35,
+      "id": 68,
       "panels": [],
       "title": "Quorum & publish",
       "type": "row"
@@ -2738,9 +2738,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 236
+        "y": 185
       },
-      "id": 36,
+      "id": 37,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -2817,9 +2817,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 246
+        "y": 195
       },
-      "id": 37,
+      "id": 38,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -2914,9 +2914,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 256
+        "y": 205
       },
-      "id": 38,
+      "id": 36,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -3029,7 +3029,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 256
+        "y": 205
       },
       "id": 39,
       "options": {
@@ -3090,7 +3090,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 266
+        "y": 215
       },
       "id": 40,
       "options": {
@@ -3194,7 +3194,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 266
+        "y": 215
       },
       "id": 41,
       "options": {
@@ -3245,9 +3245,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 276
+        "y": 246
       },
-      "id": 42,
+      "id": 70,
       "panels": [],
       "title": "Terminal blockers & serving",
       "type": "row"
@@ -3304,7 +3304,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 277
+        "y": 247
       },
       "id": 43,
       "options": {
@@ -3369,9 +3369,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 287
+        "y": 267
       },
-      "id": 44,
+      "id": 45,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3442,9 +3442,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 297
+        "y": 277
       },
-      "id": 45,
+      "id": 46,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3551,9 +3551,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 307
+        "y": 257
       },
-      "id": 46,
+      "id": 44,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -3594,9 +3594,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 317
+        "y": 358
       },
-      "id": 47,
+      "id": 72,
       "panels": [],
       "title": "Back-fill & persistence",
       "type": "row"
@@ -3631,9 +3631,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 318
+        "y": 369
       },
-      "id": 48,
+      "id": 50,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3704,9 +3704,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 328
+        "y": 379
       },
-      "id": 49,
+      "id": 51,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3777,9 +3777,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 338
+        "y": 399
       },
-      "id": 50,
+      "id": 53,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3859,9 +3859,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 348
+        "y": 409
       },
-      "id": 51,
+      "id": 55,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -3964,9 +3964,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 358
+        "y": 359
       },
-      "id": 52,
+      "id": 48,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4071,9 +4071,9 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 358
+        "y": 359
       },
-      "id": 53,
+      "id": 49,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4178,9 +4178,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 368
+        "y": 389
       },
-      "id": 54,
+      "id": 52,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4334,10 +4334,10 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 368
+        "x": 0,
+        "y": 419
       },
-      "id": 55,
+      "id": 54,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4386,9 +4386,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 378
+        "y": 143
       },
-      "id": 56,
+      "id": 67,
       "panels": [],
       "title": "Spans & traces",
       "type": "row"
@@ -4423,9 +4423,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 379
+        "y": 154
       },
-      "id": 57,
+      "id": 58,
       "options": {
         "displayMode": "gradient",
         "legend": {
@@ -4528,9 +4528,9 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 389
+        "y": 144
       },
-      "id": 58,
+      "id": 57,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4642,8 +4642,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 389
+        "x": 0,
+        "y": 164
       },
       "id": 59,
       "options": {
@@ -4741,8 +4741,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 399
+        "x": 12,
+        "y": 164
       },
       "id": 60,
       "options": {
@@ -4840,8 +4840,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 399
+        "x": 0,
+        "y": 174
       },
       "id": 61,
       "options": {
@@ -4939,8 +4939,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 409
+        "x": 12,
+        "y": 174
       },
       "id": 62,
       "options": {
@@ -5040,7 +5040,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 409
+        "y": 144
       },
       "id": 63,
       "options": {
