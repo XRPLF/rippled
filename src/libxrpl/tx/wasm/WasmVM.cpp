@@ -114,7 +114,7 @@ runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
     std::int64_t gasLimit,
-    std::string_view funcName)
+    std::string_view funcName) noexcept
 {
     // A run needs a budget to spend. Refused here rather than in the engine because what a
     // non-positive limit means is a transaction-validity rule; the engine's own budget is
@@ -153,7 +153,7 @@ runEscrowWasm(
 }
 
 NotTEC
-preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName)
+preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName) noexcept
 {
     return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
         auto const checked = rs::wasm_vm::check_escrow(
