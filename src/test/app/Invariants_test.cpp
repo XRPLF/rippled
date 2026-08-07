@@ -3271,9 +3271,9 @@ class Invariants_test : public beast::unit_test::Suite
              "set must not change assets available",
              "set must not change shares outstanding",
              "set must not change vault balance",
-             "assets available must be positive",
+             "assets available must not be negative",
              "assets available must not be greater than assets outstanding",
-             "assets outstanding must be positive"},
+             "assets outstanding must not be negative"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -3435,7 +3435,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"assets maximum must be positive"},
+            {"assets maximum must not be negative"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -3623,7 +3623,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {
-                "assets maximum must be positive",
+                "assets maximum must not be negative",
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
