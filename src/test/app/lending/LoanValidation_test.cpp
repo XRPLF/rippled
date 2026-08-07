@@ -32,6 +32,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
+#include "xrpl/protocol/Protocol.h"
 
 #include <cstdint>
 #include <optional>

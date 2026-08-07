@@ -58,10 +58,13 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include "xrpl/basics/chrono.h"
+#include "xrpl/protocol/Keylet.h"
 
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -139,7 +142,7 @@ class Vault_test : public beast::unit_test::Suite
     {
         auto const sub = env.now().time_since_epoch().count() + subOffset;
         auto const red = sub + gap;
-        test::jtx::Vault vault{env};
+        test::jtx::Vault const vault{env};
         auto [tx, keylet] = vault.create(
             {.owner = owner,
              .asset = asset,

@@ -24,8 +24,11 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include "xrpl/basics/chrono.h"
+#include "xrpl/protocol/Protocol.h"
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>

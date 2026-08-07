@@ -22,6 +22,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include "xrpl/protocol/Protocol.h"
 
 #include <optional>
 #include <stdexcept>
