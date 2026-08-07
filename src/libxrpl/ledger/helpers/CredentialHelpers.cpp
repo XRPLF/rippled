@@ -175,7 +175,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
         {
             // LCOV_EXCL_START
             JLOG(j.trace()) << "Zero credential ID.";
-            return tecBAD_CREDENTIALS;
+            return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
 
