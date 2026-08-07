@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -38,6 +39,16 @@ using xrpl::proposal::kProposalOwnerCount;
  */
 json::Value
 create(Account const& proposer, json::Value const& proposedTx, std::uint32_t expiration);
+
+/**
+ * @brief Build a TransactionProposalCancel naming the proposal to delete.
+ *
+ * @param account The account requesting the cancellation.
+ * @param proposalID The ID of the TransactionProposal to cancel.
+ * @return The TransactionProposalCancel JSON object.
+ */
+json::Value
+cancel(Account const& account, uint256 const& proposalID);
 
 /**
  * @brief Put a transaction of any type into the form a proposal stores it in:

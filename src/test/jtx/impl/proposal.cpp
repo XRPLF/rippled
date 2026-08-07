@@ -6,6 +6,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -32,6 +33,16 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
     jv[jss::Account] = proposer.human();
     jv[sfProposedTransaction.jsonName] = proposedTx;
     jv[sfExpiration.jsonName] = expiration;
+    return jv;
+}
+
+json::Value
+cancel(Account const& account, uint256 const& proposalID)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = "TransactionProposalCancel";
+    jv[jss::Account] = account.human();
+    jv[sfProposalID.jsonName] = to_string(proposalID);
     return jv;
 }
 

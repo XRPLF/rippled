@@ -1208,6 +1208,22 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 92, TransactionProposalCreate,
     {sfExpiration, SoeRequired},
 }))
 
+// Transaction type 93 is reserved for ttTRANSACTION_PROPOSAL_SIGN.
+
+/** This transaction deletes a TransactionProposal, releasing its owner's
+    reserve. While the proposal is live only its Owner or its target account
+    may cancel; once it is terminal anyone may (XLS-0103 §7). */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCancel.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
+    Delegation::NotDelegable,
+    featureCosign,
+    NoPriv,
+    ({
+    {sfProposalID, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
