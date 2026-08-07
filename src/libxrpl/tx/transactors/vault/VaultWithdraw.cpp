@@ -165,11 +165,11 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Post-fixCleanup3_4_0: the checks above only establish that an account
-    // may hold the asset. A private vault additionally restricts who may take
-    // part in it, so paying its asset out to a third party requires both ends
-    // of that payout to be inside the vault's permissioned domain.
-    // VaultDeposit applies the same domain check on the way in.
+    // The checks above only establish that an account may hold the asset. A
+    // private vault additionally restricts who may take part in it, so paying
+    // its asset out to a third party requires both ends of that payout to be
+    // inside the vault's permissioned domain. VaultDeposit applies the same
+    // domain check on the way in.
     //
     // Two cases deliberately skip the check. Withdrawing to self is never
     // restricted: losing vault access must not strand funds already deposited.
@@ -194,14 +194,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         if (!maybeDomainID)
             return tecNO_AUTH;
 
-        for (auto const& subject : {account, dstAcct})
-        {
-            // Unlike VaultDeposit we do not suppress tecEXPIRED: there is no
-            // doApply step here that would clean up the expired credential.
-            if (auto const ter = credentials::validDomain(ctx.view, *maybeDomainID, subject);
-                !isTesSuccess(ter))
-                return ter;
-        }
+        // Unlike VaultDeposit we do not suppress tecEXPIRED: there is no
+        // doApply step here that would clean up the expired credential.
+        if (auto const ter = credentials::validDomain(ctx.view, *maybeDomainID, account);
+            !isTesSuccess(ter))
+            return ter;
+
+        if (auto const ter = credentials::validDomain(ctx.view, *maybeDomainID, dstAcct);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     if (fix330Enabled)
@@ -253,8 +254,8 @@ VaultWithdraw::doApply()
     // you have a share in the vault, it means you were at some point authorized
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw it to yourself. Sending the proceeds to somebody else is a
-    // different matter: post-fixCleanup3_4_0 preclaim checks such a withdrawal
-    // against the vault's permissioned domain.
+    // different matter, and preclaim checks such a withdrawal against the
+    // vault's permissioned domain.
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
