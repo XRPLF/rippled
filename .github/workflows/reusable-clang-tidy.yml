@@ -83,11 +83,10 @@ jobs:
               -Drust=ON \
               ..
 
-      # clang-tidy needs the generated headers (protobuf, cxxbridge) to exist
       - name: Build clang-tidy prerequisites
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl_tidy_prerequisites
+          ninja -j ${{ steps.nproc.outputs.nproc }} tidy_prerequisites
 
       - name: Run clang tidy
         id: run_clang_tidy

@@ -1,7 +1,4 @@
 set(CORROSION_VERSION 0.6.1)
-# SHA256 of the release tarball referenced below. Refresh together with
-# CORROSION_VERSION:
-#   curl -sL https://github.com/corrosion-rs/corrosion/archive/refs/tags/v<ver>.tar.gz | shasum -a 256
 set(CORROSION_SHA256
     e9e95b1ee2bad52681f347993fb1a5af5cce458c5ce8a2636c9e476e4babf8e3
 )
@@ -41,6 +38,7 @@ configure_file(
 )
 
 add_custom_target(xrpl_crates)
+add_dependencies(tidy_prerequisites xrpl_crates)
 
 function(_unlink_libgcc_s crate)
     if(NOT (is_linux AND static))
@@ -53,7 +51,7 @@ function(_unlink_libgcc_s crate)
     set(imported "${crate}-static")
     if(NOT TARGET ${imported})
         message(
-            WARNING
+            FATAL_ERROR
             "Corrosion did not create the imported target '${imported}', so "
             "libgcc_s cannot be removed from the link interface of '${crate}'. "
             "xrpld will link libgcc_s.so.1 dynamically. Check where Corrosion "
@@ -65,7 +63,7 @@ function(_unlink_libgcc_s crate)
     get_target_property(libs ${imported} INTERFACE_LINK_LIBRARIES)
     if(NOT "gcc_s" IN_LIST libs)
         message(
-            WARNING
+            FATAL_ERROR
             "'gcc_s' was not in the link interface of '${imported}' as "
             "expected. If the Rust toolchain stopped reporting it this "
             "workaround is obsolete and can be deleted; otherwise xrpld may "

@@ -124,13 +124,8 @@ configuring with `-Drust=ON` (which is what CI does), see
   (your package manager, or a source build of the matching tag installed into a
   prefix on `CMAKE_PREFIX_PATH`).
 
-On **Linux and macOS**, the [Nix development shell](./nix.md) provides both the
-pinned Rust toolchain and Corrosion, so `-Drust=ON` works with no extra setup.
-`./bin/check-tools.sh` reports the Rust toolchain it finds. If Corrosion is
-missing, CMake stops during configuration with a fatal error naming what to
-install.
-
-On **Windows**, Corrosion does not have to be installed: when it is not found,
+> [!NOTE]
+> On **Windows**, Corrosion does not have to be installed: when it is not found,
 CMake downloads and builds the pinned version automatically. The Rust toolchain
 itself still has to be installed manually (see the [Windows](#windows) list
 above).

@@ -139,16 +139,12 @@ if(coverage)
     include(XrplCov)
 endif()
 
+add_custom_target(tidy_prerequisites)
+
 if(rust)
     add_subdirectory(crates)
 endif()
 include(XrplCore)
-
-add_custom_target(xrpl_tidy_prerequisites)
-add_dependencies(xrpl_tidy_prerequisites xrpl.libpb)
-if(rust)
-    add_dependencies(xrpl_tidy_prerequisites xrpl_crates)
-endif()
 
 include(XrplProtocolAutogen)
 include(XrplInstall)

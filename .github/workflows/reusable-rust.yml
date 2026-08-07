@@ -14,7 +14,7 @@ on:
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
-        required: false
+        required: true
 
 defaults:
   run:
