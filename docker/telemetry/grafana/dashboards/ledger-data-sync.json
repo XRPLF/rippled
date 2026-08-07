@@ -14,7 +14,7 @@
       "description": "###### What this is:\n*All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.*\n\n###### How it's computed:\n*Top categories by latest inbound byte value across all traffic categories. Each bar is labelled with its traffic category followed by the node identity; the shared `_bytes_in` suffix is dropped from the category name because the panel already reports inbound bytes.*\n\n###### Reading it:\n*The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "bargauge",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 0
@@ -75,10 +75,10 @@
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 4
+        "x": 12,
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -125,10 +125,10 @@
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 4
+        "x": 0,
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -187,10 +187,10 @@
       "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 12
+        "x": 12,
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -237,10 +237,10 @@
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 12
+        "x": 0,
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -287,9 +287,9 @@
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 20
       },
       "options": {
@@ -349,10 +349,10 @@
       "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 20
+        "x": 0,
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -399,10 +399,10 @@
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 28
+        "x": 12,
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -449,10 +449,10 @@
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 28
+        "x": 0,
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -511,10 +511,10 @@
       "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 36
+        "x": 12,
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -561,10 +561,10 @@
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 36
+        "x": 0,
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -605,10 +605,10 @@
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 44
+        "x": 12,
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -655,10 +655,10 @@
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 44
+        "x": 0,
+        "y": 60
       },
       "options": {
         "tooltip": {
@@ -699,10 +699,10 @@
       "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 52
+        "x": 12,
+        "y": 60
       },
       "options": {
         "tooltip": {
@@ -755,10 +755,10 @@
       "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 52
+        "x": 0,
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -838,7 +838,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 80
       },
       "id": 16,
       "panels": []
@@ -848,10 +848,10 @@
       "description": "###### What this is:\n*Current server operating state as a numeric code: 0 disconnected, 1 connected, 2 syncing, 3 tracking, 4 full, 5 validating, 6 proposing. A healthy validator sits at 6, a healthy non-validating node at 4.*\n\n###### How it's computed:\n*state_tracking{metric=\"state_value\"} (gauge). Companion time_in_current_state_seconds shows how long it has been stuck there.*\n\n###### Reading it:\n*Flat at 4-6 = full/healthy. Dropping to 1-2 and staying = the node fell out of sync and is re-acquiring (the primary red flag this row explains).*\n\n###### Healthy range:\n*4-6 steady, briefly 2-3 right after restart.*\n\n###### Watch for:\n*A node stuck below 4 for more than a few minutes, or oscillating - read the lower panels for the cause.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 61
+        "y": 81
       },
       "options": {
         "tooltip": {
@@ -973,10 +973,10 @@
       "description": "###### What this is:\n*Seconds since this node last had a freshly validated ledger. The single clearest 'am I keeping up with the network' signal.*\n\n###### How it's computed:\n*ledgermaster_validated_ledger_age gauge (seconds), per node.*\n\n###### Reading it:\n*Should hover at the network close interval (~3-5s). A rising sawtooth or a high plateau means the node is falling behind or not validating.*\n\n###### Healthy range:\n*<= ~6s on a synced node.*\n\n###### Watch for:\n*Sustained climb above ~15s, or a monotonic ramp = the node is not keeping up; correlate with job-queue wait and NuDB read latency below.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::getValidatedLedgerAge`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 61
+        "y": 81
       },
       "options": {
         "tooltip": {
@@ -1021,14 +1021,14 @@
       "id": 18
     },
     {
-      "title": "Time Spent Per State [$xrpl_network_type]",
+      "title": "Time Spent Per State",
       "description": "###### What this is:\n*Operating mode as a colour-coded timeline. Each band's width is the time spent in that state, so short-lived states show as thin slivers instead of vanishing.*\n\n###### How it's computed:\n*server_info{metric=\"server_state\"} (gauge), the raw OperatingMode 0-4. Uses server_state rather than state_value because state_value folds 5 and 6 onto FULL, which would split one Full band into three colours.*\n\n###### Reading it:\n*One green band across the window = healthy. Red/orange/yellow bands show when and for how long the node was degraded.*\n\n###### Healthy range:\n*Continuously green (Full), brief orange/yellow/blue only after a restart.*\n\n###### Watch for:\n*Repeated thin bands = the node is oscillating. This is sampled every 10s, so a state shorter than one sample can still be missed.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
       "type": "state-timeline",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 69
+        "y": 91
       },
       "options": {
         "mergeValues": true,
@@ -1131,20 +1131,17 @@
         },
         "overrides": []
       },
-      "id": 19,
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2
+      "id": 19
     },
     {
       "title": "Ledger Close Rate",
       "description": "###### What this is:\n*Rate at which the node closes ledgers, versus the ~0.25/s network cadence. A throughput deficit means it is not advancing in step with the network.*\n\n###### How it's computed:\n*rate(ledgers_closed_total[$__rate_interval]) per node.*\n\n###### Reading it:\n*Should track ~0.22-0.25 ledgers/s (one every ~4s). Near-zero while behind = stalled; a burst above network rate = catching up.*\n\n###### Healthy range:\n*~0.25/s steady on a synced node.*\n\n###### Watch for:\n*Near-zero close rate while Validated Ledger Age climbs = hard stall (e.g. genesis-flapping or disk-bound acquisition).*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::closeLedger`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 69
+        "y": 91
       },
       "options": {
         "tooltip": {
@@ -1210,10 +1207,10 @@
       "description": "###### What this is:\n*95th-percentile time a job waits in the queue before a worker thread picks it up, for the sync-critical job types. This is the metric form of the 'ProcessLData wait: NNNNms' warnings in the debug log.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(jobq_<type>_q_milliseconds_bucket[$__rate_interval])) for ledgerdata, acceptledger, fetchtxndata, transaction, advanceledger, ledgerrequest.*\n\n###### Reading it:\n*Queue wait should be single-digit to low-tens of ms. High ledgerdata/fetchtxndata wait = the node cannot process inbound ledger data fast enough.*\n\n###### Healthy range:\n*< ~50ms p95 per type on a healthy node.*\n\n###### Watch for:\n*ledgerdata or fetchtxndata q-wait spiking to seconds = worker threads are blocked (usually on NuDB reads - see the cause tier).*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJson (per-type queue timing)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 77
+        "y": 101
       },
       "options": {
         "tooltip": {
@@ -1290,10 +1287,10 @@
       "description": "###### What this is:\n*Average nodestore (NuDB) read latency: how long each on-disk object read takes. The direct disk-layer cost that backs up the job queue.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_duration_us\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]), in us.*\n\n###### Reading it:\n*Low single-digit us when the OS page cache is warm; tens-to-hundreds of us when reads hit the disk. Rises sharply during cold-cache catch-up.*\n\n###### Healthy range:\n*< ~10us/read warm; higher is expected briefly after a wipe/restart.*\n\n###### Watch for:\n*Sustained high us/read is the disk-bound signal on its own; the found ratio below stays near 100% even then, so do not wait for it to drop. Check EBS IOPS / io scheduler latency.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB backend read path`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 77
+        "y": 101
       },
       "options": {
         "tooltip": {
@@ -1335,10 +1332,10 @@
       "description": "###### What this is:\n*95th-percentile latency of the node's internal I/O service queue - the async task scheduler that dispatches network and disk callbacks.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(ios_latency_milliseconds_bucket[$__rate_interval])).*\n\n###### Reading it:\n*Low and flat when the event loop is responsive. Rising p95 means callbacks are queuing behind long-running work (often blocking disk reads).*\n\n###### Healthy range:\n*< ~10ms p95.*\n\n###### Watch for:\n*p95 climbing into hundreds of ms = the I/O service is saturated; the node cannot service network/disk events promptly, stalling sync.*\n\n###### Source:\n[core/impl/Workers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/Workers.cpp)\n\n###### Function:\n`io_service latency histogram`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 85
+        "y": 111
       },
       "options": {
         "tooltip": {
@@ -1380,10 +1377,10 @@
       "description": "###### What this is:\n*Fraction of nodestore fetches that found the object they asked for. This is not a cache hit ratio: `node_reads_hit` counts every fetch that returned an object, whatever served it, so a fetch that went all the way to disk still counts here.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_hit\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]).*\n\n###### Reading it:\n*Normally sits near 1.0 (100%) on any node that has the data, warm or cold, because a synced node almost always finds what it asks for. It does not fall when the page cache goes cold.*\n\n###### Healthy range:\n*Near 1.0. A ratio well below 1.0 means fetches are missing, which points at a gap in local history rather than at cache pressure.*\n\n###### Watch for:\n*Never read this panel on its own. A ~100% found ratio at over 100 microseconds per read is the cold-read signature, not a healthy cache: the data is found every time and paid for every time. Always pair it with NuDB Read Latency.*\n\n###### Source:\n[nodestore/Database.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/Database.cpp)\n\n###### Function:\n`Database::fetchNodeObject`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 85
+        "y": 111
       },
       "options": {
         "tooltip": {
@@ -1425,10 +1422,10 @@
       "description": "###### What this is:\n*Nodestore read throughput and backlog: reads per second, the pending read queue depth, and how many read threads are active. Shows disk saturation depth.*\n\n###### How it's computed:\n*rate(node_reads_total), and gauges read_queue / read_threads_running from nodestore_state.*\n\n###### Reading it:\n*reads/s spikes during catch-up. A growing read_queue with all read threads busy = disk cannot keep up with demand.*\n\n###### Healthy range:\n*read_queue ~0 and reads/s low on a warm synced node.*\n\n###### Watch for:\n*read_queue climbing while read_threads_running is pinned at read_threads_total = disk-bound; the IOPS ceiling is the limiter.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB read scheduler`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 93
+        "y": 121
       },
       "options": {
         "tooltip": {
@@ -1517,10 +1514,10 @@
       "description": "###### What this is:\n*Total number of jobs currently queued across the JobQueue. A backlog means work is arriving faster than worker threads can drain it.*\n\n###### How it's computed:\n*jobq_job_count gauge (total queued jobs), per node.*\n\n###### Reading it:\n*Near 0 when keeping up. Sustained positive depth = the node is overloaded or blocked on a downstream resource (usually disk reads).*\n\n###### Healthy range:\n*~0 on a healthy node.*\n\n###### Watch for:\n*Depth climbing in step with Validated Ledger Age = the queue backlog is why the node is falling behind.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJobCountTotal`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 93
+        "y": 121
       },
       "options": {
         "tooltip": {
@@ -1563,10 +1560,10 @@
       "description": "###### What this is:\n*Server load factor (fee/throttle multiplier; 1 = unloaded) alongside active inbound/outbound peer counts. Rules out overload and insufficient fetch sources as causes.*\n\n###### How it's computed:\n*load_factor_metrics{metric=\"load_factor\"}, and peer_finder_active_inbound_peers / _outbound_peers gauges.*\n\n###### Reading it:\n*load_factor at 1 = no local overload. Outbound peers should be healthy (~10+); too few peers limits how fast the node can fetch ledger data.*\n\n###### Healthy range:\n*load_factor = 1; outbound peers >= ~8.*\n\n###### Watch for:\n*load_factor > 1 = local overload throttling; very low peer count = not enough sources to acquire history from (a distinct sync bottleneck).*\n\n###### Source:\n[overlay/detail/OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl load / PeerFinder counts`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 101
+        "y": 131
       },
       "options": {
         "tooltip": {

@@ -26,7 +26,7 @@
       "description": "**What:** Time to process an accepted ledger, from the moment consensus is reached through applying the transaction set and finalising state.\n**How it's computed:** 95th and 50th percentile of per-round durations over a 5-minute window, per node.\n**Reading it:** Flat p50 with a modest p95 gap is normal; both track network transaction load.\n**Healthy range:** Roughly 3-6 seconds on mainnet.\n**Watch for:** A rising p95 that pulls away from p50 means occasional slow rounds; sustained growth precedes ledger-age alarms.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 1
@@ -81,7 +81,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 11
       },
       "collapsed": false,
       "panels": [],
@@ -92,10 +92,10 @@
       "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -129,10 +129,10 @@
       "description": "**What:** How often this node broadcasts its own consensus proposal (its candidate transaction set) to the network.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** A proposing validator emits a steady stream, roughly one per consensus round; observing-only nodes emit none.\n**Healthy range:** About one proposal per round (~0.2-0.3/s on mainnet) for a proposing node.\n**Watch for:** A validator that drops to zero has stopped proposing and may be unhealthy or misconfigured.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::propose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 14
+        "x": 12,
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -174,10 +174,10 @@
       "description": "**What:** Time spent closing a ledger once consensus triggers the close, up to completion.\n**How it's computed:** 95th percentile of per-close durations over a 5-minute window, per node.\n**Reading it:** Should sit at or just below the full round duration; a subset of overall round time.\n**Healthy range:** A few seconds, tracking the ~4s mainnet ledger interval.\n**Watch for:** A widening gap versus round duration points to overhead outside ledger construction.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 14
+        "x": 0,
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -219,9 +219,9 @@
       "description": "**What:** Time spent applying the agreed consensus result to build the new ledger.\n**How it's computed:** 95th and 50th percentile of per-round apply durations over a 5-minute window, per node.\n**Reading it:** Scales with the size of the transaction set being applied.\n**Healthy range:** Tens to a few hundred milliseconds under normal load.\n**Watch for:** Spikes indicate heavy transaction sets or I/O pressure while writing ledger state.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 22
       },
       "targets": [
@@ -272,10 +272,10 @@
       "description": "**What:** Whether validators agreed on the ledger close time (agreed) or agreed to disagree and used a fallback (disagreed), per round.\n**How it's computed:** Per-second rate of rounds split by agreement outcome over a 5-minute window, per node.\n**Reading it:** Nearly all rounds should show agreement.\n**Healthy range:** Overwhelmingly agreement; occasional disagreement is tolerable.\n**Watch for:** A rising disagreement share signals clock drift or network latency across validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 22
+        "x": 0,
+        "y": 32
       },
       "targets": [
         {
@@ -317,10 +317,10 @@
       "description": "**What:** Ledger close events split by the node's consensus mode: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n**How it's computed:** Per-second rate per mode over a 5-minute window, per node.\n**Reading it:** A healthy validator stays predominantly in Proposing; a stock node stays in Observing.\n**Healthy range:** Mostly one dominant mode with negligible Wrong/Switched Ledger.\n**Watch for:** Frequent Wrong Ledger or Switched Ledger indicates the node is out of sync and at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 30
+        "x": 12,
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -362,10 +362,10 @@
       "description": "**What:** Rate of ledgers accepted after consensus versus ledger-close events initiated.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** The two lines should overlap on a healthy network.\n**Healthy range:** Both near the ledger cadence (~0.25/s on mainnet) and tracking each other.\n**Watch for:** Divergence means some closes never complete the accept phase, hinting at consensus failures or timeouts.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan, onClose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 30
+        "x": 0,
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -415,10 +415,10 @@
       "description": "**What:** Rate of validations sent versus ledger-close events.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** Each validated ledger should yield one validation, so the lines should overlap.\n**Healthy range:** Both near the ledger cadence and tracking each other.\n**Watch for:** Validations trailing closes points to a stalled or slow validation pipeline.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan, onClose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 38
+        "x": 12,
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -468,10 +468,10 @@
       "description": "**What:** Distribution of per-round accept durations over time, showing how round times are spread rather than just a percentile.\n**How it's computed:** Counts of rounds by duration band in each 5-minute window, per node.\n**Reading it:** A tight band around the typical round time is healthy; brighter cells mark the common duration.\n**Healthy range:** Concentrated near the 3-6 second mainnet round time.\n**Watch for:** A second band at high durations reveals recurring slow rounds hidden by averages.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 38
+        "x": 0,
+        "y": 52
       },
       "options": {
         "tooltip": {
@@ -512,7 +512,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 62
       },
       "collapsed": false,
       "panels": [],
@@ -523,10 +523,10 @@
       "description": "**What:** Each node's raw, unrounded proposed close time at the instant it closed its ledger.\n**How it's computed:** Latest raw close-time value per node, plotted per round.\n**Reading it:** Compare nodes at the same round; values should cluster tightly.\n**Healthy range:** All nodes within a few seconds of each other.\n**Watch for:** A node consistently offset from the pack indicates local clock drift.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 63
       },
       "fieldConfig": {
         "defaults": {
@@ -572,10 +572,10 @@
       "description": "**What:** The consensus-agreed close time after rounding to the active resolution bin, i.e. the value written to the ledger header.\n**How it's computed:** Latest effective close-time value per node, plotted per round.\n**Reading it:** All in-agreement nodes should report the identical value each round.\n**Healthy range:** Identical across agreeing nodes.\n**Watch for:** Nodes reporting different effective values are not in close-time agreement for that round.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 47
+        "y": 63
       },
       "fieldConfig": {
         "defaults": {
@@ -621,10 +621,10 @@
       "description": "**What:** Number of distinct close-time vote buckets and the current close-time resolution, per round.\n**How it's computed:** Latest bin count and resolution value plotted per round, per node.\n**Reading it:** Fewer bins and finer resolution mean tighter agreement; resolution coarsens automatically when validators disagree.\n**Healthy range:** Few bins with fine (about 10s) resolution during healthy operation.\n**Watch for:** Many bins or resolution jumping to its coarse ceiling signals widespread clock disagreement.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 55
+        "y": 73
       },
       "fieldConfig": {
         "defaults": {
@@ -711,10 +711,10 @@
       "description": "**What:** Whether close-time resolution coarsened, sharpened, or held steady versus the previous ledger.\n**How it's computed:** Latest direction outcome plotted per round, per node.\n**Reading it:** Mostly unchanged with occasional sharpening is healthy.\n**Healthy range:** Predominantly unchanged.\n**Watch for:** Repeated coarsening indicates worsening agreement round over round.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 55
+        "y": 73
       },
       "fieldConfig": {
         "defaults": {
@@ -759,10 +759,10 @@
       "description": "**What:** How raw proposed close times spread across the quantized buckets each round.\n**How it's computed:** Count of proposals landing in each bucket, stacked per round.\n**Reading it:** A single dominant bar means strong clock agreement.\n**Healthy range:** One dominant bucket per round.\n**Watch for:** Spread across many buckets points to clock drift or network latency between validators.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "barchart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 83
       },
       "fieldConfig": {
         "defaults": {
@@ -808,7 +808,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 71
+        "y": 93
       },
       "collapsed": false,
       "panels": [],
@@ -819,10 +819,10 @@
       "description": "**What:** Share of consensus outcomes: normal agreement, moved on without full agreement, or expired (timed out).\n**How it's computed:** Total counts per outcome over a 5-minute window, shown as proportions.\n**Reading it:** The normal outcome should dominate overwhelmingly.\n**Healthy range:** Nearly all normal.\n**Watch for:** A growing moved-on or expired slice indicates network stress or instability.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "piechart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 94
       },
       "options": {
         "legend": {
@@ -857,10 +857,10 @@
       "description": "**What:** Rate of non-normal consensus outcomes (moved on plus expired) over time.\n**How it's computed:** Per-second rate of each failure outcome over a 5-minute window, per node.\n**Reading it:** Should sit at or near zero.\n**Healthy range:** Effectively zero on a stable network.\n**Watch for:** Spikes indicate consensus instability; sustained failures warrant investigation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::makeAcceptSpan",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 104
       },
       "options": {
         "tooltip": {
@@ -910,10 +910,10 @@
       "description": "**What:** End-to-end duration of a complete consensus round, filterable by consensus mode.\n**How it's computed:** 95th and 50th percentile of full-round durations over a 5-minute window, per node.\n**Reading it:** The single most important consensus-health signal; watch the trend.\n**Healthy range:** Roughly 3-6 seconds on mainnet.\n**Watch for:** Rising round time precedes validated-ledger-age alarms and points to convergence trouble.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::startRoundTracing",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 104
       },
       "options": {
         "tooltip": {
@@ -963,10 +963,10 @@
       "description": "**What:** Duration of the open phase (collecting transactions) versus the establish phase (converging on a proposal), which together make up a round.\n**How it's computed:** 95th percentile of each phase's duration over a 5-minute window, per node.\n**Reading it:** Compare the two to see whether slowness is in gathering transactions or reaching agreement.\n**Healthy range:** Open phase near the close interval; establish phase typically shorter.\n**Watch for:** A ballooning establish phase means slow convergence; a long open phase means delayed close.\n**Source:** src/xrpld/consensus/Consensus.h:Consensus::phaseOpen, Consensus::phaseEstablish",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 114
       },
       "options": {
         "tooltip": {
@@ -1018,7 +1018,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 124
       },
       "collapsed": false,
       "panels": [],
@@ -1029,10 +1029,10 @@
       "description": "**What:** Time spent each round tallying disputes and updating this node's consensus position.\n**How it's computed:** 95th and 50th percentile of per-round durations over a 5-minute window, per node.\n**Reading it:** Grows with the number of disputed transactions being reconciled.\n**Healthy range:** A few milliseconds under normal conditions.\n**Watch for:** Long durations indicate heavy dispute resolution or slow convergence on close time.\n**Source:** src/xrpld/consensus/Consensus.h:Consensus::updateOurPositions",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 97
+        "y": 125
       },
       "options": {
         "tooltip": {
@@ -1082,10 +1082,10 @@
       "description": "**What:** Rate of consensus health checks reporting a stalled condition versus progressing normally.\n**How it's computed:** Per-second rate split by stalled flag over a 5-minute window, per node.\n**Reading it:** The stalled line should stay at zero.\n**Healthy range:** Zero stalled checks.\n**Watch for:** Any sustained stalled rate surfaces a stall before it becomes a validated-ledger-age alarm.\n**Source:** src/xrpld/consensus/Consensus.h:Consensus::haveConsensus",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 97
+        "y": 125
       },
       "options": {
         "tooltip": {
@@ -1135,10 +1135,10 @@
       "description": "**What:** Rate of consensus mode transitions, split by the mode the node switched into.\n**How it's computed:** Per-second rate per target mode over a 5-minute window, per node.\n**Reading it:** A stable node changes mode rarely; occasional switches around startup are normal.\n**Healthy range:** Near zero once synced.\n**Watch for:** Frequent switches into Wrong Ledger or Switched Ledger mark an unstable node at fork risk.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onModeChange",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 105
+        "y": 135
       },
       "options": {
         "tooltip": {
