@@ -17,6 +17,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace xrpl::proposal {
 

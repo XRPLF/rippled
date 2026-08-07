@@ -4,7 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
