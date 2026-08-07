@@ -8,7 +8,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 struct Entry;
 class Logic;
@@ -96,4 +96,4 @@ private:
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v);
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource
