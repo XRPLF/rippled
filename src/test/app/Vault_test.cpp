@@ -1603,8 +1603,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2207,9 +2206,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});
@@ -2253,7 +2250,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // Enable CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            mptt.set({.flags = tfMPTSetCanTrade});
             env.close();
 
             env(offer(alice, XRP(1), asset(10)));
