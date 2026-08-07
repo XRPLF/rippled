@@ -248,112 +248,6 @@
       "id": 6
     },
     {
-      "title": "Pathfinding Fast Duration",
-      "description": "**What:** P95 and P50 execution time of the fast pathfinding search (simplified, favoring speed over completeness).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; fast pathfinding should stay quick.\n**Healthy range:** workload-dependent; typically well below full pathfinding.\n**Watch for:** Rising fast-path latency (pathfinding load or complex order books).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 22
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Fast Pathfind [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Fast Pathfind [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 7
-    },
-    {
-      "title": "Pathfinding Full Duration",
-      "description": "**What:** P95 and P50 execution time of the full, exhaustive pathfinding search.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Full pathfinding is heavier and slower than fast mode.\n**Healthy range:** workload-dependent.\n**Watch for:** High or rising full-path latency (expensive path computation under subscription load).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 22
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P95 Full Pathfind [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "interval": "15s",
-          "legendFormat": "P50 Full Pathfind [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "id": 8
-    },
-    {
       "title": "Resource Warnings Rate [$xrpl_network_type]",
       "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over 5 minutes.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
       "type": "stat",
@@ -361,7 +255,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -404,7 +298,7 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
-      "id": 9
+      "id": 7
     },
     {
       "title": "Resource Drops Rate [$xrpl_network_type]",
@@ -414,7 +308,7 @@
         "h": 4,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -457,6 +351,112 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
+      "id": 8
+    },
+    {
+      "title": "Pathfinding Fast Duration",
+      "description": "**What:** P95 and P50 execution time of the fast pathfinding search (simplified, favoring speed over completeness).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; fast pathfinding should stay quick.\n**Healthy range:** workload-dependent; typically well below full pathfinding.\n**Watch for:** Rising fast-path latency (pathfinding load or complex order books).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Fast Pathfind [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Fast Pathfind [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 9
+    },
+    {
+      "title": "Pathfinding Full Duration",
+      "description": "**What:** P95 and P50 execution time of the full, exhaustive pathfinding search.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Full pathfinding is heavier and slower than fast mode.\n**Healthy range:** workload-dependent.\n**Watch for:** High or rising full-path latency (expensive path computation under subscription load).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Full Pathfind [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Full Pathfind [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
       "id": 10
     },
     {

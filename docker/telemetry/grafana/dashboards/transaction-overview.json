@@ -9,6 +9,60 @@
   "links": [],
   "panels": [
     {
+      "title": "Transaction Apply Failed Rate [$xrpl_network_type]",
+      "description": "**What:** Rate of transactor-stage applies that returned a non-success result while building a ledger.\n**How it's computed:** Per-second rate of tx.transactor spans at stage=apply whose ter_result is not tesSUCCESS, per node.\n**Reading it:** Green below 1/s, yellow 1-5/s, red above 5/s.\n**Healthy range:** A steady low non-zero rate is normal (e.g. tefPAST_SEQ, tecUNFUNDED and other benign conflicts).\n**Watch for:** A sustained jump above the normal baseline can indicate malformed transaction floods or a systemic issue.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.transactor\", stage=\"apply\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "Failed / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: transactions/s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
+    },
+    {
       "title": "Transaction Processing Rate",
       "description": "**What:** Rate of transactions entering the processing pipeline (submitted locally or relayed by peers) versus raw transaction messages arriving from peers before deduplication.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** The received line sits above the processed line by the volume of duplicates filtered out.\n**Healthy range:** Workload-dependent; scales with network transaction volume.\n**Watch for:** A large and growing gap means heavy duplicate traffic; a processed-rate collapse means submissions are not being handled.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction, src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
@@ -16,7 +70,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -59,7 +113,7 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 2
     },
     {
       "title": "Transaction Processing Latency by Type",
@@ -69,7 +123,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -117,7 +171,7 @@
         },
         "overrides": []
       },
-      "id": 2
+      "id": 3
     },
     {
       "title": "Transaction Path Distribution",
@@ -127,7 +181,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -151,7 +205,7 @@
         },
         "overrides": []
       },
-      "id": 3
+      "id": 4
     },
     {
       "title": "Transaction Receive vs Suppressed",
@@ -161,7 +215,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -196,7 +250,7 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Transaction Processing Duration Heatmap",
@@ -206,7 +260,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -238,7 +292,7 @@
           }
         }
       },
-      "id": 5
+      "id": 6
     },
     {
       "title": "Transaction Apply Duration per Ledger",
@@ -248,7 +302,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -291,60 +345,6 @@
         },
         "overrides": []
       },
-      "id": 6
-    },
-    {
-      "title": "Transaction Apply Failed Rate [$xrpl_network_type]",
-      "description": "**What:** Rate of transactor-stage applies that returned a non-success result while building a ledger.\n**How it's computed:** Per-second rate of tx.transactor spans at stage=apply whose ter_result is not tesSUCCESS, per node.\n**Reading it:** Green below 1/s, yellow 1-5/s, red above 5/s.\n**Healthy range:** A steady low non-zero rate is normal (e.g. tefPAST_SEQ, tecUNFUNDED and other benign conflicts).\n**Watch for:** A sustained jump above the normal baseline can indicate malformed transaction floods or a systemic issue.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 32
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 600
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.transactor\", stage=\"apply\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "Failed / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: transactions/s",
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 7
     },
     {

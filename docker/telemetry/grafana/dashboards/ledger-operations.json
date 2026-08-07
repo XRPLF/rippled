@@ -59,6 +59,43 @@
       "id": 2
     },
     {
+      "title": "Ledger Validation Rate [$xrpl_network_type]",
+      "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ledgers/s"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 3
+    },
+    {
       "title": "Ledger Build Duration",
       "description": "**What:** Time to build a full ledger, including applying transactions, writing state, and finalising acceptance.\n**How it's computed:** 95th and 50th percentile of per-build durations over a 5-minute window, per node.\n**Reading it:** Scales with transaction volume and disk I/O.\n**Healthy range:** Tens to a few hundred milliseconds under typical load.\n**Watch for:** Long build times indicate expensive transaction sets or I/O pressure while flushing state.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "timeseries",
@@ -109,43 +146,6 @@
         },
         "overrides": []
       },
-      "id": 3
-    },
-    {
-      "title": "Ledger Validation Rate [$xrpl_network_type]",
-      "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 13
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: ledgers/s"
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 4
     },
     {
@@ -155,8 +155,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 17
+        "x": 12,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -197,7 +197,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 13
       },
       "collapsed": false,
       "panels": [],
@@ -211,7 +211,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -264,7 +264,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -308,7 +308,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 22
       },
       "collapsed": false,
       "panels": [],
@@ -322,7 +322,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 23
       },
       "options": {
         "tooltip": {
@@ -359,7 +359,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 27
       },
       "options": {
         "tooltip": {

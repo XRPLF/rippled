@@ -88,6 +88,43 @@
       "id": 3
     },
     {
+      "title": "Validation Send Rate [$xrpl_network_type]",
+      "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: validations/s"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 4
+    },
+    {
       "title": "Consensus Proposals Sent Rate",
       "description": "**What:** How often this node broadcasts its own consensus proposal (its candidate transaction set) to the network.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** A proposing validator emits a steady stream, roughly one per consensus round; observing-only nodes emit none.\n**Healthy range:** About one proposal per round (~0.2-0.3/s on mainnet) for a proposing node.\n**Watch for:** A validator that drops to zero has stopped proposing and may be unhealthy or misconfigured.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::propose",
       "type": "timeseries",
@@ -95,7 +132,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -130,7 +167,7 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Ledger Close Duration",
@@ -140,7 +177,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -175,43 +212,6 @@
         },
         "overrides": []
       },
-      "id": 5
-    },
-    {
-      "title": "Validation Send Rate [$xrpl_network_type]",
-      "description": "**What:** How often this node issues a validation confirming it has fully validated a ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should closely track the ledger close rate on a healthy validator.\n**Healthy range:** About one per ledger (~0.25/s on mainnet).\n**Watch for:** Validations lagging closes suggests the node is falling behind on validation.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::createValidationSpan",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[$__rate_interval]))",
-          "interval": "15s",
-          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: validations/s"
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 6
     },
     {
