@@ -39,11 +39,11 @@
   "links": [],
   "panels": [
     {
-      "title": "Validation Send Rate",
+      "title": "Validation Send Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How often this node issues a ledger validation to the network. Each validation asserts the node fully validated one ledger.*\n\n###### How it's computed:\n*Per-second rate of validation events sent, summed per node over a 5-minute window.*\n\n###### Reading it:\n*A flat line at the network's ledger cadence is normal; higher is not better and lower means the node is validating less often.*\n\n###### Healthy range:\n*Roughly one validation per closed ledger (about 0.2-0.3/s on a healthy chain).*\n\n###### Watch for:\n*A drop to zero on a validator means it stopped validating; a value well below the close rate means validation is lagging.*\n\n###### Keywords:\n- **Ledger validation** *(network event)* \u2014 the second consensus stage where the node confirms a built ledger matches the trusted validator quorum and marks it final.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::createValidationSpan`\n\n###### References:\n[Ledger validation](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-validation)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 0
@@ -71,7 +71,10 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 1,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "title": "Consensus Mode Over Time",
@@ -80,8 +83,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -108,12 +111,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
       "id": 2
+    },
+    {
+      "title": "Proposals & Validations",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
     },
     {
       "title": "Consensus Proposals Sent Rate",
@@ -123,7 +142,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -150,12 +169,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 3
+      "id": 4
     },
     {
       "title": "Accept vs Close Rate",
@@ -165,7 +187,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -199,12 +221,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Validation vs Close Rate",
@@ -214,7 +239,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 21
       },
       "options": {
         "tooltip": {
@@ -248,12 +273,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 5
+      "id": 6
     },
     {
       "title": "Time to Reach Consensus (p50/p95)",
@@ -263,7 +291,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 21
       },
       "options": {
         "tooltip": {
@@ -302,12 +330,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 6
+      "id": 7
     },
     {
       "title": "Average Time to Reach Consensus",
@@ -317,7 +348,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -346,12 +377,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 7
+      "id": 8
+    },
+    {
+      "title": "Consensus Rounds",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 9
     },
     {
       "title": "Consensus Rounds per Ledger (Establish Count)",
@@ -361,7 +408,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 38
       },
       "options": {
         "tooltip": {
@@ -395,13 +442,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "decimals": 0
         },
         "overrides": []
       },
-      "id": 8
+      "id": 10
     },
     {
       "title": "Previous Round Time per Ledger",
@@ -411,7 +461,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 46
       },
       "options": {
         "tooltip": {
@@ -440,12 +490,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 9
+      "id": 11
+    },
+    {
+      "title": "Timing",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 12
     },
     {
       "title": "Position Update Duration",
@@ -454,8 +520,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 40
+        "x": 0,
+        "y": 55
       },
       "options": {
         "tooltip": {
@@ -482,12 +548,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 10
+      "id": 13
     },
     {
       "title": "Ledger Close Duration",
@@ -496,8 +565,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 48
+        "x": 12,
+        "y": 55
       },
       "options": {
         "tooltip": {
@@ -524,12 +593,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 11
+      "id": 14
     },
     {
       "title": "Ledger Apply Duration (doAccept)",
@@ -538,8 +610,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 48
+        "x": 0,
+        "y": 63
       },
       "targets": [
         {
@@ -559,12 +631,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 12,
+      "id": 15,
       "options": {
         "tooltip": {
           "mode": "multi",
@@ -580,8 +655,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 56
+        "x": 12,
+        "y": 63
       },
       "options": {
         "tooltip": {
@@ -610,7 +685,7 @@
           "unit": "ms"
         }
       },
-      "id": 13
+      "id": 16
     },
     {
       "title": "Close-Time Agreement Rate (Agreed vs Disagreed)",
@@ -619,8 +694,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 56
+        "x": 0,
+        "y": 71
       },
       "targets": [
         {
@@ -640,12 +715,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 14,
+      "id": 17,
       "options": {
         "tooltip": {
           "mode": "multi",
@@ -661,8 +739,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 64
+        "x": 12,
+        "y": 71
       },
       "fieldConfig": {
         "defaults": {
@@ -672,7 +750,10 @@
             "pointSize": 5,
             "showPoints": "auto",
             "axisLabel": "Count / Milliseconds",
-            "spanNulls": 1800000
+            "spanNulls": 1800000,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "unit": "short"
         },
@@ -745,17 +826,17 @@
           "refId": "B"
         }
       ],
-      "id": 15
+      "id": 18
     },
     {
-      "title": "Close-Time Resolution Change (per Round)",
+      "title": "Close-Time Resolution Change (per Round) [$xrpl_network_type]",
       "description": "###### What this is:\n*Whether the close-time rounding granularity moved Coarser, Finer, or stayed Steady versus the previous round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by direction of change.*\n\n###### Reading it:\n*Mostly Steady is healthy; Coarser means widening bins (more disagreement), Finer means tightening.*\n\n###### Healthy range:\n*Predominantly Steady.*\n\n###### Watch for:\n*Frequent Coarser shifts indicate the network is repeatedly failing to agree on close time.*\n\n###### Keywords:\n- **Close-time resolution** *(network event)* \u2014 the granularity (in seconds) that close times are rounded to; widens when validators disagree.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Close time** *(network event)* \u2014 the timestamp validators agree to stamp on a ledger, rounded to a shared resolution.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Close-time resolution](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#close-time-resolution)",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 64
+        "x": 0,
+        "y": 79
       },
       "fieldConfig": {
         "defaults": {
@@ -794,7 +875,7 @@
           "refId": "A"
         }
       ],
-      "id": 16,
+      "id": 19,
       "transformations": [
         {
           "id": "renameByRegex",
@@ -817,17 +898,20 @@
             "renamePattern": "Steady"
           }
         }
-      ]
+      ],
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
-      "title": "Close-Time Proposal Spread (Distinct Positions per Round)",
+      "title": "Close-Time Proposal Spread (Distinct Positions per Round) [$xrpl_network_type]",
       "description": "###### What this is:\n*How spread out validators' proposed close times were, as the number of distinct positions per round.*\n\n###### How it's computed:\n*Rounds are counted over the window and grouped by their distinct-position count; each bar is one count value.*\n\n###### Reading it:\n*Weight on '1 distinct position' means everyone agreed; weight on 2 or more means the proposals split.*\n\n###### Healthy range:\n*Most rounds at a single distinct position.*\n\n###### Watch for:\n*A shift toward two or more distinct positions signals growing clock drift or latency across validators.*\n\n###### Keywords:\n- **Distinct positions** *(network event)* \u2014 the number of different close-time values validators proposed in a round; one means full agreement.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Clock drift** *(network event)* \u2014 differences between validators' clocks, which spread their proposed close times.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as trace spans and stored in Tempo; the value is computed directly from those raw spans by the panel's TraceQL query (no Prometheus metric involved).*\n\n###### Source:\n[RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`RCLConsensus::Adaptor::doAccept`\n\n###### References:\n[Distinct positions](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#distinct-positions)",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 72
+        "x": 12,
+        "y": 79
       },
       "fieldConfig": {
         "defaults": {
@@ -866,7 +950,23 @@
           "refId": "A"
         }
       ],
-      "id": 17
+      "id": 20,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Outcomes & Failures",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 21
     },
     {
       "title": "Consensus Outcome Distribution (per Round)",
@@ -876,7 +976,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 84
       },
       "options": {
         "legend": {
@@ -905,7 +1005,7 @@
         },
         "overrides": []
       },
-      "id": 18
+      "id": 22
     },
     {
       "title": "Consensus Failures Over Time",
@@ -915,7 +1015,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 92
       },
       "options": {
         "tooltip": {
@@ -949,12 +1049,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 19
+      "id": 23
     },
     {
       "title": "Consensus Stall Rate",
@@ -964,7 +1067,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 92
       },
       "options": {
         "tooltip": {
@@ -998,12 +1101,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 20
+      "id": 24
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
@@ -1013,7 +1119,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 96
+        "y": 100
       },
       "options": {
         "tooltip": {
@@ -1040,12 +1146,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 21
+      "id": 25
     },
     {
       "title": "Ledger History Mismatch Rate by Reason",
@@ -1055,7 +1164,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 96
+        "y": 100
       },
       "options": {
         "tooltip": {
@@ -1082,12 +1191,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 22
+      "id": 26
     }
   ],
   "schemaVersion": 39,

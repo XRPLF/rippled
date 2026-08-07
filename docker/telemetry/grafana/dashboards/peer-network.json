@@ -40,6 +40,19 @@
   "links": [],
   "panels": [
     {
+      "title": "Proposal & Validation Receive",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Peer Proposal Receive Rate",
       "description": "###### What this is:\n*How many consensus proposals this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received proposals over 5 minutes, per node.*\n\n###### Reading it:\n*A steady rate roughly proportional to the number of proposing validators.*\n\n###### Healthy range:\n*Workload-dependent; scales with validator count and connectivity.*\n\n###### Watch for:\n*A drop toward zero (isolation from the network) or a sudden flood far above baseline (proposal spam).*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n- **Proposers** *(network event)* \u2014 the count of validators whose proposals this node heard in the last closed round.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "timeseries",
@@ -47,7 +60,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -74,11 +87,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Peer Validation Receive Rate",
@@ -88,7 +105,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -115,11 +132,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
+    },
+    {
+      "title": "Trust Split",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 4
     },
     {
       "title": "Proposals Trusted vs Untrusted",
@@ -129,7 +163,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -153,7 +187,8 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Validations Trusted vs Untrusted",
@@ -163,7 +198,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -187,7 +222,21 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 6
+    },
+    {
+      "title": "Reduce-Relay",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 7
     },
     {
       "title": "Reduce-Relay Peer Selection",
@@ -197,7 +246,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 19
       },
       "options": {
         "tooltip": {
@@ -238,11 +287,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
-          }
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
       "title": "Reduce-Relay Missing-Tx Frequency",
@@ -252,7 +306,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 19
       },
       "options": {
         "tooltip": {
@@ -279,11 +333,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     }
   ],
   "schemaVersion": 39,

@@ -40,6 +40,19 @@
   "links": [],
   "panels": [
     {
+      "title": "Peer Connectivity",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Active Peers",
       "description": "###### What this is:\n*Number of active inbound and outbound peer connections the node currently holds.*\n\n###### How it's computed:\n*Current value of the inbound and outbound active-peer counts per node.*\n\n###### Reading it:\n*Outbound is what the node dials out; inbound is what others open to it. Both should be stable.*\n\n###### Healthy range:\n*roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.*\n\n###### Watch for:\n*Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).*\n\n###### Keywords:\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerfinderManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/PeerfinderManager.cpp)\n\n###### Function:\n`Logic Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#peer)",
       "type": "timeseries",
@@ -47,7 +60,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -81,11 +94,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
-          }
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Peer Disconnects",
@@ -95,7 +113,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -122,11 +140,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
-          }
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
       "title": "Total Network Bytes",
@@ -136,7 +159,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -170,11 +193,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Total Network Messages",
@@ -184,7 +211,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -218,11 +245,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Transaction Traffic",
@@ -232,7 +263,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -273,11 +304,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
       "title": "Proposal Traffic",
@@ -287,7 +322,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -335,11 +370,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Validation Traffic",
@@ -349,7 +388,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -397,21 +436,38 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
-      "title": "Overlay Traffic by Category (Bytes In)",
+      "title": "Traffic by Category",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 9
+    },
+    {
+      "title": "Overlay Traffic by Category (Bytes In) [$xrpl_network_type]",
       "description": "###### What this is:\n*Top overlay traffic categories ranked by inbound bytes, excluding the all-traffic total.*\n\n###### How it's computed:\n*Top categories by inbound byte rate per node.*\n\n###### Reading it:\n*Shows which message types dominate receive bandwidth right now.*\n\n###### Healthy range:\n*workload-dependent; transactions, proposals, and validations typically lead on a synced node.*\n\n###### Watch for:\n*A fetch or ledger-data category topping the list (sync activity) or an unexpected category dominating.*\n\n###### Keywords:\n- **Overlay** *(per node)* \u2014 the peer-to-peer network layer over which nodes exchange transactions, proposals, and validations.\n- **Proposal** *(network event)* \u2014 a validator's advertised set of candidate transactions for the next ledger, revised each round.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Overlay](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) \u00b7 [Proposal](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 24
+        "x": 0,
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -699,7 +755,11 @@
             ]
           }
         ]
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 10
     },
     {
       "title": "Duplicate Traffic (Wasted Bandwidth)",
@@ -709,7 +769,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 38
       },
       "options": {
         "tooltip": {
@@ -771,11 +831,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 11
+    },
+    {
+      "title": "Detail",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 12
     },
     {
       "title": "All Traffic Categories (Detail)",
@@ -784,8 +861,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 32
+        "x": 0,
+        "y": 47
       },
       "options": {
         "tooltip": {
@@ -812,11 +889,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     }
   ],
   "schemaVersion": 39,

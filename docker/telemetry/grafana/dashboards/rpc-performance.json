@@ -39,7 +39,7 @@
   "links": [],
   "panels": [
     {
-      "id": 11,
+      "id": 1,
       "type": "row",
       "title": "Aggregate RPC (all commands)",
       "collapsed": false,
@@ -86,12 +86,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 1
+      "id": 2
     },
     {
       "title": "RPC Latency P95 by Command",
@@ -128,19 +131,22 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 2
+      "id": 3
     },
     {
-      "title": "RPC Error Rate",
+      "title": "RPC Error Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*The percentage of each command's calls that finished with an error.*\n\n###### How it's computed:\n*Error calls divided by total calls per command over 5 minutes, expressed as a percent.*\n\n###### Reading it:\n*Green under 1%, yellow 1-5%, red above 5%.*\n\n###### Healthy range:\n*Below 1% per command in normal operation.*\n\n###### Watch for:\n*A command sitting red, indicating malformed input, overload, or a broken handler.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 9
@@ -184,7 +190,10 @@
         },
         "overrides": []
       },
-      "id": 3
+      "id": 4,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "title": "RPC Latency Heatmap",
@@ -193,8 +202,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 9
+        "x": 0,
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -223,7 +232,7 @@
           "unit": "ms"
         }
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Overall RPC Throughput",
@@ -232,8 +241,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 17
+        "x": 12,
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -267,12 +276,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 5
+      "id": 6
     },
     {
       "title": "RPC Success vs Error",
@@ -281,8 +293,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 17
+        "x": 0,
+        "y": 21
       },
       "options": {
         "tooltip": {
@@ -316,22 +328,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 6
+      "id": 7
     },
     {
-      "title": "Top Commands by Volume",
+      "title": "Top Commands by Volume [$xrpl_network_type]",
       "description": "###### What this is:\n*The ten most-called RPC commands over the recent window.*\n\n###### How it's computed:\n*Total invocation counts per command over the last 5 minutes, ranked and capped at ten.*\n\n###### Reading it:\n*The top bars are the hottest endpoints driving node load.*\n\n###### Healthy range:\n*Workload-dependent; typically led by lightweight status queries.*\n\n###### Watch for:\n*An unexpected command dominating the ranking, consistent with automated abuse.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[RPCHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/RPCHandler.cpp)\n\n###### Function:\n`callMethod`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -356,17 +371,20 @@
         },
         "overrides": []
       },
-      "id": 7
+      "id": 8,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
-      "title": "WebSocket Message Rate",
+      "title": "WebSocket Message Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How many RPC messages arrive over WebSocket connections per second.*\n\n###### How it's computed:\n*Per-second rate of processed WebSocket RPC messages over 5 minutes, per node.*\n\n###### Reading it:\n*Non-zero only when clients use WebSocket; zero is normal for HTTP-only nodes.*\n\n###### Healthy range:\n*Workload-dependent; zero if no WebSocket clients.*\n\n###### Watch for:\n*A sudden surge from a single source, consistent with a chatty or abusive subscription client.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n- **WebSocket** *(per node)* \u2014 a persistent-connection API transport used by subscription clients; zero on HTTP-only nodes.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler::processSession`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [WebSocket](https://xrpl.org/docs/references/http-websocket-apis/api-conventions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -391,7 +409,10 @@
         },
         "overrides": []
       },
-      "id": 8
+      "id": 9,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "title": "RPC Resource Cost by Command",
@@ -399,7 +420,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 33
       },
@@ -433,12 +454,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 9
+      "id": 10
     },
     {
       "title": "Batch vs Single RPC Requests",
@@ -447,8 +471,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 33
+        "x": 0,
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -482,12 +506,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 10
+      "id": 11
     },
     {
       "id": 12,
@@ -498,7 +525,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "panels": []
     },
@@ -508,9 +535,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -548,13 +575,14 @@
           "unit": "suffix: calls/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -572,7 +600,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 58
       },
       "options": {
         "tooltip": {
@@ -602,12 +630,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Calls / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -625,7 +654,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 66
       },
       "options": {
         "tooltip": {
@@ -655,12 +684,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Errors / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -678,7 +708,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 74
       },
       "options": {
         "tooltip": {
@@ -709,13 +739,14 @@
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u03bcs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -733,7 +764,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 82
       },
       "options": {
         "tooltip": {
@@ -763,12 +794,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u03bcs)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -786,7 +818,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 90
       },
       "options": {
         "tooltip": {
@@ -818,12 +850,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Error Ratio",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -850,14 +883,14 @@
       "id": 18
     },
     {
-      "title": "Current RPC Latency (p99 Gauge)",
+      "title": "Current RPC Latency (p99 Gauge) [$xrpl_network_type]",
       "description": "###### What this is:\n*Current tail latency (p99) of RPC handling across all methods, as a live gauge.*\n\n###### How it's computed:\n*p99 of the method-duration histogram over the recent window.*\n\n###### Reading it:\n*A single at-a-glance number for current RPC responsiveness.*\n\n###### Healthy range:\n*Low-millisecond under normal load.*\n\n###### Watch for:\n*Sustained elevation, indicating the node is under query pressure.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordRpcFinished`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "gauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 90
+        "y": 98
       },
       "options": {
         "reduceOptions": {
@@ -904,7 +937,10 @@
         },
         "overrides": []
       },
-      "id": 19
+      "id": 19,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     }
   ],
   "schemaVersion": 39,

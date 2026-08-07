@@ -40,11 +40,11 @@
   "links": [],
   "panels": [
     {
-      "title": "RPC Request Rate",
+      "title": "RPC Request Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How many RPC requests the server counts per second.*\n\n###### How it's computed:\n*Per-second rate of the RPC request counter over 5 minutes, per node.*\n\n###### Reading it:\n*A steady line proportional to client demand; cross-checks the trace-based RPC dashboard.*\n\n###### Healthy range:\n*Workload-dependent; tracks client activity.*\n\n###### Watch for:\n*A sudden surge above baseline, consistent with a client flooding the RPC endpoint.*\n\n###### Keywords:\n- **RPC command / method** *(per node)* \u2014 a named API request served by the node (e.g. account_info, ledger, submit), the unit RPC panels break down by.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`\n\n###### References:\n[RPC command / method](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rpc-command-method)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 0
@@ -71,7 +71,24 @@
           "unit": "reqps"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
+    },
+    {
+      "title": "RPC Response",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 2
     },
     {
       "title": "RPC Response Time",
@@ -80,8 +97,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -108,11 +125,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
       "title": "RPC Response Size",
@@ -121,8 +142,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -149,11 +170,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "RPC Response Time Distribution",
@@ -162,8 +187,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -204,11 +229,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
+    },
+    {
+      "title": "Pathfinding",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 6
     },
     {
       "title": "Pathfinding Fast Duration",
@@ -218,7 +260,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -245,11 +287,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Pathfinding Full Duration",
@@ -259,7 +305,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -286,21 +332,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
-      "title": "Resource Warnings Rate",
+      "title": "Resource Warnings Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How often the resource manager warns a peer or client for excessive usage, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-warning events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.1/sec, red above 1/sec.*\n\n###### Healthy range:\n*Near zero in normal operation.*\n\n###### Watch for:\n*A rising rate, consistent with aggressive clients that may need throttling.*\n\n###### Keywords:\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-drops-warnings)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -340,17 +390,21 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 9
     },
     {
-      "title": "Resource Drops Rate",
+      "title": "Resource Drops Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*How often the resource manager drops or blocks a peer or client for abuse, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-drop events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.01/sec, red above 0.1/sec.*\n\n###### Healthy range:\n*Zero when no abusive consumers are present.*\n\n###### Watch for:\n*Non-zero values, meaning the node is actively rejecting abusive connections.*\n\n###### Keywords:\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-drops-warnings)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -390,7 +444,24 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 10
+    },
+    {
+      "title": "gRPC (Spans)",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 11
     },
     {
       "title": "gRPC Request Rate by Method (Spans)",
@@ -400,7 +471,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -427,11 +498,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
       "title": "gRPC Latency P95 by Method (Spans)",
@@ -441,7 +516,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -468,11 +543,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     },
     {
       "title": "gRPC Error Rate by Status (Spans)",
@@ -482,7 +561,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -509,11 +588,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 14
     },
     {
       "title": "Pathfinding Compute Duration (Spans)",
@@ -523,7 +606,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -550,11 +633,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 15
     },
     {
       "title": "Pathfinding Request & Discovery Rate (Spans)",
@@ -562,9 +649,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 48
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -598,11 +685,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 16
     }
   ],
   "schemaVersion": 39,
