@@ -363,8 +363,7 @@ private:
             {.env = env,
              .issuer = issuer,
              .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanEnableCanTrade});
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -399,7 +398,7 @@ private:
         env.close();
 
         // Enable CanTrade and verify the DEX path is restored.
-        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        mpt.set({.flags = tfMPTSetCanTrade});
         env.close();
 
         env(offer(lender, XRP(1), asset(10)));
