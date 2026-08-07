@@ -446,12 +446,9 @@ struct TestPeerSet : public PeerSet
         if (behavior == PeerSetBehavior::DropAll)
             return;
 
-        // Drop every other message deterministically. A random 50% drop
-        // could drop all (1 + kSubTaskMaxTimeouts) sends of a subtask
-        // (probability (1/2)^11 per subtask), failing the whole task and
-        // making the test flaky. Alternating drops still exercise the
-        // timeout/retry path while guaranteeing every subtask eventually
-        // gets a reply.
+        // Drop every other message deterministically. Alternating drops
+        // still exercise the timeout/retry path while guaranteeing every
+        // subtask eventually gets a reply.
         if (behavior == PeerSetBehavior::Drop50 && sendCount++ % 2 == 0)
             return;
 
