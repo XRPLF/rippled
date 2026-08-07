@@ -129,7 +129,7 @@ private:
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
+    maxOffer(TAmounts<TIn, TOut> const& balances) const;
 };
 
 }  // namespace xrpl
