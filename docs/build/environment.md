@@ -97,38 +97,27 @@ manually:
 - [Conan 2.17](https://conan.io/downloads.html), or higher
 - [CMake 3.22](https://cmake.org/download/), or higher
 - a [Rust toolchain](https://rustup.rs) — only needed to build with
-  `-Drust=ON`, see [Rust and Corrosion](#rust-and-corrosion)
+  `-Drust=ON`, see [Rust](#rust)
 
 > [!NOTE]
 > Windows is used for development only and is not recommended for production.
 
-## Rust and Corrosion
+## Rust
 
 The repository contains a Rust workspace in [`crates/`](../../crates), whose
 crates are exposed to C++ through [cxx](https://cxx.rs) bindings. It is **not**
 part of a default build: the CMake `rust` option is OFF by default, and with it
-off neither of the dependencies below is needed. They are only required when
-configuring with `-Drust=ON` (which is what CI does), see
-[Options](../../BUILD.md#options).
+off no Rust toolchain is needed. It is only required when configuring with
+`-Drust=ON` (which is what CI does), see [Options](../../BUILD.md#options).
 
-- **Rust toolchain** (`cargo`, `rustc`) — the channel is pinned in
-  [`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If
-  you install Rust with [rustup](https://rustup.rs), that file is picked up
-  automatically, and `cargo`/`rustc` in the repository will use the pinned
-  version.
-- **[Corrosion](https://github.com/corrosion-rs/corrosion)** — a CMake package
-  that drives `cargo` from CMake and turns the crates into CMake targets. The
-  build requires the version pinned as `CORROSION_VERSION` in
-  [`crates/CMakeLists.txt`](../../crates/CMakeLists.txt) and looks for it with
-  `find_package(Corrosion)`, so it has to be installed where CMake can find it
-  (your package manager, or a source build of the matching tag installed into a
-  prefix on `CMAKE_PREFIX_PATH`).
+The toolchain (`cargo`, `rustc`) is pinned to the channel in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If
+you install Rust with [rustup](https://rustup.rs), that file is picked up
+automatically, and `cargo`/`rustc` in the repository will use the pinned
+version.
 
-> [!NOTE]
-> On **Windows**, Corrosion does not have to be installed: when it is not found,
-> CMake downloads and builds the pinned version automatically. The Rust toolchain
-> itself still has to be installed manually (see the [Windows](#windows) list
-> above).
+Everything else the Rust build needs on the CMake side comes from Conan along
+with the rest of the dependencies, so there is nothing further to install.
 
 ## Clang-tidy
 

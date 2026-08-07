@@ -20,10 +20,9 @@ You can verify that the required tools are installed and runnable with:
 ```
 
 Building the Rust crates in `crates/` is optional and off by default. It is
-enabled with `-Drust=ON`, which additionally requires a Rust toolchain and
-[Corrosion](https://github.com/corrosion-rs/corrosion) — see
-[Rust and Corrosion](./docs/build/environment.md#rust-and-corrosion) for how to
-get them, and [Rust crates](#rust-crates) below for what the option does.
+enabled with `-Drust=ON`, which additionally requires a Rust toolchain — see
+[Rust](./docs/build/environment.md#rust) for how to get it, and
+[Rust crates](#rust-crates) below for what the option does.
 
 `xrpld` is written in the C++23 dialect. The [tested compiler versions][cpp23-support] are:
 
@@ -357,22 +356,16 @@ builds may be faster for incremental builds, and can be helpful for detecting
 The Rust crates in `crates/` are only part of the build when `rust` is ON. With
 `-Drust=OFF` (the default) the `crates` directory is not added to the build, no
 cxxbridge bindings are generated, and the C++ tests that exercise the Rust
-interop are not compiled — so neither a Rust toolchain nor Corrosion is needed.
-CI builds always pass `-Drust=ON`.
+interop are not compiled — so no Rust toolchain is needed. CI builds always pass
+`-Drust=ON`.
 
-With `-Drust=ON` you need two extra dependencies:
-
-| Dependency                                             | Required version                                                          | Purpose                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Rust toolchain (`cargo`, `rustc`)                      | the channel pinned in [`rust-toolchain.toml`](./rust-toolchain.toml)      | Compiles the crates and generates the cxxbridge bindings.                       |
-| [Corrosion](https://github.com/corrosion-rs/corrosion) | `CORROSION_VERSION` in [`crates/CMakeLists.txt`](./crates/CMakeLists.txt) | CMake package that drives `cargo` from the build and creates the CMake targets. |
-
-Both are provided by the [Nix development shell](./docs/build/nix.md), so
-`-Drust=ON` works there without any extra setup. Otherwise install them as
-described in
-[Rust and Corrosion](./docs/build/environment.md#rust-and-corrosion). If
-Corrosion cannot be found, CMake fails during configuration with a message
-telling you what to install (on Windows it is downloaded automatically instead).
+With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`,
+`rustc`) matching the channel pinned in
+[`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and
+generates the cxxbridge bindings. It is provided by the
+[Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without
+any extra setup; otherwise install it as described in
+[Rust](./docs/build/environment.md#rust).
 
 The crates also have their own Rust unit tests. Those are run with `cargo` and
 need only the Rust toolchain, independently of CMake and of the `rust` option

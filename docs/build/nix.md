@@ -130,10 +130,9 @@ The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
 Builds of the Rust crates (`-Drust=ON`) also work out of the box: every shell
 provides the Rust toolchain pinned in
-[`rust-toolchain.toml`](../../rust-toolchain.toml) along with Corrosion, the
-CMake package that the build needs (see
-[Rust and Corrosion](./environment.md#rust-and-corrosion)), plus the
-`cargo-audit`, `cargo-llvm-cov` and `cargo-nextest` plugins.
+[`rust-toolchain.toml`](../../rust-toolchain.toml) (see
+[Rust](./environment.md#rust)), plus the `cargo-audit`, `cargo-llvm-cov` and
+`cargo-nextest` plugins.
 
 ## Automatic Activation with direnv
 

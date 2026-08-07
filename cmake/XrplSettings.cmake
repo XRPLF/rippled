@@ -33,8 +33,8 @@ endif()
 option(benchmark "Build benchmarks" ON)
 
 # When OFF, the crates directory is not added to the build at all: no Rust
-# toolchain or Corrosion is required, no cxxbridge bindings are generated, and
-# the C++ tests that consume those bindings are left out of the build tree.
+# toolchain is required, no cxxbridge bindings are generated, and the C++ tests
+# that consume those bindings are left out of the build tree.
 option(rust "Build the Rust crates and the C++ code that depends on them" OFF)
 
 # Enabled by default so every header is compiled on its own as the main file of
