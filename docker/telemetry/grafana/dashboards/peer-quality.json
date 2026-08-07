@@ -193,8 +193,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 12
+        "x": 0,
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -251,7 +251,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -321,7 +321,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 42
       },
       "collapsed": false,
       "panels": [],
@@ -335,7 +335,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 43
       },
       "options": {
         "orientation": "horizontal",
@@ -422,8 +422,8 @@
       "gridPos": {
         "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 33
+        "x": 0,
+        "y": 53
       },
       "options": {
         "tooltip": {
