@@ -36,6 +36,17 @@ namespace xrpl::test {
 
 struct TransactionProposalCreate_test : public beast::unit_test::Suite
 {
+    void
+    testReserveCounts()
+    {
+        testcase("proposal reserve");
+
+        using namespace jtx;
+
+        BEAST_EXPECT(proposal::kProposalOwnerCount == 5);
+        BEAST_EXPECT(proposal::kBatchProposalOwnerCount == 10);
+    }
+
     // Nothing about the transaction is available before the amendment is
     // active, not even to an otherwise valid proposal.
     void
@@ -754,6 +765,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         using namespace jtx;
 
         FeatureBitset const all{testableAmendments()};
+
+        testReserveCounts();
 
         // Preflight
         testDisabled(all);

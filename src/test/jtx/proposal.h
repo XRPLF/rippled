@@ -18,8 +18,10 @@
  */
 namespace xrpl::test::jtx::proposal {
 
-// The owner-reserve increments a proposal holds against its proposer, named so
-// tests and the transactor cannot disagree about them.
+// The owner-reserve increments a proposal holds against its proposer. Tests
+// spend these rather than repeating their values, so they follow the transactor
+// instead of checking it; TransactionProposalCreate_test pins the values
+// themselves, so a change to them has to be a deliberate one.
 using xrpl::proposal::kBatchProposalOwnerCount;
 using xrpl::proposal::kProposalOwnerCount;
 
