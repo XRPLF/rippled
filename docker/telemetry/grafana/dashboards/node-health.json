@@ -4481,7 +4481,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Disconnects",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,

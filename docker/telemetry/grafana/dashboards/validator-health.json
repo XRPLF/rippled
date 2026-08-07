@@ -740,63 +740,14 @@
       "id": 14
     },
     {
-      "title": "State Value Timeline",
-      "description": "###### What this is:\n*Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full, validating, proposing) over time.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the encoded state value.*\n\n###### Reading it:\n*A flat line at the full-operation state is healthy; steps show transitions.*\n\n###### Healthy range:\n*Steady at the highest (full) state.*\n\n###### Watch for:\n*Frequent transitions, useful for correlating state flapping with other metrics.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 35
-      },
-      "options": {
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"State\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "short",
-          "custom": {
-            "axisLabel": "State",
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 0,
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "gradientMode": "none"
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "id": 15
-    },
-    {
       "title": "Time in Current State [$xrpl_network_type]",
       "description": "###### What this is:\n*How long the server has held its current operating state, in seconds.*\n\n###### How it's computed:\n*Current value of the time-in-state gauge.*\n\n###### Reading it:\n*Not yet wired in the code; the value currently always reads 0.*\n\n###### Healthy range:\n*Not applicable; the value is always 0 today.*\n\n###### Watch for:\n*n/a until implemented.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "stat",
       "gridPos": {
         "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 43
+        "x": 12,
+        "y": 31
       },
       "options": {
         "tooltip": {
@@ -825,7 +776,7 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
-      "id": 16
+      "id": 15
     },
     {
       "title": "State Changes Rate [$xrpl_network_type]",
@@ -834,8 +785,8 @@
       "gridPos": {
         "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 43
+        "x": 0,
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -880,7 +831,7 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
-      "id": 17
+      "id": 16
     },
     {
       "title": "Ledgers Closed Rate [$xrpl_network_type]",
@@ -889,8 +840,8 @@
       "gridPos": {
         "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 47
+        "x": 12,
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -935,7 +886,7 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
-      "id": 18
+      "id": 17
     },
     {
       "title": "Agreement % (7d) [$xrpl_network_type]",
@@ -944,8 +895,8 @@
       "gridPos": {
         "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 47
+        "x": 0,
+        "y": 39
       },
       "options": {
         "tooltip": {
@@ -992,6 +943,55 @@
       "repeat": "xrpl_network_type",
       "repeatDirection": "h",
       "maxPerRow": 2,
+      "id": 18
+    },
+    {
+      "title": "State Value Timeline",
+      "description": "###### What this is:\n*Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full, validating, proposing) over time.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the encoded state value.*\n\n###### Reading it:\n*A flat line at the full-operation state is healthy; steps show transitions.*\n\n###### Healthy range:\n*Steady at the highest (full) state.*\n\n###### Watch for:\n*Frequent transitions, useful for correlating state flapping with other metrics.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 43
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"State\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "short",
+          "custom": {
+            "axisLabel": "State",
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
       "id": 19
     },
     {
@@ -1001,8 +1001,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 51
+        "x": 12,
+        "y": 43
       },
       "options": {
         "tooltip": {

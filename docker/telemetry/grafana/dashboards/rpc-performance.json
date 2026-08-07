@@ -41,7 +41,7 @@
     {
       "id": 1,
       "type": "row",
-      "title": "Aggregate RPC (all commands)",
+      "title": "Aggregate RPC (All Commands)",
       "collapsed": false,
       "gridPos": {
         "h": 1,
