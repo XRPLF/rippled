@@ -23,6 +23,8 @@
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <boost/algorithm/hex.hpp>
+
 #include <wasm.h>
 
 #include <array>
@@ -1366,7 +1368,7 @@ trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         }
 
         auto const type = getDataInt32(runtime, params, index);
-        // addr
+        // LCOV_EXCL_START
         if (!type)
         {
             hf.getJournal().trace() << "WasmTrace: invalid data type";

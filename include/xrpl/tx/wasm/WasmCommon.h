@@ -33,10 +33,6 @@ std::string_view inline constexpr hfErrInternal = "HfInternal";
 std::string_view inline constexpr hfErrOutOfGas = "HfOutOfGas";
 std::string_view inline constexpr wasmiTrapOutOfFuel = "OutOfFuel";
 
-// How trace() should interpret the guest's data buffer. Mirrored in the wasm
-// stdlib, so the values are part of the guest ABI: only append, never renumber.
-// Starts at 1 so a zeroed data_type falls into the invalid branch rather than
-// silently meaning Int32.
 // Guest ABI, mirrored in the wasm stdlib: append only, never renumber. Starts at
 // 1 so a zeroed data_type is rejected rather than treated as Int64.
 enum class TraceDataType : std::int32_t {
