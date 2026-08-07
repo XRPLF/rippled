@@ -263,6 +263,16 @@
         "y": 30
       },
       "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "mode": "scheme",
+          "scheme": "Turbo",
+          "steps": 64
+        },
+        "legend": {
+          "show": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
