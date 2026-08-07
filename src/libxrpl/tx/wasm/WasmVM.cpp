@@ -31,7 +31,9 @@ using CheckStatus = rs::wasm_vm::CheckStatus;
 //
 // Exhaustive over the status enum, with no `default`: the enum is generated from the
 // engine's `RunError`, so an outcome added there fails this switch under -Wswitch -Werror
-// rather than quietly picking up a neighbour's TER.
+// rather than quietly picking up a neighbour's TER. The return past the switch is for the
+// compilers that will not call an exhaustive switch exhaustive; it sits after the switch,
+// not in a `default`, so the coverage check above still holds.
 std::expected<EscrowResult, WasmTER>
 outcome(rs::wasm_vm::RunResult const& run)
 {
@@ -73,7 +75,8 @@ outcome(rs::wasm_vm::RunResult const& run)
         case RunStatus::Panic:
             return std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
     }
-    UNREACHABLE("Unexpected RunStatus value");
+    UNREACHABLE("xrpl::outcome : unknown RunStatus");
+    return std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
 }
 
 // A screening verdict as a TER.
@@ -106,7 +109,8 @@ verdict(CheckStatus status)
         case CheckStatus::Panic:
             return telFAILED_PROCESSING;
     }
-    UNREACHABLE("Unexpected CheckStatus value");
+    UNREACHABLE("xrpl::verdict : unknown CheckStatus");
+    return telFAILED_PROCESSING;
 }
 
 }  // namespace
