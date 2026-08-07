@@ -84,11 +84,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 0
       },
-      "id": 129,
+      "id": 1,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -115,8 +115,11 @@
           "expr": "label_replace(label_join(label_replace((server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"server_state\"} == bool 4) * on(service_instance_id) (ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} < bool 30), \"series\", \"Node Health\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
-      "title": "Node Health",
-      "type": "stat"
+      "title": "Node Health [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -148,12 +151,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 4
+        "x": 12,
+        "y": 0
       },
-      "id": 67,
+      "id": 2,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -185,8 +188,11 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Age",
-      "type": "stat"
+      "title": "Validated Ledger Age [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -218,12 +224,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 4
       },
-      "id": 68,
+      "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -255,8 +261,11 @@
           "refId": "A"
         }
       ],
-      "title": "Published Ledger Age",
-      "type": "stat"
+      "title": "Published Ledger Age [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -284,12 +293,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 4
       },
-      "id": 69,
+      "id": 4,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -321,8 +330,11 @@
           "refId": "A"
         }
       ],
-      "title": "Ledger Fetch Rate",
-      "type": "stat"
+      "title": "Ledger Fetch Rate [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -350,12 +362,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 8
       },
-      "id": 70,
+      "id": 5,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -387,8 +399,11 @@
           "refId": "A"
         }
       ],
-      "title": "Ledger History Mismatches",
-      "type": "stat"
+      "title": "Ledger History Mismatches [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -420,12 +435,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 28
+        "x": 12,
+        "y": 8
       },
-      "id": 71,
+      "id": 6,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -457,8 +472,11 @@
           "refId": "A"
         }
       ],
-      "title": "Ledger Publish Gap",
-      "type": "stat"
+      "title": "Ledger Publish Gap [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -490,7 +508,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -523,12 +541,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 28
+        "x": 0,
+        "y": 12
       },
-      "id": 72,
+      "id": 7,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -569,11 +587,86 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 20
       },
-      "id": 121,
+      "id": 8,
       "title": "Operating Mode",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*The share of recent wall-clock time the node spent in Full mode.*\n\n###### How it's computed:\n*Per-second rate of the Full-mode duration counter divided by the sum of the per-second rates of all five mode duration counters.*\n\n###### Reading it:\n*Higher is better; 1.0 means the node was fully synced for the entire window.*\n\n###### Healthy range:\n*At or above 0.99.*\n\n###### Watch for:\n*Values dropping below 0.9, meaning the node spent meaningful time outside Full mode.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 0.9
+              },
+              {
+                "color": "green",
+                "value": 0.99
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"% Time in Full\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "% Time in Full [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -605,7 +698,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -640,12 +733,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 25
       },
-      "id": 74,
+      "id": 10,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -742,7 +835,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -775,12 +868,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 41
+        "y": 25
       },
-      "id": 75,
+      "id": 11,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -877,7 +970,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -910,12 +1003,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 33
       },
-      "id": 76,
+      "id": 12,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -981,78 +1074,6 @@
       ],
       "title": "State Duration Rate (All States)",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "###### What this is:\n*The share of recent wall-clock time the node spent in Full mode.*\n\n###### How it's computed:\n*Per-second rate of the Full-mode duration counter divided by the sum of the per-second rates of all five mode duration counters.*\n\n###### Reading it:\n*Higher is better; 1.0 means the node was fully synced for the entire window.*\n\n###### Healthy range:\n*At or above 0.99.*\n\n###### Watch for:\n*Values dropping below 0.9, meaning the node spent meaningful time outside Full mode.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "max": 1,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 0.9
-              },
-              {
-                "color": "green",
-                "value": 0.99
-              }
-            ]
-          },
-          "unit": "percentunit"
-        }
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 12,
-        "y": 53
-      },
-      "id": 77,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        },
-        "wideLayout": true
-      },
-      "pluginVersion": "13.2.0-28926505616",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"% Time in Full\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
-          "refId": "A"
-        }
-      ],
-      "title": "% Time in Full",
-      "type": "stat"
     },
     {
       "datasource": {
@@ -1141,12 +1162,12 @@
         }
       },
       "gridPos": {
-        "h": 24,
-        "w": 24,
-        "x": 0,
-        "y": 65
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
       },
-      "id": 78,
+      "id": 13,
       "options": {
         "alignValue": "left",
         "annotations": {
@@ -1181,8 +1202,11 @@
           "refId": "A"
         }
       ],
-      "title": "Operating Mode (State Timeline)",
-      "type": "state-timeline"
+      "title": "Operating Mode (State Timeline) [$xrpl_network_type]",
+      "type": "state-timeline",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "collapsed": false,
@@ -1190,9 +1214,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 89
+        "y": 41
       },
-      "id": 122,
+      "id": 14,
       "title": "NodeStore I/O",
       "type": "row"
     },
@@ -1216,7 +1240,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1225,7 +1249,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1259,12 +1283,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 90
+        "y": 42
       },
-      "id": 80,
+      "id": 15,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1335,7 +1359,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1344,7 +1368,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1378,12 +1402,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 90
+        "y": 42
       },
-      "id": 81,
+      "id": 16,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1438,7 +1462,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1447,7 +1471,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1485,12 +1509,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 102
+        "y": 50
       },
-      "id": 82,
+      "id": 17,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1553,7 +1577,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1562,7 +1586,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1596,12 +1620,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 102
+        "y": 50
       },
-      "id": 83,
+      "id": 18,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1664,7 +1688,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1673,7 +1697,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1703,16 +1727,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 114
+        "y": 58
       },
-      "id": 84,
+      "id": 19,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1783,7 +1808,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1792,7 +1817,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1826,12 +1851,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 114
+        "y": 58
       },
-      "id": 85,
+      "id": 20,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -1872,9 +1897,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 126
+        "y": 66
       },
-      "id": 123,
+      "id": 21,
       "title": "Jobs",
       "type": "row"
     },
@@ -1908,7 +1933,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -1937,16 +1962,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 127
+        "y": 67
       },
-      "id": 87,
+      "id": 22,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2011,7 +2037,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -2044,12 +2070,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 127
+        "y": 67
       },
-      "id": 88,
+      "id": 23,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2194,7 +2220,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -2227,12 +2253,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 139
+        "y": 75
       },
-      "id": 89,
+      "id": 24,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2377,7 +2403,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -2410,12 +2436,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
-        "w": 24,
-        "x": 0,
-        "y": 151
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 75
       },
-      "id": 90,
+      "id": 25,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2480,7 +2506,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -2513,12 +2539,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
-        "y": 167
+        "y": 83
       },
-      "id": 91,
+      "id": 26,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -2559,9 +2585,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 183
+        "y": 91
       },
-      "id": 124,
+      "id": 27,
       "panels": [
         {
           "datasource": {
@@ -3007,9 +3033,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 184
+        "y": 92
       },
-      "id": 125,
+      "id": 28,
       "title": "Server Info",
       "type": "row"
     },
@@ -3145,12 +3171,12 @@
         ]
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 185
+        "y": 93
       },
-      "id": 98,
+      "id": 29,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -3183,8 +3209,11 @@
           "refId": "A"
         }
       ],
-      "title": "Server State",
-      "type": "stat"
+      "title": "Server State [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3210,12 +3239,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 185
+        "y": 93
       },
-      "id": 99,
+      "id": 30,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -3245,8 +3274,11 @@
           "refId": "A"
         }
       ],
-      "title": "Uptime",
-      "type": "stat"
+      "title": "Uptime [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3276,16 +3308,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 197
+        "y": 97
       },
-      "id": 100,
+      "id": 31,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -3315,8 +3348,11 @@
           "refId": "A"
         }
       ],
-      "title": "Peer Count",
-      "type": "stat"
+      "title": "Peer Count [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3340,12 +3376,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 197
+        "y": 97
       },
-      "id": 103,
+      "id": 32,
       "options": {
         "colorMode": "none",
         "graphMode": "area",
@@ -3377,8 +3413,11 @@
           "refId": "A"
         }
       ],
-      "title": "Current Ledger Index",
-      "type": "stat"
+      "title": "Current Ledger Index [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3438,12 +3477,12 @@
         ]
       },
       "gridPos": {
-        "h": 7,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 209
+        "y": 101
       },
-      "id": 58,
+      "id": 33,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -3475,8 +3514,11 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Seq \u2014 Convergence (Max \u2212 Min, per network)",
-      "type": "stat"
+      "title": "Validated Ledger Seq — Convergence (Max − Min, per network) [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3502,12 +3544,12 @@
         }
       },
       "gridPos": {
-        "h": 7,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 209
+        "y": 101
       },
-      "id": 56,
+      "id": 34,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -3541,8 +3583,11 @@
           "refId": "A"
         }
       ],
-      "title": "Validated Ledger Seq \u2014 Lag Behind Network Tip",
-      "type": "stat"
+      "title": "Validated Ledger Seq — Lag Behind Network Tip [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3564,12 +3609,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 216
+        "y": 105
       },
-      "id": 102,
+      "id": 35,
       "options": {
         "colorMode": "none",
         "graphMode": "none",
@@ -3602,8 +3647,11 @@
           "refId": "A"
         }
       ],
-      "title": "Build Version",
-      "type": "stat"
+      "title": "Build Version [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -3625,7 +3673,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -3634,7 +3682,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -3664,12 +3712,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 216
+        "x": 0,
+        "y": 109
       },
-      "id": 105,
+      "id": 36,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -3724,7 +3772,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -3733,7 +3781,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -3759,16 +3807,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 228
+        "x": 12,
+        "y": 109
       },
-      "id": 104,
+      "id": 37,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -3823,7 +3872,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -3832,7 +3881,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -3900,12 +3949,12 @@
         ]
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 228
+        "x": 0,
+        "y": 117
       },
-      "id": 128,
+      "id": 38,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -3968,7 +4017,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -3977,7 +4026,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -4007,12 +4056,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 240
+        "x": 12,
+        "y": 117
       },
-      "id": 106,
+      "id": 39,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4067,7 +4116,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "bars",
-            "fillOpacity": 80,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -4076,7 +4125,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 0,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -4106,16 +4155,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 16,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
-        "y": 252
+        "y": 125
       },
-      "id": 107,
+      "id": 40,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4156,11 +4206,80 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 268
+        "y": 133
       },
-      "id": 126,
+      "id": 41,
       "title": "Complete Ledgers & DB",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How many historical ledgers the node is back-filling per minute.*\n\n###### How it's computed:\n*Current value of the historical-fetch-per-minute gauge.*\n\n###### Reading it:\n*Near zero once history is complete; elevated while back-filling.*\n\n###### Healthy range:\n*Close to zero in steady state.*\n\n###### Watch for:\n*A sustained high rate means the node is still filling gaps in its stored history.*\n\n###### Keywords:\n- **Historical fetch rate** *(per node)* \u2014 how many historical ledgers the node is back-filling per minute.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Complete ledger ranges** *(per node)* \u2014 the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerDbMetricsGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#historical-fetch-rate)",
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "suffix: fetches/min"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 134
+      },
+      "id": 42,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"historical_perminute\"}, \"series\", \"Fetches/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Historical Fetch Rate [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -4198,11 +4317,11 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 269
+        "y": 138
       },
-      "id": 109,
+      "id": 43,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
@@ -4222,8 +4341,11 @@
           "refId": "A"
         }
       ],
-      "title": "Complete Ledger Ranges",
-      "type": "table"
+      "title": "Complete Ledger Ranges [$xrpl_network_type]",
+      "type": "table",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -4245,7 +4367,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -4254,7 +4376,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -4288,12 +4410,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 269
+        "x": 0,
+        "y": 150
       },
-      "id": 110,
+      "id": 44,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4349,72 +4471,6 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How many historical ledgers the node is back-filling per minute.*\n\n###### How it's computed:\n*Current value of the historical-fetch-per-minute gauge.*\n\n###### Reading it:\n*Near zero once history is complete; elevated while back-filling.*\n\n###### Healthy range:\n*Close to zero in steady state.*\n\n###### Watch for:\n*A sustained high rate means the node is still filling gaps in its stored history.*\n\n###### Keywords:\n- **Historical fetch rate** *(per node)* \u2014 how many historical ledgers the node is back-filling per minute.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Complete ledger ranges** *(per node)* \u2014 the contiguous spans of ledgers the node holds locally; one unbroken range is ideal.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerDbMetricsGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#historical-fetch-rate)",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "suffix: fetches/min"
-        }
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 0,
-        "y": 281
-      },
-      "id": 111,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "wideLayout": true
-      },
-      "pluginVersion": "13.2.0-28926505616",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"historical_perminute\"}, \"series\", \"Fetches/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
-          "refId": "A"
-        }
-      ],
-      "title": "Historical Fetch Rate",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "###### What this is:\n*Cumulative count of peers disconnected for exceeding resource limits.*\n\n###### How it's computed:\n*Current value of the resource-disconnect gauge, plotted over time.*\n\n###### Reading it:\n*A flat line is healthy; steps up mean peers were dropped for overuse.*\n\n###### Healthy range:\n*Flat or very slowly rising.*\n\n###### Watch for:\n*A rising line indicates peers are being throttled off, consistent with abusive or misbehaving peers.*\n\n###### Keywords:\n- **Resource disconnect** *(per node)* \u2014 a peer dropped for exceeding resource/load limits \u2014 the node shedding abusive or overactive peers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerServerInfoGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
       "fieldConfig": {
         "defaults": {
@@ -4425,12 +4481,12 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Disconnects",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -4439,7 +4495,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -4469,16 +4525,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 281
+        "y": 150
       },
-      "id": 112,
+      "id": 45,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4519,9 +4576,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 293
+        "y": 158
       },
-      "id": 127,
+      "id": 46,
       "title": "Ledger Economy",
       "type": "row"
     },
@@ -4551,12 +4608,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 294
+        "y": 159
       },
-      "id": 114,
+      "id": 47,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -4588,8 +4645,11 @@
           "refId": "A"
         }
       ],
-      "title": "Base Fee (drops)",
-      "type": "stat"
+      "title": "Base Fee (drops) [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -4617,12 +4677,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 294
+        "y": 159
       },
-      "id": 115,
+      "id": 48,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -4654,8 +4714,11 @@
           "refId": "A"
         }
       ],
-      "title": "Reserve Base (drops)",
-      "type": "stat"
+      "title": "Reserve Base (drops) [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -4683,12 +4746,12 @@
         }
       },
       "gridPos": {
-        "h": 12,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 306
+        "y": 163
       },
-      "id": 116,
+      "id": 49,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -4720,8 +4783,11 @@
           "refId": "A"
         }
       ],
-      "title": "Reserve Inc (drops)",
-      "type": "stat"
+      "title": "Reserve Inc (drops) [$xrpl_network_type]",
+      "type": "stat",
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "datasource": {
@@ -4743,7 +4809,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -4752,8 +4818,8 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 3,
+            "lineWidth": 1,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -4790,12 +4856,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 306
+        "x": 0,
+        "y": 167
       },
-      "id": 117,
+      "id": 50,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4850,7 +4916,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -4859,8 +4925,8 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 3,
+            "lineWidth": 1,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -4893,12 +4959,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
-        "w": 24,
-        "x": 0,
-        "y": 322
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 167
       },
-      "id": 118,
+      "id": 51,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -4963,7 +5029,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -4996,12 +5062,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 338
+        "y": 175
       },
-      "id": 119,
+      "id": 52,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -5066,7 +5132,7 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -5099,12 +5165,12 @@
         }
       },
       "gridPos": {
-        "h": 16,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 338
+        "y": 175
       },
-      "id": 120,
+      "id": 53,
       "options": {
         "annotations": {
           "clustering": -1,
@@ -5146,10 +5212,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 354
+        "y": 183
       },
       "collapsed": false,
-      "panels": []
+      "panels": [],
+      "id": 54
     },
     {
       "title": "Job Queue Saturation (Running vs Limit)",
@@ -5157,9 +5224,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 355
+        "y": 184
       },
       "options": {
         "tooltip": {
@@ -5230,22 +5297,24 @@
           "custom": {
             "axisLabel": "Running / Limit",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "thresholdsStyle": {
               "mode": "line"
-            }
+            },
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 55
     }
   ],
   "schemaVersion": 39,

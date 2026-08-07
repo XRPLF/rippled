@@ -39,12 +39,12 @@
   "links": [],
   "panels": [
     {
-      "title": "Transaction Apply Failed Rate",
+      "title": "Transaction Apply Failed Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*Transactions that fail during the apply (transactor) stage, per second \u2014 i.e. the transactor ran but the result was not tesSUCCESS.*\n\n###### How it's computed:\n*Per-second rate of tx.transactor spans at the apply stage whose ter_result is not tesSUCCESS, over the dashboard rate interval, per node.*\n\n###### Reading it:\n*A steady low background is normal (tefPAST_SEQ, tecUNFUNDED, etc.); the transactor legitimately rejects many transactions.*\n\n###### Healthy range:\n*A low, stable rate; workload-dependent.*\n\n###### Watch for:\n*A sharp rise above baseline, which points to a submission pattern that is systematically failing at apply.*\n\n###### Keywords:\n- **Transactor** *(per node)* \u2014 the rippled component that executes one transaction's type-specific logic against the ledger.\n- **Transaction result codes** *(network-wide)* \u2014 the outcome code a transaction returns \u2014 tesSUCCESS, or a tec/tef/tem/ter/tel class code on failure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/tx/detail/Transactor.cpp)\n\n###### Function:\n`Transactor::operator()`\n\n###### References:\n[Transactor](https://xrpl.org/docs/references/protocol/transactions/transaction-results) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transactor)",
       "type": "stat",
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -87,7 +87,10 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 1,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "title": "Transaction Processing Latency by Type",
@@ -129,12 +132,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
       "id": 2
+    },
+    {
+      "title": "Throughput & Results",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
     },
     {
       "title": "Transaction Rate by Type",
@@ -144,7 +163,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -176,12 +195,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 3
+      "id": 4
     },
     {
       "title": "Transaction Results by Type",
@@ -191,7 +213,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 21
       },
       "options": {
         "tooltip": {
@@ -222,13 +244,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Transaction Receive vs Suppressed",
@@ -238,7 +263,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -265,12 +290,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 5
+      "id": 6
     },
     {
       "title": "Transaction Processing Rate",
@@ -280,7 +308,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -314,12 +342,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 6
+      "id": 7
     },
     {
       "title": "Transaction Path Distribution",
@@ -329,7 +360,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 37
       },
       "fieldConfig": {
         "defaults": {
@@ -354,7 +385,7 @@
           "expr": "label_replace(label_join(label_replace(sum by (local, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"Local $1\", \"local\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
-      "id": 7
+      "id": 8
     },
     {
       "title": "Transaction Processing Duration Heatmap",
@@ -364,7 +395,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 37
       },
       "options": {
         "tooltip": {
@@ -393,7 +424,7 @@
           "unit": "ms"
         }
       },
-      "id": 8
+      "id": 9
     },
     {
       "title": "Transactor Duration by Type (p95)",
@@ -403,7 +434,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 45
       },
       "options": {
         "tooltip": {
@@ -435,7 +466,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -443,14 +477,14 @@
       "id": 10
     },
     {
-      "title": "TxQ Accept: Applied Ratio per Node (State Timeline)",
+      "title": "TxQ Accept: Applied Ratio per Node (State Timeline) [$xrpl_network_type]",
       "description": "###### What this is:\n*The applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.*\n\n###### How it's computed:\n*Per node, applied accepts divided by applied-plus-failed accepts over the window.*\n\n###### Reading it:\n*Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.*\n\n###### Healthy range:\n*At or near 100% applied when the queue is draining healthily; workload-dependent.*\n\n###### Watch for:\n*A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n- **Queue accept (drain)** *(per node)* \u2014 moving queued transactions into a newly closed ledger; the applied share shows drain health.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
       "type": "state-timeline",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 52
+        "y": 53
       },
       "options": {
         "mergeValues": true,
@@ -512,7 +546,73 @@
         },
         "overrides": []
       },
-      "id": 11
+      "id": 11,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Tx Apply Pipeline Rate by Stage",
+      "description": "**What:** Throughput of each apply-pipeline stage (preflight, preclaim, apply), showing where transactions drop out.\n**How it's computed:** Per-second rate per stage over a 5-minute window, per node.\n**Reading it:** A decline from earlier to later stages shows where transactions are filtered.\n**Healthy range:** Workload-dependent; later stages sit at or below earlier ones.\n**Watch for:** A large early-stage drop means many transactions fail basic checks, consistent with malformed floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 61
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{stage}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Spans / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 12
+    },
+    {
+      "title": "Apply Pipeline",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 69
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 13
     },
     {
       "title": "Tx Apply Pipeline Latency by Stage (p95)",
@@ -522,7 +622,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -554,12 +654,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 12
+      "id": 14
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
@@ -569,7 +672,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 78
       },
       "options": {
         "tooltip": {
@@ -601,12 +704,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 13
+      "id": 15
     },
     {
       "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
@@ -616,7 +722,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 86
       },
       "options": {
         "tooltip": {
@@ -647,13 +753,16 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
-      "id": 14
+      "id": 16
     },
     {
       "title": "Transaction Apply Duration per Ledger",
@@ -663,7 +772,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 84
+        "y": 94
       },
       "options": {
         "tooltip": {
@@ -690,12 +799,28 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 15
+      "id": 17
+    },
+    {
+      "title": "Transaction Queue",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 102
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 18
     },
     {
       "title": "TxQ Enqueue Rate by Transaction Type",
@@ -704,8 +829,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 84
+        "x": 0,
+        "y": 103
       },
       "options": {
         "tooltip": {
@@ -732,12 +857,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 16
+      "id": 19
     },
     {
       "title": "Queue Accept (Drain) Duration per Ledger",
@@ -745,9 +873,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 92
+        "w": 12,
+        "x": 12,
+        "y": 103
       },
       "options": {
         "tooltip": {
@@ -774,12 +902,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 19
+      "id": 20
     },
     {
       "title": "Queue Cleanup Rate (Expired Entries)",
@@ -789,7 +920,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 111
       },
       "options": {
         "tooltip": {
@@ -816,12 +947,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 20
+      "id": 21
     }
   ],
   "schemaVersion": 39,

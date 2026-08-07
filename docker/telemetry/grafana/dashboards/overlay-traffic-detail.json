@@ -109,11 +109,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
@@ -185,11 +189,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Validator List Traffic",
@@ -247,7 +255,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -268,7 +279,8 @@
             ]
           }
         ]
-      }
+      },
+      "id": 3
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
@@ -326,11 +338,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Have/Requested Transactions (Messages)",
@@ -388,11 +404,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Unknown / Unclassified Traffic",
@@ -450,7 +470,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -471,7 +494,8 @@
             ]
           }
         ]
-      }
+      },
+      "id": 6
     },
     {
       "title": "Proof Path Traffic",
@@ -529,11 +553,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Replay Delta Traffic",
@@ -591,11 +619,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
       "title": "GetObject Handler (TMGetObjectByHash)",
@@ -607,7 +639,8 @@
         "y": 32
       },
       "collapsed": false,
-      "panels": []
+      "panels": [],
+      "id": 9
     },
     {
       "title": "GetObject Handler Latency Breakdown",
@@ -615,7 +648,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 33
       },
@@ -655,17 +688,19 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     },
     {
       "title": "GetObject Request Size Distribution",
@@ -674,8 +709,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 41
+        "x": 12,
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -703,7 +738,8 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 11
     },
     {
       "title": "GetObject Lookups by Result",
@@ -712,7 +748,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 41
       },
       "options": {
@@ -739,11 +775,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
       "title": "GetObject Rejections",
@@ -752,8 +792,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 49
+        "x": 12,
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -779,11 +819,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     },
     {
       "title": "GetObject Charge Distribution",
@@ -792,7 +836,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 49
       },
       "options": {
@@ -831,17 +875,19 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 14
     }
   ],
   "schemaVersion": 39,

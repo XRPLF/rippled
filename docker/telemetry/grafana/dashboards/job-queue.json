@@ -10,14 +10,27 @@
   "links": [],
   "panels": [
     {
-      "title": "Current Job Latency (p99 Gauge)",
+      "title": "Current State",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
+      "title": "Current Job Latency (p99 Gauge) [$xrpl_network_type]",
       "description": "###### What this is:\n*At-a-glance p99 of how long jobs wait in the queue and how long they run once started.*\n\n###### How it's computed:\n*99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait and exec p99 under 100ms.*\n\n###### Watch for:\n*p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted / recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "gauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "reduceOptions": {
@@ -68,7 +81,23 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 2,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Throughput",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
     },
     {
       "title": "Job Throughput Rate (Per Second)",
@@ -76,9 +105,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "options": {
         "tooltip": {
@@ -113,13 +142,14 @@
           "unit": "suffix: jobs/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -127,7 +157,7 @@
         },
         "overrides": []
       },
-      "id": 2
+      "id": 4
     },
     {
       "title": "Per-Job-Type Queued Rate",
@@ -137,7 +167,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 14
       },
       "options": {
         "tooltip": {
@@ -166,12 +196,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -179,7 +210,7 @@
         },
         "overrides": []
       },
-      "id": 3
+      "id": 5
     },
     {
       "title": "Per-Job-Type Finish Rate",
@@ -189,7 +220,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -218,12 +249,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -231,7 +263,20 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 6
+    },
+    {
+      "title": "Latency",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 7
     },
     {
       "title": "Job Queue Wait Time",
@@ -241,7 +286,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 31
       },
       "options": {
         "tooltip": {
@@ -270,13 +315,14 @@
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -284,7 +330,7 @@
         },
         "overrides": []
       },
-      "id": 5
+      "id": 8
     },
     {
       "title": "Job Execution Time",
@@ -294,7 +340,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 31
       },
       "options": {
         "tooltip": {
@@ -323,13 +369,14 @@
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -337,7 +384,7 @@
         },
         "overrides": []
       },
-      "id": 6
+      "id": 9
     },
     {
       "title": "Per-Job-Type Execution Time (p99)",
@@ -347,7 +394,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 39
       },
       "options": {
         "tooltip": {
@@ -376,12 +423,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -389,7 +437,20 @@
         },
         "overrides": []
       },
-      "id": 7
+      "id": 10
+    },
+    {
+      "title": "Overflow",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 11
     },
     {
       "title": "Transaction Overflow Rate",
@@ -397,7 +458,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 48
       },
@@ -439,12 +500,13 @@
           "custom": {
             "axisLabel": "Overflows / Min",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -452,7 +514,7 @@
         },
         "overrides": []
       },
-      "id": 8
+      "id": 12
     }
   ],
   "schemaVersion": 39,

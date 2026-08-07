@@ -40,6 +40,19 @@
   "links": [],
   "panels": [
     {
+      "title": "Queue Depth & Throughput",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Transaction Queue Depth",
       "description": "###### What this is:\n*Transactions currently waiting in the transaction queue versus the queue's maximum capacity.*\n\n###### How it's computed:\n*Instantaneous gauge readings of current queue count and configured max size.*\n\n###### Reading it:\n*Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.*\n\n###### Healthy range:\n*Depth near 0 in quiet periods; workload-dependent under load.*\n\n###### Watch for:\n*Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
       "type": "timeseries",
@@ -47,7 +60,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -79,16 +92,20 @@
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Transactions Per Ledger",
@@ -98,7 +115,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -130,16 +147,32 @@
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
+    },
+    {
+      "title": "Fee Escalation",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 4
     },
     {
       "title": "Fee Escalation Levels",
@@ -147,9 +180,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -195,20 +228,23 @@
           "custom": {
             "axisLabel": "Fee Level",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "scaleDistribution": {
               "type": "log",
               "log": 2
             },
-            "spanNulls": 1800000
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Load Factor Breakdown",
@@ -217,8 +253,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -264,9 +300,11 @@
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -289,7 +327,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
       "title": "Load Factor Components",
@@ -298,8 +337,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 18
       },
       "options": {
         "tooltip": {
@@ -338,16 +377,32 @@
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
+    },
+    {
+      "title": "Queue Rejections",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 8
     },
     {
       "title": "Queue Abandonment Rate (Expired)",
@@ -357,7 +412,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 27
       },
       "options": {
         "tooltip": {
@@ -384,11 +439,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
@@ -398,7 +457,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 27
       },
       "options": {
         "tooltip": {
@@ -425,11 +484,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     }
   ],
   "schemaVersion": 39,
