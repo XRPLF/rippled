@@ -17,11 +17,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <boost/algorithm/hex.hpp>
-
 #include <cstdint>
 #include <expected>
-#include <iterator>
 #include <string>
 #include <string_view>
 

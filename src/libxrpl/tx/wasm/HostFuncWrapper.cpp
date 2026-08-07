@@ -32,6 +32,7 @@
 #include <exception>
 #include <expected>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
