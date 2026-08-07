@@ -126,9 +126,9 @@ configuring with `-Drust=ON` (which is what CI does), see
 
 > [!NOTE]
 > On **Windows**, Corrosion does not have to be installed: when it is not found,
-CMake downloads and builds the pinned version automatically. The Rust toolchain
-itself still has to be installed manually (see the [Windows](#windows) list
-above).
+> CMake downloads and builds the pinned version automatically. The Rust toolchain
+> itself still has to be installed manually (see the [Windows](#windows) list
+> above).
 
 ## Clang-tidy
 
