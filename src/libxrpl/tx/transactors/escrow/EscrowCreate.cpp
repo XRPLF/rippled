@@ -489,7 +489,7 @@ EscrowCreate::doApply()
 
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+        (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
     }
 
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))

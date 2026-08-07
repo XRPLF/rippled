@@ -649,7 +649,7 @@ class Batch_test : public beast::unit_test::Suite
             serializeBatch(
                 msg,
                 jt.stx->getAccountID(sfAccount),
-                jt.stx->getSeqValue(),
+                jt.stx->getSeqProxy().value(),
                 tfAllOrNothing,
                 jt.stx->getBatchTransactionIDs());
             finishMultiSigningData(bob.id(), msg);

@@ -212,12 +212,6 @@ STTx::getSeqProxy() const
     return SeqProxy::rawTicket(*ticketSeq);
 }
 
-std::uint32_t
-STTx::getSeqValue() const
-{
-    return getSeqProxy().value();
-}
-
 void
 STTx::sign(
     PublicKey const& publicKey,
@@ -459,7 +453,7 @@ STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> con
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
-    serializeBatch(msg, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
+    serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -553,7 +547,7 @@ STTx::checkBatchMultiSign(
     // with the stuff that stays constant from signature to signature.
     auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
+    serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,

@@ -185,7 +185,7 @@ PaymentChannelCreate::doApply()
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+        (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
     }
 
     ctx_.view().insert(slep);

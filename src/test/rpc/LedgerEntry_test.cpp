@@ -1952,7 +1952,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         // Create two tickets.
-SeqProxy tkt1 = SeqProxy::rawTicket(env.seq(env.master));
+        SeqProxy tkt1 = SeqProxy::rawTicket(env.seq(env.master));
         env(ticket::create(env.master, 2));
         env.close();
 
