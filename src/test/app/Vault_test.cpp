@@ -1552,10 +1552,12 @@ class Vault_test : public beast::unit_test::Suite
         // Advance the clock through a wide range of ledger times: an open-ended vault's phase
         // must be NoPhase at every one of them, because the derivation short-circuits on
         // VaultKind::OpenEnded before it looks at any dates.
-        auto const now = env.now();
-        checkPhaseAt(now);
-        checkPhaseAt(now + std::chrono::seconds{kMinInvestmentPeriod});
-        checkPhaseAt(now + std::chrono::seconds{kMaxInvestmentPeriod} - env.closed()->header().closeTimeResolution);
+        auto const ledgerTime = tp{d{30}} + env.closed()->header().closeTimeResolution;
+        checkPhaseAt(ledgerTime);
+        checkPhaseAt(ledgerTime + std::chrono::seconds{kMinInvestmentPeriod});
+        checkPhaseAt(
+            ledgerTime + std::chrono::seconds{kMaxInvestmentPeriod} -
+            env.closed()->header().closeTimeResolution);
     }
 
     // VaultDeposit is allowed only during Subscription (or NoPhase). Rejected during Investment and
@@ -1676,8 +1678,8 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     // End-to-end lifecycle of a closed-ended vault (Subscription → Investment → Redemption) with
-    // multiple depositors and a real loan originated through the Investment leg. Exercises every phase
-    // transition and verifies the expected deposit, withdrawal, and lending behaviour in each
+    // multiple depositors and a real loan originated through the Investment leg. Exercises every
+    // phase transition and verifies the expected deposit, withdrawal, and lending behaviour in each
     // phase.
     void
     testVaultClosedEndedLifecycle()
