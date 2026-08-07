@@ -58,6 +58,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <set>
@@ -197,10 +198,12 @@ public:
             sponsor::SponseeAcc(alice),
             Ter(temMALFORMED));
 
-        // Invalid feeAmount
-        for (auto const& amt : {XRP(-1), usd(1)})
+        // Invalid FeeAmountDelta
+        for (auto const& amt : {XRP(0), usd(1)})
         {
-            env(sponsor::set_fee(sponsor, 0, amt), sponsor::SponseeAcc(alice), Ter(temBAD_AMOUNT));
+            env(sponsor::set_fee(sponsor, 0, amt, XRP(1)),
+                sponsor::SponseeAcc(alice),
+                Ter(temBAD_AMOUNT));
         }
         // Invalid MaxFee
         for (auto const& amt : {XRP(-1), usd(1)})
@@ -209,6 +212,10 @@ public:
                 sponsor::SponseeAcc(alice),
                 Ter(temBAD_AMOUNT));
         }
+        // Invalid RemainingOwnerCountDelta
+        env(sponsor::set(sponsor, 0, 0, XRP(2), XRP(1)),
+            sponsor::SponseeAcc(alice),
+            Ter(temINVALID));
 
         // Invalid Delete operation
         env(sponsor::set_reserve(sponsor, tfDeleteObject, 1),
@@ -229,12 +236,15 @@ public:
             sponsor::CounterpartySponsor(alice),
             Ter(temMALFORMED));
 
+        // Redundant tx
+        env(sponsor::set(sponsor, 0), sponsor::SponseeAcc(alice), Ter(temREDUNDANT));
+
         //
         // preclaim
         //
 
         // Invalid Sponsee
-        env(sponsor::set(sponsor, 0), sponsor::SponseeAcc(noFunded), Ter(tecNO_DST));
+        env(sponsor::set(sponsor, 0, 1), sponsor::SponseeAcc(noFunded), Ter(tecNO_DST));
         env.close();
 
         // Invalid Sponsor
@@ -290,7 +300,7 @@ public:
 
         // Decreasing feeAmount should succeed (refund, negative delta)
         adjustAccountXRPBalance(env, sponsor, XRP(500));
-        env(sponsor::set_fee(sponsor, 0, XRP(800)),
+        env(sponsor::set_fee(sponsor, 0, XRP(-200)),
             sponsor::SponseeAcc(alice),
             Fee(XRP(1)),
             Ter(tesSUCCESS));
@@ -299,7 +309,7 @@ public:
 
         // Increasing feeAmount within delta budget should succeed
         adjustAccountXRPBalance(env, sponsor, XRP(500));
-        env(sponsor::set_fee(sponsor, 0, XRP(850)),
+        env(sponsor::set_fee(sponsor, 0, XRP(50)),
             sponsor::SponseeAcc(alice),
             Fee(XRP(1)),
             Ter(tesSUCCESS));
@@ -308,18 +318,15 @@ public:
 
         // Increasing feeAmount where delta exceeds balance should fail
         adjustAccountXRPBalance(env, sponsor, XRP(310));
-        env(sponsor::set_fee(sponsor, 0, XRP(1200)),
+        env(sponsor::set_fee(sponsor, 0, XRP(350)),
             sponsor::SponseeAcc(alice),
             Fee(XRP(1)),
             Ter(tecUNFUNDED));
         env.close();
 
         // Increasing feeAmount to reach insufficient reserve
-        auto const currentFeeAmount = env.le(keylet::sponsorship(sponsor.id(), alice.id()))
-                                          ->getFieldAmount(sfFeeAmount)
-                                          .xrp();
         adjustAccountXRPBalance(env, sponsor, XRP(310));
-        env(sponsor::set_fee(sponsor, 0, currentFeeAmount + XRP(309)),
+        env(sponsor::set_fee(sponsor, 0, XRP(309)),
             sponsor::SponseeAcc(alice),
             Fee(XRP(1)),
             Ter(tecUNFUNDED));
@@ -353,17 +360,17 @@ public:
         Account const pseudoAcc("vault", vaultSle->getAccountID(sfAccount));
         env.memoize(pseudoAcc);
 
-        // Sponsee is a pseudo account -> tecNO_PERMISSION
+        // Sponsee is a pseudo account -> tecPSEUDO_ACCOUNT
         env(sponsor::set(sp, 0, 100, XRP(100)),
             sponsor::SponseeAcc(pseudoAcc),
-            Ter(tecNO_PERMISSION));
+            Ter(tecPSEUDO_ACCOUNT));
         env.close();
 
-        // Sponsor is a pseudo account -> tecNO_PERMISSION
+        // Sponsor is a pseudo account -> tecPSEUDO_ACCOUNT
         // (submitted by bob with counterpartySponsor pointing to pseudo account)
         env(sponsor::set(bob, tfDeleteObject),
             sponsor::CounterpartySponsor(pseudoAcc),
-            Ter(tecNO_PERMISSION));
+            Ter(tecPSEUDO_ACCOUNT));
         env.close();
     }
 
@@ -543,7 +550,7 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(10000) - sle->at(sfFeeAmount) - XRP(1));
 
             // update sponsorship (decrement)
-            env(sponsor::set(sponsor, 0, 50, XRP(50), XRP(0.5)),
+            env(sponsor::set(sponsor, 0, -50, XRP(-50), XRP(0.5)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
                 Ter(tesSUCCESS));
@@ -557,7 +564,7 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(10000) - sle->at(sfFeeAmount) - XRP(2));
 
             // update sponsorship (increment)
-            env(sponsor::set(sponsor, 0, 200, XRP(200), XRP(2)),
+            env(sponsor::set(sponsor, 0, 150, XRP(150), XRP(2)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
                 Ter(tesSUCCESS));
@@ -591,26 +598,32 @@ public:
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
-            // Cannot create sponsorship with no fee or reserve budget. MaxFee
-            // and flags do not make a sponsorship object useful by themselves.
-            env(sponsor::set(sponsor, 0), sponsor::SponseeAcc(alice), Ter(tecNO_PERMISSION));
-            env.close();
-            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
-
             env(sponsor::set_max_fee(sponsor, 0, XRP(1)),
                 sponsor::SponseeAcc(alice),
                 Ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
-            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
+            env(sponsor::set(sponsor, 0, std::nullopt, std::nullopt, XRP(0)),
                 sponsor::SponseeAcc(alice),
                 Ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
-            // update sponsorship with non-zero value
-            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
+            // create sponsorship with negative values
+            env(sponsor::set_reserve(sponsor, 0, -100),
+                sponsor::SponseeAcc(alice),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+            env(sponsor::set_fee(sponsor, 0, XRP(-100)),
+                sponsor::SponseeAcc(alice),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+
+            // create sponsorship with non-zero value
+            env(sponsor::set(sponsor, 0, 100, XRP(101), XRP(1)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)));
             env.close();
@@ -618,7 +631,7 @@ public:
             sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
-            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(101));
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
 
             // update sponsorship flags
@@ -648,7 +661,7 @@ public:
                 lsfSponsorshipRequireSignForReserve);
 
             // Cannot update sponsorship so both fee and reserve budgets are absent.
-            env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
+            env(sponsor::set(sponsor, 0, -100, XRP(-101), std::nullopt),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
                 Ter(tecNO_PERMISSION));
@@ -657,17 +670,17 @@ public:
             sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
-            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(101));
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
         }
 
         {
             // Removing one budget field while the other remains keeps the
             // Sponsorship valid. Starting state (from above):
-            // RemainingOwnerCount = 100, FeeAmount = XRP(100).
+            // RemainingOwnerCount = 100, FeeAmount = XRP(101).
 
             // Remove only FeeAmount (set to 0); RemainingOwnerCount remains.
-            env(sponsor::set_fee(sponsor, 0, XRP(0)),
+            env(sponsor::set_fee(sponsor, 0, XRP(-101)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
                 Ter(tesSUCCESS));
@@ -686,12 +699,51 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            env(sponsor::set_reserve(sponsor, 0, 0),
+            // A negative FeeAmountDelta larger than the current FeeAmount is
+            // clamped, so only the current FeeAmount is refunded and the field
+            // is removed. RemainingOwnerCount keeps the Sponsorship valid.
+            auto const balanceBefore = env.balance(sponsor);
+            env(sponsor::set_fee(sponsor, 0, XRP(-500)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
                 Ter(tesSUCCESS));
             env.close();
 
+            sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
+            BEAST_EXPECT(env.balance(sponsor) == balanceBefore + XRP(100) - XRP(1));
+
+            // Restore FeeAmount for the checks below.
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(sponsor::set_reserve(sponsor, 0, -100),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+
+            // Decreasing FeeAmount below zero must fail with tecNO_PERMISSION
+            // when there is no RemainingOwnerCount (the budget would become
+            // entirely empty). Current state: FeeAmount = XRP(100), no
+            // RemainingOwnerCount.
+            env(sponsor::set_fee(sponsor, 0, XRP(-101)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            // Confirm that the sponsorship is unchanged.
             sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
@@ -745,6 +797,160 @@ public:
 
             env(sponsor::del(alice), sponsor::CounterpartySponsor(sponsor), Ter(tesSUCCESS));
             env.close();
+        }
+    }
+
+    void
+    testRemainingOwnerCountOverflow()
+    {
+        testcase("RemainingOwnerCount overflow and underflow clamping");
+        using namespace test::jtx;
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        constexpr std::int32_t kInt32Max = std::numeric_limits<std::int32_t>::max();
+
+        // --- Positive overflow: delta causes count to exceed UINT32_MAX ---
+        {
+            // Create with count = INT32_MAX.
+            env(sponsor::set_reserve(sponsor, 0, kInt32Max),
+                sponsor::SponseeAcc(alice),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) ==
+                static_cast<std::uint32_t>(kInt32Max));
+
+            // Add INT32_MAX again: count = 2 * INT32_MAX = 4294967294 (<= UINT32_MAX, still ok).
+            env(sponsor::set_reserve(sponsor, 0, kInt32Max),
+                sponsor::SponseeAcc(alice),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) ==
+                2u * static_cast<std::uint32_t>(kInt32Max));
+
+            // Adding 2 more pushes count to 4294967296, exceeding UINT32_MAX: reject.
+            env(sponsor::set_reserve(sponsor, 0, 2),
+                sponsor::SponseeAcc(alice),
+                Ter(tecLIMIT_EXCEEDED));
+            env.close();
+
+            // SLE is unchanged.
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) ==
+                2u * static_cast<std::uint32_t>(kInt32Max));
+
+            env(sponsor::del(sponsor), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // --- Negative underflow: clamps to 0; fee budget survives ---
+        {
+            // Create with count=10 and a fee budget.
+            env(sponsor::set(sponsor, 0, 10, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) == 10u);
+
+            // Delta of -20 produces count = -10; clamps to 0 (field absent).
+            env(sponsor::set_reserve(sponsor, 0, -20), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+
+            auto sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+
+            env(sponsor::del(sponsor), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // --- Negative underflow: clamped count=0 with no fee budget → no budget ---
+        {
+            // Create with count=10, no fee.
+            env(sponsor::set_reserve(sponsor, 0, 10), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) == 10u);
+
+            // Delta of -20 would clamp count to 0 with no fee → empty budget → tecNO_PERMISSION.
+            env(sponsor::set_reserve(sponsor, 0, -20),
+                sponsor::SponseeAcc(alice),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            // SLE is unchanged.
+            BEAST_EXPECT(
+                env.le(keylet::sponsorship(sponsor, alice))->at(sfRemainingOwnerCount) == 10u);
+
+            env(sponsor::del(sponsor), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
+    testConsequences()
+    {
+        testcase("Consequences");
+        using namespace test::jtx;
+        Env env{*this, testableAmendments()};
+        auto const baseFee = env.current()->fees().base;
+
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.memoize(alice);
+        env.memoize(sponsor);
+
+        {
+            // A positive FeeAmountDelta is the maximum XRP the tx can spend.
+            auto const jt = env.jt(
+                sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Seq(1),
+                Fee(baseFee));
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(100));
+        }
+
+        {
+            // A negative FeeAmountDelta withdraws from the sponsorship, so the
+            // transaction cannot spend anything.
+            auto const jt = env.jt(
+                sponsor::set_fee(sponsor, 0, XRP(-100)),
+                sponsor::SponseeAcc(alice),
+                Seq(1),
+                Fee(baseFee));
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
+        }
+
+        {
+            // No FeeAmountDelta at all.
+            auto const jt = env.jt(
+                sponsor::set_reserve(sponsor, 0, 10),
+                sponsor::SponseeAcc(alice),
+                Seq(1),
+                Fee(baseFee));
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
         }
     }
 
@@ -810,7 +1016,7 @@ public:
                 Ter(terINSUF_FEE_B));
             env.close();
 
-            env(sponsor::set_reserve(sponsor, 0, 0), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env(sponsor::set_reserve(sponsor, 0, -1), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
             env.close();
 
             // reserve insufficient
@@ -2090,7 +2296,7 @@ public:
                 XRP(10));
 
             // clear flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+            env(sponsor::set(sponsor, tfSponsorshipClearRequireSignForFee),
                 sponsor::SponseeAcc(alice));
             env.close();
 
@@ -2322,7 +2528,7 @@ public:
                 XRP(10));
 
             // clear flag
-            env(sponsor::set_fee(sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+            env(sponsor::set(sponsor, tfSponsorshipClearRequireSignForFee),
                 sponsor::SponseeAcc(alice));
             env.close();
 
@@ -4939,7 +5145,7 @@ public:
             env.close();
 
             // Create pre-funded sponsorship
-            env(sponsor::set(sponsor, 0, 0, XRP(1)), sponsor::SponseeAcc(alice), Fee(XRP(1)));
+            env(sponsor::set_fee(sponsor, 0, XRP(1)), sponsor::SponseeAcc(alice), Fee(XRP(1)));
             env.close();
 
             auto const seq = env.seq(alice);
@@ -5443,6 +5649,8 @@ protected:
         testInvalidSponsorField();
 
         testSimpleSponsorshipSet();
+        testRemainingOwnerCountOverflow();
+        testConsequences();
 
         testPreFundAndCosign();
         testSponsoredFreeTierReserve();

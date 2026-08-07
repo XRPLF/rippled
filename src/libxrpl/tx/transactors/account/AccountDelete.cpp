@@ -241,6 +241,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
+        // This also checks if destination is a pseudo-account, since pseudo-accounts have the
+        // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))

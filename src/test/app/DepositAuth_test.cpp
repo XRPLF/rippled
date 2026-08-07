@@ -21,6 +21,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -28,6 +29,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -444,7 +446,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     }
 
     void
-    testInvalid()
+    testInvalid(FeatureBitset features)
     {
         testcase("Invalid");
 
@@ -453,7 +455,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         Account const becky{"becky"};
         Account const carol{"carol"};
 
-        Env env(*this);
+        Env env(*this, features);
 
         // Tell env about alice, becky and carol since they are not yet funded.
         env.memoize(alice);
@@ -559,6 +561,25 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         env.close();
         env.require(Owners(alice, 0));
         env.require(Owners(becky, 0));
+
+        {
+            // alice attempts to authorize a pseudo-account.
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = becky, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
+
+            auto const expectedResult =
+                features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
+            env(deposit::auth(alice, vaultPseudo), expectedResult);
+            env.close();
+            env.require(Owners(alice, features[fixCleanup3_3_0] ? 0 : 1));
+        }
     }
 
     void
@@ -1459,8 +1480,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     run() override
     {
         testEnable();
-        testInvalid();
         auto const supported{jtx::testableAmendments()};
+        testInvalid(supported);
+        testInvalid(supported - fixCleanup3_3_0);
         testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
