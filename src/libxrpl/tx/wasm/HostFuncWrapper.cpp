@@ -545,8 +545,8 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 wasm_trap_t*
 getLedgerSqn_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int const index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t const index = 0;
+    auto& runtime = hf.getRT();
 
     return returnResult(runtime, params, results, hf.getLedgerSqn(), index);
 }
@@ -554,8 +554,8 @@ getLedgerSqn_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getParentLedgerTime_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int const index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t const index = 0;
+    auto& runtime = hf.getRT();
 
     return returnResult(runtime, params, results, hf.getParentLedgerTime(), index);
 }
@@ -563,8 +563,8 @@ getParentLedgerTime_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getParentLedgerHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int const index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t const index = 0;
+    auto& runtime = hf.getRT();
 
     return returnResult(runtime, params, results, hf.getParentLedgerHash(), index);
 }
@@ -572,8 +572,8 @@ getParentLedgerHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getBaseFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int const index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t const index = 0;
+    auto& runtime = hf.getRT();
 
     return returnResult(runtime, params, results, hf.getBaseFee(), index);
 }
@@ -581,8 +581,8 @@ getBaseFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 isAmendmentEnabled_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const slice = getDataSlice(runtime, params, index);
     if (!slice)
@@ -606,8 +606,8 @@ isAmendmentEnabled_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 cacheLedgerObj_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const id = getDataUInt256(runtime, params, index);
     if (!id)
@@ -623,8 +623,8 @@ cacheLedgerObj_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getTxField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
@@ -636,8 +636,8 @@ getTxField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getCurrentLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
@@ -649,8 +649,8 @@ getCurrentLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -666,8 +666,8 @@ getLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getTxNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const locator = getDataLocator(runtime, params, index);
     if (!locator)
@@ -679,8 +679,8 @@ getTxNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getCurrentLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const locator = getDataLocator(runtime, params, index);
     if (!locator)
@@ -693,8 +693,8 @@ getCurrentLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -711,8 +711,8 @@ getLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getTxArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
@@ -724,8 +724,8 @@ getTxArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getCurrentLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
@@ -737,8 +737,8 @@ getCurrentLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -754,8 +754,8 @@ getLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getTxNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const locator = getDataLocator(runtime, params, index);
     if (!locator)
@@ -767,8 +767,8 @@ getTxNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getCurrentLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const locator = getDataLocator(runtime, params, index);
     if (!locator)
@@ -780,8 +780,8 @@ getCurrentLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -798,8 +798,8 @@ getLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 updateData_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const bytes = getDataSlice(runtime, params, index);
     if (!bytes)
@@ -811,8 +811,8 @@ updateData_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 checkSignature_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const message = getDataSlice(runtime, params, index);
     if (!message)
@@ -833,8 +833,8 @@ checkSignature_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 computeSha512HalfHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const bytes = getDataSlice(runtime, params, index);
     if (!bytes)
@@ -846,8 +846,8 @@ computeSha512HalfHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 accountKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -859,8 +859,8 @@ accountKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 ammKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const issue1 = getDataAsset(runtime, params, index);
     if (!issue1)
@@ -877,8 +877,8 @@ ammKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 checkKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -894,8 +894,8 @@ checkKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 credentialKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const subj = getDataAccountID(runtime, params, index);
     if (!subj)
@@ -916,8 +916,8 @@ credentialKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 delegateKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -934,8 +934,8 @@ delegateKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 depositPreauthKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -952,8 +952,8 @@ depositPreauthKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 didKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -965,8 +965,8 @@ didKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -982,8 +982,8 @@ escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 trustLineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc1 = getDataAccountID(runtime, params, index);
     if (!acc1)
@@ -1008,8 +1008,8 @@ trustLineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 mptokenIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1026,8 +1026,8 @@ mptokenIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const slice = getDataSlice(runtime, params, index);
     if (!slice)
@@ -1047,8 +1047,8 @@ mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 nftokenOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1065,8 +1065,8 @@ nftokenOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 offerKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1082,8 +1082,8 @@ offerKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1099,8 +1099,8 @@ oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 paychannelKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1125,8 +1125,8 @@ paychannelKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1143,8 +1143,8 @@ permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 signerListKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1156,8 +1156,8 @@ signerListKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 ticketKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1173,8 +1173,8 @@ ticketKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 vaultKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1190,8 +1190,8 @@ vaultKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFT_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1207,8 +1207,8 @@ getNFT_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFTIssuer_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
@@ -1220,8 +1220,8 @@ getNFTIssuer_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFTTaxon_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
@@ -1233,8 +1233,8 @@ getNFTTaxon_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFTFlags_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
@@ -1246,8 +1246,8 @@ getNFTFlags_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
@@ -1259,8 +1259,8 @@ getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t index = 0;
+    auto& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
@@ -1354,28 +1354,54 @@ trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 
     try
     {
-        int index = 0;
-        WasmRuntimeWrapper& runtime = hf.getRT();
+        int32_t index = 0;
+        auto& runtime = hf.getRT();
+
         auto const msg = getDataString(runtime, params, index);
-        auto const type = getDataInt32(runtime, params, index);
-        auto const data = getDataSlice(runtime, params, index);
-        if (!msg || !type || !data || msg->size() + data->size() > kMaxWasmDataLength)
+        if (!msg)
         {
-            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            hf.getJournal().trace() << "WasmTrace: invalid message";
+            return nullptr;
+        }
+
+        auto const type = getDataInt32(runtime, params, index);
+        // addr
+        if (!type)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid data type";
+            return nullptr;
+        }
+        // LCOV_EXCL_STOP
+
+        auto const data = getDataSlice(runtime, params, index);
+        if (!data)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid data";
+            return nullptr;
+        }
+
+        if (msg->size() + data->size() > kMaxWasmDataLength)
+        {
+            hf.getJournal().trace() << "WasmTrace: message and data too long";
             return nullptr;
         }
 
         auto const text = traceFormat(static_cast<TraceDataType>(*type), *data);
         if (!text)
         {
-            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            hf.getJournal().trace() << "WasmTrace: data does not match the data type";
             return nullptr;
         }
+
         hf.trace(*msg, *text);
     }
     catch (std::exception const& e)
     {
         hf.getJournal().trace() << "WasmTrace: error: " << e.what();
+    }
+    catch (...)
+    {
+        hf.getJournal().trace() << "WasmTrace: unknown error";
     }
     return nullptr;
 }
@@ -1383,8 +1409,8 @@ trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatFromInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataInt64(runtime, params, i);
     if (!x)
@@ -1402,8 +1428,8 @@ floatFromInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatFromUint_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataUInt64(runtime, params, i);
     if (!x)
@@ -1421,8 +1447,8 @@ floatFromUint_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatFromSTAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1453,8 +1479,8 @@ floatFromSTAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatFromSTNumber_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1485,8 +1511,8 @@ floatFromSTNumber_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatToInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1504,8 +1530,8 @@ floatToInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatToMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1518,8 +1544,8 @@ floatToMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatFromMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
@@ -1541,8 +1567,8 @@ floatFromMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatCompare_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1558,8 +1584,8 @@ floatCompare_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatAdd_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1581,8 +1607,8 @@ floatAdd_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatSubtract_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1604,8 +1630,8 @@ floatSubtract_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatMultiply_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1627,8 +1653,8 @@ floatMultiply_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatDivide_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1650,8 +1676,8 @@ floatDivide_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatRoot_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1673,8 +1699,8 @@ floatRoot_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 wasm_trap_t*
 floatPower_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    int32_t i = 0;
+    auto& runtime = hf.getRT();
 
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
@@ -1756,7 +1782,7 @@ testGetDataIncrement()
 
         values[0] = WASM_I32_VAL(42);
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataInt32(runtime, &params, index);
         if (!result || result.value() != 42 || index != 1)
             return false;
@@ -1768,7 +1794,7 @@ testGetDataIncrement()
 
         values[0] = WASM_I64_VAL(1234);
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataInt64(runtime, &params, index);
         if (!result || result.value() != 1234 || index != 1)
             return false;
@@ -1780,7 +1806,7 @@ testGetDataIncrement()
 
         values[0] = WASM_I32_VAL(sfAccount.getCode());
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataSField(runtime, &params, index);
         if (!result || result.value().get() != sfAccount || index != 1)
             return false;
@@ -1793,7 +1819,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(3);
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataSlice(runtime, &params, index);
         if (!result || result.value() != Slice(buffer.data(), 3) || index != 2)
             return false;
@@ -1806,7 +1832,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(5);
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataString(runtime, &params, index);
         if (!result ||
             result.value() != std::string_view(reinterpret_cast<char const*>(buffer.data()), 5) ||
@@ -1825,7 +1851,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(AccountID::size());
         memcpy(&buffer[0], id.data(), AccountID::size());
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataAccountID(runtime, &params, index);
         if (!result || result.value() != id || index != 2)
             return false;
@@ -1841,7 +1867,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(Hash::size());
         memcpy(&buffer[0], h1.data(), Hash::size());
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataUInt256(runtime, &params, index);
         if (!result || result.value() != h1 || index != 2)
             return false;
@@ -1857,7 +1883,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(Currency::size());
         memcpy(&buffer[0], c.data(), Currency::size());
 
-        int index = 0;
+        int32_t index = 0;
         auto const result = getDataCurrency(runtime, &params, index);
         if (!result || result.value() != c || index != 2)
             return false;
