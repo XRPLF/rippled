@@ -23,6 +23,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -31,6 +32,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -687,7 +689,7 @@ public:
     }
 
     void
-    testDest()
+    testDest(FeatureBitset features)
     {
         testcase("Destination Constraints");
 
@@ -698,7 +700,7 @@ public:
         Account const carol{"carol"};
         Account const daria{"daria"};
 
-        Env env{*this};
+        Env env{*this, features};
         env.fund(XRP(100000), alice, becky, carol);
         env.close();
 
@@ -710,6 +712,16 @@ public:
         // carol requires a destination tag.
         env(fset(carol, asfRequireDest));
         env.close();
+
+        // Need to create a pseudo-account
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+        auto const sleVault = env.le(keylet);
+        if (!BEAST_EXPECT(sleVault))
+            return;
+        Account const vaultPseudo{"vaultPseudo", sleVault->at(sfAccount)};
 
         // Close enough ledgers to be able to delete becky's account.
         incLgrSeqForAccDel(env, becky);
@@ -729,6 +741,10 @@ public:
         // so the delete is blocked.
         env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
         env.close();
+
+        // becky attempts to delete her account using a pseudo-account as the
+        // destination, which fails since pseudo-accounts have deposit auth enabled.
+        env(acctdelete(becky, vaultPseudo), Fee(acctDelFee), Ter(tecNO_PERMISSION));
 
         // alice preauthorizes deposits from becky.  Now becky can delete her
         // account and forward the leftovers to alice.
@@ -1076,6 +1092,7 @@ public:
     void
     run() override
     {
+        auto const all{jtx::testableAmendments()};
         testBasics();
         testDirectories();
         testOwnedTypes();
@@ -1083,7 +1100,8 @@ public:
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
         testWithTickets();
-        testDest();
+        testDest(all);
+        testDest(all - fixCleanup3_3_0);
         testDestinationDepositAuthCredentials();
         testDeleteCredentialsOwner();
     }
