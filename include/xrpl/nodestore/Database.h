@@ -242,6 +242,10 @@ public:
      *
      * @return Total microseconds accumulated across every completed store.
      *
+     * @note Accumulated in nanoseconds and converted here, so the total is
+     * exact to within one microsecond however fast the stores are. Truncated
+     * rather than rounded: stores totalling under a microsecond read as 0 until
+     * they sum past 1000 ns.
      * @note Thread-safe: a single relaxed atomic load. Cheap enough for a
      * periodic observer (the telemetry reader ticks every ~10 s). Relaxed is
      * sufficient because the value is a monotonic statistic, not a
@@ -254,7 +258,7 @@ public:
     [[nodiscard]] std::uint64_t
     getStoreDurationUs() const noexcept
     {
-        return storeDurationUs_.load(std::memory_order_relaxed);
+        return storeDurationNs_.load(std::memory_order_relaxed) / kNanosecondsPerMicrosecond;
     }
 
     /**
@@ -269,13 +273,13 @@ public:
      *
      * @return Total microseconds accumulated across every completed fetch.
      *
-     * @note Same threading and monotonicity contract as
-     * getStoreDurationUs().
+     * @note Same threading, monotonicity and nanosecond-accumulation contract
+     * as getStoreDurationUs().
      */
     [[nodiscard]] std::uint64_t
     getFetchDurationUs() const noexcept
     {
-        return fetchDurationUs_.load(std::memory_order_relaxed);
+        return fetchDurationNs_.load(std::memory_order_relaxed) / kNanosecondsPerMicrosecond;
     }
 
     void
@@ -337,10 +341,14 @@ protected:
      * The write counterpart of the timing fetchNodeObject() already does for
      * reads. `store()` is pure virtual, so unlike the read path there is no
      * non-virtual wrapper in this class to time — each concrete database calls
-     * this once per store it completes, and the single conversion to
-     * microseconds lives here rather than being repeated per subclass. Each
-     * concrete store path times only its backend call, so the total reflects
-     * disk work and excludes cache bookkeeping.
+     * this once per store it completes, and the single conversion lives here
+     * rather than being repeated per subclass. Each concrete store path times
+     * only its backend call, so the total reflects disk work and excludes cache
+     * bookkeeping.
+     *
+     * Takes the raw duration rather than a converted integer, so every caller
+     * accumulates at the same resolution. See storeDurationNs_ for the
+     * accumulate-then-convert contract.
      *
      * @param elapsed Wall time the store took, as measured by the caller.
      *
@@ -351,28 +359,37 @@ protected:
      * @note Thread-safe: one relaxed atomic add, no lock. Relaxed ordering is
      * correct because the total is a statistic that is only ever read by a
      * periodic observer, never used to order other memory operations.
-     * @note A negative duration cannot occur (steady_clock is monotonic), but
-     * a caller passing one would be clamped to zero rather than wrapping the
-     * unsigned total to a huge value.
+     * @note A negative duration cannot occur (steady_clock is monotonic); one
+     * would convert to a large unsigned value here, so callers must pass an
+     * end-minus-begin span from a single clock.
      */
     void
     recordStoreDuration(std::chrono::steady_clock::duration elapsed) noexcept
     {
-        auto const us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-        if (us > 0)
-            storeDurationUs_.fetch_add(static_cast<std::uint64_t>(us), std::memory_order_relaxed);
+        storeDurationNs_.fetch_add(
+            static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count()),
+            std::memory_order_relaxed);
     }
 
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
 
+    /**
+     * Fold an imported database's read counters into this one's.
+     *
+     * @param fetches Number of completed fetches to add.
+     * @param hits Number of those fetches that found their object.
+     * @param durationUs Wall time of those fetches, in microseconds. Scaled up
+     *        to nanoseconds internally to match the accumulator's unit.
+     */
     void
-    updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t duration)
+    updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t durationUs)
     {
         fetchTotalCount_ += fetches;
         fetchHitCount_ += hits;
-        fetchDurationUs_ += duration;
+        fetchDurationNs_ += durationUs * kNanosecondsPerMicrosecond;
     }
 
 private:
@@ -397,20 +414,35 @@ private:
     std::atomic<std::uint64_t> fetchSz_{0};
 
     /**
-     * Wall time spent in backend fetches, in microseconds.
+     * Divisor converting the nanosecond accumulators to microseconds.
+     *
+     * Named rather than inline so the two accessors and updateFetchMetrics()
+     * cannot drift onto different scale factors.
+     */
+    static constexpr std::uint64_t kNanosecondsPerMicrosecond = 1000;
+
+    /**
+     * Wall time spent in backend fetches, in nanoseconds.
      *
      * Written by fetchNodeObject(), which times the whole fetch including a
      * cache lookup that misses.
+     *
+     * Nanoseconds, the clock's own resolution, because a warm store answers a
+     * read in a few hundred of them. Accumulating here and converting once, in
+     * getFetchDurationUs(), keeps the total exact to within one microsecond
+     * regardless of how fast the reads are. A 64-bit nanosecond counter spans
+     * roughly 584 years, so it cannot wrap on any real node.
      */
-    std::atomic<std::uint64_t> fetchDurationUs_{0};
+    std::atomic<std::uint64_t> fetchDurationNs_{0};
 
     /**
-     * Wall time spent in backend stores, in microseconds.
+     * Wall time spent in backend stores, in nanoseconds.
      *
      * Written by each concrete store path via recordStoreDuration(), which
-     * times only the backend call.
+     * times only the backend call. Nanoseconds for the same
+     * accumulate-then-convert reason as fetchDurationNs_.
      */
-    std::atomic<std::uint64_t> storeDurationUs_{0};
+    std::atomic<std::uint64_t> storeDurationNs_{0};
 
     mutable std::mutex readLock_;
     std::condition_variable readCondVar_;

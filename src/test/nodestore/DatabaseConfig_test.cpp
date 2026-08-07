@@ -161,20 +161,17 @@ private:
     };
 
     /**
-     * Assert the read accumulator holds exactly what the fetch reports carried.
+     * Assert the read accumulator agrees with what the fetch reports carried.
      *
-     * Deliberately not `getFetchDurationUs() > 0`: an individual read served
-     * from NuDB's in-memory buckets can genuinely measure under one
-     * microsecond and truncate to zero, so on a fast enough host every read
-     * truncates and the total stays at zero with nothing wrong. That makes
-     * `> 0` an assertion about the machine rather than about the code, and it
-     * is what failed on the macOS runner.
+     * The accumulator keeps nanoseconds and each report carries its own fetch
+     * truncated to whole microseconds, so the reported sum is the accumulated
+     * total minus one sub-microsecond remainder per fetch. That gives a bound
+     * rather than an equality, and the bound is machine-independent: an
+     * accumulator that dropped a fetch, double-counted one, or reported the
+     * write member instead would break it however fast the host is.
      *
-     * The equality below is machine-independent and strictly stronger: each
-     * fetch is measured once and that one value feeds both the accumulator
-     * and the report, so an accumulator that dropped a fetch, double-counted
-     * one, or reported the write member instead would break the equality
-     * however fast the host is.
+     * Deliberately not `getFetchDurationUs() > 0` on its own: that is an
+     * assertion about how fast the host reads, not about the code.
      *
      * @param db Database whose read accumulator is checked.
      * @param scheduler Scheduler that received the reports for @p db.
@@ -187,7 +184,10 @@ private:
         std::uint64_t expectedReports)
     {
         BEAST_EXPECT(scheduler.fetchReports.load() == expectedReports);
-        BEAST_EXPECT(db.getFetchDurationUs() == scheduler.reportedFetchUs.load());
+        auto const accumulatedUs = db.getFetchDurationUs();
+        auto const reportedUs = scheduler.reportedFetchUs.load();
+        BEAST_EXPECT(reportedUs <= accumulatedUs);
+        BEAST_EXPECT(accumulatedUs - reportedUs <= expectedReports);
     }
 
 public:

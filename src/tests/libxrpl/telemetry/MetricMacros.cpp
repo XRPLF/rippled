@@ -2847,14 +2847,14 @@ TEST(MetricMacros, nodestore_state_gauge_observes_exact_derived_means)
     EXPECT_EQ(truncating.at("nodestore_state").count(attrs("metric", "read_mean_us")), 0u);
     EXPECT_EQ(gaugeValue(truncating, "nodestore_state", attrs("metric", "node_reads_total")), 0);
 
-    // EDGE CASE: stores counted, but every one measured below a microsecond.
-    // recordStoreDuration() only adds when the cast to microseconds is > 0, so
-    // sub-microsecond stores leave the duration total at 0 while the count
-    // climbs. scaledMean divides on the COUNT alone, so it reports a genuine
-    // mean of 0 here rather than omitting the series. That is the correct
-    // reading: the stores really did complete
-    // in under a microsecond each, and the total beside it proves they
-    // happened. Absence is reserved for "no samples at all".
+    // EDGE CASE: stores counted, but the duration total still reads zero.
+    // The accumulator keeps nanoseconds and getStoreDurationUs() truncates, so
+    // a total under one microsecond reads as 0 while the count climbs.
+    // scaledMean divides on the COUNT alone, so it reports a genuine mean of 0
+    // here rather than omitting the series. That is the correct reading: the
+    // stores really did complete in under a microsecond in total, and the count
+    // beside it proves they happened. Absence is reserved for "no samples at
+    // all".
     totals = NodeStoreTotals{
         .storeCount = 9000, .storeDurationUs = 0, .fetchCount = 10, .fetchDurationUs = 50};
     auto const subMicrosecond = collectWith(totals);
