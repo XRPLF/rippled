@@ -309,6 +309,7 @@ next(Keylet const& k)
 Keylet
 ticket(AccountID const& id, SeqProxy const& seq)
 {
+    XRPL_ASSERT(seq.isTicket(), "xrpl::keylet::ticket : valid input");
     return {ltTICKET, indexHash(LedgerNameSpace::Ticket, id, seq.value())};
 }
 
