@@ -6,7 +6,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
