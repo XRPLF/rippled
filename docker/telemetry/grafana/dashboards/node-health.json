@@ -114,6 +114,90 @@
       "id": 2
     },
     {
+      "title": "Ledger Fetch Rate [$xrpl_network_type]",
+      "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over 5 minutes.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "legendFormat": "Fetches / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: fetches/s"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 3
+    },
+    {
+      "title": "Ledger History Mismatches [$xrpl_network_type]",
+      "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over 5 minutes.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "legendFormat": "Mismatches / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mismatches/s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.01
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 4
+    },
+    {
       "title": "Operating Mode (Time Share)",
       "description": "**What:** Fraction of time in each operating mode (per-interval): Disconnected, Connected, Syncing, Tracking, Full.\n**How it's computed:** Per-mode duration rate divided by the sum of all five mode rates over the interval; the five shares stack to 100%.\n**Reading it:** Full should fill almost the entire band on a healthy node.\n**Healthy range:** Full near 100%; other modes near 0.\n**Watch for:** A rising share of Syncing, Connected, or Disconnected (instability or repeated resync).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
@@ -121,7 +205,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -186,7 +270,7 @@
         },
         "overrides": []
       },
-      "id": 3
+      "id": 5
     },
     {
       "title": "Operating Mode Transitions",
@@ -196,7 +280,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -258,7 +342,7 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 6
     },
     {
       "title": "I/O Latency",
@@ -268,7 +352,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 16
       },
       "options": {
         "tooltip": {
@@ -309,7 +393,7 @@
         },
         "overrides": []
       },
-      "id": 5
+      "id": 7
     },
     {
       "title": "Job Queue Depth",
@@ -319,7 +403,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 16
       },
       "options": {
         "tooltip": {
@@ -354,90 +438,6 @@
         },
         "overrides": []
       },
-      "id": 6
-    },
-    {
-      "title": "Ledger Fetch Rate [$xrpl_network_type]",
-      "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over 5 minutes.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 20
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
-          "legendFormat": "Fetches / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: fetches/s"
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
-      "id": 7
-    },
-    {
-      "title": "Ledger History Mismatches [$xrpl_network_type]",
-      "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over 5 minutes.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 20
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
-          "legendFormat": "Mismatches / Sec [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: mismatches/s",
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0.01
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 8
     },
     {
@@ -454,6 +454,112 @@
       "id": 9
     },
     {
+      "title": "FullBelowCache Hit Rate [$xrpl_network_type]",
+      "description": "**What:** Hit-rate percentage of the FullBelowCache.\n**How it's computed:** Current value of the cache hit-rate gauge (0-100%).\n**Reading it:** Higher is better; means the node reuses knowledge of complete subtrees.\n**Healthy range:** above ~50% in steady state.\n**Watch for:** Low hit rate during steady state (cache too small or constant re-acquisition).\n**Source:** include/xrpl/basics/TaggedCache.h TaggedCache::Stats ctor",
+      "type": "gauge",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "node_family_full_below_cache_hit_rate{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Hit Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 25
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 10
+    },
+    {
+      "title": "Ledger Publish Gap [$xrpl_network_type]",
+      "description": "**What:** Difference between published and validated ledger ages: how far the publish pipeline trails validation.\n**How it's computed:** Published-ledger age minus validated-ledger age, in seconds.\n**Reading it:** Near zero means publishing keeps up with validation.\n**Healthy range:** within a few seconds of zero.\n**Watch for:** A growing gap (publish backlog, stale data for subscribers).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"} - ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Publish Gap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 11
+    },
+    {
       "title": "Key Jobs Execution Time",
       "description": "**What:** Execution time of the most important job types (accept/advance ledger, transaction, write objects, heartbeat, sweep, trusted validation/proposal, publish, client RPC, ledger data) at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Lower and stable is better; shows where consensus, transaction, and maintenance time goes.\n**Healthy range:** workload-dependent; most jobs in low tens of milliseconds.\n**Watch for:** One job type spiking (a specific bottleneck) or broad increases (overload).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
       "type": "timeseries",
@@ -461,7 +567,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -565,7 +671,7 @@
         },
         "overrides": []
       },
-      "id": 10
+      "id": 12
     },
     {
       "title": "Key Jobs Dequeue Wait Time",
@@ -575,7 +681,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 29
       },
       "options": {
         "tooltip": {
@@ -679,7 +785,7 @@
         },
         "overrides": []
       },
-      "id": 11
+      "id": 13
     },
     {
       "title": "FullBelowCache Size",
@@ -689,7 +795,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 37
       },
       "options": {
         "tooltip": {
@@ -723,112 +829,6 @@
         },
         "overrides": []
       },
-      "id": 12
-    },
-    {
-      "title": "FullBelowCache Hit Rate [$xrpl_network_type]",
-      "description": "**What:** Hit-rate percentage of the FullBelowCache.\n**How it's computed:** Current value of the cache hit-rate gauge (0-100%).\n**Reading it:** Higher is better; means the node reuses knowledge of complete subtrees.\n**Healthy range:** above ~50% in steady state.\n**Watch for:** Low hit rate during steady state (cache too small or constant re-acquisition).\n**Source:** include/xrpl/basics/TaggedCache.h TaggedCache::Stats ctor",
-      "type": "gauge",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 41
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "node_family_full_below_cache_hit_rate{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Hit Rate"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 25
-              },
-              {
-                "color": "green",
-                "value": 50
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
-      "id": 13
-    },
-    {
-      "title": "Ledger Publish Gap [$xrpl_network_type]",
-      "description": "**What:** Difference between published and validated ledger ages: how far the publish pipeline trails validation.\n**How it's computed:** Published-ledger age minus validated-ledger age, in seconds.\n**Reading it:** Near zero means publishing keeps up with validation.\n**Healthy range:** within a few seconds of zero.\n**Watch for:** A growing gap (publish backlog, stale data for subscribers).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 41
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"} - ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Publish Gap"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 14
     },
     {
@@ -838,8 +838,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 45
+        "x": 12,
+        "y": 37
       },
       "options": {
         "tooltip": {
@@ -889,7 +889,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 45
       },
       "options": {
@@ -933,8 +933,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 53
+        "x": 12,
+        "y": 45
       },
       "options": {
         "tooltip": {
