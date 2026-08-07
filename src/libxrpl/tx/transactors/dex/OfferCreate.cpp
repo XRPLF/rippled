@@ -649,8 +649,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel =
-            sb.peek(keylet::offer(accountID_, SeqProxy::rawSequence(*cancelSequence)));
+        auto const seqProxy = SeqProxy::rawSequence(*cancelSequence);
+        auto const sleCancel = sb.peek(keylet::offer(accountID_, seqProxy));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error

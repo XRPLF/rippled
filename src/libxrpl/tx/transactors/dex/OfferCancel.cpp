@@ -58,8 +58,8 @@ OfferCancel::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto sleOffer =
-            view().peek(keylet::offer(accountID_, SeqProxy::rawSequence(offerSequence))))
+    auto const seqProxy = SeqProxy::rawSequence(offerSequence);
+    if (auto sleOffer = view().peek(keylet::offer(accountID_, seqProxy)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.registry.get().getJournal("View"));

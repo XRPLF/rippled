@@ -20,7 +20,8 @@ namespace xrpl::test::jtx {
 std::tuple<json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
 {
-    auto keylet = keylet::vault(args.owner.id(), SeqProxy::rawSequence(env.seq(args.owner)));
+    auto const seqProxy = SeqProxy::rawSequence(env.seq(args.owner));
+    auto keylet = keylet::vault(args.owner.id(), seqProxy);
     json::Value jv;
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();

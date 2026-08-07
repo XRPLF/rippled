@@ -434,7 +434,8 @@ parseEscrow(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::escrow(*id, SeqProxy::rawSequence(*seq)).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::escrow(*id, seqProxy).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
@@ -496,7 +497,8 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanBroker(*id, SeqProxy::rawSequence(*seq)).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loanBroker(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -518,7 +520,8 @@ parseLoan(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loan(*id, SeqProxy::rawSequence(*seq)).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loan(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -601,7 +604,8 @@ parseOffer(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::offer(*id, SeqProxy::rawSequence(*seq)).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::offer(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -663,7 +667,8 @@ parsePermissionedDomain(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::permissionedDomain(*account, SeqProxy::rawSequence(pd[jss::seq].asUInt())).key;
+    auto const seqProxy = SeqProxy::rawSequence(pd[jss::seq].asUInt());
+    return keylet::permissionedDomain(*account, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -767,7 +772,8 @@ parseTicket(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::ticket(*id, SeqProxy::rawTicket(*seq)).key;
+    auto const seqProxy = SeqProxy::rawTicket(*seq);
+    return keylet::ticket(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -789,7 +795,8 @@ parseVault(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, SeqProxy::rawSequence(*seq)).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>

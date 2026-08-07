@@ -49,7 +49,8 @@ parseVault(json::Value const& params, json::Value& jvResult)
             return std::nullopt;
         }
 
-        uNodeIndex = keylet::vault(*id, SeqProxy::rawSequence(params[jss::seq].asUInt())).key;
+        auto const seq = SeqProxy::rawSequence(params[jss::seq].asUInt());
+        uNodeIndex = keylet::vault(*id, seq).key;
     }
     else
     {
