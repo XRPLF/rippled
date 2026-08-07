@@ -217,6 +217,17 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
     // including combinations that could never verify: an empty container, a
     // key with no signature, a signature with no key, and a signature next to
     // the empty SigningPubKey the canonical form requires.
+    //
+    // The rejection code is not uniform, though. A fill that leaves actual
+    // signature bytes behind (a non-empty TxnSignature, or one inside a
+    // Signers entry) is, for some containers, intercepted before ever
+    // reaching our own hasSignatureField check: the payload's own top-level
+    // fields are checked by Transactor::preflight2's dry-run simulate-key
+    // logic, and LoanSet forwards its CounterpartySignature through that same
+    // logic, both yielding temINVALID instead. SponsorSignature and
+    // BatchSigners are not inspected that way — only their presence is
+    // checked elsewhere — so they always reach our own check regardless of
+    // what they hold.
     void
     testRejectedSignatureFields(FeatureBitset features)
     {
@@ -270,8 +281,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                  proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target) + 1)});
         };
 
-        auto reject = [&](json::Value const& proposedTx) {
-            env(proposal::create(alice, proposedTx, expiration), Ter(temBAD_SIGNER));
+        auto reject = [&](json::Value const& proposedTx, TER expected) {
+            env(proposal::create(alice, proposedTx, expiration), Ter(expected));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -279,38 +290,50 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // Every way of filling in a signature. The payload's own signature
         // fields and a co-signature object hold the same three members, so the
-        // same fills apply to both.
-        std::vector<std::function<void(json::Value&)>> const fills{
-            [&](json::Value& o) { o[jss::SigningPubKey] = key; },
-            [&](json::Value& o) { o[sfTxnSignature.getJsonName()] = sig; },
-            [&](json::Value& o) {
-                o[jss::SigningPubKey] = "";
-                o[sfTxnSignature.getJsonName()] = sig;
-            },
+        // same fills apply to both. `signs` marks a fill that leaves actual
+        // signature bytes behind, which some containers' own dry-run
+        // simulate-key check reacts to (see the class comment above).
+        struct Fill
+        {
+            std::function<void(json::Value&)> apply;
+            bool signs;
+        };
+
+        std::vector<Fill> const fills{
+            {[&](json::Value& o) { o[jss::SigningPubKey] = key; }, false},
+            {[&](json::Value& o) { o[sfTxnSignature.getJsonName()] = sig; }, true},
+            {[&](json::Value& o) {
+                 o[jss::SigningPubKey] = "";
+                 o[sfTxnSignature.getJsonName()] = sig;
+             },
+             true},
             // Signed the ordinary way, which is the likeliest way one of these
             // arrives here.
-            [&](json::Value& o) {
-                o[jss::SigningPubKey] = key;
-                o[sfTxnSignature.getJsonName()] = sig;
-            },
+            {[&](json::Value& o) {
+                 o[jss::SigningPubKey] = key;
+                 o[sfTxnSignature.getJsonName()] = sig;
+             },
+             true},
             // Multi-signed: the signer's own key is empty and the signatures
             // sit in a nested Signers array. Each entry needs all three of
             // Account, SigningPubKey and TxnSignature to parse at all, so only
             // their values can vary.
-            [&](json::Value& o) {
-                o[jss::SigningPubKey] = "";
-                auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
-                signer[jss::Account] = bob.human();
-                signer[jss::SigningPubKey] = key;
-                signer[sfTxnSignature.getJsonName()] = sig;
-            },
-            [&](json::Value& o) {
-                o[jss::SigningPubKey] = "";
-                auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
-                signer[jss::Account] = bob.human();
-                signer[jss::SigningPubKey] = "";
-                signer[sfTxnSignature.getJsonName()] = sig;
-            },
+            {[&](json::Value& o) {
+                 o[jss::SigningPubKey] = "";
+                 auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                 signer[jss::Account] = bob.human();
+                 signer[jss::SigningPubKey] = key;
+                 signer[sfTxnSignature.getJsonName()] = sig;
+             },
+             true},
+            {[&](json::Value& o) {
+                 o[jss::SigningPubKey] = "";
+                 auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                 signer[jss::Account] = bob.human();
+                 signer[jss::SigningPubKey] = "";
+                 signer[sfTxnSignature.getJsonName()] = sig;
+             },
+             true},
         };
 
         // Every place a signature could sit, on a payload of a type that
@@ -318,27 +341,33 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // BatchSigners to a Batch, while a Sponsor's signature and the
         // payload's own signature fields sit on any transaction. A signature
         // is no more storable for being a field its transaction type expects
-        // (On-Chain Cosigner spec §6.1, §6.6.3).
+        // (On-Chain Cosigner spec §6.1, §6.6.3). `checksSignatureContent`
+        // marks a place whose own preflight forwards the container through a
+        // dry-run simulate-key check, the same as the payload's own top-level
+        // fields.
         struct Place
         {
             std::function<json::Value()> payload;
             std::function<json::Value&(json::Value&)> at;
+            bool checksSignatureContent;
         };
 
         std::vector<Place> const places{
-            {payment, [](json::Value& tx) -> json::Value& { return tx; }},
+            {payment, [](json::Value& tx) -> json::Value& { return tx; }, true},
             {loanSet,
              [](json::Value& tx) -> json::Value& {
                  auto& o = tx[sfCounterpartySignature.getJsonName()];
                  o = json::Value{json::ValueType::Object};
                  return o;
-             }},
+             },
+             true},
             {sponsoredPayment,
              [](json::Value& tx) -> json::Value& {
                  auto& o = tx[sfSponsorSignature.getJsonName()];
                  o = json::Value{json::ValueType::Object};
                  return o;
-             }},
+             },
+             false},
             // A BatchSigners entry names the account it speaks for; the other
             // two co-signatures are fixed by the transaction they belong to and
             // do not.
@@ -347,7 +376,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                  auto& o = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
                  o[jss::Account] = bob.human();
                  return o;
-             }},
+             },
+             false},
         };
 
         for (auto const& place : places)
@@ -355,36 +385,40 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             for (auto const& fill : fills)
             {
                 json::Value tx = place.payload();
-                fill(place.at(tx));
-                reject(tx);
+                fill.apply(place.at(tx));
+                reject(tx, place.checksSignatureContent && fill.signs ? temINVALID : temBAD_SIGNER);
             }
         }
 
         // Every place but the payload itself: a co-signature object is
         // disqualifying by its presence alone, so each is rejected left empty
         // too. The payload's own fields have no such case — left alone they are
-        // the canonical form.
+        // the canonical form. An empty container never trips a simulate-key
+        // check, so this is temBAD_SIGNER regardless of checksSignatureContent.
         for (std::size_t i = 1; i < places.size(); ++i)
         {
             json::Value tx = places[i].payload();
             places[i].at(tx);
-            reject(tx);
+            reject(tx, temBAD_SIGNER);
         }
 
         // Nor does the payload have a counterpart for an absent SigningPubKey:
         // in a co-signature object an absent member is just an unfilled one,
         // but at the top level it is not the same as an empty one, with or
-        // without a signature beside it.
+        // without a signature beside it. SigningPubKey is a required common
+        // field, so its absence means proposedTx isn't a valid instance of its
+        // own type; that's caught while constructing it as an STTx, before
+        // reaching our own hasEmptySigningPubKey check.
         {
             json::Value tx = payment();
             tx.removeMember(jss::SigningPubKey);
-            reject(tx);
+            reject(tx, temMALFORMED);
         }
         {
             json::Value tx = payment();
             tx.removeMember(jss::SigningPubKey);
             tx[sfTxnSignature.getJsonName()] = sig;
-            reject(tx);
+            reject(tx, temMALFORMED);
         }
     }
 
