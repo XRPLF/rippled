@@ -33,6 +33,10 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 # Every config must declare 'minimal'. Minimal configs form the reduced matrix
 # built for pull requests by default; the full matrix adds the rest. Packaging
 # configs declare it too, but packaging is gated in the workflow, not by it.
+#
+# Configs may also opt into 'benchmark' to smoke-run the benchmarks. Note that
+# the flag applies to every entry a config expands into, so only set it on
+# configs that expand to a single combination.
 
 
 @dataclasses.dataclass
@@ -43,6 +47,7 @@ class LinuxConfig:
     build_type: list[str]
     arch: list[str]
     minimal: bool
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
@@ -81,6 +86,7 @@ class PlatformConfig:
     build_type: list[str]
     minimal: bool
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
 
     def __post_init__(self) -> None:
@@ -125,6 +131,7 @@ class MatrixEntry:
     cmake_args: str
     cmake_target: str
     build_only: bool
+    benchmark: bool
     build_type: str
     architecture: Architecture
     sanitizers: str
@@ -193,6 +200,7 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
                         cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                         cmake_target="all",
                         build_only=False,
+                        benchmark=cfg.benchmark,
                         build_type=build_type,
                         architecture=arch_info,
                         sanitizers=sanitizer,
@@ -245,6 +253,7 @@ def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
+                    benchmark=cfg.benchmark,
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
