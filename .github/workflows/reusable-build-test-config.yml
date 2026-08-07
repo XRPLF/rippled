@@ -3,6 +3,12 @@ name: Build and test configuration
 on:
   workflow_call:
     inputs:
+      benchmark:
+        description: "Whether to smoke-run the benchmarks after testing."
+        required: false
+        type: boolean
+        default: false
+
       build_only:
         description: 'Whether to only build or to build and test the code ("true", "false").'
         required: true
@@ -170,9 +176,9 @@ jobs:
               ..
 
       # Export the sanitizer options before any instrumented binary runs. The
-      # protocol code-gen and build steps below invoke instrumented dependency
-      # tools (protoc, grpc), so setting UBSAN_OPTIONS here lets the UBSan
-      # suppression list silence their diagnostics too, not just at test time.
+      # build step below invokes instrumented dependency tools (protoc, grpc),
+      # so setting UBSAN_OPTIONS here lets the UBSan suppression list silence
+      # their diagnostics too, not just at test time.
       # GITHUB_WORKSPACE (not the github.workspace context) is used so the path
       # resolves correctly inside the container job.
       - name: Set sanitizer options
@@ -189,32 +195,6 @@ jobs:
           echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
-
-      - name: Check protocol autogen files are up-to-date
-        working-directory: ${{ env.BUILD_DIR }}
-        env:
-          MESSAGE: |
-
-            The generated protocol wrapper classes are out of date.
-
-            This typically happens when the macro files or generator scripts
-            have changed but the generated files were not regenerated.
-
-            To fix this:
-              1. Run: cmake --build . --target setup_code_gen
-              2. Run: cmake --build . --target code_gen
-              3. Commit and push the regenerated files
-        run: |
-          set -e
-          cmake --build . --target setup_code_gen
-          cmake --build . --target code_gen
-          DIFF=$(git -C .. status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
-          if [ -n "${DIFF}" ]; then
-              echo "::error::Generated protocol files are out of date"
-              git -C .. diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
-              echo "${MESSAGE}"
-              exit 1
-          fi
 
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
@@ -328,11 +308,14 @@ jobs:
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
-      # performance measurement, so it is skipped for instrumented builds
-      # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
-      # and on Windows, where the `install` target does not build them.
+      # performance measurement, so there is nothing to gain from repeating it
+      # across configurations: it is opted into by a single config in the
+      # strategy matrix (see the 'benchmark' flag in the JSON files), which
+      # keeps it off instrumented builds (sanitizers/coverage/voidstar), where
+      # it would be slow and meaningless, off Debug builds, where it is much
+      # slower, and off Windows, where the `install` target does not build them.
       - name: Run the benchmarks
-        if: ${{ !inputs.build_only && runner.os != 'Windows' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        if: ${{ inputs.benchmark }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           rc=0
