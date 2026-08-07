@@ -8,7 +8,9 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/WasmFixture.h>
 
+#include <array>
 #include <cstdint>
+#include <expected>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -71,7 +73,7 @@ TEST_F(WasmVMTest, GuestTrapIsChargedAsContractFault)
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecFAILED_PROCESSING);
     ASSERT_TRUE(outcome.error().cost.has_value());
-    EXPECT_GT(*outcome.error().cost, 0);
+    EXPECT_GT(*outcome.error().cost, 0);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TEST_F(WasmVMTest, NonTerminatingContractSpendsWholeBudget)
@@ -81,7 +83,7 @@ TEST_F(WasmVMTest, NonTerminatingContractSpendsWholeBudget)
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecOUT_OF_GAS);
     ASSERT_TRUE(outcome.error().cost.has_value());
-    EXPECT_EQ(*outcome.error().cost, kAmpleGas);
+    EXPECT_EQ(*outcome.error().cost, kAmpleGas);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 // A budget too small to reach the first host charge is still out of gas, whatever the engine
@@ -160,6 +162,7 @@ TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
     ASSERT_FALSE(outcome.has_value());
     EXPECT_EQ(outcome.error().ter, tecFAILED_PROCESSING);
     ASSERT_TRUE(outcome.error().cost.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_GT(*outcome.error().cost, 0) << "the start section's instructions are metered";
 }
 

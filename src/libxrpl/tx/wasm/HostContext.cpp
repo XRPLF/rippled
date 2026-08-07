@@ -6,6 +6,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
+#include <rust/cxx.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

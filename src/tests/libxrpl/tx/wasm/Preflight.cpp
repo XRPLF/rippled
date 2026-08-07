@@ -1,8 +1,12 @@
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <helpers/CaptureSink.h>
+#include <tx/wasm/MockHostFunctions.h>
 #include <tx/wasm/WasmFixture.h>
 
 #include <string>

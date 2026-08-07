@@ -1,8 +1,8 @@
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/MockHostFunctions.h>
 #include <tx/wasm/WasmFixture.h>
 
 #include <expected>

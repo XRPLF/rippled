@@ -2,11 +2,13 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostContext.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
+#include <rust/cxx.h>
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
 #include <cstdint>
@@ -134,7 +136,7 @@ runEscrowWasm(
             return nodeSideFault;
         }
 
-        HostContext ctx{hfs};
+        HostContext const ctx{hfs};
         auto const run = rs::wasm_vm::run_escrow(
             ctx,
             rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},

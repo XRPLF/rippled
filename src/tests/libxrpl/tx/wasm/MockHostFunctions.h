@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/tx/wasm/HostFunc.h>
