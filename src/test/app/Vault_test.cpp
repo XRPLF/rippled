@@ -42,6 +42,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1329,6 +1330,19 @@ class Vault_test : public beast::unit_test::Suite
             env(tx, Ter{temMALFORMED});
         });
 
+        // Gap strictly greater than MAX_INVESTMENT_PERIOD => temMALFORMED. Same code path as
+        // gap == MAX_INVESTMENT_PERIOD above, but covers the "gap >= MAX" bullet fully.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub + maxPeriod + 1});
+            env(tx, Ter{temMALFORMED});
+        });
+
         // Happy path: gap exactly equal to MIN_INVESTMENT_PERIOD is accepted (lower bound is
         // inclusive).
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
@@ -1508,6 +1522,42 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // Open-ended vaults are always in VaultPhase::NoPhase, regardless of the ledger clock or any
+    // dates present on the vault.
+    void
+    testVaultPhaseDerivationOpenEnded()
+    {
+        testcase("open-ended phase derivation");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        env.fund(XRP(1000), owner);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const checkPhaseAt = [&](NetClock::time_point at) {
+            closeToTime(env, at);
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(getVaultPhase(*env.current(), sle) == VaultPhase::NoPhase);
+        };
+
+        // Advance the clock through a wide range of ledger times: an open-ended vault's phase
+        // must be NoPhase at every one of them, because the derivation short-circuits on
+        // VaultKind::OpenEnded before it looks at any dates.
+        auto const now = env.now();
+        checkPhaseAt(now);
+        checkPhaseAt(now + std::chrono::seconds{kMinInvestmentPeriod});
+        checkPhaseAt(now + std::chrono::seconds{kMaxInvestmentPeriod} - env.closed()->header().closeTimeResolution);
+    }
+
     // VaultDeposit is allowed only during Subscription (or NoPhase). Rejected during Investment and
     // Redemption.
     void
@@ -1626,34 +1676,42 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     // End-to-end lifecycle of a closed-ended vault (Subscription → Investment → Redemption) with
-    // multiple LPs, exercising every phase transition and verifying the expected deposit and
-    // withdrawal behaviour in each phase.
+    // multiple depositors and a real loan originated through the Investment leg. Exercises every phase
+    // transition and verifies the expected deposit, withdrawal, and lending behaviour in each
+    // phase.
     void
     testVaultClosedEndedLifecycle()
     {
         testcase("closed-ended vault lifecycle (subscribe → invest → redeem)");
         using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
 
         Env env{*this, testableAmendments()};
         Account const owner{"owner"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10'000), owner, alice, bob);
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), owner, alice, bob, borrower);
         env.close();
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
         Asset const asset = xrpIssue();
-        auto const [vault, keylet, sub, red] = makeClosedEndedVault(env, owner, asset, 300u, 60u);
+        // Widen the Investment window so a single-payment loan (min payment interval
+        // kMinPaymentInterval = 60s) fits before RedemptionDate with headroom.
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
 
         auto const sleCreate = env.le(keylet);
         BEAST_EXPECT(sleCreate);
         MPTIssue const shares{sleCreate->at(sfShareMPTID)};
 
-        auto const availableEq = [&](STAmount const& expected) {
+        auto const balancesEq = [&](STAmount const& available, STAmount const& total) {
             auto const sle = env.le(keylet);
-            BEAST_EXPECT(sle->at(sfAssetsAvailable) == expected);
-            BEAST_EXPECT(sle->at(sfAssetsTotal) == expected);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == total);
         };
+        auto const availableEq = [&](STAmount const& expected) { balancesEq(expected, expected); };
 
         // env.balance(account, mptIssue) name-resolves the issuer via Env::lookup, but the share
         // issuer is the vault's pseudo-account and is never registered with the jtx Env. Read the
@@ -1691,6 +1749,12 @@ class Vault_test : public beast::unit_test::Suite
         sharesEq(alice, 75'000'000);
         availableEq(XRP(275).value());
 
+        // Create a loan broker backed by this vault. LoanBrokerSet has no phase gate, so it is
+        // fine to do in Subscription.
+        auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+        env(loan_broker::set(owner, keylet.key));
+        env.close();
+
         // ---- Investment phase (now == sub + 1) ----
         env.close(tp{d{sub + 1}});
 
@@ -1703,6 +1767,24 @@ class Vault_test : public beast::unit_test::Suite
             Ter{tecTOO_SOON});
         env.close();
 
+        // A real loan is originated during Investment (permitted only in this phase). Zero-interest
+        // one-payment schedule keeps AssetsTotal unchanged (both accrual and cash-basis
+        // accounting recognise no interest at origination); AssetsAvailable drops by the loan
+        // principal.
+        env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+            loan::kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto const sleBroker = env.le(keylet::loanBroker(brokerKeylet.key));
+        BEAST_EXPECT(sleBroker);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, 1u);
+        BEAST_EXPECT(env.le(loanKeylet));
+        balancesEq(XRP(215).value(), XRP(275).value());
+
         // Non-immutable VaultSet still works in Investment (positive control).
         {
             auto tx = vault.set({.owner = owner, .id = keylet.key});
@@ -1711,10 +1793,9 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // Balances unchanged after the two failed txns and one set.
+        // Depositor share balances unchanged by the loan origination; only AssetsAvailable moved.
         sharesEq(alice, 75'000'000);
         sharesEq(bob, 200'000'000);
-        availableEq(XRP(275).value());
 
         // ---- Redemption phase (now == red) ----
         env.close(tp{d{red}});
@@ -1725,17 +1806,24 @@ class Vault_test : public beast::unit_test::Suite
             Ter{tecEXPIRED});
         env.close();
 
-        // alice redeems her remaining 75 XRP.
+        // alice redeems her remaining 75 XRP (fits within AssetsAvailable = 215).
         env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(75).value()}));
         env.close();
         sharesEq(alice, 0);
-        availableEq(XRP(200).value());
+        balancesEq(XRP(140).value(), XRP(200).value());
 
-        // bob redeems his 200 XRP.
-        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}));
+        // bob has 200 XRP-worth of shares but only 140 XRP is available (the remaining 60 XRP
+        // sits in the outstanding loan). A full 200 XRP withdrawal fails against the
+        // AssetsAvailable cap; bob redeems 140 XRP instead and is left holding 60M shares backed
+        // by the loan receivable — the realistic outcome when capital is still deployed at
+        // Redemption.
+        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}),
+            Ter{tecINSUFFICIENT_FUNDS});
         env.close();
-        sharesEq(bob, 0);
-        availableEq(XRP(0).value());
+        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(140).value()}));
+        env.close();
+        sharesEq(bob, 60'000'000);
+        balancesEq(XRP(0).value(), XRP(60).value());
 
         // Defensive spot-check that the three immutable fields have not changed across the entire
         // lifecycle. Direct immutability coverage lives with the invariant tests.
@@ -9109,6 +9197,7 @@ public:
         testCreateFailMPT();
         testVaultCreateClosedEnded();
         testVaultPhaseDerivation();
+        testVaultPhaseDerivationOpenEnded();
         testVaultDepositClosedEnded();
         testVaultWithdrawClosedEnded();
         testVaultClosedEndedLifecycle();
