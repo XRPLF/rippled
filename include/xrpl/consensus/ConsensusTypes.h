@@ -8,7 +8,9 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 
 namespace xrpl {
@@ -188,6 +190,75 @@ struct ConsensusCloseTimes
      */
     NetClock::time_point self;
 };
+
+/**
+ * Offset of the network's close time relative to ours, using a weighted median.
+ *
+ * Treats the sample set as `{self x 1}` merged with `{t x w}` for each
+ * `(t, w)` in `times.peers`, in time order, and returns `(median - self)`
+ * in whole seconds. Uses the lower weighted median: the median is the
+ * earliest time at which the running weight reaches half the total, so an
+ * even total whose halfway point falls between two bins resolves to the
+ * earlier bin.
+ *
+ * @param times Our own close time and the weighted close times of peers.
+ * @return Weighted median of all close times minus our own, in whole seconds.
+ */
+inline std::chrono::seconds
+medianCloseOffset(ConsensusCloseTimes const& times)
+{
+    using namespace std::chrono;
+    using time_point = NetClock::time_point;
+
+    std::int64_t totalWeight = 1;
+    for (auto const& [_, w] : times.peers)
+        totalWeight += w;
+
+    std::int64_t const halfWeight = (totalWeight + 1) / 2;
+
+    std::optional<time_point> median{};
+    std::int64_t tally = 0;
+    bool selfPlaced = false;
+
+    // Accumulate weight in time order; the first bin to reach halfWeight is
+    // the (lower) weighted median. Returns true once that bin is found.
+    auto step = [&](time_point t, std::int64_t w) {
+        XRPL_ASSERT(tally < halfWeight, "xrpl::medianCloseOffset::step : median not yet found");
+        tally += w;
+        if (tally >= halfWeight)
+        {
+            median = t;
+            return true;
+        }
+        return false;
+    };
+
+    for (auto const& [t, w] : times.peers)
+    {
+        if (!selfPlaced && times.self <= t)
+        {
+            selfPlaced = true;
+            if (step(times.self, 1))
+                break;
+        }
+        if (step(t, w))
+            break;
+    }
+    if (!selfPlaced && !median)
+        step(times.self, 1);
+
+    if (!median)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::medianCloseOffset : median not found");
+        median = times.self;
+        // LCOV_EXCL_STOP
+    }
+
+    return duration_cast<seconds>(
+        duration<std::int64_t>{median->time_since_epoch().count()} -
+        duration<std::int64_t>{times.self.time_since_epoch().count()});
+}
 
 /**
  * Whether we have or don't have a consensus
