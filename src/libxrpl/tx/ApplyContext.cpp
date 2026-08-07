@@ -58,15 +58,18 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    if (vmReturnCode_.has_value())
+    // tecINTERNAL reports an xrpld bug, not a result: nothing the VM recorded
+    // before we hit it belongs in the metadata.
+    if (ter != tecINTERNAL)
     {
+        if (vmReturnCode_.has_value())
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
+            view_->setVMReturnCode(*vmReturnCode_);
+        }
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->setVMReturnCode(*vmReturnCode_);
+        view_->setGasUsed(gasUsed_);
     }
-    // tecINTERNAL reports an xrpld bug, not gas the transaction owes: a cost
-    // recorded before we hit it is not trustworthy, so it is left unreported.
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    view_->setGasUsed(ter == tecINTERNAL ? std::nullopt : gasUsed_);
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }

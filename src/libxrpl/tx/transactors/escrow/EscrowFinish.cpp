@@ -421,8 +421,7 @@ EscrowFinish::doApply()
 
         // Gas consumed, reported in the tx metadata whenever the engine has a
         // trustworthy number: a completed run, out of gas, or a wasm fault.
-        std::optional<std::int64_t> const cost =
-            re.has_value() ? std::optional<std::int64_t>{re->cost} : re.error().cost;
+        std::optional<std::int64_t> const cost = re.has_value() ? re->cost : re.error().cost;
         if (cost.has_value())
         {
             // The engine cannot spend more than it was given, and pins the cost
