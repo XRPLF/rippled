@@ -142,10 +142,7 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
     // paths feed the same accumulator with comparable numbers.
     auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
-    storeDurationStats(
-        static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
-                                       std::chrono::steady_clock::now() - begin)
-                                       .count()));
+    storeDurationStats(std::chrono::steady_clock::now() - begin);
 
     storeStats(1, nObj->getData().size());
 }
