@@ -117,9 +117,9 @@ VaultCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     if (isClosedEnded)
     {
-        auto const sub = ctx.tx[sfSubscriptionDate];
-        auto const red = ctx.tx[sfRedemptionDate];
-        if (red <= sub || red - sub < kMinInvestmentPeriod || red - sub >= kMaxInvestmentPeriod)
+        auto const sub = static_cast<std::int64_t>(ctx.tx[sfSubscriptionDate]);
+        auto const red = static_cast<std::int64_t>(ctx.tx[sfRedemptionDate]);
+        if (red < sub + kMinInvestmentPeriod || red >= sub + kMaxInvestmentPeriod)
             return temMALFORMED;
     }
 

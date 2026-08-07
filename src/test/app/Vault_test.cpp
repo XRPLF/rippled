@@ -1283,8 +1283,8 @@ class Vault_test : public beast::unit_test::Suite
         /*
          * Gap smaller than MIN_INVESTMENT_PERIOD => temMALFORMED. Includes the SubscriptionDate >=
          * RedemptionDate degenerate cases: the red == sub boundary and the strictly-reversed red <
-         * sub case, the latter exercising the red <= sub short-circuit that guards the unsigned red
-         * - sub subtraction against wrap-around.
+         * sub case, the latter yielding a negative signed int64 gap that is caught by the
+         * sub-minimum branch of the gap check.
          */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;

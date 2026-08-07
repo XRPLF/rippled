@@ -4547,8 +4547,8 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-        // RedemptionDate strictly before SubscriptionDate; exercises the red <= sub short-circuit
-        // that guards the unsigned red - sub subtraction against wrap-around.
+        // RedemptionDate strictly before SubscriptionDate; the signed int64 gap is negative and
+        // is caught by the sub-minimum branch of the gap check.
         doInvariantCheck(
             {"closed-ended vault RedemptionDate - SubscriptionDate must be "
              "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
