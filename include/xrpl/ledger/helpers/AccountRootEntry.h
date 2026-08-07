@@ -10,18 +10,20 @@
 namespace xrpl {
 
 template <typename ViewT>
-class AccountRootEntry : public SLEBase<ViewT>
+class AccountRootEntry : public SLEBase<ViewT, ltACCOUNT_ROOT>
 {
 public:
+    using Base = SLEBase<ViewT, ltACCOUNT_ROOT>;
+
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
+    using Base::Base;
 
     explicit AccountRootEntry(
         AccountID const& id,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::account(id), view, j)
+        : Base(keylet::account(id), view, j)
     {
     }
 };

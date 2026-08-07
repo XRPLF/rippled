@@ -1,6 +1,8 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -8,20 +10,25 @@
 namespace xrpl {
 
 template <typename ViewT>
-class DIDEntry : public SLEBase<ViewT>
+class DIDEntry : public SLEBase<ViewT, ltDID>
 {
 public:
+    using Base = SLEBase<ViewT, ltDID>;
+
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
+    using Base::Base;
 
     explicit DIDEntry(
         AccountID const& account,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::did(account), view, j)
+        : Base(keylet::did(account), view, j)
     {
     }
 };
+
+using RDIDEntry = DIDEntry<ReadView>;
+using WDIDEntry = DIDEntry<ApplyView>;
 
 }  // namespace xrpl

@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,18 +13,20 @@
 namespace xrpl {
 
 template <typename ViewT>
-class DirectoryNodeEntry : public SLEBase<ViewT>
+class DirectoryNodeEntry : public SLEBase<ViewT, ltDIR_NODE>
 {
 public:
+    using Base = SLEBase<ViewT, ltDIR_NODE>;
+
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
+    using Base::Base;
 
     explicit DirectoryNodeEntry(
         AccountID const& id,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::ownerDir(id), view, j)
+        : Base(keylet::ownerDir(id), view, j)
     {
     }
 
@@ -32,11 +36,14 @@ public:
     explicit DirectoryNodeEntry(
         uint256 const& root,
         std::uint64_t index,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::page(root, index), view, j)
+        : Base(keylet::page(root, index), view, j)
     {
     }
 };
+
+using RDirectoryNodeEntry = DirectoryNodeEntry<ReadView>;
+using WDirectoryNodeEntry = DirectoryNodeEntry<ApplyView>;
 
 }  // namespace xrpl

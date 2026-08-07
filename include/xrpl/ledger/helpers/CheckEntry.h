@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,29 +13,34 @@
 namespace xrpl {
 
 template <typename ViewT>
-class CheckEntry : public SLEBase<ViewT>
+class CheckEntry : public SLEBase<ViewT, ltCHECK>
 {
 public:
+    using Base = SLEBase<ViewT, ltCHECK>;
+
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
+    using Base::Base;
 
     explicit CheckEntry(
         AccountID const& id,
         std::uint32_t seq,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::check(id, seq), view, j)
+        : Base(keylet::check(id, seq), view, j)
     {
     }
 
     explicit CheckEntry(
         uint256 const& checkID,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::check(checkID), view, j)
+        : Base(keylet::check(checkID), view, j)
     {
     }
 };
+
+using RCheckEntry = CheckEntry<ReadView>;
+using WCheckEntry = CheckEntry<ApplyView>;
 
 }  // namespace xrpl

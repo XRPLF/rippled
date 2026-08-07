@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
 
@@ -10,29 +12,34 @@
 namespace xrpl {
 
 template <typename ViewT>
-class LoanEntry : public SLEBase<ViewT>
+class LoanEntry : public SLEBase<ViewT, ltLOAN>
 {
 public:
+    using Base = SLEBase<ViewT, ltLOAN>;
+
     // Inherit base constructors: adopt an existing SLE, or resolve one from a
     // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
+    using Base::Base;
 
     explicit LoanEntry(
         uint256 const& loanBrokerID,
         std::uint32_t loanSeq,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::loan(loanBrokerID, loanSeq), view, j)
+        : Base(keylet::loan(loanBrokerID, loanSeq), view, j)
     {
     }
 
     explicit LoanEntry(
         uint256 const& loanID,
-        SLEBase<ViewT>::view_ref_type view,
+        Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::loan(loanID), view, j)
+        : Base(keylet::loan(loanID), view, j)
     {
     }
 };
+
+using RLoanEntry = LoanEntry<ReadView>;
+using WLoanEntry = LoanEntry<ApplyView>;
 
 }  // namespace xrpl
