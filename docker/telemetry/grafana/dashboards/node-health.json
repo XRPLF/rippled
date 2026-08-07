@@ -14,7 +14,7 @@
       "description": "**What:** Seconds since the most recently validated ledger, i.e. how far behind the network the node is.\n**How it's computed:** Current value of the validated-ledger-age gauge per node.\n**Reading it:** Lower is better; a healthy node stays within a few ledger-close intervals.\n**Healthy range:** under ~10s (the network closes a ledger every 3-5s).\n**Watch for:** Above 20s or climbing steadily (the node is falling behind or has lost sync).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 0
@@ -66,7 +66,7 @@
       "description": "**What:** Seconds since the most recently published ledger (the ledger exposed to clients and subscribers).\n**How it's computed:** Current value of the published-ledger-age gauge per node.\n**Reading it:** Should track validated-ledger age closely.\n**Healthy range:** under ~10s.\n**Watch for:** Published age growing while validated age stays low (publish-pipeline backlog).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 0
@@ -118,10 +118,10 @@
       "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over 5 minutes.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -154,10 +154,10 @@
       "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over 5 minutes.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -202,10 +202,10 @@
       "description": "**What:** Fraction of time in each operating mode (per-interval): Disconnected, Connected, Syncing, Tracking, Full.\n**How it's computed:** Per-mode duration rate divided by the sum of all five mode rates over the interval; the five shares stack to 100%.\n**Reading it:** Full should fill almost the entire band on a healthy node.\n**Healthy range:** Full near 100%; other modes near 0.\n**Watch for:** A rising share of Syncing, Connected, or Disconnected (instability or repeated resync).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -277,10 +277,10 @@
       "description": "**What:** Count of transitions into each operating mode.\n**How it's computed:** Per-mode transition counters at their latest value per node.\n**Reading it:** Few transitions is good; a stable node rarely leaves Full.\n**Healthy range:** workload-dependent; low and infrequent transitions.\n**Watch for:** Frequent transitions out of Full, or any into Disconnected/Syncing (flapping).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -349,10 +349,10 @@
       "description": "**What:** P95 and P50 latency of the I/O service loop, i.e. how long a queued timer callback waits to run.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Low and flat is good; this reflects event-loop responsiveness.\n**Healthy range:** single-digit milliseconds; over ~10ms is notable, over ~500ms is bad.\n**Watch for:** Rising P95 (thread-pool saturation or blocking work on the I/O thread).\n**Source:** src/xrpld/app/main/Application.cpp ApplicationImp ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -400,10 +400,10 @@
       "description": "**What:** Number of jobs currently waiting in the job queue.\n**How it's computed:** Current value of the job-count gauge per node.\n**Reading it:** Near zero when the node keeps up; brief spikes during heavy work are normal.\n**Healthy range:** low, returning to baseline quickly.\n**Watch for:** Sustained high depth (node cannot process work fast enough: replay, heavy RPC, or overload).\n**Source:** src/libxrpl/core/detail/JobQueue.cpp JobQueue ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -447,7 +447,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "collapsed": false,
       "panels": [],
@@ -458,10 +458,10 @@
       "description": "**What:** Hit-rate percentage of the FullBelowCache.\n**How it's computed:** Current value of the cache hit-rate gauge (0-100%).\n**Reading it:** Higher is better; means the node reuses knowledge of complete subtrees.\n**Healthy range:** above ~50% in steady state.\n**Watch for:** Low hit rate during steady state (cache too small or constant re-acquisition).\n**Source:** include/xrpl/basics/TaggedCache.h TaggedCache::Stats ctor",
       "type": "gauge",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -512,10 +512,10 @@
       "description": "**What:** Difference between published and validated ledger ages: how far the publish pipeline trails validation.\n**How it's computed:** Published-ledger age minus validated-ledger age, in seconds.\n**Reading it:** Near zero means publishing keeps up with validation.\n**Healthy range:** within a few seconds of zero.\n**Watch for:** A growing gap (publish backlog, stale data for subscribers).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -564,10 +564,10 @@
       "description": "**What:** Execution time of the most important job types (accept/advance ledger, transaction, write objects, heartbeat, sweep, trusted validation/proposal, publish, client RPC, ledger data) at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Lower and stable is better; shows where consensus, transaction, and maintenance time goes.\n**Healthy range:** workload-dependent; most jobs in low tens of milliseconds.\n**Watch for:** One job type spiking (a specific bottleneck) or broad increases (overload).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -678,10 +678,10 @@
       "description": "**What:** Time key jobs wait in the queue before they start running, at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Low wait means the scheduler keeps up; high wait means backlog.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** Rising wait across job types (queue congestion delaying consensus and transaction work).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -792,10 +792,10 @@
       "description": "**What:** Number of entries in the FullBelowCache, which tracks tree nodes known to have all children present locally.\n**How it's computed:** Current value of the cache-size gauge per node.\n**Reading it:** Grows as the node learns complete subtrees; helps avoid redundant fetches.\n**Healthy range:** workload-dependent; stable once synced.\n**Watch for:** Collapsing to near zero repeatedly (cache thrash) alongside rising fetch traffic.\n**Source:** include/xrpl/basics/TaggedCache.h TaggedCache::Stats ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -836,10 +836,10 @@
       "description": "**What:** How fast the node accrues time in Full versus Tracking mode, normalized to seconds per second.\n**How it's computed:** Per-second rate of the Full and Tracking accumulated-time gauges, scaled to seconds.\n**Reading it:** Full rate near 1.0 means the node is in Full essentially all the time.\n**Healthy range:** Full rate ~1.0, Tracking near 0.\n**Watch for:** Full rate dropping below 1.0 with Tracking rising (time being lost to non-Full modes).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 37
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -887,10 +887,10 @@
       "description": "**What:** Execution time for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's execution-time histogram over 5 minutes.\n**Reading it:** Full breakdown of job performance; use the Key Jobs panel for the focused view.\n**Healthy range:** workload-dependent.\n**Watch for:** Any job type with a persistent upward trend, or many rising together (systemic slowdown).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 71
       },
       "options": {
         "tooltip": {
@@ -931,10 +931,10 @@
       "description": "**What:** Queue wait time before execution for all non-special job types at the selected quantile.\n**How it's computed:** Selected quantile of each job's queue-wait histogram over 5 minutes.\n**Reading it:** Complete picture of scheduling delay across job types.\n**Healthy range:** workload-dependent; short waits.\n**Watch for:** High waits across many job types (systemic job-queue congestion).\n**Source:** include/xrpl/core/JobTypeData.h JobTypeData ctor",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 71
       },
       "options": {
         "tooltip": {

@@ -27,7 +27,7 @@
       "description": "**What:** Rate of consensus proposals arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects how many validators' proposals reach this node each round.\n**Healthy range:** Workload-dependent; scales with peer count and network activity.\n**Watch for:** A sudden drop means loss of proposal flow; a sharp sustained spike from a single peer can indicate flooding.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 1
@@ -72,7 +72,7 @@
       "description": "**What:** Rate of ledger validations arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects the volume of validation traffic reaching this node.\n**Healthy range:** Workload-dependent; scales with the number of validators and peers.\n**Watch for:** A drop starves the validation quorum; an abnormal spike from one peer can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 1
@@ -119,7 +119,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 11
       },
       "collapsed": false,
       "panels": [],
@@ -130,10 +130,10 @@
       "description": "**What:** Share of received proposals from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** A well-connected node with a good UNL sees a healthy trusted share.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A collapse of the trusted share means poor connectivity to UNL validators; a flood of untrusted proposals can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "piechart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -164,10 +164,10 @@
       "description": "**What:** Share of received validations from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** Confirms the node is hearing from its expected trusted validator set.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A shrinking trusted share risks the validation quorum; a surge of untrusted validations can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "piechart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 12
       },
       "options": {
         "tooltip": {

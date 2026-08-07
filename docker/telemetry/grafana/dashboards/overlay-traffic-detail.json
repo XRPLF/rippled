@@ -14,7 +14,7 @@
       "description": "###### What this is:\n*Squelch relay-control messages in/out, plus messages suppressed by squelch and squelch directives that were ignored. Squelch reduces redundant message forwarding between peers.*\n\n###### How it's computed:\n*Per-second message rate for the squelch, squelch-suppressed, and squelch-ignored categories, in and out.*\n\n###### Reading it:\n*High suppressed counts mean squelch is saving bandwidth; ignored should stay low.*\n\n###### Healthy range:\n*workload-dependent; suppressed far above ignored.*\n\n###### Watch for:\n*High ignored counts (peers not honoring squelch) or squelch traffic itself dominating.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 0
@@ -88,7 +88,7 @@
       "description": "###### What this is:\n*Overlay protocol overhead bytes split into base overhead, intra-cluster overhead, and validator-manifest distribution overhead.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the overhead, overhead-cluster, and overhead-manifest categories.*\n\n###### Reading it:\n*Base overhead is routine; cluster and manifest rise around cluster syncs and manifest changes.*\n\n###### Healthy range:\n*workload-dependent; low and stable.*\n\n###### Watch for:\n*Sustained high cluster or manifest overhead (frequent cluster state churn or manifest reissue).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 0
@@ -162,10 +162,10 @@
       "description": "###### What this is:\n*Bytes and messages exchanged distributing validator lists (trusted-list configuration) between peers.*\n\n###### How it's computed:\n*Per-second in/out byte and message rate for the validator-lists category.*\n\n###### Reading it:\n*Bursts when lists update or new peers connect; quiet otherwise.*\n\n###### Healthy range:\n*workload-dependent; occasional bursts.*\n\n###### Watch for:\n*Continuous high volume (repeated list re-fetching or churn).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -241,10 +241,10 @@
       "description": "###### What this is:\n*Transaction-set fetch (get) and share bytes exchanged during ledger close.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the set-get and set-share categories.*\n\n###### Reading it:\n*Some exchange each ledger is normal as peers reconcile transaction sets.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High set-get (peers frequently missing transaction sets: possible sync delays).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -303,10 +303,10 @@
       "description": "###### What this is:\n*Transaction-availability messages: advertisements that a peer has certain transactions, and explicit requests for transaction data.*\n\n###### How it's computed:\n*Per-second in/out message rate for the have-transactions and requested-transactions categories.*\n\n###### Reading it:\n*Compare requested versus have to gauge how well transactions are propagating.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Requested far exceeding have (peers behind on transaction propagation).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -365,10 +365,10 @@
       "description": "###### What this is:\n*Overlay traffic that matches no known message category, in bytes and messages.*\n\n###### How it's computed:\n*Current in/out byte and message counts for the unknown category.*\n\n###### Reading it:\n*Should be at or near zero.*\n\n###### Healthy range:\n*zero.*\n\n###### Watch for:\n*Any sustained non-zero value (protocol version mismatch, corrupted messages, or an unclassified new message type).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -444,10 +444,10 @@
       "description": "###### What this is:\n*Proof-path request/response bytes used to verify individual ledger entries without downloading the whole ledger.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the proof-path request and response categories.*\n\n###### Reading it:\n*Rises when peers verify specific state, often during catch-up.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High sustained request volume (heavy state-verification load).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -506,10 +506,10 @@
       "description": "###### What this is:\n*Replay-delta request/response bytes used to efficiently replay ledger state changes during catch-up.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the replay-delta request and response categories.*\n\n###### Reading it:\n*Active during catch-up and replay; quiet when synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous replay traffic (node repeatedly replaying rather than staying current).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {

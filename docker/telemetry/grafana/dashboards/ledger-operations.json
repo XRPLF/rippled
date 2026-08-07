@@ -26,7 +26,7 @@
       "description": "**What:** How often the node constructs a new ledger from its parent, applying transactions and writing state.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the consensus close cadence.\n**Healthy range:** About 0.25/s on mainnet (~4s rounds).\n**Watch for:** A drop below the close rate means the node is not keeping up with ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 1
@@ -63,7 +63,7 @@
       "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 1
@@ -100,10 +100,10 @@
       "description": "**What:** Time to build a full ledger, including applying transactions, writing state, and finalising acceptance.\n**How it's computed:** 95th and 50th percentile of per-build durations over a 5-minute window, per node.\n**Reading it:** Scales with transaction volume and disk I/O.\n**Healthy range:** Tens to a few hundred milliseconds under typical load.\n**Watch for:** Long build times indicate expensive transaction sets or I/O pressure while flushing state.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 11
       },
       "options": {
         "tooltip": {
@@ -153,10 +153,10 @@
       "description": "**What:** Distribution of ledger-build durations over time, revealing spread beyond a single percentile.\n**How it's computed:** Counts of builds by duration band in each 5-minute window, per node.\n**Reading it:** A tight band at low durations is healthy; brighter cells mark the common build time.\n**Healthy range:** Concentrated in the low tens of milliseconds.\n**Watch for:** An occasional high-duration band flags slow builds that percentile charts may miss.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 11
       },
       "options": {
         "tooltip": {
@@ -197,7 +197,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 21
       },
       "collapsed": false,
       "panels": [],
@@ -208,10 +208,10 @@
       "description": "**What:** Time to apply the agreed transaction set into the new ledger, including retry passes.\n**How it's computed:** 95th and 50th percentile of per-ledger apply durations over a 5-minute window, per node.\n**Reading it:** Grows with the number and complexity of transactions in the set.\n**Healthy range:** Tens to a few hundred milliseconds under normal load.\n**Watch for:** Sustained high durations indicate heavy or expensive transaction sets.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -261,10 +261,10 @@
       "description": "**What:** How often the transaction-application phase runs during ledger building.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** One apply pass per ledger build, so it should track the build rate.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** Divergence from the build rate signals an accounting or pipeline anomaly.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -308,7 +308,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 32
       },
       "collapsed": false,
       "panels": [],
@@ -319,10 +319,10 @@
       "description": "**What:** How often completed ledgers are written into the local ledger history.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build rate under normal operation.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A store rate below the build rate means ledgers are being built but not persisted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::storeLedger",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -356,10 +356,10 @@
       "description": "**What:** Ledger construction time versus total ledger-close time; construction is a subset of close.\n**How it's computed:** 95th percentile of each duration over a 5-minute window, per node.\n**Reading it:** Build should sit at or just below close.\n**Healthy range:** Both a few hundred milliseconds or less, tracking each other.\n**Watch for:** A large gap means significant overhead in the consensus pipeline outside ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl, src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 27
+        "x": 12,
+        "y": 33
       },
       "options": {
         "tooltip": {

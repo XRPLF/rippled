@@ -13,7 +13,7 @@
       "description": "**What:** Rate of transactor-stage applies that returned a non-success result while building a ledger.\n**How it's computed:** Per-second rate of tx.transactor spans at stage=apply whose ter_result is not tesSUCCESS, per node.\n**Reading it:** Green below 1/s, yellow 1-5/s, red above 5/s.\n**Healthy range:** A steady low non-zero rate is normal (e.g. tefPAST_SEQ, tecUNFUNDED and other benign conflicts).\n**Watch for:** A sustained jump above the normal baseline can indicate malformed transaction floods or a systemic issue.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "stat",
       "gridPos": {
-        "h": 4,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 0
@@ -67,10 +67,10 @@
       "description": "**What:** Rate of transactions entering the processing pipeline (submitted locally or relayed by peers) versus raw transaction messages arriving from peers before deduplication.\n**How it's computed:** Per-second rate of each over a 5-minute window, per node.\n**Reading it:** The received line sits above the processed line by the volume of duplicates filtered out.\n**Healthy range:** Workload-dependent; scales with network transaction volume.\n**Watch for:** A large and growing gap means heavy duplicate traffic; a processed-rate collapse means submissions are not being handled.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction, src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 4
+        "x": 12,
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -120,10 +120,10 @@
       "description": "**What:** Per-transaction-type processing latency through the pipeline.\n**How it's computed:** 95th and 50th percentile of per-type durations over a 5-minute window, per node.\n**Reading it:** Simple payments are fast; complex types like offers or AMM operations run longer.\n**Healthy range:** Sub-millisecond to a few milliseconds; type-dependent.\n**Watch for:** A latency climb for one type signals contention or expensive processing specific to it.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -178,7 +178,7 @@
       "description": "**What:** Split of processed transactions by origin: submitted locally versus relayed from peers.\n**How it's computed:** Total counts split by origin over a 5-minute window, shown as proportions.\n**Reading it:** Most nodes see mostly relayed traffic; a submission endpoint sees more local.\n**Healthy range:** Workload-dependent.\n**Watch for:** A surge in local submissions on a node not meant to accept them can indicate misuse.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "piechart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 20
@@ -212,7 +212,7 @@
       "description": "**What:** Raw transaction messages received from peers, split by whether they were suppressed as duplicates before processing.\n**How it's computed:** Per-second rate split by suppressed flag over a 5-minute window, per node.\n**Reading it:** A healthy relay network produces a steady suppressed share as duplicates are filtered.\n**Healthy range:** Workload-dependent; suppression is expected and normal.\n**Watch for:** A sharp rise in the suppressed line can reflect gossip amplification or a peer replaying transactions.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::handleTransaction",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 20
@@ -257,10 +257,10 @@
       "description": "**What:** Distribution of transaction processing times over time.\n**How it's computed:** Counts of transactions by duration band in each 5-minute window, per node.\n**Reading it:** A single tight band is healthy; brighter cells mark the common processing time.\n**Healthy range:** Concentrated at low latency.\n**Watch for:** A second high-latency band reveals a subset of transactions that are consistently slow.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -299,10 +299,10 @@
       "description": "**What:** Time to apply the agreed transaction set into a new ledger.\n**How it's computed:** 95th and 50th percentile of per-ledger apply durations over a 5-minute window, per node.\n**Reading it:** Scales with the number and complexity of transactions per ledger.\n**Healthy range:** Tens to a few hundred milliseconds under normal load.\n**Watch for:** Sustained high durations indicate heavy transaction sets or expensive processing.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -354,7 +354,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 40
       },
       "collapsed": false,
       "panels": [],
@@ -365,10 +365,10 @@
       "description": "**What:** Processing rate broken down by transaction type (Payment, OfferCreate, AMM operations, etc.).\n**How it's computed:** Per-second rate per type over a 5-minute window.\n**Reading it:** Shows the transaction mix and how it shifts over time.\n**Healthy range:** Workload-dependent; usually Payment-heavy.\n**Watch for:** A sudden burst of one type is a leading indicator of spam or fee escalation.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -415,10 +415,10 @@
       "description": "**What:** Non-success result codes broken down by transaction type, showing which types fail and how.\n**How it's computed:** Per-second rate per type and result code over a 5-minute window (successes excluded).\n**Reading it:** Occasional failures are normal; watch which types and codes dominate.\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A concentration of one failure code on one type can indicate a broken client or targeted spam.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::processTransaction",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -461,14 +461,14 @@
       "id": 10
     },
     {
-      "title": "TxQ Accept: Applied Ratio per Node (State Timeline) [$xrpl_network_type]",
+      "title": "TxQ Accept: Applied Ratio per Node (State Timeline)",
       "description": "**What:** Applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.\n**How it's computed:** Per node, applied accepts divided by applied-plus-failed accepts over a 5-minute window.\n**Reading it:** Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.\n**Healthy range:** At or near 100% applied when the queue is draining healthily; workload-dependent.\n**Watch for:** A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::accept",
       "type": "state-timeline",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 61
       },
       "options": {
         "mergeValues": true,
@@ -520,9 +520,6 @@
         },
         "overrides": []
       },
-      "repeat": "xrpl_network_type",
-      "repeatDirection": "h",
-      "maxPerRow": 2,
       "id": 11
     },
     {
@@ -530,10 +527,10 @@
       "description": "**What:** Per-type execution time of the transactor that actually applies each transaction's effects.\n**How it's computed:** 95th percentile of per-type durations over a 5-minute window, per node.\n**Reading it:** Reveals which transaction types are most expensive to execute.\n**Healthy range:** Sub-millisecond to a few milliseconds; type-dependent.\n**Watch for:** A climbing figure for one type points to expensive processing or contention for that type.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 71
       },
       "options": {
         "tooltip": {
@@ -582,7 +579,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 81
       },
       "collapsed": false,
       "panels": [],
@@ -593,10 +590,10 @@
       "description": "**What:** Rate at which transactions are placed into the queue, split by transaction type.\n**How it's computed:** Per-second rate per type over a 5-minute window, per node.\n**Reading it:** Shows which types make up inbound demand and how the mix shifts as the queue fills.\n**Healthy range:** Workload-dependent.\n**Watch for:** A spam burst of one type here is a leading indicator of fee escalation.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::apply",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 70
+        "y": 82
       },
       "options": {
         "tooltip": {
@@ -638,10 +635,10 @@
       "description": "**What:** Time spent draining queued transactions into a newly closed ledger.\n**How it's computed:** 95th and 50th percentile of per-ledger drain durations over a 5-minute window, per node.\n**Reading it:** Rises as the queue holds more transactions to process at close.\n**Healthy range:** A few milliseconds when the queue is light.\n**Watch for:** Rising drain time signals queue pressure at ledger close.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::accept",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 70
+        "y": 82
       },
       "options": {
         "tooltip": {
@@ -691,10 +688,10 @@
       "description": "**What:** Rate at which expired transactions are removed from the queue each ledger.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Normally low; entries expire when submitters underbid the current fee.\n**Healthy range:** Near zero in calm conditions.\n**Watch for:** A rising rate means submitters abandoned under-fee transactions, a demand-frustration signal distinct from throughput.\n**Source:** src/xrpld/app/misc/detail/TxQ.cpp:TxQ::processClosedLedger",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 78
+        "y": 92
       },
       "options": {
         "tooltip": {
@@ -736,10 +733,10 @@
       "description": "**What:** Throughput of each apply-pipeline stage (preflight, preclaim, apply), showing where transactions drop out.\n**How it's computed:** Per-second rate per stage over a 5-minute window, per node.\n**Reading it:** A decline from earlier to later stages shows where transactions are filtered.\n**Healthy range:** Workload-dependent; later stages sit at or below earlier ones.\n**Watch for:** A large early-stage drop means many transactions fail basic checks, consistent with malformed floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 102
       },
       "options": {
         "tooltip": {
@@ -788,7 +785,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 112
       },
       "collapsed": false,
       "panels": [],
@@ -799,10 +796,10 @@
       "description": "**What:** 95th-percentile duration of each apply-pipeline stage (preflight, preclaim, apply).\n**How it's computed:** 95th percentile of per-stage durations over a 5-minute window, per node.\n**Reading it:** Isolates which stage dominates transaction processing time.\n**Healthy range:** Sub-millisecond to a few milliseconds per stage.\n**Watch for:** A stage that grows disproportionately points to a bottleneck in that step.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 95
+        "y": 113
       },
       "options": {
         "tooltip": {
@@ -849,10 +846,10 @@
       "description": "**What:** Rate of pipeline spans ending in a non-success result, split by stage (preflight, preclaim, apply).\n**How it's computed:** Per-second rate of non-success outcomes per stage over a 5-minute window, per node.\n**Reading it:** Shows whether failures concentrate early (basic checks) or late (application).\n**Healthy range:** Low and workload-dependent.\n**Watch for:** A surge of early-stage failures is consistent with malformed or spam transaction floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 103
+        "y": 123
       },
       "options": {
         "tooltip": {
@@ -899,10 +896,10 @@
       "description": "**What:** 95th-percentile stage duration broken down by both transaction type and pipeline stage.\n**How it's computed:** 95th percentile of durations per type and stage over a 5-minute window, per node.\n**Reading it:** For each transaction type, shows which stage dominates its latency.\n**Healthy range:** Sub-millisecond to a few milliseconds; type- and stage-dependent.\n**Watch for:** A specific type-and-stage combination climbing points to a targeted expensive or abusive pattern.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 111
+        "y": 133
       },
       "options": {
         "tooltip": {
