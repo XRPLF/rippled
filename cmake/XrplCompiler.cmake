@@ -188,6 +188,57 @@ else()
     endif()
 endif()
 
+# Decide how seriously to take linker warnings.
+#
+# CI builds in a fully controlled environment, so any linker warning there points at a real problem
+# and is turned into a build failure. There is no single spelling for this: Apple's ld and the cctools
+# ld64 only accept -fatal_warnings, while GNU ld, mold and lld only accept --fatal-warnings. Windows is
+# left out on purpose (link.exe would need its own /WX).
+#
+# Locally only one warning is silenced, and only on macOS. Conan builds every dependency against
+# `os.version` from the Conan profile, while our own binaries target CMAKE_OSX_DEPLOYMENT_TARGET (see
+# CMakeLists.txt). A Conan profile created before conan/profiles/default started pinning os.version
+# has no os.version at all, so its dependencies were built against the (newer) host SDK and the linker
+# warns once per object file:
+#
+#   ld: warning: object file (.../libbenchmark_main.a[2](benchmark_main.cc.o)) was built for newer
+#   'macOS' version (26.0) than being linked (15.0)
+#
+# Reinstalling conan/profiles and rebuilding every dependency is the real fix, but it is not worth
+# forcing on anyone. Apple's ld can single out that one warning with -deployment_target_mismatches,
+# which leaves every other linker warning visible - CI turns those into errors, so they should not be
+# invisible locally. The cctools ld64 that the Nix toolchain links with has no per-warning control at
+# all (-w is the only lever in its whole option table), so there it costs all linker warnings.
+if(is_ci AND (is_macos OR is_linux))
+    if(is_macos)
+        set(fatal_warnings_flag "-Wl,-fatal_warnings")
+    else()
+        set(fatal_warnings_flag "-Wl,--fatal-warnings")
+    endif()
+    message(
+        STATUS
+        "Treating all linker warnings as errors (${fatal_warnings_flag})"
+    )
+    target_link_options(common INTERFACE "${fatal_warnings_flag}")
+    unset(fatal_warnings_flag)
+elseif(is_macos)
+    if(is_nix_compiler)
+        set(silence_flag "-Wl,-w")
+        message(
+            STATUS
+            "Silencing all macOS linker warnings (${silence_flag}): the Nix linker cannot single out deployment target mismatches"
+        )
+    else()
+        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
+        message(
+            STATUS
+            "Silencing macOS deployment target mismatch warnings (${silence_flag})"
+        )
+    endif()
+    target_link_options(common INTERFACE "${silence_flag}")
+    unset(silence_flag)
+endif()
+
 # Antithesis instrumentation will only be built and deployed using machines running Linux.
 if(voidstar)
     if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
