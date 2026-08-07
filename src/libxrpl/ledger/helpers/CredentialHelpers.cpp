@@ -54,7 +54,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
     {
         // Credentials already checked in preclaim. Look only for expired here.
         if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
-            tecINTERNAL;  // LCOV_EXCL_LINE
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
