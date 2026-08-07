@@ -216,7 +216,7 @@ MPTokenIssuanceCreate::doApply()
         {
             .priorBalance = preFeeBalance_,
             .account = accountID_,
-            .sequence = tx.getSeqValue(),
+            .sequence = tx.getSeqProxy().value(),
             .flags = tx.getFlags(),
             .maxAmount = tx[~sfMaximumAmount],
             .assetScale = tx[~sfAssetScale],
