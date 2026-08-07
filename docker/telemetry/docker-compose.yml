@@ -24,7 +24,7 @@ services:
   # OpenTelemetry Collector: receives spans from xrpld via OTLP protocol,
   # batches them for efficiency, and forwards to Tempo for storage.
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.121.0
+    image: otel/opentelemetry-collector-contrib:0.158.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4317:4317" # OTLP gRPC
@@ -52,7 +52,7 @@ services:
   # Grafana Tempo: distributed tracing backend that stores and indexes
   # spans. Queryable via TraceQL in Grafana Explore.
   tempo:
-    image: grafana/tempo:2.7.2
+    image: grafana/tempo:2.9.4
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
       - "3200:3200" # Tempo HTTP API (health check, query)
@@ -69,7 +69,7 @@ services:
   # Collector exports via otlphttp to Loki's /otlp endpoint.
   # Query logs via Grafana Explore -> Loki at http://localhost:3000.
   loki:
-    image: grafana/loki:3.4.2
+    image: grafana/loki:3.7.6
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
@@ -79,8 +79,8 @@ services:
       - xrpld-telemetry
 
   prometheus:
-    # Pinned to the v2.53 LTS line for reproducible, config-stable runs.
-    image: prom/prometheus:v2.53.3
+    # Pinned to an exact patch release for reproducible, config-stable runs.
+    image: prom/prometheus:v3.13.2
     ports:
       - "9090:9090"
     volumes:
@@ -94,7 +94,7 @@ services:
   # Grafana: visualization UI with Tempo pre-configured as a datasource.
   # Anonymous admin access enabled for local development convenience.
   grafana:
-    image: grafana/grafana:11.5.2
+    image: grafana/grafana:13.1.2
     # Alerting secrets/addresses (Slack webhook, alert email) come from this
     # gitignored file; Grafana expands the ${VARS} referenced in the alerting
     # provisioning YAML. Absent file = unset vars = receivers have no live
@@ -110,6 +110,10 @@ services:
       # the callback URL is how the renderer fetches the panel from grafana.
       - GF_RENDERING_SERVER_URL=http://renderer:8081/render
       - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+      # Grafana 13 turns the renderAuthJWT feature toggle on by default, which
+      # makes the renderer reject requests unless both sides share a token that
+      # is not the "-" default. Must match AUTH_TOKEN on the renderer service.
+      - GF_RENDERING_RENDERER_TOKEN=${GF_RENDERING_RENDERER_TOKEN:-xrpld-local-render}
     # SMTP for the critical-tier email receiver and the Slack webhook / email
     # address for the contact points all come from the env_file above, which
     # injects them straight into the container environment for Grafana to
@@ -133,7 +137,14 @@ services:
   # Grafana image renderer: a sidecar that renders panels/dashboards to PNG
   # for image export and alerting. Grafana calls it at http://renderer:8081.
   renderer:
-    image: grafana/grafana-image-renderer:latest
+    # Pinned like every other image in this stack so a stack that worked
+    # yesterday still works today. Upstream maintains only the newest release,
+    # which is expected to serve all supported Grafana versions.
+    image: grafana/grafana-image-renderer:v5.12.0
+    environment:
+      # Shared secret for the JWT-authenticated render requests Grafana 13
+      # sends. Must match GF_RENDERING_RENDERER_TOKEN on the grafana service.
+      - AUTH_TOKEN=${GF_RENDERING_RENDERER_TOKEN:-xrpld-local-render}
     ports:
       - "8081:8081" # Renderer HTTP endpoint (called by grafana)
     networks:

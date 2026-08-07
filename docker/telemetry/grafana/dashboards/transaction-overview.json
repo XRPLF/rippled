@@ -39,12 +39,12 @@
   "links": [],
   "panels": [
     {
-      "title": "Transaction Apply Failed Rate",
+      "title": "Transaction Apply Failed Rate [$xrpl_network_type]",
       "description": "###### What this is:\n*Transactions that fail during the apply (transactor) stage, per second \u2014 i.e. the transactor ran but the result was not tesSUCCESS.*\n\n###### How it's computed:\n*Per-second rate of tx.transactor spans at the apply stage whose ter_result is not tesSUCCESS, over the dashboard rate interval, per node.*\n\n###### Reading it:\n*A steady low background is normal (tefPAST_SEQ, tecUNFUNDED, etc.); the transactor legitimately rejects many transactions.*\n\n###### Healthy range:\n*A low, stable rate; workload-dependent.*\n\n###### Watch for:\n*A sharp rise above baseline, which points to a submission pattern that is systematically failing at apply.*\n\n###### Keywords:\n- **Transactor** *(per node)* \u2014 the rippled component that executes one transaction's type-specific logic against the ledger.\n- **Transaction result codes** *(network-wide)* \u2014 the outcome code a transaction returns \u2014 tesSUCCESS, or a tec/tef/tem/ter/tel class code on failure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/tx/detail/Transactor.cpp)\n\n###### Function:\n`Transactor::operator()`\n\n###### References:\n[Transactor](https://xrpl.org/docs/references/protocol/transactions/transaction-results) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transactor)",
       "type": "stat",
       "gridPos": {
-        "h": 4,
-        "w": 6,
+        "h": 10,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -87,17 +87,20 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 1,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "title": "Transaction Processing Latency by Type",
       "description": "###### What this is:\n*The 95th-percentile time to process a transaction, broken down by transaction type.*\n\n###### How it's computed:\n*95th-percentile of processing durations over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Lower is better; compare types to find the expensive ones.*\n\n###### Healthy range:\n*A few milliseconds for simple payments; workload- and type-dependent.*\n\n###### Watch for:\n*A type whose latency climbs, pointing to expensive processing or resource pressure.*\n\n###### Keywords:\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`\n\n###### References:\n[Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -129,7 +132,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -137,14 +143,27 @@
       "id": 2
     },
     {
+      "title": "Throughput & Results",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
+    },
+    {
       "title": "Transaction Rate by Type",
       "description": "###### What this is:\n*How many transactions of each type enter processing per second.*\n\n###### How it's computed:\n*Per-second processing rate over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Shows the transaction mix; payments usually lead.*\n\n###### Healthy range:\n*Workload-dependent; mix reflects network activity.*\n\n###### Watch for:\n*A single type spiking far above baseline, consistent with a spam campaign of that type.*\n\n###### Keywords:\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`\n\n###### References:\n[Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 21
       },
       "options": {
         "tooltip": {
@@ -176,22 +195,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 3
+      "id": 4
     },
     {
       "title": "Transaction Results by Type",
       "description": "###### What this is:\n*The non-success result codes transactions return, by transaction type.*\n\n###### How it's computed:\n*Per-second rate of failing transactions over 5 minutes, grouped by type and result code.*\n\n###### Reading it:\n*Fewer failures is better; use it to see which types fail and why.*\n\n###### Healthy range:\n*Workload-dependent; a modest background of expected failures is normal.*\n\n###### Watch for:\n*A surge of one failure code for one type, indicating a systemic issue or abusive submissions.*\n\n###### Keywords:\n- **Transaction result codes** *(network-wide)* \u2014 the outcome code a transaction returns \u2014 tesSUCCESS, or a tec/tef/tem/ter/tel class code on failure.\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`\n\n###### References:\n[Transaction result codes](https://xrpl.org/docs/references/protocol/transactions/transaction-results) \u00b7 [Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-result-codes)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 31
       },
       "options": {
         "tooltip": {
@@ -222,23 +244,26 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
-      "id": 4
+      "id": 5
     },
     {
       "title": "Transaction Receive vs Suppressed",
       "description": "###### What this is:\n*Raw transactions received from peers, split by whether they were duplicates suppressed before processing.*\n\n###### How it's computed:\n*Per-second rate of received transactions over the window, split by suppressed flag and node.*\n\n###### Reading it:\n*A large suppressed share is normal, since the same transaction arrives from many peers.*\n\n###### Healthy range:\n*Workload-dependent; suppressed typically exceeds newly processed.*\n\n###### Watch for:\n*A collapse in suppression (duplicate filtering failing) or an overall receive flood.*\n\n###### Keywords:\n- **Transaction suppression** *(per node)* \u2014 dropping a transaction already seen from another peer, so it is not reprocessed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::handleTransaction`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-suppression)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -265,22 +290,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 5
+      "id": 6
     },
     {
       "title": "Transaction Processing Rate",
       "description": "###### What this is:\n*Transactions entering the processing pipeline versus raw transactions arriving from peers.*\n\n###### How it's computed:\n*Per-second rates of processed transactions and received peer transactions over 5 minutes, per node.*\n\n###### Reading it:\n*Received sits above processed; the difference is deduplicated relay traffic.*\n\n###### Healthy range:\n*Workload-dependent; both scale with network volume.*\n\n###### Watch for:\n*A receive rate spiking well above processing, consistent with relay flooding.*\n\n###### Keywords:\n- **Transaction suppression** *(per node)* \u2014 dropping a transaction already seen from another peer, so it is not reprocessed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp) \u00b7 [PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction ; PeerImp::handleTransaction`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-suppression)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -314,22 +342,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 6
+      "id": 7
     },
     {
       "title": "Transaction Path Distribution",
       "description": "###### What this is:\n*The split of transactions by origin: submitted locally versus relayed from peers.*\n\n###### How it's computed:\n*Processed-transaction rate over 5 minutes, split by local-origin flag and shown as proportions.*\n\n###### Reading it:\n*Most traffic on a network node is peer-relayed; local dominates on a submission node.*\n\n###### Healthy range:\n*Workload-dependent on the node's role.*\n\n###### Watch for:\n*An unexpected surge in local submissions, consistent with a local client flooding the node.*\n\n###### Keywords:\n- **Local vs relayed transactions** *(per node)* \u2014 the origin split \u2014 transactions submitted directly to this node versus relayed from peers.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#local-vs-relayed-transactions)",
       "type": "piechart",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 51
       },
       "fieldConfig": {
         "defaults": {
@@ -354,19 +385,29 @@
           "expr": "label_replace(label_join(label_replace(sum by (local, service_instance_id, xrpl_branch, xrpl_node_role) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"Local $1\", \"local\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
-      "id": 7
+      "id": 8
     },
     {
       "title": "Transaction Processing Duration Heatmap",
       "description": "###### What this is:\n*The full distribution of transaction processing times over the window.*\n\n###### How it's computed:\n*Counts of transactions in each latency band per 5-minute window, shown as color density.*\n\n###### Reading it:\n*A tight low band is healthy; spread bands mean uneven processing time.*\n\n###### Healthy range:\n*Most mass in the low-latency bands; workload-dependent.*\n\n###### Watch for:\n*A distinct slow cluster (multi-modal timing) hidden by percentile charts.*\n\n###### Keywords:\n- **Transaction** *(network event)* \u2014 a signed instruction submitted to the network and applied when a ledger closes.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 51
       },
       "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "mode": "scheme",
+          "scheme": "Turbo",
+          "steps": 64
+        },
+        "legend": {
+          "show": true
+        },
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
@@ -393,17 +434,17 @@
           "unit": "ms"
         }
       },
-      "id": 8
+      "id": 9
     },
     {
       "title": "Transactor Duration by Type (p95)",
       "description": "###### What this is:\n*The 95th-percentile execution time of the core transactor step, by transaction type.*\n\n###### How it's computed:\n*95th-percentile of transactor durations over 5 minutes, grouped by type and node.*\n\n###### Reading it:\n*Lower is better; reveals which types are most expensive to execute.*\n\n###### Healthy range:\n*Sub-millisecond to a few ms for most types; workload-dependent.*\n\n###### Watch for:\n*A type whose execution time grows, indicating expensive logic or ledger contention.*\n\n###### Keywords:\n- **Transactor** *(per node)* \u2014 the rippled component that executes one transaction's type-specific logic against the ledger.\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`Transactor::operator()`\n\n###### References:\n[Transactor](https://xrpl.org/docs/references/protocol/transactions/transaction-results) \u00b7 [Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transactor)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -435,7 +476,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
@@ -447,10 +491,10 @@
       "description": "###### What this is:\n*The applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.*\n\n###### How it's computed:\n*Per node, applied accepts divided by applied-plus-failed accepts over the window.*\n\n###### Reading it:\n*Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.*\n\n###### Healthy range:\n*At or near 100% applied when the queue is draining healthily; workload-dependent.*\n\n###### Watch for:\n*A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n- **Queue accept (drain)** *(per node)* \u2014 moving queued transactions into a newly closed ledger; the applied share shows drain health.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
       "type": "state-timeline",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 12,
         "x": 0,
-        "y": 52
+        "y": 71
       },
       "options": {
         "mergeValues": true,
@@ -474,9 +518,9 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=\"applied\"}[$__rate_interval]))\n/\nsum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=~\"applied|failed\"}[$__rate_interval]))",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=\"applied\"}[$__rate_interval]))\n/\nsum by (service_instance_id, xrpl_network_type) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept_tx\", txq_status=~\"applied|failed\"}[$__rate_interval]))",
           "interval": "15s",
-          "legendFormat": "{{service_instance_id}}"
+          "legendFormat": "{{service_instance_id}} [{{xrpl_network_type}}]"
         }
       ],
       "fieldConfig": {
@@ -515,14 +559,77 @@
       "id": 11
     },
     {
+      "title": "Tx Apply Pipeline Rate by Stage",
+      "description": "**What:** Throughput of each apply-pipeline stage (preflight, preclaim, apply), showing where transactions drop out.\n**How it's computed:** Per-second rate per stage over a 5-minute window, per node.\n**Reading it:** A decline from earlier to later stages shows where transactions are filtered.\n**Healthy range:** Workload-dependent; later stages sit at or below earlier ones.\n**Watch for:** A large early-stage drop means many transactions fail basic checks, consistent with malformed floods.\n**Source:** src/libxrpl/tx/Transactor.cpp:Transactor::operator()",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 81
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{stage}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Spans / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 12
+    },
+    {
+      "title": "Apply Pipeline",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 91
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 13
+    },
+    {
       "title": "Tx Apply Pipeline Latency by Stage (p95)",
       "description": "###### What this is:\n*The 95th-percentile duration of each apply-pipeline stage.*\n\n###### How it's computed:\n*95th-percentile of per-stage durations over 5 minutes, grouped by stage and node.*\n\n###### Reading it:\n*Lower is better; isolates which stage dominates processing time.*\n\n###### Healthy range:\n*Each stage typically sub-millisecond to a few ms; workload-dependent.*\n\n###### Watch for:\n*One stage's latency rising, pinpointing the bottleneck in transaction handling.*\n\n###### Keywords:\n- **Apply pipeline stages** *(per node)* \u2014 the ordered checks a transaction passes \u2014 preflight (stateless), preclaim (stateful), then apply.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) \u00b7 [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`\n\n###### References:\n[Apply pipeline stages](https://xrpl.org/docs/concepts/transactions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#apply-pipeline-stages)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 92
       },
       "options": {
         "tooltip": {
@@ -554,22 +661,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 12
+      "id": 14
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
       "description": "###### What this is:\n*How many transactions fail at each apply-pipeline stage per second.*\n\n###### How it's computed:\n*Per-second rate of non-success outcomes over 5 minutes, grouped by stage and node.*\n\n###### Reading it:\n*Shows whether rejections concentrate in preflight, preclaim, or apply.*\n\n###### Healthy range:\n*Workload-dependent; a modest background of expected rejections is normal.*\n\n###### Watch for:\n*A failure spike concentrated in one stage, consistent with malformed or spam submissions.*\n\n###### Keywords:\n- **Apply pipeline stages** *(per node)* \u2014 the ordered checks a transaction passes \u2014 preflight (stateless), preclaim (stateful), then apply.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) \u00b7 [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`\n\n###### References:\n[Apply pipeline stages](https://xrpl.org/docs/concepts/transactions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#apply-pipeline-stages)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 102
       },
       "options": {
         "tooltip": {
@@ -601,22 +711,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 13
+      "id": 15
     },
     {
       "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
       "description": "###### What this is:\n*The 95th-percentile stage duration broken down by both transaction type and pipeline stage.*\n\n###### How it's computed:\n*95th-percentile durations over 5 minutes, grouped by type and stage; higher cardinality than the by-stage view.*\n\n###### Reading it:\n*Lower is better; shows which stage dominates each type's latency.*\n\n###### Healthy range:\n*Workload-dependent; most type/stage pairs sub-millisecond to a few ms.*\n\n###### Watch for:\n*A specific type/stage combination rising sharply, pinpointing a costly path.*\n\n###### Keywords:\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n- **Apply pipeline stages** *(per node)* \u2014 the ordered checks a transaction passes \u2014 preflight (stateless), preclaim (stateful), then apply.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) \u00b7 [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`\n\n###### References:\n[Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Apply pipeline stages](https://xrpl.org/docs/concepts/transactions) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 112
       },
       "options": {
         "tooltip": {
@@ -647,23 +760,26 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
-      "id": 14
+      "id": 16
     },
     {
       "title": "Transaction Apply Duration per Ledger",
       "description": "###### What this is:\n*The 95th-percentile time to apply the agreed transaction set into each new ledger.*\n\n###### How it's computed:\n*95th-percentile of transaction-apply durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; a major component of ledger build time.*\n\n###### Healthy range:\n*A few to tens of milliseconds; scales with transactions per ledger.*\n\n###### Watch for:\n*Rising durations during heavy or expensive transaction sets.*\n\n###### Keywords:\n- **Transaction apply phase** *(per node)* \u2014 the step that executes the agreed transaction set into the new ledger during a close.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **In-ledger vs target count** *(per node)* \u2014 transactions already in the open ledger versus the soft target that triggers fee escalation.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`\n\n###### References:\n[Transaction apply phase](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [In-ledger vs target count](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-apply-phase)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 84
+        "y": 122
       },
       "options": {
         "tooltip": {
@@ -690,22 +806,38 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 15
+      "id": 17
+    },
+    {
+      "title": "Transaction Queue",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 132
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 18
     },
     {
       "title": "TxQ Enqueue Rate by Transaction Type",
       "description": "###### What this is:\n*How many transactions are queued (rather than applied immediately) per second, by type.*\n\n###### How it's computed:\n*Per-second rate of queue-enqueue operations over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Shows the demand mix hitting the queue and how it shifts as the queue fills.*\n\n###### Healthy range:\n*Workload-dependent; low or zero when the network is not congested.*\n\n###### Watch for:\n*A spam burst of one type, an early indicator of fee escalation.*\n\n###### Keywords:\n- **Direct apply vs enqueue** *(per node)* \u2014 whether a transaction applied straight to the open ledger or was placed in the queue for a later ledger.\n- **Transaction type** *(network-wide)* \u2014 the kind of transaction (Payment, OfferCreate, TrustSet, AMM*, NFToken*, etc.), used as a breakdown dimension.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::apply`\n\n###### References:\n[Direct apply vs enqueue](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Transaction type](https://xrpl.org/docs/references/protocol/transactions/types) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#direct-apply-vs-enqueue)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 84
+        "x": 0,
+        "y": 133
       },
       "options": {
         "tooltip": {
@@ -732,64 +864,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 16
-    },
-    {
-      "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
-      "description": "###### What this is:\n*The fraction of transactions that applied straight to the open ledger instead of being queued.*\n\n###### How it's computed:\n*Direct-apply rate divided by direct-apply plus enqueue rate over 5 minutes, per node.*\n\n###### Reading it:\n*Higher is better; near 1.0 means the network is not congested.*\n\n###### Healthy range:\n*Close to 1.0 when not congested; falls as demand exceeds capacity.*\n\n###### Watch for:\n*A falling ratio, the cleanest single signal the network has entered sustained fee escalation.*\n\n###### Keywords:\n- **Direct apply vs enqueue** *(per node)* \u2014 whether a transaction applied straight to the open ledger or was placed in the queue for a later ledger.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::tryDirectApply ; TxQ::apply`\n\n###### References:\n[Direct apply vs enqueue](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#direct-apply-vs-enqueue)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 92
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 600
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) / clamp_min(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) + sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.enqueue\"}[$__rate_interval])), 1), \"series\", \"Direct-Apply Fraction\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "percentunit",
-          "custom": {
-            "axisLabel": "Bypass Fraction",
-            "spanNulls": 1800000,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "id": 18
+      "id": 19
     },
     {
       "title": "Queue Accept (Drain) Duration per Ledger",
       "description": "###### What this is:\n*The 95th-percentile time to drain queued transactions into a newly closed ledger.*\n\n###### How it's computed:\n*95th-percentile of queue-drain durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; rising time signals queue pressure at ledger close.*\n\n###### Healthy range:\n*A few milliseconds when the queue is light; workload-dependent.*\n\n###### Watch for:\n*A sustained climb, indicating a large or contended queue slowing ledger close.*\n\n###### Keywords:\n- **Queue accept (drain)** *(per node)* \u2014 moving queued transactions into a newly closed ledger; the applied share shows drain health.\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`\n\n###### References:\n[Queue accept (drain)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#queue-accept-drain)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 92
+        "y": 133
       },
       "options": {
         "tooltip": {
@@ -816,22 +909,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 19
+      "id": 20
     },
     {
       "title": "Queue Cleanup Rate (Expired Entries)",
       "description": "###### What this is:\n*How often expired transactions are removed from the queue each ledger, per second.*\n\n###### How it's computed:\n*Per-second rate of queue-cleanup operations over 5 minutes, per node.*\n\n###### Reading it:\n*Low is healthy; a rising rate means submitters are abandoning transactions.*\n\n###### Healthy range:\n*Near zero when not congested; workload-dependent.*\n\n###### Watch for:\n*A rising rate, a demand-frustration signal where submitters under-bid the escalating fee and gave up.*\n\n###### Keywords:\n- **Queue expiry / abandonment** *(per node)* \u2014 removing a queued transaction whose LastLedgerSequence deadline passed before inclusion.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::processClosedLedger`\n\n###### References:\n[Queue expiry / abandonment](https://xrpl.org/docs/concepts/transactions/reliable-transaction-submission) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#queue-expiry-abandonment)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 143
       },
       "options": {
         "tooltip": {
@@ -858,12 +954,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
       },
-      "id": 20
+      "id": 21
     }
   ],
   "schemaVersion": 39,

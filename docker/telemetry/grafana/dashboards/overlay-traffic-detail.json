@@ -44,7 +44,7 @@
       "description": "###### What this is:\n*Squelch relay-control messages in/out, plus messages suppressed by squelch and squelch directives that were ignored. Squelch reduces redundant message forwarding between peers.*\n\n###### How it's computed:\n*Per-second message rate for the squelch, squelch-suppressed, and squelch-ignored categories, in and out.*\n\n###### Reading it:\n*High suppressed counts mean squelch is saving bandwidth; ignored should stay low.*\n\n###### Healthy range:\n*workload-dependent; suppressed far above ignored.*\n\n###### Watch for:\n*High ignored counts (peers not honoring squelch) or squelch traffic itself dominating.*\n\n###### Keywords:\n- **Transaction suppression** *(per node)* \u2014 dropping a transaction already seen from another peer, so it is not reprocessed.\n- **Squelch** *(per node)* \u2014 control messages that tell a peer to stop forwarding a given validator's messages, cutting redundancy.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-suppression)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 0
@@ -109,18 +109,22 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
       "description": "###### What this is:\n*Overlay protocol overhead bytes split into base overhead, intra-cluster overhead, and validator-manifest distribution overhead.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the overhead, overhead-cluster, and overhead-manifest categories.*\n\n###### Reading it:\n*Base overhead is routine; cluster and manifest rise around cluster syncs and manifest changes.*\n\n###### Healthy range:\n*workload-dependent; low and stable.*\n\n###### Watch for:\n*Sustained high cluster or manifest overhead (frequent cluster state churn or manifest reissue).*\n\n###### Keywords:\n- **Overlay** *(per node)* \u2014 the peer-to-peer network layer over which nodes exchange transactions, proposals, and validations.\n- **Manifest** *(network-wide)* \u2014 a signed record binding a validator's rotating signing key to its stable master key.\n- **Cluster** *(cluster-wide)* \u2014 a group of trusted co-operated nodes that share load information and skip some verification.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Overlay](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) \u00b7 [Cluster](https://xrpl.org/docs/concepts/networks-and-servers/clustering) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 0
@@ -185,21 +189,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Validator List Traffic",
       "description": "###### What this is:\n*Bytes and messages exchanged distributing validator lists (trusted-list configuration) between peers.*\n\n###### How it's computed:\n*Per-second in/out byte and message rate for the validator-lists category.*\n\n###### Reading it:\n*Bursts when lists update or new peers connect; quiet otherwise.*\n\n###### Healthy range:\n*workload-dependent; occasional bursts.*\n\n###### Watch for:\n*Continuous high volume (repeated list re-fetching or churn).*\n\n###### Keywords:\n- **Validator list** *(network-wide)* \u2014 signed lists of recommended validators (UNLs) that peers distribute to each other.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Validator list](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validator-list)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -247,7 +255,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -268,17 +279,18 @@
             ]
           }
         ]
-      }
+      },
+      "id": 3
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
       "description": "###### What this is:\n*Transaction-set fetch (get) and share bytes exchanged during ledger close.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the set-get and set-share categories.*\n\n###### Reading it:\n*Some exchange each ledger is normal as peers reconcile transaction sets.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High set-get (peers frequently missing transaction sets: possible sync delays).*\n\n###### Keywords:\n- **Set get/share** *(per node)* \u2014 exchange of candidate transaction sets between peers as they reconcile during a ledger close.\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#set-get-share)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 10
       },
       "options": {
         "tooltip": {
@@ -326,21 +338,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Have/Requested Transactions (Messages)",
       "description": "###### What this is:\n*Transaction-availability messages: advertisements that a peer has certain transactions, and explicit requests for transaction data.*\n\n###### How it's computed:\n*Per-second in/out message rate for the have-transactions and requested-transactions categories.*\n\n###### Reading it:\n*Compare requested versus have to gauge how well transactions are propagating.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Requested far exceeding have (peers behind on transaction propagation).*\n\n###### Keywords:\n- **Have / requested transactions** *(per node)* \u2014 advertisements that a peer holds certain transactions, and explicit requests for transaction data.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#have-requested-transactions)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -388,21 +404,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Unknown / Unclassified Traffic",
       "description": "###### What this is:\n*Overlay traffic that matches no known message category, in bytes and messages.*\n\n###### How it's computed:\n*Current in/out byte and message counts for the unknown category.*\n\n###### Reading it:\n*Should be at or near zero.*\n\n###### Healthy range:\n*zero.*\n\n###### Watch for:\n*Any sustained non-zero value (protocol version mismatch, corrupted messages, or an unclassified new message type).*\n\n###### Keywords:\n- **Overlay** *(per node)* \u2014 the peer-to-peer network layer over which nodes exchange transactions, proposals, and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Overlay](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -450,7 +470,10 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": [
@@ -471,17 +494,18 @@
             ]
           }
         ]
-      }
+      },
+      "id": 6
     },
     {
       "title": "Proof Path Traffic",
       "description": "###### What this is:\n*Proof-path request/response bytes used to verify individual ledger entries without downloading the whole ledger.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the proof-path request and response categories.*\n\n###### Reading it:\n*Rises when peers verify specific state, often during catch-up.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High sustained request volume (heavy state-verification load).*\n\n###### Keywords:\n- **Path request / discovery** *(per node)* \u2014 a client's ongoing pathfinding subscription (request) and the periodic path-refresh passes (discovery).\n- **Proof path** *(per node)* \u2014 messages that prove a single ledger entry exists without transferring the whole ledger.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Path request / discovery](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods/path-and-order-book-methods/path_find) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#path-request-discovery)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -529,21 +553,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Replay Delta Traffic",
       "description": "###### What this is:\n*Replay-delta request/response bytes used to efficiently replay ledger state changes during catch-up.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the replay-delta request and response categories.*\n\n###### Reading it:\n*Active during catch-up and replay; quiet when synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous replay traffic (node repeatedly replaying rather than staying current).*\n\n###### Keywords:\n- **Replay delta** *(per node)* \u2014 messages carrying just the changes between ledgers, to replay state efficiently during catch-up.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#replay-delta)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "options": {
         "tooltip": {
@@ -591,11 +619,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
       "title": "GetObject Handler (TMGetObjectByHash)",
@@ -604,20 +636,21 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 40
       },
       "collapsed": false,
-      "panels": []
+      "panels": [],
+      "id": 9
     },
     {
       "title": "GetObject Handler Latency Breakdown",
       "description": "###### What this is:\n*The three additive parts of TMGetObjectByHash service time, drawn on one axis so the expensive part names itself. Queue Wait is how long the RcvGetObjByHash job sat queued before a worker took it; its job type, ledgerRequest, allows only 3 to run at once. Handler Total is the whole job body once running. NodeStore Lookup is only the fetch loop inside that body. End-to-end service time is Queue Wait plus Handler Total, and Handler Total itself splits into NodeStore Lookup plus everything else.*\n\n###### How it's computed:\n*p99 of job_queued_us and job_running_us, both filtered to handler=\"RcvGetObjByHash\", plus p99 of getobject_lookup_us. Each is histogram_quantile over the microsecond bucket series, summed by le so the quantile is computed across the whole bucket set. The handler label is the sanitized addJob name, so RcvGetObjByHash is separated from RcvGetLedger even though both are job type ledgerRequest.*\n\n###### Reading it:\n*Read it as a subtraction, not as three independent lines. The timed fetch loop covers both the NodeStore fetches and the copying of each returned object into the reply, so the vertical gap between Handler Total and NodeStore Lookup is what happens after the loop: serializing the reply message, plus computing the charge and recording the metrics. So: Queue Wait tall with Handler Total flat means queue contention and the work itself is fine. Handler Total tracking NodeStore Lookup closely means storage is the bottleneck. Handler Total well above NodeStore Lookup means the cost has moved out of the fetch loop into reply serialization.*\n\n###### Healthy range:\n*All three sub-millisecond while peers ask for the handful of objects the sync path produces; workload-dependent above that.*\n\n###### Watch for:\n*Queue Wait climbing while the other two stay flat: the ledgerRequest queue is saturated, so cross-check Job Queue Backlog and Deferred by Type and LedgerReq Wait by Handler on the Ledger Data and Sync dashboard to see which producer is starving it. A widening Handler Total minus NodeStore Lookup gap: reply serialization regressed. NodeStore Lookup rising on its own: check getobject_lookups_total misses and the NuDB panels.*\n\n###### Keywords:\n- **GetObject / object fetch** *(per node)* \u2014 peer requests that fetch individual pieces of ledger data by hash, such as tree nodes or transactions.\n- **Handler label** *(per node)* \u2014 the addJob call-site name attached to job metrics, so producers sharing one job type stay separable.\n- **NodeStore lookup (hit / miss)** *(per node)* \u2014 one object-store fetch by hash; a hit is usually served from cache, a miss does a disk seek.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics (lookup) / MetricsRegistry::recordJobStarted, recordJobFinished (queue, total)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#getobject-object-fetch)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 12,
         "x": 0,
-        "y": 33
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -655,29 +688,41 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     },
     {
       "title": "GetObject Request Size Distribution",
       "description": "###### What this is:\n*How many objects peers ask for per TMGetObjectByHash message, as a full distribution rather than an average. This characterizes the request that caused any latency seen in the breakdown panel: large batches make the work genuinely large, which is a different problem from the same work becoming slower.*\n\n###### How it's computed:\n*Counts of requests falling in each object-count band per 5-minute window, from the getobject_request_objects bucket series, drawn as color density.*\n\n###### Reading it:\n*A tight band at the bottom is honest traffic: the inbound-ledger acquire path asks for at most 4 hashes of one object type per message. Bands above 64 and above 1024 are the medium and large pricing bands, so mass there means the size surcharge is being applied. A hot cell in the top row is the overflow bucket and means requests larger than the top bucket boundary.*\n\n###### Healthy range:\n*Nearly all mass in the lowest bands (8 objects or fewer per request).*\n\n###### Watch for:\n*Mass appearing in the high bands, especially a persistent hot row near the top: a peer is batching thousands of hashes per message, which is what the differential pricing exists to charge for. Confirm with GetObject Charge Distribution and GetObject Rejections. Buckets are explicit (1,2,4,8,16,64,256,1024,4096,12288) and reach the handler's hard cap, so the top row is real traffic at the cap, not a measurement ceiling.*\n\n###### Keywords:\n- **GetObject / object fetch** *(per node)* \u2014 peer requests that fetch individual pieces of ledger data by hash, such as tree nodes or transactions.\n- **Resource charge** *(per node)* \u2014 the load cost the resource manager bills a peer per request; crossing the warning then drop threshold sheds the peer.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#getobject-object-fetch)",
       "type": "heatmap",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 41
       },
       "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "mode": "scheme",
+          "scheme": "Turbo",
+          "steps": 64
+        },
+        "legend": {
+          "show": true
+        },
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
@@ -703,17 +748,18 @@
           "unit": "short"
         },
         "overrides": []
-      }
+      },
+      "id": 11
     },
     {
       "title": "GetObject Lookups by Result",
       "description": "###### What this is:\n*NodeStore lookups performed by the handler, split into hits and misses. A miss does a node-store seek while a hit is usually served from cache, so the hit/miss mix is the reason NodeStore Lookup time moves.*\n\n###### How it's computed:\n*Per-second rate of getobject_lookups_total, grouped by the result label. The counter is advanced once per request with the batch totals -- hits are the objects returned, misses are the rest of the request -- not once per object, so the rate is objects per second rather than requests per second.*\n\n###### Reading it:\n*Use this to explain the NodeStore Lookup line on the breakdown panel. A miss-heavy mix makes that line rise for a real reason: seeks, not a regression. A hit-heavy mix with rising lookup time points at the storage layer instead.*\n\n###### Healthy range:\n*Hits dominating on a warm synced node; misses low and driven by genuine catch-up requests.*\n\n###### Watch for:\n*A sustained miss rate far above the hit rate: a peer is asking for hashes this node does not hold, which is either a peer far out of sync or a client requesting objects this node never stored. Cross-check GetObject Charge Distribution, since misses are billed first and at eight times the hit cost.*\n\n###### Keywords:\n- **NodeStore lookup (hit / miss)** *(per node)* \u2014 one object-store fetch by hash; a hit is usually served from cache, a miss does a disk seek.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n- **Resource charge** *(per node)* \u2014 the load cost the resource manager bills a peer per request; crossing the warning then drop threshold sheds the peer.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore-lookup-hit-miss)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 41
+        "x": 0,
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -739,21 +785,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
       "title": "GetObject Rejections",
       "description": "###### What this is:\n*Requests refused by the message handler before any NodeStore access, split by which gate refused them: oversize means more objects than the handler accepts (its hard cap is 12288), malformed_ledgerhash means the ledger hash was not 32 bytes.*\n\n###### How it's computed:\n*Per-second rate of getobject_rejected_total, grouped by the reason label. Both gates run in onMessage on the generic query path before the job is queued, so a rejection consumes no queue slot and no NodeStore lookup. The fetch-pack and transaction sub-types return earlier and never reach either gate.*\n\n###### Reading it:\n*Any non-zero value is traffic that does not conform to the protocol: the sync path asks for a handful of hashes and always sends a full-size hash. Because the gates fire before the fetch loop, rejections explain why request volume can be high while lookups stay flat.*\n\n###### Healthy range:\n*Zero. No conforming peer produces either rejection, so a flat zero line is the expected reading and is not on its own evidence that the counter is wired -- confirm that from the other GetObject panels, which do move on a healthy node.*\n\n###### Watch for:\n*A rising oversize rate: a peer is sending requests above the accepted object count. Confirm the pricing response on GetObject Charge Distribution, and expect the peer to be shed once its resource balance crosses the drop threshold. A rising malformed rate points at a broken or non-conforming client rather than at load.*\n\n###### Keywords:\n- **GetObject / object fetch** *(per node)* \u2014 peer requests that fetch individual pieces of ledger data by hash, such as tree nodes or transactions.\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n- **Resource charge** *(per node)* \u2014 the load cost the resource manager bills a peer per request; crossing the warning then drop threshold sheds the peer.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage (TMGetObjectByHash)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#getobject-object-fetch)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 49
+        "x": 12,
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -779,21 +829,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     },
     {
       "title": "GetObject Charge Distribution",
       "description": "###### What this is:\n*The dynamic resource charge applied per TMGetObjectByHash request, as percentiles. This is the differential-pricing component only -- a flat base charge is applied separately when the message is admitted -- so it shows whether cost actually escalates with request size and miss ratio the way the pricing model intends.*\n\n###### How it's computed:\n*p50, p90 and p99 of getobject_charge over the dashboard rate interval, from its bucket series summed by le. The value recorded is the charge that was applied, computed from billable hits, billable misses and the request-size band.*\n\n###### Reading it:\n*p50 sitting at zero is the healthy shape: requests inside the free allowance cost nothing. Movement in p99 while p50 stays at zero means a small number of expensive requests, which is exactly the traffic the model is meant to price. Compare with GetObject Request Size Distribution: charge should rise in steps as requests cross the size-band edges at 64 and 1024, not smoothly.*\n\n###### Healthy range:\n*p50 at zero, p99 low. Requests of 16 objects or fewer carry no dynamic charge by design.*\n\n###### Watch for:\n*p99 climbing steadily: sustained expensive traffic, and the peers producing it should be approaching the resource drop threshold. Buckets are explicit and bracket the resource thresholds (5000 warning, 25000 drop), so p99 crossing 25000 means senders are being shed on a single message. The axis is deliberately unscaled rather than abbreviated, so those two numbers are readable exactly rather than as 5 K and 25 K.*\n\n###### Keywords:\n- **Resource charge** *(per node)* \u2014 the load cost the resource manager bills a peer per request; crossing the warning then drop threshold sheds the peer.\n- **Resource drops / warnings** *(per node)* \u2014 the resource manager warning (then dropping/blocking) a peer or client for excessive usage.\n- **GetObject / object fetch** *(per node)* \u2014 peer requests that fetch individual pieces of ledger data by hash, such as tree nodes or transactions.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::computeGetObjectByHashFee (charge) / PeerImp::recordGetObjectMetrics (recording)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-charge)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 49
+        "x": 0,
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -831,17 +885,19 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 14
     }
   ],
   "schemaVersion": 39,

@@ -251,14 +251,14 @@
     },
     {
       "type": "stat",
-      "title": "Nodes By Error Volume",
+      "title": "Nodes By Error Volume [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are logging the most errors.*\n\n###### How it's computed:\n*Count of ERR and FTL log lines per node over the dashboard window, ranked highest first.*\n\n###### Reading it:\n*The top entry is the node in the most trouble. Compare nodes rather than reading an absolute value.*\n\n###### Healthy range:\n*Zero, or a small flat count. ERR is not routine.*\n\n###### Watch for:\n*Any node pulling far ahead of its peers, which usually means a fault local to that node rather than a network condition.*\n\n###### Keywords:\n- **ERR / FTL** *(per line)* — the two most severe xrpld log levels; both survive the default Info threshold.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 13
@@ -312,27 +312,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | severity =~ `ERR|FTL` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Errors [{{service_instance_id}}]"
+          "legendFormat": "Errors [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 3
+      "id": 3,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Attack-Like Input",
+      "title": "Nodes By Attack-Like Input [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are receiving the most malformed or unwanted peer payloads.*\n\n###### How it's computed:\n*Count of Resource fee charges whose reason is useless data, unwanted data, or init drop, per node.*\n\n###### Reading it:\n*These three reasons indicate a peer sent something the node could not use, so a high count is the closest log-derived proxy for abusive input.*\n\n###### Healthy range:\n*Low and flat. Some useless data is normal on a busy overlay.*\n\n###### Watch for:\n*A sharp rise on one node, especially paired with a single dominant IP in the charged-peers table below.*\n\n###### Keywords:\n- **Useless data** *(per charge)* — payload the node could not use, e.g. an empty or malformed message.\n- **Init drop** *(per charge)* — a connection dropped during initialisation.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Requires debug logs on the Resource partition.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 13
+        "x": 0,
+        "y": 23
       },
       "fieldConfig": {
         "defaults": {
@@ -383,27 +386,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` |~ `useless data|unwanted data|init drop` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Charges [{{service_instance_id}}]"
+          "legendFormat": "Charges [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 4
+      "id": 4,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Total Fee Charged",
+      "title": "Nodes By Total Fee Charged [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are absorbing the most peer-imposed load, weighted by fee amount.*\n\n###### How it's computed:\n*Sum of every resource fee amount parsed from the Resource partition, per node.*\n\n###### Reading it:\n*Weighted by cost rather than event count, so one heavy request at 2000 outranks eight moderate ones at 250.*\n\n###### Healthy range:\n*Proportional to peer count and request volume; compare nodes of similar role.*\n\n###### Watch for:\n*One node far above peers of the same role, which means it is carrying disproportionate peer load.*\n\n###### Keywords:\n- **Fee weight** *(per charge)* — the credit amount: 2000 heavy, 250 moderate, 150 useless data.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Requires debug logs on the Resource partition.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 33
       },
       "fieldConfig": {
         "defaults": {
@@ -454,27 +460,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `Resource` | regexp `\\(\\$(?P<fee>[0-9]+)\\)` | unwrap fee [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Fee Charged [{{service_instance_id}}]"
+          "legendFormat": "Fee Charged [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 5
+      "id": 5,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Manifest Rejection",
+      "title": "Nodes By Manifest Rejection [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are rejecting the most inbound manifests.*\n\n###### How it's computed:\n*Count of ManifestCache lines with a Stale, Invalid, Revoked, or UntrustedCapacity outcome, per node.*\n\n###### Reading it:\n*A manifest flood shows up here first. Stale dominates normally because peers re-gossip manifests the node already holds.*\n\n###### Healthy range:\n*Workload-dependent; nodes on the same network should sit close together.*\n\n###### Watch for:\n*A single node far ahead, or any Invalid at all, which means a signature failed verification.*\n\n###### Keywords:\n- **Rejection** *(per manifest)* — any non-accepted disposition.\n- **UntrustedCapacity** *(per manifest)* — rate-limit rejection for an unlisted key; rc5+ builds only.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`ManifestCache::applyManifest`\n\n###### Note:\n*Requires debug logs on the ManifestCache partition.*\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 21
+        "x": 0,
+        "y": 43
       },
       "fieldConfig": {
         "defaults": {
@@ -525,27 +534,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Rejections [{{service_instance_id}}]"
+          "legendFormat": "Rejections [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 6
+      "id": 6,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Consensus Problem",
+      "title": "Nodes By Consensus Problem [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are logging the most consensus warnings and errors.*\n\n###### How it's computed:\n*Count of LedgerConsensus lines at WRN severity or above, per node.*\n\n###### Reading it:\n*Consensus is a network-wide process, so a single node standing out points at that node rather than the network.*\n\n###### Healthy range:\n*Low. Some warnings occur during normal round churn.*\n\n###### Watch for:\n*One node far above its peers, or a step change after a deploy.*\n\n###### Keywords:\n- **Consensus round** *(per ledger)* — one Open to Establish to Accepted cycle.\n- **Dispute** *(per transaction)* — a transaction peers disagree about including.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[Consensus.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/consensus/Consensus.h)\n\n###### Function:\n`Consensus::timerEntry / checkConsensus`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 53
       },
       "fieldConfig": {
         "defaults": {
@@ -596,27 +608,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LedgerConsensus` | severity =~ `WRN|ERR|FTL` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Consensus Events [{{service_instance_id}}]"
+          "legendFormat": "Consensus Events [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 7
+      "id": 7,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Job Latency Breach",
+      "title": "Nodes By Job Latency Breach [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are missing job latency targets most often.*\n\n###### How it's computed:\n*Count of LoadMonitor slow-job lines per node; the emitter only fires above a 500ms threshold.*\n\n###### Reading it:\n*A direct read on which node is most overloaded. Works at the default log level.*\n\n###### Healthy range:\n*Low. A busy node breaches occasionally.*\n\n###### Watch for:\n*A node far ahead of its peers, which usually means disk or CPU pressure local to it.*\n\n###### Keywords:\n- **Breach** *(per job)* — one job execution over the 500ms LoadMonitor threshold.\n\n###### Computation boundary:\n*Result: Per node — a count of BREACHES, never of total job executions.*\n*Derived in the Grafana query. Use the native `job_*` metrics for totals.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*Counts breaches above 500ms only, so it is an exception count and not a latency measure.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 29
+        "x": 0,
+        "y": 63
       },
       "fieldConfig": {
         "defaults": {
@@ -667,27 +682,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `LoadMonitor` |~ `Job: .* run: [0-9]+ms wait: [0-9]+ms` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Breaches [{{service_instance_id}}]"
+          "legendFormat": "Breaches [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 8
+      "id": 8,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Sync Instability",
+      "title": "Nodes By Sync Instability [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes are spending the most time out of the full state.*\n\n###### How it's computed:\n*Count of STATE-> transitions into any non-full state, per node.*\n\n###### Reading it:\n*A stable node holds full and emits nothing here, so any non-zero value means it left full that many times.*\n\n###### Healthy range:\n*Zero on a synced node.*\n\n###### Watch for:\n*A repeating count, which means the node is flapping rather than having had one bad moment.*\n\n###### Keywords:\n- **Operating mode** *(per node)* — Disconnected, Connected, Syncing, Tracking, Full.\n- **Flapping** *(per node)* — repeated departures from full.\n\n###### Computation boundary:\n*Result: Per node — a count over the dashboard window, ranked worst-first.*\n*NOT recorded as a metric. Derived in the Grafana query by regex over raw log text.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 73
       },
       "fieldConfig": {
         "defaults": {
@@ -738,27 +756,30 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (count_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" |~ `STATE->(syncing|connected|tracking|disconnected)` [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Transitions [{{service_instance_id}}]"
+          "legendFormat": "Transitions [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 9
+      "id": 9,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "stat",
-      "title": "Nodes By Duplicate Ledger Fetches",
+      "title": "Nodes By Duplicate Ledger Fetches [$xrpl_network_type]",
       "description": "###### What this is:\n*Which nodes wasted the most ledger-fetch bandwidth, counted as duplicate SHAMap nodes received.*\n\n###### How it's computed:\n*Sum of the `dupe` counter from `Ledger AS/TX node stats` log lines, per node, over the dashboard window. `dupe` is matched by its own regex because the emitter omits any counter that is zero.*\n\n###### Reading it:\n*Every duplicate is a ledger node the peer sent that this node already held: bytes crossed the network, the peer spent resource credit serving it, and it was discarded.*\n\n###### Healthy range:\n*Workload-dependent. Compare nodes of the same role rather than reading an absolute value; some duplication is unavoidable when fetching one ledger from several peers.*\n\n###### Watch for:\n*A node far ahead of its siblings, which points at that node's fetch logic or peer set rather than a network condition.*\n\n###### Keywords:\n- **Ledger node** *(per fetch)* — one SHAMap node fetched while acquiring a ledger.\n- **Duplicate** *(per fetch)* — a node already held locally; wasted bandwidth and peer credit.\n\n###### Computation boundary:\n*Result: Per node — a COUNT of duplicates, not a ratio.*\n*NOT recorded as a metric. Derived in the Grafana query via `unwrap` over raw log text.*\n\n###### Source:\n[InboundLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedger.cpp)\n\n###### Function:\n`InboundLedger::onTimer`\n\n###### Note:\n*Requires debug logs on the InboundLedger partition. For the duplicate RATIO see \"Ledger Node Fetch Duplicate Ratio\" in the Ledger Acquisition Efficiency row — a stat panel cannot render a division, because Loki does not name binary-operation frames and Grafana falls back to \"Value #A\".*\n\n###### References:\n[Ledgers](https://xrpl.org/docs/concepts/ledgers)",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 37
+        "x": 0,
+        "y": 83
       },
       "fieldConfig": {
         "defaults": {
@@ -809,13 +830,16 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "expr": "topk($topn, sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])))",
+          "expr": "topk($topn, sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__range])))",
           "instant": true,
           "queryType": "instant",
-          "legendFormat": "Duplicates [{{service_instance_id}}]"
+          "legendFormat": "Duplicates [{{service_instance_id}}] [{{xrpl_network_type}}]"
         }
       ],
-      "id": 10
+      "id": 10,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "row",
@@ -825,7 +849,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 93
       },
       "panels": [],
       "id": 11
@@ -842,7 +866,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 46
+        "y": 94
       },
       "fieldConfig": {
         "defaults": {
@@ -851,13 +875,14 @@
           "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Transitions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -902,7 +927,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 94
       },
       "fieldConfig": {
         "defaults": {
@@ -955,7 +980,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 104
       },
       "panels": [],
       "id": 14
@@ -968,7 +993,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 57
+        "y": 105
       },
       "fieldConfig": {
         "defaults": {
@@ -976,13 +1001,14 @@
           "unit": "suffix: lines/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Log Lines / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1027,7 +1053,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 57
+        "y": 105
       },
       "fieldConfig": {
         "defaults": {
@@ -1035,13 +1061,14 @@
           "unit": "suffix: lines/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Log Lines / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1086,7 +1113,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 115
       },
       "panels": [],
       "id": 17
@@ -1099,7 +1126,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 68
+        "y": 116
       },
       "fieldConfig": {
         "defaults": {
@@ -1107,13 +1134,14 @@
           "unit": "suffix: manifests/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Manifests / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1158,20 +1186,21 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 68
+        "y": 116
       },
       "fieldConfig": {
         "defaults": {
           "unit": "suffix: manifests/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Manifests / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1199,8 +1228,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Accepted [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: Accepted` [$__auto])) or vector(0)"
+          "legendFormat": "Accepted [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: Accepted` [$__auto])) or vector(0)"
         },
         {
           "datasource": {
@@ -1208,8 +1237,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Rejected [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__auto])) or vector(0)"
+          "legendFormat": "Rejected [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ManifestCache` | severity =~ \"$severity\" |~ `Manifest: (Stale|Invalid|Revoked|UntrustedCapacity)` [$__auto])) or vector(0)"
         }
       ],
       "id": 19,
@@ -1220,13 +1249,13 @@
     },
     {
       "type": "table",
-      "title": "Top $topn Manifest Producers By Master Key",
+      "title": "Top $topn Manifest Producers By Master Key [$xrpl_network_type]",
       "description": "###### What this is:\n*The master keys responsible for the most manifest log events in the selected window.*\n\n###### How it's computed:\n*Count of ManifestCache lines grouped by the base58 master key parsed from the log text, limited to the top N.\nCounts are per log EVENT, not per distinct manifest.*\n\n###### Reading it:\n*Identifies which validator keys generate the most manifest churn on this node.*\n\n###### Healthy range:\n*A small number of keys with modest repeat counts. Live observation shows roughly 19 to 24 events per key per hour.*\n\n###### Watch for:\n*A single unlisted key with a very high count, which is the signature of a targeted manifest flood.*\n\n###### Keywords:\n- **Master key** *(per validator)* — the long-lived base58 key a manifest is signed under.\n- **Log event** *(per line)* — one manifest apply attempt; the same key recurs as peers re-gossip.\n\n###### Computation boundary:\n*Result: Per master key per node — counts log EVENTS, NOT distinct manifests and NOT distinct keys.*\n*Derived in the Grafana query. Truncated to top N: Loki rejects queries returning over 2000 series, so a true distinct-key count is impossible here.*\n\n###### Source:\n[Manifest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/server/Manifest.cpp)\n\n###### Function:\n`logMftAct`\n\n###### Note:\n*Truncated to the top N. Loki rejects a query returning over 2000 series, so a full distinct-key count is not possible here.*\n\n###### References:\n[Validator keys](https://xrpl.org/docs/concepts/consensus-protocol/validator-keys)",
       "gridPos": {
-        "h": 14,
+        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 126
       },
       "fieldConfig": {
         "defaults": {
@@ -1353,7 +1382,10 @@
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "row",
@@ -1363,7 +1395,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 92
+        "y": 138
       },
       "panels": [],
       "id": 21
@@ -1376,7 +1408,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 93
+        "y": 139
       },
       "fieldConfig": {
         "defaults": {
@@ -1384,13 +1416,14 @@
           "unit": "suffix: charges/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Charges / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1435,7 +1468,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 93
+        "y": 139
       },
       "fieldConfig": {
         "defaults": {
@@ -1443,13 +1476,14 @@
           "unit": "suffix: fee/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Fee Units / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1488,13 +1522,13 @@
     },
     {
       "type": "table",
-      "title": "Top $topn Charged Peers By IP And Public Key",
+      "title": "Top $topn Charged Peers By IP And Public Key [$xrpl_network_type]",
       "description": "###### What this is:\n*The peers accumulating the most resource fee charges, identified by IP address and node public key.*\n\n###### How it's computed:\n*Sum of fee amounts parsed from Resource charge lines, grouped by IP and public key, limited to the top N.*\n\n###### Reading it:\n*This is the direct answer to which peer is costing this node the most, and is the primary abuse-attribution view.*\n\n###### Healthy range:\n*Charges spread across many peers with no single dominant entry.*\n\n###### Watch for:\n*One IP far above the rest, especially paired with the useless data reason, which indicates an abusive or misbehaving peer.*\n\n###### Keywords:\n- **Node public key** *(per peer)* — the peer's base58 identity, stable across reconnects.\n- **IP address** *(per peer)* — source address; the optional `:port` suffix is stripped so one peer is one row.\n\n###### Computation boundary:\n*Result: Per peer per node — a SUM of fee amounts over the dashboard window.*\n*Derived in the Grafana query. Truncated to top N by Loki's 2000-series limit, so this is the head of the distribution, never a total.*\n\n###### Source:\n[ResourceManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/resource/detail/ResourceManager.cpp)\n\n###### Function:\n`Logic::charge`\n\n###### Note:\n*Truncated to the top N because of Loki's 2000-series query limit.*\n\n###### References:\n[Peer protocol](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)",
       "gridPos": {
-        "h": 14,
+        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 103
+        "y": 149
       },
       "fieldConfig": {
         "defaults": {
@@ -1633,7 +1667,10 @@
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
     },
     {
       "type": "row",
@@ -1643,7 +1680,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 117
+        "y": 161
       },
       "panels": [],
       "id": 25
@@ -1656,7 +1693,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 118
+        "y": 162
       },
       "fieldConfig": {
         "defaults": {
@@ -1665,13 +1702,14 @@
           "max": 1,
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duplicate Ratio",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1716,8 +1754,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Duplicate Ratio [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto])))"
+          "legendFormat": "Duplicate Ratio [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) / (sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto])) + sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto])))"
         }
       ],
       "id": 26,
@@ -1734,20 +1772,21 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 118
+        "y": 162
       },
       "fieldConfig": {
         "defaults": {
           "unit": "suffix: nodes/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Ledger Nodes / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1775,8 +1814,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Good [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
+          "legendFormat": "Good [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `good:(?P<good>[0-9]+)` | unwrap good [$__auto]))"
         },
         {
           "datasource": {
@@ -1784,8 +1823,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Duplicate [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
+          "legendFormat": "Duplicate [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `dupe:(?P<dupe>[0-9]+)` | unwrap dupe [$__auto]))"
         },
         {
           "datasource": {
@@ -1793,8 +1832,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "C",
-          "legendFormat": "Acquire Timeouts [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `Acquire \\S+ timeouts:(?P<timeouts>[0-9]+)` | unwrap timeouts [$__auto]))"
+          "legendFormat": "Acquire Timeouts [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (sum_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `InboundLedger` | severity =~ \"$severity\" | regexp `Acquire \\S+ timeouts:(?P<timeouts>[0-9]+)` | unwrap timeouts [$__auto]))"
         }
       ],
       "id": 27,
@@ -1811,7 +1850,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 128
+        "y": 172
       },
       "panels": [],
       "id": 28
@@ -1824,7 +1863,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 129
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -1832,13 +1871,14 @@
           "unit": "suffix: events/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Peer Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1883,20 +1923,21 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 129
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
           "unit": "suffix: events/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Peer Events / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -1924,8 +1965,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Handshake [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic handshake` [$__auto]))"
+          "legendFormat": "Handshake [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic handshake` [$__auto]))"
         },
         {
           "datasource": {
@@ -1933,8 +1974,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Accept [{{service_instance_id}}]",
-          "expr": "sum by (service_instance_id) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic accept` [$__auto]))"
+          "legendFormat": "Accept [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "sum by (service_instance_id, xrpl_network_type) (rate({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `PeerFinder` | severity =~ \"$severity\" |~ `Logic accept` [$__auto]))"
         }
       ],
       "id": 30,
@@ -1951,7 +1992,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 139
+        "y": 183
       },
       "panels": [],
       "id": 31
@@ -1964,7 +2005,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 140
+        "y": 184
       },
       "fieldConfig": {
         "defaults": {
@@ -1972,13 +2013,14 @@
           "unit": "suffix: transitions/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Transitions / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2023,7 +2065,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 140
+        "y": 184
       },
       "fieldConfig": {
         "defaults": {
@@ -2031,13 +2073,14 @@
           "unit": "suffix: beats/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Heartbeats / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2080,9 +2123,9 @@
       "description": "###### What this is:\n*The quorum threshold and trusted validator count this node computed, as recorded in the log.*\n\n###### How it's computed:\n*Quorum and total are parsed from the `Using quorum of N for new set of M trusted validators` line and plotted as values.*\n\n###### Reading it:\n*Confirms the node agrees with the network on how many validators it trusts and how many must agree.*\n\n###### Healthy range:\n*Stable, with quorum at roughly 80 percent of the trusted total.*\n\n###### Watch for:\n*A drop in the trusted total, which shrinks the quorum and weakens the node's safety margin.*\n\n###### Keywords:\n- **Quorum** *(per node)* — how many trusted validators must agree; normally about 80 percent of the trusted set.\n- **Trusted set** *(per node)* — validators from the UNL this node currently trusts.\n\n###### Computation boundary:\n*Result: Per node — the last VALUE parsed from the log line, not a rate or count.*\n*Derived in the Grafana query via `unwrap`. Overlaps the `unl_quorum` metric; prefer that metric for the value and this panel for churn events.*\n\n###### Source:\n[ValidatorList.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/ValidatorList.cpp)\n\n###### Function:\n`ValidatorList::updateTrusted`\n\n###### References:\n[Unique Node List](https://xrpl.org/docs/concepts/consensus-protocol/unique-node-list)",
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 150
+        "y": 194
       },
       "fieldConfig": {
         "defaults": {
@@ -2090,17 +2133,19 @@
           "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "fillOpacity": 0,
             "axisLabel": "Validators",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -2124,8 +2169,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "A",
-          "legendFormat": "Quorum [{{service_instance_id}}]",
-          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap quorum [$__auto]))"
+          "legendFormat": "Quorum [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "max by (service_instance_id, xrpl_network_type) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap quorum [$__auto]))"
         },
         {
           "datasource": {
@@ -2133,8 +2178,8 @@
             "uid": "${DS_LOKI}"
           },
           "refId": "B",
-          "legendFormat": "Trusted Validators [{{service_instance_id}}]",
-          "expr": "max by (service_instance_id) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap total [$__auto]))"
+          "legendFormat": "Trusted Validators [{{service_instance_id}}] [{{xrpl_network_type}}]",
+          "expr": "max by (service_instance_id, xrpl_network_type) (max_over_time({service_name=~\"$service_name\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\"} | xrpl_network_type =~ \"$xrpl_network_type\" | partition = `ValidatorList` | severity =~ \"$severity\" | regexp `Using quorum of (?P<quorum>[0-9]+) for new set of (?P<total>[0-9]+) trusted` | unwrap total [$__auto]))"
         }
       ],
       "id": 34,
@@ -2151,7 +2196,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 160
+        "y": 204
       },
       "panels": [],
       "id": 35
@@ -2164,7 +2209,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 161
+        "y": 205
       },
       "fieldConfig": {
         "defaults": {
@@ -2173,13 +2218,14 @@
           "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Run Time (ms)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2224,7 +2270,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 161
+        "y": 205
       },
       "fieldConfig": {
         "defaults": {
@@ -2232,13 +2278,14 @@
           "unit": "suffix: breaches/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Breaches / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2281,9 +2328,9 @@
       "description": "###### What this is:\n*The 99th percentile queue wait time of jobs that breached their latency target.*\n\n###### How it's computed:\n*Quantile over the wait millisecond value parsed from LoadMonitor job lines, grouped by job name.*\n\n###### Reading it:\n*Separates queueing delay from execution cost. High wait with low run means the job queue is saturated rather than the work being slow.*\n\n###### Healthy range:\n*Near zero. Live observation shows wait at 0ms for most breaches, meaning run time is the cause.*\n\n###### Watch for:\n*Wait time rising above run time, which shifts the diagnosis from slow work to a saturated job queue.*\n\n###### Keywords:\n- **Wait time** *(per job)* — time queued before execution began.\n- **Run versus wait** *(per job)* — high wait means a saturated queue; high run means slow work.\n\n###### Computation boundary:\n*Result: Per node per job type — a p99 over BREACHES ONLY.*\n*Derived in the Grafana query via `unwrap`.*\n\n###### Source:\n[LoadMonitor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/LoadMonitor.cpp)\n\n###### Function:\n`LoadMonitor::addLoadSample`\n\n###### Note:\n*Counts BREACHES above the 500ms threshold, not total job executions.*\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)",
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 171
+        "y": 215
       },
       "fieldConfig": {
         "defaults": {
@@ -2292,13 +2339,14 @@
           "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Queue Wait Time (ms)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2343,7 +2391,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 181
+        "y": 225
       },
       "panels": [],
       "id": 39
@@ -2356,7 +2404,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 182
+        "y": 226
       },
       "fieldConfig": {
         "defaults": {
@@ -2364,13 +2412,14 @@
           "unit": "suffix: lines/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Log Lines / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -2431,10 +2480,10 @@
       "title": "Recent Warnings And Errors",
       "description": "###### What this is:\n*The most recent log lines at warning severity or above.*\n\n###### How it's computed:\n*Raw log stream filtered to WRN, ERR, and FTL, newest first.*\n\n###### Reading it:\n*Use this to read the actual text behind a spike in the rate panel beside it.*\n\n###### Healthy range:\n*Sparse. LoadMonitor slow-job warnings are the common benign entry.*\n\n###### Watch for:\n*Repeating identical errors, which indicate a stuck retry loop rather than a transient fault.*\n\n###### Keywords:\n- **Log stream** *(per node)* — the raw lines behind the aggregate rates, newest first.\n\n###### Computation boundary:\n*Result: Raw log lines, no aggregation.*\n*Rendered directly from Loki; no computation applied.*\n\n###### Source:\n[Log.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/basics/Log.cpp)\n\n###### Function:\n`Logs::Sink::write`\n\n###### References:\n[Loki log queries](https://grafana.com/docs/loki/latest/query/log_queries/)",
       "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 182
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 236
       },
       "fieldConfig": {
         "defaults": {},
