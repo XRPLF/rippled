@@ -16,7 +16,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -43,11 +43,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
     },
     {
       "title": "RPC Latency P95 by Command",
@@ -57,7 +61,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -84,18 +88,22 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
-      "title": "RPC Error Rate",
+      "title": "RPC Error Rate [$xrpl_network_type]",
       "description": "**What:** Percentage of each RPC command's calls that ended in an error.\n**How it's computed:** Error calls divided by total calls per command over a 5-minute window, per node.\n**Reading it:** Green below 1%, yellow 1-5%, red above 5%.\n**Healthy range:** Below 1% for healthy commands.\n**Watch for:** A sustained error spike on one command is consistent with a client probing or misusing that endpoint.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 8
@@ -137,7 +145,11 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 3
     },
     {
       "title": "RPC Latency Heatmap",
@@ -146,8 +158,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -178,7 +190,8 @@
             "spanNulls": 1800000
           }
         }
-      }
+      },
+      "id": 4
     },
     {
       "title": "Overall RPC Throughput",
@@ -187,8 +200,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -223,11 +236,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "RPC Success vs Error",
@@ -236,8 +253,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -272,21 +289,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
-      "title": "Top Commands by Volume",
+      "title": "Top Commands by Volume [$xrpl_network_type]",
       "description": "**What:** The ten most-called RPC commands by total invocations recently.\n**How it's computed:** Ranked total counts per command over a 5-minute window, per node.\n**Reading it:** Identifies the hottest API endpoints driving node load.\n**Healthy range:** Workload-dependent.\n**Watch for:** An unexpected command dominating the ranking can indicate scripted abuse or a misbehaving client.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "bargauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -309,17 +330,21 @@
           "unit": "none"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 7
     },
     {
-      "title": "WebSocket Message Rate",
+      "title": "WebSocket Message Rate [$xrpl_network_type]",
       "description": "**What:** Rate of incoming WebSocket RPC messages the server processes.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Non-zero only when clients connect over WebSocket rather than HTTP.\n**Healthy range:** Zero is normal for HTTP-only deployments; otherwise workload-dependent.\n**Watch for:** An unexpected surge points to a chatty or abusive WebSocket client.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -342,7 +367,11 @@
           "unit": "suffix: messages/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 8
     },
     {
       "title": "RPC Resource Cost by Command",
@@ -350,7 +379,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 32
       },
@@ -384,11 +413,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Batch vs Single RPC Requests",
@@ -397,8 +430,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 32
+        "x": 0,
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -433,11 +466,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     }
   ],
   "schemaVersion": 39,

@@ -10,11 +10,11 @@
   "links": [],
   "panels": [
     {
-      "title": "Validated Ledger Age",
+      "title": "Validated Ledger Age [$xrpl_network_type]",
       "description": "**What:** Seconds since the most recently validated ledger, i.e. how far behind the network the node is.\n**How it's computed:** Current value of the validated-ledger-age gauge per node.\n**Reading it:** Lower is better; a healthy node stays within a few ledger-close intervals.\n**Healthy range:** under ~10s (the network closes a ledger every 3-5s).\n**Watch for:** Above 20s or climbing steadily (the node is falling behind or has lost sync).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 0
@@ -55,14 +55,18 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
     },
     {
-      "title": "Published Ledger Age",
+      "title": "Published Ledger Age [$xrpl_network_type]",
       "description": "**What:** Seconds since the most recently published ledger (the ledger exposed to clients and subscribers).\n**How it's computed:** Current value of the published-ledger-age gauge per node.\n**Reading it:** Should track validated-ledger age closely.\n**Healthy range:** under ~10s.\n**Watch for:** Published age growing while validated age stays low (publish-pipeline backlog).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
         "y": 0
@@ -103,7 +107,11 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 2
     },
     {
       "title": "Operating Mode (Time Share)",
@@ -113,7 +121,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -167,14 +175,18 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3,
+            "pointSize": 5,
             "stacking": {
               "mode": "normal"
-            }
+            },
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
       "title": "Operating Mode Transitions",
@@ -184,7 +196,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -238,11 +250,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "I/O Latency",
@@ -252,7 +268,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -285,11 +301,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Job Queue Depth",
@@ -299,7 +319,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -325,21 +345,26 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
-          }
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
-      "title": "Ledger Fetch Rate",
+      "title": "Ledger Fetch Rate [$xrpl_network_type]",
       "description": "**What:** Rate at which the node requests ledgers from peers.\n**How it's computed:** Per-second rate of the ledger-fetches counter over 5 minutes.\n**Reading it:** Near zero when synced; rises when catching up or backfilling history.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Sustained high fetch rate on a node that should be current (repeatedly missing ledgers).\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp InboundLedgersImp ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -361,17 +386,21 @@
           "unit": "suffix: fetches/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 7
     },
     {
-      "title": "Ledger History Mismatches",
+      "title": "Ledger History Mismatches [$xrpl_network_type]",
       "description": "**What:** Rate of ledger-history hash mismatches: built ledgers whose hash disagrees with the validated hash.\n**How it's computed:** Per-second rate of the history-mismatch counter over 5 minutes.\n**Reading it:** Should be flat at zero.\n**Healthy range:** zero.\n**Watch for:** Any non-zero value (consensus divergence, corrupted history, or database issues).\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp incrementLedgerHistoryMismatch (caller LedgerHistory.cpp)",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -405,7 +434,11 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 8
     },
     {
       "title": "--- Extended Metrics (Recovered from Phase 6) ---",
@@ -414,10 +447,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 24
       },
       "collapsed": false,
-      "panels": []
+      "panels": [],
+      "id": 9
     },
     {
       "title": "Key Jobs Execution Time",
@@ -427,7 +461,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -523,11 +557,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     },
     {
       "title": "Key Jobs Dequeue Wait Time",
@@ -537,7 +575,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -633,11 +671,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 11
     },
     {
       "title": "FullBelowCache Size",
@@ -647,7 +689,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -673,20 +715,24 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
-      "title": "FullBelowCache Hit Rate",
+      "title": "FullBelowCache Hit Rate [$xrpl_network_type]",
       "description": "**What:** Hit-rate percentage of the FullBelowCache.\n**How it's computed:** Current value of the cache hit-rate gauge (0-100%).\n**Reading it:** Higher is better; means the node reuses knowledge of complete subtrees.\n**Healthy range:** above ~50% in steady state.\n**Watch for:** Low hit rate during steady state (cache too small or constant re-acquisition).\n**Source:** include/xrpl/basics/TaggedCache.h TaggedCache::Stats ctor",
       "type": "gauge",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 41
       },
       "options": {
@@ -727,17 +773,21 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 13
     },
     {
-      "title": "Ledger Publish Gap",
+      "title": "Ledger Publish Gap [$xrpl_network_type]",
       "description": "**What:** Difference between published and validated ledger ages: how far the publish pipeline trails validation.\n**How it's computed:** Published-ledger age minus validated-ledger age, in seconds.\n**Reading it:** Near zero means publishing keeps up with validation.\n**Healthy range:** within a few seconds of zero.\n**Watch for:** A growing gap (publish backlog, stale data for subscribers).\n**Source:** src/xrpld/app/ledger/LedgerMaster.h LedgerMaster::Stats ctor",
       "type": "stat",
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 0,
-        "y": 49
+        "x": 12,
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -775,7 +825,11 @@
           }
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 14
     },
     {
       "title": "State Duration Rate (Full vs Tracking)",
@@ -784,8 +838,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 49
+        "x": 0,
+        "y": 45
       },
       "options": {
         "tooltip": {
@@ -818,11 +872,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 15
     },
     {
       "title": "All Jobs Execution Time (Detail)",
@@ -830,9 +888,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 57
+        "w": 12,
+        "x": 12,
+        "y": 45
       },
       "options": {
         "tooltip": {
@@ -858,11 +916,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 16
     },
     {
       "title": "All Jobs Dequeue Wait (Detail)",
@@ -870,9 +932,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 65
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -898,11 +960,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 17
     }
   ],
   "schemaVersion": 39,

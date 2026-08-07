@@ -9,14 +9,27 @@
   "links": [],
   "panels": [
     {
-      "title": "Ledger Build Rate",
+      "title": "Ledger Build & Validate",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
+      "title": "Ledger Build Rate [$xrpl_network_type]",
       "description": "**What:** How often the node constructs a new ledger from its parent, applying transactions and writing state.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the consensus close cadence.\n**Healthy range:** About 0.25/s on mainnet (~4s rounds).\n**Watch for:** A drop below the close rate means the node is not keeping up with ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 8,
+        "h": 4,
+        "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -39,7 +52,11 @@
           "unit": "suffix: ledgers/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 2
     },
     {
       "title": "Ledger Build Duration",
@@ -49,7 +66,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 5
       },
       "options": {
         "tooltip": {
@@ -84,21 +101,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
-      "title": "Ledger Validation Rate",
+      "title": "Ledger Validation Rate [$xrpl_network_type]",
       "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
       "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 0
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 13
       },
       "options": {
         "tooltip": {
@@ -121,7 +142,11 @@
           "unit": "suffix: ledgers/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 4
     },
     {
       "title": "Ledger Build Duration Heatmap",
@@ -130,8 +155,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -162,7 +187,21 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
+    },
+    {
+      "title": "Transaction Apply",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 6
     },
     {
       "title": "Transaction Apply Duration",
@@ -172,7 +211,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -207,11 +246,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "Transaction Apply Rate",
@@ -221,7 +264,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -248,21 +291,38 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
-      "title": "Ledger Store Rate",
+      "title": "Store & Close Timing",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 9
+    },
+    {
+      "title": "Ledger Store Rate [$xrpl_network_type]",
       "description": "**What:** How often completed ledgers are written into the local ledger history.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build rate under normal operation.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A store rate below the build rate means ledgers are being built but not persisted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::storeLedger",
       "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 0
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -285,7 +345,11 @@
           "unit": "suffix: ledgers/s"
         },
         "overrides": []
-      }
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 10
     },
     {
       "title": "Build vs Close Duration",
@@ -293,9 +357,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 24
+        "y": 39
       },
       "options": {
         "tooltip": {
@@ -330,11 +394,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 11
     }
   ],
   "schemaVersion": 39,
