@@ -3684,6 +3684,72 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testMPTSplitEscrowTransferFee(FeatureBitset features)
+    {
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        bool const withCleanup340 = features[fixCleanup3_4_0];
+        testcase(
+            std::string("MPT Split Escrow Transfer Fee ") +
+            (withCleanup340 ? "with Cleanup340" : "without Cleanup340"));
+
+        Env env{*this, features};
+        auto const baseFee = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        env.fund(XRP(1'000), alice, bob, gw);
+        env.close();
+
+        MPTTester const mpt({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob},
+            .transferFee = 1'000,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+        });
+        env(pay(gw, alice, mpt(10'000)));
+        env.close();
+
+        static constexpr int escrowCount = 10;
+        static constexpr int splitAmount = 10;
+        static constexpr int totalLocked = escrowCount * splitAmount;
+        std::array<std::uint32_t, escrowCount> seqs{};
+        for (auto& seq : seqs)
+        {
+            seq = env.seq(alice);
+            env(escrow::create(alice, bob, mpt(splitAmount)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150));
+            env.close();
+        }
+
+        BEAST_EXPECT(env.balance(alice, mpt) == mpt(10'000 - totalLocked));
+        BEAST_EXPECT(env.balance(bob, mpt) == mpt(0));
+        BEAST_EXPECT(env.balance(gw, mpt) == mpt(-10'000));
+        BEAST_EXPECT(mptEscrowed(env, alice, mpt) == totalLocked);
+        BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == totalLocked);
+
+        for (auto const seq : seqs)
+        {
+            env(escrow::finish(bob, alice, seq),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150));
+            env.close();
+        }
+
+        auto const feeBurned = withCleanup340 ? escrowCount : 0;
+        BEAST_EXPECT(env.balance(alice, mpt) == mpt(10'000 - totalLocked));
+        BEAST_EXPECT(env.balance(bob, mpt) == mpt(totalLocked - feeBurned));
+        BEAST_EXPECT(env.balance(gw, mpt) == mpt(-10'000 + feeBurned));
+        BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+        BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
+    }
+
+    void
     testMPTRequireAuth(FeatureBitset features)
     {
         testcase("MPT Require Auth");
@@ -4001,6 +4067,8 @@ public:
             testMPTWithFeats(feats);
             testMPTWithFeats(feats - fixTokenEscrowV1);
         }
+        testMPTSplitEscrowTransferFee(all - fixCleanup3_4_0);
+        testMPTSplitEscrowTransferFee(all);
     }
 };
 
