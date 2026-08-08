@@ -27,6 +27,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
@@ -79,6 +80,245 @@ ledgerEntryTypeName(SLE const& sle)
         // LCOV_EXCL_STOP
     }
     return item->getName();
+}
+
+void
+FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    std::ostringstream err;
+
+    XRPL_ASSERT(after, "xrpl::FailedTransaction::visitEntry : valid after");
+
+    if (!before)
+    {
+        // Nothing can be created by a failed transaction
+        err << "Unexpected ledger entry created: " << ledgerEntryTypeName(*after) << ", "
+            << after->key();
+        errors_.emplace_back(err.str());
+        return;
+    }
+
+    if (after->getType() == ltACCOUNT_ROOT)
+    {
+        if (isDelete)
+        {
+            err << "Account root was deleted: " << after->at(sfAccount);
+            errors_.emplace_back(err.str());
+            return;
+        }
+
+        if (after->at(sfBalance) != before->at(sfBalance))
+        {
+            if (after->at(sfBalance) > before->at(sfBalance))
+            {
+                err << "Account root balance increased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (accountPaidFee_)
+            {
+                err << "Multiple Account roots were charged fees: "
+                    << accountPaidFee_->at(sfAccount) << " and " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            accountPaidFee_ = after;
+        }
+
+        if (after->at(sfSequence) != before->at(sfSequence))
+        {
+            if (after->at(sfSequence) < before->at(sfSequence))
+            {
+                // Actually, this is always bad, but out of scope for this invariant
+                err << "Account root sequence decreased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (accountIncreasedSequence_)
+            {
+                err << "Multiple Account root sequences were incremented: "
+                    << accountIncreasedSequence_->at(sfAccount) << " and " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (after->at(sfSequence) != before->at(sfSequence) + 1)
+            {
+                err << "Account root sequence incremented by "
+                    << (after->at(sfSequence) - before->at(sfSequence)) << ": "
+                    << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            accountIncreasedSequence_ = after;
+        }
+
+        auto const* format = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
+        if (format == nullptr)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::FailedTransaction::visitEntry : account root has no known ledger format");
+            return;
+            // LCOV_EXCL_STOP
+        }
+
+        for (auto const& elem : format->getSOTemplate())
+        {
+            // skip this for now
+
+            break;
+
+            auto const& sf = elem.sField();
+
+            // No fields other than sfSequence and sfBalance may change
+            if (sf == sfSequence || sf == sfBalance)
+                continue;
+
+            auto const* bField = before->peekAtPField(sf);
+            auto const* aField = after->peekAtPField(sf);
+            bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
+            bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
+            if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+            {
+                err << "At least one account root field modified: " << after->at(sfAccount)
+                    << ", field: " << sf.getName()
+                    << ", before: " << (bPresent ? bField->getText() : "(absent)")
+                    << ", after: " << (aPresent ? aField->getText() : "(absent)");
+                errors_.emplace_back(err.str());
+                return;
+            }
+        }
+
+        return;
+    }
+
+    if (after->getType() == ltTICKET)
+    {
+        if (!isDelete)
+        {
+            err << "Ticket was modified: " << after->at(sfAccount) << ", "
+                << after->at(sfTicketSequence);
+            errors_.emplace_back(err.str());
+            return;
+        }
+        if (deletedTicket_)
+        {
+            err << "Multiple tickets were deleted: " << deletedTicket_->at(sfAccount) << ", "
+                << deletedTicket_->at(sfTicketSequence) << " and " << after->at(sfAccount) << ", "
+                << after->at(sfTicketSequence);
+            errors_.emplace_back(err.str());
+            return;
+        }
+        deletedTicket_ = after;
+
+        return;
+    }
+
+    if (after->getType() == ltDIR_NODE)
+    {
+        // Directory deletions and modifications are a legal side effect of deleting objects. Track
+        // them separately.
+        directorySideEffects_.emplace_back(after);
+        return;
+    }
+
+    if (isDelete)
+    {
+        switch (after->getType())
+        {
+            case ltOFFER:
+            case ltRIPPLE_STATE:
+            case ltNFTOKEN_OFFER:
+            case ltCREDENTIAL:
+                deletedObjects_.emplace_back(before, after);
+                return;
+            default:
+                err << "Unexpected ledger entry deleted: " << ledgerEntryTypeName(*after) << ", "
+                    << after->key();
+                errors_.emplace_back(err.str());
+                return;
+        }
+    }
+
+    err << "Unexpected ledger entry modified: " << ledgerEntryTypeName(*after) << ", "
+        << after->key();
+    errors_.emplace_back(err.str());
+}
+
+bool
+FailedTransaction::finalize(
+    STTx const& tx,
+    TER const ter,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (isTesSuccess(ter))
+    {
+        return true;
+    }
+
+    bool result = true;
+
+    // Log all the failures regardless of amendment status, but only return false / failure if
+    // fixCleanup3_4_0 is enabled
+    for (auto const& err : errors_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: " << err;
+        result = false;
+    }
+
+    if (accountIncreasedSequence_ && deletedTicket_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: both account sequence increased and ticket deleted";
+        result = false;
+    }
+
+    if (tx.getSeqProxy().isTicket() && accountIncreasedSequence_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: account sequence increased by a ticket transaction";
+        result = false;
+    }
+
+    if (tx.getSeqProxy().isSeq() && deletedTicket_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ticket deleted by a sequence transaction";
+        result = false;
+    }
+
+    auto const typesAllowedToDelete = Transactor::typesForResult(ter);
+
+    for (auto const& deleted : deletedObjects_)
+    {
+        auto const type = deleted.after->getType();
+        if (!typesAllowedToDelete.contains(type))
+        {
+            JLOG(j.fatal()) << "Invariant failed: unexpected ledger entry deleted: "
+                            << ledgerEntryTypeName(*deleted.after);
+            result = false;
+        }
+        // For offers, only allow unfunded removals
+        // (where TakerPays is unchanged)
+        if (type == ltOFFER &&
+            deleted.before->getFieldAmount(sfTakerPays) !=
+                deleted.after->getFieldAmount(sfTakerPays))
+        {
+            JLOG(j.fatal()) << "Invariant failed: funded offer deleted: "
+                            << ledgerEntryTypeName(*deleted.after);
+            result = false;
+        }
+    }
+
+    if (!deletedTicket_ && deletedObjects_.empty() && !directorySideEffects_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: " << directorySideEffects_.size()
+                        << " directory side effects without any deleted objects";
+        result = false;
+    }
+
+    bool const enforce = view.rules().enabled(fixCleanup3_4_0);
+    XRPL_ASSERT_IF(!result, enforce, "FailedTransaction::finalize : amendment enabled");
+    return result || !enforce;
 }
 
 void

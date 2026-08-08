@@ -336,6 +336,10 @@ public:
         uint256 const& ticketIndex,
         beast::Journal j);
 
+    // Interface used by processPersistentChanges and Invariants
+    static std::unordered_set<LedgerEntryType>
+    typesForResult(TER const ter);
+
 protected:
     TER
     apply();
