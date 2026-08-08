@@ -741,27 +741,27 @@ Config::loadFromString(std::string const& fileContents)
         auto const sec = section(Sections::kPathFind);
 
         pathCacheReuseLedgers = sec.valueOr(Keys::kCacheReuseLedgers, pathCacheReuseLedgers);
-        if (pathCacheReuseLedgers > 256)
+        if (pathCacheReuseLedgers > 64)
         {
             Throw<std::runtime_error>(
                 std::string("Invalid ") + Sections::kPathFind + " " + Keys::kCacheReuseLedgers +
-                ": must be between 0 and 256 inclusive");
+                ": must be between 0 and 64 inclusive");
         }
 
         pathFindLineChunkSize = sec.valueOr(Keys::kLineChunkSize, pathFindLineChunkSize);
-        if (pathFindLineChunkSize < 1 || pathFindLineChunkSize > 10'000)
+        if (pathFindLineChunkSize < 1 || pathFindLineChunkSize > 1024)
         {
             Throw<std::runtime_error>(
                 std::string("Invalid ") + Sections::kPathFind + " " + Keys::kLineChunkSize +
-                ": must be between 1 and 10000 inclusive");
+                ": must be between 1 and 1024 inclusive");
         }
 
         pathFullSearchInterval = sec.valueOr(Keys::kFullSearchInterval, pathFullSearchInterval);
-        if (pathFullSearchInterval < 1 || pathFullSearchInterval > 1000)
+        if (pathFullSearchInterval < 1 || pathFullSearchInterval > 100)
         {
             Throw<std::runtime_error>(
                 std::string("Invalid ") + Sections::kPathFind + " " + Keys::kFullSearchInterval +
-                ": must be between 1 and 1000 inclusive");
+                ": must be between 1 and 100 inclusive");
         }
 
         {

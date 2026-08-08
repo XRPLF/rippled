@@ -144,6 +144,7 @@ static constexpr std::size_t kPathFindMaxLinesPerAccount = 50'000;
  * kPathFindMaxLinesPerAccount to load the full set in a single reply.
  *
  * Default for Config::pathFindLineChunkSize ([path_find] line_chunk_size).
+ * Config range: 1–1024.
  */
 static constexpr std::size_t kPathFindLineChunkSize = 64;
 
@@ -152,12 +153,10 @@ static constexpr std::size_t kPathFindLineChunkSize = 64;
  * without reloading. Pathfinding is best-effort; slightly stale lines are OK.
  * Large ledger jumps still force a full clear.
  *
- * Sized so a full 100-session revalidate wave (a few seconds) does not thrash
- * the cache when ledgers close every ~3–4s.
- *
  * Default for Config::pathCacheReuseLedgers ([path_find] cache_reuse_ledgers).
+ * Config range: 0–64.
  */
-static constexpr std::uint32_t kPathCacheReuseLedgers = 12;
+static constexpr std::uint32_t kPathCacheReuseLedgers = 6;
 
 /**
  * Base interval (in ledger closes) between full Pathfinder rediscoveries for an
@@ -170,8 +169,9 @@ static constexpr std::uint32_t kPathCacheReuseLedgers = 12;
  * Timed rediscovery is also skipped while the server is locally loaded.
  *
  * Default for Config::pathFullSearchInterval ([path_find] full_search_interval).
+ * Config range: 1–100.
  */
-static constexpr std::uint32_t kPathFullSearchInterval = 20;
+static constexpr std::uint32_t kPathFullSearchInterval = 3;
 
 /**
  * Concurrent revalidates for established path_find sessions (not first update).

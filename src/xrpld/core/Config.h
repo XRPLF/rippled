@@ -206,11 +206,11 @@ public:
     // pathCacheReuseLedgers: how many ledger advances a cached trust-line
     //   vector may be reused without reload (best-effort staleness). Larger
     //   values cut owner-dir thrash under load; smaller values are fresher.
-    std::uint32_t pathCacheReuseLedgers = 12;
+    std::uint32_t pathCacheReuseLedgers = 6;
     // WS progressive owner-dir load size (lines per load/expand step).
     std::size_t pathFindLineChunkSize = 64;
     // Closed-ledger interval between full Pathfinder rediscoveries (staggered).
-    std::uint32_t pathFullSearchInterval = 20;
+    std::uint32_t pathFullSearchInterval = 3;
     // Open-ledger revalidate-only tick period for live path_find sessions.
     std::chrono::milliseconds pathMidCloseDelay{500};
     // Soft global / per-account caps on PathFindTrustLine objects in AssetCache.
