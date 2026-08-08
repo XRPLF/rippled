@@ -116,7 +116,8 @@ public:
 /**
  * @brief An unsuccessful transaction claiming a fee can only make a very small set of changes.
  *
- * 1. Reduce at most one AccountRoot's XRP balance (pay a fee). (A transaction may pay 0.)
+ * 1. Reduce at most one AccountRoot or Sponsorship's XRP balance (pay a fee). (A transaction may
+ *    pay 0.)
  * 2. Increment one AccountRoot's sequence or delete a Ticket, not both.
  * 3. Delete expired objects, depending on the failure code.
  *      For tecOVERSIZE and tecKILLED, ltOFFER
@@ -144,6 +145,7 @@ class FailedTransaction
     // accountPaidFee and accountIncreasedSequence are usually the same account, but they don't have
     // to be.
     SLE::const_pointer accountPaidFee_;
+    SLE::const_pointer sponsorPaidFee_;
     SLE::const_pointer accountIncreasedSequence_;
     SLE::const_pointer deletedTicket_;
     std::vector<DeletedEntry> deletedObjects_;

@@ -92,73 +92,83 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
     if (!before)
     {
         // Nothing can be created by a failed transaction
-        err << "Unexpected ledger entry created: " << ledgerEntryTypeName(*after) << ", "
-            << after->key();
+        auto const name = [&after] -> std::string {
+            switch (after->getType())
+            {
+                case ltNICKNAME:
+                case ltCONTRACT:
+                case ltGENERATOR_MAP:
+                    return "[DEPRECATED TYPE]";
+                default:
+                    return ledgerEntryTypeName(*after);
+            }
+        };
+        err << "Unexpected ledger entry created: " << name() << ", " << after->key();
         errors_.emplace_back(err.str());
         return;
     }
 
-    if (after->getType() == ltACCOUNT_ROOT)
-    {
+    // Returns whether the object matched the target type. If it was, the caller may do additional
+    // checks related to that type, and should return.
+    auto validateFeePayer = [isDelete, &err, this](
+                                LedgerEntryType target,
+                                SLE::const_pointer& tracker,
+                                SLE::const_ref before,
+                                SLE::const_ref after,
+                                SF_AMOUNT const& field,
+                                std::string_view desc,
+                                std::function<std::string(SLE::const_ref)> labelMaker) {
+        if (after->getType() != target)
+            return false;
+
+        auto const label = labelMaker(after);
+
         if (isDelete)
         {
-            err << "Account root was deleted: " << after->at(sfAccount);
+            err << desc << " was deleted: " << label;
             errors_.emplace_back(err.str());
-            return;
+            return true;
         }
 
-        if (after->at(sfBalance) != before->at(sfBalance))
+        auto const beforeOptional = before->at(~field);
+        auto const afterOptional = after->at(~field);
+
+        auto const beforeBalance = beforeOptional.value_or(STAmount{xrpIssue()});
+        auto const afterBalance = afterOptional.value_or(STAmount{xrpIssue()});
+
+        // Check both directions because there's a separate check for "balance increased".
+        if (!canSubtract(beforeBalance, afterBalance) && !canSubtract(afterBalance, beforeBalance))
         {
-            if (after->at(sfBalance) > before->at(sfBalance))
-            {
-                err << "Account root balance increased: " << after->at(sfAccount);
-                errors_.emplace_back(err.str());
-                return;
-            }
-            if (accountPaidFee_)
-            {
-                err << "Multiple Account roots were charged fees: "
-                    << accountPaidFee_->at(sfAccount) << " and " << after->at(sfAccount);
-                errors_.emplace_back(err.str());
-                return;
-            }
-            accountPaidFee_ = after;
+            err << desc << " before and after balances not comparable: " << label;
+            errors_.emplace_back(err.str());
+            return true;
         }
 
-        if (after->at(sfSequence) != before->at(sfSequence))
+        if (afterBalance != beforeBalance)
         {
-            if (after->at(sfSequence) < before->at(sfSequence))
+            if (afterBalance > beforeBalance)
             {
-                // Actually, this is always bad, but out of scope for this invariant
-                err << "Account root sequence decreased: " << after->at(sfAccount);
+                err << desc << " balance increased: " << label;
                 errors_.emplace_back(err.str());
-                return;
+                return true;
             }
-            if (accountIncreasedSequence_)
+            if (tracker)
             {
-                err << "Multiple Account root sequences were incremented: "
-                    << accountIncreasedSequence_->at(sfAccount) << " and " << after->at(sfAccount);
+                err << "Multiple " << desc << "s were charged fees: " << labelMaker(tracker)
+                    << " and " << label;
                 errors_.emplace_back(err.str());
-                return;
+                return true;
             }
-            if (after->at(sfSequence) != before->at(sfSequence) + 1)
-            {
-                err << "Account root sequence incremented by "
-                    << (after->at(sfSequence) - before->at(sfSequence)) << ": "
-                    << after->at(sfAccount);
-                errors_.emplace_back(err.str());
-                return;
-            }
-            accountIncreasedSequence_ = after;
+            tracker = after;
         }
 
-        auto const* format = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
+        auto const* format = LedgerFormats::getInstance().findByType(target);
         if (format == nullptr)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
                 "xrpl::FailedTransaction::visitEntry : account root has no known ledger format");
-            return;
+            return true;
             // LCOV_EXCL_STOP
         }
 
@@ -170,8 +180,8 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
 
             auto const& sf = elem.sField();
 
-            // No fields other than sfSequence and sfBalance may change
-            if (sf == sfSequence || sf == sfBalance)
+            // No fields other than sfSequence, sfBalance, or sfFeeAmount may change
+            if (&sf == &sfSequence || &sf == &sfBalance || &sf == &sfFeeAmount)
                 continue;
 
             auto const* bField = before->peekAtPField(sf);
@@ -180,17 +190,75 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
             bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
             if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
             {
-                err << "At least one account root field modified: " << after->at(sfAccount)
+                err << "At least one " << desc << " field modified: " << label
                     << ", field: " << sf.getName()
-                    << ", before: " << (bPresent ? bField->getText() : "(absent)")
-                    << ", after: " << (aPresent ? aField->getText() : "(absent)");
+                    /*
+                        << ", before: " << (bPresent ? bField->getText() : "(absent)")
+                        << ", after: " << (aPresent ? aField->getText() : "(absent)")
+                        */
+                    ;
                 errors_.emplace_back(err.str());
-                return;
+                return true;
             }
         }
 
+        return true;
+    };
+
+    if (validateFeePayer(
+            ltACCOUNT_ROOT,
+            accountPaidFee_,
+            before,
+            after,
+            sfBalance,
+            "Account root",
+            [](SLE::const_ref sle) { return to_string(sle->at(sfAccount)); }))
+    {
+        auto const beforeSequence = before->at(sfSequence);
+        auto const afterSequence = after->at(sfSequence);
+        if (afterSequence != beforeSequence)
+        {
+            if (afterSequence < beforeSequence)
+            {
+                // This is always bad, but we're only checking failed transactions here
+                // TODO: Maybe add a "global failures" check to this Invariant, at the risk of scope
+                // creep.
+                err << "Account root sequence decreased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (accountIncreasedSequence_)
+            {
+                err << "Multiple Account root sequences were incremented: "
+                    << accountIncreasedSequence_->at(sfAccount) << " and " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (afterSequence != beforeSequence + 1)
+            {
+                err << "Account root sequence incremented by " << (afterSequence - beforeSequence)
+                    << ": " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            accountIncreasedSequence_ = after;
+        }
         return;
     }
+
+    if (validateFeePayer(
+            ltSPONSORSHIP,
+            sponsorPaidFee_,
+            before,
+            after,
+            sfFeeAmount,
+            "Sponsor",
+            [](SLE::const_ref sle) {
+                std::ostringstream l;
+                l << sle->at(sfOwner) << " -> " << sle->at(sfSponsee);
+                return l.str();
+            }))
+        return;
 
     if (after->getType() == ltTICKET)
     {
@@ -261,10 +329,17 @@ FailedTransaction::finalize(
     bool result = true;
 
     // Log all the failures regardless of amendment status, but only return false / failure if
-    // fixCleanup3_4_0 is enabled
+    // fixTecInvariant is enabled
     for (auto const& err : errors_)
     {
         JLOG(j.fatal()) << "Invariant failed: " << err;
+        result = false;
+    }
+
+    if (accountPaidFee_ && sponsorPaidFee_)
+    {
+        // Is this legal?
+        JLOG(j.fatal()) << "Invariant failed: both account and sponsor paid fee";
         result = false;
     }
 
@@ -316,7 +391,7 @@ FailedTransaction::finalize(
         result = false;
     }
 
-    bool const enforce = view.rules().enabled(fixCleanup3_4_0);
+    bool const enforce = view.rules().enabled(fixTecInvariant);
     XRPL_ASSERT_IF(!result, enforce, "FailedTransaction::finalize : amendment enabled");
     return result || !enforce;
 }

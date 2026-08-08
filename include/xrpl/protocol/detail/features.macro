@@ -15,6 +15,7 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FIX    (TecInvariant,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_4_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Sponsor,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(BatchV1_1,                   Supported::Yes, VoteBehavior::DefaultNo)
