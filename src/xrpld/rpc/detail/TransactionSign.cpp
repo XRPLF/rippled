@@ -314,11 +314,11 @@ checkPayment(
                     app);
                 if (pf.findPaths(app.config().pathSearchOld))
                 {
-                    // 4 is the maximum paths
+                    // submit build_path intentionally keeps the historical cap
+                    // of 4 paths (not kPathFindMaxPaths / path_find's six).
                     pf.computePathRanks(4);
-                    STPath fullLiquidityPath;
                     STPathSet const paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
+                    result = pf.getBestPaths(4, paths, sendMax.getIssuer());
                 }
             }
 

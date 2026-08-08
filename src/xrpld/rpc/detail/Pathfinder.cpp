@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/TrustLine.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -68,16 +70,12 @@ Each complete path is then rated and sorted. Paths with no or trivial
 liquidity are dropped.  Otherwise, paths are sorted based on quality,
 liquidity, and path length.
 
-Path slots are filled in quality (ratio of out to in) order, with the
-exception that the last path must have enough liquidity to complete the
-payment (assuming no liquidity overlap).  In addition, if no selected path
-is capable of providing enough liquidity to complete the payment by itself,
-an extra "covering" path is returned.
+Path slots are filled in quality (ratio of out to in) order up to maxPaths.
+Each selected alternative is returned for the client to choose among; there
+are no reserved full-liquidity spare slots and no extra covering path.
 
 The selected paths are then tested to determine if they can complete the
-payment and, if so, at what cost.  If they fail and a covering path was
-found, the test is repeated with the covering path.  If this succeeds, the
-final paths and the estimated cost are returned.
+payment and, if so, at what cost.
 
 The engine permits the search depth to be selected and the paths table
 includes the depth at which each path type is found.  A search depth of zero
@@ -176,12 +174,13 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
-// Return the smallest amount of useful liquidity for a given amount, and the
-// total number of paths we have to evaluate.
+// Return the smallest amount of useful liquidity for a given amount across
+// maxPaths alternatives. (No extra "full liquidity" spare slots.)
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
-    return divide(amount, STAmount(maxPaths + 2), amount.asset());
+    auto const slots = std::max(1, maxPaths);
+    return divide(amount, STAmount(slots), amount.asset());
 }
 
 STAmount
@@ -529,10 +528,18 @@ Pathfinder::rankPaths(
     std::vector<PathRank>& rankedPaths,
     std::function<bool(void)> const& continueCallback)
 {
-    JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates, and " << maxPaths
-                     << " maximum";
+    // Cap expensive getPathLiquidity work. completePaths_ may hold up to
+    // kPathfinderMaxCompletePaths; each candidate costs 1–2 RippleCalc.
+    // Prefer earlier entries (cheaper gPathTable path types are added first).
+    auto const rankCap = static_cast<std::size_t>(
+        app_.getFeeTrack().isLoadedLocal() ? rpc::tuning::kPathRankMaxCandidatesLoaded
+                                           : rpc::tuning::kPathRankMaxCandidates);
+    auto const toRank = std::min(paths.size(), rankCap);
+
+    JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates (ranking " << toRank
+                     << "), and " << maxPaths << " maximum";
     rankedPaths.clear();
-    rankedPaths.reserve(paths.size());
+    rankedPaths.reserve(toRank);
 
     auto const saMinDstAmount = [&]() -> STAmount {
         if (!convertAll_)
@@ -546,7 +553,7 @@ Pathfinder::rankPaths(
         return largestAmount(dstAmount_);
     }();
 
-    for (int i = 0; i < paths.size(); ++i)
+    for (std::size_t i = 0; i < toRank; ++i)
     {
         if (continueCallback && !continueCallback())
             return;
@@ -571,7 +578,7 @@ Pathfinder::rankPaths(
                     {.quality = uQuality,
                      .length = currentPath.size(),
                      .liquidity = liquidity,
-                     .index = i});
+                     .index = static_cast<int>(i)});
             }
         }
     }
@@ -603,7 +610,6 @@ Pathfinder::rankPaths(
 STPathSet
 Pathfinder::getBestPaths(
     int maxPaths,
-    STPath& fullLiquidityPath,
     STPathSet const& extraPaths,
     AccountID const& srcIssuer,
     std::function<bool(void)> const& continueCallback)
@@ -614,8 +620,6 @@ Pathfinder::getBestPaths(
     if (completePaths_.empty() && extraPaths.empty())
         return completePaths_;
 
-    XRPL_ASSERT(
-        fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : first empty path result");
     bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_);
 
     std::vector<PathRank> extraPathRanks;
@@ -623,9 +627,9 @@ Pathfinder::getBestPaths(
 
     STPathSet bestPaths;
 
-    // The best PathRanks are now at the start.  Pull off enough of them to
-    // fill bestPaths, then look through the rest for the best individual
-    // path that can satisfy the entire liquidity - if one exists.
+    // The best PathRanks are now at the start. Fill up to maxPaths alternatives
+    // by quality/liquidity. Do not reserve spare slots for a single fully
+    // liquid covering path — clients want the full set of alternatives.
     STAmount remaining = remainingAmount_;
 
     auto pathsIterator = pathRanks_.begin();
@@ -635,6 +639,10 @@ Pathfinder::getBestPaths(
     {
         if (continueCallback && !continueCallback())
             break;
+
+        if (static_cast<int>(bestPaths.size()) >= maxPaths)
+            break;
+
         bool usePath = false;
         bool useExtraPath = false;
 
@@ -675,10 +683,6 @@ Pathfinder::getBestPaths(
         if (usePath)
             ++pathsIterator;
 
-        auto iPathsLeft = maxPaths - bestPaths.size();
-        if (iPathsLeft <= 0 && !fullLiquidityPath.empty())
-            break;
-
         if (path.empty())
         {
             // LCOV_EXCL_START
@@ -700,31 +704,12 @@ Pathfinder::getBestPaths(
             startsWithIssuer = true;
         }
 
-        if (iPathsLeft > 1 || (iPathsLeft > 0 && pathRank.liquidity >= remaining))
-        // last path must fill
-        {
-            --iPathsLeft;
-            remaining -= pathRank.liquidity;
-            bestPaths.pushBack(startsWithIssuer ? removeIssuer(path) : path);
-        }
-        else if (iPathsLeft == 0 && pathRank.liquidity >= dstAmount_ && fullLiquidityPath.empty())
-        {
-            // We found an extra path that can move the whole amount.
-            fullLiquidityPath = (startsWithIssuer ? removeIssuer(path) : path);
-            JLOG(j_.debug()) << "Found extra full path: "
-                             << fullLiquidityPath.getJson(JsonOptions::Values::None);
-        }
-        else
-        {
-            JLOG(j_.debug()) << "Skipping a non-filling path: "
-                             << path.getJson(JsonOptions::Values::None);
-        }
+        remaining -= pathRank.liquidity;
+        bestPaths.pushBack(startsWithIssuer ? removeIssuer(path) : path);
     }
 
     if (remaining > beast::kZero)
     {
-        XRPL_ASSERT(
-            fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : second empty path result");
         JLOG(j_.info()) << "Paths could not send " << remaining << " of " << dstAmount_;
     }
     else
@@ -786,11 +771,15 @@ Pathfinder::getPathsOut(
 
         asset.visit(
             [&](Issue const&) {
-                if (auto const lines = rLCache_->getRippleLines(account, direction))
+                // Shared full line vector + inline filters (no per-hop allocation).
+                if (auto const lines = rLCache_->getRippleLines(account))
                 {
+                    auto const wantCurrency = pathAsset.get<Currency>();
                     for (auto const& rspEntry : *lines)
                     {
-                        if (pathAsset.get<Currency>() != rspEntry.getLimit().get<Issue>().currency)
+                        if (direction == LineDirection::Incoming && rspEntry.getNoRipple())
+                            continue;
+                        if (wantCurrency != rspEntry.getCurrency())
                             continue;
                         if (rspEntry.getBalance() <= beast::kZero &&
                             (!rspEntry.getLimitPeer() ||
@@ -1063,8 +1052,8 @@ Pathfinder::addLink(
                         auto const correctAsset = [&]() {
                             if constexpr (kIsLine)
                             {
-                                return uEndPathAsset.get<Currency>() ==
-                                    asset.getLimit().template get<Issue>().currency;
+                                // Inline currency match against the shared full vector.
+                                return uEndPathAsset.get<Currency>() == asset.getCurrency();
                             }
                             if constexpr (kIsMpt)
                             {
@@ -1140,18 +1129,14 @@ Pathfinder::addLink(
 
                 uEndPathAsset.visit(
                     [&](Currency const&) {
-                        if (auto const lines = rLCache_->getRippleLines(
-                                uEndAccount,
-                                bIsNoRippleOut ? LineDirection::Incoming : LineDirection::Outgoing))
-                        {
+                        // Shared full Outgoing vector; currency + Incoming (noRipple)
+                        // filters run inline in forAssets/checkAsset — no hop allocs.
+                        if (auto const lines = rLCache_->getRippleLines(uEndAccount))
                             forAssets(*lines);
-                        }
                     },
                     [&](MPTID const&) {
                         if (auto const mpts = rLCache_->getMPTs(uEndAccount))
-                        {
                             forAssets(*mpts);
-                        }
                     });
 
                 if (!candidates.empty())
@@ -1389,9 +1374,10 @@ Pathfinder::initPathTable()
         PaymentType::NonXrpToXrp,
         {{.cost = 1, .path = "sxd"},   // gateway buys XRP
          {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
+         {.cost = 6, .path = "sabxd"},
          {.cost = 6, .path = "saaxd"},
          {.cost = 7, .path = "sbxd"},
-         {.cost = 8, .path = "sabxd"},
+         {.cost = 8, .path = "sabbxd"},  // source -> gateway -> book -> book -> book(XRP) -> dest
          {.cost = 9, .path = "sabaxd"}});
 
     // non-XRP to non-XRP (same currency)

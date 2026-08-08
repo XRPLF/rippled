@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
 #include <optional>
@@ -167,6 +168,15 @@ public:
         return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
+    /**
+     * Currency of this trust line (from our limit amount).
+     */
+    [[nodiscard]] Currency
+    getCurrency() const
+    {
+        return getLimit().get<Issue>().currency;
+    }
+
     json::Value
     getJson(int);
 
@@ -194,8 +204,54 @@ public:
     static std::optional<PathFindTrustLine>
     makeItem(AccountID const& accountID, SLE::const_ref sle);
 
+    /**
+     * Resume point for a chunked owner-directory trust-line scan.
+     * page == 0 means the root owner-dir page; otherwise keylet::page(root, page).
+     * indexInPage is the next sfIndexes entry to consider on that page.
+     */
+    struct DirCursor
+    {
+        std::uint64_t page{0};
+        std::size_t indexInPage{0};
+        bool complete{false};
+    };
+
+    /**
+     * Result of one chunked owner-dir scan step.
+     */
+    struct ChunkResult
+    {
+        std::vector<PathFindTrustLine> lines;
+        DirCursor cursor;
+    };
+
+    /**
+     * Load up to maxLines outgoing/incoming trust lines, resuming from cursor.
+     * When maxLines is 0, returns immediately with the same cursor (no work).
+     * On completion of the owner directory, cursor.complete is true.
+     *
+     * Callers (Pathfinder) apply currency filters inline on the shared vector;
+     * this loader does not filter by currency.
+     */
+    static ChunkResult
+    getItemsChunk(
+        AccountID const& accountID,
+        ReadView const& view,
+        LineDirection direction,
+        DirCursor const& cursor,
+        std::size_t maxLines);
+
+    /**
+     * Load trust lines for an account (optionally capped).
+     *
+     * @param maxLines If non-zero, stop after this many matching lines (budget).
+     */
     static std::vector<PathFindTrustLine>
-    getItems(AccountID const& accountID, ReadView const& view, LineDirection direction);
+    getItems(
+        AccountID const& accountID,
+        ReadView const& view,
+        LineDirection direction,
+        std::size_t maxLines = 0);
 };
 
 // This wrapper is used for the `AccountLines` command and includes the quality

@@ -25,11 +25,12 @@ accountSourceAssets(
     if (includeXRP)
         assets.insert(xrpCurrency());
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
+    // Full (unfiltered) load: need every currency the account can send.
+    if (auto const lines = lrCache->getRippleLines(account))
     {
         for (auto const& rspEntry : *lines)
         {
-            auto& saBalance = rspEntry.getBalance();
+            auto const& saBalance = rspEntry.getBalance();
 
             // Filter out non
             if (saBalance > beast::kZero
@@ -69,11 +70,12 @@ accountDestAssets(
         assets.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
+    // Full (unfiltered) load: need every currency the account can receive.
+    if (auto const lines = lrCache->getRippleLines(account))
     {
         for (auto const& rspEntry : *lines)
         {
-            auto& saBalance = rspEntry.getBalance();
+            auto const& saBalance = rspEntry.getBalance();
 
             if (saBalance < rspEntry.getLimit())  // Can take more
                 assets.insert(saBalance.get<Issue>().currency);

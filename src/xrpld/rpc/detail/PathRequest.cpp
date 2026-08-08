@@ -64,6 +64,7 @@ PathRequest::PathRequest(
     , inProgress_(false)
     , iLevel_(0)
     , bLastSuccess_(false)
+    , lastFullSearchIndex_(0)
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
@@ -87,6 +88,7 @@ PathRequest::PathRequest(
     , inProgress_(false)
     , iLevel_(0)
     , bLastSuccess_(false)
+    , lastFullSearchIndex_(0)
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
@@ -95,6 +97,10 @@ PathRequest::PathRequest(
 
 PathRequest::~PathRequest()
 {
+    // WS disconnect or last strong-ref drop: unhook from the manager so the
+    // shared AssetCache can be released when no sessions remain.
+    owner_.removePathRequest(this);
+
     using namespace std::chrono;
     auto stream = journal_.info();
     if (!stream)
@@ -119,12 +125,10 @@ PathRequest::~PathRequest()
 }
 
 bool
-PathRequest::isNew()
+PathRequest::isNew() const
 {
     std::scoped_lock const sl(indexLock_);
-
-    // does this path request still need its first full path
-    return lastIndex_ == 0;
+    return !firstUpdateDone_;
 }
 
 bool
@@ -138,13 +142,15 @@ PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
         return false;
     }
 
-    if (newOnly && (lastIndex_ != 0))
+    if (newOnly && firstUpdateDone_)
     {
-        // Only handling new requests, this isn't new
+        // Only handling brand-new sessions
         return false;
     }
 
-    if (lastIndex_ >= index)
+    // Already finished a pinned update for this ledger (or newer). Open first
+    // updates leave lastIndex_ at 0 so the same-seq closed wave still runs.
+    if (lastIndex_ != 0 && lastIndex_ >= index)
     {
         return false;
     }
@@ -160,12 +166,25 @@ PathRequest::hasCompletion()
 }
 
 void
-PathRequest::updateComplete()
+PathRequest::updateComplete(std::optional<LedgerIndex> pinSeq, bool completedWork)
 {
     std::scoped_lock const sl(indexLock_);
 
     XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
     inProgress_ = false;
+
+    if (!completedWork)
+    {
+        // Abandoned claim / drop: clear inProgress only.
+        return;
+    }
+
+    firstUpdateDone_ = true;
+    if (pinSeq)
+    {
+        // Closed (or explicit pin): skip reprocess of this seq until next.
+        lastIndex_ = *pinSeq;
+    }
 
     if (fCompletion_)
     {
@@ -187,7 +206,8 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
         return false;
     }
 
-    auto const& lrLedger = crCache->getLedger();
+    // By-value snapshot: keeps ReadView alive if the shared cache advances.
+    auto const lrLedger = crCache->getLedger();
 
     if (!lrLedger->exists(keylet::account(*raSrcAccount_)))
     {
@@ -251,8 +271,30 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     if (parseJson(value) != PFR_PJ_INVALID)
     {
         valid = isValid(cache);
+        // WS subscription: run a fast Pathfinder for the create reply. Claim
+        // inProgress_ so concurrent updateAll / mid-close cannot race context_
+        // (same PathRequest). Do not pin lastIndex_ — isNew() stays true until
+        // the first completed updateAll wave.
         if (!hasCompletion() && valid)
-            doUpdate(cache, true);
+        {
+            {
+                std::scoped_lock const sl(indexLock_);
+                // Create is single-threaded per request; should never be in flight.
+                XRPL_ASSERT(!inProgress_, "xrpl::PathRequest::doCreate : not in progress");
+                inProgress_ = true;
+            }
+            try
+            {
+                doUpdate(cache, true);
+            }
+            catch (...)
+            {
+                updateComplete();
+                throw;
+            }
+            // Clear claim without pinning so the first updateAll still runs.
+            updateComplete();
+        }
     }
 
     if (auto stream = journal_.debug())
@@ -478,6 +520,9 @@ json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
+    // Detach immediately so AssetCache can reclaim if this was the last session
+    // (do not wait for ~PathRequest / next updateAll scavenge).
+    owner_.removePathRequest(this);
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
@@ -533,12 +578,90 @@ PathRequest::getPathFinder(
 }
 
 bool
+PathRequest::revalidatePaths(
+    std::shared_ptr<AssetCache> const& cache,
+    Asset const& asset,
+    STPathSet const& paths,
+    STAmount const& dstAmount,
+    json::Value& jvArray,
+    std::shared_ptr<ReadView const> const& calcLedger)
+{
+    if (paths.empty())
+        return false;
+
+    auto const& sourceAccount = [&] {
+        if (!isXRP(asset.getIssuer()))
+            return asset.getIssuer();
+        if (isXRP(asset))
+            return xrpAccount();
+        return *raSrcAccount_;
+    }();
+
+    STAmount const saMaxAmount = [&]() {
+        if (saSendMax_)
+            return *saSendMax_;
+        return asset.visit(
+            [&](Issue const& issue) {
+                return STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true);
+            },
+            [](MPTIssue const& issue) { return STAmount(issue, 1u, 0, true); });
+    }();
+
+    path::RippleCalc::Input rcInput;
+    if (convertAll_)
+        rcInput.partialPaymentAllowed = true;
+
+    // Mid-close may pass the open ledger for fresh offers/balances while line
+    // vectors still come from the shared AssetCache.
+    auto const ledger = calcLedger ? calcLedger : cache->getLedger();
+    PaymentSandbox sandbox(&*ledger, TapNone);
+    auto rc = path::RippleCalc::rippleCalculate(
+        sandbox,
+        saMaxAmount,
+        dstAmount,
+        *raDstAccount_,
+        *raSrcAccount_,
+        paths,
+        domain_,
+        app_,
+        &rcInput);
+
+    if (rc.result() != tesSUCCESS)
+    {
+        JLOG(journal_.debug()) << iIdentifier_ << " revalidate failed: " << transHuman(rc.result());
+        return false;
+    }
+
+    json::Value jvEntry(json::ValueType::Object);
+    if (rc.actualAmountIn.holds<Issue>())
+        rc.actualAmountIn.get<Issue>().account = sourceAccount;
+    jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::Values::None);
+    jvEntry[jss::paths_computed] = paths.getJson(JsonOptions::Values::None);
+
+    if (convertAll_)
+    {
+        jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::Values::None);
+    }
+
+    if (hasCompletion())
+        jvEntry[jss::paths_canonical] = json::ValueType::Array;
+
+    jvArray.append(std::move(jvEntry));
+    return true;
+}
+
+bool
 PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
     int const level,
     json::Value& jvArray,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool(void)> const& continueCallback,
+    bool fullSearch,
+    bool allowEscalate,
+    bool& didFullSearch,
+    std::shared_ptr<ReadView const> const& calcLedger)
 {
+    didFullSearch = false;
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
     {
@@ -546,39 +669,107 @@ PathRequest::findPaths(
     }
     if (sourceAssets.empty())
     {
+        // Absolute hard cap (legacy ripple_path_find): exceeding is an error.
+        // Soft cap for WS subscriptions / loaded servers: truncate without error
+        // so concurrent Pathfinder waves stay bounded.
+        std::size_t const hardMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCur);
+        std::size_t softMax = hardMax;
+        if (!hasCompletion())
+            softMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurSub);
+        if (app_.getFeeTrack().isLoadedLocal())
+        {
+            softMax =
+                std::min(softMax, static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurLoaded));
+        }
+
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
         bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
         {
-            if (!std::visit(
-                    [&]<typename TAsset>(TAsset const& a) {
-                        if (!sameAccount || a != saDstAmount_.asset())
+            bool overHard = false;
+            bool atSoft = false;
+            std::visit(
+                [&]<typename TAsset>(TAsset const& a) {
+                    if (!sameAccount || a != saDstAmount_.asset())
+                    {
+                        if (sourceAssets.size() >= hardMax)
                         {
-                            if (sourceAssets.size() >= rpc::tuning::kMaxAutoSrcCur)
-                                return false;
-                            if constexpr (std::is_same_v<TAsset, Currency>)
-                            {
-                                sourceAssets.insert(
-                                    Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount_});
-                            }
-                            else
-                            {
-                                sourceAssets.insert(MPTIssue{a});
-                            }
+                            overHard = true;
+                            return;
                         }
-                        return true;
-                    },
-                    asset.value()))
-            {
+                        if (sourceAssets.size() >= softMax)
+                        {
+                            atSoft = true;
+                            return;
+                        }
+                        if constexpr (std::is_same_v<TAsset, Currency>)
+                        {
+                            sourceAssets.insert(
+                                Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount_});
+                        }
+                        else
+                        {
+                            sourceAssets.insert(MPTIssue{a});
+                        }
+                    }
+                },
+                asset.value());
+            if (overHard)
                 return false;
-            }
+            if (atSoft)
+                break;
         }
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
     hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
+
+    // Cheap path: revalidate previously discovered paths without Pathfinder.
+    // Prefer this whenever a full graph search is not required (first/fast/
+    // failed last / staggered rediscovery).
+    if (!fullSearch)
+    {
+        bool anyOk = false;
+        for (auto const& asset : sourceAssets)
+        {
+            if (continueCallback && !continueCallback())
+                break;
+            auto it = context_.find(asset);
+            if (it == context_.end() || it->second.empty())
+                continue;
+            if (revalidatePaths(cache, asset, it->second, dstAmount, jvArray, calcLedger))
+                anyOk = true;
+        }
+
+        if (anyOk)
+        {
+            int const size = static_cast<int>(sourceAssets.size());
+            consumer_.charge({std::clamp((size * size) / 2 + 20, 25, 200), "path revalidate"});
+            JLOG(journal_.debug()) << iIdentifier_ << " incremental revalidate ok ("
+                                   << jvArray.size() << " alternatives)";
+            return true;
+        }
+
+        // No prior paths worked. Escalating on every failed revalidate was the
+        // main wave-cost blowup under load. Mid-close ticks pass
+        // allowEscalate=false; closed waves escalate only when fullSearch was
+        // already selected (rediscovery / failed backoff).
+        if (!allowEscalate)
+        {
+            JLOG(journal_.debug())
+                << iIdentifier_ << " incremental revalidate empty/failed; no escalate";
+            return true;
+        }
+
+        JLOG(journal_.debug()) << iIdentifier_
+                               << " incremental revalidate empty/failed; full search";
+        fullSearch = true;
+    }
+
+    didFullSearch = true;
+
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -594,9 +785,8 @@ PathRequest::findPaths(
             continue;
         }
 
-        STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
+            kMaxPaths, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
 
         auto const& sourceAccount = [&] {
@@ -624,7 +814,8 @@ PathRequest::findPaths(
         path::RippleCalc::Input rcInput;
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
-        auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
+        auto const ledger = calcLedger ? calcLedger : cache->getLedger();
+        auto sandbox = std::make_unique<PaymentSandbox>(&*ledger, TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
             saMaxAmount,  // --> Amount to send is unlimited
@@ -639,37 +830,8 @@ PathRequest::findPaths(
             app_,
             &rcInput);
 
-        if (!convertAll_ && !fullLiquidityPath.empty() &&
-            (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
-        {
-            JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
-
-            ps.pushBack(fullLiquidityPath);
-            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
-            rc = path::RippleCalc::rippleCalculate(
-                *sandbox,
-                saMaxAmount,  // --> Amount to send is unlimited
-                              //     to get an estimate.
-                dstAmount,    // --> Amount to deliver.
-                // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-                *raDstAccount_,  // --> Account to deliver to.
-                *raSrcAccount_,  // --> Account sending from.
-                // NOLINTEND(bugprone-unchecked-optional-access)
-                ps,       // --> Path set.
-                domain_,  // --> Domain.
-                app_);
-
-            if (!isTesSuccess(rc.result()))
-            {
-                JLOG(journal_.warn())
-                    << iIdentifier_ << " Failed with covering path " << transHuman(rc.result());
-            }
-            else
-            {
-                JLOG(journal_.debug())
-                    << iIdentifier_ << " Extra path element gives " << transHuman(rc.result());
-            }
-        }
+        // No covering/full-liquidity spare path: alternatives are exactly the
+        // best maxPaths set from getBestPaths.
 
         if (rc.result() == tesSUCCESS)
         {
@@ -713,10 +875,25 @@ json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
     bool fast,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool(void)> const& continueCallback,
+    bool revalidateOnly,
+    std::shared_ptr<ReadView const> const& calcLedger)
 {
     using namespace std::chrono;
-    JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
+    JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal")
+                           << (revalidateOnly ? " revalidate_only" : "");
+
+    // Pin every account loaded via getRippleLines on this thread to this
+    // session so shared hubs stay cached until *this* path_find ends.
+    AssetCache::SessionPin const sessionPin{iIdentifier_};
+
+    // One-shot ripple_path_find: load/expand up to the per-account cap so the
+    // single reply sees the full line set (budget permitting).
+    // WebSocket path_find: default LoadScope (64-line chunks) and progressive
+    // expand across later closed-ledger updates.
+    std::optional<AssetCache::LoadScope> lineLoadScope;
+    if (hasCompletion())
+        lineLoadScope.emplace(app_.config().pathFindMaxLinesPerAccount);
 
     {
         std::scoped_lock const sl(lock_);
@@ -748,6 +925,7 @@ PathRequest::doUpdate(
         newStatus[jss::id] = jvId_;
 
     bool const loaded = app_.getFeeTrack().isLoadedLocal();
+    bool const isSubscription = !hasCompletion();
 
     if (iLevel_ == 0)
     {
@@ -777,26 +955,159 @@ PathRequest::doUpdate(
     }
     else
     {
-        // adjust as needed
-        if (!loaded && (iLevel_ < app_.config().pathSearchMax))
+        // Failed last attempt: deepen search for one-shot/legacy requests.
+        // WS subscriptions freeze depth so concurrent rediscovery does not
+        // ratchet every session toward pathSearchMax.
+        if (!isSubscription && !loaded && (iLevel_ < app_.config().pathSearchMax))
             ++iLevel_;
         if (loaded && (iLevel_ > app_.config().pathSearchFast))
             --iLevel_;
     }
 
-    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
+    // Subscriptions: hard-cap search depth so staggered rediscovery stays cheap.
+    if (isSubscription && !fast)
+    {
+        int const cap = loaded ? app_.config().pathSearchFast : app_.config().pathSearch;
+        if (iLevel_ > cap)
+            iLevel_ = cap;
+    }
+
+    // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
+    auto const ledgerForSeq = calcLedger ? calcLedger : cache->getLedger();
+    auto const ledgerSeq = ledgerForSeq->seq();
+
+    // Full Pathfinder when: first/fast update, failed-search backoff elapsed, or
+    // staggered rediscovery is due. Timed rediscovery is skipped while the
+    // server is locally loaded (revalidate-only until load eases).
+    //
+    // revalidateOnly (mid-close / periodic only): never Pathfinder — keeps the
+    // 500ms tick cheap. Closed-ledger waves pass revalidateOnly=false so
+    // rediscovery and failed recovery still run (staggered / backoff).
+    //
+    // lastFullSearchIndex_ is only stamped for *non-fast* Pathfinder runs so a
+    // fast doCreate cannot block the first non-fast updateAll Pathfinder.
+    //
+    // Stagger: dueAt = lastFull + interval + (id % interval).
+    auto const interval = app_.config().pathFullSearchInterval;
+    bool rediscoveryDue = false;
+    if (!revalidateOnly && !fast && lastFullSearchIndex_ != 0 && bLastSuccess_ && !loaded)
+    {
+        auto const stagger = static_cast<LedgerIndex>(iIdentifier_ % interval);
+        auto const dueAt = lastFullSearchIndex_ + interval + stagger;
+        rediscoveryDue = ledgerSeq >= dueAt;
+    }
+
+    bool failedSearchDue = false;
+    if (!revalidateOnly && !fast && !bLastSuccess_)
+    {
+        if (lastFullSearchIndex_ == 0)
+            failedSearchDue = true;
+        else
+            failedSearchDue =
+                ledgerSeq >= lastFullSearchIndex_ + rpc::tuning::kPathFailedSearchInterval;
+    }
+
+    // One-shot / private cache: drain incomplete owner-dir fills now so a
+    // single reply is as complete as the budget allows. WS subscriptions:
+    // PathRequestManager expands once per closed wave (not per session) to
+    // avoid N× parallel unique-lock expands under steady revalidate workers.
+    if (!revalidateOnly && hasCompletion())
+    {
+        while (cache->expandIncompleteLines())
+        {
+        }
+    }
+
+    // WS only: progressive fills bump lineEpoch(); escalate Pathfinder when this
+    // session has not searched against the latest epoch. Stagger so concurrent
+    // subscriptions do not all full-search every close while a whale chunks in.
+    // One-shot already filled above and always full-searches via lastFull==0.
+    auto const lineEpoch = cache->lineEpoch();
+    bool const linesNewer = isSubscription && (lineEpoch != lastLineEpoch_);
+    bool growthSearch = false;
+    if (linesNewer && !revalidateOnly && !loaded)
+    {
+        auto const growInterval = std::max<LedgerIndex>(1, interval / 4);
+        auto const stagger = static_cast<LedgerIndex>(iIdentifier_ % growInterval);
+        growthSearch =
+            lastFullSearchIndex_ == 0 || ledgerSeq >= lastFullSearchIndex_ + growInterval + stagger;
+    }
+
+    bool const fullSearch = !revalidateOnly &&
+        (fast || lastFullSearchIndex_ == 0 || failedSearchDue || rediscoveryDue || growthSearch);
+
+    // Subscriptions never escalate a failed revalidate into Pathfinder unless
+    // this wave already chose fullSearch (first / rediscovery / failed backoff /
+    // progressive line growth). One-shot ripple_path_find may still escalate.
+    bool const allowEscalate = !revalidateOnly && (!isSubscription || fullSearch);
+
+    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_
+                           << (fullSearch ? (growthSearch          ? " full_search(lines_grew)"
+                                                 : rediscoveryDue  ? " full_search(rediscovery)"
+                                                 : failedSearchDue ? " full_search(failed_backoff)"
+                                                                   : " full_search")
+                                          : " revalidate");
 
     json::Value jvArray = json::ValueType::Array;
-    if (findPaths(cache, iLevel_, jvArray, continueCallback))
+    bool didFullSearch = false;
+    if (findPaths(
+            cache,
+            iLevel_,
+            jvArray,
+            continueCallback,
+            fullSearch,
+            allowEscalate,
+            didFullSearch,
+            calcLedger))
     {
-        bLastSuccess_ = jvArray.size() != 0;
+        // Non-escalating revalidate produced nothing (mid-close revalidateOnly,
+        // or closed subscription revalidate without fullSearch): restore last
+        // alternatives for display only. Still mark failure so the next closed
+        // wave can Pathfinder via failedSearchDue / rediscovery.
+        bool restoredStale = false;
+        if (jvArray.size() == 0 && isSubscription && !didFullSearch)
+        {
+            std::scoped_lock const sl(lock_);
+            if (jvStatus_.isMember(jss::alternatives) && jvStatus_[jss::alternatives].size() > 0)
+            {
+                jvArray = jvStatus_[jss::alternatives];
+                restoredStale = true;
+            }
+        }
+
+        if (restoredStale)
+        {
+            // Display-only restore; force failure so the next closed
+            // non-revalidate wave can full-search (failedSearchDue).
+            bLastSuccess_ = false;
+        }
+        else
+        {
+            bLastSuccess_ = jvArray.size() != 0;
+        }
+
+        // Stamp only non-fast Pathfinder runs. Fast create must leave
+        // lastFullSearchIndex_ at 0 so the first updateAll still full-searches.
+        if (didFullSearch && !fast)
+            lastFullSearchIndex_ = ledgerSeq;
+        // Capture post-search epoch (Pathfinder may have loaded new accounts).
+        if (didFullSearch)
+            lastLineEpoch_ = cache->lineEpoch();
         newStatus[jss::alternatives] = std::move(jvArray);
     }
     else
     {
         bLastSuccess_ = false;
+        if (didFullSearch && !fast)
+            lastFullSearchIndex_ = ledgerSeq;
+        if (didFullSearch)
+            lastLineEpoch_ = cache->lineEpoch();
         newStatus = rpcError(RpcInternal);
     }
+
+    // Incomplete owner-dir fill for accounts this session pinned (not cache-global).
+    if (!newStatus.isMember(jss::error) && cache->hasIncompleteLinesForSession(iIdentifier_))
+        newStatus[jss::warning] = "path_lines_partial";
 
     if (fast && quickReply_ == steady_clock::time_point{})
     {

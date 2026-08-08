@@ -200,6 +200,23 @@ public:
     int pathSearchFast = 2;
     int pathSearchMax = 3;
 
+    // Concurrent path_find (WebSocket + AssetCache) knobs. Defaults match
+    // rpc::tuning::* constants. Override via the [path_find] config section.
+    //
+    // pathCacheReuseLedgers: how many ledger advances a cached trust-line
+    //   vector may be reused without reload (best-effort staleness). Larger
+    //   values cut owner-dir thrash under load; smaller values are fresher.
+    std::uint32_t pathCacheReuseLedgers = 12;
+    // WS progressive owner-dir load size (lines per load/expand step).
+    std::size_t pathFindLineChunkSize = 64;
+    // Closed-ledger interval between full Pathfinder rediscoveries (staggered).
+    std::uint32_t pathFullSearchInterval = 20;
+    // Open-ledger revalidate-only tick period for live path_find sessions.
+    std::chrono::milliseconds pathMidCloseDelay{500};
+    // Soft global / per-account caps on PathFindTrustLine objects in AssetCache.
+    std::size_t pathFindMaxTotalLines = 1'000'000;
+    std::size_t pathFindMaxLinesPerAccount = 50'000;
+
     // Validation
     std::optional<std::size_t> validationQuorum;  // validations to consider ledger authoritative
 

@@ -26,6 +26,11 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 This section contains changes targeting a future version.
 
+### Changes
+
+- `path_find` / `ripple_path_find`: Path selection no longer reserves a full-liquidity "covering" (spare) path and no longer requires the last alternative to alone fill the payment. The server returns up to **six** ranked path alternatives per source asset (`paths_computed`), filled by quality and liquidity only. Previously, the set was capped at four paths, the final slot had to be able to complete the payment by itself (assuming no liquidity overlap), and if the combined set failed with `tecPATH_PARTIAL` / `terNO_LINE` the calculation could be retried with an extra covering path. That retry path is removed. Pathfinding remains best-effort. This is an intentional product tradeoff: under concurrent load, clients benefit more from a fuller set of real alternatives than from a reserved single full-liquidity spare. See implementation comments in `Pathfinder::getBestPaths` / `findPaths` and `PathRequest`. ([#7962](https://github.com/XRPLF/rippled/pull/7962))
+  - **Optional new field:** WebSocket `path_find` updates may include `warning: "path_lines_partial"` when trust lines for accounts used by **this** subscription are still being filled progressively (owner-directory chunk load). Clients that ignore unknown fields are unaffected; those that key on `warning` should treat this as best-effort incompleteness, not a hard error. The field is omitted when the session's pinned line sets are complete (or on errors).
+
 ### Additions
 
 - `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.

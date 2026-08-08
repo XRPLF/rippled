@@ -39,7 +39,8 @@ enum JobType {
     JtSweep,            // Sweep for stale structures
     JtValidationUt,     // A validation from an untrusted source
     JtManifest,         // A validator's manifest
-    JtUpdatePf,         // Update pathfinding requests
+    JtUpdatePf,         // Update pathfinding requests (orchestrator; limit 1)
+    JtPathFindWork,     // Parallel path_find revalidate unit of work
     JtTransactionL,     // A local transaction
     JtReplayReq,        // Peer request a ledger delta or a skip list
     JtLedgerReq,        // Peer request ledger/txnset data
@@ -77,6 +78,12 @@ enum JobType {
     JtNsAsyncRead,
     JtNsWrite,
 };
+
+/**
+ * Concurrent JtPathFindWork slots (JobTypes limit and PathRequestManager fan-out).
+ * rpc::tuning::kPathSteadyUpdateParallelism must equal this value.
+ */
+inline constexpr int kPathFindWorkLimit = 32;
 
 class Job : public CountedObject<Job>
 {

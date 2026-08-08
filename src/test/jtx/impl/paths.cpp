@@ -54,9 +54,8 @@ Paths::operator()(Env& env, JTx& jt) const
     if (!pf.findPaths(depth_))
         return;
 
-    STPath fp;
     pf.computePathRanks(limit_);
-    auto const found = pf.getBestPaths(limit_, fp, {}, in_.getIssuer());
+    auto const found = pf.getBestPaths(limit_, {}, in_.getIssuer());
 
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()

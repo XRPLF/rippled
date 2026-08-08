@@ -3,12 +3,14 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
@@ -72,13 +74,20 @@ public:
     ~PathRequest() override;
 
     bool
-    isNew();
+    isNew() const;
     bool
     needsUpdate(bool newOnly, LedgerIndex index);
 
-    // Called when the PathRequest update is complete.
+    /**
+     * Finish a claimed update slot.
+     * @param pinSeq If set, record lastIndex_ so same-seq reprocess is skipped
+     *        (typically closed ledgers only).
+     * @param completedWork If false, only clear inProgress_ (abandoned claim /
+     *        drop without finishing). If true, clear isNew() even when pinSeq
+     *        is nullopt (open first-update: allow same-seq closed wave).
+     */
     void
-    updateComplete();
+    updateComplete(std::optional<LedgerIndex> pinSeq = std::nullopt, bool completedWork = false);
 
     std::pair<bool, json::Value>
     doCreate(std::shared_ptr<AssetCache> const&, json::Value const&);
@@ -91,15 +100,34 @@ public:
     doAborting() const;
 
     // update jvStatus
+    /**
+     * @param revalidateOnly When true (mid-close / periodic refresh only), only
+     *        re-run rippleCalculate on known paths. Never starts Pathfinder and
+     *        never escalates a failed revalidate into a full graph search.
+     *        Closed-ledger waves pass false so rediscovery / failed recovery work.
+     * @param calcLedger Optional ledger for PaymentSandbox (open mid-close).
+     *        When null, uses cache->getLedger(). Line vectors still come from cache.
+     */
     json::Value
     doUpdate(
         std::shared_ptr<AssetCache> const&,
         bool fast,
-        std::function<bool(void)> const& continueCallback = {});
+        std::function<bool(void)> const& continueCallback = {},
+        bool revalidateOnly = false,
+        std::shared_ptr<ReadView const> const& calcLedger = {});
     InfoSub::pointer
     getSubscriber() const;
     bool
     hasCompletion();
+
+    /**
+     * Unique id for AssetCache session pins / release.
+     */
+    [[nodiscard]] int
+    id() const
+    {
+        return iIdentifier_;
+    }
 
 private:
     bool
@@ -117,13 +145,37 @@ private:
     /**
      * Finds and sets a PathSet in the JSON argument.
      * Returns false if the source currencies are invalid.
+     *
+     * @param fullSearch If false and context_ has prior paths, only re-run
+     *        rippleCalculate on those paths (skip Pathfinder graph search).
+     * @param allowEscalate If false, a failed revalidate does NOT fall through
+     *        to Pathfinder (used for mid-close ticks).
+     * @param didFullSearch Set true if Pathfinder ran (vs pure revalidate).
+     * @param calcLedger Ledger for PaymentSandbox; null → cache->getLedger().
      */
     bool
     findPaths(
         std::shared_ptr<AssetCache> const&,
         int const,
         json::Value&,
-        std::function<bool(void)> const&);
+        std::function<bool(void)> const&,
+        bool fullSearch,
+        bool allowEscalate,
+        bool& didFullSearch,
+        std::shared_ptr<ReadView const> const& calcLedger = {});
+
+    /**
+     * Re-estimate liquidity for an existing path set on calcLedger (or cache).
+     * Returns true if rippleCalculate succeeded (tesSUCCESS).
+     */
+    bool
+    revalidatePaths(
+        std::shared_ptr<AssetCache> const& cache,
+        Asset const& asset,
+        STPathSet const& paths,
+        STAmount const& dstAmount,
+        json::Value& jvArray,
+        std::shared_ptr<ReadView const> const& calcLedger = {});
 
     int
     parseJson(json::Value const&);
@@ -155,12 +207,37 @@ private:
 
     bool convertAll_{};
 
-    std::recursive_mutex indexLock_;
+    mutable std::recursive_mutex indexLock_;
+    /**
+     * After a completed update that pins a ledger seq, needsUpdate skips the
+     * same (or older) ledger. 0 until the first closed-ledger pin (open first
+     * updates set firstUpdateDone_ without pinning so same-seq closed still runs).
+     */
     LedgerIndex lastIndex_;
+    /**
+     * True after any finished doUpdate (open or closed). isNew() is the inverse.
+     * Distinct from lastIndex_ so open first-update can leave isNew false without
+     * suppressing the subsequent closed wave at the same sequence.
+     */
+    bool firstUpdateDone_{false};
     bool inProgress_;
 
     int iLevel_;
     bool bLastSuccess_;
+
+    /**
+     * Ledger index of the last *non-fast* Pathfinder search (0 = never completed
+     * a non-fast full search). Fast doCreate must not stamp this, or the first
+     * updateAll never runs Pathfinder at pathSearch depth.
+     */
+    LedgerIndex lastFullSearchIndex_;
+
+    /**
+     * AssetCache::lineEpoch() observed at the last Pathfinder-driven update.
+     * When the shared cache loads more trust-line chunks, this lags and the
+     * next non-revalidate update escalates to Pathfinder.
+     */
+    std::uint64_t lastLineEpoch_{0};
 
     int const iIdentifier_;
 
@@ -168,7 +245,7 @@ private:
     std::chrono::steady_clock::time_point quickReply_;
     std::chrono::steady_clock::time_point fullReply_;
 
-    static unsigned int const kMaxPaths = 4;
+    static unsigned int const kMaxPaths = rpc::tuning::kPathFindMaxPaths;
 };
 
 }  // namespace xrpl

@@ -732,6 +732,65 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, Sections::kPathSearchMax, strTemp, j_))
         pathSearchMax = beast::lexicalCastThrow<int>(strTemp);
 
+    // Concurrent path_find / AssetCache knobs (optional multi-key section).
+    if (exists(Sections::kPathFind))
+    {
+        auto const sec = section(Sections::kPathFind);
+
+        pathCacheReuseLedgers = sec.valueOr(Keys::kCacheReuseLedgers, pathCacheReuseLedgers);
+        if (pathCacheReuseLedgers > 256)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kCacheReuseLedgers +
+                ": must be between 0 and 256 inclusive");
+        }
+
+        pathFindLineChunkSize = sec.valueOr(Keys::kLineChunkSize, pathFindLineChunkSize);
+        if (pathFindLineChunkSize < 1 || pathFindLineChunkSize > 10'000)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kLineChunkSize +
+                ": must be between 1 and 10000 inclusive");
+        }
+
+        pathFullSearchInterval = sec.valueOr(Keys::kFullSearchInterval, pathFullSearchInterval);
+        if (pathFullSearchInterval < 1 || pathFullSearchInterval > 1000)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kFullSearchInterval +
+                ": must be between 1 and 1000 inclusive");
+        }
+
+        {
+            auto const ms = sec.valueOr(
+                Keys::kMidCloseMs, static_cast<std::uint32_t>(pathMidCloseDelay.count()));
+            if (ms < 50 || ms > 10'000)
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid ") + Sections::kPathFind + " " + Keys::kMidCloseMs +
+                    ": must be between 50 and 10000 inclusive");
+            }
+            pathMidCloseDelay = std::chrono::milliseconds{ms};
+        }
+
+        pathFindMaxTotalLines = sec.valueOr(Keys::kMaxTotalLines, pathFindMaxTotalLines);
+        if (pathFindMaxTotalLines < 1'000)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kMaxTotalLines +
+                ": must be at least 1000");
+        }
+
+        pathFindMaxLinesPerAccount =
+            sec.valueOr(Keys::kMaxLinesPerAccount, pathFindMaxLinesPerAccount);
+        if (pathFindMaxLinesPerAccount < 64 || pathFindMaxLinesPerAccount > pathFindMaxTotalLines)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kMaxLinesPerAccount +
+                ": must be between 64 and max_total_lines inclusive");
+        }
+    }
+
     if (getSingleSection(secConfig, Sections::kDebugLogfile, strTemp, j_))
         debugLogfile_ = strTemp;
 

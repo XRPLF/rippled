@@ -32,6 +32,7 @@ struct Sections
     static constexpr auto kNodeSeed = "node_seed";
     static constexpr auto kNodeSize = "node_size";
     static constexpr auto kOverlay = "overlay";
+    static constexpr auto kPathFind = "path_find";
     static constexpr auto kPathSearch = "path_search";
     static constexpr auto kPathSearchFast = "path_search_fast";
     static constexpr auto kPathSearchMax = "path_search_max";
@@ -95,6 +96,7 @@ struct Keys
     static constexpr auto kBlockSize = "block_size";
     static constexpr auto kCacheAge = "cache_age";
     static constexpr auto kCacheMb = "cache_mb";
+    static constexpr auto kCacheReuseLedgers = "cache_reuse_ledgers";
     static constexpr auto kCacheSize = "cache_size";
     static constexpr auto kClientMaxWindowBits = "client_max_window_bits";
     static constexpr auto kClientNoContextTakeover = "client_no_context_takeover";
@@ -107,6 +109,7 @@ struct Keys
     static constexpr auto kFileSizeMult = "file_size_mult";
     static constexpr auto kFilterBits = "filter_bits";
     static constexpr auto kFilterFull = "filter_full";
+    static constexpr auto kFullSearchInterval = "full_search_interval";
     static constexpr auto kHardSet = "hard_set";
     static constexpr auto kHighThreads = "high_threads";
     static constexpr auto kHoldTime = "hold_time";
@@ -115,13 +118,17 @@ struct Keys
     static constexpr auto kJournalSizeLimit = "journal_size_limit";
     static constexpr auto kLedgersInQueue = "ledgers_in_queue";
     static constexpr auto kLimit = "limit";
+    static constexpr auto kLineChunkSize = "line_chunk_size";
     static constexpr auto kLogInterval = "log_interval";
     static constexpr auto kMaxDivergedTime = "max_diverged_time";
     static constexpr auto kMaxLedgerCountsToStore = "max_ledger_counts_to_store";
+    static constexpr auto kMaxLinesPerAccount = "max_lines_per_account";
+    static constexpr auto kMaxTotalLines = "max_total_lines";
     static constexpr auto kMaxUnknownTime = "max_unknown_time";
     static constexpr auto kMaximumTxnInLedger = "maximum_txn_in_ledger";
     static constexpr auto kMaximumTxnPerAccount = "maximum_txn_per_account";
     static constexpr auto kMemoryLevel = "memory_level";
+    static constexpr auto kMidCloseMs = "mid_close_ms";
     static constexpr auto kMinLedgersToComputeSizeLimit = "min_ledgers_to_compute_size_limit";
     static constexpr auto kMinimumEscalationMultiplier = "minimum_escalation_multiplier";
     static constexpr auto kMinimumLastLedgerBuffer = "minimum_last_ledger_buffer";

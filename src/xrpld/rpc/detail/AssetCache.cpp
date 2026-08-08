@@ -2,6 +2,7 @@
 
 #include <xrpld/rpc/detail/MPT.h>
 #include <xrpld/rpc/detail/TrustLine.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -15,115 +16,523 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
+namespace {
 
-AssetCache::AssetCache(std::shared_ptr<ReadView const> ledger, beast::Journal j)
-    : ledger_(std::move(ledger)), journal_(j)
+// Thread-local session id for automatic pin on getRippleLines (set by SessionPin).
+thread_local int tlsPinSessionId = 0;
+
+// Thread-local chunk override from LoadScope. 0 = use AssetCache::lineChunkSize_.
+thread_local std::size_t tlsChunkOverride = 0;
+
+}  // namespace
+
+AssetCache::SessionPin::SessionPin(int sessionId) noexcept : prev_(tlsPinSessionId)
 {
-    JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
+    tlsPinSessionId = sessionId;
+}
+
+AssetCache::SessionPin::~SessionPin() noexcept
+{
+    tlsPinSessionId = prev_;
+}
+
+AssetCache::LoadScope::LoadScope(std::size_t chunkLines) noexcept : prev_(tlsChunkOverride)
+{
+    tlsChunkOverride = chunkLines == 0 ? 0 : chunkLines;
+}
+
+AssetCache::LoadScope::~LoadScope() noexcept
+{
+    tlsChunkOverride = prev_;
+}
+
+AssetCache::AssetCache(
+    std::shared_ptr<ReadView const> ledger,
+    beast::Journal j,
+    std::size_t maxTotalLines,
+    std::size_t maxLinesPerAccount,
+    std::uint32_t cacheReuseLedgers,
+    std::size_t lineChunkSize)
+    : ledger_(std::move(ledger))
+    , journal_(j)
+    , maxTotalLines_(maxTotalLines)
+    , maxLinesPerAccount_(maxLinesPerAccount)
+    , cacheReuseLedgers_(cacheReuseLedgers)
+    , lineChunkSize_(lineChunkSize == 0 ? rpc::tuning::kPathFindLineChunkSize : lineChunkSize)
+{
+    JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq
+                           << " maxTotalLines=" << maxTotalLines_
+                           << " maxLinesPerAccount=" << maxLinesPerAccount_
+                           << " cacheReuseLedgers=" << cacheReuseLedgers_
+                           << " lineChunkSize=" << lineChunkSize_;
 }
 
 AssetCache::~AssetCache()
 {
     JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->header().seq << " with "
-                           << lines_.size() << " accounts and " << totalLineCount_
-                           << " distinct trust lines.";
+                           << lines_.size() << " accounts and "
+                           << totalLineCount_.load(std::memory_order_relaxed)
+                           << " trust lines (hits=" << cacheHits_.load(std::memory_order_relaxed)
+                           << " misses=" << cacheMisses_.load(std::memory_order_relaxed)
+                           << " loaded=" << linesLoaded_.load(std::memory_order_relaxed)
+                           << " advances=" << ledgerAdvances_.load(std::memory_order_relaxed)
+                           << ")";
+}
+
+std::shared_ptr<ReadView const>
+AssetCache::getLedger() const
+{
+    std::shared_lock const sl(lock_);
+    return ledger_;
+}
+
+void
+AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool forceClear)
+{
+    std::unique_lock const sl(lock_);
+    if (!ledger)
+        return;
+
+    auto const oldSeq = ledger_->header().seq;
+    auto const newSeq = ledger->header().seq;
+    // Same-seq open → closed is a real view upgrade (mid-close then close).
+    // Same-seq closed → open / identical open is a no-op without forceClear.
+    bool const sameSeqUpgrade = oldSeq == newSeq && ledger_->open() && !ledger->open();
+    if (oldSeq == newSeq && !forceClear && !sameSeqUpgrade)
+        return;
+
+    ledger_ = ledger;
+    ++ledgerAdvances_;
+
+    // MPTs are cheap; always drop on advance.
+    mpts_.clear();
+
+    if (forceClear)
+    {
+        lines_.clear();
+        sessionAccounts_.clear();
+        totalLineCount_.store(0, std::memory_order_relaxed);
+        JLOG(journal_.info()) << "advanceLedger force-cleared cache for ledger " << newSeq;
+        return;
+    }
+
+    // Keep account line vectors, cursors, and session pins. Vectors reload
+    // lazily when older than cacheReuseLedgers_ (cursor reset on reload).
+    JLOG(journal_.debug()) << "advanceLedger " << oldSeq << " -> " << newSeq
+                           << (sameSeqUpgrade ? " (open->closed)" : "") << " retained "
+                           << lines_.size() << " accounts / "
+                           << totalLineCount_.load(std::memory_order_relaxed) << " lines";
+}
+
+std::size_t
+AssetCache::effectiveChunkSize() const
+{
+    return tlsChunkOverride != 0 ? tlsChunkOverride : lineChunkSize_;
+}
+
+void
+AssetCache::pinAccountUnlocked(int sessionId, AccountID const& accountID)
+{
+    // First pin of this account by this session increments pinCount.
+    auto& held = sessionAccounts_[sessionId];
+    if (!held.insert(accountID).second)
+        return;  // already pinned by this session
+
+    auto it = lines_.find(accountID);
+    if (it == lines_.end())
+    {
+        // Should not happen: pin only after load. Roll back session set entry.
+        held.erase(accountID);
+        if (held.empty())
+            sessionAccounts_.erase(sessionId);
+        return;
+    }
+    ++it->second.pinCount;
+}
+
+std::size_t
+AssetCache::remainingBudgetUnlocked() const
+{
+    auto const total = totalLineCount_.load(std::memory_order_relaxed);
+    return maxTotalLines_ > total ? maxTotalLines_ - total : 0;
+}
+
+void
+AssetCache::coalescePendingUnlocked(LineEntry& entry)
+{
+    if (entry.pending.empty())
+        return;
+
+    auto appendPending = [&](std::vector<PathFindTrustLine>& dest) {
+        for (auto& part : entry.pending)
+        {
+            if (!part)
+                continue;
+            dest.reserve(dest.size() + part->size());
+            for (auto& line : *part)
+                dest.push_back(std::move(line));
+        }
+        entry.pending.clear();
+    };
+
+    if (!entry.lines)
+    {
+        entry.lines = std::make_shared<std::vector<PathFindTrustLine>>();
+        appendPending(*entry.lines);
+        return;
+    }
+
+    // Sole owner: absorb pending in place (no full duplicate of published lines).
+    if (entry.lines.use_count() == 1)
+    {
+        appendPending(*entry.lines);
+        return;
+    }
+
+    // Still shared with a reader: publish a new vector for future callers.
+    // Prior readers keep their stable snapshot. Peak cost is paid once on
+    // first publish after concurrent expand — never on the expand itself.
+    auto grown = std::make_shared<std::vector<PathFindTrustLine>>();
+    grown->reserve(entry.storedLineCount());
+    for (auto const& line : *entry.lines)
+        grown->push_back(line);
+    appendPending(*grown);
+    entry.lines = std::move(grown);
+}
+
+std::size_t
+AssetCache::expandAccountUnlocked(AccountID const& accountID, LineEntry& entry)
+{
+    if (entry.cursor.complete)
+        return 0;
+
+    auto const have = entry.storedLineCount();
+    if (have >= maxLinesPerAccount_)
+    {
+        entry.cursor.complete = true;
+        return 0;
+    }
+
+    auto const remaining = remainingBudgetUnlocked();
+    if (remaining == 0)
+        return 0;
+
+    // Expand size follows LoadScope when set; otherwise configured lineChunkSize_
+    // (WS slow load). One-shot sets a large LoadScope to finish in one pass.
+    std::size_t want = effectiveChunkSize();
+    want = std::min(want, remaining);
+    want = std::min(want, maxLinesPerAccount_ - have);
+    if (want == 0)
+        return 0;
+
+    auto chunk = PathFindTrustLine::getItemsChunk(
+        accountID, *ledger_, LineDirection::Outgoing, entry.cursor, want);
+
+    entry.cursor = chunk.cursor;
+
+    if (chunk.lines.empty())
+    {
+        // No matching lines in this span; cursor still advanced / completed.
+        if (have >= maxLinesPerAccount_)
+            entry.cursor.complete = true;
+        return 0;
+    }
+
+    auto const added = chunk.lines.size();
+    // Never full-copy the published vector on expand:
+    // - sole owner → append in place (after absorbing any pending)
+    // - shared with readers → push a pending chunk only (+chunk memory)
+    // PathFindTrustLine is constructible but not assignable — only push_back.
+    if (!entry.lines && entry.pending.empty())
+    {
+        entry.lines = std::make_shared<std::vector<PathFindTrustLine>>(std::move(chunk.lines));
+    }
+    else if (entry.lines && entry.lines.use_count() == 1)
+    {
+        if (!entry.pending.empty())
+            coalescePendingUnlocked(entry);
+        entry.lines->reserve(entry.lines->size() + added);
+        for (auto& line : chunk.lines)
+            entry.lines->push_back(std::move(line));
+    }
+    else
+    {
+        entry.pending.push_back(
+            std::make_shared<std::vector<PathFindTrustLine>>(std::move(chunk.lines)));
+    }
+
+    totalLineCount_.fetch_add(added, std::memory_order_relaxed);
+    linesLoaded_.fetch_add(added, std::memory_order_relaxed);
+    lineEpoch_.fetch_add(1, std::memory_order_relaxed);
+
+    if (entry.storedLineCount() >= maxLinesPerAccount_)
+        entry.cursor.complete = true;
+
+    if (!entry.cursor.complete)
+    {
+        JLOG(journal_.debug()) << "expandAccount partial account=" << accountID
+                               << " lines=" << entry.storedLineCount()
+                               << " pending_chunks=" << entry.pending.size()
+                               << " page=" << entry.cursor.page
+                               << " idx=" << entry.cursor.indexInPage;
+    }
+
+    return added;
 }
 
 std::shared_ptr<std::vector<PathFindTrustLine>>
-AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
+AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
 {
-    auto const hash = hasher_(accountID);
-    AccountKey key(accountID, direction, hash);
-    AccountKey otherkey(
-        accountID,
-        direction == LineDirection::Outgoing ? LineDirection::Incoming : LineDirection::Outgoing,
-        hash);
+    // Caller holds unique lock_.
+    auto const curSeq = ledger_->header().seq;
+    auto it = lines_.find(accountID);
 
-    std::scoped_lock const sl(lock_);
-
-    auto [it, inserted] = [&]() {
-        if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
-        {
-            // The whole point of using the direction flag is to reduce the
-            // number of trust line objects held in memory. Ensure that there is
-            // only a single set of trustlines in the cache per account.
-            auto const size = otheriter->second ? otheriter->second->size() : 0;
-            JLOG(journal_.info())
-                << "Request for "
-                << (direction == LineDirection::Outgoing ? "outgoing" : "incoming")
-                << " trust lines for account " << accountID << " found " << size
-                << (direction == LineDirection::Outgoing ? " incoming" : " outgoing")
-                << " trust lines. "
-                << (direction == LineDirection::Outgoing ? "Deleting the subset of incoming"
-                                                         : "Returning the superset of outgoing")
-                << " trust lines. ";
-            if (direction == LineDirection::Outgoing)
-            {
-                // This request is for the outgoing set, but there is already a
-                // subset of incoming lines in the cache. Erase that subset
-                // to be replaced by the full set. The full set will be built
-                // below, and will be returned, if needed, on subsequent calls
-                // for either value of outgoing.
-                XRPL_ASSERT(
-                    size <= totalLineCount_, "xrpl::AssetCache::getRippleLines : maximum lines");
-                totalLineCount_ -= size;
-                lines_.erase(otheriter);
-            }
-            else
-            {
-                // This request is for the incoming set, but there is
-                // already a superset of the outgoing trust lines in the cache.
-                // The path finding engine will disregard the non-rippling trust
-                // lines, so to prevent them from being stored twice, return the
-                // outgoing set.
-                key = otherkey;
-                return std::pair{otheriter, false};
-            }
-        }
-        return lines_.emplace(key, nullptr);
-    }();
-
-    if (inserted)
+    std::size_t preservedPins = 0;
+    if (it != lines_.end())
     {
-        XRPL_ASSERT(it->second == nullptr, "xrpl::Asset::getRippleLines : null lines");
-        auto lines = PathFindTrustLine::getItems(accountID, *ledger_, direction);
-        if (!lines.empty())
+        auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
+        if (age <= cacheReuseLedgers_)
         {
-            it->second = std::make_shared<std::vector<PathFindTrustLine>>(std::move(lines));
-            totalLineCount_ += it->second->size();
+            ++cacheHits_;
+            return it->second.lines;
+        }
+        // Stale: drop content but preserve pinCount across reload.
+        preservedPins = it->second.pinCount;
+        auto const size = it->second.storedLineCount();
+        totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+        lines_.erase(it);
+    }
+
+    ++cacheMisses_;
+
+    LineEntry entry;
+    entry.loadedSeq = curSeq;
+    entry.pinCount = preservedPins;
+    entry.cursor = {};
+    entry.lines = nullptr;
+    entry.pending.clear();
+
+    auto const remaining = remainingBudgetUnlocked();
+    // First-load chunk: LoadScope override or configured lineChunkSize_.
+    // No silent floor when remaining == 0 — leave incomplete empty entry so a
+    // later expand can proceed if budget frees.
+    std::size_t want = std::min(effectiveChunkSize(), maxLinesPerAccount_);
+    if (remaining < want)
+        want = remaining;
+
+    if (want > 0)
+    {
+        auto chunk = PathFindTrustLine::getItemsChunk(
+            accountID, *ledger_, LineDirection::Outgoing, entry.cursor, want);
+        entry.cursor = chunk.cursor;
+        if (!chunk.lines.empty())
+        {
+            entry.lines = std::make_shared<std::vector<PathFindTrustLine>>(std::move(chunk.lines));
+            totalLineCount_.fetch_add(entry.lines->size(), std::memory_order_relaxed);
+            linesLoaded_.fetch_add(entry.lines->size(), std::memory_order_relaxed);
+            lineEpoch_.fetch_add(1, std::memory_order_relaxed);
+            if (entry.lines->size() >= maxLinesPerAccount_)
+                entry.cursor.complete = true;
+        }
+    }
+    // else: remaining == 0 → empty, incomplete (cursor still at start)
+
+    if (!entry.cursor.complete)
+    {
+        // Budget exhaustion is the surprising case; normal progressive chunks log at debug.
+        if (remaining == 0 || remainingBudgetUnlocked() == 0)
+        {
+            JLOG(journal_.warn()) << "loadOutgoing budget-blocked account=" << accountID
+                                  << " lines=" << (entry.lines ? entry.lines->size() : 0)
+                                  << " total=" << totalLineCount_.load(std::memory_order_relaxed);
+        }
+        else
+        {
+            JLOG(journal_.debug())
+                << "loadOutgoing chunked account=" << accountID
+                << " lines=" << (entry.lines ? entry.lines->size() : 0) << " complete=false";
         }
     }
 
-    XRPL_ASSERT(
-        !it->second || !it->second->empty(),
-        "xrpl::AssetCache::getRippleLines : null or nonempty lines");
-    auto const size = it->second ? it->second->size() : 0;
-    JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "
-                           << size
-                           << (key.direction == LineDirection::Outgoing ? " outgoing" : " incoming")
-                           << " lines for " << (inserted ? "new " : "existing ") << accountID
-                           << " out of a total of " << lines_.size() << " accounts and "
-                           << totalLineCount_ << " trust lines";
+    auto [ins, ok] = lines_.emplace(accountID, std::move(entry));
+    (void)ok;
 
-    return it->second;
+    JLOG(journal_.trace()) << "loadOutgoingUnlocked ledger " << curSeq << " account " << accountID
+                           << " lines=" << ins->second.storedLineCount()
+                           << " complete=" << ins->second.cursor.complete
+                           << " pins=" << ins->second.pinCount
+                           << " total=" << totalLineCount_.load(std::memory_order_relaxed);
+
+    return ins->second.lines;
 }
 
-std::shared_ptr<std::vector<PathFindMPT>> const&
-AssetCache::getMPTs(xrpl::AccountID const& account)
+std::shared_ptr<std::vector<PathFindTrustLine>>
+AssetCache::getOrLoadOutgoing(AccountID const& accountID)
 {
-    std::scoped_lock const sl(lock_);
+    {
+        std::shared_lock const sl(lock_);
+        auto const curSeq = ledger_->header().seq;
+        auto it = lines_.find(accountID);
+        if (it != lines_.end())
+        {
+            auto const age =
+                curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
+            // Fast path only when there is nothing pending to publish.
+            if (age <= cacheReuseLedgers_ && it->second.pending.empty())
+            {
+                ++cacheHits_;
+                return it->second.lines;
+            }
+            if (age > cacheReuseLedgers_)
+            {
+                // Stale — fall through to unique lock reload.
+            }
+            else
+            {
+                // Fresh but has pending chunks — need unique lock to coalesce.
+            }
+        }
+    }
 
+    std::unique_lock const sl(lock_);
+    auto const curSeq = ledger_->header().seq;
+    auto it = lines_.find(accountID);
+    if (it != lines_.end())
+    {
+        auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
+        if (age <= cacheReuseLedgers_)
+        {
+            ++cacheHits_;
+            coalescePendingUnlocked(it->second);
+            return it->second.lines;
+        }
+    }
+    return loadOutgoingUnlocked(accountID);
+}
+
+std::shared_ptr<std::vector<PathFindTrustLine>>
+AssetCache::getRippleLines(AccountID const& accountID)
+{
+    auto const full = getOrLoadOutgoing(accountID);
+
+    // Pin to the active path_find session (if any) so this account is only
+    // freed when that session ends — not when some other session closes.
+    if (tlsPinSessionId != 0)
+    {
+        std::unique_lock const sl(lock_);
+        pinAccountUnlocked(tlsPinSessionId, accountID);
+    }
+
+    if (!full || full->empty())
+        return nullptr;
+    return full;
+}
+
+bool
+AssetCache::expandIncompleteLines()
+{
+    std::unique_lock const sl(lock_);
+    bool grew = false;
+    for (auto& [accountID, entry] : lines_)
+    {
+        if (entry.cursor.complete)
+            continue;
+        if (remainingBudgetUnlocked() == 0)
+            break;
+        if (expandAccountUnlocked(accountID, entry) > 0)
+            grew = true;
+    }
+    return grew;
+}
+
+bool
+AssetCache::hasIncompleteLines() const
+{
+    std::shared_lock const sl(lock_);
+    for (auto const& [_, entry] : lines_)
+    {
+        if (!entry.cursor.complete)
+            return true;
+    }
+    return false;
+}
+
+bool
+AssetCache::hasIncompleteLinesForSession(int sessionId) const
+{
+    std::shared_lock const sl(lock_);
+    auto sit = sessionAccounts_.find(sessionId);
+    if (sit == sessionAccounts_.end())
+        return false;
+    for (auto const& accountID : sit->second)
+    {
+        auto it = lines_.find(accountID);
+        if (it != lines_.end() && !it->second.cursor.complete)
+            return true;
+    }
+    return false;
+}
+
+std::size_t
+AssetCache::releaseSession(int sessionId)
+{
+    std::unique_lock const sl(lock_);
+    auto sit = sessionAccounts_.find(sessionId);
+    if (sit == sessionAccounts_.end())
+        return 0;
+
+    std::size_t freed = 0;
+    for (auto const& accountID : sit->second)
+    {
+        auto it = lines_.find(accountID);
+        if (it == lines_.end())
+            continue;
+
+        if (it->second.pinCount > 0)
+            --it->second.pinCount;
+
+        if (it->second.pinCount == 0)
+        {
+            auto const size = it->second.storedLineCount();
+            freed += size;
+            totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+            lines_.erase(it);
+        }
+    }
+    sessionAccounts_.erase(sit);
+
+    if (freed > 0)
+    {
+        JLOG(journal_.debug()) << "releaseSession id=" << sessionId << " freed=" << freed
+                               << " remaining_lines="
+                               << totalLineCount_.load(std::memory_order_relaxed)
+                               << " remaining_accounts=" << lines_.size();
+    }
+    return freed;
+}
+
+std::shared_ptr<std::vector<PathFindMPT>>
+AssetCache::getMPTs(AccountID const& account)
+{
+    {
+        std::shared_lock const sl(lock_);
+        if (auto it = mpts_.find(account); it != mpts_.end())
+            return it->second;
+    }
+
+    std::unique_lock const sl(lock_);
     if (auto it = mpts_.find(account); it != mpts_.end())
         return it->second;
 
     std::vector<PathFindMPT> mpts;
-    // Get issued/authorized tokens
     forEachItem(*ledger_, account, [&](SLE::const_ref sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
@@ -150,13 +559,12 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
     if (mpts.empty())
     {
         mpts_.emplace(account, nullptr);
-    }
-    else
-    {
-        mpts_.emplace(account, std::make_shared<std::vector<PathFindMPT>>(std::move(mpts)));
+        return nullptr;
     }
 
-    return mpts_[account];
+    auto inserted = std::make_shared<std::vector<PathFindMPT>>(std::move(mpts));
+    mpts_.emplace(account, inserted);
+    return inserted;
 }
 
 }  // namespace xrpl

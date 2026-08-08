@@ -66,15 +66,16 @@ public:
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
-    /* Get the best paths, up to maxPaths in number, from completePaths_.
-
-       On return, if fullLiquidityPath is not empty, then it contains the best
-       additional single path which can consume all the liquidity.
-    */
+    /**
+     * Get the best paths, up to maxPaths in number, from completePaths_.
+     *
+     * Paths are filled by quality/liquidity only. There is no reserved
+     * full-liquidity covering/spare path (see API-CHANGELOG covering-path
+     * note). Callers may inject previously found paths via extraPaths.
+     */
     STPathSet
     getBestPaths(
         int maxPaths,
-        STPath& fullLiquidityPath,
         STPathSet const& extraPaths,
         AccountID const& srcIssuer,
         std::function<bool(void)> const& continueCallback = {});
