@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -260,7 +261,7 @@ doAccountInfo(rpc::JsonContext& context)
 
                 // We expect txs to be returned sorted by SeqProxy.  Verify
                 // that with a couple of asserts.
-                SeqProxy prevSeqProxy = SeqProxy::sequence(0);
+                SeqProxy prevSeqProxy = SeqProxy::rawSequence(0);
                 for (auto const& tx : txs)
                 {
                     json::Value jvTx = json::ValueType::Object;
