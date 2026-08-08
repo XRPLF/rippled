@@ -14,7 +14,8 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": true
+        "minimal": true,
+        "benchmark": true
       },
 
       {
@@ -69,7 +70,8 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
+        "minimal": false,
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ],
 
@@ -78,7 +80,8 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
+        "minimal": false,
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ]
   },

@@ -25,6 +25,7 @@ struct Sections
     static constexpr auto kLedgerHistory = "ledger_history";
     static constexpr auto kLedgerReplay = "ledger_replay";
     static constexpr auto kLedgerTxTables = "ledger_tx_tables";
+    static constexpr auto kMaxSubscriptionsPerConnection = "max_subscriptions_per_connection";
     static constexpr auto kMaxTransactions = "max_transactions";
     static constexpr auto kNetworkId = "network_id";
     static constexpr auto kNetworkQuorum = "network_quorum";
@@ -124,7 +125,9 @@ struct Keys
     static constexpr auto kMaxLedgerCountsToStore = "max_ledger_counts_to_store";
     static constexpr auto kMaxLinesPerAccount = "max_lines_per_account";
     static constexpr auto kMaxTotalLines = "max_total_lines";
+    static constexpr auto kMaxTrustedCount = "max_trusted_count";
     static constexpr auto kMaxUnknownTime = "max_unknown_time";
+    static constexpr auto kMaxUntrustedCount = "max_untrusted_count";
     static constexpr auto kMaximumTxnInLedger = "maximum_txn_in_ledger";
     static constexpr auto kMaximumTxnPerAccount = "maximum_txn_per_account";
     static constexpr auto kMemoryLevel = "memory_level";
