@@ -709,7 +709,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     }
 
     SeqProxy const tSeqProx = tx.getSeqProxy();
-    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const aSeq = SeqProxy::rawSequence((*sle)[sfSequence]);
 
     if (tSeqProx.isSeq())
     {
@@ -791,16 +791,17 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-    if (seqProx.isSeq())
+    SeqProxy const seqProxy = ctx_.tx.getSeqProxy();
+    if (seqProxy.isSeq())
     {
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+        sleAccount->setFieldU32(sfSequence, seqProxy.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
+    auto const keylet = keylet::ticket(accountID_, seqProxy);
+    return ticketDelete(view(), accountID_, keylet.key, j_);
 }
 
 // Remove a single Ticket from the ledger.

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <functional>
@@ -45,6 +44,6 @@ readPeerFinderDB(soci::session& session, std::function<void(std::string const&, 
  * @param v Entry to save which contains information about a new peer.
  */
 void
-savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v);
+savePeerFinderDB(soci::session& session, std::vector<peer_finder::Store::Entry> const& v);
 
 }  // namespace xrpl

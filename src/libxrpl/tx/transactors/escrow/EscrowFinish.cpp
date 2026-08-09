@@ -28,6 +28,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -35,7 +36,6 @@
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -251,7 +251,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
         ctx.view.rules().enabled(featureSmartEscrow))
     {
         // this check is done in doApply before this amendment is enabled
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -299,7 +300,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
@@ -417,9 +419,35 @@ EscrowFinish::doApply()
             return tecINTERNAL;
         }
         std::uint32_t const allowance = ctx_.tx[sfGas];
-        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
+        auto const re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
+        // Gas consumed, reported in the tx metadata whenever the engine has a
+        // trustworthy number: a completed run, out of gas, or a wasm fault.
+        std::optional<std::int64_t> const cost = re.has_value() ? re->cost : re.error().cost;
+        if (cost.has_value())
+        {
+            // The engine cannot spend more than it was given, and pins the cost
+            // to the allowance when it runs out.
+            if (*cost < 0 || *cost > allowance)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            ctx_.setGasUsed(static_cast<std::uint32_t>(*cost));
+        }
+
+        if (!re.has_value())
+        {
+            // No return code, and any data it wrote goes away with the view.
+            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error().ter);
+            return re.error().ter;
+        }
+
+        auto const reValue = re->result;
+        JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue) << ", cost: " << re->cost;
+
+        ctx_.setVMReturnCode(reValue);
+
+        // Only matters on a reject, where the escrow survives:
+        // Transactor::processPersistentChanges replays this after the reset.
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
         {
             if (data->size() > kMaxWasmDataLength)
@@ -431,28 +459,9 @@ EscrowFinish::doApply()
             ctx_.view().update(slep);
         }
 
-        if (re.has_value())
-        {
-            auto const reValue = re.value().result;
-            auto const reCost = re.value().cost;
-            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue) << ", cost: " << reCost;
-
-            ctx_.setVMReturnCode(reValue);
-
-            if (reCost < 0 || reCost > std::numeric_limits<uint32_t>::max())
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            ctx_.setGasUsed(static_cast<uint32_t>(reCost));
-
-            if (reValue <= 0)
-            {
-                return tecBYTECODE_REJECTED;
-            }
-        }
-        else
-        {
-            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error().ter);
-            return re.error().ter;
-        }
+        // 0 or negative is a contract-defined reject code, reported as sfVMReturnCode.
+        if (reValue <= 0)
+            return tecBYTECODE_REJECTED;
     }
 
     AccountID const account = (*slep)[sfAccount];

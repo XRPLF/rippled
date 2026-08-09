@@ -1,6 +1,8 @@
 # Linux Packaging
 
-This directory contains all files needed to build RPM and Debian packages for `xrpld`.
+This directory contains all files needed to build RPM and Debian packages for
+`xrpld`. The packages also ship the `validator-keys` tool, so packaging requires
+a build configured with `-Dvalidator_keys=ON`.
 
 ## Directory layout
 
@@ -46,17 +48,28 @@ To print the full packaging matrix (artifact names and images) for the current
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-package.yml`. That workflow generates its own packaging matrix from
 `package_configs` in `linux.json` (via `generate.py --packaging`) and fans out
-one job per distro. Each job downloads the pre-built `xrpld` binary artifact and
-runs in that distro's container, so the package format follows from the
-container's package manager. The packaging script derives the package version
-from the downloaded binary's `xrpld --version` output; no CMake configure or
-build step is needed inside the packaging job.
+one job per distro. Each job downloads the pre-built `xrpld` and `validator-keys`
+binary artifacts and runs in that distro's container, so the package format
+follows from the container's package manager. The packaging script derives the
+package version from the downloaded binary's `xrpld --version` output; no CMake
+configure or build step is needed inside the packaging job.
+
+The binaries come from the `debian` and `rhel` build configurations in
+`linux.json`'s `configs` section, which pass `-Dvalidator_keys=ON` so that the
+build job produces `validator-keys` next to `xrpld` and uploads it as the
+`validator-keys-<config name>` artifact. The packaging entry for a distro names
+both artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`), so a
+packaged configuration must keep `-Dvalidator_keys=ON`.
+
+`validator-keys` is fetched from an exact commit pinned in
+[`cmake/XrplValidatorKeys.cmake`](../cmake/XrplValidatorKeys.cmake), so a given
+`xrpld` version always packages the same tool; bump that commit deliberately.
 
 ### Locally (mirrors CI)
 
-With an `xrpld` binary already built at `build/xrpld`, run the packaging step
-inside the same container CI uses. The image tag is derived from `linux.json`
-so you don't need to hardcode a SHA.
+With `xrpld` and `validator-keys` binaries already built at `build/xrpld` and
+`build/validator-keys`, run the packaging step inside the same container CI uses.
+The image tag is derived from `linux.json` so you don't need to hardcode a SHA.
 
 ```bash
 # From the repo root. Each distro's container image is the `image` field of its
@@ -87,6 +100,7 @@ needed, but the host toolchain replaces the pinned CI image:
 ```bash
 cmake \
     -Dxrpld=ON \
+    -Dvalidator_keys=ON \
     -Dpkg_release=1 \
     -Dtests=OFF \
     ..
@@ -95,9 +109,11 @@ cmake --build . --target package # deb on Debian/Ubuntu, rpm on RHEL
 ```
 
 The `cmake/XrplPackaging.cmake` module defines the `package` target only if at
-least one of `rpmbuild` / `dpkg-buildpackage` is present; `build_pkg.sh` then
-infers the package format from the host's package manager. The packaging script
-installs to FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
+least one of `rpmbuild` / `dpkg-buildpackage` is present and both the `xrpld` and
+`validator-keys` targets exist (`-Dxrpld=ON -Dvalidator_keys=ON`); the target
+builds both binaries before packaging. `build_pkg.sh` then infers the package
+format from the host's package manager. The packaging script installs to
+FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
 `CMAKE_INSTALL_PREFIX`.
 
 The package version is not a CMake input on this path: `build_pkg.sh` derives it
@@ -156,13 +172,17 @@ CMake/CI integration. The CI workflow and the CMake `package` target both invoke
 and lets the script use defaults for the rest.
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
-`stage_common()` to copy the binary, config files, and shared support files
-into the staging area, and invokes the platform build tool.
+`stage_common()` to copy the `xrpld` and `validator-keys` binaries, config files,
+and shared support files into the staging area, and invokes the platform build
+tool. Both binaries must be present in `BUILD_DIR` and must run in the packaging
+environment; a missing or non-runnable one fails early. That runtime check is
+what catches a binary still linked against the Nix store's ELF loader (see
+`patch_nix_binary` in `cmake/PatchNixBinary.cmake`).
 
 ### RPM
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
-2. Copies `xrpld.spec` and all shared source files (binary, configs, service files) into `SOURCES/`.
+2. Copies `xrpld.spec` and all shared source files (binaries, configs, service files) into `SOURCES/`.
 3. Runs `rpmbuild -bb`, passing the normalized package metadata version as the
    `pkg_version` RPM macro and `PKG_RELEASE` as the `pkg_release` RPM macro.
    The spec uses manual `install` commands to place files, disables `dwz`, and
@@ -182,7 +202,8 @@ service restart.
 ### DEB
 
 1. Creates a staging source tree at `debbuild/source/` inside the build directory.
-2. Stages the binary, configs, `README.md`, and `LICENSE.md`.
+2. Stages the binaries, configs, `README.md`, `LICENSE.md`, and
+   `validator-keys-LICENSE`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
