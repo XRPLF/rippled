@@ -425,10 +425,25 @@ AssetCache::getRippleLines(AccountID const& accountID)
 
     // Pin to the active path_find session (if any) so this account is only
     // freed when that session ends — not when some other session closes.
+    //
+    // Hot path (already pinned): shared_lock membership check only. Pathfinder
+    // calls getRippleLines per hop under SessionPin; an unconditional unique_lock
+    // here would serialize kPathSteadyUpdateParallelism workers on every hop.
+    // Escalate to unique only on the first pin of this account for the session.
     if (tlsPinSessionId != 0)
     {
-        std::unique_lock const sl(lock_);
-        pinAccountUnlocked(tlsPinSessionId, accountID);
+        bool alreadyPinned = false;
+        {
+            std::shared_lock const sl(lock_);
+            auto const sit = sessionAccounts_.find(tlsPinSessionId);
+            if (sit != sessionAccounts_.end() && sit->second.count(accountID) != 0)
+                alreadyPinned = true;
+        }
+        if (!alreadyPinned)
+        {
+            std::unique_lock const sl(lock_);
+            pinAccountUnlocked(tlsPinSessionId, accountID);
+        }
     }
 
     if (!full || full->empty())

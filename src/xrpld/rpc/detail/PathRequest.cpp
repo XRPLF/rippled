@@ -170,7 +170,11 @@ PathRequest::updateComplete(std::optional<LedgerIndex> pinSeq, bool completedWor
 {
     std::scoped_lock const sl(indexLock_);
 
-    XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
+    // Idempotent: updateAll may release remaining batch claims after a throw
+    // while ClaimGuard already cleared the request that failed.
+    if (!inProgress_)
+        return;
+
     inProgress_ = false;
 
     if (!completedWork)

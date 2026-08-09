@@ -129,8 +129,23 @@ private:
     void
     insertPathRequest(PathRequest::pointer const&);
 
+    /**
+     * Publish AssetCache counter deltas to insight collectors.
+     * Takes lock_ (recursive) — serializes lastCache* baselines with close paths.
+     */
     void
     publishCacheStats(AssetCache const& cache);
+
+    /**
+     * Caller holds lock_. Rebuild requests_ without expired weaks, and drop
+     * @a request if non-null. Strong refs are held until after the vector is
+     * replaced so ~PathRequest → removePathRequest cannot re-enter mid-erase
+     * (recursive_mutex would allow that and invalidate iterators).
+     *
+     * @return number of entries removed (expired + matched request).
+     */
+    std::size_t
+    rebuildRequestsUnlocked(PathRequest* request = nullptr);
 
     /**
      * Caller holds lock_. Erase expired weak_ptrs; if no live sessions remain,

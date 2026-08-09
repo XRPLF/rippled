@@ -157,15 +157,23 @@ class PathFindSub_test : public beast::unit_test::Suite
     }
 
     jtx::Env
-    makeEnv()
+    makeEnv(bool multiWorker = true)
     {
         using namespace jtx;
-        return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            // Standalone unit tests default to 1 JobQueue worker, which
-            // deadlocks PathRequestManager::runParallel (fork-join of
-            // JtPathFindWork). Multi-thread so steady revalidate can fan out.
-            cfg->forceMultiThread = true;
-            cfg->workers = 4;
+        return Env(*this, envconfig([multiWorker](std::unique_ptr<Config> cfg) {
+            // Multi-worker envs exercise parallel steady revalidate. Default
+            // stand-alone is 1 JobQueue worker; runParallel falls back to
+            // serial there (see testSingleWorkerMultiSessionNoHang).
+            if (multiWorker)
+            {
+                cfg->forceMultiThread = true;
+                cfg->workers = 4;
+            }
+            else
+            {
+                cfg->forceMultiThread = false;
+                cfg->workers = 1;
+            }
             cfg->pathFullSearchInterval = 2;
             cfg->pathCacheReuseLedgers = 4;
             cfg->pathMidCloseDelay = std::chrono::milliseconds{200};
@@ -359,6 +367,67 @@ class PathFindSub_test : public beast::unit_test::Suite
             std::this_thread::sleep_for(25ms);
         }
         BEAST_EXPECT(gc["pathfind_cache_lines"].asDouble() == 0);
+    }
+
+    void
+    testSingleWorkerMultiSessionNoHang()
+    {
+        // Regression: runParallel used to fork-join JtPathFindWork from inside
+        // a JobQueue thread. With workers=1 (stand-alone default) the wait
+        // never completed and wedged pathfinding. Must finish promptly.
+        testcase("single worker: multi-session steady wave does not hang");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv(/*multiWorker=*/false);
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+        setupUsdCorridor(env, gw, alice, bob);
+        env.fund(XRP(100000), carol, dan);
+        env.close();
+        env.trust(gw["USD"](10000), carol);
+        env.trust(gw["USD"](10000), dan);
+        env(pay(gw, carol, gw["USD"](2000)));
+        env(pay(gw, dan, gw["USD"](50)));
+        env.close();
+
+        constexpr int kSessions = 3;
+        std::vector<std::unique_ptr<WSClient>> clients;
+        std::vector<std::pair<Account, Account>> pairs = {{alice, bob}, {carol, dan}, {alice, dan}};
+
+        for (int i = 0; i < kSessions; ++i)
+        {
+            clients.push_back(makeWSClient(env.app().config()));
+            auto const& [src, dst] = pairs[static_cast<std::size_t>(i)];
+            auto jr = clients.back()->invoke(
+                "path_find", pfCreate(src, dst, dst["USD"](5), "USD"))[jss::result];
+            BEAST_EXPECT(!jr.isMember(jss::error));
+        }
+
+        // First wave (new sessions) then steady wave — both used to hang when
+        // steadyUpdates.size() > 1 on a 1-worker queue.
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        for (auto& c : clients)
+            drainPathFind(*c);
+
+        waveClosed(env);
+        int refreshed = 0;
+        for (auto& c : clients)
+        {
+            if (waitPathFindUpdate(*c, 5s, /*requireAlts=*/false))
+                ++refreshed;
+            drainPathFind(*c);
+        }
+        BEAST_EXPECT(refreshed == kSessions);
+
+        for (auto& c : clients)
+        {
+            json::Value closeReq;
+            closeReq[jss::subcommand] = "close";
+            (void)c->invoke("path_find", closeReq);
+        }
     }
 
     void
@@ -569,6 +638,7 @@ public:
     {
         testRevalidateAcrossCloses();
         testMultiSessionSharedCache();
+        testSingleWorkerMultiSessionNoHang();
         testSixPathShape();
         testPartialLiquidityNoCoveringSpare();
         testStaggeredRediscoverySurvivesManyCloses();

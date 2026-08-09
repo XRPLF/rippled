@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/Tuning.h>
@@ -41,6 +42,12 @@ static_assert(
 void
 PathRequestManager::publishCacheStats(AssetCache const& cache)
 {
+    // lastCache* baselines are shared with removePathRequest / dropRequest /
+    // releaseCacheIfIdleUnlocked (WS close threads). Always take lock_ —
+    // recursive so call sites that already hold it are fine; updateAll's
+    // end-of-wave publish must not race unlocked.
+    std::scoped_lock const sl(lock_);
+
     auto const hits = cache.cacheHits();
     auto const misses = cache.cacheMisses();
     auto const loaded = cache.linesLoaded();
@@ -135,14 +142,33 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 namespace {
 
 /**
+ * Match Application's JobQueue thread-count policy for the parallelization
+ * decision. Exact multi-core default is at least 2; we only need to know
+ * whether a second worker can drain JtPathFindWork while updateAll waits.
+ */
+[[nodiscard]] int
+jobQueueWorkerCount(Config const& cfg)
+{
+    if (cfg.workers > 0)
+        return cfg.workers;
+    // Standalone defaults to a single worker unless forceMultiThread.
+    if (cfg.standalone() && !cfg.forceMultiThread)
+        return 1;
+    // Non-standalone / multi-thread formula always yields >= 2.
+    return 2;
+}
+
+/**
  * Run steady revalidates in bounded parallel batches via JobQueue.
  *
  * Matches project convention (no std::async): each unit is JtPathFindWork so
  * concurrency is visible to job accounting and capped by JobTypes limit (32).
  *
  * Fork-join from a JobQueue thread: queue count-1 workers, run one unit on
- * this thread, then wait. That always makes progress even if the pool is
- * saturated (avoids "all workers waiting for more workers" deadlock).
+ * this thread, then wait. Requires workerCount >= 2 — updateAll itself runs
+ * on a JobQueue worker (JtUpdatePf / JtRpc), so a single-worker queue would
+ * never dispatch the sibling jobs and hang forever on doneCv. In that case
+ * (stand-alone default, workers=1) fall back to serial execution.
  *
  * Completes the full work vector — do not abort mid-wave for new path_find
  * sessions (that stretched mean update gap under load).
@@ -152,6 +178,7 @@ runParallel(
     JobQueue& jobQueue,
     std::vector<PathRequest::pointer> const& work,
     int parallelism,
+    int workerCount,
     std::function<bool(PathRequest::pointer const&, bool, bool)> const& runOne,
     bool pinIndex,
     bool revalidateOnly,
@@ -161,7 +188,28 @@ runParallel(
     if (work.empty())
         return;
 
-    auto const par = static_cast<std::size_t>(std::max(1, parallelism));
+    auto runSerial = [&](std::size_t begin, std::size_t end) {
+        for (std::size_t i = begin; i < end; ++i)
+        {
+            if (jobQueue.isStopping())
+                break;
+            bool const keep = runOne(work[i], pinIndex, revalidateOnly);
+            ++processed;
+            if (!keep)
+                onDrop(work[i]);
+        }
+    };
+
+    // Single worker cannot fork-join: this thread would wait for itself.
+    if (workerCount < 2 || parallelism <= 1)
+    {
+        runSerial(0, work.size());
+        return;
+    }
+
+    // Cap batch size so we do not queue more siblings than other workers
+    // can run (1 unit runs inline on this thread).
+    auto const par = static_cast<std::size_t>(std::max(1, std::min(parallelism, workerCount)));
 
     for (std::size_t batch = 0; batch < work.size(); batch += par)
     {
@@ -173,10 +221,7 @@ runParallel(
 
         if (count == 1)
         {
-            bool const keep = runOne(work[batch], pinIndex, revalidateOnly);
-            ++processed;
-            if (!keep)
-                onDrop(work[batch]);
+            runSerial(batch, end);
             continue;
         }
 
@@ -226,7 +271,8 @@ runParallel(
             }
         }
 
-        // Last unit always runs on this thread (fork-join progress guarantee).
+        // Last unit always runs on this thread (fork-join progress guarantee
+        // when workerCount >= 2 so siblings can drain on other workers).
         {
             auto const idx = count - 1;
             auto const& req = work[batch + idx];
@@ -490,21 +536,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
 
     auto dropRequest = [&](PathRequest::pointer const& request) {
         std::scoped_lock const sl(lock_);
-        auto ret = std::ranges::remove_if(requests_, [&](auto const& wl) {
-            auto r = wl.lock();
-            if (!r)
-            {
-                ++removed;
-                return true;
-            }
-            if (request && r == request)
-            {
-                ++removed;
-                return true;
-            }
-            return false;
-        });
-        requests_.erase(ret.begin(), ret.end());
+        removed += static_cast<int>(rebuildRequestsUnlocked(request ? request.get() : nullptr));
 
         // Always release session pins (resource-pressure / exception drops used
         // to skip this and strand PathFindTrustLine vectors under budget).
@@ -577,51 +609,72 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
         // Pin lastIndex_ only on closed ledgers so an open first-update at seq S
         // does not skip the subsequent closed wave at the same S. isNew() clears
         // via markCompleted without a pin on open.
+        //
+        // needsUpdate already set inProgress_ for every entry in firstUpdates /
+        // steadyUpdates. If runOne throws (e.g. SHAMapMissingNode), release all
+        // remaining claims before rethrowing — otherwise those sessions stay
+        // inProgress forever and never receive another update.
         std::size_t firstDone = 0;
-        for (; firstDone < firstUpdates.size(); ++firstDone)
+        try
         {
-            if (app_.getJobQueue().isStopping())
-                break;
-            if (!newRequests && app_.getLedgerMaster().isNewPathRequest())
+            for (; firstDone < firstUpdates.size(); ++firstDone)
             {
-                mustBreak = true;
-                break;
+                if (app_.getJobQueue().isStopping())
+                    break;
+                if (!newRequests && app_.getLedgerMaster().isNewPathRequest())
+                {
+                    mustBreak = true;
+                    break;
+                }
+
+                auto const& req = firstUpdates[firstDone];
+                // First update: full Pathfinder (revalidateOnly=false).
+                bool const keep = runOne(req, /*pinIndex=*/closedLedger, /*revalidateOnly=*/false);
+                ++processed;
+                if (!keep)
+                    dropRequest(req);
             }
+            // Release claims for first updates we never started.
+            for (std::size_t i = firstDone; i < firstUpdates.size(); ++i)
+                firstUpdates[i]->updateComplete();
 
-            auto const& req = firstUpdates[firstDone];
-            // First update: full Pathfinder (revalidateOnly=false).
-            bool const keep = runOne(req, /*pinIndex=*/closedLedger, /*revalidateOnly=*/false);
-            ++processed;
-            if (!keep)
-                dropRequest(req);
+            if (!mustBreak && !app_.getJobQueue().isStopping())
+            {
+                // Established sessions: bounded parallel revalidate (main gap win).
+                // Closed: pin lastIndex_. Mid-close: do not pin.
+                // revalidateOnly ONLY for mid-close so closed waves can rediscover
+                // / recover failed searches (staggered / backoff in doUpdate).
+                // runParallel's runUnit catches per-unit errors (no claim leak).
+                bool const pinSteady = closedLedger;
+                bool const revalidateOnly = processSteadyOnOpen;
+                runParallel(
+                    app_.getJobQueue(),
+                    steadyUpdates,
+                    rpc::tuning::kPathSteadyUpdateParallelism,
+                    jobQueueWorkerCount(app_.config()),
+                    runOne,
+                    pinSteady,
+                    revalidateOnly,
+                    dropRequest,
+                    processed);
+            }
+            else
+            {
+                // Release steady claims we never started.
+                for (auto const& req : steadyUpdates)
+                    req->updateComplete();
+            }
         }
-        // Release claims for first updates we never started.
-        for (std::size_t i = firstDone; i < firstUpdates.size(); ++i)
-            firstUpdates[i]->updateComplete();
-
-        if (!mustBreak && !app_.getJobQueue().isStopping())
+        catch (...)
         {
-            // Established sessions: bounded parallel revalidate (main gap win).
-            // Closed: pin lastIndex_. Mid-close: do not pin.
-            // revalidateOnly ONLY for mid-close so closed waves can rediscover
-            // / recover failed searches (staggered / backoff in doUpdate).
-            bool const pinSteady = closedLedger;
-            bool const revalidateOnly = processSteadyOnOpen;
-            runParallel(
-                app_.getJobQueue(),
-                steadyUpdates,
-                rpc::tuning::kPathSteadyUpdateParallelism,
-                runOne,
-                pinSteady,
-                revalidateOnly,
-                dropRequest,
-                processed);
-        }
-        else
-        {
-            // Release steady claims we never started.
+            // runOne's ClaimGuard already cleared the throwing request. Clear
+            // every other claimed session so they are not frozen (updateComplete
+            // is idempotent when inProgress_ is already false).
+            for (std::size_t i = firstDone; i < firstUpdates.size(); ++i)
+                firstUpdates[i]->updateComplete();
             for (auto const& req : steadyUpdates)
                 req->updateComplete();
+            throw;
         }
 
         if (mustBreak)
@@ -693,12 +746,50 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
 bool
 PathRequestManager::hasLiveRequestsUnlocked() const
 {
+    // Use expired() — do not promote weak_ptr to shared_ptr. A temporary
+    // shared_ptr that is the last owner would run ~PathRequest → removePathRequest
+    // and re-enter while callers iterate requests_.
     for (auto const& w : requests_)
     {
-        if (w.lock())
+        if (!w.expired())
             return true;
     }
     return false;
+}
+
+std::size_t
+PathRequestManager::rebuildRequestsUnlocked(PathRequest* request)
+{
+    // Hold every successfully locked request until AFTER requests_ is replaced.
+    // Otherwise the temporary shared_ptr from weak_ptr::lock() can be the last
+    // owner; its destructor calls removePathRequest and erases requests_ while
+    // the caller is still mid-iteration (recursive_mutex allows re-entry).
+    std::vector<PathRequest::pointer> keepAlive;
+    std::vector<PathRequest::wptr> survivors;
+    keepAlive.reserve(requests_.size());
+    survivors.reserve(requests_.size());
+
+    std::size_t removed = 0;
+    for (auto const& wl : requests_)
+    {
+        auto r = wl.lock();
+        if (!r)
+        {
+            ++removed;
+            continue;
+        }
+        keepAlive.push_back(r);
+        if (request && r.get() == request)
+        {
+            ++removed;
+            continue;
+        }
+        survivors.push_back(wl);
+    }
+    requests_ = std::move(survivors);
+    // keepAlive destructs after requests_ is stable; nested removePathRequest
+    // (if any) only rebuilds an already-consistent vector.
+    return removed;
 }
 
 void
@@ -706,7 +797,8 @@ PathRequestManager::releaseCacheIfIdleUnlocked()
 {
     // Drop expired weak_ptrs first — they previously kept requests_ non-empty
     // forever after WS disconnect, so AssetCache was never reclaimed.
-    auto dead = std::ranges::remove_if(requests_, [](auto const& wl) { return !wl.lock(); });
+    // expired() only — never lock() here (see rebuildRequestsUnlocked).
+    auto dead = std::ranges::remove_if(requests_, [](auto const& wl) { return wl.expired(); });
     requests_.erase(dead.begin(), dead.end());
 
     if (hasLiveRequestsUnlocked())
@@ -768,11 +860,7 @@ void
 PathRequestManager::removePathRequest(PathRequest* request)
 {
     std::scoped_lock const sl(lock_);
-    auto ret = std::ranges::remove_if(requests_, [&](auto const& wl) {
-        auto r = wl.lock();
-        return !r || (request && r.get() == request);
-    });
-    requests_.erase(ret.begin(), ret.end());
+    rebuildRequestsUnlocked(request);
 
     // Drop this session's account pins. Accounts still pinned by other live
     // path_finds are kept; only exclusively held (or last holder) entries free.
@@ -793,13 +881,25 @@ PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
     {
         std::scoped_lock const sl(lock_);
 
-        auto ret = std::ranges::find_if(requests_, [](auto const& wl) {
-            auto r = wl.lock();
-            return r && !r->isNew();
-        });
+        // Promote only while scanning; keep alive until after emplace so a
+        // last-ref temporary cannot re-enter removePathRequest mid-find.
+        std::vector<PathRequest::pointer> keepAlive;
+        auto insertAt = requests_.end();
+        for (auto it = requests_.begin(); it != requests_.end(); ++it)
+        {
+            auto r = it->lock();
+            if (!r)
+                continue;
+            keepAlive.push_back(r);
+            if (!r->isNew())
+            {
+                insertAt = it;
+                break;
+            }
+        }
 
         armTimer = !hasLiveRequestsUnlocked();
-        requests_.emplace(ret, req);
+        requests_.emplace(insertAt, req);
     }
 
     // First live session: start periodic revalidate ticks immediately so gaps
