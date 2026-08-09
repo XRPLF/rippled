@@ -124,8 +124,24 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
         return;
     }
 
-    // Keep account line vectors, cursors, and session pins. Vectors reload
-    // lazily when older than cacheReuseLedgers_ (cursor reset on reload).
+    // Soft retain complete vectors. Incomplete progressive fills cannot resume
+    // a DirCursor across ledgers: owner-dir pages split/merge, so {page,
+    // indexInPage} from an older ledger can dup or skip lines. Drop partial
+    // entries (pins re-established on next getRippleLines via SessionPin).
+    for (auto it = lines_.begin(); it != lines_.end();)
+    {
+        if (it->second.cursor.complete)
+        {
+            ++it;
+            continue;
+        }
+        auto const n = it->second.storedLineCount();
+        if (n > 0)
+            totalLineCount_.fetch_sub(n, std::memory_order_relaxed);
+        it = lines_.erase(it);
+    }
+
+    // Complete vectors + sessionAccounts_ pins kept; incomplete reloaded next get.
     JLOG(journal_.debug()) << "advanceLedger " << oldSeq << " -> " << newSeq
                            << (sameSeqUpgrade ? " (open->closed)" : "") << " retained "
                            << lines_.size() << " accounts / "

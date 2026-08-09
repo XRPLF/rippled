@@ -253,6 +253,47 @@ class AssetCache_test : public beast::unit_test::Suite
     }
 
     void
+    testSoftAdvanceResetsIncompleteCursor()
+    {
+        testcase("soft advance resets incomplete DirCursor (no cross-ledger resume)");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        fundManyLines(env, alice, 6, "ic");
+
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/100000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/1);
+
+        {
+            AssetCache::SessionPin pin{1};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+        BEAST_EXPECT(cache->hasIncompleteLines());
+        auto const partial = cache->totalLineCount();
+        BEAST_EXPECT(partial >= 1);
+        BEAST_EXPECT(partial < 6);  // chunk size 1 → progressive
+
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        // Incomplete partial entries erased; complete hubs would be retained.
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(!cache->hasIncompleteLines());
+
+        {
+            AssetCache::SessionPin pin{1};
+            // Next access reloads from the new ledger (no positional resume).
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && !lines->empty());
+        }
+        cache->releaseSession(1);
+    }
+
+    void
     testReuseWindowExpiryReloads()
     {
         testcase("cache reuse window expiry forces reload");
@@ -529,6 +570,7 @@ public:
         testPendingExpandWhileShared();
         testSessionPinsSharedHub();
         testAdvanceLedgerSoftRetainAndForceClear();
+        testSoftAdvanceResetsIncompleteCursor();
         testReuseWindowExpiryReloads();
         testMaxLinesPerAccountAndChunk();
         testGlobalBudgetBlocksNewLines();

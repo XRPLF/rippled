@@ -231,15 +231,19 @@ runParallel(
         }
     };
 
-    // Single worker cannot fork-join: this thread would wait for itself.
-    if (workerCount < 2 || parallelism <= 1)
+    // Fork-join blocks *this* JobQueue thread on doneCv while siblings run as
+    // JtPathFindWork. Need the waiter free + at least one other worker free, so
+    // require workerCount >= 3 (1 blocked parent + ≥2 available is ideal; with
+    // only 2 total, the single free worker is easily starved by other job types).
+    // workerCount < 2 also cannot self-dispatch siblings.
+    if (workerCount < 3 || parallelism <= 1)
     {
         runSerial(0, work.size());
         return;
     }
 
-    // Cap batch size so we do not queue more siblings than other workers
-    // can run (1 unit runs inline on this thread).
+    // Cap batch size: 1 unit runs inline on this thread; queue at most
+    // workerCount-1 siblings so the remaining pool can drain the barrier.
     auto const par = static_cast<std::size_t>(std::max(1, std::min(parallelism, workerCount)));
 
     for (std::size_t batch = 0; batch < work.size(); batch += par)
@@ -477,9 +481,10 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
     bool const closedLedger = !inLedger->open();
     bool const processSteadyOnOpen = midClose && !closedLedger;
 
-    // Snapshot once per wave — avoid repeated getLedger() shared_lock on the
-    // hot partition/claim path under parallel steady updates.
-    auto const ledgerSeq = cache->getLedger()->seq();
+    // Pin / claim index must track the wave's ledger, not a lagging cache view.
+    // Closed waves: inLedger is authoritative. Mid-close does not pin lastIndex_
+    // (pinIndex=false); cache seq is fine for logging / claimIndex edge cases.
+    auto const ledgerSeq = closedLedger ? inLedger->seq() : cache->getLedger()->seq();
     // Open mid-close: use the open view for pricing (issue #3).
     std::shared_ptr<ReadView const> const calcLedger =
         processSteadyOnOpen ? inLedger : std::shared_ptr<ReadView const>{};

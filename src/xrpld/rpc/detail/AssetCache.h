@@ -33,7 +33,8 @@ namespace xrpl {
  * - Global line budget bounds worst-case memory (hard stop when remaining == 0;
  *   no silent floor). Incomplete accounts grow on expandIncompleteLines.
  * - Hits use shared_lock; misses/expands load under unique lock (single-flight).
- * - Soft ledger advance re-stamps entry freshness (no mass invalidation).
+ * - Soft ledger advance keeps complete line vectors; incomplete progressive
+ *   fills drop and reload (DirCursor is not stable across ledger page changes).
  * - Per-session account pins: an entry is freed only when every path_find that
  *   used it has ended. Shared hubs stay warm for remaining sessions (no LRU
  *   thrash during ramp-down). When the last subscription ends the whole cache

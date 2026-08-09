@@ -1085,6 +1085,10 @@ PathRequest::doUpdate(
             // Display-only restore; force failure so the next closed
             // non-revalidate wave can full-search (failedSearchDue).
             bLastSuccess_ = false;
+            // Not a successful recompute — clients must not treat this as a
+            // fresh full_reply path set.
+            newStatus[jss::full_reply] = false;
+            newStatus[jss::warning] = "path_revalidate_failed";
         }
         else
         {
@@ -1111,7 +1115,9 @@ PathRequest::doUpdate(
     }
 
     // Incomplete owner-dir fill for accounts this session pinned (not cache-global).
-    if (!newStatus.isMember(jss::error) && cache->hasIncompleteLinesForSession(iIdentifier_))
+    // Do not overwrite path_revalidate_failed (stale restore takes precedence).
+    if (!newStatus.isMember(jss::error) && !newStatus.isMember(jss::warning) &&
+        cache->hasIncompleteLinesForSession(iIdentifier_))
         newStatus[jss::warning] = "path_lines_partial";
 
     if (fast && quickReply_ == steady_clock::time_point{})
