@@ -1402,10 +1402,12 @@ trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     {
         hf.getJournal().trace() << "WasmTrace: error: " << e.what();
     }
+    // LCOV_EXCL_START
     catch (...)
     {
         hf.getJournal().trace() << "WasmTrace: unknown error";
     }
+    // LCOV_EXCL_STOP
     return nullptr;
 }
 

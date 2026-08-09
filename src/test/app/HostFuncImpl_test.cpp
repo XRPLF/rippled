@@ -362,7 +362,7 @@ ww(E&& e, P&& params, P&& result, Args... args)
 
 // ww() packs only integral args as wasm params, so the scoped enum needs widening.
 constexpr int32_t
-tdt(TraceDataType t)
+traceDataTypeToInt(TraceDataType t)
 {
     return static_cast<int32_t>(t);
 }
@@ -3458,7 +3458,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::AsText),
+                       traceDataTypeToInt(TraceDataType::AsText),
                        256,
                        slice.size());
 
@@ -3481,7 +3481,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::AsHex),
+                       traceDataTypeToInt(TraceDataType::AsHex),
                        256,
                        slice.size());
 
@@ -3504,6 +3504,31 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 auto* trap =
                     ww(&import.at("trace"), params, result, 0, msg.size(), 9999, 256, slice.size());
                 BEAST_EXPECT(!trap);
+            }
+
+            // msg and data each fit, but their combined size exceeds
+            // kMaxWasmDataLength, so nothing is logged
+            {
+                std::string const longMsg(kMaxWasmDataLength, 'x');
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(longMsg.data()), longMsg.size());
+                vrt.setBytes(2048, slice.data(), slice.size());
+                WasmValVec params(5), result(0);
+                auto* trap =
+                    ww(&import.at("trace"),
+                       params,
+                       result,
+                       0,
+                       longMsg.size(),
+                       traceDataTypeToInt(TraceDataType::AsText),
+                       2048,
+                       slice.size());
+
+                if (BEAST_EXPECT(!trap))
+                {
+                    auto const messages = sink.messages().str();
+                    BEAST_EXPECT(messages.contains("message and data too long"));
+                    BEAST_EXPECT(!messages.contains(longMsg));
+                }
             }
         }
 
@@ -3535,7 +3560,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::AsText),
+                   traceDataTypeToInt(TraceDataType::AsText),
                    256,
                    slice.size());
 
@@ -3580,7 +3605,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(type),
+                       traceDataTypeToInt(type),
                        256,
                        sizeof(wire));
 
@@ -3609,7 +3634,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Int64),
+                       traceDataTypeToInt(TraceDataType::Int64),
                        256,
                        sizeof(tooShort));
                 BEAST_EXPECT(!trap);
@@ -3643,7 +3668,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::Int64),
+                   traceDataTypeToInt(TraceDataType::Int64),
                    256,
                    sizeof(wire));
 
@@ -3685,7 +3710,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::Account),
+                   traceDataTypeToInt(TraceDataType::Account),
                    256,
                    accountId.size());
 
@@ -3724,7 +3749,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::Account),
+                   traceDataTypeToInt(TraceDataType::Account),
                    256,
                    accountId.size());
 
@@ -3767,7 +3792,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Amount),
+                       traceDataTypeToInt(TraceDataType::Amount),
                        256,
                        amountBytes.size());
 
@@ -3795,7 +3820,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Amount),
+                       traceDataTypeToInt(TraceDataType::Amount),
                        256,
                        amountBytes.size());
 
@@ -3818,7 +3843,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Amount),
+                       traceDataTypeToInt(TraceDataType::Amount),
                        256,
                        amountBytes.size());
 
@@ -3854,7 +3879,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::Amount),
+                   traceDataTypeToInt(TraceDataType::Amount),
                    256,
                    amountBytes.size());
 
@@ -3979,7 +4004,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Xfloat),
+                       traceDataTypeToInt(TraceDataType::Xfloat),
                        256,
                        invalid.size());
 
@@ -3996,7 +4021,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        result,
                        0,
                        msg.size(),
-                       tdt(TraceDataType::Xfloat),
+                       traceDataTypeToInt(TraceDataType::Xfloat),
                        256,
                        floatMaxExp.size());
 
@@ -4030,7 +4055,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    msg.size(),
-                   tdt(TraceDataType::Xfloat),
+                   traceDataTypeToInt(TraceDataType::Xfloat),
                    256,
                    invalid.size());
 
@@ -6286,7 +6311,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    result,
                    0,
                    testMsg.size(),
-                   tdt(TraceDataType::AsText),
+                   traceDataTypeToInt(TraceDataType::AsText),
                    100,
                    5);
 

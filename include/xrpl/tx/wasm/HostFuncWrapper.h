@@ -191,8 +191,7 @@ using getNFTSequence_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t)
 wasm_trap_t* getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 // trace(msg_ptr, msg_len, data_type, data_ptr, data_len); data_type is a
-// TraceDataType. Replaces the former trace/trace_num/trace_acct/trace_xfloat/
-// trace_amt imports.
+// TraceDataType.
 using trace_proto = void(uint8_t const*, int32_t, int32_t, uint8_t const*, int32_t);
 wasm_trap_t* trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 

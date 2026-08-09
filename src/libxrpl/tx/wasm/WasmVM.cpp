@@ -79,7 +79,7 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "nft_taxon", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "nft_flags", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTTransferFee, "nft_xfer_fee", hfs,                                               60);
-    WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_serial", hfs,                                                   60);
+    WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_serial", hfs,                                                    60);
 
     WASM_IMPORT_FUNC (i, trace, hfs,                                                                           30);
 
