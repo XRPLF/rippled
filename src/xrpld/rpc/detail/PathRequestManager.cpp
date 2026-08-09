@@ -39,6 +39,36 @@ static_assert(
     rpc::tuning::kPathSteadyUpdateParallelism == kPathFindWorkLimit,
     "JtPathFindWork JobTypes limit must match path_find steady parallelism");
 
+PathRequestManager::PathRequestManager(
+    Application& app,
+    beast::Journal journal,
+    beast::insight::Collector::ptr const& collector)
+    : app_(app)
+    , journal_(journal)
+    , midCloseBag_(std::make_shared<MidCloseBag>())
+    , midCloseTimer_(app.getIOContext())
+    , lastIdentifier_(0)
+{
+    midCloseBag_->manager = this;
+    fast_ = collector->makeEvent("pathfind_fast");
+    full_ = collector->makeEvent("pathfind_full");
+    cacheHits_ = collector->makeCounter("pathfind_cache_hits");
+    cacheMisses_ = collector->makeCounter("pathfind_cache_misses");
+    linesLoaded_ = collector->makeCounter("pathfind_lines_loaded");
+    cacheLedgerAdvances_ = collector->makeCounter("pathfind_cache_advances");
+}
+
+PathRequestManager::~PathRequestManager()
+{
+    // Detach handlers before cancel so a later operation_aborted callback
+    // (run on io_context threads that outlive this member) sees manager==null.
+    {
+        std::lock_guard const lk(midCloseBag_->mutex);
+        midCloseBag_->manager = nullptr;
+    }
+    midCloseTimer_.cancel();
+}
+
 void
 PathRequestManager::publishCacheStats(AssetCache const& cache)
 {
@@ -142,18 +172,19 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 namespace {
 
 /**
- * Match Application's JobQueue thread-count policy for the parallelization
- * decision. Exact multi-core default is at least 2; we only need to know
- * whether a second worker can drain JtPathFindWork while updateAll waits.
+ * Match Application's JobQueue thread-count policy exactly (Application.cpp).
+ * Order matters: stand-alone without forceMultiThread is always 1 worker even
+ * when [workers] is set higher — checking workers first would allow runParallel
+ * to fork-join and hang forever on the single real JobQueue thread.
  */
 [[nodiscard]] int
 jobQueueWorkerCount(Config const& cfg)
 {
-    if (cfg.workers > 0)
-        return cfg.workers;
-    // Standalone defaults to a single worker unless forceMultiThread.
+    // Must match ApplicationImp JobQueue sizing — do not reorder.
     if (cfg.standalone() && !cfg.forceMultiThread)
         return 1;
+    if (cfg.workers > 0)
+        return cfg.workers;
     // Non-standalone / multi-thread formula always yields >= 2.
     return 2;
 }
@@ -303,44 +334,63 @@ PathRequestManager::scheduleMidCloseRefresh()
     if (midCloseScheduled_.exchange(true, std::memory_order_acq_rel))
         return;
 
+    auto bag = midCloseBag_;
     midCloseTimer_.expires_after(app_.config().pathMidCloseDelay);
-    midCloseTimer_.async_wait([this](boost::system::error_code const& waitEc) {
-        midCloseScheduled_.store(false, std::memory_order_release);
-        if (waitEc || app_.isStopping() || !requestsPending())
+    // Capture bag (not raw this). Hold bag->mutex for the whole callback so
+    // ~PathRequestManager (which nulls manager under the same mutex) cannot
+    // destroy *this while we run — cancel() alone does not wait for handlers.
+    midCloseTimer_.async_wait([bag](boost::system::error_code const& waitEc) {
+        std::lock_guard const lk(bag->mutex);
+        if (!bag->manager)
             return;
-
-        // Non-blocking: dispatch revalidate on JtRpc so it never waits behind
-        // JtUpdatePf (limit 1) closed-ledger / first-update waves. Skip if a
-        // prior tick is still queued or running (wave overran the period).
-        if (!revalidateJobPending_.exchange(true, std::memory_order_acq_rel))
-        {
-            bool const queued = app_.getJobQueue().addJob(JtRpc, "PthFindReval", [this]() {
-                try
-                {
-                    runPeriodicRevalidate();
-                }
-                catch (std::exception const& ex)
-                {
-                    JLOG(journal_.info()) << "periodic path revalidate exception: " << ex.what();
-                }
-                // Clear only after the wave finishes so ticks cannot overlap.
-                revalidateJobPending_.store(false, std::memory_order_release);
-            });
-            if (!queued)
-            {
-                revalidateJobPending_.store(false, std::memory_order_release);
-                JLOG(journal_.debug()) << "periodic path revalidate job not queued";
-            }
-            else
-            {
-                JLOG(journal_.debug()) << "periodic path revalidate job queued";
-            }
-        }
-
-        // Keep ticking every pathMidCloseDelay while sessions remain.
-        if (requestsPending() && !app_.isStopping())
-            scheduleMidCloseRefresh();
+        bag->manager->onMidCloseTimer(waitEc);
     });
+}
+
+void
+PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
+{
+    // Caller must hold midCloseBag_->mutex (timer path) so this stays alive.
+    midCloseScheduled_.store(false, std::memory_order_release);
+    if (waitEc || app_.isStopping() || !requestsPending())
+        return;
+
+    // Non-blocking: dispatch revalidate on JtRpc so it never waits behind
+    // JtUpdatePf (limit 1) closed-ledger / first-update waves. Skip if a
+    // prior tick is still queued or running (wave overran the period).
+    auto bag = midCloseBag_;
+    if (!revalidateJobPending_.exchange(true, std::memory_order_acq_rel))
+    {
+        bool const queued = app_.getJobQueue().addJob(JtRpc, "PthFindReval", [bag]() {
+            // Hold bag mutex for the wave so destructor cannot free *this mid-run.
+            std::lock_guard const lk(bag->mutex);
+            auto* self = bag->manager;
+            if (!self)
+                return;
+            try
+            {
+                self->runPeriodicRevalidate();
+            }
+            catch (std::exception const& ex)
+            {
+                JLOG(self->journal_.info()) << "periodic path revalidate exception: " << ex.what();
+            }
+            self->revalidateJobPending_.store(false, std::memory_order_release);
+        });
+        if (!queued)
+        {
+            revalidateJobPending_.store(false, std::memory_order_release);
+            JLOG(journal_.debug()) << "periodic path revalidate job not queued";
+        }
+        else
+        {
+            JLOG(journal_.debug()) << "periodic path revalidate job queued";
+        }
+    }
+
+    // Keep ticking every pathMidCloseDelay while sessions remain.
+    if (requestsPending() && !app_.isStopping())
+        scheduleMidCloseRefresh();
 }
 
 void

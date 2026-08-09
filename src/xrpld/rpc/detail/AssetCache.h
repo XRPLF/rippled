@@ -127,6 +127,16 @@ public:
     expandIncompleteLines();
 
     /**
+     * Like expandIncompleteLines, but only accounts pinned by sessionId.
+     * Used by one-shot ripple_path_find when it shares AssetCache with WS
+     * sessions so a legacy drain cannot expand every hub on the node.
+     *
+     * @return true if any pinned account's line vector grew.
+     */
+    bool
+    expandIncompleteLinesForSession(int sessionId);
+
+    /**
      * True if any cached account still has a residual owner-dir cursor
      * (partial line set).
      */

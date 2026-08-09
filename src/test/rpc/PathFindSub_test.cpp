@@ -161,9 +161,9 @@ class PathFindSub_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         return Env(*this, envconfig([multiWorker](std::unique_ptr<Config> cfg) {
-            // Multi-worker envs exercise parallel steady revalidate. Default
-            // stand-alone is 1 JobQueue worker; runParallel falls back to
-            // serial there (see testSingleWorkerMultiSessionNoHang).
+            // Multi-worker envs exercise parallel steady revalidate.
+            // Stand-alone without forceMultiThread → Application always builds
+            // 1 JobQueue thread even if [workers] is higher (see Application.cpp).
             if (multiWorker)
             {
                 cfg->forceMultiThread = true;
@@ -172,7 +172,9 @@ class PathFindSub_test : public beast::unit_test::Suite
             else
             {
                 cfg->forceMultiThread = false;
-                cfg->workers = 1;
+                // Intentionally workers>1 while still single-threaded JobQueue —
+                // catches jobQueueWorkerCount checking workers before standalone.
+                cfg->workers = 2;
             }
             cfg->pathFullSearchInterval = 2;
             cfg->pathCacheReuseLedgers = 4;
@@ -373,11 +375,13 @@ class PathFindSub_test : public beast::unit_test::Suite
     testSingleWorkerMultiSessionNoHang()
     {
         // Regression: runParallel used to fork-join JtPathFindWork from inside
-        // a JobQueue thread. With workers=1 (stand-alone default) the wait
-        // never completed and wedged pathfinding. Must finish promptly.
+        // a JobQueue thread. Stand-alone without forceMultiThread always has
+        // exactly 1 JobQueue thread even when [workers] > 1 (Application order).
+        // jobQueueWorkerCount must match that, not prefer cfg.workers first.
         testcase("single worker: multi-session steady wave does not hang");
         using namespace jtx;
         using namespace std::chrono_literals;
+        // workers=2 would mislead a wrong formula into thinking fan-out is safe.
         Env env = makeEnv(/*multiWorker=*/false);
         Account const gw{"gateway"};
         Account const alice{"alice"};

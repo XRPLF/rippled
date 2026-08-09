@@ -31,21 +31,14 @@ public:
     PathRequestManager(
         Application& app,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
-        : app_(app), journal_(journal), midCloseTimer_(app.getIOContext()), lastIdentifier_(0)
-    {
-        fast_ = collector->makeEvent("pathfind_fast");
-        full_ = collector->makeEvent("pathfind_full");
-        cacheHits_ = collector->makeCounter("pathfind_cache_hits");
-        cacheMisses_ = collector->makeCounter("pathfind_cache_misses");
-        linesLoaded_ = collector->makeCounter("pathfind_lines_loaded");
-        cacheLedgerAdvances_ = collector->makeCounter("pathfind_cache_advances");
-    }
+        beast::insight::Collector::ptr const& collector);
 
-    ~PathRequestManager()
-    {
-        midCloseTimer_.cancel();
-    }
+    /**
+     * Cancel mid-close timer and detach async handlers so they cannot touch
+     * this after destruction (io_context threads join only after Application
+     * members are destroyed).
+     */
+    ~PathRequestManager();
 
     /**
      * @param midClose When true and ledger is open, also revalidate established
@@ -164,6 +157,13 @@ private:
     void
     runPeriodicRevalidate();
 
+    /**
+     * Timer completion body. Invoked only while MidCloseBag holds a lock and
+     * manager is non-null (or via a JobQueue job that re-checks the bag).
+     */
+    void
+    onMidCloseTimer(boost::system::error_code const& waitEc);
+
     Application& app_;
     beast::Journal journal_;
 
@@ -184,6 +184,19 @@ private:
     // Strong while any path_find session is live; released when idle so
     // trust-line vectors are not pinned forever after WS disconnect.
     std::shared_ptr<AssetCache> assetCache_;
+
+    /**
+     * Lifetime token for mid-close async_wait / JtRpc jobs. Handlers capture
+     * shared_ptr<MidCloseBag> and take bag->mutex before using manager.
+     * Destructor nulls manager under that mutex so cancel()'d handlers never
+     * touch a destroyed PathRequestManager (io threads outlive this object).
+     */
+    struct MidCloseBag
+    {
+        std::mutex mutex;
+        PathRequestManager* manager{nullptr};
+    };
+    std::shared_ptr<MidCloseBag> midCloseBag_;
 
     boost::asio::steady_timer midCloseTimer_;
     std::atomic<bool> midCloseScheduled_{false};

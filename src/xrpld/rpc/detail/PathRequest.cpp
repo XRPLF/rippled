@@ -1011,13 +1011,14 @@ PathRequest::doUpdate(
                 ledgerSeq >= lastFullSearchIndex_ + rpc::tuning::kPathFailedSearchInterval;
     }
 
-    // One-shot / private cache: drain incomplete owner-dir fills now so a
-    // single reply is as complete as the budget allows. WS subscriptions:
-    // PathRequestManager expands once per closed wave (not per session) to
-    // avoid N× parallel unique-lock expands under steady revalidate workers.
+    // One-shot ripple_path_find: drain incomplete fills for *this session's*
+    // pinned accounts only. Must not call expandIncompleteLines() on a shared
+    // AssetCache — that walks every incomplete hub any WS session cached and
+    // can load up to max_total_lines under unique_lock in one RPC.
+    // WS subscriptions: PathRequestManager expands once per closed wave.
     if (!revalidateOnly && hasCompletion())
     {
-        while (cache->expandIncompleteLines())
+        while (cache->expandIncompleteLinesForSession(iIdentifier_))
         {
         }
     }

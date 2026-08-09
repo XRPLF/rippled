@@ -469,6 +469,28 @@ AssetCache::expandIncompleteLines()
 }
 
 bool
+AssetCache::expandIncompleteLinesForSession(int sessionId)
+{
+    std::unique_lock const sl(lock_);
+    auto sit = sessionAccounts_.find(sessionId);
+    if (sit == sessionAccounts_.end())
+        return false;
+
+    bool grew = false;
+    for (auto const& accountID : sit->second)
+    {
+        auto it = lines_.find(accountID);
+        if (it == lines_.end() || it->second.cursor.complete)
+            continue;
+        if (remainingBudgetUnlocked() == 0)
+            break;
+        if (expandAccountUnlocked(accountID, it->second) > 0)
+            grew = true;
+    }
+    return grew;
+}
+
+bool
 AssetCache::hasIncompleteLines() const
 {
     std::shared_lock const sl(lock_);
