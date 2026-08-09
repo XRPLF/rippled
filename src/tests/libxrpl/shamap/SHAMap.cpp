@@ -257,12 +257,9 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
             map.invariants();
         }
 
-        int h = 7;
+        auto keyIndex = kKeys.size();
         for (auto const& k : map)
-        {
-            EXPECT_EQ(k.key(), kKeys[h]);
-            --h;
-        }
+            EXPECT_EQ(k.key(), kKeys[--keyIndex]);
     }
 }
 
@@ -288,7 +285,11 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     uint256 rootHash;
     std::vector<Blob> goodPath;
 
-    for (unsigned char c = 1; c < 100; ++c)
+    static constexpr unsigned char kFirstKey = 1;
+    static constexpr unsigned char kKeyCount = 100;
+    static constexpr unsigned char kLastKey = kKeyCount - 1;
+
+    for (unsigned char c = kFirstKey; c < kKeyCount; ++c)
     {
         uint256 k(c);
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
@@ -304,7 +305,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
         auto& proofPath = *path;
 
         EXPECT_TRUE(map.verifyProofPath(root, k, proofPath));
-        if (c == 1)
+        if (c == kFirstKey)
         {
             // extra node
             proofPath.insert(proofPath.begin(), proofPath.front());
@@ -313,7 +314,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
             uint256 const wrongKey(c + 1);
             EXPECT_FALSE(map.getProofPath(wrongKey));
         }
-        if (c == 99)
+        if (c == kLastKey)
         {
             key = k;
             rootHash = root;

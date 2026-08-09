@@ -171,9 +171,8 @@ else()
     # Clang wrapper supplies those paths itself (via -nostdinc++), so at compile time the
     # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
     # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
-    get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
     if(
-        _cxx_real MATCHES "^/nix/store/"
+        is_nix_compiler
         AND is_linux
         AND is_clang
         AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"

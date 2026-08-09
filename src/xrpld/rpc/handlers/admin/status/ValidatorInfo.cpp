@@ -12,12 +12,12 @@
 
 namespace xrpl {
 json::Value
-doValidatorInfo(RPC::JsonContext& context)
+doValidatorInfo(rpc::JsonContext& context)
 {
     // return error if not configured as validator
     auto const validationPK = context.app.getValidationPublicKey();
     if (!validationPK)
-        return RPC::notValidatorError();
+        return rpc::notValidatorError();
 
     json::Value ret;
 
