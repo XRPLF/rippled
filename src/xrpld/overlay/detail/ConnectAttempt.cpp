@@ -7,8 +7,6 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -16,6 +14,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
@@ -49,10 +49,10 @@ ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
     endpoint_type remoteEndpoint,
-    Resource::Consumer usage,
+    resource::Consumer usage,
     shared_context const& context,
     Peer::id_t id,
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)
     : Child(overlay)
@@ -462,7 +462,7 @@ ConnectAttempt::processResponse()
 
         auto const result =
             overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
-        if (result != PeerFinder::Result::Success)
+        if (result != peer_finder::Result::Success)
         {
             fail("Outbound " + std::string(to_string(result)));
             return;

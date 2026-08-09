@@ -30,8 +30,10 @@ missing=()
 checked=0
 
 # check <name> [probe-command...]
-# Runs the probe (default: "<name> --version") quietly. Records <name> as
-# missing if the command is not found or exits non-zero.
+# Runs the probe (default: "<name> --version"), capturing both stdout and
+# stderr, and prints one aligned line: the status, the name, and the first
+# non-blank line of the probe output (its version). Records <name> as missing
+# if the command is not found or exits non-zero.
 check() {
     local name="$1"
     shift
@@ -40,10 +42,11 @@ check() {
         probe=("${name}" --version)
     fi
 
-    echo "Checking ${name}..."
     checked=$((checked + 1))
-    if "${probe[@]}" | head -n 1; then
-        printf '  [ ok ] %s\n' "${name}"
+    local output version
+    if output="$("${probe[@]}" 2>&1)"; then
+        version="$(printf '%s\n' "${output}" | grep -m1 '[^[:space:]]' || true)"
+        printf '  [ ok ] %-20s %s\n' "${name}" "${version}"
     else
         printf '  [MISS] %s\n' "${name}"
         missing+=("${name}")
@@ -85,12 +88,14 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check file
     check less
     check make
-    check netstat which netstat
+    # net-tools netstat reports "net-tools X.Y"; macOS ships BSD netstat with no
+    # version flag, so fall back to a presence marker there.
+    check netstat sh -c 'command -v netstat >/dev/null && { netstat --version 2>&1 | grep -m1 -oE "net-tools [0-9.]+" || echo present; }'
     check ninja
-    check perl
+    check perl perl -e 'print "$^V\n"'
     check pkg-config
     check vim
-    check zip
+    check zip bash -c 'zip --version 2>&1 | grep -m1 -oE "Zip [0-9.]+"'
 
     # These tools are present in our Linux CI images and in local development
     # setups, but not in the macOS CI environment. So check them everywhere

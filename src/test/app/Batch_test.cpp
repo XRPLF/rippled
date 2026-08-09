@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TER.h>
@@ -166,7 +167,7 @@ class Batch_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
     static std::unique_ptr<Config>
@@ -498,7 +499,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
-            env.setParseFailureExpected(true);
+            auto const g = env.getParseFailureGuard(true);
             try
             {
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -510,7 +511,6 @@ class Batch_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(true);
             }
-            env.setParseFailureExpected(false);
         }
 
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
@@ -649,7 +649,7 @@ class Batch_test : public beast::unit_test::Suite
             serializeBatch(
                 msg,
                 jt.stx->getAccountID(sfAccount),
-                jt.stx->getSeqValue(),
+                jt.stx->getSeqProxy().value(),
                 tfAllOrNothing,
                 jt.stx->getBatchTransactionIDs());
             finishMultiSigningData(bob.id(), msg);
@@ -3177,10 +3177,11 @@ class Batch_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         {
-            using namespace loanBroker;
+            using namespace loan_broker;
             env(set(lender, vaultKeylet.key),
                 kManagementFeeRate(TenthBips16(100)),
                 kDebtMaximum(debtMaximumValue),
@@ -3199,7 +3200,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const lenderSeq = env.seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,

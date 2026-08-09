@@ -409,7 +409,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfPreviousTxnID,            SoeRequired},
     {sfPreviousTxnLgrSeq,        SoeRequired},
     {sfDomainID,                 SoeOptional},
-    {sfMutableFlags,             SoeDefault},
+    {sfImmutableFlags,           SoeDefault},
     {sfReferenceHolding,         SoeOptional},
     {sfIssuerEncryptionKey,      SoeOptional},
     {sfAuditorEncryptionKey,     SoeOptional},
@@ -510,6 +510,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfShareMPTID,           SoeRequired},
     {sfWithdrawalPolicy,     SoeRequired},
     {sfScale,                SoeDefault},
+    {sfLEVersion,            SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
