@@ -1,4 +1,5 @@
-#include <xrpld/app/main/CollectorManager.h>
+
+#include <xrpl/core/CollectorManager.h>
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Group.h>

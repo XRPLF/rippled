@@ -14,7 +14,6 @@
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/BasicApp.h>
-#include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
@@ -57,6 +56,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
+#include <xrpl/core/CollectorManager.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/NetworkIDService.h>

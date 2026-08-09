@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
@@ -9,6 +8,7 @@
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/CollectorManager.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/resource/ResourceManager.h>

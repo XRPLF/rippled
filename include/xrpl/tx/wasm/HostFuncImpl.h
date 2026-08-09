@@ -2,7 +2,9 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/CollectorManager.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -81,6 +83,15 @@ public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
         : HostFunctions(ct.journal), ctx_(ct), leKey_(leKey)
     {
+    }
+
+    beast::insight::Event
+    executionTimeEvent(std::string_view name) const override
+    {
+        return ctx_.registry.get()
+            .getCollectorManager()
+            .group(std::string{name.data(), name.size()})
+            ->makeEvent("finish_time");
     }
 
     bool

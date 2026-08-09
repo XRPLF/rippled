@@ -47,12 +47,14 @@ add(HostFunctions&, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
+namespace {
 std::vector<uint8_t>
 hexToBytes(std::string const& hex)
 {
     auto const ws = boost::algorithm::unhex(hex);
     return Bytes(ws.begin(), ws.end());
 }
+}  // namespace
 
 template <class IT, class T>
 unsigned

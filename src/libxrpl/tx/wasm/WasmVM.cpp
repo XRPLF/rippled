@@ -6,6 +6,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
 
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <string>
@@ -127,8 +128,18 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
+    auto const start = std::chrono::steady_clock::now();
+
     auto const ret =
         vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
+
+    // microseconds is intentional.  The resolution of the StatsD is milliseconds,
+    // but this runs too fast for that.
+    hfs.executionTimeEvent("runEscrowWasm_us")
+        .notify(
+            std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
+                                          std::chrono::steady_clock::now() - start)
+                                          .count()});
 
     if (!ret)
     {
@@ -158,8 +169,18 @@ preflightEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
+    auto const start = std::chrono::steady_clock::now();
+
     auto const ret =
         vm.check(wasmCode, hfs, funcName, params, createWasmImport(hfs), hfs.getJournal());
+
+    // microseconds is intentional.  The resolution of the StatsD is milliseconds,
+    // but this runs too fast for that.
+    hfs.executionTimeEvent("preflightEscrowWasm_us")
+        .notify(
+            std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
+                                          std::chrono::steady_clock::now() - start)
+                                          .count()});
 
     return ret;
 }

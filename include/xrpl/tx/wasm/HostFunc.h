@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -105,6 +106,12 @@ public:
     getJournal() const
     {
         return j_;
+    }
+
+    [[nodiscard]] virtual beast::insight::Event
+    executionTimeEvent(std::string_view name) const
+    {
+        return {};
     }
 
     // LCOV_EXCL_START

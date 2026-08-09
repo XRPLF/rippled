@@ -5,6 +5,8 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/insight/EventImpl.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
@@ -19,13 +21,75 @@
 
 #include <boost/algorithm/hex.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <iostream>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace xrpl::test {
+
+/**
+ * Lets a test assert that the WASM execution-timing path fired and inspect the
+ * recorded durations, without needing a StatsD sink or a full Collector.
+ */
+struct RecordingEventImpl : public beast::insight::EventImpl
+{
+    std::size_t count{};
+    value_type last{};
+    value_type total{};
+    value_type min{value_type::max()};
+    value_type max{value_type::min()};
+    std::vector<value_type> samples;
+    bool printOnDestruction{};
+
+    ~RecordingEventImpl() override
+    {
+        if (printOnDestruction && count > 0)
+        {
+            std::cout << "Mean (us): " << meanUs() << "\n";
+        }
+    }
+
+    void
+    notify(value_type const& value) override
+    {
+        ++count;
+        last = value;
+        total += value;
+        min = std::min(min, value);
+        max = std::max(max, value);
+        samples.push_back(value);
+    }
+
+    [[nodiscard]] double
+    meanUs() const
+    {
+        return count != 0 ? static_cast<double>(total.count()) / static_cast<double>(count) : 0.0;
+    }
+
+    [[nodiscard]] value_type
+    percentile(double p) const
+    {
+        if (samples.empty())
+        {
+            return value_type{};
+        }
+        auto sorted = samples;
+        std::ranges::sort(sorted);
+        auto rank = static_cast<std::size_t>((p / 100.0) * static_cast<double>(sorted.size()));
+        if (rank >= sorted.size())
+        {
+            rank = sorted.size() - 1;
+        }
+        return sorted[rank];
+    }
+};
 
 class TestLedgerDataProvider : public HostFunctions
 {
@@ -49,6 +113,7 @@ protected:
     test::jtx::Env& env_;
     AccountID accountID_;
     Bytes data_;
+    std::shared_ptr<RecordingEventImpl> execTimeEvent_ = std::make_shared<RecordingEventImpl>();
 
 public:
     TestHostFunctions(test::jtx::Env& env) : HostFunctions(env.journal), env_(env)
@@ -56,6 +121,21 @@ public:
         accountID_ = env.master.id();
         std::string t = "10000";
         data_ = Bytes{t.begin(), t.end()};
+    }
+
+    // Return an Event backed by our recording impl so a test can assert that
+    // the WASM execution was timed. The name is ignored -- every call records
+    // into the same impl.
+    [[nodiscard]] beast::insight::Event
+    executionTimeEvent(std::string_view name) const override
+    {
+        return beast::insight::Event(execTimeEvent_);
+    }
+
+    [[nodiscard]] std::shared_ptr<RecordingEventImpl>&
+    getExecutionTimeEventImpl()
+    {
+        return execTimeEvent_;
     }
 
     [[nodiscard]] std::expected<std::uint32_t, HostFunctionError>

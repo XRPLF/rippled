@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/app/main/CollectorManager.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/CollectorManager.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
