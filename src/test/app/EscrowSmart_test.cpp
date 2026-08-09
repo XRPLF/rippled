@@ -492,6 +492,18 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 Fee(finishFee),
                 escrow::Gas(2),
                 Ter(tecOUT_OF_GAS));
+
+            // Running out of gas still reports the gas consumed, which is the
+            // whole allowance. The function did not run to completion, so
+            // there is no return code to report.
+            auto const txMeta = env.meta();
+            if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
+            {
+                BEAST_EXPECTS(
+                    txMeta->getFieldU32(sfGasUsed) == 2,
+                    std::to_string(txMeta->getFieldU32(sfGasUsed)));
+            }
+            BEAST_EXPECT(txMeta && !txMeta->isFieldPresent(sfVMReturnCode));
         }
 
         {
@@ -509,6 +521,32 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                     (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1),
                 escrow::Gas(allowance),
                 Ter(tefNO_BYTECODE));
+        }
+
+        {
+            // a trap in the wasm code reports the gas it burned, which is only
+            // part of the allowance
+            auto const trapSeq = env.seq(alice);
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(kTrapUnreachableHex),
+                escrow::kCancelTime(env.now() + 100s),
+                Fee(env.current()->fees().base * 10 + kTrapUnreachableHex.size() / 2 * 5));
+            env.close();
+
+            std::uint32_t const allowance = 1000;
+            env(escrow::finish(carol, alice, trapSeq),
+                Fee(env.current()->fees().base +
+                    (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1),
+                escrow::Gas(allowance),
+                Ter(tecFAILED_PROCESSING));
+
+            auto const txMeta = env.meta();
+            if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
+            {
+                auto const gasUsed = txMeta->getFieldU32(sfGasUsed);
+                BEAST_EXPECTS(gasUsed < allowance, std::to_string(gasUsed));
+            }
+            BEAST_EXPECT(txMeta && !txMeta->isFieldPresent(sfVMReturnCode));
         }
     }
 
