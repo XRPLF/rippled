@@ -400,34 +400,11 @@ public:
         return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) const
+    // A no-op rather than Unimplemented: trace only writes to the local log.
+    // trace_wrap has already rendered the guest's buffer into `data`.
+    virtual void
+    trace(std::string_view const& msg, std::string_view const& data) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
-    traceNum(std::string_view const& msg, int64_t data) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
-    traceAccount(std::string_view const& msg, AccountID const& account) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Slice const& data) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
-    traceAmount(std::string_view const& msg, STAmount const& amount) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>

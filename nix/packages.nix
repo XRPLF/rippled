@@ -16,7 +16,23 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
-  rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
+  # rust-overlay's toolchain propagates the *default* stdenv.cc onto the PATH (so
+  # cargo has a linker). That default may be different from the clang we pin here,
+  # so it shadows our clang and the build can silently use a different compiler
+  # version. Drop that cc from every propagation channel instead of pinning a
+  # replacement: the toolchain then carries no compiler and cargo just uses the
+  # active shell's stdenv cc. Must cover all channels — rust-overlay uses both
+  # propagatedBuildInputs and depsHostHostPropagated.
+  rustToolchainBase = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
+  rustToolchain =
+    let
+      defaultCc = pkgs.stdenv.cc; # default compiler from nixpkgs stdenv
+      withoutDefaultCc = builtins.filter (dep: (dep.outPath or "") != defaultCc.outPath);
+    in
+    rustToolchainBase.overrideAttrs (old: {
+      propagatedBuildInputs = withoutDefaultCc (old.propagatedBuildInputs or [ ]);
+      depsHostHostPropagated = withoutDefaultCc (old.depsHostHostPropagated or [ ]);
+    });
 
   # Nix wraps its toolchain so that binaries are exposed only under unsuffixed
   # names (gcc, g++, clang-tidy, ...). Several tools probe for a
@@ -48,6 +64,17 @@ let
       }) tools
     );
 
+  # The cc-wrapper doesn't re-export gcov, but coverage tooling (gcovr) needs a
+  # gcov that exactly matches the compiler. Surface it from a gcc `cc` output.
+  mkGcov =
+    { name, cc }:
+    pkgs.linkFarm "gcov-${name}" [
+      {
+        name = "bin/gcov";
+        path = "${cc}/bin/gcov";
+      }
+    ];
+
   clangToolLinks = mkVersionedToolLinks {
     name = "clang-tools";
     package = clangTools;
@@ -72,6 +99,7 @@ in
     gccPackage
     llvmPackages
     mkVersionedToolLinks
+    mkGcov
     ;
 
   commonPackages = with pkgs; [
