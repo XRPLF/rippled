@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -288,7 +289,7 @@ public:
     {
         if (!account)
             return std::unexpected(HostFunctionError::InvalidAccount);
-        auto const keylet = keylet::check(account, seq);
+        auto const keylet = keylet::check(account, SeqProxy::rawSequence(seq));
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
@@ -308,7 +309,7 @@ public:
     {
         if (!account)
             return std::unexpected(HostFunctionError::InvalidAccount);
-        auto const keylet = keylet::escrow(account, seq);
+        auto const keylet = keylet::escrow(account, SeqProxy::rawSequence(seq));
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 

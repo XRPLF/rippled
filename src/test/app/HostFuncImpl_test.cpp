@@ -34,6 +34,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -382,7 +383,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -409,7 +411,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -439,7 +442,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -470,7 +474,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -497,7 +502,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -561,7 +567,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, 2);
+        auto const dummyEscrow = keylet::escrow(env.master, SeqProxy::rawSequence(2));
         auto const accountKeylet = keylet::account(env.master);
         {
             VirtualRuntime vrt;
@@ -701,7 +707,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             obj.setFieldV256(sfCredentialIDs, credIds);
         });
         ApplyContext ac = createApplyContext(env, ov, stx);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
 
         {
             VirtualRuntime vrt;
@@ -957,7 +964,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         ApplyContext ac = createApplyContext(env, ov);
 
         // Find the escrow ledger object
-        auto const escrowKeylet = keylet::escrow(env.master, env.seq(env.master) - 1);
+        auto const escrowKeylet =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) - 1));
         BEAST_EXPECT(env.le(escrowKeylet));
 
         VirtualRuntime vrt;
@@ -1022,7 +1030,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) + 5));
             VirtualRuntime vrt2;
             WasmHostFunctionsImpl hfs2(ac, dummyEscrow);
 
@@ -1059,7 +1068,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const accountKeylet = keylet::account(env.master.id());
-        auto const escrowKeylet = keylet::escrow(env.master.id(), env.seq(env.master) - 1);
+        auto const escrowKeylet =
+            keylet::escrow(env.master.id(), SeqProxy::rawSequence(env.seq(env.master) - 1));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
@@ -1174,7 +1184,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         });
 
         ApplyContext ac = createApplyContext(env, ov, stx);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -1537,7 +1548,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         // hfs.getCurrentLedgerObjNestedField(locator);
         {
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) + 5));
             VirtualRuntime vrt2;
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
@@ -1580,7 +1592,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -1824,7 +1837,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         });
 
         ApplyContext ac = createApplyContext(env, ov, stx);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -1930,7 +1944,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) + 5));
             VirtualRuntime vrt2;
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
@@ -1963,7 +1978,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -2051,7 +2067,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         });
 
         ApplyContext ac = createApplyContext(env, ov, stx);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -2165,7 +2182,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         expectError({sfSigners.getCode()}, HostFunctionError::FieldNotFound);
 
         {
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) + 5));
             VirtualRuntime vrt2;
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
@@ -2205,7 +2223,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -2309,7 +2328,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const escrowKeylet = keylet::escrow(env.master, env.seq(env.master) - 1);
+        auto const escrowKeylet =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master) - 1));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
@@ -2353,7 +2373,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -2509,7 +2530,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -2544,7 +2566,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
         VirtualRuntime vrt;
 
@@ -2599,7 +2622,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::check(masterID, 1u);
+            auto const expected = keylet::check(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("check_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -2749,7 +2772,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::escrow(masterID, 1u);
+            auto const expected = keylet::escrow(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("escrow_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -2810,7 +2833,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::mptokenIssuance(1u, masterID);
+            auto const expected = keylet::mptokenIssuance(makeMptID(1u, masterID));
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("mpt_issuance_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2850,7 +2873,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::nftokenOffer(masterID, 1u);
+            auto const expected = keylet::nftokenOffer(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("nft_offer_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2868,7 +2891,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::offer(masterID, 1u);
+            auto const expected = keylet::offer(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("offer_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -2902,7 +2925,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::payChannel(masterID, alice.id(), 1u);
+            auto const expected =
+                keylet::payChannel(masterID, alice.id(), SeqProxy::rawSequence(1u));
             WasmValVec params(8), result(1);
             auto* trap = ww(
                 &imp.at("paychan_id"), params, result, masterID, alice.id(), toBytes(1u), 1024, 32);
@@ -2946,7 +2970,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::permissionedDomain(masterID, 1u);
+            auto const expected = keylet::permissionedDomain(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(
                 &imp.at("permissioned_domain_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2986,7 +3010,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::ticket(masterID, 1u);
+            auto const expected = keylet::ticket(masterID, SeqProxy::rawTicket(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("ticket_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -3003,7 +3027,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::vault(masterID, 1u);
+            auto const expected = keylet::vault(masterID, SeqProxy::rawSequence(1u));
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("vault_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -3043,7 +3067,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(alice, env.seq(alice));
+        auto const dummyEscrow = keylet::escrow(alice, SeqProxy::rawSequence(env.seq(alice)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3179,7 +3203,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3244,7 +3269,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3280,7 +3306,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3326,7 +3353,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3373,7 +3401,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -3436,7 +3465,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3540,7 +3570,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3583,7 +3614,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3649,7 +3681,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3691,7 +3724,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3730,7 +3764,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3772,7 +3807,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3859,7 +3895,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -3985,7 +4022,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -4037,7 +4075,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
-            auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+            auto const dummyEscrow =
+                keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             VirtualRuntime vrt;
@@ -4074,7 +4113,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4146,7 +4186,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4216,7 +4257,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4421,7 +4463,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4511,7 +4554,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4644,7 +4688,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4775,7 +4820,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -4929,7 +4975,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5083,7 +5130,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5266,7 +5314,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5442,7 +5491,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         testcase("float non-canonical");
@@ -5464,7 +5514,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5658,7 +5709,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5765,7 +5817,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -5975,7 +6028,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -6178,7 +6232,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
@@ -6228,7 +6283,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         Env env{*this};
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        auto const dummyEscrow =
+            keylet::escrow(env.master, SeqProxy::rawSequence(env.seq(env.master)));
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
