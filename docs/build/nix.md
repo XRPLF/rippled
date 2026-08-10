@@ -126,11 +126,7 @@ Once inside the Nix development shell, follow the standard [build instructions](
 
 Two things differ from a system environment:
 
-**Prebuilt Conan packages.** There is no guarantee that binaries from the Conan cache will work when using Nix. If you encounter any errors, use `--build '*'` to force Conan to compile everything from source:
-
-```bash
-conan install .. --output-folder . --build '*' --settings build_type=Release
-```
+**Prebuilt Conan packages.** There is no guarantee that binaries from the Conan cache will work when using Nix. If you encounter any errors, add `--build '*'` to the `conan install` command in [Build and Test](../../BUILD.md#build-and-test) to force Conan to compile everything from source. Keep the rest of the command as it is there, so it rebuilds the `build_type` you are actually configuring.
 
 **Coverage builds.** `-Dcoverage=ON` works in the `gcc` shell (and `gcc-plain` on Linux):
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
