@@ -160,6 +160,11 @@ pub struct FakeHost {
     pub le_arr_lens: HashMap<(i32, i32), i32>,
     /// Every (cache slot, field selector) `get_ledger_obj_array_len` was asked for.
     pub le_arr_lens_asked: RefCell<Vec<(i32, i32)>>,
+    /// What `get_tx_nested_array_len` answers, by locator bytes. An unlisted locator
+    /// answers `NoArray`.
+    pub tx_nested_arr_lens: HashMap<Vec<u8>, i32>,
+    /// Every locator `get_tx_nested_array_len` was asked for.
+    pub tx_nested_arr_lens_asked: RefCell<Vec<Vec<u8>>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -205,6 +210,8 @@ impl Default for FakeHost {
             home_le_arr_lens_asked: RefCell::new(Vec::new()),
             le_arr_lens: HashMap::new(),
             le_arr_lens_asked: RefCell::new(Vec::new()),
+            tx_nested_arr_lens: HashMap::new(),
+            tx_nested_arr_lens_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -295,6 +302,11 @@ impl FakeHost {
 
     pub fn answering_le_arr_len(mut self, cache_idx: i32, field: i32, len: i32) -> FakeHost {
         self.le_arr_lens.insert((cache_idx, field), len);
+        self
+    }
+
+    pub fn answering_tx_nested_arr_len(mut self, locator: Vec<u8>, len: i32) -> FakeHost {
+        self.tx_nested_arr_lens.insert(locator, len);
         self
     }
 
@@ -425,6 +437,16 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
+        self.tx_nested_arr_lens_asked
+            .borrow_mut()
+            .push(locator.to_vec());
+        match self.tx_nested_arr_lens.get(locator) {
+            Some(&len) => Ok(len),
+            None => Err(HostError::NoArray),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -480,6 +502,7 @@ pub mod import {
         r#"(import "host_lib" "home_le_arr_len" (func $home_le_arr_len (param i32) (result i32)))"#;
     pub const LE_ARR_LEN: &str =
         r#"(import "host_lib" "le_arr_len" (func $le_arr_len (param i32 i32) (result i32)))"#;
+    pub const TX_INNER_ARR_LEN: &str = r#"(import "host_lib" "tx_inner_arr_len" (func $tx_inner_arr_len (param i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

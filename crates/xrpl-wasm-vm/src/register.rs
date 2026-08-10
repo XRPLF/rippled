@@ -253,6 +253,20 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::GetTxNestedArrayLen => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 loc_ptr: i32,
+                 loc_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetTxNestedArrayLen, |c| {
+                        let host = c.data().host;
+                        let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
+                        host.get_tx_nested_array_len(locator)
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

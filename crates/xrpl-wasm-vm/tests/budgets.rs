@@ -124,6 +124,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $le_arr_len (i32.const 1) (i32.const 1))",
             2,
         ),
+        HostFunctionSpec::GetTxNestedArrayLen => (
+            import::TX_INNER_ARR_LEN,
+            "(call $tx_inner_arr_len (i32.const 0) (i32.const 4))",
+            2,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

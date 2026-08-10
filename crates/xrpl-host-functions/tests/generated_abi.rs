@@ -139,6 +139,14 @@ impl HostFunctions for FakeHost {
         Ok(cache_idx + field)
     }
 
+    /// A nested array-length getter, keyed by the locator bytes.
+    fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
+        if locator.is_empty() {
+            return Err(HostError::LocatorMalformed);
+        }
+        Ok(locator.len() as i32)
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -202,6 +210,11 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(host.get_ledger_obj_array_len(2, 3), Ok(5));
     assert_eq!(host.get_ledger_obj_array_len(0, 3), Err(HostError::NoArray));
+    assert_eq!(host.get_tx_nested_array_len(&[9, 0, 0, 0]), Ok(4));
+    assert_eq!(
+        host.get_tx_nested_array_len(&[]),
+        Err(HostError::LocatorMalformed)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -284,6 +297,7 @@ fn the_spec_table_matches_the_declarations() {
             ("tx_arr_len", 40),
             ("home_le_arr_len", 40),
             ("le_arr_len", 40),
+            ("tx_inner_arr_len", 70),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

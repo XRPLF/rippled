@@ -199,6 +199,12 @@ host_functions! {
     #[wasm_name = "le_arr_len"]
     fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32>;
 
+    /// The number of elements in a nested array field of the transaction, reached by a
+    /// `locator`. Reads the locator region and answers the count directly.
+    #[gas = 70]
+    #[wasm_name = "tx_inner_arr_len"]
+    fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

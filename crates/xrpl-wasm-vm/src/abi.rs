@@ -244,6 +244,9 @@ mod tests {
         fn get_ledger_obj_array_len(&self, _cache_idx: i32, _field: i32) -> HostResult<i32> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_tx_nested_array_len(&self, _locator: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
