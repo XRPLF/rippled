@@ -720,6 +720,14 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                 publishCacheStats(*assetCache_);
         }
 
+        // Force-drop removes the weak from requests_ but the PathRequest may
+        // outlive this wave (WS still holds a shared_ptr). Clear owner_ so
+        // ~PathRequest does not call removePathRequest on a manager that was
+        // never told to detach this session (manager dtor only detaches
+        // entries still in requests_ — force-dropped ones would UAF).
+        if (request)
+            request->detachFromManager();
+
         // Last session gone (or only dead weaks) — free trust-line memory now.
         releaseCacheIfIdleUnlocked();
     };
@@ -926,8 +934,16 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
         mustBreak = false;
     } while (!app_.getJobQueue().isStopping());
 
-    if (cache)
-        publishCacheStats(*cache);
+    // Publish only while this wave's cache is still the manager's live
+    // instance. If the last subscription ended mid-update, dropRequest /
+    // releaseCacheIfIdle already published deltas and zeroed lastCache*
+    // baselines; publishing the local shared_ptr again would re-count the
+    // entire cache lifetime as a new insight delta (inflated counters).
+    {
+        std::scoped_lock const sl(lock_);
+        if (cache && assetCache_ == cache)
+            publishCacheStats(*cache);
+    }
 
     // Keep the periodic revalidate timer armed while sessions are live.
     // (Also started from insertPathRequest; this re-arms after closed waves.)
@@ -1075,6 +1091,13 @@ PathRequestManager::removePathRequest(PathRequest* request)
         if (freed > 0)
             publishCacheStats(*assetCache_);
     }
+
+    // Clear owner_ once unlinked so a later ~PathRequest (or a second close)
+    // does not re-enter after this manager is destroyed. Manager dtor only
+    // detaches sessions still listed in requests_; closed/force-dropped ones
+    // would otherwise keep a dangling owner_.
+    if (request)
+        request->detachFromManager();
 
     releaseCacheIfIdleUnlocked();
 }

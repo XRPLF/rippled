@@ -175,15 +175,18 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
-// Smallest liquidity worth ranking for a destination amount across maxPaths
-// alternatives. Historical path_find used maxPaths+2 when maxPaths was 4 and
-// two slots were reserved for covering/spare paths. With six ranked paths and
-// no covering spare, divide by maxPaths so the threshold matches the old
-// amount/6 floor without reintroducing spare-slot math.
+// Smallest liquidity worth ranking for a destination amount.
+//
+// Divisor is maxPaths+2 (historical covering/spare slots). That must stay:
+// transactionSign build_path still ranks with maxPaths=4 and needs amount/6.
+// Dividing by maxPaths alone made signed-payment path building use amount/4,
+// which discarded usable routes that previously ranked.
+// path_find (maxPaths=6) becomes amount/8 — slightly more permissive, never
+// stricter than the old floor.
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
-    auto const slots = std::max(1, maxPaths);
+    auto const slots = std::max(1, maxPaths + 2);
     return divide(amount, STAmount(slots), amount.asset());
 }
 
