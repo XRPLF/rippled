@@ -450,12 +450,6 @@ public:
     }
 
     friend constexpr bool
-    operator!=(Number const& x, Number const& y) noexcept
-    {
-        return !(x == y);
-    }
-
-    friend constexpr bool
     operator<(Number const& l, Number const& r) noexcept
     {
         bool const lneg = l.negative_;
