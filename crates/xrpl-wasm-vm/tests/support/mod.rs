@@ -105,6 +105,8 @@ pub struct FakeHost {
     pub ledger_sqn: Answer,
     /// What `get_parent_ledger_time` answers.
     pub parent_ledger_time: Answer,
+    /// What `get_parent_ledger_hash` answers.
+    pub parent_ledger_hash: Answer,
     /// What `get_current_ledger_obj_field` answers, by field selector. An
     /// unlisted selector answers `FieldNotFound`.
     pub fields: HashMap<i32, Answer>,
@@ -126,6 +128,8 @@ impl Default for FakeHost {
             // A distinct value from the sequence number, so a test cannot pass by
             // reading one where it meant the other.
             parent_ledger_time: Answer::bytes(9u32.to_le_bytes()),
+            // 32 bytes counting up from 0, the length of a real ledger hash.
+            parent_ledger_hash: Answer::filler(32),
             fields: HashMap::new(),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
@@ -147,6 +151,11 @@ impl FakeHost {
 
     pub fn answering_parent_ledger_time(mut self, answer: Answer) -> FakeHost {
         self.parent_ledger_time = answer;
+        self
+    }
+
+    pub fn answering_parent_ledger_hash(mut self, answer: Answer) -> FakeHost {
+        self.parent_ledger_hash = answer;
         self
     }
 
@@ -172,6 +181,10 @@ impl HostFunctions for FakeHost {
 
     fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize> {
         self.parent_ledger_time.fill(out)
+    }
+
+    fn get_parent_ledger_hash(&self, out: &mut [u8]) -> HostResult<usize> {
+        self.parent_ledger_hash.fill(out)
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -216,6 +229,7 @@ pub mod import {
     pub const LDGR_INDEX: &str =
         r#"(import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))"#;
     pub const PARENT_LDGR_TIME: &str = r#"(import "host_lib" "parent_ldgr_time" (func $parent_ldgr_time (param i32 i32) (result i32)))"#;
+    pub const PARENT_LDGR_HASH: &str = r#"(import "host_lib" "parent_ldgr_hash" (func $parent_ldgr_hash (param i32 i32) (result i32)))"#;
     pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =

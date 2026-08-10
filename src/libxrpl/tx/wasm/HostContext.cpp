@@ -84,6 +84,18 @@ HostContext::getParentLedgerTime(rust::Slice<std::uint8_t> out) const noexcept
 }
 
 std::int32_t
+HostContext::getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const hash = hostFunctions_.getParentLedgerHash();
+        if (!hash)
+            return hfErrorToInt(hash.error());
+
+        return answer(out, hash->data(), hash->size());
+    });
+}
+
+std::int32_t
 HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out)
     const noexcept
 {

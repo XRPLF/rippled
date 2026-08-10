@@ -48,6 +48,9 @@ public:
     getParentLedgerTime(rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t
+    getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
     getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t

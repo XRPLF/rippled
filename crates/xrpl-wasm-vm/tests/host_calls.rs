@@ -49,6 +49,31 @@ fn parent_ldgr_time_writes_the_close_time_where_the_guest_asked() {
     assert_eq!(status(&wat, &host), 4, "the byte count");
 }
 
+/// A 32-byte value (a ledger hash) travels the same getter path as the 4-byte
+/// scalars: every byte lands where the guest asked, and the status is the length.
+#[test]
+fn parent_ldgr_hash_writes_all_32_bytes_where_the_guest_asked() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[import::PARENT_LDGR_HASH, ONE_PAGE],
+        "(call $parent_ldgr_hash (i32.const 64) (i32.const 32))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the byte count");
+
+    // The default hash is 0, 1, 2, ..., so its first four bytes load as 0x03020100.
+    let wat = module(
+        &[import::PARENT_LDGR_HASH, ONE_PAGE],
+        "(drop (call $parent_ldgr_hash (i32.const 64) (i32.const 32)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(
+        status(&wat, &host),
+        0x03020100,
+        "the first four bytes the host wrote"
+    );
+}
+
 /// The output region is wherever the guest points, not a fixed address.
 #[test]
 fn the_output_region_is_the_pointer_the_guest_gave() {

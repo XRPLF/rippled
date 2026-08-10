@@ -111,6 +111,11 @@ host_functions! {
     #[wasm_name = "parent_ldgr_time"]
     fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The hash of the parent (last-closed) ledger, as 32 bytes.
+    #[gas = 60]
+    #[wasm_name = "parent_ldgr_hash"]
+    fn get_parent_ledger_hash(&self, out: &mut [u8]) -> HostResult<usize>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]
