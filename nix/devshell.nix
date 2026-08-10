@@ -35,7 +35,7 @@ let
 
   # Own Conan home, so Nix-built packages never share a cache with a system
   # Conan. The stamp holds a content-addressed store path, so init.sh re-runs
-  # only when it or a profile changes.
+  # only when something in conan/ changes.
   conanHook = ''
     export CONAN_HOME="$HOME/.conan2-nix"
     _xrpl_conan_stamp="$CONAN_HOME/.xrpld-devshell"
@@ -43,7 +43,7 @@ let
       if ${conanDir}/init.sh; then
         printf '%s' "${conanDir}" >"$_xrpl_conan_stamp"
       else
-        echo "⚠️  Conan setup failed - see 'Conan configuration' in docs/build/nix.md to finish it by hand."
+        echo "⚠️  Conan setup failed - run ./conan/init.sh from the repository root to retry."
       fi
     fi
     unset _xrpl_conan_stamp
