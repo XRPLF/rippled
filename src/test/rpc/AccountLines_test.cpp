@@ -81,6 +81,20 @@ public:
         }
         Account const alice{"alice"};
         {
+            // account_lines on an unfunded account.
+            json::Value params;
+            params[jss::account] = alice.human();
+            auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(
+                lines[jss::result][jss::error_message] ==
+                rpc::makeError(RpcActNotFound)[jss::error_message]);
+        }
+        env.fund(XRP(10000), alice);
+        env.close();
+        LedgerHeader const ledger3Info = env.closed()->header();
+        BEAST_EXPECT(ledger3Info.seq == 3);
+
+        {
             // test peer non-string
             auto testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
@@ -98,20 +112,6 @@ public:
             testInvalidPeerParam(json::Value(json::ValueType::Object));
             testInvalidPeerParam(json::Value(json::ValueType::Array));
         }
-        {
-            // account_lines on an unfunded account.
-            json::Value params;
-            params[jss::account] = alice.human();
-            auto const lines = env.rpc("json", "account_lines", to_string(params));
-            BEAST_EXPECT(
-                lines[jss::result][jss::error_message] ==
-                rpc::makeError(RpcActNotFound)[jss::error_message]);
-        }
-        env.fund(XRP(10000), alice);
-        env.close();
-        LedgerHeader const ledger3Info = env.closed()->header();
-        BEAST_EXPECT(ledger3Info.seq == 3);
-
         {
             // alice is funded but has no lines.  An empty array is returned.
             json::Value params;
@@ -771,6 +771,29 @@ public:
         }
         Account const alice{"alice"};
         {
+            // account_lines on an unfunded account.
+            json::Value params;
+            params[jss::account] = alice.human();
+            json::Value request;
+            request[jss::method] = "account_lines";
+            request[jss::jsonrpc] = "2.0";
+            request[jss::ripplerpc] = "2.0";
+            request[jss::id] = 5;
+            request[jss::params] = params;
+            auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(
+                lines[jss::error][jss::message] ==
+                rpc::makeError(RpcActNotFound)[jss::error_message]);
+            BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
+        }
+        env.fund(XRP(10000), alice);
+        env.close();
+        LedgerHeader const ledger3Info = env.closed()->header();
+        BEAST_EXPECT(ledger3Info.seq == 3);
+
+        {
             // test peer non-string
             auto testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
@@ -799,29 +822,6 @@ public:
             testInvalidPeerParam(json::Value(json::ValueType::Object));
             testInvalidPeerParam(json::Value(json::ValueType::Array));
         }
-        {
-            // account_lines on an unfunded account.
-            json::Value params;
-            params[jss::account] = alice.human();
-            json::Value request;
-            request[jss::method] = "account_lines";
-            request[jss::jsonrpc] = "2.0";
-            request[jss::ripplerpc] = "2.0";
-            request[jss::id] = 5;
-            request[jss::params] = params;
-            auto const lines = env.rpc("json2", to_string(request));
-            BEAST_EXPECT(
-                lines[jss::error][jss::message] ==
-                rpc::makeError(RpcActNotFound)[jss::error_message]);
-            BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
-        }
-        env.fund(XRP(10000), alice);
-        env.close();
-        LedgerHeader const ledger3Info = env.closed()->header();
-        BEAST_EXPECT(ledger3Info.seq == 3);
-
         {
             // alice is funded but has no lines.  An empty array is returned.
             json::Value params;
