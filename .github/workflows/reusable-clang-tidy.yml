@@ -59,6 +59,13 @@ jobs:
         with:
           compiler: ${{ env.COMPILER }}
 
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          cache-directories: ${{ env.BUILD_DIR }}/corrosion
+          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
+          workspaces: crates -> ../${{ env.BUILD_DIR }}/cargo
+
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
 
