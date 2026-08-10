@@ -3762,7 +3762,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const gw = Account("gw");
 
-        for (auto const testFeatures : {features - featureMPTokensV2, features | featureMPTokensV2})
+        for (auto const testFeatures :
+             {features - featureMPTokensV2 - fixCleanup3_4_0,
+              features - featureMPTokensV2,
+              (features | featureMPTokensV2) - fixCleanup3_4_0,
+              features | featureMPTokensV2})
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
