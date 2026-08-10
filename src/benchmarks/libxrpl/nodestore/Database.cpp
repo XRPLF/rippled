@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 namespace {
 
 // Number of distinct objects pre-generated per run.
@@ -240,4 +240,4 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
 }();
 
 }  // namespace
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

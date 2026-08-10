@@ -30,7 +30,9 @@ ignoreRegExpList:
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
-  - filename: "**/*_test.cpp" # all test files
+  - filename:
+      - "**/*_test.cpp" # legacy boost.test files
+      - "src/tests/**/*.cpp" # gtest test files
     ignoreRegExpList:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
@@ -130,6 +132,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
@@ -163,6 +166,7 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
   - lseq
   - lsmf
   - ltype
@@ -172,7 +176,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -200,6 +203,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
