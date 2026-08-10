@@ -172,6 +172,28 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::GetCurrentLedgerObjNestedField => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 loc_ptr: i32,
+                 loc_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(
+                        &mut caller,
+                        HostFunctionSpec::GetCurrentLedgerObjNestedField,
+                        |c| {
+                            let out = Region::new(out_ptr, out_len);
+                            let locator = Region::new(loc_ptr, loc_len);
+                            write_buffered(c, out, |host, data, buf| {
+                                host.get_current_ledger_obj_nested_field(locator.read(data)?, buf)
+                            })
+                        },
+                    )
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

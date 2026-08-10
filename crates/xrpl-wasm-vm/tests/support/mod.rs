@@ -135,6 +135,11 @@ pub struct FakeHost {
     pub tx_nested: HashMap<Vec<u8>, Answer>,
     /// Every locator `get_tx_nested_field` was asked for.
     pub tx_nested_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_current_ledger_obj_nested_field` answers, by locator bytes. An
+    /// unlisted locator answers `FieldNotFound`.
+    pub home_le_nested: HashMap<Vec<u8>, Answer>,
+    /// Every locator `get_current_ledger_obj_nested_field` was asked for.
+    pub home_le_nested_asked: RefCell<Vec<Vec<u8>>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -170,6 +175,8 @@ impl Default for FakeHost {
             le_fields_asked: RefCell::new(Vec::new()),
             tx_nested: HashMap::new(),
             tx_nested_asked: RefCell::new(Vec::new()),
+            home_le_nested: HashMap::new(),
+            home_le_nested_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -230,6 +237,11 @@ impl FakeHost {
 
     pub fn answering_tx_nested(mut self, locator: Vec<u8>, answer: Answer) -> FakeHost {
         self.tx_nested.insert(locator, answer);
+        self
+    }
+
+    pub fn answering_home_le_nested(mut self, locator: Vec<u8>, answer: Answer) -> FakeHost {
+        self.home_le_nested.insert(locator, answer);
         self
     }
 
@@ -307,6 +319,20 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_current_ledger_obj_nested_field(
+        &self,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.home_le_nested_asked
+            .borrow_mut()
+            .push(locator.to_vec());
+        match self.home_le_nested.get(locator) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::FieldNotFound),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -354,6 +380,7 @@ pub mod import {
         r#"(import "host_lib" "le_field" (func $le_field (param i32 i32 i32 i32) (result i32)))"#;
     pub const TX_INNER: &str =
         r#"(import "host_lib" "tx_inner" (func $tx_inner (param i32 i32 i32 i32) (result i32)))"#;
+    pub const HOME_LE_INNER: &str = r#"(import "host_lib" "home_le_inner" (func $home_le_inner (param i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

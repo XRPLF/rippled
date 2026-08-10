@@ -206,6 +206,23 @@ fn tx_inner_reads_the_locator_and_writes_the_field() {
     assert_eq!(*host.tx_nested_asked.borrow(), vec![locator]);
 }
 
+/// The same read-input-write-output path over the current object, with its own
+/// answer set distinct from the transaction's nested getter.
+#[test]
+fn home_le_inner_reads_the_locator_and_writes_the_field() {
+    let locator = vec![5u8, 0, 0, 0];
+    let host = FakeHost::new()
+        .answering_home_le_nested(locator.clone(), support::Answer::bytes([0xcc, 0xdd, 0xee]));
+
+    let wat = module(
+        &[import::HOME_LE_INNER, ONE_PAGE],
+        "(i32.store (i32.const 0) (i32.const 5))
+         (call $home_le_inner (i32.const 0) (i32.const 4) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 3, "the field bytes the host wrote");
+    assert_eq!(*host.home_le_nested_asked.borrow(), vec![locator]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

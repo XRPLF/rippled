@@ -159,6 +159,16 @@ host_functions! {
     #[wasm_name = "tx_inner"]
     fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
+    /// The serialized bytes of a nested field of the current (escrow) ledger object,
+    /// reached by a `locator`, as with [`Self::get_tx_nested_field`].
+    #[gas = 110]
+    #[wasm_name = "home_le_inner"]
+    fn get_current_ledger_obj_nested_field(
+        &self,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

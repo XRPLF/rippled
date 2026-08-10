@@ -101,6 +101,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $tx_inner (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
             4,
         ),
+        HostFunctionSpec::GetCurrentLedgerObjNestedField => (
+            import::HOME_LE_INNER,
+            "(call $home_le_inner (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
+            4,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",
