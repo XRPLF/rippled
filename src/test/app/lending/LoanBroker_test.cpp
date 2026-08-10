@@ -2539,11 +2539,11 @@ class LoanBroker_test : public beast::unit_test::Suite
     {
         testcase(
             std::string{"CoverWithdraw with credential-based deposit preauth "} +
-            (features[fixCleanup3_2_0] ? "post-fix" : "pre-fix"));
+            (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix"));
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        bool const fixEnabled = features[fixCleanup3_2_0];
+        bool const fixEnabled = features[fixCleanup3_4_0];
 
         Env env(*this, features);
 
@@ -2566,19 +2566,20 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = broker, .id = vaultKeylet.key, .amount = asset(1'000)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
-        env(loanBroker::set(broker, vaultKeylet.key));
+        auto const brokerKeylet =
+            keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));
+        env(loan_broker::set(broker, vaultKeylet.key));
         env.close();
 
-        env(loanBroker::coverDeposit(broker, brokerKeylet.key, asset(500)));
+        env(loan_broker::coverDeposit(broker, brokerKeylet.key, asset(500)));
         env.close();
 
         auto coverWithdrawToDest = [&]() {
-            return loanBroker::coverWithdraw(broker, brokerKeylet.key, asset(10));
+            return loan_broker::coverWithdraw(broker, brokerKeylet.key, asset(10));
         };
 
         // Without any preauth, coverWithdraw to dest fails
-        env(coverWithdrawToDest(), loanBroker::kDestination(dest), Ter{tecNO_PERMISSION});
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), Ter{tecNO_PERMISSION});
         env.close();
 
         // Issue and accept a credential for the broker (with expiration)
@@ -2600,14 +2601,14 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Without supplying credentials, still fails
-        env(coverWithdrawToDest(), loanBroker::kDestination(dest), Ter{tecNO_PERMISSION});
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), Ter{tecNO_PERMISSION});
         env.close();
 
         if (!fixEnabled)
         {
             // Pre-fix: sfCredentialIDs in LoanBrokerCoverWithdraw is disabled
             env(coverWithdrawToDest(),
-                loanBroker::kDestination(dest),
+                loan_broker::kDestination(dest),
                 credentials::Ids({credIdx}),
                 Ter{temDISABLED});
             env.close();
@@ -2615,21 +2616,21 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
 
         // With credentials, succeeds
-        env(coverWithdrawToDest(), loanBroker::kDestination(dest), credentials::Ids({credIdx}));
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), credentials::Ids({credIdx}));
         env.close();
 
         // Bad credential id is rejected
         std::string const invalidIdx =
             "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
         env(coverWithdrawToDest(),
-            loanBroker::kDestination(dest),
+            loan_broker::kDestination(dest),
             credentials::Ids({invalidIdx}),
             Ter{tecBAD_CREDENTIALS});
         env.close();
 
         // Malformed credential array (duplicates) is rejected by checkFields
         env(coverWithdrawToDest(),
-            loanBroker::kDestination(dest),
+            loan_broker::kDestination(dest),
             credentials::Ids({credIdx, credIdx}),
             Ter{temMALFORMED});
         env.close();
@@ -2643,7 +2644,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             credentials::ledgerEntry(env, broker, credIssuer, credType2)[jss::result][jss::index]
                 .asString();
         env(coverWithdrawToDest(),
-            loanBroker::kDestination(dest),
+            loan_broker::kDestination(dest),
             credentials::Ids({credIdx2}),
             Ter{tecNO_PERMISSION});
         env.close();
@@ -2652,7 +2653,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close(150s);
         BEAST_EXPECT(env.le(credKeylet));
         env(coverWithdrawToDest(),
-            loanBroker::kDestination(dest),
+            loan_broker::kDestination(dest),
             credentials::Ids({credIdx}),
             Ter{tecEXPIRED});
         env.close();
@@ -2897,7 +2898,7 @@ public:
 
         testRIPD4274();
 
-        testCoverWithdrawCredentialDepositPreauth(all_ - fixCleanup3_2_0);
+        testCoverWithdrawCredentialDepositPreauth(all_ - fixCleanup3_4_0);
         testCoverWithdrawCredentialDepositPreauth(all_);
 
         testLoanBrokerDeleteLockedMPT(all_);
