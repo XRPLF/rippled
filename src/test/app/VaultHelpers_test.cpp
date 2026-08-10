@@ -142,6 +142,19 @@ class VaultHelpers_test : public beast::unit_test::Suite
             BEAST_EXPECT(totalAfter == totalBeforeNegative - 10);
             BEAST_EXPECT(availableAfter == availableBeforeNegative);
         }
+
+        // If the underlying accountSend fails (here: sender has no trust
+        // line for the vault asset and is not its issuer, so cannot source
+        // the IOU), the helper propagates the non-tes error rather than
+        // silently swallowing it.
+        {
+            Account const stranger{"stranger"};
+            env.fund(XRP(10'000), stranger);
+            env.close();
+            STAmount const ten{vaultAsset, 10};
+            auto const ter = addVaultAssets(view, vault, stranger, ten, ten, env.journal);
+            BEAST_EXPECT(!isTesSuccess(ter));
+        }
     }
 
     void
@@ -220,6 +233,21 @@ class VaultHelpers_test : public beast::unit_test::Suite
             BEAST_EXPECT(failTer == tefINTERNAL);
             BEAST_EXPECT(Number(vault->at(sfAssetsTotal)) == totalBeforeFail);
             BEAST_EXPECT(Number(vault->at(sfAssetsAvailable)) == availableBeforeFail);
+        }
+
+        // If the underlying accountSend fails (here: recipient has no trust
+        // line for the vault asset and cannot receive it), the helper
+        // propagates the non-tes error rather than silently swallowing it.
+        // In production the recipient is always the asset issuer, which
+        // implicitly holds its own asset; this synthetic third-party
+        // recipient stands in only to exercise the failure branch.
+        {
+            Account const stranger{"stranger"};
+            env.fund(XRP(10'000), stranger);
+            env.close();
+            STAmount const ten{vaultAsset, 10};
+            auto const failTer = clawbackVaultAssets(view, vault, stranger, ten, env.journal);
+            BEAST_EXPECT(!isTesSuccess(failTer));
         }
     }
 
@@ -417,6 +445,39 @@ class VaultHelpers_test : public beast::unit_test::Suite
         BEAST_EXPECT(availableAfter == availableBefore - 100);
         BEAST_EXPECT(borrowerBalanceAfter == borrowerBalanceBefore + eighty);
         BEAST_EXPECT(feeRecipientBalanceAfter == feeRecipientBalanceBefore + twenty);
+
+        // Zero-amount recipients still count toward the recipients.size() > 1
+        // precondition and drive the sum-of-amounts to zero, which short-
+        // circuits the accountSendMulti call. The Vault's fields are still
+        // updated (both to their pre-call values, since the deltas are all
+        // zero), and no funds move.
+        {
+            Number const totalBeforeZero = vault->at(sfAssetsTotal);
+            Number const availableBeforeZero = vault->at(sfAssetsAvailable);
+            auto const borrowerBalanceBeforeZero = accountHolds(
+                view,
+                borrower,
+                vaultAsset,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                env.journal);
+            MultiplePaymentDestinations const zeroRecipients{
+                {borrower, Number{0}},
+                {feeRecipient, Number{0}},
+            };
+            auto const zeroTer = moveVaultAssets(view, vault, zeroRecipients, zero, env.journal);
+            auto const borrowerBalanceAfterZero = accountHolds(
+                view,
+                borrower,
+                vaultAsset,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                env.journal);
+            BEAST_EXPECT(isTesSuccess(zeroTer));
+            BEAST_EXPECT(Number(vault->at(sfAssetsTotal)) == totalBeforeZero);
+            BEAST_EXPECT(Number(vault->at(sfAssetsAvailable)) == availableBeforeZero);
+            BEAST_EXPECT(borrowerBalanceAfterZero == borrowerBalanceBeforeZero);
+        }
     }
 
 public:
