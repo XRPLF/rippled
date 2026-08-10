@@ -12,6 +12,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -38,6 +39,9 @@ public:
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
@@ -76,6 +80,10 @@ private:
     // only be reached through Batch::checkSign.
     static NotTEC
     checkBatchSign(PreclaimContext const& ctx);
+
+    // nullopt on overflow or oversized signer arrays.
+    static std::optional<XRPAmount>
+    calculateBaseFeeImpl(ReadView const& view, STTx const& tx);
 };
 
 }  // namespace xrpl

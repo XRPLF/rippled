@@ -234,7 +234,7 @@ AMM::ammRpcInfo(
             jv[jss::amm_account] = *ammAccount;
     }
     auto jr =
-        (apiVersion == RPC::kApiInvalidVersion
+        (apiVersion == rpc::kApiInvalidVersion
              ? env_.rpc("json", "amm_info", to_string(jv))
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
@@ -326,13 +326,10 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
 {
     return expectAuctionSlot(
         [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
-            for (auto const& account : accounts)
-            {
-                if (std::ranges::find(authAccounts, account.getAccountID(sfAccount)) ==
-                    authAccounts.end())
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& account) {
+                return std::ranges::find(authAccounts, account.getAccountID(sfAccount)) !=
+                    authAccounts.end();
+            });
         });
 }
 

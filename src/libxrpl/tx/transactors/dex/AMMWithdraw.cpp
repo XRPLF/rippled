@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -375,11 +376,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToWithdraw = [&,
+                               &amountBalance = amountBalance,
+                               &amount2Balance = amount2Balance,
+                               &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalWithdrawLimit(
@@ -433,6 +433,29 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToWithdraw();
+        }
+        catch (std::runtime_error const& e)
+        {
+            // Defense in-depth for amount overflow/out-of-range: the withdrawal
+            // counterpart of the AMMDeposit guard. Unlike deposit, no known
+            // withdraw path can throw here - preclaim bounds the requested
+            // amounts by the pool balances, and the only historical throw
+            // (denom == 0 in singleWithdrawEPrice) is guarded under
+            // fixCleanup3_3_0. Gated by fixCleanup3_4_0 to preserve the
+            // legacy tefEXCEPTION pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "AMMWithdraw: amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+            // LCOV_EXCL_STOP
+        }
     }();
 
     if (!isTesSuccess(result))

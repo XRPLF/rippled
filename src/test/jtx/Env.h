@@ -482,11 +482,52 @@ public:
             app().getNumberOfThreads() == 1,
             "syncClose() is only useful on an application with a single thread");
         auto const result = close();
-        auto serverBarrier = std::make_shared<std::promise<void>>();
-        auto future = serverBarrier->get_future();
-        boost::asio::post(app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
-        auto const status = future.wait_for(timeout);
-        return result && status == std::future_status::ready;
+        return result && drainServerIo(timeout);
+    }
+
+    /**
+     * Disconnect the Env's built-in client and wait for the server to
+     * register the dropped connection.
+     *
+     * Env holds one persistent client connection to the server's RPC port for
+     * its whole lifetime (see client()), and that connection counts against
+     * the port's connection limit. Tests that need a known starting occupancy
+     * can call this to deterministically release that slot instead of waiting
+     * out the server's localhost idle timeout.
+     *
+     * The server decrements its per-port connection count in the peer's
+     * destructor, which runs when the io_context processes the end-of-stream
+     * on the closed socket. After closing the client this drains the server's
+     * io_context twice: the first barrier guarantees the reactor has reaped
+     * the closed socket and queued the peer's teardown, and the second
+     * guarantees that teardown (and therefore the count decrement) has run.
+     *
+     * This is only sound when the server uses a single io_context thread, so
+     * that draining establishes ordering against the teardown - configure the
+     * Env with singleThreadIo() (as syncClose() also requires). Like
+     * syncClose(), it relies on loopback teardown latency being negligible.
+     *
+     * @param timeout Maximum time to wait for each barrier task to execute
+     * @return true if both barriers executed within timeout, false otherwise
+     */
+    [[nodiscard]] bool
+    disconnectClient(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
+    {
+        XRPL_ASSERT(
+            app().getNumberOfThreads() == 1,
+            "disconnectClient() is only useful on an application with a single "
+            "thread");
+
+        bundle_.client->disconnect();
+
+        // Drain the server's single io thread twice: the first barrier flushes
+        // the reactor's reap of the closed socket (queuing the peer teardown),
+        // the second flushes that teardown - and therefore the connection-count
+        // decrement. Both run unconditionally so a timed-out first drain does
+        // not short-circuit the second.
+        bool const reaped = drainServerIo(timeout);
+        bool const toreDown = drainServerIo(timeout);
+        return reaped && toreDown;
     }
 
     /**
@@ -512,6 +553,49 @@ public:
     setParseFailureExpected(bool b)
     {
         parseFailureExpected_ = b;
+    }
+
+    /**
+     * RAII class to set and restore the parse failure flag (setParseFailureExpected).
+     *
+     * Can be created directly, or through the `getParseFailureGuard(bool)` function.
+     */
+    class ParseFailureGuard final
+    {
+        Env& self_;
+        bool const oldExpected_;
+
+    public:
+        ParseFailureGuard(Env& self, bool b)
+            : self_(self), oldExpected_(self_.parseFailureExpected_)
+        {
+            self_.setParseFailureExpected(b);
+        }
+
+        ~ParseFailureGuard()
+        {
+            self_.setParseFailureExpected(oldExpected_);
+        }
+
+        // No copy, no move
+        ParseFailureGuard(ParseFailureGuard const&) = delete;
+        ParseFailureGuard&
+        operator=(ParseFailureGuard const&) = delete;
+        ParseFailureGuard(ParseFailureGuard&& other) = delete;
+        ParseFailureGuard&
+        operator=(ParseFailureGuard&&) = delete;
+    };
+
+    /**
+     * Gets an RAII guard to set and restore the parse failure flag
+     *
+     * Usage:
+     * auto const guard = env.getParseFailureGuard(true/false);
+     */
+    [[nodiscard]] ParseFailureGuard
+    getParseFailureGuard(bool b)
+    {
+        return ParseFailureGuard{*this, b};
     }
 
     /**
@@ -803,6 +887,25 @@ public:
     }
 
 private:
+    /**
+     * Drain the (single) server io_context thread once.
+     *
+     * Posts a barrier task to the server's io_context and blocks until it
+     * runs, so every task queued before it has been processed. Only meaningful
+     * with a single io thread (see syncClose()/disconnectClient()).
+     *
+     * @param timeout Maximum time to wait for the barrier task to execute
+     * @return true if the barrier ran within timeout, false otherwise
+     */
+    [[nodiscard]] bool
+    drainServerIo(std::chrono::steady_clock::duration timeout)
+    {
+        auto barrier = std::make_shared<std::promise<void>>();
+        auto future = barrier->get_future();
+        boost::asio::post(app().getIOContext(), [barrier]() { barrier->set_value(); });
+        return future.wait_for(timeout) == std::future_status::ready;
+    }
+
     void
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
@@ -978,7 +1081,7 @@ Env::rpc(
     Args&&... args)
 {
     return doRpc(
-        RPC::kApiCommandLineVersion,
+        rpc::kApiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }
