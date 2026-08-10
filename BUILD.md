@@ -53,47 +53,25 @@ releases](https://github.com/XRPLF/rippled/releases).
 
 ### Set Up Conan
 
-Once your [development environment](./docs/build/environment.md) is ready, you
-may need to set up your Conan profile.
-
-Both steps below, plus our [`global.conf`](./conan/global.conf) defaults, can be
-applied in one command:
+Once your [development environment](./docs/build/environment.md) is ready, set
+Conan up for this repository:
 
 ```bash
 ./conan/init.sh
 ```
 
-It honours `CONAN_HOME` and never deletes an existing Conan home, so it is safe
-to re-run. Note that it overwrites `global.conf` and our profiles in that home.
+That installs our [`global.conf`](./conan/global.conf), our Conan
+[profiles](./conan/profiles), and the `xrplf` remote that hosts some of our
+dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home,
+so it is safe to re-run — it only overwrites the files it manages.
 
 > [!TIP]
-> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this
-> whole section is already done for you — the script runs on entry.
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is
+> already done for you: the script runs on entry.
 
-#### Profiles
-
-We recommend that you install our Conan profiles:
-
-```bash
-conan config install conan/profiles/ -tf $(conan config home)/profiles/
-```
-
-You can check your Conan profile by running:
-
-```bash
-conan profile show
-```
-
-If the default profile is not suitable for your environment, you can create a custom profile and pass it to Conan.
-More information on customizing Conan can be found in the [Advanced Conan configuration](./docs/build/advanced_conan.md).
-
-#### Add xrplf remote
-
-Run the following command to add the `xrplf` remote, which hosts some of our dependencies:
-
-```bash
-conan remote add --index 0 --force xrplf https://conan.xrplf.org/repository/conan/
-```
+You can inspect the resulting profile with `conan profile show`. If it is not
+suitable for your environment, create a custom profile and pass it to Conan — see
+[Advanced Conan configuration](./docs/build/advanced_conan.md).
 
 ### Set Up Ccache
 
@@ -389,7 +367,7 @@ incompatible with it — see
 #### ERROR: Package not resolved
 
 If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
-please [add `xrplf` remote](#add-xrplf-remote) or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
+please [set Conan up](#set-up-conan) so the `xrplf` remote is configured, or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
