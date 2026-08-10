@@ -23,7 +23,7 @@ namespace {
 //------------------------------------------------------------------------------
 // clang-format off
 // NOLINTNEXTLINE(readability-identifier-naming)
-char const* const versionString = "3.3.0-rc1"
+char const* const versionString = "3.4.0-b0"
     // clang-format on
     ;
 

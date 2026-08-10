@@ -106,9 +106,10 @@ jobs:
       # header files are copied into separate directories by CMake, which will
       # otherwise result in cache misses.
       CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
-      # Determine if coverage and voidstar should be enabled.
+      # Determine if coverage, voidstar and validator-keys should be enabled.
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
+      VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
@@ -226,6 +227,22 @@ jobs:
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Run the validator-keys tests
+        if: ${{ env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: ./validator-keys --unittest
+
+      - name: Upload the validator-keys binary
+        if: ${{ github.event.repository.visibility == 'public' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validator-keys-${{ inputs.config_name }}
+          path: |
+            ${{ env.BUILD_DIR }}/validator-keys
+            ${{ env.BUILD_DIR }}/validator-keys-LICENSE
           retention-days: 3
           if-no-files-found: error
 
@@ -375,7 +392,7 @@ jobs:
               --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           disable_search: true

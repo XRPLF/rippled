@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -203,7 +204,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -228,7 +230,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
