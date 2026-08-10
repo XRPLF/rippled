@@ -254,6 +254,19 @@ host_functions! {
     #[wasm_name = "check_id"]
     fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `Credential`, computed from the 20-byte subject and
+    /// issuer account ids and a credential-type byte string. Reads all three regions
+    /// and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "credential_id"]
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

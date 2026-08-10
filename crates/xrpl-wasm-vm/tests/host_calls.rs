@@ -431,6 +431,37 @@ fn check_id_reads_the_account_and_seq_and_writes_the_keylet() {
     assert_eq!(*host.check_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// A keylet getter that reads three input regions — two accounts and a credential
+/// type: all three reach the host keyed together, and the keylet lands where asked.
+#[test]
+fn credential_id_reads_subject_issuer_and_type() {
+    // Guest memory is zeroed, so the two 20-byte accounts and the 4-byte type read
+    // as zeros of their declared lengths.
+    let subject = vec![0u8; 20];
+    let issuer = vec![0u8; 20];
+    let cred_type = vec![0u8; 4];
+    let host = FakeHost::new().answering_credential_keylet(
+        subject.clone(),
+        issuer.clone(),
+        cred_type.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::CREDENTIAL_ID, ONE_PAGE],
+        "(call $credential_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 20) (i32.const 20)
+            (i32.const 40) (i32.const 4)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(
+        *host.credential_keylets_asked.borrow(),
+        vec![(subject, issuer, cred_type)]
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

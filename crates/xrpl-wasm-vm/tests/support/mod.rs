@@ -194,6 +194,11 @@ pub struct FakeHost {
     pub check_keylets: HashMap<(Vec<u8>, i32), Answer>,
     /// Every (account, seq) `check_keylet` was asked for.
     pub check_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `credential_keylet` answers, by (subject, issuer, type) bytes. An unlisted
+    /// key answers `InvalidAccount`.
+    pub credential_keylets: HashMap<(Vec<u8>, Vec<u8>, Vec<u8>), Answer>,
+    /// Every (subject, issuer, type) `credential_keylet` was asked for.
+    pub credential_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -254,6 +259,8 @@ impl Default for FakeHost {
             amm_keylets_asked: RefCell::new(Vec::new()),
             check_keylets: HashMap::new(),
             check_keylets_asked: RefCell::new(Vec::new()),
+            credential_keylets: HashMap::new(),
+            credential_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -394,6 +401,18 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.check_keylets.insert((account, seq), answer);
+        self
+    }
+
+    pub fn answering_credential_keylet(
+        mut self,
+        subject: Vec<u8>,
+        issuer: Vec<u8>,
+        credential_type: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.credential_keylets
+            .insert((subject, issuer, credential_type), answer);
         self
     }
 
@@ -593,6 +612,21 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (subject.to_vec(), issuer.to_vec(), credential_type.to_vec());
+        self.credential_keylets_asked.borrow_mut().push(key.clone());
+        match self.credential_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -655,6 +689,7 @@ pub mod import {
     pub const ACCOUNTROOT_ID: &str = r#"(import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const AMM_ID: &str = r#"(import "host_lib" "amm_id" (func $amm_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const CHECK_ID: &str = r#"(import "host_lib" "check_id" (func $check_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const CREDENTIAL_ID: &str = r#"(import "host_lib" "credential_id" (func $credential_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

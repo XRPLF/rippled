@@ -273,6 +273,16 @@ mod ffi {
         fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "credentialKeylet"]
+        fn credential_keylet(
+            self: &HostContext,
+            subject: &[u8],
+            issuer: &[u8],
+            credential_type: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -429,6 +439,19 @@ impl HostFunctions for CxxHost<'_> {
 
     fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.check_keylet(account, seq, out))
+    }
+
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .credential_keylet(subject, issuer, credential_type, out),
+        )
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

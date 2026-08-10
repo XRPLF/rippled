@@ -506,6 +506,28 @@ HostContext::checkKeylet(
 }
 
 std::int32_t
+HostContext::credentialKeylet(
+    rust::Slice<std::uint8_t const> subject,
+    rust::Slice<std::uint8_t const> issuer,
+    rust::Slice<std::uint8_t const> credentialType,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (subject.size() != AccountID::size() || issuer.size() != AccountID::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.credentialKeylet(
+            AccountID::fromVoid(subject.data()),
+            AccountID::fromVoid(issuer.data()),
+            Slice{credentialType.data(), credentialType.size()});
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

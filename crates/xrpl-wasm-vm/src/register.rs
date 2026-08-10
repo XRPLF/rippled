@@ -382,6 +382,35 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::CredentialKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 subj_ptr: i32,
+                 subj_len: i32,
+                 iss_ptr: i32,
+                 iss_len: i32,
+                 ct_ptr: i32,
+                 ct_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::CredentialKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let subject = Region::new(subj_ptr, subj_len);
+                        let issuer = Region::new(iss_ptr, iss_len);
+                        let cred_type = Region::new(ct_ptr, ct_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.credential_keylet(
+                                subject.read(data)?,
+                                issuer.read(data)?,
+                                cred_type.read(data)?,
+                                buf,
+                            )
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

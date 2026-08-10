@@ -198,6 +198,24 @@ impl HostFunctions for FakeHost {
         put(out, &[account[0]; HASH_LEN])
     }
 
+    /// A keylet from subject, issuer, and credential type; `InvalidAccount` if either
+    /// account is empty, `InvalidParams` if the type is empty.
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        if subject.is_empty() || issuer.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        if credential_type.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[subject[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -302,6 +320,15 @@ fn the_trait_is_implementable() {
         host.check_keylet(&[], 5, &mut out),
         Err(HostError::InvalidAccount)
     );
+    assert_eq!(
+        host.credential_keylet(&[7; 20], &[8; 20], b"cred", &mut out),
+        Ok(HASH_LEN)
+    );
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.credential_keylet(&[], &[8; 20], b"cred", &mut out),
+        Err(HostError::InvalidAccount)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -391,6 +418,7 @@ fn the_spec_table_matches_the_declarations() {
             ("accountroot_id", 350),
             ("amm_id", 450),
             ("check_id", 350),
+            ("credential_id", 350),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

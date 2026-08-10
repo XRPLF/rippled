@@ -141,6 +141,15 @@ public:
         std::int32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Subject and issuer must each be 20 bytes, else `InvalidParams`. Writes the
+    // 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    credentialKeylet(
+        rust::Slice<std::uint8_t const> subject,
+        rust::Slice<std::uint8_t const> issuer,
+        rust::Slice<std::uint8_t const> credentialType,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
