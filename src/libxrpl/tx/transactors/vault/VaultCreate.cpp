@@ -113,10 +113,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
     auto const isClosedEnded = kind == VaultKind::ClosedEnded;
     if (!isClosedEnded && (hasSubscription || hasRedemption))
         return temMALFORMED;
-    if (isClosedEnded && (!hasSubscription || !hasRedemption))
-        return temMALFORMED;
     if (isClosedEnded)
     {
+       if (!hasSubscription || !hasRedemption)
+            return temMALFORMED;
         auto const sub = static_cast<std::int64_t>(ctx.tx[sfSubscriptionDate]);
         auto const red = static_cast<std::int64_t>(ctx.tx[sfRedemptionDate]);
         if (red < sub + kMinInvestmentPeriod || red >= sub + kMaxInvestmentPeriod)
