@@ -155,6 +155,11 @@ pub struct FakeHost {
     pub home_le_arr_lens: HashMap<i32, i32>,
     /// Every field selector `get_current_ledger_obj_array_len` was asked for.
     pub home_le_arr_lens_asked: RefCell<Vec<i32>>,
+    /// What `get_ledger_obj_array_len` answers, by (cache slot, field selector). An
+    /// unlisted key answers `NoArray`.
+    pub le_arr_lens: HashMap<(i32, i32), i32>,
+    /// Every (cache slot, field selector) `get_ledger_obj_array_len` was asked for.
+    pub le_arr_lens_asked: RefCell<Vec<(i32, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -198,6 +203,8 @@ impl Default for FakeHost {
             tx_arr_lens_asked: RefCell::new(Vec::new()),
             home_le_arr_lens: HashMap::new(),
             home_le_arr_lens_asked: RefCell::new(Vec::new()),
+            le_arr_lens: HashMap::new(),
+            le_arr_lens_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -283,6 +290,11 @@ impl FakeHost {
 
     pub fn answering_home_le_arr_len(mut self, field: i32, len: i32) -> FakeHost {
         self.home_le_arr_lens.insert(field, len);
+        self
+    }
+
+    pub fn answering_le_arr_len(mut self, cache_idx: i32, field: i32, len: i32) -> FakeHost {
+        self.le_arr_lens.insert((cache_idx, field), len);
         self
     }
 
@@ -405,6 +417,14 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32> {
+        self.le_arr_lens_asked.borrow_mut().push((cache_idx, field));
+        match self.le_arr_lens.get(&(cache_idx, field)) {
+            Some(&len) => Ok(len),
+            None => Err(HostError::NoArray),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -458,6 +478,8 @@ pub mod import {
         r#"(import "host_lib" "tx_arr_len" (func $tx_arr_len (param i32) (result i32)))"#;
     pub const HOME_LE_ARR_LEN: &str =
         r#"(import "host_lib" "home_le_arr_len" (func $home_le_arr_len (param i32) (result i32)))"#;
+    pub const LE_ARR_LEN: &str =
+        r#"(import "host_lib" "le_arr_len" (func $le_arr_len (param i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

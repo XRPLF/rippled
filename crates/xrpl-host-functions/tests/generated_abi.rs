@@ -131,6 +131,14 @@ impl HostFunctions for FakeHost {
         Ok(field + 1)
     }
 
+    /// The same, over a cached object keyed by slot.
+    fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32> {
+        if cache_idx <= 0 || field < 0 {
+            return Err(HostError::NoArray);
+        }
+        Ok(cache_idx + field)
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -192,6 +200,8 @@ fn the_trait_is_implementable() {
         host.get_current_ledger_obj_array_len(-1),
         Err(HostError::NoArray)
     );
+    assert_eq!(host.get_ledger_obj_array_len(2, 3), Ok(5));
+    assert_eq!(host.get_ledger_obj_array_len(0, 3), Err(HostError::NoArray));
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -273,6 +283,7 @@ fn the_spec_table_matches_the_declarations() {
             ("le_inner", 110),
             ("tx_arr_len", 40),
             ("home_le_arr_len", 40),
+            ("le_arr_len", 40),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

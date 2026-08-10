@@ -271,6 +271,20 @@ fn home_le_arr_len_passes_the_selector_and_returns_the_count() {
     assert_eq!(*host.home_le_arr_lens_asked.borrow(), vec![17]);
 }
 
+/// The scalar count over a cached object: the slot leads, and both it and the
+/// selector reach the host keyed together.
+#[test]
+fn le_arr_len_passes_the_slot_and_selector_and_returns_the_count() {
+    let host = FakeHost::new().answering_le_arr_len(2, 17, 9);
+
+    let wat = module(
+        &[import::LE_ARR_LEN, ONE_PAGE],
+        "(call $le_arr_len (i32.const 2) (i32.const 17))",
+    );
+    assert_eq!(status(&wat, &host), 9, "the array length");
+    assert_eq!(*host.le_arr_lens_asked.borrow(), vec![(2, 17)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

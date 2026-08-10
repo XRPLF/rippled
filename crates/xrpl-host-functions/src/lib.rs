@@ -193,6 +193,12 @@ host_functions! {
     #[wasm_name = "home_le_arr_len"]
     fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32>;
 
+    /// The number of elements in an array field of a previously cached ledger object,
+    /// selected by its cache slot and `SField` code.
+    #[gas = 40]
+    #[wasm_name = "le_arr_len"]
+    fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
