@@ -53,33 +53,25 @@ releases](https://github.com/XRPLF/rippled/releases).
 
 ### Set Up Conan
 
-Once your [development environment](./docs/build/environment.md) is ready, you
-may need to set up your Conan profile.
-
-#### Profiles
-
-We recommend that you install our Conan profiles:
+Once your [development environment](./docs/build/environment.md) is ready, set
+Conan up for this repository:
 
 ```bash
-conan config install conan/profiles/ -tf $(conan config home)/profiles/
+./conan/init.sh
 ```
 
-You can check your Conan profile by running:
+That installs our [`global.conf`](./conan/global.conf), our Conan
+[profiles](./conan/profiles), and the `xrplf` remote that hosts some of our
+dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home,
+so it is safe to re-run — it only overwrites the files it manages.
 
-```bash
-conan profile show
-```
+> [!TIP]
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is
+> already done for you: the script runs on entry.
 
-If the default profile is not suitable for your environment, you can create a custom profile and pass it to Conan.
-More information on customizing Conan can be found in the [Advanced Conan configuration](./docs/build/advanced_conan.md).
-
-#### Add xrplf remote
-
-Run the following command to add the `xrplf` remote, which hosts some of our dependencies:
-
-```bash
-conan remote add --index 0 --force xrplf https://conan.xrplf.org/repository/conan/
-```
+You can inspect the resulting profile with `conan profile show`. If it is not
+suitable for your environment, create a custom profile and pass it to Conan — see
+[Advanced Conan configuration](./docs/build/advanced_conan.md).
 
 ### Set Up Ccache
 
@@ -368,14 +360,14 @@ After any updates or changes to dependencies, you may need to do the following:
 4. [Regenerate lockfile](./docs/build/advanced_conan.md#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
 
-If you are using the Nix development shell, prebuilt Conan binaries may be
-incompatible with it — see
-[Building xrpld in the Nix shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell).
+If you are using the Nix development shell, whether prebuilt Conan binaries apply
+depends on your platform — see
+[Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
 
 #### ERROR: Package not resolved
 
 If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
-please [add `xrplf` remote](#add-xrplf-remote) or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
+please [set Conan up](#set-up-conan) so the `xrplf` remote is configured, or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
