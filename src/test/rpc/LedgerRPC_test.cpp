@@ -161,7 +161,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         {
             // Request a ledger with a very large (double) sequence.
             auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 2e15 }");
-            BEAST_EXPECT(RPC::containsError(ret));
+            BEAST_EXPECT(rpc::containsError(ret));
             BEAST_EXPECT(ret[jss::error_message] == "Invalid parameters.");
         }
 

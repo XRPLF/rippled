@@ -129,15 +129,6 @@ in
     perl # needed for openssl
     pkg-config
     pre-commit
-    # protoc generates the Go gRPC bindings and embeds its own version string into every committed
-    # .pb.go file. To allow CI to verify those files with a plain `git diff`, we pin the version to
-    # `protobuf_34` rather than the rolling `protobuf` to keep regeneration reproducible across the
-    # Nix frequently changing unstable channel. The protoc-gen-go* plugins have no versioned
-    # attributes in nixpkgs; protoc-gen-go's version is in turn constrained by the go.mod require
-    # on google.golang.org/protobuf.
-    protobuf_34 # provides protoc
-    protoc-gen-go # protoc plugin for the Go message bindings
-    protoc-gen-go-grpc # protoc plugin for the Go gRPC service stubs
     python3
     runClangTidy
     vim
@@ -146,7 +137,6 @@ in
     cargo-audit
     cargo-llvm-cov
     cargo-nextest
-    corrosion
     rustToolchain
   ];
 }
