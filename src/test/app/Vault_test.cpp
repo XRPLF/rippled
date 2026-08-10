@@ -3024,21 +3024,19 @@ class Vault_test : public beast::unit_test::Suite
 
         testcase("private vault share transfer after depositor loses domain");
 
-        // FN-82: the "Private Vault - Access Control Rules" spec says a holder who
-        // loses Layer 2 (Permissioned Domain membership) after acquiring shares
-        // must be blocked from sending them onward, by P2P transfer or DEX offer,
-        // the same way a brand-new never-authorized holder is blocked. Only
-        // withdrawal to self is meant to stay open.
+        // The "Private Vault - Access Control Rules" spec requires that a holder who
+        // loses Layer 2 (Permissioned Domain membership) after acquiring shares be
+        // blocked from sending them onward, by P2P transfer or DEX offer, the same
+        // way a brand-new never-authorized holder is blocked. Only withdrawal to
+        // self is meant to stay open.
         //
-        // This was flagged in standup as a suspected gap (an existing holder's
-        // MPToken might keep looking "authorized" once granted). It isn't: for a
-        // domain-gated share MPToken, requireAuth()'s escape hatch for holders
-        // who already have an MPToken (MPTokenHelpers.cpp) only applies to the
-        // classic explicit-issuer-authorization flag, which enforceMPTokenAuthorization
-        // documents as "meaningless" for domain-authorized holders and never sets.
-        // So a stale MPToken does not carry authorization forward once the
-        // account's domain credential is gone, and both actions below are
-        // correctly blocked.
+        // For a domain-gated share MPToken, requireAuth()'s escape hatch for
+        // holders who already have an MPToken (MPTokenHelpers.cpp) only applies to
+        // the classic explicit-issuer-authorization flag, which
+        // enforceMPTokenAuthorization documents as "meaningless" for
+        // domain-authorized holders and never sets. So a stale MPToken does not
+        // carry authorization forward once the account's domain credential is
+        // gone, and both actions below are correctly blocked.
 
         Env env{*this, testableAmendments()};
         Account const issuer{"issuer"};
@@ -3136,10 +3134,9 @@ class Vault_test : public beast::unit_test::Suite
 
         testcase("private vault share purchase via DEX requires buyer domain membership");
 
-        // FN-82: doc section 3.3 requires the *buyer* leg of a DEX trade in
-        // private-vault shares to hold Layer 1 and Layer 2 as well, not just the
-        // seller. This closes out that row with a real test rather than the
-        // static reading of checkAcceptAsset() done earlier in the audit.
+        // The "Private Vault - Access Control Rules" spec requires the buyer leg
+        // of a DEX trade in private-vault shares to hold Layer 1 and Layer 2 as
+        // well, not just the seller.
 
         Env env{*this, testableAmendments()};
         Account const issuer{"issuer"};
