@@ -23,10 +23,10 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
-#include <boost/format/free_funcs.hpp>
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -61,7 +61,7 @@ injectSLE(json::Value& jv, SLE const& sle)
             boost::to_lower(md5);
             // VFALCO TODO Give a name to this constant and move it
             //             to a more visible location.
-            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
+            jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
         }
     }
     else

@@ -9,9 +9,9 @@ namespace xrpl {
 
 // These pragmas are built at startup and applied to all database
 // connections, unless otherwise noted.
-inline constexpr char const* kCommonDbPragmaJournal{"PRAGMA journal_mode=%s;"};
-inline constexpr char const* kCommonDbPragmaSync{"PRAGMA synchronous=%s;"};
-inline constexpr char const* kCommonDbPragmaTemp{"PRAGMA temp_store=%s;"};
+inline constexpr char const* kCommonDbPragmaJournal{"PRAGMA journal_mode={};"};
+inline constexpr char const* kCommonDbPragmaSync{"PRAGMA synchronous={};"};
+inline constexpr char const* kCommonDbPragmaTemp{"PRAGMA temp_store={};"};
 // A warning will be logged if any lower-safety sqlite tuning settings
 // are used and at least this much ledger history is configured. This
 // includes full history nodes. This is because such a large amount of

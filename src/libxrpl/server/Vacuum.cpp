@@ -7,11 +7,11 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/format.hpp>  // IWYU pragma: keep
 
 #include <soci/into.h>
 
 #include <cstdint>
+#include <format>
 #include <iostream>
 #include <memory>
 
@@ -41,7 +41,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
     // regardless of the config settings.
-    session << boost::format(kCommonDbPragmaTemp) % "file";
+    session << std::format(kCommonDbPragmaTemp, "file");
     session << "PRAGMA page_size;", soci::into(pageSize);
 
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;

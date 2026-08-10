@@ -41,6 +41,7 @@
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>

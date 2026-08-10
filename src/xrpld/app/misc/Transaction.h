@@ -15,6 +15,9 @@
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+// SOCI requires boost::optional (not std::optional) for its into/use bindings.
+#include <boost/optional.hpp>
+
 #include <cstdint>
 #include <memory>
 #include <optional>

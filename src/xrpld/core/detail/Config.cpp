@@ -23,7 +23,6 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/format/free_funcs.hpp>
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>  // IWYU pragma: keep
@@ -36,6 +35,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <format>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -401,7 +401,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         boost::filesystem::create_directories(dataDir, ec);
 
         if (ec)
-            Throw<std::runtime_error>(boost::str(boost::format("Can not create %s") % dataDir));
+            Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
 
         legacy(Sections::kDatabasePath, boost::filesystem::absolute(dataDir).string());
     }
@@ -1316,8 +1316,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "truncate") || boost::iequals(journalMode, "persist") ||
                 boost::iequals(journalMode, "wal"))
             {
-                result->emplace_back(
-                    boost::str(boost::format(kCommonDbPragmaJournal) % journalMode));
+                result->emplace_back(std::format(kCommonDbPragmaJournal, journalMode));
             }
             else
             {
@@ -1338,7 +1337,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(boost::str(boost::format(kCommonDbPragmaSync) % synchronous));
+                result->emplace_back(std::format(kCommonDbPragmaSync, synchronous));
             }
             else
             {
@@ -1359,7 +1358,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(boost::str(boost::format(kCommonDbPragmaTemp) % tempStore));
+                result->emplace_back(std::format(kCommonDbPragmaTemp, tempStore));
             }
             else
             {
