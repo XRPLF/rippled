@@ -1,6 +1,14 @@
+%if "%{?pkg_version}" == ""
+%{error:pkg_version must be defined}
+%endif
+
+%if "%{?pkg_release}" == ""
+%{error:pkg_release must be defined}
+%endif
+
 Name:     xrpld
-Version:  %{xrpld_version}
-Release:  %{xrpld_release}%{?dist}
+Version:  %{pkg_version}
+Release:  %{pkg_release}%{?dist}
 Summary:  XRP Ledger daemon
 
 License:  ISC
@@ -11,6 +19,9 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
+# Intentionally trade larger RPM artifacts for faster package validation.
+%global _binary_payload w.ufdio
+%global _find_debuginfo_dwz_opts %{nil}
 
 %build_mtime_policy clamp_to_source_date_epoch
 
@@ -21,6 +32,8 @@ BuildRequires: systemd-rpm-macros
 xrpld is the reference implementation of the XRP Ledger protocol. It
 participates in the peer-to-peer XRP Ledger network, processes
 transactions, and maintains the ledger database.
+This package also includes the validator-keys tool for validator key
+management.
 
 %prep
 :
@@ -30,26 +43,27 @@ transactions, and maintains the ledger database.
 
 %install
 install -Dm0755 %{_sourcedir}/xrpld                %{buildroot}%{_bindir}/%{name}
+install -Dm0755 %{_sourcedir}/validator-keys       %{buildroot}%{_bindir}/validator-keys
 install -Dm0644 %{_sourcedir}/xrpld.cfg            %{buildroot}%{_sysconfdir}/%{name}/xrpld.cfg
 install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{name}/validators.txt
 
 # systemd units, sysusers, tmpfiles, preset
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
-install -Dm0644 %{_sourcedir}/update-xrpld.service %{buildroot}%{_unitdir}/update-xrpld.service
-install -Dm0644 %{_sourcedir}/update-xrpld.timer   %{buildroot}%{_unitdir}/update-xrpld.timer
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 %{_sourcedir}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-xrpld.preset
+install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
+cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
+enable xrpld.service
+EOF
 
 # Logrotate config
 install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
-# Update helper
-install -Dm0755 %{_sourcedir}/update-xrpld         %{buildroot}%{_libexecdir}/%{name}/update-xrpld
-
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
 install -Dm0644 %{_sourcedir}/README.md  %{buildroot}%{_docdir}/%{name}/README.md
+# Upstream notice for the bundled validator-keys tool.
+install -Dm0644 %{_sourcedir}/validator-keys-LICENSE %{buildroot}%{_docdir}/%{name}/validator-keys-LICENSE
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
@@ -61,39 +75,35 @@ ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
 
 %post
 systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
-%systemd_post xrpld.service update-xrpld.timer
+%systemd_post xrpld.service
 
 %preun
-%systemd_preun xrpld.service update-xrpld.timer
+%systemd_preun xrpld.service
 
 %postun
-%systemd_postun_with_restart xrpld.service
+%systemd_postun xrpld.service
 
 %files
 %license %{_docdir}/%{name}/LICENSE.md
+%license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
 
 %dir %{_sysconfdir}/%{name}
-%dir %{_libexecdir}/%{name}
 
 %{_bindir}/%{name}
+%{_bindir}/validator-keys
 
 %config(noreplace) %{_sysconfdir}/%{name}/xrpld.cfg
 %config(noreplace) %{_sysconfdir}/%{name}/validators.txt
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 
-%{_libexecdir}/%{name}/update-xrpld
 
 %{_unitdir}/xrpld.service
-%{_unitdir}/update-xrpld.service
-%{_unitdir}/update-xrpld.timer
 %{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
-
-%ghost %dir /var/lib/%{name}
-%ghost %dir /var/log/%{name}
-
+%ghost %dir /var/lib/xrpld
+%ghost %dir /var/log/xrpld
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.

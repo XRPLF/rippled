@@ -1,6 +1,5 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
@@ -12,6 +11,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_writer.h>
@@ -362,10 +362,10 @@ run(int argc, char** argv)
     std::string importText;
     {
         importText += "Import an existing node database (specified in the [";
-        importText += ConfigSection::importNodeDatabase();
+        importText += Sections::kImportNodeDatabase;
         importText += "] configuration file section) into the current ";
         importText += "node database (specified in the [";
-        importText += ConfigSection::nodeDatabase();
+        importText += Sections::kNodeDatabase;
         importText += "] configuration file section).";
     }
 
@@ -506,7 +506,7 @@ run(int argc, char** argv)
     if (vm.contains("version"))
     {
         // LCOV_EXCL_START
-        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "xrpld version " << build_info::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -716,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::ip::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -826,7 +826,7 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("xrpld: rpc");
-    return RPCCall::fromCommandLine(
+    return rpc_call::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }

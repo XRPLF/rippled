@@ -3,6 +3,12 @@ name: Build and test configuration
 on:
   workflow_call:
     inputs:
+      benchmark:
+        description: "Whether to smoke-run the benchmarks after testing."
+        required: false
+        type: boolean
+        default: false
+
       build_only:
         description: 'Whether to only build or to build and test the code ("true", "false").'
         required: true
@@ -57,6 +63,12 @@ on:
         type: string
         default: ""
 
+      compiler:
+        description: 'The compiler to use ("gcc" or "clang"). Leave empty for macOS/Windows (uses system default).'
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -76,7 +88,7 @@ jobs:
     name: ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
-    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 60 }}
+    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 180 }}
     env:
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
@@ -94,9 +106,10 @@ jobs:
       # header files are copied into separate directories by CMake, which will
       # otherwise result in cache misses.
       CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
-      # Determine if coverage and voidstar should be enabled.
+      # Determine if coverage, voidstar and validator-keys should be enabled.
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
+      VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
@@ -104,16 +117,21 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >>"${GITHUB_ENV}"
+
+      - name: Check tools
+        env:
+          CHECK_TOOLS_SKIP_CLONE: "1"
+        run: ./bin/check-tools.sh || true
 
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
@@ -123,6 +141,12 @@ jobs:
         id: nproc
         with:
           subtract: ${{ inputs.nproc_subtract }}
+
+      - name: Set compiler environment (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: ${{ inputs.compiler }}
 
       - name: Setup Conan
         env:
@@ -146,37 +170,32 @@ jobs:
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
-              -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+              -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \
               ..
 
-      - name: Check protocol autogen files are up-to-date
-        working-directory: ${{ env.BUILD_DIR }}
+      # Export the sanitizer options before any instrumented binary runs. The
+      # build step below invokes instrumented dependency tools (protoc, grpc),
+      # so setting UBSAN_OPTIONS here lets the UBSan suppression list silence
+      # their diagnostics too, not just at test time.
+      # GITHUB_WORKSPACE (not the github.workspace context) is used so the path
+      # resolves correctly inside the container job.
+      - name: Set sanitizer options
+        if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
         env:
-          MESSAGE: |
-
-            The generated protocol wrapper classes are out of date.
-
-            This typically happens when the macro files or generator scripts
-            have changed but the generated files were not regenerated.
-
-            To fix this:
-              1. Run: cmake --build . --target setup_code_gen
-              2. Run: cmake --build . --target code_gen
-              3. Commit and push the regenerated files
+          CONFIG_NAME: ${{ inputs.config_name }}
         run: |
-          set -e
-          cmake --build . --target setup_code_gen
-          cmake --build . --target code_gen
-          DIFF=$(git -C .. status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
-          if [ -n "${DIFF}" ]; then
-              echo "::error::Generated protocol files are out of date"
-              git -C .. diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
-              echo "${MESSAGE}"
-              exit 1
+          SUPP="${GITHUB_WORKSPACE}/sanitizers/suppressions"
+          ASAN_OPTS="include=${SUPP}/runtime-asan-options.txt:suppressions=${SUPP}/asan.supp"
+          if [[ "${CONFIG_NAME}" == *gcc* ]]; then
+              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
+          echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
+          echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
+          echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
+          echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
@@ -185,11 +204,13 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
+          set -o pipefail
           cmake \
               --build . \
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
-              --target "${CMAKE_TARGET}"
+              --target "${CMAKE_TARGET}" \
+              2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -209,6 +230,31 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+      - name: Run the validator-keys tests
+        if: ${{ env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: ./validator-keys --unittest
+
+      - name: Upload the validator-keys binary
+        if: ${{ github.event.repository.visibility == 'public' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validator-keys-${{ inputs.config_name }}
+          path: |
+            ${{ env.BUILD_DIR }}/validator-keys
+            ${{ env.BUILD_DIR }}/validator-keys-LICENSE
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Upload the test binary (Linux)
+        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: xrpl_tests-${{ inputs.config_name }}
+          path: ${{ env.BUILD_DIR }}/xrpl_tests
+          retention-days: 3
+          if-no-files-found: error
+
       - name: Export server definitions
         if: ${{ runner.os != 'Windows' && !inputs.build_only && env.VOIDSTAR_ENABLED != 'true' }}
         working-directory: ${{ env.BUILD_DIR }}
@@ -217,7 +263,7 @@ jobs:
           ./xrpld --definitions | python3 -m json.tool >server_definitions.json
 
       - name: Upload server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: server-definitions
@@ -243,32 +289,10 @@ jobs:
         run: |
           ./xrpld --version | grep libvoidstar
 
-      - name: Set sanitizer options
-        if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
-        env:
-          CONFIG_NAME: ${{ inputs.config_name }}
-        run: |
-          ASAN_OPTS="include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-asan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
-          if [[ "${CONFIG_NAME}" == *gcc* ]]; then
-              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
-          fi
-          echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          echo "TSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-tsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >>${GITHUB_ENV}
-          echo "UBSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-ubsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >>${GITHUB_ENV}
-          echo "LSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-lsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >>${GITHUB_ENV}
-
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
-        working-directory: ${{ env.BUILD_DIR }}
-        # Windows locks some of the build files while running tests, and parallel jobs can collide
-        env:
-          BUILD_TYPE: ${{ inputs.build_type }}
-          PARALLELISM: ${{ runner.os == 'Windows' && '1' || steps.nproc.outputs.nproc }}
-        run: |
-          ctest \
-              --output-on-failure \
-              -C "${BUILD_TYPE}" \
-              -j "${PARALLELISM}"
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        run: ./xrpl_tests
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -279,27 +303,67 @@ jobs:
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
-      - name: Show test failure summary
-        if: ${{ failure() && !inputs.build_only }}
-        env:
-          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+          # The resolver/preload workaround is only correct for the ASan build:
+          # a regular build doesn't hit the __dn_expand interceptor bug, and must
+          # NOT have libasan injected. So only preload when xrpld is ASan-built.
+          #
+          # libresolv hosts getaddrinfo's resolver helpers (dn_expand, res_*). Under ASan
+          # these are intercepted via dlsym(RTLD_NEXT, ...), which yields a NULL pointer
+          # and crashes DNS resolution if libresolv isn't loaded. Linking it guarantees
+          # the symbols are present; it's a harmless no-op on glibc >= 2.34 (merged into
+          # libc) and is what the compiler driver already does for sanitizer builds.
+          #   https://github.com/llvm/llvm-project/issues/59007
+          #   https://github.com/google/sanitizers/issues/1592
+          if ldd ./xrpld | grep -q libasan; then
+              PRELOAD="$(gcc -print-file-name=libasan.so):/usr/lib/x86_64-linux-gnu/libresolv.so.2"
+          else
+              PRELOAD=""
+          fi
+
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
+
+      # Smoke-run every benchmark module with a single repetition to confirm the
+      # benchmarks still build and execute. This is a correctness check, not a
+      # performance measurement, so there is nothing to gain from repeating it
+      # across configurations: it is opted into by a single config in the
+      # strategy matrix (see the 'benchmark' flag in the JSON files), which
+      # keeps it off instrumented builds (sanitizers/coverage/voidstar), where
+      # it would be slow and meaningless, off Debug builds, where it is much
+      # slower, and off Windows, where the `install` target does not build them.
+      - name: Run the benchmarks
+        if: ${{ inputs.benchmark }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          if [ ! -d "${WORKING_DIR}" ]; then
-              echo "Working directory '${WORKING_DIR}' does not exist."
-              exit 0
-          fi
+          rc=0
+          while IFS= read -r bench; do
+              echo "::group::${bench}"
+              "./${bench}" --benchmark_repetitions=1 || rc=1
+              echo "::endgroup::"
+          done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
+          exit "${rc}"
 
-          cd "${WORKING_DIR}"
+      - name: Show build/test failure summary
+        if: ${{ failure() }}
+        run: |
+          cd "${GITHUB_WORKSPACE}"
 
-          if [ ! -f unittest.log ]; then
-              echo "unittest.log not found; embedded tests may not have run."
-              exit 0
-          fi
-
-          if ! grep -E "failed" unittest.log; then
-              echo "Log present but no failure lines found in unittest.log."
+          if [ -f unittest.log ]; then
+              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "unittest.log present but no failure lines found."
+              fi
+          elif [ -f build.log ]; then
+              # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
+              # "error C####:", "error LNK####:", and "fatal error LNK####:".
+              # -A6 prints the lines that follow each match (source line, caret,
+              # notes, and the "N errors generated" tally) to capture the whole
+              # diagnostic block.
+              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" build.log; then
+                  echo "build.log present but no compile errors found."
+              fi
+          else
+              echo "unittest.log/build.log not found; something went wrong."
+              exit 1
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
@@ -323,8 +387,8 @@ jobs:
               --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           disable_search: true
           disable_telem: true

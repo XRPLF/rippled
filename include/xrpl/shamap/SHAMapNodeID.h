@@ -3,13 +3,19 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <compare>
+#include <cstddef>
 #include <optional>
+#include <ostream>
 #include <string>
+#include <string_view>
 #include <tuple>
 
 namespace xrpl {
 
-/** Identifies a node inside a SHAMap */
+/**
+ * Identifies a node inside a SHAMap
+ */
 class SHAMapNodeID : public CountedObject<SHAMapNodeID>
 {
 private:
@@ -60,42 +66,31 @@ public:
     static SHAMapNodeID
     createID(int depth, uint256 const& key);
 
-    // FIXME-C++20: use spaceship and operator synthesis
-    /** Comparison operators */
-    bool
-    operator<(SHAMapNodeID const& n) const
+    /**
+     * Comparison operators
+     *
+     * <, >, <= and >= are synthesized from the spaceship. It is written out
+     * rather than defaulted because the ordering is by depth first, and the
+     * members are not declared in that order.
+     */
+    std::strong_ordering
+    operator<=>(SHAMapNodeID const& n) const
     {
-        return std::tie(depth_, id_) < std::tie(n.depth_, n.id_);
+        return std::tie(depth_, id_) <=> std::tie(n.depth_, n.id_);
     }
 
-    bool
-    operator>(SHAMapNodeID const& n) const
-    {
-        return n < *this;
-    }
-
-    bool
-    operator<=(SHAMapNodeID const& n) const
-    {
-        return !(n < *this);
-    }
-
-    bool
-    operator>=(SHAMapNodeID const& n) const
-    {
-        return !(*this < n);
-    }
-
+    /**
+     * Equality, which the spaceship above does not provide.
+     *
+     * Only a *defaulted* operator<=> implicitly declares a defaulted
+     * operator==; the one above is user-provided, so == has to be written.
+     * It cannot be defaulted either, because a defaulted == would also compare
+     * the CountedObject base, which is not equality comparable.
+     */
     bool
     operator==(SHAMapNodeID const& n) const
     {
         return (depth_ == n.depth_) && (id_ == n.id_);
-    }
-
-    bool
-    operator!=(SHAMapNodeID const& n) const
-    {
-        return !(*this == n);
     }
 };
 
@@ -114,7 +109,8 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
     return out << to_string(node);
 }
 
-/** Return an object representing a serialized SHAMap Node ID
+/**
+ * Return an object representing a serialized SHAMap Node ID
  *
  * @param s A string of bytes
  * @param data a non-null pointer to a buffer of @param size bytes.
@@ -127,13 +123,15 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
 deserializeSHAMapNodeID(void const* data, std::size_t size);
 
 [[nodiscard]] inline std::optional<SHAMapNodeID>
-deserializeSHAMapNodeID(std::string const& s)
+deserializeSHAMapNodeID(std::string_view s)
 {
     return deserializeSHAMapNodeID(s.data(), s.size());
 }
 /** @} */
 
-/** Returns the branch that would contain the given hash */
+/**
+ * Returns the branch that would contain the given hash
+ */
 [[nodiscard]] unsigned int
 selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 

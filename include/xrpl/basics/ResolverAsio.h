@@ -5,6 +5,8 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <memory>
+
 namespace xrpl {
 
 class ResolverAsio : public Resolver

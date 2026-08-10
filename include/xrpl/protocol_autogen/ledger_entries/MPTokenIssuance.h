@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPTokenIssuance(std::shared_ptr<SLE const> sle)
+    explicit MPTokenIssuance(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -256,27 +256,27 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (SoeDefault)
+     * @brief Get sfImmutableFlags (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getMutableFlags() const
+    getImmutableFlags() const
     {
-        if (hasMutableFlags())
-            return this->sle_->at(sfMutableFlags);
+        if (hasImmutableFlags())
+            return this->sle_->at(sfImmutableFlags);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfMutableFlags is present.
+     * @brief Check if sfImmutableFlags is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasMutableFlags() const
+    hasImmutableFlags() const
     {
-        return this->sle_->isFieldPresent(sfMutableFlags);
+        return this->sle_->isFieldPresent(sfImmutableFlags);
     }
 
     /**
@@ -301,6 +301,78 @@ public:
     hasReferenceHolding() const
     {
         return this->sle_->isFieldPresent(sfReferenceHolding);
+    }
+
+    /**
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getIssuerEncryptionKey() const
+    {
+        if (hasIssuerEncryptionKey())
+            return this->sle_->at(sfIssuerEncryptionKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerEncryptionKey() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getAuditorEncryptionKey() const
+    {
+        if (hasAuditorEncryptionKey())
+            return this->sle_->at(sfAuditorEncryptionKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorEncryptionKey() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfConfidentialOutstandingAmount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getConfidentialOutstandingAmount() const
+    {
+        if (hasConfidentialOutstandingAmount())
+            return this->sle_->at(sfConfidentialOutstandingAmount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfConfidentialOutstandingAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasConfidentialOutstandingAmount() const
+    {
+        return this->sle_->isFieldPresent(sfConfidentialOutstandingAmount);
     }
 };
 
@@ -339,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenIssuanceBuilder(std::shared_ptr<SLE const> sle)
+    MPTokenIssuanceBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE)
         {
@@ -348,7 +420,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfIssuer (SoeRequired)
@@ -483,13 +557,13 @@ public:
     }
 
     /**
-     * @brief Set sfMutableFlags (SoeDefault)
+     * @brief Set sfImmutableFlags (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfMutableFlags] = value;
+        object_[sfImmutableFlags] = value;
         return *this;
     }
 
@@ -501,6 +575,39 @@ public:
     setReferenceHolding(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfReferenceHolding] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfIssuerEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfAuditorEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfConfidentialOutstandingAmount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setConfidentialOutstandingAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfConfidentialOutstandingAmount] = value;
         return *this;
     }
 

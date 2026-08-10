@@ -5,23 +5,21 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
 #include <cstdint>
-#include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -45,10 +43,7 @@ assetsToSharesDeposit(
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares)
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -72,8 +67,8 @@ sharesToAssetsDeposit(
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
@@ -101,8 +96,8 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {
@@ -142,6 +137,24 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
         return false;  // LCOV_EXCL_LINE
 
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
+}
+
+[[nodiscard]] VaultVersion
+getVaultVersion(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
+    if (!vault->isFieldPresent(sfLEVersion))
+        return VaultVersion::Legacy;
+
+    auto const version = vault->at(sfLEVersion);
+    if (version > std::to_underlying(VaultVersion::CashBasis))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
+        return VaultVersion::Legacy;
+        // LCOV_EXCL_STOP
+    }
+    return static_cast<VaultVersion>(version);
 }
 
 }  // namespace xrpl

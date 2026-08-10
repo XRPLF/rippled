@@ -213,7 +213,7 @@ Env::balance(Account const& account, Asset const& asset) const
         [&](Issue const& issue) -> PrettyAmount {
             if (isXRP(issue.currency))
                 return balance(account);
-            auto const sle = le(keylet::line(account.id(), issue));
+            auto const sle = le(keylet::trustLine(account.id(), issue));
             if (!sle)
                 return {STAmount(issue, 0), account.name()};
             auto amount = sle->getFieldAmount(sfBalance);
@@ -231,7 +231,7 @@ Env::balance(Account const& account, Asset const& asset) const
             if (account.id() == issuer)
             {
                 // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
+                auto const sle = le(keylet::mptokenIssuance(id));
                 if (!sle)
                     return {STAmount(mptIssue, 0), account.name()};
 
@@ -253,7 +253,7 @@ Env::balance(Account const& account, Asset const& asset) const
 PrettyAmount
 Env::limit(Account const& account, Issue const& issue) const
 {
-    auto const sle = le(keylet::line(account.id(), issue));
+    auto const sle = le(keylet::trustLine(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto const aHigh = account.id() > issue.account;
@@ -272,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -280,13 +307,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);
@@ -471,9 +498,9 @@ Env::postconditions(
          !test.expect(
              parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
              "apply " + locStr + ": Got RPC result "s +
-                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 (parsed.rpcCode ? rpc::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
                  " (" + parsed.rpcMessage + "); Expected " +
-                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 rpc::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
                  ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
@@ -602,7 +629,7 @@ Env::autofill(JTx& jt)
     catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
         rethrow();
     }
 }

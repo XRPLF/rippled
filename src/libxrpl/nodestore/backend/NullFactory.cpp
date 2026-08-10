@@ -1,6 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -13,7 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class NullBackend : public Backend
 {
@@ -81,7 +81,9 @@ public:
     {
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {
@@ -123,4 +125,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

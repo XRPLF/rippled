@@ -1,38 +1,51 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
-/** A backend used for the NodeStore.
-
-    The NodeStore uses a swappable backend so that other database systems
-    can be tried. Different databases may offer various features such
-    as improved performance, fault tolerant or distributed storage, or
-    all in-memory operation.
-
-    A given instance of a backend is fixed to a particular key size.
-*/
+/**
+ * A backend used for the NodeStore.
+ *
+ * The NodeStore uses a swappable backend so that other database systems
+ * can be tried. Different databases may offer various features such
+ * as improved performance, fault tolerant or distributed storage, or
+ * all in-memory operation.
+ *
+ * A given instance of a backend is fixed to a particular key size.
+ */
 class Backend
 {
 public:
-    /** Destroy the backend.
-
-        All open files are closed and flushed. If there are batched writes
-        or other tasks scheduled, they will be completed before this call
-        returns.
-    */
+    /**
+     * Destroy the backend.
+     *
+     * All open files are closed and flushed. If there are batched writes
+     * or other tasks scheduled, they will be completed before this call
+     * returns.
+     */
     virtual ~Backend() = default;
 
-    /** Get the human-readable name of this backend.
-        This is used for diagnostic output.
-    */
+    /**
+     * Get the human-readable name of this backend.
+     * This is used for diagnostic output.
+     */
     virtual std::string
     getName() = 0;
 
-    /** Get the block size for backends that support it
+    /**
+     * Get the block size for backends that support it
      */
     [[nodiscard]] virtual std::optional<std::size_t>
     getBlockSize() const
@@ -40,25 +53,28 @@ public:
         return std::nullopt;
     }
 
-    /** Open the backend.
-        @param createIfMissing Create the database files if necessary.
-        This allows the caller to catch exceptions.
-    */
+    /**
+     * Open the backend.
+     * @param createIfMissing Create the database files if necessary.
+     * This allows the caller to catch exceptions.
+     */
     virtual void
     open(bool createIfMissing = true) = 0;
 
-    /** Returns true is the database is open.
+    /**
+     * Returns true is the database is open.
      */
     virtual bool
     isOpen() = 0;
 
-    /** Open the backend.
-        @param createIfMissing Create the database files if necessary.
-        @param appType Deterministic appType used to create a backend.
-        @param uid Deterministic uid used to create a backend.
-        @param salt Deterministic salt used to create a backend.
-        @throws std::runtime_error is function is called not for NuDB backend.
-    */
+    /**
+     * Open the backend.
+     * @param createIfMissing Create the database files if necessary.
+     * @param appType Deterministic appType used to create a backend.
+     * @param uid Deterministic uid used to create a backend.
+     * @param salt Deterministic salt used to create a backend.
+     * @throws std::runtime_error is function is called not for NuDB backend.
+     */
     virtual void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
     {
@@ -66,60 +82,70 @@ public:
             "Deterministic appType/uid/salt not supported by backend " + getName());
     }
 
-    /** Close the backend.
-        This allows the caller to catch exceptions.
-    */
+    /**
+     * Close the backend.
+     * This allows the caller to catch exceptions.
+     */
     virtual void
     close() = 0;
 
-    /** Fetch a single object.
-        If the object is not found or an error is encountered, the
-        result will indicate the condition.
-        @note This will be called concurrently.
-        @param hash The hash of the object.
-        @param pObject [out] The created object if successful.
-        @return The result of the operation.
-    */
+    /**
+     * Fetch a single object.
+     * If the object is not found or an error is encountered, the
+     * result will indicate the condition.
+     * @note This will be called concurrently.
+     * @param hash The hash of the object.
+     * @param pObject [out] The created object if successful.
+     * @return The result of the operation.
+     */
     virtual Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
 
-    /** Store a single object.
-        Depending on the implementation this may happen immediately
-        or deferred using a scheduled task.
-        @note This will be called concurrently.
-        @param object The object to store.
-    */
+    /**
+     * Store a single object.
+     * Depending on the implementation this may happen immediately
+     * or deferred using a scheduled task.
+     * @note This will be called concurrently.
+     * @param object The object to store.
+     */
     virtual void
     store(std::shared_ptr<NodeObject> const& object) = 0;
 
-    /** Store a group of objects.
-        @note This function will not be called concurrently with
-              itself or @ref store.
-    */
+    /**
+     * Store a group of objects.
+     * @note This function will not be called concurrently with
+     *       itself or @ref store.
+     */
     virtual void
     storeBatch(Batch const& batch) = 0;
 
     virtual void
     sync() = 0;
 
-    /** Visit every object in the database
-        This is usually called during import.
-        @note This routine will not be called concurrently with itself
-              or other methods.
-        @see import
-    */
+    /**
+     * Visit every object in the database
+     * This is usually called during import.
+     * @note This routine will not be called concurrently with itself
+     *       or other methods.
+     * @see import
+     */
     virtual void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
-    /** Estimate the number of write operations pending. */
+    /**
+     * Estimate the number of write operations pending.
+     */
     virtual int
     getWriteLoad() = 0;
 
-    /** Remove contents on disk upon destruction. */
+    /**
+     * Remove contents on disk upon destruction.
+     */
     virtual void
     setDeletePath() = 0;
 
-    /** Perform consistency checks on database.
+    /**
+     * Perform consistency checks on database.
      *
      * This method is implemented only by NuDBBackend. It is not yet called
      * anywhere, but it might be a good idea to one day call it at startup to
@@ -130,9 +156,11 @@ public:
     {
     }
 
-    /** Returns the number of file descriptors the backend expects to need. */
+    /**
+     * Returns the number of file descriptors the backend expects to need.
+     */
     [[nodiscard]] virtual int
     fdRequired() const = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

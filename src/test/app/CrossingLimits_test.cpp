@@ -258,7 +258,7 @@ public:
 
             env.require(Balance(alice, usd(2503)));
             env.require(Balance(alice, eur(1100)));
-            auto const numAOffers = 2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 2000 + 100 + 1000 + 1 - ((2 * 100) + (2 * 199) + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 
@@ -329,7 +329,7 @@ public:
 
             env.require(Balance(alice, usd(2494)));
             env.require(Balance(alice, eur(1100)));
-            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + (2 * 100) + (2 * 199) + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(Owners(alice, numAOffers + 2));
 

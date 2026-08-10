@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/AmendmentTable.h>
@@ -133,7 +134,7 @@ class Feature_test : public beast::unit_test::Suite
         // or removed, swap out for any other feature.
         BEAST_EXPECT(
             featureToName(fixRemoveNFTokenAutoTrustLine) == "fixRemoveNFTokenAutoTrustLine");
-        BEAST_EXPECT(featureToName(featureBatch) == "Batch");
+        BEAST_EXPECT(featureToName(featureBatchV1_1) == "BatchV1_1");
         BEAST_EXPECT(featureToName(featureDID) == "DID");
         BEAST_EXPECT(featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
         BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
@@ -189,13 +190,13 @@ class Feature_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        std::string const name = "fixAMMOverflowOffer";
+        std::string const name = "fixCleanup3_1_3";
         auto jrr = env.rpc("feature", name)[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         auto const expected = to_string(sha512Half(Slice(name.data(), name.size())));
-        char const sha[] = "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
+        char const sha[] = "303ACB16CF8DBD3B5C34F131A9D19A7DE01AE05F480A8A682B869D1B4AAC8CFC";
         BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
@@ -279,8 +280,8 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_rpc"].set("admin", "");
-                    (*cfg)["port_ws"].set("admin", "");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdmin, "");
+                    (*cfg)[Sections::kPortWs].set(Keys::kAdmin, "");
                     return cfg;
                 })};
 
@@ -486,7 +487,7 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset{featurePriceOracle}};
-        static constexpr char const* kFeatureName = "fixAMMOverflowOffer";
+        static constexpr char const* kFeatureName = "fixCleanup3_1_3";
 
         auto jrr = env.rpc("feature", kFeatureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
