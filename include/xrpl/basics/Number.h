@@ -304,7 +304,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *      on-ledger are non-negative. This is due to implementation details of
  *      several operations which use unsigned arithmetic internally. This is
  *      sufficient to represent all valid XRP values (where the absolute value
- *      can not exceed INITIAL_XRP: 10^17), and MPT values (where the absolute
+ *      can not exceed kInitialXRP: 10^17), and MPT values (where the absolute
  *      value can not exceed maxMPTokenAmount: 2^63-1).
  *
  * ---- Mantissa Range Switching ----
