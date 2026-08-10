@@ -33,7 +33,9 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <set>
 #include <tuple>
+#include <utility>
 #include <variant>
 
 namespace xrpl {
@@ -251,6 +253,8 @@ doGetAggregatePrice(rpc::JsonContext& context)
     // Collect the dataset into bimap keyed by lastUpdateTime and
     // STAmount (Number is int64 and price is uint64)
     Prices prices;
+    // Track seen {account, documentID} pairs to skip duplicates
+    std::set<std::pair<AccountID, std::uint32_t>> seen;
     for (auto const& oracle : params[jss::oracles])
     {
         if (!oracle.isMember(jss::oracle_document_id) || !oracle.isMember(jss::account))
@@ -267,6 +271,10 @@ doGetAggregatePrice(rpc::JsonContext& context)
             rpc::injectError(RpcInvalidParams, result);
             return result;
         }
+
+        // Skip duplicate oracle entries
+        if (!seen.emplace(*account, *documentID).second)
+            continue;
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
