@@ -73,7 +73,7 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
@@ -813,7 +813,7 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter >= beast::kZero && brokerBalanceAfter >= beast::kZero,
         "xrpl::LoanPay::doApply",
-        "positive vault and broker balances");
+        "non-negative vault and broker balances");
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter >= vaultBalanceBefore,
         "xrpl::LoanPay::doApply",

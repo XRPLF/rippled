@@ -58,6 +58,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
+#include <format>
 #include <functional>
 #include <map>
 #include <memory>
@@ -280,13 +282,13 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    [[nodiscard]] beast::IP::Endpoint
+    [[nodiscard]] beast::ip::Endpoint
     getRemoteAddress() const override
     {
         return {};
     }
     void
-    charge(Resource::Charge const& fee, std::string const& context = {}) override
+    charge(resource::Charge const& fee, std::string const& context = {}) override
     {
     }
     [[nodiscard]] id_t
@@ -333,7 +335,7 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] uint256
     getClosedLedgerHash() const override
     {
         static uint256 const kHash{};
@@ -958,7 +960,8 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto reply = std::make_shared<protocol::TMProofPathResponse>(
                 server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(reply->has_error());
-            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+            BEAST_EXPECT(
+                server.msgHandler.processProofPathResponse(reply) == ReplayMsgStatus::BadData);
         }
         {
             // request, wrong hash
@@ -982,7 +985,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto reply = std::make_shared<protocol::TMProofPathResponse>(
                 server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(!reply->has_error());
-            BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
+            BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply) == ReplayMsgStatus::Ok);
 
             {
                 // bad reply: invalid hash/key sizes
@@ -990,37 +993,49 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                     // reply with undersized ledgerhash (31 bytes)
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_ledgerhash(std::string(31, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with oversized ledgerhash (33 bytes)
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_ledgerhash(std::string(33, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with empty ledgerhash
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_ledgerhash(std::string());
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with undersized key (31 bytes)
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_key(std::string(31, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with oversized key (33 bytes)
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_key(std::string(33, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with empty key
                     auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
                     bad->set_key(std::string());
-                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processProofPathResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
             }
 
@@ -1030,13 +1045,18 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                 std::string r(reply->ledgerheader());
                 r.back()--;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processProofPathResponse(reply) ==
+                    ReplayMsgStatus::Malformed);
                 r.back()++;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processProofPathResponse(reply) == ReplayMsgStatus::Ok);
                 // bad proof path
                 reply->mutable_path()->RemoveLast();
-                BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processProofPathResponse(reply) ==
+                    ReplayMsgStatus::Malformed);
             }
         }
     }
@@ -1054,14 +1074,16 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
                 server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(reply->has_error());
-            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+            BEAST_EXPECT(
+                server.msgHandler.processReplayDeltaResponse(reply) == ReplayMsgStatus::BadData);
             // request, wrong hash
             uint256 hash(1234567);
             request->set_ledgerhash(hash.data(), hash.size());
             reply = std::make_shared<protocol::TMReplayDeltaResponse>(
                 server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(reply->has_error());
-            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+            BEAST_EXPECT(
+                server.msgHandler.processReplayDeltaResponse(reply) == ReplayMsgStatus::BadData);
         }
 
         {
@@ -1071,7 +1093,8 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
                 server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(!reply->has_error());
-            BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
+            BEAST_EXPECT(
+                server.msgHandler.processReplayDeltaResponse(reply) == ReplayMsgStatus::Ok);
 
             {
                 // bad reply: invalid hash sizes
@@ -1079,19 +1102,25 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                     // reply with undersized ledgerhash (31 bytes)
                     auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
                     bad->set_ledgerhash(std::string(31, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processReplayDeltaResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with oversized ledgerhash (33 bytes)
                     auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
                     bad->set_ledgerhash(std::string(33, '\x01'));
-                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processReplayDeltaResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
                 {
                     // reply with empty ledgerhash
                     auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
                     bad->set_ledgerhash(std::string());
-                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                    BEAST_EXPECT(
+                        server.msgHandler.processReplayDeltaResponse(bad) ==
+                        ReplayMsgStatus::Malformed);
                 }
             }
 
@@ -1101,14 +1130,74 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                 std::string r(reply->ledgerheader());
                 r.back()--;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processReplayDeltaResponse(reply) ==
+                    ReplayMsgStatus::Malformed);
                 r.back()++;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processReplayDeltaResponse(reply) == ReplayMsgStatus::Ok);
                 // bad txns
                 reply->mutable_transaction()->RemoveLast();
-                BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(
+                    server.msgHandler.processReplayDeltaResponse(reply) ==
+                    ReplayMsgStatus::Malformed);
             }
+        }
+    }
+
+    void
+    testTruncatedHeader()
+    {
+        testcase("TruncatedLedgerHeader");
+        LedgerServer server(*this, {.initLedgers = 1});
+        auto const l = server.ledgerMaster.getClosedLedger();
+
+        auto runNoThrow = [this](auto fn, char const* what) {
+            try
+            {
+                BEAST_EXPECT(fn() == ReplayMsgStatus::Malformed);
+            }
+            catch (std::exception const& e)
+            {
+                fail(
+                    std::format("processor threw on truncated header ({}): {}", what, e.what()),
+                    __FILE__,
+                    __LINE__);
+            }
+            catch (...)
+            {
+                fail(
+                    std::format("processor threw unknown exception ({}) on truncated header", what),
+                    __FILE__,
+                    __LINE__);
+            }
+        };
+
+        {
+            auto request = std::make_shared<protocol::TMReplayDeltaRequest>();
+            request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
+            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
+                server.msgHandler.processReplayDeltaRequest(request));
+            BEAST_EXPECT(!reply->has_error());
+
+            reply->set_ledgerheader(std::string(1, '\x00'));
+            runNoThrow(
+                [&] { return server.msgHandler.processReplayDeltaResponse(reply); }, "ReplayDelta");
+        }
+
+        {
+            auto request = std::make_shared<protocol::TMProofPathRequest>();
+            request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
+            request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
+            request->set_key(keylet::skip().key.data(), keylet::skip().key.size());
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(
+                server.msgHandler.processProofPathRequest(request));
+            BEAST_EXPECT(!reply->has_error());
+
+            reply->set_ledgerheader(std::string(1, '\x00'));
+            runNoThrow(
+                [&] { return server.msgHandler.processProofPathResponse(reply); }, "ProofPath");
         }
     }
 
@@ -1206,7 +1295,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             if (serverResult != expecting)
                 return false;
 
-            beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+            beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
             serverEnv.app().config().ledgerReplay = server;
             auto httpResp = xrpl::makeResponse(
@@ -1514,6 +1603,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
     {
         testProofPath();
         testReplayDelta();
+        testTruncatedHeader();
         testTaskParameter();
         testConfig();
         testHandshake();

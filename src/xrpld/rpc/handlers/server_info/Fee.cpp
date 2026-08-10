@@ -8,7 +8,7 @@
 
 namespace xrpl {
 json::Value
-doFee(RPC::JsonContext& context)
+doFee(rpc::JsonContext& context)
 {
     auto result = context.app.getTxQ().doRPC(context.app);
     if (result.type() == json::ValueType::Object)
@@ -16,7 +16,7 @@ doFee(RPC::JsonContext& context)
 
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::doFee : invalid result type");
-    RPC::injectError(RpcInternal, context.params);
+    rpc::injectError(RpcInternal, context.params);
     return context.params;
     // LCOV_EXCL_STOP
 }
