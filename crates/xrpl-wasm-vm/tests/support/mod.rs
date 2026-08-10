@@ -125,6 +125,11 @@ pub struct FakeHost {
     /// What `get_current_ledger_obj_field` answers, by field selector. An
     /// unlisted selector answers `FieldNotFound`.
     pub fields: HashMap<i32, Answer>,
+    /// What `get_ledger_obj_field` answers, by (cache slot, field selector). An
+    /// unlisted key answers `FieldNotFound`.
+    pub le_fields: HashMap<(i32, i32), Answer>,
+    /// Every (cache slot, field selector) `get_ledger_obj_field` was asked for.
+    pub le_fields_asked: RefCell<Vec<(i32, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -156,6 +161,8 @@ impl Default for FakeHost {
             tx_fields: HashMap::new(),
             tx_fields_asked: RefCell::new(Vec::new()),
             fields: HashMap::new(),
+            le_fields: HashMap::new(),
+            le_fields_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -206,6 +213,11 @@ impl FakeHost {
 
     pub fn answering_field(mut self, field: i32, answer: Answer) -> FakeHost {
         self.fields.insert(field, answer);
+        self
+    }
+
+    pub fn answering_le_field(mut self, cache_idx: i32, field: i32, answer: Answer) -> FakeHost {
+        self.le_fields.insert((cache_idx, field), answer);
         self
     }
 
@@ -262,6 +274,19 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_ledger_obj_field(
+        &self,
+        cache_idx: i32,
+        field: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.le_fields_asked.borrow_mut().push((cache_idx, field));
+        match self.le_fields.get(&(cache_idx, field)) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::FieldNotFound),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -305,6 +330,8 @@ pub mod import {
     pub const TX_FIELD: &str =
         r#"(import "host_lib" "tx_field" (func $tx_field (param i32 i32 i32) (result i32)))"#;
     pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
+    pub const LE_FIELD: &str =
+        r#"(import "host_lib" "le_field" (func $le_field (param i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

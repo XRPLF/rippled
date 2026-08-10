@@ -91,6 +91,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4))",
             3,
         ),
+        HostFunctionSpec::GetLedgerObjField => (
+            import::LE_FIELD,
+            "(call $le_field (i32.const 1) (i32.const 1) (i32.const 0) (i32.const 4))",
+            4,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

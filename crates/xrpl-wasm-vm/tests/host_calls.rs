@@ -171,6 +171,21 @@ fn tx_field_passes_the_selector_and_writes_the_field() {
     assert_eq!(*host.tx_fields_asked.borrow(), vec![17]);
 }
 
+/// A field getter over a cached object: both the slot and the selector reach the
+/// host, keyed together, and the answered bytes land where the guest asked.
+#[test]
+fn le_field_passes_the_slot_and_selector_through() {
+    let host =
+        FakeHost::new().answering_le_field(2, 17, support::Answer::bytes([0xab, 0xcd, 0xef]));
+
+    let wat = module(
+        &[import::LE_FIELD, ONE_PAGE],
+        "(call $le_field (i32.const 2) (i32.const 17) (i32.const 0) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 3);
+    assert_eq!(*host.le_fields_asked.borrow(), vec![(2, 17)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

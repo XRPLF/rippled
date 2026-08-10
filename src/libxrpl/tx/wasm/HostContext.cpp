@@ -187,6 +187,26 @@ HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8
 }
 
 std::int32_t
+HostContext::getLedgerObjField(
+    std::int32_t cacheIdx,
+    std::int32_t field,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const& knownSFields = SField::getKnownCodeToField();
+        auto const it = knownSFields.find(field);
+        if (it == knownSFields.end())
+            return hfErrorToInt(HostFunctionError::InvalidField);
+
+        auto const value = hostFunctions_.getLedgerObjField(cacheIdx, *it->second);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

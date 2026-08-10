@@ -146,6 +146,12 @@ host_functions! {
     #[wasm_name = "home_le_field"]
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The serialized bytes of one field of a previously cached ledger object,
+    /// selected by its cache slot and the field's `SField` code.
+    #[gas = 70]
+    #[wasm_name = "le_field"]
+    fn get_ledger_obj_field(&self, cache_idx: i32, field: i32, out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

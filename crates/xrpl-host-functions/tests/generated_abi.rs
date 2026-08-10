@@ -69,6 +69,19 @@ impl HostFunctions for FakeHost {
         put(out, &[field as u8])
     }
 
+    /// A field getter over a cached object, keyed by slot and selector.
+    fn get_ledger_obj_field(
+        &self,
+        cache_idx: i32,
+        field: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        if cache_idx <= 0 || field < 0 {
+            return Err(HostError::FieldNotFound);
+        }
+        put(out, &[cache_idx as u8, field as u8])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -109,6 +122,8 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 5);
     assert_eq!(host.get_current_ledger_obj_field(3, &mut out), Ok(1));
     assert_eq!(out[0], 3);
+    assert_eq!(host.get_ledger_obj_field(2, 4, &mut out), Ok(2));
+    assert_eq!(out[..2], [2, 4]);
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -184,6 +199,7 @@ fn the_spec_table_matches_the_declarations() {
             ("cache_le", 5000),
             ("tx_field", 70),
             ("home_le_field", 70),
+            ("le_field", 70),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

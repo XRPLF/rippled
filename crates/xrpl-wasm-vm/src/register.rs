@@ -137,6 +137,23 @@ pub(crate) fn register_host_functions(
                     )
                 },
             ),
+            HostFunctionSpec::GetLedgerObjField => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 cache_idx: i32,
+                 field: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetLedgerObjField, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        write_into(c, out, |host, out| {
+                            host.get_ledger_obj_field(cache_idx, field, out)
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

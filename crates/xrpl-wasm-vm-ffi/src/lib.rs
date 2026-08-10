@@ -192,6 +192,15 @@ mod ffi {
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjField"]
+        fn get_ledger_obj_field(
+            self: &HostContext,
+            cache_idx: i32,
+            field: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -275,6 +284,15 @@ impl HostFunctions for CxxHost<'_> {
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_current_ledger_obj_field(field, out))
+    }
+
+    fn get_ledger_obj_field(
+        &self,
+        cache_idx: i32,
+        field: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.get_ledger_obj_field(cache_idx, field, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
