@@ -307,7 +307,7 @@ removeVaultAssets(
     applyRemoveVaultAssets(ctx.view, vault, amount, finalRemoval);
 
     if (amount == beast::kZero)
-        return tesSUCCESS;
+        return tesSUCCESS;  // LCOV_EXCL_LINE
 
     return doWithdraw(ctx, senderAcct, dstAcct, vault->at(sfAccount), priorBalance, amount, j);
 }

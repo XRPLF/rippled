@@ -772,6 +772,10 @@ roundToAsset(
     return roundToScale(ret, scale);
 }
 
+/* Checks if a value is already rounded to the specified scale.
+ * Returns true if rounding down and rounding up produce the same result,
+ * indicating no further precision exists beyond the scale.
+ */
 [[nodiscard]] inline bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {

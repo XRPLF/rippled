@@ -271,17 +271,13 @@ LoanManage::defaultLoan(
 
     // Update the Vault's assets, and return funds from the LoanBroker
     // pseudo-account to the Vault pseudo-account:
-    if (auto const ter = addVaultAssets(
-            view,
-            vaultSle,
-            brokerSle->at(sfAccount),
-            STAmount{vaultAsset, defaultCovered},
-            STAmount{vaultAsset, vaultTotalDelta},
-            j);
-        !isTesSuccess(ter))
-        return ter;
-
-    return tesSUCCESS;
+    return addVaultAssets(
+        view,
+        vaultSle,
+        brokerSle->at(sfAccount),
+        STAmount{vaultAsset, defaultCovered},
+        STAmount{vaultAsset, vaultTotalDelta},
+        j);
 }
 
 TER
