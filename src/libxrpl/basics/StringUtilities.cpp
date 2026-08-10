@@ -5,15 +5,16 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/algorithm/hex.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -67,7 +68,7 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     }
 
     pUrl.scheme = smMatch[1];
-    boost::algorithm::to_lower(pUrl.scheme);
+    pUrl.scheme = toLower(pUrl.scheme);
     pUrl.username = smMatch[2];
     pUrl.password = smMatch[3];
     std::string const domain = smMatch[4];
@@ -96,7 +97,20 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 std::string
 trimWhitespace(std::string str)
 {
-    boost::trim(str);
+    auto const isSpace = [](unsigned char c) { return std::isspace(c) != 0; };
+
+    auto const end = std::ranges::find_if_not(str | std::views::reverse, isSpace).base();
+    str.erase(end, str.end());
+    str.erase(str.begin(), std::ranges::find_if_not(str, isSpace));
+
+    return str;
+}
+
+std::string
+toLower(std::string str)
+{
+    std::ranges::transform(
+        str, str.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return str;
 }
 

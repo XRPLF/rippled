@@ -125,8 +125,17 @@ struct ParsedUrl
 bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl);
 
+/**
+ * Return @p str with leading and trailing whitespace removed.
+ */
 std::string
 trimWhitespace(std::string str);
+
+/**
+ * Return @p str with every character mapped through std::tolower.
+ */
+std::string
+toLower(std::string str);
 
 std::optional<std::uint64_t>
 toUInt64(std::string const& s);
