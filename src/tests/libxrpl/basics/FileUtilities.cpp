@@ -20,10 +20,11 @@ class TempFile
 {
 public:
     explicit TempFile(std::filesystem::path file, std::string const& contents)
-        : dir_(beast::uniqueRandomPath(
-              std::filesystem::temp_directory_path(),
-              100,
-              "xrpl-file-utilities-"))
+        : dir_(
+              beast::uniqueRandomPath(
+                  std::filesystem::temp_directory_path(),
+                  100,
+                  "xrpl-file-utilities-"))
         , file_(dir_ / file)
     {
         std::filesystem::create_directory(dir_);

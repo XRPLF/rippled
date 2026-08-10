@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <iomanip>
+#include <ios>
 #include <random>
 #include <sstream>
 #include <stdexcept>
