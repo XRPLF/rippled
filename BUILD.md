@@ -7,9 +7,7 @@
 For the hardware needed to run a node, see
 [System Requirements](https://xrpl.org/system-requirements.html).
 
-Building xrpld requires Git, Python, Conan, CMake, and a C++23 compiler. The
-required tool versions, the compiler versions tested in CI, and how to install
-them on each platform are documented in the
+For the software needed to build xrpld, see the
 [environment setup guide](./docs/build/environment.md).
 
 ## Operating Systems
