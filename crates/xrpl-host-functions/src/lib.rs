@@ -135,6 +135,12 @@ host_functions! {
     #[wasm_name = "cache_le"]
     fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32>;
 
+    /// The serialized bytes of one field of the transaction being executed, selected
+    /// by its `SField` code.
+    #[gas = 70]
+    #[wasm_name = "tx_field"]
+    fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]

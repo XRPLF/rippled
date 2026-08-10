@@ -103,6 +103,20 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::GetTxField => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 field: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetTxField, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        write_into(c, out, |host, out| host.get_tx_field(field, out))
+                    })
+                },
+            ),
             HostFunctionSpec::GetCurrentLedgerObjField => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

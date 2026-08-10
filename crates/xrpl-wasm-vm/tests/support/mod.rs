@@ -117,6 +117,11 @@ pub struct FakeHost {
     pub cache_slot: HostResult<i32>,
     /// Every (object id, requested slot) `cache_ledger_obj` was asked to cache.
     pub cached: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `get_tx_field` answers, by field selector. An unlisted selector answers
+    /// `FieldNotFound`.
+    pub tx_fields: HashMap<i32, Answer>,
+    /// Every field selector `get_tx_field` was asked for.
+    pub tx_fields_asked: RefCell<Vec<i32>>,
     /// What `get_current_ledger_obj_field` answers, by field selector. An
     /// unlisted selector answers `FieldNotFound`.
     pub fields: HashMap<i32, Answer>,
@@ -148,6 +153,8 @@ impl Default for FakeHost {
             // Slot 1 by default; slot assignment is the host's job, not the ABI's.
             cache_slot: Ok(1),
             cached: RefCell::new(Vec::new()),
+            tx_fields: HashMap::new(),
+            tx_fields_asked: RefCell::new(Vec::new()),
             fields: HashMap::new(),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
@@ -192,6 +199,11 @@ impl FakeHost {
         self
     }
 
+    pub fn answering_tx_field(mut self, field: i32, answer: Answer) -> FakeHost {
+        self.tx_fields.insert(field, answer);
+        self
+    }
+
     pub fn answering_field(mut self, field: i32, answer: Answer) -> FakeHost {
         self.fields.insert(field, answer);
         self
@@ -232,6 +244,14 @@ impl HostFunctions for FakeHost {
     fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32> {
         self.cached.borrow_mut().push((obj_id.to_vec(), cache_idx));
         self.cache_slot
+    }
+
+    fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.tx_fields_asked.borrow_mut().push(field);
+        match self.tx_fields.get(&field) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::FieldNotFound),
+        }
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -282,6 +302,8 @@ pub mod import {
     pub const AMENDMENT_ENABLED: &str = r#"(import "host_lib" "amendment_enabled" (func $amendment_enabled (param i32 i32) (result i32)))"#;
     pub const CACHE_LE: &str =
         r#"(import "host_lib" "cache_le" (func $cache_le (param i32 i32 i32) (result i32)))"#;
+    pub const TX_FIELD: &str =
+        r#"(import "host_lib" "tx_field" (func $tx_field (param i32 i32 i32) (result i32)))"#;
     pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =

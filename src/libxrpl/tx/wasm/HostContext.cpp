@@ -152,6 +152,23 @@ HostContext::cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t 
 }
 
 std::int32_t
+HostContext::getTxField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const& knownSFields = SField::getKnownCodeToField();
+        auto const it = knownSFields.find(field);
+        if (it == knownSFields.end())
+            return hfErrorToInt(HostFunctionError::InvalidField);
+
+        auto const value = hostFunctions_.getTxField(*it->second);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out)
     const noexcept
 {

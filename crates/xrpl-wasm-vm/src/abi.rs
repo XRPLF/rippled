@@ -203,6 +203,9 @@ mod tests {
         fn cache_ledger_obj(&self, _obj_id: &[u8], _cache_idx: i32) -> HostResult<i32> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_tx_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn get_current_ledger_obj_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

@@ -156,6 +156,21 @@ fn the_output_region_is_the_pointer_the_guest_gave() {
     }
 }
 
+/// A field getter over the transaction: the selector reaches the host, and the bytes
+/// it answers land where the guest asked. It has its own answer set, distinct from
+/// the current-object field getter's.
+#[test]
+fn tx_field_passes_the_selector_and_writes_the_field() {
+    let host = FakeHost::new().answering_tx_field(17, support::Answer::bytes([0xab, 0xcd]));
+
+    let wat = module(
+        &[import::TX_FIELD, ONE_PAGE],
+        "(call $tx_field (i32.const 17) (i32.const 0) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 2);
+    assert_eq!(*host.tx_fields_asked.borrow(), vec![17]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

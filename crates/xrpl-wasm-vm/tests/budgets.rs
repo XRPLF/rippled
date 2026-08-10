@@ -81,6 +81,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $cache_le (i32.const 0) (i32.const 32) (i32.const 0))",
             3,
         ),
+        HostFunctionSpec::GetTxField => (
+            import::TX_FIELD,
+            "(call $tx_field (i32.const 1) (i32.const 0) (i32.const 4))",
+            3,
+        ),
         HostFunctionSpec::GetCurrentLedgerObjField => (
             import::HOME_LE_FIELD,
             "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4))",

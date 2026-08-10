@@ -66,6 +66,9 @@ public:
     cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t cacheIdx) const noexcept;
 
     [[nodiscard]] std::int32_t
+    getTxField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
     getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t

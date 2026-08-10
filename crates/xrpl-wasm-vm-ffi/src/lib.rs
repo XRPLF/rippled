@@ -184,6 +184,10 @@ mod ffi {
         fn cache_ledger_obj(self: &HostContext, obj_id: &[u8], cache_idx: i32) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getTxField"]
+        fn get_tx_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "getCurrentLedgerObjField"]
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
 
@@ -263,6 +267,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32> {
         scalar(self.ctx.cache_ledger_obj(obj_id, cache_idx))
+    }
+
+    fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_tx_field(field, out))
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
