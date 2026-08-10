@@ -360,8 +360,8 @@ After any updates or changes to dependencies, you may need to do the following:
 4. [Regenerate lockfile](./docs/build/advanced_conan.md#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
 
-If you are using the Nix development shell, prebuilt Conan binaries may be
-incompatible with it — see
+If you are using the Nix development shell, whether prebuilt Conan binaries apply
+depends on your platform — see
 [Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
 
 #### ERROR: Package not resolved

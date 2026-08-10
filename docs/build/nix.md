@@ -130,46 +130,25 @@ The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
 ## Conan configuration
 
-The shell configures Conan for you: there is no `conan config install` or
-`conan remote add` to run by hand. It does this in a Conan home of its own, so
-the setup is self-contained and can be thrown away without touching a system
-Conan.
-
-On entry, the shell exports `CONAN_HOME=~/.conan2-nix` and, whenever the tracked
-configuration has changed since last time, runs
-[`conan/init.sh`](../../conan/init.sh) to install into it:
-
-- our [`global.conf`](../../conan/global.conf), the same one CI applies;
-- the [profiles](../../conan/profiles) from this repository;
-- the `xrplf` remote, which hosts some of our dependencies.
-
-That script is not Nix-specific — it honours `CONAN_HOME`, so you can run it in
-any environment to do the same setup:
-
-```bash
-./conan/init.sh
-```
-
-The separate home is deliberate. Packages built with the Nix toolchain are not
-interchangeable with ones a system Conan built against a different compiler and
-libc, and a single shared cache mixes the two silently. Keeping them apart also
-means you can start over by deleting `~/.conan2-nix`; the shell reinstalls
-everything on next entry.
-
-> [!NOTE]
-> `CONAN_HOME` is exported by the shell, so `conan` commands from the
-> [build instructions](../../BUILD.md#steps) act on `~/.conan2-nix`
-> automatically. Setting `CONAN_HOME` yourself after entering the shell still
-> wins, which is how [`conan/lockfile/regenerate.sh`](../../conan/lockfile/regenerate.sh)
-> gets its throwaway home.
+The shell runs [`conan/init.sh`](../../conan/init.sh) on entry, so
+[Set Up Conan](../../BUILD.md#set-up-conan) is already done for you. It installs
+into the shell's own Conan home: `CONAN_HOME=~/.conan2-nix`.
 
 ### Prebuilt packages
 
-There is no guarantee that binaries from the Conan remotes will work when using
-Nix. If you encounter any errors, add `--build '*'` to the `conan install`
-command in [Build and Test](../../BUILD.md#build-and-test) to force Conan to
-compile everything from source. Keep the rest of the command as it is there, so
-it rebuilds the `build_type` you are actually configuring.
+On **Linux**, the binaries on the `xrplf` remote are built in this same Nix
+environment — CI runs in Docker images that bundle the dev shell's toolchain (see
+[`nix/docker`](../../nix/docker)) — so `.#gcc` and `.#clang` can reuse them. The
+`-plain` shells do not match that toolchain's glibc, so binaries from the remote
+are not a reliable match there.
+
+On **macOS**, CI builds with Apple Clang, so the remote holds nothing for the Nix
+`clang` toolchain and dependencies are compiled locally. We do not publish
+Nix-built macOS binaries because a Conan package ID records the compiler version
+but not the nixpkgs revision.
+
+To compile everything from source, add `--build '*'` to the `conan install`
+command.
 
 ## Automatic Activation with direnv
 
