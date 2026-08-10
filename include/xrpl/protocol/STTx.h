@@ -93,12 +93,6 @@ public:
     [[nodiscard]] SeqProxy
     getSeqProxy() const;
 
-    /**
-     * Returns the first non-zero value of (Sequence, TicketSequence).
-     */
-    [[nodiscard]] std::uint32_t
-    getSeqValue() const;
-
     [[nodiscard]] boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 

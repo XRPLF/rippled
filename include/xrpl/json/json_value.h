@@ -73,33 +73,15 @@ operator==(StaticString x, StaticString y)
 }
 
 inline bool
-operator!=(StaticString x, StaticString y)
-{
-    return !(x == y);
-}
-
-inline bool
 operator==(std::string const& x, StaticString y)
 {
     return strcmp(x.c_str(), y.cStr()) == 0;
 }
 
 inline bool
-operator!=(std::string const& x, StaticString y)
-{
-    return !(x == y);
-}
-
-inline bool
 operator==(StaticString x, std::string const& y)
 {
     return y == x;
-}
-
-inline bool
-operator!=(StaticString x, std::string const& y)
-{
-    return !(y == x);
 }
 
 /**
@@ -489,12 +471,6 @@ toJson(xrpl::Number const& number)
 bool
 operator==(Value const&, Value const&);
 
-inline bool
-operator!=(Value const& x, Value const& y)
-{
-    return !(x == y);
-}
-
 bool
 operator<(Value const&, Value const&);
 
@@ -562,12 +538,6 @@ public:
         return isEqual(other);
     }
 
-    bool
-    operator!=(SelfType const& other) const
-    {
-        return !isEqual(other);
-    }
-
     /**
      * Return either the index or the member name of the referenced value as a
      * Value.
@@ -623,6 +593,7 @@ class ValueConstIterator : public ValueIteratorBase
 public:
     using size_t = unsigned int;
     using difference_type = int;
+    using value_type = Value const;
     using reference = Value const&;
     using pointer = Value const*;
     using SelfType = ValueConstIterator;
@@ -687,6 +658,7 @@ class ValueIterator : public ValueIteratorBase
 public:
     using size_t = unsigned int;
     using difference_type = int;
+    using value_type = Value;
     using reference = Value&;
     using pointer = Value*;
     using SelfType = ValueIterator;

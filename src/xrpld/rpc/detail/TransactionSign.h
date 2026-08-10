@@ -20,7 +20,7 @@ class LoadFeeTrack;
 class Transaction;
 class TxQ;
 
-namespace RPC {
+namespace rpc {
 
 /**
  * Populate augmented submit fields into a JSON result.
@@ -45,8 +45,8 @@ getCurrentNetworkFee(
     TxQ const& txQ,
     Application const& app,
     json::Value const& tx,
-    int mult = Tuning::kDefaultAutoFillFeeMultiplier,
-    int div = Tuning::kDefaultAutoFillFeeDivisor);
+    int mult = tuning::kDefaultAutoFillFeeMultiplier,
+    int div = tuning::kDefaultAutoFillFeeDivisor);
 
 /**
  * Fill in the fee on behalf of the client.
@@ -155,5 +155,5 @@ transactionSubmitMultiSigned(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl
