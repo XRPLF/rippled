@@ -2,6 +2,7 @@
 #pragma once
 
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
@@ -291,6 +292,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLowSponsor);
     }
+
+    /**
+     * @brief Get sfDust (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getDust() const
+    {
+        if (hasDust())
+            return this->sle_->at(sfDust);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDust is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDust() const
+    {
+        return this->sle_->isFieldPresent(sfDust);
+    }
 };
 
 /**
@@ -479,6 +504,17 @@ public:
     setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfLowSponsor] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDust (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setDust(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfDust] = value;
         return *this;
     }
 

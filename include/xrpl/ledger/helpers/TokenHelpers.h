@@ -60,6 +60,40 @@ enum class AllowMPTOverflow : bool { No = false, Yes };
  */
 enum class WaiveMPTCanTransfer : bool { No = false, Yes };
 
+/**
+ * Feature-agnostic trust-line dust primitive.
+ *
+ * A caller that maintains its own cached total of a trust line's balance can
+ * ask the credit path (accountSend / directSendNoFeeIOU) to keep sfBalance
+ * representable at a scale of the caller's choosing and park any sub-quantum
+ * remainder in the trust line's sfDust field, then report back what actually
+ * moved. Passing a DustSplit* is the opt-in; the credit path's default is
+ * nullptr, which reproduces the classic behaviour exactly.
+ *
+ * The target-scale choice and the "receivable-invariance" contract (the
+ * caller must reconcile any (balanceDelta - amount) drift with its own
+ * accounting) belong to the caller. This type is intentionally feature-
+ * agnostic: it says nothing about Vaults, AMMs, or any specific consumer.
+ *
+ * All output fields below are RECEIVER-POSITIVE: positive means the
+ * receiver's holdings grew.
+ */
+struct DustSplit
+{
+    explicit DustSplit(int targetScale) : targetScale(targetScale)
+    {
+    }
+
+    // --- in ---
+    int targetScale;  // exponent sfBalance must remain representable at
+
+    // --- out ---
+    Number balanceDelta{};  // how much sfBalance moved
+    Number dustDelta{};     // how much sfDust moved. SIGNED: negative means
+                            // previously-deferred dust was promoted into
+                            // sfBalance by this operation.
+};
+
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
  * - WeakAuth
@@ -386,7 +420,8 @@ accountSend(
     beast::Journal j,
     SLE::ref sponsorSle = {},
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
-    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No,
+    DustSplit* dust = nullptr);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /**

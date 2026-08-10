@@ -22,6 +22,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -730,6 +731,16 @@ removeEmptyHolding(
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
+        return tecHAS_OBLIGATIONS;
+    // A line can be balance-zero yet still hold non-zero sfDust: a debit
+    // can legally consume all representable balance and leave only dust.
+    // Refuse to delete such a line — dust is invisible to accountHolds,
+    // so deletion would silently destroy that value. Gated on the
+    // amendment as defense in depth (pre-amendment sfDust is always zero
+    // by construction, so the check is a no-op there, but the explicit
+    // gate documents the invariant).
+    if (!accountIsIssuer && ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+        Number{line->at(sfDust)} != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
