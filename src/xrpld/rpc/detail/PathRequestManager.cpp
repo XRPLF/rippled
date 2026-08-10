@@ -73,14 +73,15 @@ PathRequestManager::~PathRequestManager()
         assetCache_.reset();
     }
 
-    // Stop new mid-close handlers from observing *this, cancel the timer, then
-    // wait for any handler that already took a manager pointer (inFlight).
+    // Stop new mid-close handlers from observing *this, cancel the timer under
+    // the same mutex that serializes expires_after/async_wait, then wait for
+    // any handler that already took a manager pointer (inFlight).
     // Do not hold bag->mutex across refresh — that stalled io_context threads.
     {
         std::lock_guard const lk(midCloseBag_->mutex);
         midCloseBag_->manager = nullptr;
+        cancelMidCloseTimerUnlocked();
     }
-    midCloseTimer_.cancel();
     {
         std::unique_lock lk(midCloseBag_->mutex);
         midCloseBag_->idle.wait(lk, [this] { return midCloseBag_->inFlight == 0; });
@@ -372,45 +373,68 @@ runParallel(
 }  // namespace
 
 void
+PathRequestManager::cancelMidCloseTimerUnlocked()
+{
+    // Caller holds midCloseBag_->mutex. Bump epoch so a pending async_wait
+    // (operation_aborted or late fire) cannot clear scheduled after a re-arm
+    // or call onMidCloseTimer on a cancelled generation.
+    ++midCloseBag_->epoch;
+    midCloseBag_->scheduled = false;
+    midCloseTimer_.cancel();
+}
+
+void
 PathRequestManager::scheduleMidCloseRefresh()
 {
     // Only one mid-close timer in flight; re-armed after each tick while live.
-    if (midCloseScheduled_.exchange(true, std::memory_order_acq_rel))
-        return;
-
+    // Serialize all timer ops on bag->mutex — boost::asio::steady_timer is not
+    // safe for concurrent expires_after/async_wait vs cancel from other threads
+    // (insertPathRequest, last-session release, destructor, timer re-arm).
     auto bag = midCloseBag_;
-    midCloseTimer_.expires_after(app_.config().pathMidCloseDelay);
-    // Capture bag (not raw this). Enter inFlight only while using manager so
-    // ~PathRequestManager can wait without cancel() having to join io threads.
-    // Never hold bag->mutex across onMidCloseTimer / revalidate (io stall).
-    midCloseTimer_.async_wait([bag](boost::system::error_code const& waitEc) {
-        PathRequestManager* self = nullptr;
-        {
-            std::lock_guard const lk(bag->mutex);
-            if (!bag->manager)
-                return;
-            self = bag->manager;
-            ++bag->inFlight;
-        }
-        struct InFlightGuard
-        {
-            MidCloseBag& bag;
-            ~InFlightGuard()
+    std::uint64_t epoch = 0;
+    {
+        std::lock_guard const lk(bag->mutex);
+        if (!bag->manager || bag->scheduled)
+            return;
+        bag->scheduled = true;
+        epoch = ++bag->epoch;
+        midCloseTimer_.expires_after(app_.config().pathMidCloseDelay);
+        // Capture bag (not raw this). Enter inFlight only while using manager so
+        // ~PathRequestManager can wait without cancel() having to join io threads.
+        // Never hold bag->mutex across onMidCloseTimer / revalidate (io stall).
+        midCloseTimer_.async_wait([bag, epoch](boost::system::error_code const& waitEc) {
+            PathRequestManager* self = nullptr;
             {
-                std::lock_guard const lk(bag.mutex);
-                --bag.inFlight;
-                bag.idle.notify_all();
+                std::lock_guard const lk(bag->mutex);
+                // Stale generation (cancelled or superseded) — ignore.
+                if (epoch != bag->epoch)
+                    return;
+                bag->scheduled = false;
+                if (!bag->manager)
+                    return;
+                self = bag->manager;
+                ++bag->inFlight;
             }
-        } const inFlightGuard{*bag};
-        self->onMidCloseTimer(waitEc);
-    });
+            struct InFlightGuard
+            {
+                MidCloseBag& bag;
+                ~InFlightGuard()
+                {
+                    std::lock_guard const lk(bag.mutex);
+                    --bag.inFlight;
+                    bag.idle.notify_all();
+                }
+            } const inFlightGuard{*bag};
+            self->onMidCloseTimer(waitEc);
+        });
+    }
 }
 
 void
 PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
 {
     // Caller has entered MidCloseBag::inFlight so *this stays alive.
-    midCloseScheduled_.store(false, std::memory_order_release);
+    // bag->scheduled was cleared by the async_wait handler under bag->mutex.
     if (waitEc || app_.isStopping() || !requestsPending())
         return;
 
@@ -830,6 +854,16 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
             // Interrupted to pick up brand-new sessions; loop with newOnly.
             newRequests = true;
         }
+        else if (processSteadyOnOpen)
+        {
+            // One mid-close revalidate pass. Never poll/consume
+            // pathFindNewRequest_ here — that would steal creates from
+            // LedgerMaster::updatePaths. updatePaths checks the flag before
+            // calling updateAll; if mid-close clears it, the create job exits
+            // with "Nothing to do" and brand-new path_find clients wait until
+            // the next closed ledger for their first full Pathfinder result.
+            break;
+        }
         else if (newRequests)
         {
             newRequests = app_.getLedgerMaster().isNewPathRequest();
@@ -841,12 +875,6 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                     // re-snapshot and run one full pass so everyone is updated
                     // for this validated ledger (skips those already completed
                     // via lastIndex_ >= seq).
-                }
-                else if (processSteadyOnOpen)
-                {
-                    // Mid-close wave finished (new + steady). Done until next
-                    // close or another mid-close timer.
-                    break;
                 }
                 else
                 {
@@ -957,8 +985,12 @@ PathRequestManager::releaseCacheIfIdleUnlocked()
         return;
     }
 
-    midCloseTimer_.cancel();
-    midCloseScheduled_.store(false, std::memory_order_release);
+    {
+        // Timer cancel must use the same mutex as scheduleMidCloseRefresh
+        // (insert / timer / destructor threads).
+        std::lock_guard const lk(midCloseBag_->mutex);
+        cancelMidCloseTimerUnlocked();
+    }
     revalidateJobPending_.store(false, std::memory_order_release);
 
     if (!assetCache_)

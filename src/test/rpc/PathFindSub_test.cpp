@@ -26,6 +26,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Tuning.h>
@@ -721,6 +722,92 @@ class PathFindSub_test : public beast::unit_test::Suite
         (void)wsc->invoke("path_find", closeReq);
     }
 
+    /**
+     * Mid-close must not consume pathFindNewRequest_. If it did, LedgerMaster::
+     * updatePaths can exit with "Nothing to do" and a brand-new path_find client
+     * waits until the next closed ledger for its first full Pathfinder result.
+     */
+    void
+    testMidClosePreservesNewSubscriptionSignal()
+    {
+        testcase("mid-close: does not swallow new path_find subscription signal");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv();
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        setupUsdCorridor(env, gw, alice, bob);
+        env.fund(XRP(100000), carol);
+        env.close();
+        env.trust(gw["USD"](10000), carol);
+        env(pay(gw, carol, gw["USD"](5000)));
+        env.close();
+
+        // Established session A so mid-close has work and the timer path is live.
+        auto wscA = makeWSClient(env.app().config());
+        auto jrA =
+            wscA->invoke("path_find", pfCreate(alice, bob, bob["USD"](10), "USD"))[jss::result];
+        BEAST_EXPECT(!jrA.isMember(jss::error));
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        BEAST_EXPECT(waitPathFindUpdate(*wscA, 5s, true));
+        drainPathFind(*wscA);
+
+        auto& lm = env.app().getLedgerMaster();
+        // Drop any residual create signal from session A.
+        (void)lm.isNewPathRequest();
+
+        // Brand-new client B. makePathRequest sets pathFindNewRequest_ and may
+        // queue PthFindNewReq. Mid-close must not clear that flag.
+        auto wscB = makeWSClient(env.app().config());
+        auto jrB =
+            wscB->invoke("path_find", pfCreate(carol, bob, bob["USD"](5), "USD"))[jss::result];
+        BEAST_EXPECT(!jrB.isMember(jss::error));
+
+        // Pure mid-close wave (same entry as periodic revalidate). Must not
+        // first-Pathfind B (isFirst skip) and must not steal the create signal.
+        BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/true));
+
+        // Flag preservation: re-arm a create signal and ensure mid-close leaves
+        // it set. Concurrent updatePaths may drain the flag after mid-close
+        // releases waveMutex_, so retry a few times; with the bug mid-close
+        // always consumes and preserved stays 0 when mid-close runs with the
+        // flag set.
+        int attempted = 0;
+        int preserved = 0;
+        for (int i = 0; i < 40; ++i)
+        {
+            (void)lm.isNewPathRequest();
+            if (!lm.newPathRequest())
+                continue;
+            ++attempted;
+            // Inline mid-close holds waveMutex_ so a concurrent create updateAll
+            // blocks before isNewPathRequest — only mid-close could clear it.
+            env.app().getPathRequestManager().updateAll(env.current(), /*midClose=*/true);
+            if (lm.isNewPathRequest())
+                ++preserved;
+        }
+        BEAST_EXPECT(attempted > 0);
+        // Fix: mid-close never consumes → preserved tracks attempted (minus a
+        // rare post-unlock drain). Bug: mid-close always consumes → preserved≈0.
+        BEAST_EXPECT(preserved * 2 >= attempted);
+
+        // B must still receive a first full result without waiting for a new
+        // closed ledger (create-style open wave / queued PthFindNewReq).
+        if (!waitPathFindUpdate(*wscB, 100ms, true))
+        {
+            // Explicit create wake if the JobQueue job already lost the race.
+            BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/false));
+        }
+        BEAST_EXPECT(waitPathFindUpdate(*wscB, 5s, true));
+
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wscA->invoke("path_find", closeReq);
+        (void)wscB->invoke("path_find", closeReq);
+    }
+
 public:
     void
     run() override
@@ -733,6 +820,7 @@ public:
         testPartialLiquidityNoCoveringSpare();
         testStaggeredRediscoverySurvivesManyCloses();
         testMidCloseRevalidateOnly();
+        testMidClosePreservesNewSubscriptionSignal();
     }
 };
 

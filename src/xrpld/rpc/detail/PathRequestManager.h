@@ -56,7 +56,9 @@ public:
 
     /**
      * Arm the periodic revalidate timer (Config::pathMidCloseDelay). Safe to
-     * call repeatedly; only one timer is in flight.
+     * call repeatedly from any thread; only one timer is in flight. All timer
+     * ops are serialized on MidCloseBag::mutex (asio steady_timer is not
+     * thread-safe across expires_after / async_wait / cancel).
      */
     void
     scheduleMidCloseRefresh();
@@ -160,11 +162,19 @@ private:
     runPeriodicRevalidate();
 
     /**
-     * Timer completion body. Invoked only while MidCloseBag holds a lock and
-     * manager is non-null (or via a JobQueue job that re-checks the bag).
+     * Timer completion body. Invoked only after the async_wait handler has
+     * validated bag epoch/manager and entered inFlight (bag mutex not held
+     * across this call).
      */
     void
     onMidCloseTimer(boost::system::error_code const& waitEc);
+
+    /**
+     * Cancel the mid-close timer and invalidate any pending async_wait.
+     * Caller must hold midCloseBag_->mutex.
+     */
+    void
+    cancelMidCloseTimerUnlocked();
 
     Application& app_;
     beast::Journal journal_;
@@ -188,15 +198,22 @@ private:
     std::shared_ptr<AssetCache> assetCache_;
 
     /**
-     * Lifetime token for mid-close async_wait / JtRpc jobs. Handlers capture
-     * shared_ptr<MidCloseBag>. bag->mutex is only held to publish/check manager
-     * and to enter/leave inFlight — never across runPeriodicRevalidate so
-     * network io_context threads are not stalled on a long refresh.
+     * Lifetime + timer token for mid-close async_wait / JtRpc jobs. Handlers
+     * capture shared_ptr<MidCloseBag>. bag->mutex is held only for:
+     *   - publish/check manager and enter/leave inFlight
+     *   - all midCloseTimer_ ops (expires_after / async_wait / cancel) and the
+     *     scheduled/epoch single-flight fields (asio timers are not thread-safe)
+     * Never hold bag->mutex across runPeriodicRevalidate so network io_context
+     * threads are not stalled on a long refresh.
      *
      * Protocol: under mutex, if manager is non-null, ++inFlight and copy the
      * pointer, unlock, use the pointer, then --inFlight and notify. Destructor
-     * nulls manager then waits until inFlight == 0 so no handler uses a
-     * destroyed PathRequestManager (io threads outlive this object).
+     * nulls manager, invalidates the timer epoch, cancels the timer, then waits
+     * until inFlight == 0 so no handler uses a destroyed PathRequestManager
+     * (io threads outlive this object).
+     *
+     * epoch is bumped on every cancel so a stale operation_aborted handler
+     * cannot clear scheduled after a newer arm, or re-enter onMidCloseTimer.
      */
     struct MidCloseBag
     {
@@ -204,11 +221,12 @@ private:
         std::condition_variable idle;
         PathRequestManager* manager{nullptr};
         int inFlight{0};
+        bool scheduled{false};
+        std::uint64_t epoch{0};
     };
     std::shared_ptr<MidCloseBag> midCloseBag_;
 
     boost::asio::steady_timer midCloseTimer_;
-    std::atomic<bool> midCloseScheduled_{false};
     // True while a JtRpc periodic revalidate job is queued or running.
     // Cleared only after runPeriodicRevalidate returns (not before).
     std::atomic<bool> revalidateJobPending_{false};
