@@ -213,6 +213,15 @@ mod ffi {
         ) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjNestedField"]
+        fn get_ledger_obj_nested_field(
+            self: &HostContext,
+            cache_idx: i32,
+            locator: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -317,6 +326,18 @@ impl HostFunctions for CxxHost<'_> {
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.get_current_ledger_obj_nested_field(locator, out))
+    }
+
+    fn get_ledger_obj_nested_field(
+        &self,
+        cache_idx: i32,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .get_ledger_obj_nested_field(cache_idx, locator, out),
+        )
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

@@ -227,6 +227,14 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_ledger_obj_nested_field(
+            &self,
+            _cache_idx: i32,
+            _locator: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

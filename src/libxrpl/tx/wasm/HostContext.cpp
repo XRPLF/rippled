@@ -257,6 +257,29 @@ HostContext::getCurrentLedgerObjNestedField(
 }
 
 std::int32_t
+HostContext::getLedgerObjNestedField(
+    std::int32_t cacheIdx,
+    rust::Slice<std::uint8_t const> locator,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (locator.empty() || (locator.size() & 3) != 0)
+            return hfErrorToInt(HostFunctionError::LocatorMalformed);
+
+        std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
+        std::vector<std::int32_t> locBuf(steps);
+        std::memcpy(locBuf.data(), locator.data(), locator.size());
+        FieldLocator const fl(std::move(locBuf));
+
+        auto const value = hostFunctions_.getLedgerObjNestedField(cacheIdx, fl);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

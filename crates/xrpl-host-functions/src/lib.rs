@@ -169,6 +169,17 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The serialized bytes of a nested field of a previously cached ledger object,
+    /// selected by its cache slot and reached by a `locator`.
+    #[gas = 110]
+    #[wasm_name = "le_inner"]
+    fn get_ledger_obj_nested_field(
+        &self,
+        cache_idx: i32,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

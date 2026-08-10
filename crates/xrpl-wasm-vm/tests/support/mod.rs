@@ -140,6 +140,11 @@ pub struct FakeHost {
     pub home_le_nested: HashMap<Vec<u8>, Answer>,
     /// Every locator `get_current_ledger_obj_nested_field` was asked for.
     pub home_le_nested_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_ledger_obj_nested_field` answers, by (cache slot, locator bytes). An
+    /// unlisted key answers `FieldNotFound`.
+    pub le_nested: HashMap<(i32, Vec<u8>), Answer>,
+    /// Every (cache slot, locator) `get_ledger_obj_nested_field` was asked for.
+    pub le_nested_asked: RefCell<Vec<(i32, Vec<u8>)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -177,6 +182,8 @@ impl Default for FakeHost {
             tx_nested_asked: RefCell::new(Vec::new()),
             home_le_nested: HashMap::new(),
             home_le_nested_asked: RefCell::new(Vec::new()),
+            le_nested: HashMap::new(),
+            le_nested_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -242,6 +249,16 @@ impl FakeHost {
 
     pub fn answering_home_le_nested(mut self, locator: Vec<u8>, answer: Answer) -> FakeHost {
         self.home_le_nested.insert(locator, answer);
+        self
+    }
+
+    pub fn answering_le_nested(
+        mut self,
+        cache_idx: i32,
+        locator: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.le_nested.insert((cache_idx, locator), answer);
         self
     }
 
@@ -333,6 +350,21 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_ledger_obj_nested_field(
+        &self,
+        cache_idx: i32,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.le_nested_asked
+            .borrow_mut()
+            .push((cache_idx, locator.to_vec()));
+        match self.le_nested.get(&(cache_idx, locator.to_vec())) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::FieldNotFound),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -381,6 +413,7 @@ pub mod import {
     pub const TX_INNER: &str =
         r#"(import "host_lib" "tx_inner" (func $tx_inner (param i32 i32 i32 i32) (result i32)))"#;
     pub const HOME_LE_INNER: &str = r#"(import "host_lib" "home_le_inner" (func $home_le_inner (param i32 i32 i32 i32) (result i32)))"#;
+    pub const LE_INNER: &str = r#"(import "host_lib" "le_inner" (func $le_inner (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

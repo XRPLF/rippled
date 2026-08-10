@@ -223,6 +223,26 @@ fn home_le_inner_reads_the_locator_and_writes_the_field() {
     assert_eq!(*host.home_le_nested_asked.borrow(), vec![locator]);
 }
 
+/// The nested getter over a cached object: the slot leads, the locator is read from
+/// memory, and the two reach the host keyed together.
+#[test]
+fn le_inner_reads_the_slot_and_locator_and_writes_the_field() {
+    let locator = vec![5u8, 0, 0, 0];
+    let host = FakeHost::new().answering_le_nested(
+        3,
+        locator.clone(),
+        support::Answer::bytes([0x11, 0x22]),
+    );
+
+    let wat = module(
+        &[import::LE_INNER, ONE_PAGE],
+        "(i32.store (i32.const 0) (i32.const 5))
+         (call $le_inner (i32.const 3) (i32.const 0) (i32.const 4) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 2, "the field bytes the host wrote");
+    assert_eq!(*host.le_nested_asked.borrow(), vec![(3, locator)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
