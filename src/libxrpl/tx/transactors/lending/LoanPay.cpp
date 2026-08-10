@@ -517,8 +517,9 @@ LoanPay::doApply()
     // check; the real post-rounding values are read back from the Vault SLE
     // further below, once addVaultAssets/associateAsset have actually
     // mutated and rounded it.
-    Number const assetsAvailableAfterRaw = assetsAvailableBefore + totalPaidToVaultRounded;
-    Number const assetsTotalAfterRaw = assetsTotalBefore + assetsTotalDelta;
+    [[maybe_unused]] Number const assetsAvailableAfterRaw =
+        assetsAvailableBefore + totalPaidToVaultRounded;
+    [[maybe_unused]] Number const assetsTotalAfterRaw = assetsTotalBefore + assetsTotalDelta;
 
     XRPL_ASSERT_PARTS(
         assetsAvailableAfterRaw <= assetsTotalAfterRaw,
