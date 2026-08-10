@@ -51,6 +51,9 @@ public:
     getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t
+    getBaseFee(rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
     getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t

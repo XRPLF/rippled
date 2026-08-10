@@ -116,6 +116,11 @@ host_functions! {
     #[wasm_name = "parent_ldgr_hash"]
     fn get_parent_ledger_hash(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The base fee of the ledger being built, in drops, as 4 little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "base_fee"]
+    fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]

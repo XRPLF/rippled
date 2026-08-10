@@ -74,6 +74,25 @@ fn parent_ldgr_hash_writes_all_32_bytes_where_the_guest_asked() {
     );
 }
 
+/// A third scalar getter, to pin the pattern rather than a single instance of it.
+#[test]
+fn base_fee_writes_the_fee_where_the_guest_asked() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[import::BASE_FEE, ONE_PAGE],
+        "(drop (call $base_fee (i32.const 64) (i32.const 4)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 10, "the 4 LE bytes the host wrote");
+
+    let wat = module(
+        &[import::BASE_FEE, ONE_PAGE],
+        "(call $base_fee (i32.const 64) (i32.const 4))",
+    );
+    assert_eq!(status(&wat, &host), 4, "the byte count");
+}
+
 /// The output region is wherever the guest points, not a fixed address.
 #[test]
 fn the_output_region_is_the_pointer_the_guest_gave() {

@@ -96,6 +96,18 @@ HostContext::getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept
 }
 
 std::int32_t
+HostContext::getBaseFee(rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const fee = hostFunctions_.getBaseFee();
+        if (!fee)
+            return hfErrorToInt(fee.error());
+
+        return answerScalar(out, *fee);
+    });
+}
+
+std::int32_t
 HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out)
     const noexcept
 {
