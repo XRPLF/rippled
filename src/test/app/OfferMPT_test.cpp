@@ -39,6 +39,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -652,8 +653,8 @@ public:
         env(offer(carol, drops(1), musd(100)));
         env.close();
 
-        auto const issuerOffer = keylet::offer(issuer.id(), issuerOfferSeq);
-        auto const carolOffer = keylet::offer(carol.id(), carolOfferSeq);
+        auto const issuerOffer = keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerOfferSeq));
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
         BEAST_EXPECT(env.le(issuerOffer) != nullptr);
         BEAST_EXPECT(env.le(carolOffer) != nullptr);
 
@@ -715,7 +716,8 @@ public:
             // payment goes dry. The removal happens only inside the crossing:
             // tecPATH_DRY discards everything but the fee, so the offer itself
             // stays in the ledger, unconsumed.
-            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq))) != nullptr);
             BEAST_EXPECT(env.balance(alice) == aliceXRPBefore);
             BEAST_EXPECT(env.balance(bob) == bobXRPBefore);
         }
@@ -755,7 +757,8 @@ public:
             // an IOU (eur) output leg: the fractional usd (MPT) input rounds
             // to zero. The degraded offer is removed during crossing, the
             // payment goes dry, and tecPATH_DRY leaves the offer in the ledger.
-            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq))) != nullptr);
             BEAST_EXPECT(env.balance(alice, eur) == aliceEURBefore);
             BEAST_EXPECT(env.balance(bob, eur) == bobEURBefore);
         }
@@ -794,7 +797,8 @@ public:
             // fractional usd (MPT) input rounds to zero. The degraded offer is
             // removed during crossing, the payment goes dry, and tecPATH_DRY
             // leaves the offer in the ledger.
-            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq))) != nullptr);
             BEAST_EXPECT(env.balance(alice, eur) == eur(aliceEURBefore));
             BEAST_EXPECT(env.balance(bob, eur) == eur(bobEURBefore));
         }
@@ -842,8 +846,8 @@ public:
             env(pay(gw, bob, usd(2)));
             env.close();
 
-            auto const aliceOffer = keylet::offer(alice.id(), aliceOfferSeq);
-            auto const carolOffer = keylet::offer(carol.id(), carolOfferSeq);
+            auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+            auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
             BEAST_EXPECT(env.le(aliceOffer) != nullptr);
             BEAST_EXPECT(env.le(carolOffer) != nullptr);
 
@@ -3596,7 +3600,8 @@ public:
             env(offer(taker, XRP(1), token(offerAmount)));
             env.close();
 
-            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
             BEAST_EXPECT(env.balance(taker, token) == token(takerFunds));
         }
 
@@ -3620,7 +3625,7 @@ public:
             env(offer(issuer, XRP(1), token(poisonAmount)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+            auto const poisonKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
             BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
             auto const takerSeq = env.seq(taker);
@@ -3628,7 +3633,8 @@ public:
             env.close();
 
             BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
         }
 
         {
@@ -3660,7 +3666,7 @@ public:
             env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(mallory.id(), poisonSeq);
+            auto const poisonKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(poisonSeq));
             BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
             auto const aliceSeq = env.seq(alice);
@@ -3668,7 +3674,8 @@ public:
             env.close();
 
             BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceSeq))) != nullptr);
         }
 
         {
@@ -3698,7 +3705,7 @@ public:
             env(offer(issuer, XRP(1), token(offerOut)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+            auto const poisonKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
             BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
             auto const issuerXRPBefore = env.balance(issuer, XRP);
@@ -3714,7 +3721,8 @@ public:
             // the unusable offer is removed, the taker's offer remains, and no
             // value changes hands beyond the taker's transaction fee.
             BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
             BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore);
             BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee);
             BEAST_EXPECT(env.balance(taker, token) == takerMPTBefore);
@@ -3745,7 +3753,8 @@ public:
             env(offer(poisonMaker, XRP(1), token(offerOut)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(poisonMaker.id(), poisonSeq);
+            auto const poisonKeylet =
+                keylet::offer(poisonMaker.id(), SeqProxy::rawSequence(poisonSeq));
             BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
             auto const takerSeq = env.seq(taker);
@@ -3753,7 +3762,8 @@ public:
             env.close();
 
             BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
             BEAST_EXPECT(env.balance(poisonMaker, token) == token(funded));
             BEAST_EXPECT(env.balance(taker, token) == token(0));
         }
@@ -3783,7 +3793,8 @@ public:
                 env(offer(issuer, XRP(1), token(poisonAmount)));
                 env.close();
 
-                auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+                auto const poisonKeylet =
+                    keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
                 BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
                 auto const takerSeq = env.seq(taker);
@@ -3791,7 +3802,8 @@ public:
                 env.close();
 
                 BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
-                BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+                BEAST_EXPECT(
+                    env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
             }
             BEAST_EXPECT(logs.contains("Removing offer with overflowing amount calculation"));
         }

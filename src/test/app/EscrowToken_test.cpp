@@ -3766,12 +3766,20 @@ struct EscrowToken_test : public beast::unit_test::Suite
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
-            auto const expectedErr = mptV2 ? Ter(tesSUCCESS) : Ter(tefEXCEPTION);
+            // The transfer-fee split in EscrowFinish only overflows on the
+            // legacy divideRound(amount, lockedRate, ...) path, which runs when
+            // fixCleanup3_4_0 is disabled. With fixCleanup3_4_0 the split uses
+            // mulRatio (128-bit intermediate), which cannot overflow. Without
+            // it, this large amount overflows unless the MPTokensV2 Number path
+            // is active. So the finish succeeds when either amendment is enabled.
+            bool const cleanup340 = testFeatures[fixCleanup3_4_0];
+            bool const noOverflow = cleanup340 || mptV2;
+            auto const expectedErr = noOverflow ? Ter(tesSUCCESS) : Ter(tefEXCEPTION);
 
-            // Finish with a large MPT amount and non-zero transfer fee. Without
-            // featureMPTokensV2 this overflows in divideRound(amount,
-            // lockedRate, ...). With featureMPTokensV2 the Number path avoids
-            // the overflow and unlocks the escrow.
+            // Finish with a large MPT amount and non-zero transfer fee. When the
+            // computation overflows (legacy divideRound path, no MPTokensV2) the
+            // finish fails with tefEXCEPTION and the escrow is untouched;
+            // otherwise it unlocks the escrow.
             {
                 Env env{*this, testFeatures};
                 env.fund(XRP(1'000), alice, bob, gw);
@@ -3806,9 +3814,9 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     expectedErr);
                 env.close();
 
-                if (mptV2)
+                if (noOverflow)
                 {
-                    BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
+                    BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
                     BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(escrowAmount));
                     auto const postBob = env.balance(bob, mpt);
                     BEAST_EXPECT(postBob.value() > preBob.value());
@@ -3820,7 +3828,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 }
                 else
                 {
-                    BEAST_EXPECT(env.le(keylet::escrow(alice.id(), seq)));
+                    BEAST_EXPECT(env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
                     BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(escrowAmount));
                     BEAST_EXPECT(env.balance(bob, mpt) == preBob);
                     BEAST_EXPECT(mptEscrowed(env, alice, mpt) == escrowAmount);
@@ -3864,7 +3872,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     Ter(tesSUCCESS));
                 env.close();
 
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
                 BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(noOverflowEscrowAmount));
                 auto const postBob = env.balance(bob, mpt);
                 BEAST_EXPECT(postBob.value() > preBob.value());
@@ -3907,7 +3915,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env(escrow::cancel(alice, alice, seq), Fee(baseFee), Ter(tesSUCCESS));
                 env.close();
 
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
                 BEAST_EXPECT(env.balance(alice, mpt) == preAlice);
                 BEAST_EXPECT(env.balance(bob, mpt) == preBob);
                 BEAST_EXPECT(env.balance(gw, mpt) == -mpt(escrowAmount));

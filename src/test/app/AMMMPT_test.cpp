@@ -38,6 +38,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -5778,7 +5779,7 @@ private:
                 token((pool.out - expectedAmounts->out).value()),
                 amm.tokens()));
             env.require(Balance(dst, token(expectedAmounts->out.value())));
-            BEAST_EXPECT(env.le(keylet::offer(maker.id(), makerOfferSeq)));
+            BEAST_EXPECT(env.le(keylet::offer(maker.id(), SeqProxy::rawSequence(makerOfferSeq))));
         };
 
         // CLOB price: 10'000'000 MPT per 1 XRP, so one raw MPT unit is worth
@@ -7367,7 +7368,7 @@ private:
         // overflow. Deposit has no such bound, which is why only the deposit
         // path was exposed.
         //
-        // These mirror the deposit repros: the same oversized two-asset
+        // These mirror the deposit tests: the same oversized two-asset
         // request is rejected cleanly. If the preclaim bound is ever weakened,
         // equalWithdrawLimit would be reached with a huge frac and
         // Number::operator rep() would escape as tefEXCEPTION, failing this.
