@@ -4135,11 +4135,11 @@ NetworkOPsImp::pubMPTTransaction(
         if (subMPT_.empty())
             return;
 
-        auto affectedMPTs = transaction.getMeta().getAffectedMPTs();
-        // MPTokenIssuance ledger entries do not store their own issuance ID, so
-        // global MPT set/lock/unlock transactions must be matched from the tx.
-        if (stTxn->isFieldPresent(sfMPTokenIssuanceID))
-            affectedMPTs.insert(stTxn->getFieldH192(sfMPTokenIssuanceID));
+        // getAffectedMPTs derives the issuance id for MPTokenIssuance entries
+        // from the metadata, so it also covers transactions whose top-level
+        // STTx carries no MPTokenIssuanceID, such as the inner transactions
+        // of a Batch.
+        auto const affectedMPTs = transaction.getMeta().getAffectedMPTs();
 
         for (auto const& affectedMPT : affectedMPTs)
         {

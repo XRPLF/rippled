@@ -399,7 +399,7 @@ doSubscribe(rpc::JsonContext& context)
         if (!context.params[jss::mpt_issuances].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = rpc::parseMptIssuanceIds(context.params[jss::mpt_issuances]);
+        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
         if (ids.empty())
             return rpcError(RpcInvalidParams);
         context.netOps.subMPT(ispSub, ids);

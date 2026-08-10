@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Manifest.h>
 

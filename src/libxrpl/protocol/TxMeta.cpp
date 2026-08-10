@@ -6,6 +6,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -162,6 +164,15 @@ TxMeta::getAffectedMPTs() const
             XRPL_ASSERT(inner, "xrpl::getAffectedMPTs : STObject type cast succeeded");
             if (inner != nullptr)
             {
+                // An MPTokenIssuance entry does not store its own issuance id;
+                // the id is derived from the issuer and the sequence that
+                // created the issuance.
+                if (it.getFieldU16(sfLedgerEntryType) == ltMPTOKEN_ISSUANCE)
+                {
+                    list.insert(
+                        makeMptID(inner->getFieldU32(sfSequence), inner->getAccountID(sfIssuer)));
+                }
+
                 for (auto const& field : *inner)
                 {
                     if (auto mptID = dynamic_cast<STBitString<192> const*>(&field);

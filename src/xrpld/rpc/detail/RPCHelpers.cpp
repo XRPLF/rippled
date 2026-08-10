@@ -116,7 +116,7 @@ parseAccountIds(json::Value const& jvArray)
 }
 
 hash_set<MPTID>
-parseMptIssuanceIds(json::Value const& jvArray)
+parseMPTIssuanceIDs(json::Value const& jvArray)
 {
     hash_set<MPTID> result;
     for (auto const& jv : jvArray)

@@ -1,6 +1,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -2025,11 +2026,8 @@ public:
 
         // Transfer fee is 10%
         mptAlice.create(
-            {.transferFee = 10'000,
-             .ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
-        mptCarol.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+            {.transferFee = 10'000, .ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
+        mptCarol.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
 
         json::Value stream;
         stream = json::ValueType::Object;
@@ -2064,8 +2062,6 @@ public:
                 jv[jss::type] == "mptTransaction";
         }));
 
-        env.close();
-
         // subscribe stream sees alice's MPT
         mptAlice.pay(alice, bob, 2000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -2078,12 +2074,10 @@ public:
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
                 jv[jss::transaction][jss::Destination] == bob.human() &&
-                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
         }));
-
-        env.close();
 
         // subscribe stream sees carol's MPT
         mptCarol.pay(carol, dan, 1000);
@@ -2097,7 +2091,7 @@ public:
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
                 jv[jss::transaction][jss::Destination] == dan.human() &&
-                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
@@ -2159,10 +2153,78 @@ public:
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
                 jv[jss::transaction][jss::Destination] == carol.human() &&
-                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
         }));
+    }
+
+    void
+    testSubMPTBatch()
+    {
+        // MPTs destroyed by the inner transactions of a Batch are still seen by
+        // the stream. An MPTokenIssuance entry does not carry its own issuance
+        // id, so this exercises deriving the id from the metadata.
+        testcase("SubMPT batch");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // A Batch requires at least two inner transactions, so destroy two
+        // issuances at once.
+        MPTTester mptAlice1(env, alice, MPTInit{});
+        mptAlice1.create({.ownerCount = 1});
+        auto const mptID1 = mptAlice1.issuanceID();
+
+        MPTTester mptAlice2(env, alice, MPTInit{.fund = false});
+        mptAlice2.create({.ownerCount = 2});
+        auto const mptID2 = mptAlice2.issuanceID();
+
+        json::Value stream;
+        stream = json::ValueType::Object;
+        stream[jss::mpt_issuances] = json::ValueType::Array;
+        stream[jss::mpt_issuances].append(to_string(mptID1));
+        stream[jss::mpt_issuances].append(to_string(mptID2));
+        auto const jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // destroy both issuances from inside a Batch
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(mptAlice1.destroyJV({.issuer = alice, .id = mptID1}), seq + 1),
+            batch::Inner(mptAlice2.destroyJV({.issuer = alice, .id = mptID2}), seq + 2));
+        env.close();
+
+        // each inner transaction is published on the stream for its own issuance
+        for (auto const& mptID : {mptID1, mptID2})
+        {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::engine_result] == "tesSUCCESS" &&
+                    jv[jss::transaction][jss::Account] == alice.human() &&
+                    jv[jss::transaction][sfMPTokenIssuanceID.jsonName] == to_string(mptID) &&
+                    jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceDestroy" &&
+                    jv[jss::type] == "mptTransaction";
+            }));
+        }
+
+        // the outer Batch transaction is not itself published on the stream;
+        // only the inner transactions touch the issuances
+        BEAST_EXPECT(!wsc->findMsg(1s, [](auto const& jv) {
+            return jv[jss::transaction][jss::TransactionType] == "Batch";
+        }));
+
+        json::Value unsubStream;
+        unsubStream = json::ValueType::Object;
+        unsubStream[jss::mpt_issuances] = json::ValueType::Array;
+        unsubStream[jss::mpt_issuances].append(to_string(mptID1));
+        unsubStream[jss::mpt_issuances].append(to_string(mptID2));
+        BEAST_EXPECT(wsc->invoke("unsubscribe", unsubStream)[jss::status] == "success");
     }
 
     void
@@ -2187,6 +2249,7 @@ public:
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
         testSubMPT();
+        testSubMPTBatch();
         testAsyncTeardownDoesNotStall();
         testResubscribeAfterDisconnect();
         testSubscriptionCapRejects();
