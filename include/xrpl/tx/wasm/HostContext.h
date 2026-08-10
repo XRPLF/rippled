@@ -75,6 +75,12 @@ public:
     getLedgerObjField(std::int32_t cacheIdx, std::int32_t field, rust::Slice<std::uint8_t> out)
         const noexcept;
 
+    // The locator is a path of little-endian i32 steps, so its byte length must be a
+    // non-zero multiple of 4, else `LocatorMalformed`.
+    [[nodiscard]] std::int32_t
+    getTxNestedField(rust::Slice<std::uint8_t const> locator, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 

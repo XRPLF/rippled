@@ -96,6 +96,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $le_field (i32.const 1) (i32.const 1) (i32.const 0) (i32.const 4))",
             4,
         ),
+        HostFunctionSpec::GetTxNestedField => (
+            import::TX_INNER,
+            "(call $tx_inner (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
+            4,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

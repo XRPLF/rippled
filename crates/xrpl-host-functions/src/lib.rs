@@ -152,6 +152,13 @@ host_functions! {
     #[wasm_name = "le_field"]
     fn get_ledger_obj_field(&self, cache_idx: i32, field: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The serialized bytes of a nested field of the transaction, reached by a
+    /// `locator`: a path of little-endian `i32` steps (so its byte length is a
+    /// non-zero multiple of 4). Reads the locator region and writes the field bytes.
+    #[gas = 110]
+    #[wasm_name = "tx_inner"]
+    fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

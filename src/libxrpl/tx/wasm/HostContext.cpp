@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <cstring>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -199,6 +201,32 @@ HostContext::getLedgerObjField(
             return hfErrorToInt(HostFunctionError::InvalidField);
 
         auto const value = hostFunctions_.getLedgerObjField(cacheIdx, *it->second);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::getTxNestedField(
+    rust::Slice<std::uint8_t const> locator,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        // A path of i32 steps: non-empty and a whole number of them.
+        if (locator.empty() || (locator.size() & 3) != 0)
+            return hfErrorToInt(HostFunctionError::LocatorMalformed);
+
+        // Copy into an aligned int32 buffer rather than aliasing the slice, whose
+        // bytes carry no int32 alignment guarantee. The wire byte order is kept; the
+        // field getters below apply `adjustWasmEndianess` when they read a step.
+        std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
+        std::vector<std::int32_t> locBuf(steps);
+        std::memcpy(locBuf.data(), locator.data(), locator.size());
+        FieldLocator const fl(std::move(locBuf));
+
+        auto const value = hostFunctions_.getTxNestedField(fl);
         if (!value)
             return hfErrorToInt(value.error());
 

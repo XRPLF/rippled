@@ -217,6 +217,9 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_tx_nested_field(&self, _locator: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

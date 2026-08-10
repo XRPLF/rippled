@@ -186,6 +186,26 @@ fn le_field_passes_the_slot_and_selector_through() {
     assert_eq!(*host.le_fields_asked.borrow(), vec![(2, 17)]);
 }
 
+/// A nested-field getter: the locator is read from one region and the answer written
+/// to another — the read-input-write-output path. The guest lays the locator down in
+/// memory, and the bytes the host answers land where it asked.
+#[test]
+fn tx_inner_reads_the_locator_and_writes_the_field() {
+    // An eight-byte, two-step locator, as it lands in little-endian guest memory.
+    let locator = vec![17u8, 0, 0, 0, 2, 0, 0, 0];
+    let host =
+        FakeHost::new().answering_tx_nested(locator.clone(), support::Answer::bytes([0xaa, 0xbb]));
+
+    let wat = module(
+        &[import::TX_INNER, ONE_PAGE],
+        "(i32.store (i32.const 0) (i32.const 17))
+         (i32.store (i32.const 4) (i32.const 2))
+         (call $tx_inner (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 2, "the field bytes the host wrote");
+    assert_eq!(*host.tx_nested_asked.borrow(), vec![locator]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
