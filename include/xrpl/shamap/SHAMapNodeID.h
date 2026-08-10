@@ -79,8 +79,14 @@ public:
         return std::tie(depth_, id_) <=> std::tie(n.depth_, n.id_);
     }
 
-    // Not defaulted: that would also compare the CountedObject base, which is
-    // not equality comparable.
+    /**
+     * Equality, which the spaceship above does not provide.
+     *
+     * Only a *defaulted* operator<=> implicitly declares a defaulted
+     * operator==; the one above is user-provided, so == has to be written.
+     * It cannot be defaulted either, because a defaulted == would also compare
+     * the CountedObject base, which is not equality comparable.
+     */
     bool
     operator==(SHAMapNodeID const& n) const
     {

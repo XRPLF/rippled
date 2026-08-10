@@ -275,13 +275,6 @@ public:
     }
 
     /**
-     * Return true if lhs != rhs.
-     *
-     * @param lhs Step to compare.
-     * @param rhs Step to compare.
-     * @return true if lhs != rhs.
-     */
-    /**
      * Streaming operator for a Step.
      */
     friend std::ostream&
