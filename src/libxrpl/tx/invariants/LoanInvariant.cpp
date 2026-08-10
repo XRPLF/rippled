@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -106,6 +107,20 @@ ValidLoan::finalize(
                                 << " is zero or negative ";
                 return false;
             }
+        }
+        // A loan must reference a live loan broker, and that broker must
+        // reference a live vault; otherwise the loan is orphaned and its
+        // balances have no counterparty on the ledger.
+        auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
+        if (!brokerSle)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan broker does not exist";
+            return false;
+        }
+        if (!view.read(keylet::vault(brokerSle->at(sfVaultID))))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan broker vault does not exist";
+            return false;
         }
     }
 

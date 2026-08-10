@@ -4211,6 +4211,25 @@ class Invariants_test : public beast::unit_test::Suite
                 });
         }
 
+        // A loan must reference a live loan broker. A bare loan SLE is
+        // inserted with every other loan-level field kept consistent so the
+        // earlier ValidLoan checks pass; sfLoanBrokerID defaults to zero,
+        // which resolves to no broker, and the broker-existence check trips.
+        doInvariantCheck(
+            {"Loan broker does not exist"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(0);
+                sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 0);
+                ac.view().insert(sleLoan);
+                return true;
+            });
+
         // ttVAULT_SET: owner is immutable
         doInvariantCheck(
             {"violation of vault immutable data"},

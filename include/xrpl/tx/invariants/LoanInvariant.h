@@ -23,6 +23,9 @@ namespace xrpl {
  * 2. A loan may only be deleted by a `LoanDelete` transaction.
  * 3. A loan that is not fully paid off must not be deleted.
  *
+ * 4. Every loan must reference a live loan broker, and that broker must
+ *    reference a live vault.
+ *
  */
 class ValidLoan
 {
