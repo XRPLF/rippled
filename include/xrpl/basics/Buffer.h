@@ -226,10 +226,4 @@ operator==(Buffer const& lhs, Buffer const& rhs) noexcept
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
-inline bool
-operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
-{
-    return !(lhs == rhs);
-}
-
 }  // namespace xrpl
