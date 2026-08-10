@@ -462,6 +462,32 @@ fn credential_id_reads_subject_issuer_and_type() {
     );
 }
 
+/// A two-account keylet getter: both accounts reach the host as a pair, and the
+/// keylet lands where the guest asked.
+#[test]
+fn delegate_id_reads_both_accounts_and_writes_the_keylet() {
+    let account = vec![0u8; 20];
+    let authorize = vec![0u8; 20];
+    let host = FakeHost::new().answering_delegate_keylet(
+        account.clone(),
+        authorize.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::DELEGATE_ID, ONE_PAGE],
+        "(call $delegate_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 20) (i32.const 20)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(
+        *host.delegate_keylets_asked.borrow(),
+        vec![(account, authorize)]
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
