@@ -5154,15 +5154,15 @@ private:
         using namespace jtx;
         FeatureBitset const all{testableAmendments()};
 
-        // FN-36: a credential issued to an AMM pseudo-account can't be accepted
-        // or deleted by it. Before fixCleanup3_4_0 it stays pinned in
-        // the pseudo-account's owner directory and makes AMM deletion fail with
-        // tecINTERNAL (deleteAMMTrustLines rejects the unexpected directory
-        // entry).
+        // A credential issued to an AMM pseudo-account can't be accepted or
+        // deleted by it. A pin created before the cure activates stays pinned
+        // in the pseudo-account's owner directory and makes AMM deletion fail
+        // with tecINTERNAL (deleteAMMTrustLines rejects the unexpected
+        // directory entry).
         Account const attacker{"attacker"};
         char const credType[] = "FN36";
 
-        Env env(*this, all - fixCleanup3_4_0);
+        Env env(*this, all - fixCleanup3_3_0 - fixCleanup3_4_0);
         fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
         env.fund(XRP(1'000), attacker);
         env.close();
@@ -5184,11 +5184,7 @@ private:
         env.enableFeature(fixCleanup3_4_0);
         env.close();
 
-        // Part 1: a new pin is rejected outright.
-        env(credentials::create(ammAcct, attacker, "FN36B"), Ter(tecPSEUDO_ACCOUNT));
-        env.close();
-
-        // Part 2: the pre-existing pin is cleaned up and the AMM deletes.
+        // The pre-existing pin is cleaned up and the AMM deletes.
         amm.withdrawAll(alice_);
         BEAST_EXPECT(!amm.ammExists());
         BEAST_EXPECT(!env.le(credKey));

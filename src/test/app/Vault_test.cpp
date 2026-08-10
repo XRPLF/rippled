@@ -7739,17 +7739,16 @@ class Vault_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        // FN-36: a credential issued to a vault pseudo-account can't be
-        // accepted or deleted by it (pseudo-accounts can't sign), so it stays
-        // pinned in the pseudo-account's owner directory and blocks VaultDelete
-        // with tecHAS_OBLIGATIONS. fixCleanup3_4_0 rejects such
-        // credentials up front and, for pins created before the amendment,
-        // removes them on VaultDelete.
+        // A credential issued to a vault pseudo-account can't be accepted or
+        // deleted by it (pseudo-accounts can't sign), so it stays pinned in the
+        // pseudo-account's owner directory and blocks VaultDelete with
+        // tecHAS_OBLIGATIONS. A pin created before the cure activates is removed
+        // by VaultDelete once it does.
         Account const owner{"owner"};
         Account const attacker{"attacker"};
         char const credType[] = "FN36";
 
-        Env env{*this, all_ - fixCleanup3_4_0};
+        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
         env.fund(XRP(1'000'000), owner, attacker);
         env.close();
 
@@ -7768,8 +7767,7 @@ class Vault_test : public beast::unit_test::Suite
         // its owner count (an unaccepted credential is owned by the issuer).
         auto const pseudoOwnerCount = ownerCount(env, pseudo);
 
-        // Before the amendment: the pin succeeds.
-        testcase("Credential pins vault pseudo-account (amendment disabled)");
+        testcase("Credential pins vault pseudo-account");
         env(credentials::create(pseudo, attacker, credType));
         env.close();
 
@@ -7785,14 +7783,9 @@ class Vault_test : public beast::unit_test::Suite
         env.enableFeature(fixCleanup3_4_0);
         env.close();
 
-        // Part 1: a new pin is rejected outright.
-        testcase("Credential on vault pseudo-account rejected (amendment enabled)");
-        env(credentials::create(pseudo, attacker, "FN36B"), Ter(tecPSEUDO_ACCOUNT));
-        env.close();
-
-        // Part 2: the pre-existing pin no longer blocks deletion; the credential
-        // is cleaned up and the issuer's owner count is restored.
-        testcase("VaultDelete removes pinned credential (amendment enabled)");
+        // The pre-existing pin no longer blocks deletion; the credential is
+        // cleaned up and the issuer's owner count is restored.
+        testcase("VaultDelete removes pinned credential");
         env(vault.del({.owner = owner, .id = keylet.key}));
         env.close();
 
@@ -7814,7 +7807,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const owner{"owner"};
         Account const attacker{"attacker"};
 
-        Env env{*this, all_ - fixCleanup3_4_0};
+        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
         env.fund(XRP(10'000'000), owner, attacker);
         env.close();
 

@@ -105,7 +105,7 @@ VaultDelete::doApply()
     // else. They would otherwise keep its owner directory alive and block
     // deletion with tecHAS_OBLIGATIONS. Doing it first means a bounded,
     // tecINCOMPLETE cleanup can be resumed by a later transaction without having
-    // already torn down the vault. See fixCleanup3_4_0.
+    // already torn down the vault.
     if (view().rules().enabled(fixCleanup3_4_0))
     {
         if (auto const ter = credentials::deletePseudoAccountCredentials(

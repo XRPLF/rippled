@@ -1448,7 +1448,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
             types.insert(ltRIPPLE_STATE);
             // A bounded pseudo-account credential cleanup (VaultDelete /
             // LoanBrokerDelete) persists its partial credential deletions so a
-            // later transaction can resume. See fixCleanup3_4_0.
+            // later transaction can resume.
             if (credentialCleanup)
                 types.insert(ltCREDENTIAL);
         }

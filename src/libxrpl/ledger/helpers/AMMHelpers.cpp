@@ -690,9 +690,10 @@ deleteAMMTrustLines(
 
                 return {deleteAMMTrustLine(sb, sleItem, ammAccountID, j), SkipEntry::No};
             }
-            // A credential can be pinned to the AMM pseudo-account before
-            // fixCleanup3_4_0. Clean it up here, inside the same bounded walk, so
-            // the pinned AMM can be deleted. See fixCleanup3_4_0.
+            // A credential naming the pseudo-account as subject can't be
+            // accepted or deleted by it and would otherwise permanently pin the
+            // AMM. Clean it up here, inside the same bounded walk, so the
+            // pinned AMM can still be deleted.
             if (sb.rules().enabled(fixCleanup3_4_0) && nodeType == ltCREDENTIAL)
                 return {credentials::deleteSLE(sb, sleItem, j), SkipEntry::No};
             // LCOV_EXCL_START
@@ -773,7 +774,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     // deleteAMMTrustLines also removes any credentials pinned to the AMM
-    // pseudo-account before fixCleanup3_4_0, within its bounded walk.
+    // pseudo-account, within its bounded walk.
     if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMaxDeletableAmmTrustLines, j);
         !isTesSuccess(ter))
         return ter;
@@ -915,9 +916,9 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 ++nMPT;
                 continue;
             }
-            // A credential can be pinned to the AMM pseudo-account before
-            // fixCleanup3_4_0. Ignore it here; VaultDelete-style
-            // cleanup in deleteAMMAccount removes it when the AMM is deleted.
+            // A credential naming the pseudo-account as subject can be pinned
+            // to its owner directory. Ignore it here; deleteAMMTrustLines
+            // removes it when the AMM is deleted.
             if (view.rules().enabled(fixCleanup3_4_0) && entryType == ltCREDENTIAL)
                 continue;
             if (entryType != ltRIPPLE_STATE)

@@ -37,10 +37,10 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
  * @brief Remove credentials pinned to a pseudo-account's owner directory.
  *
  * Cleans up credentials that were linked to a pseudo-account (Vault, LoanBroker,
- * AMM) before fixCleanup3_4_0, which such an account can neither accept nor
- * delete. Only credentials are removed, at most @p maxNodesToDelete of them; on
- * reaching that bound the result is `tecINCOMPLETE` and the caller must
- * propagate it so a later transaction resumes.
+ * AMM), which such an account can neither accept nor delete. Only credentials
+ * are removed, at most @p maxNodesToDelete of them; on reaching that bound the
+ * result is `tecINCOMPLETE` and the caller must propagate it so a later
+ * transaction resumes.
  *
  * @param view Mutable ledger view.
  * @param pseudoAcct The pseudo-account whose directory is cleaned.
