@@ -56,6 +56,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $ldgr_index (i32.const 0) (i32.const 4))",
             2,
         ),
+        HostFunctionSpec::GetParentLedgerTime => (
+            import::PARENT_LDGR_TIME,
+            "(call $parent_ldgr_time (i32.const 0) (i32.const 4))",
+            2,
+        ),
         HostFunctionSpec::GetCurrentLedgerObjField => (
             import::HOME_LE_FIELD,
             "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4))",

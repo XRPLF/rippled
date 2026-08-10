@@ -160,6 +160,10 @@ mod ffi {
         fn get_ledger_sqn(self: &HostContext, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getParentLedgerTime"]
+        fn get_parent_ledger_time(self: &HostContext, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "getCurrentLedgerObjField"]
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
 
@@ -210,6 +214,10 @@ fn reported(n: i32) -> HostResult<()> {
 impl HostFunctions for CxxHost<'_> {
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_ledger_sqn(out))
+    }
+
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_parent_ledger_time(out))
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {

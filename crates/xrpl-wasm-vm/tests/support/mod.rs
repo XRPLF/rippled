@@ -103,6 +103,8 @@ pub enum Trace {
 pub struct FakeHost {
     /// What `get_ledger_sqn` answers.
     pub ledger_sqn: Answer,
+    /// What `get_parent_ledger_time` answers.
+    pub parent_ledger_time: Answer,
     /// What `get_current_ledger_obj_field` answers, by field selector. An
     /// unlisted selector answers `FieldNotFound`.
     pub fields: HashMap<i32, Answer>,
@@ -121,6 +123,9 @@ impl Default for FakeHost {
         FakeHost {
             // 4 little-endian bytes, as the declaration's doc comment specifies.
             ledger_sqn: Answer::bytes(7u32.to_le_bytes()),
+            // A distinct value from the sequence number, so a test cannot pass by
+            // reading one where it meant the other.
+            parent_ledger_time: Answer::bytes(9u32.to_le_bytes()),
             fields: HashMap::new(),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
@@ -137,6 +142,11 @@ impl FakeHost {
 
     pub fn answering_sqn(mut self, answer: Answer) -> FakeHost {
         self.ledger_sqn = answer;
+        self
+    }
+
+    pub fn answering_parent_ledger_time(mut self, answer: Answer) -> FakeHost {
+        self.parent_ledger_time = answer;
         self
     }
 
@@ -158,6 +168,10 @@ impl FakeHost {
 impl HostFunctions for FakeHost {
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
         self.ledger_sqn.fill(out)
+    }
+
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize> {
+        self.parent_ledger_time.fill(out)
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -201,6 +215,7 @@ impl HostFunctions for FakeHost {
 pub mod import {
     pub const LDGR_INDEX: &str =
         r#"(import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))"#;
+    pub const PARENT_LDGR_TIME: &str = r#"(import "host_lib" "parent_ldgr_time" (func $parent_ldgr_time (param i32 i32) (result i32)))"#;
     pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =

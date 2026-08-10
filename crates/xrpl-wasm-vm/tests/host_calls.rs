@@ -27,6 +27,28 @@ fn ldgr_index_writes_the_sequence_number_where_the_guest_asked() {
     assert_eq!(status(&wat, &host), 4, "the byte count");
 }
 
+/// A second scalar getter travels the same path: the value the host supplies lands
+/// where the guest asked, and the status is the byte count. The default parent
+/// ledger time is distinct from the sequence number, so this cannot pass by reading
+/// the wrong one.
+#[test]
+fn parent_ldgr_time_writes_the_close_time_where_the_guest_asked() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[import::PARENT_LDGR_TIME, ONE_PAGE],
+        "(drop (call $parent_ldgr_time (i32.const 64) (i32.const 4)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 9, "the 4 LE bytes the host wrote");
+
+    let wat = module(
+        &[import::PARENT_LDGR_TIME, ONE_PAGE],
+        "(call $parent_ldgr_time (i32.const 64) (i32.const 4))",
+    );
+    assert_eq!(status(&wat, &host), 4, "the byte count");
+}
+
 /// The output region is wherever the guest points, not a fixed address.
 #[test]
 fn the_output_region_is_the_pointer_the_guest_gave() {

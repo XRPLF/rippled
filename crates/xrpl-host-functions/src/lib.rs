@@ -106,6 +106,11 @@ host_functions! {
     #[wasm_name = "ldgr_index"]
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The close time of the parent (last-closed) ledger, as 4 little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "parent_ldgr_time"]
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]

@@ -31,6 +31,10 @@ impl HostFunctions for FakeHost {
         put(out, &7u32.to_le_bytes())
     }
 
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize> {
+        put(out, &9u32.to_le_bytes())
+    }
+
     /// Fails on a field it doesn't know, so the error channel is exercised too.
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         if field < 0 {
@@ -65,6 +69,8 @@ fn the_trait_is_implementable() {
 
     assert_eq!(host.get_ledger_sqn(&mut out), Ok(4));
     assert_eq!(out[..4], [7, 0, 0, 0]);
+    assert_eq!(host.get_parent_ledger_time(&mut out), Ok(4));
+    assert_eq!(out[..4], [9, 0, 0, 0]);
     assert_eq!(host.get_current_ledger_obj_field(3, &mut out), Ok(1));
     assert_eq!(out[0], 3);
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
@@ -135,6 +141,7 @@ fn the_spec_table_matches_the_declarations() {
         table,
         [
             ("ldgr_index", 60),
+            ("parent_ldgr_time", 60),
             ("home_le_field", 70),
             ("sha512_half", 2000),
             ("trace", 500),
