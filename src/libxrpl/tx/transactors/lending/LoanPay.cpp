@@ -467,8 +467,20 @@ LoanPay::doApply()
               SpendableHandling::FullBalance);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+
+    // Cash-basis IOU Vaults route the credit through the dust-aware
+    // addVaultAssets overload (via the xrpl:: dispatcher), which needs the
+    // raw pre-rounding total so its DustSplit can park the sub-quantum
+    // remainder in the custody line's sfDust. Legacy and integral-asset
+    // Vaults still pre-round to the Vault's anterior scale here — that
+    // byte-identical to the base branch. The predicate is inlined
+    // deliberately: the transactor never mentions xrpl::vault_dust::.
+    bool const useDust = view.rules().enabled(featureLendingProtocolV1_1) &&
+        getVaultVersion(vaultSle) == VaultVersion::CashBasis && !asset.integral();
+
+    auto const totalPaidToVaultRounded = useDust
+        ? totalPaidToVaultRaw
+        : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -579,6 +591,11 @@ LoanPay::doApply()
 
     // Update the Vault's assets, and transfer the Vault's share of the
     // payment from the payer to the Vault pseudo-account.
+    //
+    // totalPaidToVaultRounded is either the pre-rounded amount (Legacy /
+    // integral asset path — same as base branch) or the raw pre-rounding
+    // amount (dust path — the dust-aware addVaultAssets overload consumes
+    // the raw digits to compute the sfDust residual).
     if (auto const ret = addVaultAssets(
             view,
             vaultSle,
@@ -589,11 +606,18 @@ LoanPay::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    // Must run after addVaultAssets mutates the Vault's sfAssetsTotal/
-    // sfAssetsAvailable (above): it rounds every asset-typed field on the
-    // Vault SLE to the asset's canonical precision, which the mutation
-    // above does not do itself.
-    associateAsset(*vaultSle, asset);
+    // associateAsset snaps every asset-typed STNumber on the Vault SLE to
+    // STAmount's 16-significant-digit precision (via roundToAsset on the
+    // field's current value). For non-dust paths that is the intended
+    // canonicalisation and matches base-branch behaviour verbatim. For the
+    // dust path it would silently erase the sub-quantum recognition
+    // adjustment that the dust-aware addVaultAssets just applied to
+    // sfAssetsTotal (Number carries 19 digits; STAmount only 16), which
+    // is what keeps the receivable (sfAssetsTotal - sfAssetsAvailable)
+    // aligned with principalOutstanding across the repayment. Skip it
+    // in that path.
+    if (!useDust)
+        associateAsset(*vaultSle, asset);
 
     // Duplicate some checks after rounding. These re-read the Vault's fields
     // rather than reusing assetsAvailableAfterRaw/assetsTotalAfterRaw, since

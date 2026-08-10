@@ -188,6 +188,12 @@ addVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::addVaultAssets : valid Vault sle");
 
+    // Forward to the dust-aware overlay for eligible Vaults (cash-basis +
+    // IOU asset). Every other Vault runs the base body verbatim below,
+    // byte-identical to a call with no overlay in the tree.
+    if (vault_dust::useVaultDust(vault))
+        return vault_dust::addVaultAssets(view, vault, sender, amount, valueDelta, j);
+
     [[maybe_unused]] Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::addVaultAssets : amount matches vault asset");
     XRPL_ASSERT(
@@ -258,6 +264,9 @@ clawbackVaultAssets(
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::clawbackVaultAssets : valid Vault sle");
 
+    if (vault_dust::useVaultDust(vault))
+        return vault_dust::clawbackVaultAssets(view, vault, recipient, amount, j);
+
     Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::clawbackVaultAssets : amount matches vault asset");
     XRPL_ASSERT(amount > beast::kZero, "xrpl::clawbackVaultAssets : amount is positive");
@@ -303,6 +312,10 @@ removeVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::removeVaultAssets : valid Vault sle");
 
+    if (vault_dust::useVaultDust(vault))
+        return vault_dust::removeVaultAssets(
+            ctx, vault, senderAcct, dstAcct, priorBalance, amount, j, finalRemoval);
+
     [[maybe_unused]] Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::removeVaultAssets : amount matches vault asset");
     XRPL_ASSERT(amount >= beast::kZero, "xrpl::removeVaultAssets : amount is non-negative");
@@ -324,6 +337,10 @@ moveVaultAssets(
     beast::Journal j)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::moveVaultAssets : valid Vault sle");
+
+    if (vault_dust::useVaultDust(vault))
+        return vault_dust::moveVaultAssets(view, vault, recipients, valueDelta, j);
+
     XRPL_ASSERT(recipients.size() > 1, "xrpl::moveVaultAssets : multiple recipients provided");
 
     Asset const asset = vault->at(sfAsset);
