@@ -32,6 +32,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/circular_buffer.hpp>
@@ -97,7 +98,7 @@ private:
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
-    beast::IP::Endpoint const remoteAddress_;
+    beast::ip::Endpoint const remoteAddress_;
 
     // These are up here to prevent warnings about order of initializations
     //
@@ -161,11 +162,11 @@ private:
 
     struct ChargeWithContext
     {
-        Resource::Charge fee = Resource::kFeeTrivialPeer;
+        resource::Charge fee = resource::kFeeTrivialPeer;
         std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
-        update(Resource::Charge f, std::string const& add)
+        update(resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(f >= fee, "xrpl::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
@@ -179,7 +180,7 @@ private:
 
     std::mutex mutable recentLock_;
     protocol::TMStatusChange lastStatus_;
-    Resource::Consumer usage_;
+    resource::Consumer usage_;
     ChargeWithContext fee_;
 
     // One-shot guard so concurrent JobQueue workers cannot double-count
@@ -187,7 +188,7 @@ private:
     // post duplicate fail() calls) when several queued requests cross
     // kDropThreshold before the first fail() lands on the strand.
     std::atomic<bool> chargeDisconnectFired_{false};
-    std::shared_ptr<PeerFinder::Slot> const slot_;
+    std::shared_ptr<peer_finder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     http_request_type request_;
     http_response_type response_;
@@ -258,11 +259,11 @@ public:
     PeerImp(
         Application& app,
         id_t id,
-        std::shared_ptr<PeerFinder::Slot> const& slot,
+        std::shared_ptr<peer_finder::Slot> const& slot,
         http_request_type&& request,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
-        Resource::Consumer consumer,
+        resource::Consumer consumer,
         std::unique_ptr<stream_type>&& streamPtr,
         OverlayImpl& overlay);
 
@@ -275,9 +276,9 @@ public:
         Application& app,
         std::unique_ptr<stream_type>&& streamPtr,
         Buffers const& buffers,
-        std::shared_ptr<PeerFinder::Slot>&& slot,
+        std::shared_ptr<peer_finder::Slot>&& slot,
         http_response_type&& response,
-        Resource::Consumer usage,
+        resource::Consumer usage,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         id_t id,
@@ -291,7 +292,7 @@ public:
         return pJournal_;
     }
 
-    std::shared_ptr<PeerFinder::Slot> const&
+    std::shared_ptr<peer_finder::Slot> const&
     slot()
     {
         return slot_;
@@ -339,16 +340,18 @@ public:
     void
     sendEndpoints(FwdIt first, FwdIt last)
         requires(
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>);
+            std::is_same_v< //
+                typename std::iterator_traits<FwdIt>::value_type,
+                peer_finder::Endpoint>);
 
-    beast::IP::Endpoint
+    beast::ip::Endpoint
     getRemoteAddress() const override
     {
         return remoteAddress_;
     }
 
     void
-    charge(Resource::Charge const& fee, std::string const& context) override;
+    charge(resource::Charge const& fee, std::string const& context) override;
 
     //
     // Identity
@@ -427,9 +430,10 @@ public:
     // Ledger
     //
 
-    uint256 const&
+    uint256
     getClosedLedgerHash() const override
     {
+        std::scoped_lock const sl{recentLock_};
         return closedLedgerHash_;
     }
 
@@ -462,6 +466,21 @@ public:
     compressionEnabled() const override
     {
         return compressionEnabled_ == Compressed::On;
+    }
+
+    /**
+     * Largest TMManifests message this node accepts, in bytes.
+     *
+     * Read by invokeProtocolMessage to drop oversized messages before
+     * parsing. Not part of the Peer interface: the message handler is a
+     * template parameter, so only PeerImp needs to provide this.
+     */
+    [[nodiscard]] std::size_t
+    maxManifestsMessageSize() const
+    {
+        return maximumManifestsMessageSize(
+            trustedManifestCount(app_.config().maxTrustedCount),
+            untrustedManifestCount(app_.config().maxUntrustedCount));
     }
 
     bool
@@ -697,7 +716,7 @@ protected:
      *
      * Dispatched from `onMessage(TMGetObjectByHash)` to the JobQueue
      * (`JtLedgerReq`) so synchronous NodeStore lookups do not block the
-     * peer's I/O strand. Caps iteration at `Tuning::kHardMaxReplyNodes`
+     * peer's I/O strand. Caps iteration at `tuning::kHardMaxReplyNodes`
      * regardless of hit/miss outcome and applies differential pricing
      * via `computeGetObjectByHashFee()` after the fetch loop completes.
      *
@@ -711,25 +730,25 @@ protected:
      * request based on how much work was actually performed.
      *
      * The charge has three components on top of the base
-     * `Resource::kFeeModerateBurdenPeer`:
+     * `resource::kFeeModerateBurdenPeer`:
      *   - per-hit lookup cost (cheap; usually served from cache)
      *   - per-miss lookup cost (expensive node store seeks)
      *   - request-size band surcharge (escalates abusive batch sizes)
      *
-     * The first `Tuning::kFreeObjectsPerRequest` objects are free so
+     * The first `tuning::kFreeObjectsPerRequest` objects are free so
      * that legitimate `InboundLedger::getNeededHashes()` traffic
      * (at most 8 objects) is unaffected.
      *
      * @param requested Number of objects requested by the message. This
      *                  value is used for request-size pricing and may
-     *                  exceed `Tuning::kHardMaxReplyNodes` when this
+     *                  exceed `tuning::kHardMaxReplyNodes` when this
      *                  helper is called directly, even though processing
-     *                  caps the iterations to `Tuning::kHardMaxReplyNodes`.
+     *                  caps the iterations to `tuning::kHardMaxReplyNodes`.
      * @param found     Number of objects successfully returned in the
      *                  reply.
-     * @return A `Resource::Charge` whose cost reflects the work performed.
+     * @return A `resource::Charge` whose cost reflects the work performed.
      */
-    static Resource::Charge
+    static resource::Charge
     computeGetObjectByHashFee(int const requested, int const found);
 
     /**
@@ -740,9 +759,9 @@ protected:
      * full JobQueue handler. Production callers should never read this back —
      * the value is consumed by `charge()`/`disconnect()` internally.
      *
-     * @return The current `Resource::Charge` accumulated on `fee_`.
+     * @return The current `resource::Charge` accumulated on `fee_`.
      */
-    Resource::Charge
+    resource::Charge
     currentFeeCharge() const
     {
         return fee_.fee;
@@ -756,9 +775,9 @@ PeerImp::PeerImp(
     Application& app,
     std::unique_ptr<stream_type>&& streamPtr,
     Buffers const& buffers,
-    std::shared_ptr<PeerFinder::Slot>&& slot,
+    std::shared_ptr<peer_finder::Slot>&& slot,
     http_response_type&& response,
-    Resource::Consumer usage,
+    resource::Consumer usage,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     id_t id,
@@ -788,7 +807,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{.fee = Resource::kFeeTrivialPeer}
+    , fee_{.fee = resource::kFeeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
@@ -815,7 +834,8 @@ PeerImp::PeerImp(
 template <class FwdIt>
 void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
-    requires(std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>)
+    requires(
+        std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, peer_finder::Endpoint>)
 {
     protocol::TMEndpoints tm;
 

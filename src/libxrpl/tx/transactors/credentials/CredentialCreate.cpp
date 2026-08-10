@@ -84,7 +84,9 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     auto const credType(ctx.tx[sfCredentialType]);
     auto const subject = ctx.tx[sfSubject];
 
-    if (!ctx.view.exists(keylet::account(subject)))
+    auto const subjectSle = ctx.view.read(keylet::account(subject));
+
+    if (!subjectSle)
     {
         JLOG(ctx.j.trace()) << "Subject doesn't exist.";
         return tecNO_TARGET;
@@ -104,6 +106,12 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.trace()) << "Credential already exists.";
         return tecDUPLICATE;
+    }
+
+    if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(subjectSle))
+    {
+        JLOG(ctx.j.trace()) << "Subject is a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
     }
 
     return tesSUCCESS;
