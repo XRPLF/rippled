@@ -146,7 +146,6 @@ in
     cargo-audit
     cargo-llvm-cov
     cargo-nextest
-    corrosion
     rustToolchain
   ];
 }
