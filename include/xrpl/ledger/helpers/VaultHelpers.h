@@ -159,6 +159,19 @@ getVaultKind(STTx const& tx);
 isValidVaultKind(STTx const& tx);
 
 /**
+ * Returns true iff the (SubscriptionDate, RedemptionDate) gap of a
+ * closed-ended vault satisfies
+ * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. The arithmetic
+ * is performed in std::int64_t so that @p sub near UINT32_MAX does not
+ * overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
+ *
+ * @param sub The value of sfSubscriptionDate.
+ * @param red The value of sfRedemptionDate.
+ */
+[[nodiscard]] bool
+isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
+
+/**
  * Returns the current lifecycle phase of a vault. Open-ended
  * vaults are always NoPhase. For closed-ended vaults the phase is derived
  * from the parent ledger close time and the vault's immutable

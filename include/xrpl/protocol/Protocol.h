@@ -355,8 +355,8 @@ enum class VaultPhase : std::uint8_t {
  */
 constexpr std::uint32_t kMinInvestmentPeriod =
     std::chrono::seconds{std::chrono::minutes{1}}.count();
-constexpr std::uint32_t kMaxInvestmentPeriod =
-    std::chrono::seconds{std::chrono::days{30 * 365}}.count();
+// This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
+constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
 /**
  * Maximum recursion depth for vault shares being put as an asset inside

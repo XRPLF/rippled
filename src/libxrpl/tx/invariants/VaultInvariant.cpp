@@ -669,18 +669,14 @@ ValidVault::finalize(
                                "and RedemptionDate";
                         result = false;
                     }
-                    else
+                    else if (!isValidClosedEndedGap(
+                                 *afterVault.subscriptionDate, *afterVault.redemptionDate))
                     {
-                        auto const sub = static_cast<std::int64_t>(*afterVault.subscriptionDate);
-                        auto const red = static_cast<std::int64_t>(*afterVault.redemptionDate);
-                        if (red < sub + kMinInvestmentPeriod || red >= sub + kMaxInvestmentPeriod)
-                        {
-                            JLOG(j.fatal())  //
-                                << "Invariant failed: closed-ended vault RedemptionDate - "
-                                   "SubscriptionDate must be within [MIN_INVESTMENT_PERIOD, "
-                                   "MAX_INVESTMENT_PERIOD)";
-                            result = false;
-                        }
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault RedemptionDate - "
+                               "SubscriptionDate must be within [MIN_INVESTMENT_PERIOD, "
+                               "MAX_INVESTMENT_PERIOD)";
+                        result = false;
                     }
                 }
 

@@ -4487,7 +4487,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::optional<std::uint32_t> subscriptionDate,
                 std::optional<std::uint32_t> redemptionDate) -> bool {
             auto const sequence = ac.view().seq();
-            auto const vaultKeylet = keylet::vault(owner.id(), sequence);
+            auto const vaultKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(sequence));
             auto sleVault = std::make_shared<SLE>(vaultKeylet);
             auto const vaultPage = ac.view().dirInsert(
                 keylet::ownerDir(owner.id()), sleVault->key(), describeOwnerDir(owner.id()));
@@ -4670,8 +4670,8 @@ class Invariants_test : public beast::unit_test::Suite
                 // Synthesize a Loan whose final scheduled payment lands
                 // exactly at RedemptionDate: StartDate = red, interval = 60,
                 // remaining = 1 => red + 60 >= red.
-                auto sleLoan =
-                    std::make_shared<SLE>(keylet::loan(closedEndedBrokerKeylet.key, loanSeq));
+                auto sleLoan = std::make_shared<SLE>(
+                    keylet::loan(closedEndedBrokerKeylet.key, SeqProxy::rawSequence(loanSeq)));
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
@@ -4702,7 +4702,8 @@ class Invariants_test : public beast::unit_test::Suite
                 closedEndedKeylet = keylet;
 
                 // Create the loan broker; LoanBrokerSet has no phase gate.
-                closedEndedBrokerKeylet = keylet::loanBroker(a1.id(), env.seq(a1));
+                closedEndedBrokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
                 env(loan_broker::set(a1, keylet.key));
 
                 // Advance parent close time into Investment so

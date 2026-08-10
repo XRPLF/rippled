@@ -194,6 +194,14 @@ isValidVaultKind(STTx const& tx)
         *kindField == std::to_underlying(VaultKind::ClosedEnded);
 }
 
+[[nodiscard]] bool
+isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
+{
+    auto const s = static_cast<std::int64_t>(sub);
+    auto const r = static_cast<std::int64_t>(red);
+    return r >= s + kMinInvestmentPeriod && r < s + kMaxInvestmentPeriod;
+}
+
 [[nodiscard]] VaultPhase
 getVaultPhase(ReadView const& view, SLE::const_ref vault)
 {

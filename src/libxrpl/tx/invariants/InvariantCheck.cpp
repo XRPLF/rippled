@@ -1126,20 +1126,17 @@ NoModifiedUnmodifiableFields::finalize(
         auto const& before = slePair.first;
         auto const& after = slePair.second;
         auto const type = after->getType();
-        bool bad = false;
-        [[maybe_unused]] bool enforce = false;
+        // featureLendingProtocol gates enforcement, not detection: changes are
+        // always logged, but the transaction is only failed once the amendment
+        // is enabled. Type-specific field lists may add their own gates (see
+        // ltVAULT).
+        bool const enforce = view.rules().enabled(featureLendingProtocol);
+        bool bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+            kFieldChanged(before, after, sfLedgerIndex);
         switch (type)
         {
             case ltLOAN_BROKER:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfSequence) ||
+                bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfVaultNode) ||
                     kFieldChanged(before, after, sfVaultID) ||
@@ -1150,15 +1147,7 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfSequence) ||
+                bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
@@ -1178,23 +1167,15 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfLoanScale);
                 break;
             case ltVAULT:
-                // Fallback checks for ltVAULT copied from below
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex);
-
                 /*
-                 * The VaultKind, SubscriptionDate and RedemptionDate
-                 * fields are introduced by featureLendingProtocolV1_1
-                 * and are the only vault fields whose immutability is
-                 * enforced here; pre-V1_1 vaults do not carry them.
+                 * sfAccount, sfAsset and sfShareMPTID are already
+                 * captured by VaultInvariant. The additional fields
+                 * below are introduced by featureLendingProtocolV1_1
+                 * and only exist on V1_1 vaults.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
-                    // sfAccount, sfAsset, sfShareMPTID are already captured by VaultInvariant
-                    bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                        kFieldChanged(before, after, sfLedgerIndex) ||
-                        kFieldChanged(before, after, sfVaultKind) ||
+                    bad = bad || kFieldChanged(before, after, sfVaultKind) ||
                         kFieldChanged(before, after, sfSubscriptionDate) ||
                         kFieldChanged(before, after, sfRedemptionDate) ||
                         kFieldChanged(before, after, sfSequence) ||
@@ -1206,18 +1187,7 @@ NoModifiedUnmodifiableFields::finalize(
                 }
                 break;
             default:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 *
-                 * We use the lending protocol as a gate, even though
-                 * all transactions are affected because that's when it
-                 * was added.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
-                    kFieldChanged(before, after, sfLedgerIndex);
+                break;
         }
         XRPL_ASSERT(
             !bad || enforce,
