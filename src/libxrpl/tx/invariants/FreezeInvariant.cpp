@@ -73,7 +73,7 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
-    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_3_0);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
 
     return std::ranges::all_of(balanceChanges_, [&](auto const& entry) {
         auto const& [issue, changes] = entry;
@@ -256,9 +256,9 @@ TransfersNotFrozen::validateFrozenState(
         return true;
     }
 
-    // Pre-fixCleanup3_3_0: the isAMMLine check incorrectly blocked clawback on
+    // Pre-fixCleanup3_4_0: the isAMMLine check incorrectly blocked clawback on
     // individually-frozen or deep-frozen AMM trust lines.
-    // Post-fixCleanup3_3_0: AMMClawbacks are allowed to override all freeze types.
+    // Post-fixCleanup3_4_0: AMMClawbacks are allowed to override all freeze types.
     bool const isAMMLine = change.line->isFlag(lsfAMMNode);
     if ((fixOverrideFreeze || !isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {

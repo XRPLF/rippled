@@ -2160,7 +2160,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         // AMMClawback must still succeed because the freeze invariant
         // short-circuits before reaching the AMM line check (no receivers in
         // the USD issuer's change set). Behavior is identical with or without
-        // fixCleanup3_3_0.
+        // fixCleanup3_4_0.
         {
             Env env(*this, features);
             Account const gw{"gateway"};
@@ -2205,7 +2205,7 @@ class AMMClawback_test : public beast::unit_test::Suite
 
         // gw2 (EUR issuer) individually freezes the AMM-EUR trust line.
         // The EUR flow (AMM → alice) is a genuine P2P transfer checked by the
-        // freeze invariant. Pre-fixCleanup3_3_0 the isAMMNode guard incorrectly
+        // freeze invariant. Pre-fixCleanup3_4_0 the isAMMNode guard incorrectly
         // blocked AMMClawback's overrideFreeze privilege on that trust line.
         {
             Env env(*this, features);
@@ -2239,9 +2239,9 @@ class AMMClawback_test : public beast::unit_test::Suite
             env(trust(gw2, STAmount{Issue{eur.currency, amm.ammAccount()}, 0}, tfSetFreeze));
             env.close();
 
-            if (features[fixCleanup3_3_0])
+            if (features[fixCleanup3_4_0])
             {
-                // Post-fixCleanup3_3_0: overrideFreeze privilege applies to
+                // Post-fixCleanup3_4_0: overrideFreeze privilege applies to
                 // all freeze types on AMM trust lines.
                 env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tesSUCCESS));
                 env.close();
@@ -2254,7 +2254,7 @@ class AMMClawback_test : public beast::unit_test::Suite
             }
             else
             {
-                // Pre-fixCleanup3_3_0: the isAMMNode guard prevents the
+                // Pre-fixCleanup3_4_0: the isAMMNode guard prevents the
                 // overrideFreeze privilege from applying to individually-frozen
                 // AMM trust lines, so the invariant blocks the clawback.
                 env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tecINVARIANT_FAILED));
@@ -2340,7 +2340,7 @@ class AMMClawback_test : public beast::unit_test::Suite
                 tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
-            if (features[fixCleanup3_3_0])
+            if (features[fixCleanup3_4_0])
             {
                 env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tesSUCCESS));
                 env.close();
@@ -2353,7 +2353,7 @@ class AMMClawback_test : public beast::unit_test::Suite
             }
             else
             {
-                // Pre-fixCleanup3_3_0: same isAMMNode guard issue blocks the
+                // Pre-fixCleanup3_4_0: same isAMMNode guard issue blocks the
                 // clawback on deep-frozen AMM trust lines.
                 env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tecINVARIANT_FAILED));
             }
@@ -2733,7 +2733,7 @@ class AMMClawback_test : public beast::unit_test::Suite
               // precision loss caught in transaction layer -> tecPRECISION_LOSS
               all - fixAMMClawbackRounding - featureMPTokensV2,
               all - featureMPTokensV2,
-              all - fixCleanup3_3_0,
+              all - fixCleanup3_4_0,
               all})
         {
             testAMMClawbackSpecificAmount(features);
