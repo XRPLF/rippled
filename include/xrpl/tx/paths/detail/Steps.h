@@ -281,12 +281,6 @@ public:
      * @param rhs Step to compare.
      * @return true if lhs != rhs.
      */
-    friend bool
-    operator!=(Step const& lhs, Step const& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
     /**
      * Streaming operator for a Step.
      */
