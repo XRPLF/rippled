@@ -6,9 +6,9 @@ This document explains how to set one up.
 
 ## Tested compiler versions
 
-`xrpld` is built in the **C++23** dialect by default.
-Make sure your toolchain is recent enough — the [compiler versions][cpp23-support]
-currently tested in CI are:
+`xrpld` is built in the **C++23** dialect by default, so your toolchain has to
+support it — see [compiler support for C++23][cpp23-support].
+The versions currently tested in CI are:
 
 | Compiler    | Version            |
 | ----------- | ------------------ |
