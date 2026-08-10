@@ -218,7 +218,7 @@ LoanBrokerSet::doApply()
         }
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const vaultAsset = sleVault->at(sfAsset);
-        auto const sequence = tx.getSeqValue();
+        auto const sequence = tx.getSeqProxy();
 
         auto owner = view.peek(keylet::account(accountID_));
         if (!owner)
@@ -253,7 +253,7 @@ LoanBrokerSet::doApply()
             return ter;
 
         // Initialize data fields:
-        broker->at(sfSequence) = sequence;
+        broker->at(sfSequence) = sequence.value();
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;
