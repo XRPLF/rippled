@@ -10,7 +10,6 @@
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <iterator>
 #include <optional>
@@ -94,14 +93,34 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     return true;
 }
 
+namespace {
+
+// Deliberately not std::isspace / std::tolower: those consult the current C
+// locale, so the same input could trim or fold differently depending on
+// process-wide state set by something else entirely. Everything these helpers
+// are used on (config keys and values, URL schemes, hex digests) is ASCII, and
+// the callers want a fixed answer, so spell the ASCII rules out.
+
+constexpr bool
+isAsciiSpace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
+
+constexpr char
+toAsciiLower(char c)
+{
+    return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c;
+}
+
+}  // namespace
+
 std::string
 trimWhitespace(std::string str)
 {
-    auto const isSpace = [](unsigned char c) { return std::isspace(c) != 0; };
-
-    auto const end = std::ranges::find_if_not(str | std::views::reverse, isSpace).base();
+    auto const end = std::ranges::find_if_not(str | std::views::reverse, isAsciiSpace).base();
     str.erase(end, str.end());
-    str.erase(str.begin(), std::ranges::find_if_not(str, isSpace));
+    str.erase(str.begin(), std::ranges::find_if_not(str, isAsciiSpace));
 
     return str;
 }
@@ -109,8 +128,7 @@ trimWhitespace(std::string str)
 std::string
 toLower(std::string str)
 {
-    std::ranges::transform(
-        str, str.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    std::ranges::transform(str, str.begin(), toAsciiLower);
     return str;
 }
 
