@@ -121,6 +121,13 @@ host_functions! {
     #[wasm_name = "base_fee"]
     fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// Whether an amendment is enabled. The input is either its 32-byte id or its
+    /// name; the answer is `1` if enabled and `0` if not. Unlike the getters, this
+    /// reads an input region and returns the flag directly rather than writing bytes.
+    #[gas = 100]
+    #[wasm_name = "amendment_enabled"]
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]

@@ -93,6 +93,33 @@ fn base_fee_writes_the_fee_where_the_guest_asked() {
     assert_eq!(status(&wat, &host), 4, "the byte count");
 }
 
+/// A call that reads an input region and returns a scalar flag, rather than writing
+/// bytes to an output region: the amendment reaches the host, and its verdict comes
+/// back as the call's status.
+#[test]
+fn amendment_enabled_reads_the_input_and_returns_the_flag() {
+    let host = FakeHost::new(); // enabled by default
+
+    let wat = module(
+        &[import::AMENDMENT_ENABLED, ONE_PAGE],
+        "(call $amendment_enabled (i32.const 64) (i32.const 32))",
+    );
+    assert_eq!(status(&wat, &host), 1, "the enabled flag");
+    assert_eq!(
+        *host.amendments_asked.borrow(),
+        [vec![0u8; 32]],
+        "the 32-byte region reached the host"
+    );
+
+    // A host that reports the amendment disabled answers 0 — a value, not an error.
+    let host = FakeHost::new().answering_amendment_enabled(Ok(0));
+    let wat = module(
+        &[import::AMENDMENT_ENABLED, ONE_PAGE],
+        "(call $amendment_enabled (i32.const 0) (i32.const 32))",
+    );
+    assert_eq!(status(&wat, &host), 0, "the disabled flag");
+}
+
 /// The output region is wherever the guest points, not a fixed address.
 #[test]
 fn the_output_region_is_the_pointer_the_guest_gave() {

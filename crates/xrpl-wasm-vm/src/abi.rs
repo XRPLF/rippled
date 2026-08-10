@@ -197,6 +197,9 @@ mod tests {
         fn get_base_fee(&self, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn is_amendment_enabled(&self, _amendment: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn get_current_ledger_obj_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

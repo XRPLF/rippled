@@ -108,6 +108,34 @@ HostContext::getBaseFee(rust::Slice<std::uint8_t> out) const noexcept
 }
 
 std::int32_t
+HostContext::isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        // A 32-byte input may be an amendment id; try that first and fall through to
+        // a name lookup if it is not an enabled amendment - the 32 bytes could spell
+        // a name instead.
+        if (amendment.size() == uint256::size())
+        {
+            auto const enabled =
+                hostFunctions_.isAmendmentEnabled(uint256::fromVoid(amendment.data()));
+            if (enabled && *enabled == 1)
+                return *enabled;
+        }
+
+        if (amendment.size() > 64)
+            return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+
+        auto const name =
+            std::string_view(reinterpret_cast<char const*>(amendment.data()), amendment.size());
+        auto const enabled = hostFunctions_.isAmendmentEnabled(name);
+        if (!enabled)
+            return hfErrorToInt(enabled.error());
+
+        return *enabled;
+    });
+}
+
+std::int32_t
 HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out)
     const noexcept
 {

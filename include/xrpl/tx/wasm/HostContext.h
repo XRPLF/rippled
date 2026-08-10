@@ -53,6 +53,12 @@ public:
     [[nodiscard]] std::int32_t
     getBaseFee(rust::Slice<std::uint8_t> out) const noexcept;
 
+    // The amendment is either a 32-byte id or a name; a 32-byte input is tried as an
+    // id first and falls back to a name lookup. Answers 1 or 0, or a negative
+    // `HostFunctionError` code.
+    [[nodiscard]] std::int32_t
+    isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const noexcept;
+
     [[nodiscard]] std::int32_t
     getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
 

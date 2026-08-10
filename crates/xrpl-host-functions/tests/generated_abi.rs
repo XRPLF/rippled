@@ -43,6 +43,11 @@ impl HostFunctions for FakeHost {
         put(out, &10u32.to_le_bytes())
     }
 
+    /// Returns a flag rather than bytes, and reads its input: enabled unless empty.
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32> {
+        Ok(i32::from(!amendment.is_empty()))
+    }
+
     /// Fails on a field it doesn't know, so the error channel is exercised too.
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         if field < 0 {
@@ -83,6 +88,8 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 0xab);
     assert_eq!(host.get_base_fee(&mut out), Ok(4));
     assert_eq!(out[..4], [10, 0, 0, 0]);
+    assert_eq!(host.is_amendment_enabled(&[1; 32]), Ok(1));
+    assert_eq!(host.is_amendment_enabled(&[]), Ok(0));
     assert_eq!(host.get_current_ledger_obj_field(3, &mut out), Ok(1));
     assert_eq!(out[0], 3);
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
@@ -156,6 +163,7 @@ fn the_spec_table_matches_the_declarations() {
             ("parent_ldgr_time", 60),
             ("parent_ldgr_hash", 60),
             ("base_fee", 60),
+            ("amendment_enabled", 100),
             ("home_le_field", 70),
             ("sha512_half", 2000),
             ("trace", 500),

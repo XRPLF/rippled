@@ -74,6 +74,20 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::IsAmendmentEnabled => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 ptr: i32,
+                 len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::IsAmendmentEnabled, |c| {
+                        let host = c.data().host;
+                        let amendment = read_borrowed(c, Region::new(ptr, len))?;
+                        host.is_amendment_enabled(amendment)
+                    })
+                },
+            ),
             HostFunctionSpec::GetCurrentLedgerObjField => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

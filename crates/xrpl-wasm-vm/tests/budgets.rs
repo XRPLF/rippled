@@ -71,6 +71,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $base_fee (i32.const 0) (i32.const 4))",
             2,
         ),
+        HostFunctionSpec::IsAmendmentEnabled => (
+            import::AMENDMENT_ENABLED,
+            "(call $amendment_enabled (i32.const 0) (i32.const 32))",
+            2,
+        ),
         HostFunctionSpec::GetCurrentLedgerObjField => (
             import::HOME_LE_FIELD,
             "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4))",

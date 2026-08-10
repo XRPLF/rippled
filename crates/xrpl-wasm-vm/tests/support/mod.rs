@@ -109,6 +109,10 @@ pub struct FakeHost {
     pub parent_ledger_hash: Answer,
     /// What `get_base_fee` answers.
     pub base_fee: Answer,
+    /// What `is_amendment_enabled` answers, whatever amendment it is given.
+    pub amendment_enabled: HostResult<i32>,
+    /// Every amendment `is_amendment_enabled` was asked about.
+    pub amendments_asked: RefCell<Vec<Vec<u8>>>,
     /// What `get_current_ledger_obj_field` answers, by field selector. An
     /// unlisted selector answers `FieldNotFound`.
     pub fields: HashMap<i32, Answer>,
@@ -134,6 +138,9 @@ impl Default for FakeHost {
             parent_ledger_hash: Answer::filler(32),
             // A distinct value again, so no getter can pass by reading another's answer.
             base_fee: Answer::bytes(10u32.to_le_bytes()),
+            // Enabled by default; the id-or-name dispatch is the host's job, not the ABI's.
+            amendment_enabled: Ok(1),
+            amendments_asked: RefCell::new(Vec::new()),
             fields: HashMap::new(),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
@@ -168,6 +175,11 @@ impl FakeHost {
         self
     }
 
+    pub fn answering_amendment_enabled(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.amendment_enabled = answer;
+        self
+    }
+
     pub fn answering_field(mut self, field: i32, answer: Answer) -> FakeHost {
         self.fields.insert(field, answer);
         self
@@ -198,6 +210,11 @@ impl HostFunctions for FakeHost {
 
     fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize> {
         self.base_fee.fill(out)
+    }
+
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32> {
+        self.amendments_asked.borrow_mut().push(amendment.to_vec());
+        self.amendment_enabled
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -245,6 +262,7 @@ pub mod import {
     pub const PARENT_LDGR_HASH: &str = r#"(import "host_lib" "parent_ldgr_hash" (func $parent_ldgr_hash (param i32 i32) (result i32)))"#;
     pub const BASE_FEE: &str =
         r#"(import "host_lib" "base_fee" (func $base_fee (param i32 i32) (result i32)))"#;
+    pub const AMENDMENT_ENABLED: &str = r#"(import "host_lib" "amendment_enabled" (func $amendment_enabled (param i32 i32) (result i32)))"#;
     pub const HOME_LE_FIELD: &str = r#"(import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =

@@ -171,6 +171,12 @@ mod ffi {
         #[cxx_name = "getBaseFee"]
         fn get_base_fee(self: &HostContext, out: &mut [u8]) -> i32;
 
+        /// Reads the amendment (id or name) and answers `1`/`0`, or a negative
+        /// `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "isAmendmentEnabled"]
+        fn is_amendment_enabled(self: &HostContext, amendment: &[u8]) -> i32;
+
         #[namespace = "xrpl"]
         #[cxx_name = "getCurrentLedgerObjField"]
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
@@ -219,6 +225,15 @@ fn reported(n: i32) -> HostResult<()> {
     Ok(())
 }
 
+/// A call whose answer is the scalar the guest reads directly (a flag): a
+/// non-negative value is that answer, a negative one its error code.
+fn flag(n: i32) -> HostResult<i32> {
+    if n < 0 {
+        return Err(HostError::from_code(n));
+    }
+    Ok(n)
+}
+
 impl HostFunctions for CxxHost<'_> {
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_ledger_sqn(out))
@@ -234,6 +249,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_base_fee(out))
+    }
+
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32> {
+        flag(self.ctx.is_amendment_enabled(amendment))
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -534,6 +553,9 @@ mod tests {
         assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
         assert_eq!(reported(0), Ok(()));
         assert_eq!(reported(-14), Err(HostError::NoMemExported));
+        assert_eq!(flag(1), Ok(1));
+        assert_eq!(flag(0), Ok(0));
+        assert_eq!(flag(-2), Err(HostError::FieldNotFound));
     }
 
     /// An exception caught on the C++ side arrives as `-1`, which has to reach the
@@ -543,6 +565,7 @@ mod tests {
     fn a_caught_cxx_exception_arrives_as_internal() {
         assert_eq!(bytes_written(-1), Err(HostError::Internal));
         assert_eq!(reported(-1), Err(HostError::Internal));
+        assert_eq!(flag(-1), Err(HostError::Internal));
     }
 
     // -----------------------------------------------------------------------
