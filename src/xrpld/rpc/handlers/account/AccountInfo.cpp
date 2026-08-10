@@ -122,7 +122,7 @@ doAccountInfo(rpc::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLsFlags{
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 10> kLsFlags{
         {{"defaultRipple", lsfDefaultRipple},
          {"depositAuth", lsfDepositAuth},
          {"disableMasterKey", lsfDisableMaster},
@@ -131,7 +131,8 @@ doAccountInfo(rpc::JsonContext& context)
          {"noFreeze", lsfNoFreeze},
          {"passwordSpent", lsfPasswordSpent},
          {"requireAuthorization", lsfRequireAuth},
-         {"requireDestinationTag", lsfRequireDestTag}}};
+         {"requireDestinationTag", lsfRequireDestTag},
+         {"allowTrustLineClawback", lsfAllowTrustLineClawback}}};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
         kDisallowIncomingFlags{
@@ -140,11 +141,14 @@ doAccountInfo(rpc::JsonContext& context)
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
              {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineClawbackFlag{
-        "allowTrustLineClawback", lsfAllowTrustLineClawback};
-
     static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
         "allowTrustLineLocking", lsfAllowTrustLineLocking};
+
+    // TODO: consider replacing this with a static_assert in C++26 (via reflection)
+    XRPL_ASSERT_PARTS(
+        kLsFlags.size() + kDisallowIncomingFlags.size() + 1 == getAccountRootFlags().size(),
+        "xrpl::doAccountInfo",
+        "number of account flags");
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -169,9 +173,6 @@ doAccountInfo(rpc::JsonContext& context)
 
         for (auto const& lsf : kDisallowIncomingFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-
-        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
