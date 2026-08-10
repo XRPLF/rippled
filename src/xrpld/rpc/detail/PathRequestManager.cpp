@@ -715,6 +715,18 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
         firstUpdates.reserve(requests.size());
         steadyUpdates.reserve(requests.size());
 
+        // Progressive line fill once per closed/create wave (shared cache), not
+        // per session inside parallel doUpdate (avoids N unique-lock expands).
+        //
+        // Must run BEFORE needsUpdate claims inProgress_. getItemsChunk can
+        // throw SHAMapMissingNode (incomplete ledger data). If expand ran after
+        // claims and threw, LedgerMaster/runPeriodicRevalidate catch the error
+        // but never clear inProgress_ — open subscriptions then permanently
+        // skip every later wave (needsUpdate returns false while inProgress_).
+        // waveMutex_ already serializes waves, so expand-before-claim is safe.
+        if (!processSteadyOnOpen && cache)
+            cache->expandIncompleteLines();
+
         // Partition before running work. Capture isNew() before needsUpdate
         // (needsUpdate only sets inProgress_; lastIndex_ flips after complete).
         //
@@ -769,11 +781,6 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                 request->updateComplete();
             }
         }
-
-        // Progressive line fill once per closed/create wave (shared cache), not
-        // per session inside parallel doUpdate (avoids N unique-lock expands).
-        if (!processSteadyOnOpen && cache)
-            cache->expandIncompleteLines();
 
         // First full updates: serial — avoids ramp load spikes / gap mountains.
         // Pin lastIndex_ only on closed ledgers so an open first-update at seq S
