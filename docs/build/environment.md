@@ -19,9 +19,18 @@ currently tested in CI are:
 
 LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
 
+### Older compilers
+
 Older compilers may fail to build the latest `develop` code: the codebase now
 relies on C++23 features and has been adjusted for `clang-tidy`.
 If the latest code doesn't build for you, update your build toolchain first.
+
+If updating isn't an option for you, we do accept pull requests that fix builds
+on older compilers, as long as the change is small and doesn't make the code
+harder to read. What we can't promise is that older compilers will keep working:
+only the versions in the table above are tested in CI, and we won't hold back
+the use of C++23 features or add invasive workarounds to keep an untested
+compiler building. Treat support for anything outside the table as best-effort.
 
 ## Required tools
 
