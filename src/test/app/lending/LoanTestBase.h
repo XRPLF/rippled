@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -474,7 +475,7 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
         env(set(lender, vaultKeylet.key, params.flags),
@@ -665,9 +666,9 @@ protected:
     {
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(brokerStateBefore))
-            return keylet::loan(broker.brokerID, 0);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        return keylet::loan(broker.brokerID, loanSequence);
+        return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
     }
 
     // Funds issuer/lender/borrower with XRP, creates an IOU asset issued by
@@ -852,7 +853,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return std::nullopt;
@@ -1329,7 +1330,8 @@ protected:
             // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
             // object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence)), loanSequence);
         }();
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
@@ -1666,7 +1668,7 @@ protected:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
+        auto badKeylet = keylet::vault(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
         // Try some failure cases
         // flags are checked first
         env(set(evan, broker.brokerID, principalRequest, tfLoanSetMask),
