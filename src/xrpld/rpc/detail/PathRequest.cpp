@@ -45,6 +45,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -56,7 +57,7 @@ PathRequest::PathRequest(
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
-    , owner_(owner)
+    , owner_(&owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
     , jvStatus_(json::ValueType::Object)
@@ -80,7 +81,7 @@ PathRequest::PathRequest(
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
-    , owner_(owner)
+    , owner_(&owner)
     , fCompletion_(std::move(completion))
     , consumer_(consumer)
     , jvStatus_(json::ValueType::Object)
@@ -95,11 +96,19 @@ PathRequest::PathRequest(
     JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
+void
+PathRequest::detachFromManager() noexcept
+{
+    owner_ = nullptr;
+}
+
 PathRequest::~PathRequest()
 {
     // WS disconnect or last strong-ref drop: unhook from the manager so the
-    // shared AssetCache can be released when no sessions remain.
-    owner_.removePathRequest(this);
+    // shared AssetCache can be released when no sessions remain. owner_ is
+    // null if ~PathRequestManager already detached this session.
+    if (owner_)
+        owner_->removePathRequest(this);
 
     using namespace std::chrono;
     auto stream = journal_.info();
@@ -526,7 +535,8 @@ PathRequest::doClose()
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
     // Detach immediately so AssetCache can reclaim if this was the last session
     // (do not wait for ~PathRequest / next updateAll scavenge).
-    owner_.removePathRequest(this);
+    if (owner_)
+        owner_->removePathRequest(this);
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
@@ -674,23 +684,37 @@ PathRequest::findPaths(
     if (sourceAssets.empty())
     {
         // Absolute hard cap (legacy ripple_path_find): exceeding is an error.
-        // Soft cap for WS subscriptions / loaded servers: truncate without error
-        // so concurrent Pathfinder waves stay bounded.
+        // Soft cap is for WS subscriptions only so concurrent Pathfinder waves
+        // stay bounded. One-shot ripple_path_find never silent-truncates under
+        // load — clients expect a complete auto source set (or a hard error).
         std::size_t const hardMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCur);
         std::size_t softMax = hardMax;
         if (!hasCompletion())
-            softMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurSub);
-        if (app_.getFeeTrack().isLoadedLocal())
         {
-            softMax =
-                std::min(softMax, static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurLoaded));
+            softMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurSub);
+            if (app_.getFeeTrack().isLoadedLocal())
+            {
+                softMax =
+                    std::min(softMax, static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCurLoaded));
+            }
         }
 
+        // accountSourceAssets returns a hash_set (unspecified order). Build a
+        // deterministic list so soft truncation is stable across runs: XRP
+        // first, then currency/MPT codes sorted by hex.
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
         bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
+        std::vector<PathAsset> ordered;
+        ordered.reserve(assets.size());
         for (auto const& asset : assets)
+            ordered.push_back(asset);
+        std::sort(ordered.begin(), ordered.end(), [](PathAsset const& a, PathAsset const& b) {
+            return to_string(a) < to_string(b);
+        });
+
+        for (auto const& asset : ordered)
         {
             bool overHard = false;
             bool atSoft = false;
@@ -992,7 +1016,8 @@ PathRequest::doUpdate(
     // fast doCreate cannot block the first non-fast updateAll Pathfinder.
     //
     // Stagger: dueAt = lastFull + interval + (id % interval).
-    auto const interval = app_.config().pathFullSearchInterval;
+    // Config clamps pathFullSearchInterval to 1–100; still guard % 0.
+    auto const interval = std::max<std::uint32_t>(1, app_.config().pathFullSearchInterval);
     bool rediscoveryDue = false;
     if (!revalidateOnly && !fast && lastFullSearchIndex_ != 0 && bLastSuccess_ && !loaded)
     {
@@ -1067,8 +1092,9 @@ PathRequest::doUpdate(
     {
         // Non-escalating revalidate produced nothing (mid-close revalidateOnly,
         // or closed subscription revalidate without fullSearch): restore last
-        // alternatives for display only. Still mark failure so the next closed
-        // wave can Pathfinder via failedSearchDue / rediscovery.
+        // alternatives for display so the client is not blanked, with an
+        // explicit warning. bLastSuccess_ is forced false so the next closed
+        // wave can Pathfinder via failedSearchDue (not a silent success).
         bool restoredStale = false;
         if (jvArray.size() == 0 && isSubscription && !didFullSearch)
         {
@@ -1082,11 +1108,7 @@ PathRequest::doUpdate(
 
         if (restoredStale)
         {
-            // Display-only restore; force failure so the next closed
-            // non-revalidate wave can full-search (failedSearchDue).
             bLastSuccess_ = false;
-            // Not a successful recompute — clients must not treat this as a
-            // fresh full_reply path set.
             newStatus[jss::full_reply] = false;
             newStatus[jss::warning] = "path_revalidate_failed";
         }
@@ -1123,12 +1145,14 @@ PathRequest::doUpdate(
     if (fast && quickReply_ == steady_clock::time_point{})
     {
         quickReply_ = steady_clock::now();
-        owner_.reportFast(duration_cast<milliseconds>(quickReply_ - created_));
+        if (owner_)
+            owner_->reportFast(duration_cast<milliseconds>(quickReply_ - created_));
     }
     else if (!fast && fullReply_ == steady_clock::time_point{})
     {
         fullReply_ = steady_clock::now();
-        owner_.reportFull(duration_cast<milliseconds>(fullReply_ - created_));
+        if (owner_)
+            owner_->reportFull(duration_cast<milliseconds>(fullReply_ - created_));
     }
 
     {

@@ -60,8 +60,21 @@ PathRequestManager::PathRequestManager(
 
 PathRequestManager::~PathRequestManager()
 {
-    // Stop new handlers from observing *this, cancel the timer, then wait for
-    // any handler that already took a manager pointer (inFlight) to finish.
+    // Detach live PathRequests first so ~PathRequest (WS may still hold
+    // shared_ptrs) never calls removePathRequest on a destroyed manager.
+    {
+        std::scoped_lock const sl(lock_);
+        for (auto const& wr : requests_)
+        {
+            if (auto req = wr.lock())
+                req->detachFromManager();
+        }
+        requests_.clear();
+        assetCache_.reset();
+    }
+
+    // Stop new mid-close handlers from observing *this, cancel the timer, then
+    // wait for any handler that already took a manager pointer (inFlight).
     // Do not hold bag->mutex across refresh — that stalled io_context threads.
     {
         std::lock_guard const lk(midCloseBag_->mutex);
@@ -149,11 +162,17 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         return assetCache_;
     }
 
-    // Large jumps always force a rebuild so the soft-reuse window cannot
-    // straddle a huge gap. Matches historical getLineCache policy.
+    // Only authoritative (validated/closed or closed create waves) mutate the
+    // shared cache. Non-authoritative callers (WS create / legacy doCreate) must
+    // not force-clear hubs for every other live session.
+    if (!authoritative)
+        return assetCache_;
+
+    // Large jumps force a rebuild so the soft-reuse window cannot straddle a
+    // huge gap. Matches historical getLineCache policy (authoritative only).
     bool const largeJumpForward = lgrSeq > (lineSeq + 8);
     bool const largeJumpBack = (lgrSeq + 8) < lineSeq;
-    if (largeJumpForward || (authoritative && largeJumpBack))
+    if (largeJumpForward || largeJumpBack)
     {
         JLOG(journal_.info()) << "getAssetCache large ledger jump " << lineSeq << " -> " << lgrSeq
                               << "; force rebuild";
@@ -161,11 +180,8 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         return assetCache_;
     }
 
-    // Only authoritative (validated/closed) ledgers soft-advance the shared
-    // cache across sequence changes. Open mid-close may still advance when
-    // called with authoritative=true from updateAll so revalidate sees the
-    // open view; create/legacy use authoritative=false and never mutate.
-    if (authoritative && lgrSeq > lineSeq)
+    // Soft-advance across sequence changes for closed/create waves.
+    if (lgrSeq > lineSeq)
     {
         assetCache_->advanceLedger(ledger, /*forceClear=*/false);
         return assetCache_;
@@ -419,13 +435,18 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
             struct InFlightGuard
             {
                 MidCloseBag& bag;
+                PathRequestManager* self;
                 ~InFlightGuard()
                 {
+                    // Always clear pending (including non-std::exception) so a
+                    // stuck flag cannot permanently suppress mid-close ticks.
+                    if (self)
+                        self->revalidateJobPending_.store(false, std::memory_order_release);
                     std::lock_guard const lk(bag.mutex);
                     --bag.inFlight;
                     bag.idle.notify_all();
                 }
-            } const inFlightGuard{*bag};
+            } const inFlightGuard{*bag, self};
 
             try
             {
@@ -435,7 +456,6 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
             {
                 JLOG(self->journal_.info()) << "periodic path revalidate exception: " << ex.what();
             }
-            self->revalidateJobPending_.store(false, std::memory_order_release);
         });
         if (!queued)
         {
@@ -700,9 +720,24 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
             if (!request->needsUpdate(newOnly, claimIndex))
                 continue;
 
+            // Mid-close is revalidate-only for established WS subscriptions.
+            // Never first-Pathfind brand-new sessions or complete one-shot
+            // legacy ripple_path_find against the open ledger here — those
+            // belong to create/closed waves (updatePaths).
+            if (processSteadyOnOpen)
+            {
+                if (isFirst || request->hasCompletion())
+                {
+                    request->updateComplete();  // release claim only
+                    continue;
+                }
+                steadyUpdates.push_back(std::move(request));
+                continue;
+            }
+
             if (isFirst)
                 firstUpdates.push_back(std::move(request));
-            else if (closedLedger || processSteadyOnOpen)
+            else if (closedLedger)
                 steadyUpdates.push_back(std::move(request));
             else
             {

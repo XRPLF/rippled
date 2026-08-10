@@ -119,9 +119,12 @@ public:
     getRippleLines(AccountID const& accountID);
 
     /**
-     * Append one chunk of trust lines to each incomplete cached account,
-     * while global/per-account budget allows. Copy-on-write so existing
-     * shared vectors stay stable for concurrent readers.
+     * Grow incomplete cached accounts under unique_lock, while global budget
+     * allows. Multi-session hubs (higher pinCount) expand first; each pass
+     * admits at most kPathExpandLinesPerWave new rows and may take several
+     * progressive chunks per account (so 64-line defaults do not leave hubs
+     * under-filled for dozens of closes). Copy-on-write keeps published
+     * vectors stable for concurrent readers.
      *
      * @return true if any account's line vector grew.
      */

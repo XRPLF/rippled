@@ -117,7 +117,8 @@ static constexpr int kMaxAutoSrcCur = 88;
 static constexpr int kMaxAutoSrcCurSub = 16;
 
 /**
- * Auto source-currency cap while the server is locally loaded.
+ * Auto source-currency cap for WS path_find while the server is locally
+ * loaded. Does not apply to one-shot ripple_path_find (hard cap only).
  */
 static constexpr int kMaxAutoSrcCurLoaded = 12;
 
@@ -219,7 +220,8 @@ static constexpr std::uint32_t kPathFailedSearchInterval = 5;
 /**
  * Max complete paths to liquidity-rank per Pathfinder invocation.
  * Ranking is 1–2 RippleCalc per path; completePaths_ can hold up to 1000.
- * Earlier entries tend to be cheaper path types (gPathTable order).
+ * When more candidates exist, rankPaths pre-orders by path length (cheap) so
+ * truncation is not pure insertion order from completePaths_.
  */
 static constexpr int kPathRankMaxCandidates = 200;
 
@@ -227,6 +229,14 @@ static constexpr int kPathRankMaxCandidates = 200;
  * Tighter ranking cap when the server is locally loaded.
  */
 static constexpr int kPathRankMaxCandidatesLoaded = 80;
+
+/**
+ * Max new trust-line rows admitted in one expandIncompleteLines() pass
+ * (closed/create waves). Multiple 64-line chunks may run per account while
+ * this budget remains so multi-session hubs fill within a few closes without
+ * a one-shot full-account drain under unique_lock.
+ */
+static constexpr std::size_t kPathExpandLinesPerWave = 2048;
 
 }  // namespace xrpl::rpc::tuning
 /** @} */

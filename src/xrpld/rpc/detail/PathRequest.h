@@ -121,6 +121,13 @@ public:
     hasCompletion();
 
     /**
+     * Called from ~PathRequestManager before the manager is destroyed so
+     * subsequent ~PathRequest does not call into a freed owner.
+     */
+    void
+    detachFromManager() noexcept;
+
+    /**
      * Unique id for AssetCache session pins / release.
      */
     [[nodiscard]] int
@@ -185,7 +192,9 @@ private:
 
     std::recursive_mutex lock_;
 
-    PathRequestManager& owner_;
+    // Nullable so ~PathRequestManager can detach live sessions before destroy
+    // (WS InfoSub may outlive the manager briefly during Application teardown).
+    PathRequestManager* owner_;
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;

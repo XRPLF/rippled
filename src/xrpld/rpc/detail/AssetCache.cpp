@@ -437,7 +437,7 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
 std::shared_ptr<std::vector<PathFindTrustLine>>
 AssetCache::getRippleLines(AccountID const& accountID)
 {
-    auto const full = getOrLoadOutgoing(accountID);
+    auto full = getOrLoadOutgoing(accountID);
 
     // Pin to the active path_find session (if any) so this account is only
     // freed when that session ends — not when some other session closes.
@@ -459,6 +459,11 @@ AssetCache::getRippleLines(AccountID const& accountID)
         if (!alreadyPinned)
         {
             std::unique_lock const sl(lock_);
+            // Entry may have been evicted between load and pin (another
+            // session's releaseSession dropped pinCount to 0). Reload under
+            // this unique lock so pin bookkeeping is never silently lost.
+            if (lines_.find(accountID) == lines_.end())
+                full = loadOutgoingUnlocked(accountID);
             pinAccountUnlocked(tlsPinSessionId, accountID);
         }
     }
@@ -472,15 +477,46 @@ bool
 AssetCache::expandIncompleteLines()
 {
     std::unique_lock const sl(lock_);
-    bool grew = false;
-    for (auto& [accountID, entry] : lines_)
+
+    // Prefer multi-session hubs (high pinCount) so concurrent path_finds see
+    // useful line sets first. Unordered map iteration order is not meaningful.
+    std::vector<std::pair<std::size_t, AccountID>> work;
+    work.reserve(lines_.size());
+    for (auto const& [accountID, entry] : lines_)
     {
-        if (entry.cursor.complete)
-            continue;
-        if (remainingBudgetUnlocked() == 0)
+        if (!entry.cursor.complete)
+            work.emplace_back(entry.pinCount, accountID);
+    }
+    std::sort(work.begin(), work.end(), [](auto const& a, auto const& b) {
+        if (a.first != b.first)
+            return a.first > b.first;
+        return a.second < b.second;
+    });
+
+    bool grew = false;
+    // Bound unique_lock hold: multiple chunks per account, but stop after
+    // kPathExpandLinesPerWave new rows so a closed wave cannot drain the
+    // entire max_total_lines budget in one expand.
+    std::size_t remainingWave = rpc::tuning::kPathExpandLinesPerWave;
+    for (auto const& [pinCount, accountID] : work)
+    {
+        (void)pinCount;
+        if (remainingBudgetUnlocked() == 0 || remainingWave == 0)
             break;
-        if (expandAccountUnlocked(accountID, entry) > 0)
+        auto it = lines_.find(accountID);
+        if (it == lines_.end() || it->second.cursor.complete)
+            continue;
+
+        // Several progressive chunks per account per wave — a 64-line default
+        // would otherwise leave large hubs under-represented for many closes.
+        while (!it->second.cursor.complete && remainingBudgetUnlocked() > 0 && remainingWave > 0)
+        {
+            auto const added = expandAccountUnlocked(accountID, it->second);
+            if (added == 0)
+                break;
             grew = true;
+            remainingWave = added >= remainingWave ? 0 : remainingWave - added;
+        }
     }
     return grew;
 }

@@ -39,6 +39,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -174,8 +175,11 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
-// Return the smallest amount of useful liquidity for a given amount across
-// maxPaths alternatives. (No extra "full liquidity" spare slots.)
+// Smallest liquidity worth ranking for a destination amount across maxPaths
+// alternatives. Historical path_find used maxPaths+2 when maxPaths was 4 and
+// two slots were reserved for covering/spare paths. With six ranked paths and
+// no covering spare, divide by maxPaths so the threshold matches the old
+// amount/6 floor without reintroducing spare-slot math.
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
@@ -530,11 +534,23 @@ Pathfinder::rankPaths(
 {
     // Cap expensive getPathLiquidity work. completePaths_ may hold up to
     // kPathfinderMaxCompletePaths; each candidate costs 1–2 RippleCalc.
-    // Prefer earlier entries (cheaper gPathTable path types are added first).
     auto const rankCap = static_cast<std::size_t>(
         app_.getFeeTrack().isLoadedLocal() ? rpc::tuning::kPathRankMaxCandidatesLoaded
                                            : rpc::tuning::kPathRankMaxCandidates);
     auto const toRank = std::min(paths.size(), rankCap);
+
+    // When truncating, do not rank pure insertion order (later gPathTable
+    // expansions would never be liquidity-tested). Pre-order by length — free
+    // and correlated with final rank — then take the first toRank indices.
+    // Equal lengths keep relative insertion order (stable_sort).
+    std::vector<std::size_t> order(paths.size());
+    std::iota(order.begin(), order.end(), 0);
+    if (paths.size() > toRank)
+    {
+        std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+            return paths[a].size() < paths[b].size();
+        });
+    }
 
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates (ranking " << toRank
                      << "), and " << maxPaths << " maximum";
@@ -553,10 +569,11 @@ Pathfinder::rankPaths(
         return largestAmount(dstAmount_);
     }();
 
-    for (std::size_t i = 0; i < toRank; ++i)
+    for (std::size_t r = 0; r < toRank; ++r)
     {
         if (continueCallback && !continueCallback())
             return;
+        auto const i = order[r];
         auto const& currentPath = paths[i];
         if (!currentPath.empty())
         {
@@ -1340,12 +1357,17 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 
 }  // namespace
 
-// Costs:
+// Search costs (searchLevel): lower is tried first / at lower path_search levels.
 // 0 = minimum to make some payments possible
 // 1 = include trivial paths to make common cases work
 // 4 = normal fast search level
 // 7 = normal slow search level
 // 10 = most aggressive
+//
+// NonXrpToXrp: moderate-cost tiers include account→book→XRP and two-account
+// hops; an extra book hop sits at a higher search level. Costs are search
+// tiers, not liquidity ranks — final ordering still uses RippleCalc
+// quality/liquidity.
 
 void
 Pathfinder::initPathTable()
@@ -1368,12 +1390,12 @@ Pathfinder::initPathTable()
 
     fillPaths(
         PaymentType::NonXrpToXrp,
-        {{.cost = 1, .path = "sxd"},   // gateway buys XRP
-         {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
-         {.cost = 6, .path = "sabxd"},
-         {.cost = 6, .path = "saaxd"},
-         {.cost = 7, .path = "sbxd"},
-         {.cost = 8, .path = "sabbxd"},  // source -> gateway -> book -> book -> book(XRP) -> dest
+        {{.cost = 1, .path = "sxd"},     // gateway buys XRP
+         {.cost = 2, .path = "saxd"},    // source -> gateway -> book(XRP) -> dest
+         {.cost = 6, .path = "sabxd"},   // source -> account -> book(XRP) -> dest
+         {.cost = 6, .path = "saaxd"},   // source -> account -> account -> book(XRP)
+         {.cost = 7, .path = "sbxd"},    // source -> book -> XRP dest
+         {.cost = 8, .path = "sabbxd"},  // source -> account -> book -> book -> book(XRP)
          {.cost = 9, .path = "sabaxd"}});
 
     // non-XRP to non-XRP (same currency)
