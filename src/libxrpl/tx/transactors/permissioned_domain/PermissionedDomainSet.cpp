@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -73,7 +74,9 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to create the Permissioned Domain. */
+/**
+ * Attempt to create the Permissioned Domain.
+ */
 TER
 PermissionedDomainSet::doApply()
 {
@@ -106,17 +109,19 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
+        auto const reserve =
+            accountReserve(ctx_.view(), ownerSle, ctx_.journal, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
-        auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        auto const seq = fixEnabled ? ctx_.tx.getSeqProxy()
+                                    : SeqProxy::rawSequence(ctx_.tx.getFieldU32(sfSequence));
         Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, accountID_);
-        slePd->setFieldU32(sfSequence, seq);
+        slePd->setFieldU32(sfSequence, seq.value());
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
             view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
@@ -125,7 +130,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        increaseOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
         view().insert(slePd);
     }
 

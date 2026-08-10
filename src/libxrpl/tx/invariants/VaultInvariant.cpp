@@ -199,7 +199,7 @@ ValidVault::deltaAssets(AccountID const& id) const
             {
                 if (isXRP(issue))
                     return lookup(keylet::account(id).key);
-                auto result = lookup(keylet::line(id, issue).key);
+                auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
                 if (result && id > issue.getIssuer())
@@ -222,7 +222,10 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    if (auto const delegate = tx[~sfDelegate]; delegate.has_value() && *delegate != tx[sfAccount])
+    // Only add the fee back if tx[sfAccount] actually paid it. When the fee is
+    // paid by someone else (a delegate or a fee sponsor), the
+    // account's XRP balance moved only by the vault amount.
+    if (tx.getFeePayerID() != tx[sfAccount])
         return ret;
 
     ret->delta += fee.drops();
@@ -238,7 +241,7 @@ ValidVault::deltaShares(AccountID const& id) const
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
         if (id == afterVault.pseudoId)
-            return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
+            return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
         return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
     }();
 
@@ -411,7 +414,7 @@ ValidVault::finalize(
                 return e;
         }
 
-        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        auto const sleShares = view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();
@@ -462,7 +465,7 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets available must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
         result = false;
     }
 
@@ -480,15 +483,21 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(fixCleanup3_4_0) && afterVault.lossUnrealized < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
+        result = false;
+    }
+
     if (afterVault.assetsTotal < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets outstanding must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets outstanding must not be negative";
         result = false;
     }
 
     if (afterVault.assetsMaximum < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets maximum must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
     }
 
@@ -1044,10 +1053,8 @@ ValidVault::finalize(
 
             case ttLOAN_SET:
             case ttLOAN_MANAGE:
-            case ttLOAN_PAY: {
-                // TBD
+            case ttLOAN_PAY:
                 return true;
-            }
 
             default:
                 // LCOV_EXCL_START

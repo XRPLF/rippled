@@ -10,13 +10,10 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/make_Manager.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/Slice.h>
@@ -36,13 +33,19 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Manifest.h>
@@ -91,13 +94,13 @@
 
 namespace xrpl {
 
-namespace CrawlOptions {
+namespace crawl_options {
 static constexpr auto kDisabled = 0;
 static constexpr auto kOverlay = (1 << 0);
 static constexpr auto kServerInfo = (1 << 1);
 static constexpr auto kServerCounts = (1 << 2);
-static constexpr auto kUNL = (1 << 3);
-}  // namespace CrawlOptions
+static constexpr auto kUnl = (1 << 3);
+}  // namespace crawl_options
 
 //------------------------------------------------------------------------------
 
@@ -132,7 +135,7 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -153,7 +156,7 @@ OverlayImpl::Timer::onTimer(error_code ec)
     if (overlay_.app_.config().txReduceRelayEnable)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timerCount_ % Tuning::kCheckIdlePeers) == 0)
+    if ((++overlay_.timerCount_ % tuning::kCheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -165,7 +168,7 @@ OverlayImpl::OverlayImpl(
     Application& app,
     Setup setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
@@ -178,18 +181,19 @@ OverlayImpl::OverlayImpl(
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , resourceManager_(resourceManager)
+    , store_(app_.getJournal("PeerFinder"))
     , peerFinder_(
-          PeerFinder::makeManager(
+          peer_finder::makeManager(
               ioContext,
               stopwatch(),
               app_.getJournal("PeerFinder"),
-              config,
+              store_,
               collector))
     , resolver_(resolver)
     , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
-          std::bind(&OverlayImpl::collectMetrics, this),
+          [this] { collectMetrics(); },
           collector,
           [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
@@ -200,6 +204,7 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
+    store_.open(config);
     beast::PropertyStream::Source::add(peerFinder_.get());
 }
 
@@ -304,7 +309,7 @@ OverlayImpl::onHandoff(
             bool const reserved = static_cast<bool>(app_.getCluster().member(publicKey)) ||
                 app_.getPeerReservations().contains(publicKey);
             auto const result = peerFinder_->activate(slot, publicKey, reserved);
-            if (result != PeerFinder::Result::Success)
+            if (result != peer_finder::Result::Success)
             {
                 peerFinder_->onClosed(slot);
                 JLOG(journal.debug())
@@ -377,14 +382,14 @@ OverlayImpl::makePrefix(std::uint32_t id)
 
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse(
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress)
 {
     boost::beast::http::response<JsonBody> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::service_unavailable);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     {
         std::ostringstream ostr;
         ostr << remoteAddress;
@@ -404,16 +409,16 @@ OverlayImpl::makeRedirectResponse(
 
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse(
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress,
-    std::string text)
+    std::string const& text)
 {
     boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::bad_request);
     msg.reason("Bad Request (" + text + ")");
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Remote-Address", remoteAddress.to_string());
     msg.insert(boost::beast::http::field::connection, "close");
     msg.prepare_payload();
@@ -423,7 +428,7 @@ OverlayImpl::makeErrorResponse(
 //------------------------------------------------------------------------------
 
 void
-OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
+OverlayImpl::connect(beast::ip::Endpoint const& remoteEndpoint)
 {
     XRPL_ASSERT(work_, "xrpl::OverlayImpl::connect : work is set");
 
@@ -493,7 +498,7 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 }
 
 void
-OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
+OverlayImpl::remove(std::shared_ptr<peer_finder::Slot> const& slot)
 {
     std::scoped_lock const lock(mutex_);
     auto const iter = peers_.find(slot);
@@ -504,7 +509,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
+    peer_finder::Config const config = peer_finder::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
@@ -537,7 +542,7 @@ OverlayImpl::start()
 
     resolver_.resolve(
         bootstrapIps,
-        [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+        [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
             std::vector<std::string> ips;
             ips.reserve(addresses.size());
             for (auto const& addr : addresses)
@@ -562,8 +567,8 @@ OverlayImpl::start()
     {
         resolver_.resolve(
             app_.config().ipsFixed,
-            [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
-                std::vector<beast::IP::Endpoint> ips;
+            [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+                std::vector<beast::ip::Endpoint> ips;
                 ips.reserve(addresses.size());
 
                 for (auto& addr : addresses)
@@ -592,7 +597,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
+    boost::asio::dispatch(strand_, [this] { stopChildren(); });
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -623,11 +628,12 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 }
 
 //------------------------------------------------------------------------------
-/** A peer has connected successfully
-    This is called after the peer handshake has been completed and during
-    peer activation. At this point, the peer address and the public key
-    are known.
-*/
+/**
+ * A peer has connected successfully
+ * This is called after the peer handshake has been completed and during
+ * peer activation. At this point, the peer address and the public key
+ * are known.
+ */
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
@@ -661,25 +667,51 @@ OverlayImpl::onManifests(
     std::shared_ptr<protocol::TMManifests> const& m,
     std::shared_ptr<PeerImp> const& from)
 {
-    auto const n = m->list_size();
     auto const& journal = from->pJournal();
+
+    // Process every trusted manifest, but stop processing untrusted ones once
+    // the configured untrusted count has been handled, so the work stays
+    // bounded. Trusted manifests are always processed: dropping one would delay
+    // a validator key rotation reaching this node.
+    auto const maxUntrusted = untrustedManifestCount(app_.config().maxUntrustedCount);
+    auto const total = static_cast<std::size_t>(m->list_size());
+    std::size_t untrusted = 0;
+    bool skippedUntrusted = false;
 
     protocol::TMManifests relay;
 
-    for (std::size_t i = 0; i < n; ++i)
+    for (std::size_t i = 0; i < total; ++i)
     {
         auto& s = m->list().Get(i).stobject();
 
         if (auto mo = deserializeManifest(s))
         {
             auto const serialized = mo->serialized;
+            // Resolve trust before applyManifest takes the manifest-cache
+            // lock: listed() takes the validator-list lock, so ordering it
+            // first avoids holding the two locks in opposite orders.
+            bool const isTrusted = app_.getValidators().listed(mo->masterKey);
 
-            auto const result = app_.getValidatorManifests().applyManifest(std::move(*mo));
+            // Bound untrusted work: process at most maxUntrusted untrusted
+            // manifests, but never skip a trusted one. Trusted manifests are
+            // not counted against the cap.
+            if (!isTrusted)
+            {
+                if (untrusted >= maxUntrusted)
+                {
+                    skippedUntrusted = true;
+                    continue;
+                }
+                ++untrusted;
+            }
+
+            auto const result = app_.getValidatorManifests().applyManifest(
+                std::move(*mo),
+                isTrusted ? ManifestRateLimitCapPolicy::Uncapped
+                          : ManifestRateLimitCapPolicy::Capped);
 
             if (result == ManifestDisposition::Accepted)
             {
-                relay.add_list()->set_stobject(s);
-
                 // N.B.: this is important; the applyManifest call above moves
                 //       the loaded Manifest out of the optional so we need to
                 //       reload it here.
@@ -690,13 +722,17 @@ OverlayImpl::onManifests(
                     "deserialization succeeded");
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
+                // NOLINTEND(bugprone-unchecked-optional-access)
 
-                if (app_.getValidators().listed(mo->masterKey))
+                relay.add_list()->set_stobject(s);
+
+                // Persist to the wallet DB only for trusted keys, so untrusted
+                // gossip never survives a restart.
+                if (isTrusted)
                 {
                     auto db = app_.getWalletDB().checkoutDb();
                     addValidatorManifest(*db, serialized);
                 }
-                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
         else
@@ -704,6 +740,17 @@ OverlayImpl::onManifests(
             JLOG(journal.debug()) << "Malformed manifest #" << i + 1 << ": " << strHex(s);
             continue;
         }
+    }
+
+    if (skippedUntrusted)
+    {
+        // The sender exceeded the untrusted per-message cap. Charge it (once,
+        // here) so a flood of untrusted manifests is penalized.
+        from->charge(resource::kFeeMalformedRequest, "too many untrusted manifests");
+
+        JLOG(journal.warn()) << "Manifests: message had " << total
+                             << " entries; processed all trusted plus the first " << maxUntrusted
+                             << " untrusted";
     }
 
     if (!relay.list().empty())
@@ -724,10 +771,11 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
     traffic_.addCount(cat, false, size);
 }
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the XRPL protocol.
-*/
+/**
+ * The number of active peers on the network
+ * Active peers are only those peers that have completed the handshake
+ * and are running the XRPL protocol.
+ */
 std::size_t
 OverlayImpl::size() const
 {
@@ -862,30 +910,30 @@ OverlayImpl::json()
 bool
 OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 {
-    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::kDisabled)
+    if (req.target() != "/crawl" || setup_.crawlOptions == crawl_options::kDisabled)
         return false;
 
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
     msg.result(boost::beast::http::status::ok);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
     msg.body()["version"] = json::Value(2u);
 
-    if ((setup_.crawlOptions & CrawlOptions::kOverlay) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kOverlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kServerInfo) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kServerCounts) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kUNL) != 0u)
+    if ((setup_.crawlOptions & crawl_options::kUnl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -909,7 +957,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
@@ -966,7 +1014,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
         return false;
     boost::beast::http::response<JsonBody> msg;
     msg.version(req.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
@@ -1157,14 +1205,14 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 }
 
 void
-OverlayImpl::broadcast(protocol::TMProposeSet& m)
+OverlayImpl::broadcast(protocol::TMProposeSet const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1179,14 +1227,14 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
 }
 
 void
-OverlayImpl::broadcast(protocol::TMValidation& m)
+OverlayImpl::broadcast(protocol::TMValidation const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1207,14 +1255,62 @@ OverlayImpl::getManifestsMessage()
 
     if (auto seq = app_.getValidatorManifests().sequence(); seq != manifestListSeq_)
     {
-        protocol::TMManifests tm;
-
+        // Phase 1: snapshot the cache under its own lock. Do not call
+        // Validators::listed() here — that takes the validator-list lock, and
+        // forEachManifest holds the manifest-cache lock, so consulting trust
+        // inside the callback would invert the lock order used elsewhere
+        // (see onManifests) and risk deadlock. Capture the manifest hash now,
+        // while we have the Manifest object, for the suppression key.
+        struct CachedManifest
+        {
+            PublicKey masterKey;
+            std::string serialized;
+            uint256 hash;
+        };
+        std::vector<CachedManifest> cached;
         app_.getValidatorManifests().forEachManifest(
-            [&tm](std::size_t s) { tm.mutable_list()->Reserve(s); },
-            [&tm, &hr = app_.getHashRouter()](Manifest const& manifest) {
-                tm.add_list()->set_stobject(manifest.serialized.data(), manifest.serialized.size());
-                hr.addSuppression(manifest.hash());
+            [&cached](std::size_t s) { cached.reserve(s); },
+            [&cached](Manifest const& manifest) {
+                cached.push_back(
+                    {.masterKey = manifest.masterKey,
+                     .serialized = manifest.serialized,
+                     .hash = manifest.hash()});
             });
+
+        // Phase 2: no cache lock held, so trust checks are safe. Include every
+        // trusted manifest, then fill any remaining headroom up to the
+        // configured untrusted count with gossip. Trusted manifests are never
+        // dropped; the trusted count only sizes the accepted message.
+        std::vector<CachedManifest const*> selected;
+        std::vector<CachedManifest const*> untrusted;
+        for (auto const& e : cached)
+        {
+            if (app_.getValidators().listed(e.masterKey))
+            {
+                selected.push_back(&e);
+            }
+            else
+            {
+                untrusted.push_back(&e);
+            }
+        }
+
+        // Cap untrusted only; trusted manifests are all included above.
+        auto const take =
+            std::min(untrustedManifestCount(app_.config().maxUntrustedCount), untrusted.size());
+        selected.insert(selected.end(), untrusted.begin(), untrusted.begin() + take);
+
+        // Shuffle the order. Cryptographic randomness is not needed here.
+        std::shuffle(selected.begin(), selected.end(), defaultPrng());
+
+        protocol::TMManifests tm;
+        auto& hr = app_.getHashRouter();
+        tm.mutable_list()->Reserve(static_cast<int>(selected.size()));
+        for (auto const* e : selected)
+        {
+            tm.add_list()->set_stobject(e->serialized.data(), e->serialized.size());
+            hr.addSuppression(e->hash);
+        }
 
         manifestMessage_.reset();
 
@@ -1489,7 +1585,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+        post(strand_, [this, id] { deletePeer(id); });
         return;
     }
 
@@ -1501,7 +1597,7 @@ OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+        post(strand_, [this] { deleteIdlePeers(); });
         return;
     }
 
@@ -1516,7 +1612,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     Overlay::Setup setup;
 
     {
-        auto const& section = config.section("overlay");
+        auto const& section = config.section(Sections::kOverlay);
         setup.context = makeSslContext("");
 
         set(setup.ipLimit, "ip_limit", section);
@@ -1529,7 +1625,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
         {
             boost::system::error_code ec;
             setup.publicIp = boost::asio::ip::make_address(ip, ec);
-            if (ec || !beast::IP::isPublic(setup.publicIp))
+            if (ec || !beast::ip::isPublic(setup.publicIp))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
 
@@ -1543,7 +1639,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     }
 
     {
-        auto const& section = config.section("crawl");
+        auto const& section = config.section(Sections::kCrawl);
         auto const& values = section.values();
 
         if (values.size() > 1)
@@ -1569,33 +1665,33 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
 
         if (crawlEnabled)
         {
-            if (get<bool>(section, "overlay", true))
+            if (get<bool>(section, Keys::kOverlay, true))
             {
-                setup.crawlOptions |= CrawlOptions::kOverlay;
+                setup.crawlOptions |= crawl_options::kOverlay;
             }
-            if (get<bool>(section, "server", true))
+            if (get<bool>(section, Keys::kServer, true))
             {
-                setup.crawlOptions |= CrawlOptions::kServerInfo;
+                setup.crawlOptions |= crawl_options::kServerInfo;
             }
-            if (get<bool>(section, "counts", false))
+            if (get<bool>(section, Keys::kCounts, false))
             {
-                setup.crawlOptions |= CrawlOptions::kServerCounts;
+                setup.crawlOptions |= crawl_options::kServerCounts;
             }
-            if (get<bool>(section, "unl", true))
+            if (get<bool>(section, Keys::kUnl, true))
             {
-                setup.crawlOptions |= CrawlOptions::kUNL;
+                setup.crawlOptions |= crawl_options::kUnl;
             }
         }
     }
     {
-        auto const& section = config.section("vl");
+        auto const& section = config.section(Sections::kVl);
 
         set(setup.vlEnabled, "enabled", section);
     }
 
     try
     {
-        auto id = config.legacy("network_id");
+        auto id = config.legacy(Sections::kNetworkId);
 
         if (!id.empty())
         {
@@ -1626,7 +1722,7 @@ makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,

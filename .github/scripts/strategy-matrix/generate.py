@@ -20,8 +20,6 @@ _SANITIZER_SUFFIX: dict[str, str] = {
 def get_cmake_args(build_type: str, extra_args: str) -> str:
     """Get the full list of CMake arguments for a config."""
     args = _BASE_CMAKE_ARGS.copy()
-    if build_type == "Release":
-        args.append("-Dassert=ON")
     if extra_args:
         args.extend(extra_args.split())
     return " ".join(args)
@@ -32,6 +30,15 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+# Every config must declare 'minimal'. Minimal configs form the reduced matrix
+# built for pull requests by default; the full matrix adds the rest. Packaging
+# configs declare it too, but packaging is gated in the workflow, not by it.
+#
+# Configs may also opt into 'benchmark' to smoke-run the benchmarks. Note that
+# the flag applies to every entry a config expands into, so only set it on
+# configs that expand to a single combination.
+
+
 @dataclasses.dataclass
 class LinuxConfig:
     """One entry in linux.json's 'configs' or 'package_configs' arrays."""
@@ -39,6 +46,8 @@ class LinuxConfig:
     compiler: list[str]
     build_type: list[str]
     arch: list[str]
+    minimal: bool
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
@@ -75,7 +84,9 @@ class PlatformConfig:
     """One entry in macos.json's or windows.json's 'configs' array."""
 
     build_type: list[str]
+    minimal: bool
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
 
     def __post_init__(self) -> None:
@@ -120,6 +131,7 @@ class MatrixEntry:
     cmake_args: str
     cmake_target: str
     build_only: bool
+    benchmark: bool
     build_type: str
     architecture: Architecture
     sanitizers: str
@@ -131,7 +143,8 @@ class MatrixEntry:
 class PackagingEntry:
     """One entry in the generated packaging strategy matrix."""
 
-    artifact_name: str
+    xrpld_artifact_name: str
+    validator_keys_artifact_name: str
     image: str
     distro: str  # e.g. "debian" or "rhel"; drives package-format-specific steps
 
@@ -151,16 +164,19 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(linux: LinuxFile) -> list[MatrixEntry]:
+def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a LinuxFile into a flat list of matrix entries.
 
     Each config entry is expanded over the cross-product of its
-    compiler, build_type, sanitizers, and architecture lists.
+    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
+    true, only configs flagged as minimal are included.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
+            if minimal and not cfg.minimal:
+                continue
             # An empty sanitizers list means "one entry with no sanitizer".
             effective_sanitizers = cfg.sanitizers or [""]
             effective_archs = {arch: _ARCHS[arch] for arch in cfg.arch}
@@ -185,6 +201,7 @@ def expand_linux_matrix(linux: LinuxFile) -> list[MatrixEntry]:
                         cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                         cmake_target="all",
                         build_only=False,
+                        benchmark=cfg.benchmark,
                         build_type=build_type,
                         architecture=arch_info,
                         sanitizers=sanitizer,
@@ -202,14 +219,19 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     the nix-based build images, because deb/rpm tooling (debhelper, rpm-build)
     is taken from the distro's archive rather than from nixpkgs. Each config
     entry carries its own 'image'.
+
+    The artifact names must match what the build job uploads: one artifact per
+    binary, each named after the build config.
     """
     entries = []
     for distro, configs in linux.package_configs.items():
         for cfg in configs:
             for compiler, build_type in itertools.product(cfg.compiler, cfg.build_type):
+                config_name = f"{distro}-{compiler}-{build_type.lower()}-amd64"
                 entries.append(
                     PackagingEntry(
-                        artifact_name=f"xrpld-{distro}-{compiler}-{build_type.lower()}-amd64",
+                        xrpld_artifact_name=f"xrpld-{config_name}",
+                        validator_keys_artifact_name=f"validator-keys-{config_name}",
                         image=cfg.image,
                         distro=distro,
                     )
@@ -218,13 +240,18 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     return entries
 
 
-def expand_platform_matrix(pf: PlatformFile) -> list[MatrixEntry]:
-    """Expand a PlatformFile (macOS or Windows) into matrix entries."""
+def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
+    """Expand a PlatformFile (macOS or Windows) into matrix entries.
+
+    When 'minimal' is true, only configs flagged as minimal are included.
+    """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
     entries: list[MatrixEntry] = []
     for cfg in pf.configs:
+        if minimal and not cfg.minimal:
+            continue
         for build_type in cfg.build_type:
             entries.append(
                 MatrixEntry(
@@ -232,6 +259,7 @@ def expand_platform_matrix(pf: PlatformFile) -> list[MatrixEntry]:
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
+                    benchmark=cfg.benchmark,
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
@@ -262,6 +290,14 @@ if __name__ == "__main__":
         help="Emit the Linux packaging matrix instead of the build/test matrix.",
         action="store_true",
     )
+    parser.add_argument(
+        "-m",
+        "--minimal",
+        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
+        "used for pull requests by default. If omitted, the full matrix is "
+        "emitted.",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     matrix: list[MatrixEntry] | list[PackagingEntry] = []
@@ -270,12 +306,16 @@ if __name__ == "__main__":
         matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
     else:
         if args.config in ("linux", None):
-            matrix += expand_linux_matrix(LinuxFile.load(THIS_DIR / "linux.json"))
+            matrix += expand_linux_matrix(
+                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
+            )
         if args.config in ("macos", None):
-            matrix += expand_platform_matrix(PlatformFile.load(THIS_DIR / "macos.json"))
+            matrix += expand_platform_matrix(
+                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
+            )
         if args.config in ("windows", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "windows.json")
+                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
             )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")

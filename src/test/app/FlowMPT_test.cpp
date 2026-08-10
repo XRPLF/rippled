@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
@@ -30,6 +31,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -407,7 +409,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 env(pay(gw, alice, usd(1'000)));
                 env(pay(gw, bob, eur(1'000)));
 
-                Keylet const bobUsdOffer = keylet::offer(bob, env.seq(bob));
+                Keylet const bobUsdOffer = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob)));
                 env(offer(bob, usd(10), drops(2)), Txflags(tfPassive));
                 env(offer(bob, drops(1), eur(1'000)), Txflags(tfPassive));
 
@@ -725,7 +727,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     // Helper function that returns the Offers on an account.

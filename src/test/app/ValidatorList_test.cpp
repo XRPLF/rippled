@@ -13,6 +13,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -145,8 +146,8 @@ private:
 
         for (auto const& val : validators)
         {
-            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
-                "\",\"manifest\":\"" + val.manifest + "\"},";
+            data += R"({"validation_public_key":")" + strHex(val.masterPublic) +
+                R"(","manifest":")" + val.manifest + "\"},";
         }
 
         data.pop_back();
@@ -198,7 +199,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
             BEAST_EXPECT(trustedKeys->quorum() == 1);
         }
@@ -208,7 +209,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal,
                 minQuorum);
             BEAST_EXPECT(trustedKeys->quorum() == minQuorum);
@@ -266,7 +267,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             // Correct (empty) configuration
@@ -277,8 +278,10 @@ private:
                 trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed(localSigningPublicOuter));
 
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            manifests.applyManifest(*deserializeManifest(cfgManifest));
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
+            manifests.applyManifest(
+                *deserializeManifest(cfgManifest), ManifestRateLimitCapPolicy::Capped);
+            // NOLINTEND(bugprone-unchecked-optional-access)
             BEAST_EXPECT(
                 trustedKeys->load(localSigningPublicOuter, emptyCfgKeys, emptyCfgPublishers));
 
@@ -292,7 +295,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, emptyCfgPublishers));
@@ -327,7 +330,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             auto const localSigningPublic =
@@ -347,7 +350,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             auto const localSigningPublic = randomNode();
@@ -365,11 +368,13 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            manifests.applyManifest(*deserializeManifest(cfgManifest));
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
+            manifests.applyManifest(
+                *deserializeManifest(cfgManifest), ManifestRateLimitCapPolicy::Capped);
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(trustedKeys->load(localSigningPublicOuter, cfgKeys, emptyCfgPublishers));
 
@@ -385,7 +390,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             // load should reject invalid validator list signing keys
@@ -421,7 +426,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             std::vector<PublicKey> const keys(
@@ -446,7 +451,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
@@ -454,13 +459,16 @@ private:
             auto const pubRevokedSigning = randomKeyPair(KeyType::Secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            pubManifests.applyManifest(*deserializeManifest(makeManifestString(
-                pubRevokedPublic,
-                pubRevokedSecret,
-                pubRevokedSigning.first,
-                pubRevokedSigning.second,
-                std::numeric_limits<std::uint32_t>::max())));
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
+            pubManifests.applyManifest(
+                *deserializeManifest(makeManifestString(
+                    pubRevokedPublic,
+                    pubRevokedSecret,
+                    pubRevokedSigning.first,
+                    pubRevokedSigning.second,
+                    std::numeric_limits<std::uint32_t>::max())),
+                ManifestRateLimitCapPolicy::Capped);
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             // these two are not revoked (and not in the manifest cache at all.)
             auto legitKey1 = randomMasterKey();
@@ -485,7 +493,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
@@ -493,13 +501,16 @@ private:
             auto const pubRevokedSigning = randomKeyPair(KeyType::Secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            pubManifests.applyManifest(*deserializeManifest(makeManifestString(
-                pubRevokedPublic,
-                pubRevokedSecret,
-                pubRevokedSigning.first,
-                pubRevokedSigning.second,
-                std::numeric_limits<std::uint32_t>::max())));
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
+            pubManifests.applyManifest(
+                *deserializeManifest(makeManifestString(
+                    pubRevokedPublic,
+                    pubRevokedSecret,
+                    pubRevokedSigning.first,
+                    pubRevokedSigning.second,
+                    std::numeric_limits<std::uint32_t>::max())),
+                ManifestRateLimitCapPolicy::Capped);
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             // this one is not revoked (and not in the manifest cache at all.)
             auto legitKey = randomMasterKey();
@@ -571,7 +582,7 @@ private:
             manifests,
             manifests,
             env.app().getTimeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(Sections::kDatabasePath),
             env.journal);
 
         auto expectTrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
@@ -986,7 +997,7 @@ private:
             manifests,
             manifests,
             env.app().getTimeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(Sections::kDatabasePath),
             env.journal);
 
         auto const publisherSecret = randomSecretKey();
@@ -1117,7 +1128,7 @@ private:
             manifestsOuter,
             manifestsOuter,
             env.timeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(Sections::kDatabasePath),
             env.journal);
 
         std::vector<std::string> const cfgPublishersOuter;
@@ -1217,7 +1228,8 @@ private:
 
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::Accepted);
+                manifestsOuter.applyManifest(std::move(*m1), ManifestRateLimitCapPolicy::Capped) ==
+                ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic1));
@@ -1231,7 +1243,8 @@ private:
                 masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::Accepted);
+                manifestsOuter.applyManifest(std::move(*m2), ManifestRateLimitCapPolicy::Capped) ==
+                ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic2));
@@ -1248,7 +1261,8 @@ private:
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
             BEAST_EXPECT(max->revoked());
             BEAST_EXPECT(
-                manifestsOuter.applyManifest(std::move(*max)) == ManifestDisposition::Accepted);
+                manifestsOuter.applyManifest(std::move(*max), ManifestRateLimitCapPolicy::Capped) ==
+                ManifestDisposition::Accepted);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);
@@ -1283,7 +1297,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
             auto const publisherSecret = randomSecretKey();
             auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
@@ -1310,7 +1324,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
             auto const masterPrivate = randomSecretKey();
             auto const masterPublic = derivePublicKey(KeyType::Ed25519, masterPrivate);
@@ -1344,7 +1358,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal,
                 minQuorum);
 
@@ -1400,7 +1414,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.app().getTimeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             std::vector<std::string> const emptyCfgKeys;
@@ -1499,7 +1513,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             std::vector<std::string> const cfgPublishers;
@@ -1535,7 +1549,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             auto const localKey = randomNode();
@@ -1582,7 +1596,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             hash_set<NodeID> activeValidators;
@@ -1670,7 +1684,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             hash_set<NodeID> activeValidators;
@@ -1877,7 +1891,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             // Empty list has no expiration
@@ -1899,7 +1913,7 @@ private:
                 manifests,
                 manifests,
                 env.app().getTimeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             std::vector<Validator> validators = {randomValidator()};
@@ -2040,7 +2054,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                env.app().config().legacy("database_path"),
+                env.app().config().legacy(Sections::kDatabasePath),
                 env.journal,
                 minimumQuorum);
 
@@ -2595,7 +2609,7 @@ private:
     }
 
     void
-    testQuorumDisabled()
+    testQuorumDisabled()  // NOLINT(readability-function-size)
     {
         testcase("Test quorum disabled");
 
@@ -2636,7 +2650,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(Sections::kDatabasePath),
                 env.journal);
 
             std::vector<std::string> cfgPublishers;
@@ -2667,7 +2681,9 @@ private:
             auto threshold = listThreshold > 0 ? std::optional(listThreshold) : std::nullopt;
             if (self)
             {
-                valManifests.applyManifest(*deserializeManifest(base64Decode(self->manifest)));
+                valManifests.applyManifest(
+                    *deserializeManifest(base64Decode(self->manifest)),
+                    ManifestRateLimitCapPolicy::Capped);
                 BEAST_EXPECT(
                     result->load(self->signingPublic, emptyCfgKeys, cfgPublishers, threshold));
             }

@@ -34,7 +34,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 class AccountLines_test : public beast::unit_test::Suite
 {
@@ -51,7 +51,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", "{ }");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::missingFieldError(jss::account)[jss::error_message]);
+                rpc::missingFieldError(jss::account)[jss::error_message]);
         }
         {
             // account_lines with a malformed account.
@@ -60,7 +60,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::makeError(RpcActMalformed)[jss::error_message]);
+                rpc::makeError(RpcActMalformed)[jss::error_message]);
         }
         {
             // test account non-string
@@ -87,7 +87,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::makeError(RpcActNotFound)[jss::error_message]);
+                rpc::makeError(RpcActNotFound)[jss::error_message]);
         }
         env.fund(XRP(10000), alice);
         env.close();
@@ -250,7 +250,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::makeError(RpcActMalformed)[jss::error_message]);
+                rpc::makeError(RpcActMalformed)[jss::error_message]);
         }
         {
             // A negative limit should fail.
@@ -260,7 +260,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
         }
         {
             // Limit the response to 1 trust line.
@@ -297,7 +297,7 @@ public:
             auto const linesD = env.rpc("json", "account_lines", to_string(paramsD));
             BEAST_EXPECT(
                 linesD[jss::result][jss::error_message] ==
-                RPC::makeError(RpcInvalidParams)[jss::error_message]);
+                rpc::makeError(RpcInvalidParams)[jss::error_message]);
         }
         {
             // A non-string marker should also fail.
@@ -307,7 +307,7 @@ public:
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::marker, "string"));
+                rpc::expectedFieldMessage(jss::marker, "string"));
         }
         {
             // Check that the flags we expect from alice to gw2 are present.
@@ -496,7 +496,7 @@ public:
         auto const linesEnd = env.rpc("json", "account_lines", to_string(linesEndParams));
         BEAST_EXPECT(
             linesEnd[jss::result][jss::error_message] ==
-            RPC::makeError(RpcInvalidParams)[jss::error_message]);
+            rpc::makeError(RpcInvalidParams)[jss::error_message]);
     }
 
     void
@@ -728,7 +728,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::missingFieldError(jss::account)[jss::error_message]);
+                rpc::missingFieldError(jss::account)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -746,7 +746,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::makeError(RpcActMalformed)[jss::error_message]);
+                rpc::makeError(RpcActMalformed)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -765,7 +765,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::makeError(RpcActNotFound)[jss::error_message]);
+                rpc::makeError(RpcActNotFound)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -998,7 +998,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::makeError(RpcActMalformed)[jss::error_message]);
+                rpc::makeError(RpcActMalformed)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -1017,7 +1017,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -1090,7 +1090,7 @@ public:
             auto const linesD = env.rpc("json2", to_string(requestD));
             BEAST_EXPECT(
                 linesD[jss::error][jss::message] ==
-                RPC::makeError(RpcInvalidParams)[jss::error_message]);
+                rpc::makeError(RpcInvalidParams)[jss::error_message]);
             BEAST_EXPECT(linesD.isMember(jss::jsonrpc) && linesD[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesD.isMember(jss::ripplerpc) && linesD[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(linesD.isMember(jss::id) && linesD[jss::id] == 5);
@@ -1109,7 +1109,7 @@ public:
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::expectedFieldMessage(jss::marker, "string"));
+                rpc::expectedFieldMessage(jss::marker, "string"));
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::id) && lines[jss::id] == 5);
@@ -1266,7 +1266,7 @@ public:
         auto const linesEnd = env.rpc("json2", to_string(linesEndRequest));
         BEAST_EXPECT(
             linesEnd[jss::error][jss::message] ==
-            RPC::makeError(RpcInvalidParams)[jss::error_message]);
+            rpc::makeError(RpcInvalidParams)[jss::error_message]);
         BEAST_EXPECT(linesEnd.isMember(jss::jsonrpc) && linesEnd[jss::jsonrpc] == "2.0");
         BEAST_EXPECT(linesEnd.isMember(jss::ripplerpc) && linesEnd[jss::ripplerpc] == "2.0");
         BEAST_EXPECT(linesEnd.isMember(jss::id) && linesEnd[jss::id] == 5);
@@ -1286,4 +1286,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountLines, rpc, xrpl);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

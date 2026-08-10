@@ -1,10 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+
+namespace xrpl::node_store {
 
 class DatabaseNodeImp : public Database
 {
@@ -24,16 +42,16 @@ public:
     {
         std::optional<int> cacheSize, cacheAge;
 
-        if (config.exists("cache_size"))
+        if (config.exists(Keys::kCacheSize))
         {
-            cacheSize = get<int>(config, "cache_size");
+            cacheSize = get<int>(config, Keys::kCacheSize);
             if (cacheSize.value() < 0)
                 Throw<std::runtime_error>("Specified negative value for cache_size");
         }
 
-        if (config.exists("cache_age"))
+        if (config.exists(Keys::kCacheAge))
         {
-            cacheAge = get<int>(config, "cache_age");
+            cacheAge = get<int>(config, Keys::kCacheAge);
             if (cacheAge.value() < 0)
                 Throw<std::runtime_error>("Specified negative value for cache_age");
         }
@@ -50,7 +68,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -120,4 +138,4 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
