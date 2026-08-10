@@ -107,8 +107,10 @@ public:
  *
  * Any failure (a finalize returning false or an exception anywhere in the
  * check) returns failInvariantCheck(result).  On the first pass that yields
- * tecINVARIANT_FAILED.  If that triggers a fee-claim reset and invariants
- * are checked again, a second failure escalates to tefINVARIANT_FAILED,
+ * tecINVARIANT_FAILED, which the transactor treats as a signal to roll the
+ * transaction's effects back to a fee-claim-only state and re-run this
+ * runner against the reduced state (see Transactor::InvariantScope).  If
+ * that second pass also fails, the result escalates to tefINVARIANT_FAILED,
  * which excludes the transaction from the ledger entirely.
  *
  * The whole traversal — both layers' visitEntry calls and both layers'

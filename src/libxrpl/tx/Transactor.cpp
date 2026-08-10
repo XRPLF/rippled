@@ -1617,22 +1617,27 @@ Transactor::operator()()
 
     if (applied)
     {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
+        // First invariant pass: both protocol and transaction-specific
+        // checks run against the transaction's tentative outcome. If it
+        // does not return tecINVARIANT_FAILED, we can proceed to apply the
+        // tx.
         result = checkInvariants(result, fee, InvariantScope::Full);
         if (result == tecINVARIANT_FAILED)
         {
-            // Reset to fee-claim only
+            // Fee-claim reset: roll the transaction's effects back so that
+            // only the fee deduction remains. This is the reset referenced
+            // by InvariantScope::ProtocolOnly.
             auto const resetResult = reset(fee);
             if (!isTesSuccess(resetResult.first))
                 result = resetResult.first;
 
             fee = resetResult.second;
 
-            // Check invariants again to ensure the fee claiming doesn't violate
-            // invariants. After reset, only protocol invariants are re-checked;
-            // the transaction's effects have been rolled back, so the
-            // transaction-specific invariants are no longer meaningful.
+            // Re-check invariants against the post-reset (fee-claim only)
+            // state. The transaction's effects are gone, so the
+            // transaction-specific invariants no longer apply and only the
+            // protocol invariants are re-run. A failure here escalates to
+            // tefINVARIANT_FAILED and excludes the tx from the ledger.
             if (isTesSuccess(result) || isTecClaim(result))
                 result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
         }

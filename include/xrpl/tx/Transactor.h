@@ -188,9 +188,23 @@ public:
      * Which invariant layers to check.
      *
      * Full runs the protocol invariants plus the transaction-specific
-     * check.  After a fee-claim reset the transaction's effects have been
-     * rolled back, so only the protocol invariants are meaningful; pass
-     * ProtocolOnly to narrow the scope in that case.
+     * check.  This is always the scope of the initial pass, even when the
+     * tentative TER is a tec: a bug or exploit could still mutate ledger
+     * state, so transaction-specific invariants must run for failed
+     * transactions too.
+     *
+     * ProtocolOnly runs only the protocol invariants and is used
+     * exclusively for the second invariant pass that follows a
+     * fee-claim reset — specifically, the reset that
+     * Transactor::operator() performs when the initial invariant pass
+     * returns tecINVARIANT_FAILED, rolling the transaction's effects back
+     * to a fee-claim-only state.  In that reduced state the
+     * transaction-specific post-conditions no longer apply, but the
+     * protocol invariants must still hold against the fee claim itself.
+     * ProtocolOnly is not intended for other context discards (e.g. the
+     * reset used to handle tecOVERSIZE/tecKILLED/etc. in
+     * processPersistentChanges, or the ctx_.discard() done under
+     * TapFailHard); those paths do not re-run invariants at all.
      */
     enum class InvariantScope { Full, ProtocolOnly };
 
@@ -200,9 +214,11 @@ public:
      * Delegates to the free xrpl::checkInvariants runner.  When @p scope is
      * InvariantScope::Full, this transactor is passed so both layers
      * share a single walk of the modified ledger entries.  A failure in
-     * either layer fails the transaction the same way: tecINVARIANT_FAILED on
-     * the first pass, escalating to tefINVARIANT_FAILED if invariants are
-     * checked again after a fee-claim reset.
+     * either layer fails the transaction the same way: tecINVARIANT_FAILED
+     * on the first pass, which the caller may respond to by rolling the
+     * transaction back to a fee-claim state and re-invoking this with
+     * InvariantScope::ProtocolOnly; a failure on that post-reset pass
+     * escalates to tefINVARIANT_FAILED.
      *
      * @param result  the tentative TER from transaction processing.
      * @param fee     the fee consumed by the transaction.
