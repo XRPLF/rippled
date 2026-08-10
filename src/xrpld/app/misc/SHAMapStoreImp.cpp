@@ -6,12 +6,12 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
@@ -527,7 +527,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        newPath = beast::uniqueRandomPath(get(section, Keys::kPath), 100, dbPrefix_ + ".");
+        newPath = uniqueRandomPath(get(section, Keys::kPath), dbPrefix_ + ".");
     }
     section.set(Keys::kPath, newPath.string());
 

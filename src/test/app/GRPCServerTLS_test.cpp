@@ -1,8 +1,8 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
@@ -254,8 +254,8 @@ public:
 
     TemporaryTLSCertificates()
     {
-        tempDir_ = beast::uniqueRandomPath(
-            std::filesystem::temp_directory_path(), 100, std::string(kCertsDirPrefix));
+        tempDir_ = xrpl::uniqueRandomPath(
+            std::filesystem::temp_directory_path(), std::string(kCertsDirPrefix));
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCaCertFilename, kCaCertContent);

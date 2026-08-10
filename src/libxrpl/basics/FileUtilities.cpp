@@ -1,12 +1,18 @@
 #include <xrpl/basics/FileUtilities.h>
 
+#include <xrpl/basics/contract.h>
+
 #include <cerrno>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <ios>
 #include <iterator>
 #include <optional>
+#include <random>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <system_error>
 
@@ -72,6 +78,32 @@ writeFileContents(
         ec.assign(errno, std::generic_category());
         return;
     }
+}
+
+std::filesystem::path
+uniqueRandomPath(
+    std::filesystem::path const& base,
+    std::string const& prefix,
+    std::size_t maxAttempts)
+{
+    std::random_device rd;
+    for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
+    {
+        std::ostringstream oss;
+        oss << prefix << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8)
+            << rd();
+        auto candidate = base / oss.str();
+        std::error_code ec;
+        bool const exists = std::filesystem::exists(candidate, ec);
+        if (ec)
+        {
+            Throw<std::runtime_error>(
+                "Unable to check path '" + candidate.string() + "': " + ec.message());
+        }
+        if (!exists)
+            return candidate;
+    }
+    Throw<std::runtime_error>("Unable to generate a unique path under '" + base.string() + "'");
 }
 
 }  // namespace xrpl

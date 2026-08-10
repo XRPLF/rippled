@@ -6,7 +6,6 @@
 
 #include <xrpl/beast/unit_test/runner.h>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <exception>

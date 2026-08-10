@@ -1,7 +1,6 @@
 #include <xrpl/basics/FileUtilities.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/beast/utility/temp_dir.h>
 
 #include <gtest/gtest.h>
 
@@ -19,11 +18,7 @@ class TempFile
 {
 public:
     explicit TempFile(std::filesystem::path file, std::string const& contents)
-        : dir_(
-              beast::uniqueRandomPath(
-                  std::filesystem::temp_directory_path(),
-                  100,
-                  "xrpl-file-utilities-"))
+        : dir_(uniqueRandomPath(std::filesystem::temp_directory_path(), "xrpl-file-utilities-"))
         , file_(dir_ / file)
     {
         std::filesystem::create_directory(dir_);
