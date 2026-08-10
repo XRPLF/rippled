@@ -4,33 +4,15 @@
 
 ## Minimum Requirements
 
-See [System Requirements](https://xrpl.org/system-requirements.html).
+For the hardware needed to run a node, see
+[System Requirements](https://xrpl.org/system-requirements.html).
 
-Building xrpld generally requires Git, Python, Conan, CMake, and a C++
-compiler.
-
-- [Python](https://www.python.org/downloads/)
-- [Conan](https://conan.io/downloads.html)
-- [CMake](https://cmake.org/download/)
-
-You can verify that the required tools are installed and runnable with:
-
-```bash
-./bin/check-tools.sh
-```
-
-`xrpld` is written in the C++23 dialect. The [tested compiler versions][cpp23-support] are:
-
-| Compiler    | Version         |
-| ----------- | --------------- |
-| GCC         | 15.2            |
-| Clang       | 22              |
-| Apple Clang | 21              |
-| MSVC        | 19.44[^windows] |
+Building xrpld requires Git, Python, Conan, CMake, and a C++23 compiler. The
+required tool versions, the compiler versions tested in CI, and how to install
+them on each platform are documented in the
+[environment setup guide](./docs/build/environment.md).
 
 ## Operating Systems
-
-Please see the [environment setup guide](./docs/build/environment.md) for detailed instructions for all platforms.
 
 ### Linux
 
@@ -47,9 +29,8 @@ CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOY
 
 ### Windows
 
-Windows is used by some engineers for development only.
-
-[^windows]: Windows is not recommended for production use.
+Windows is used by some engineers for development only, and is not recommended
+for production use.
 
 ## Steps
 
@@ -74,12 +55,8 @@ releases](https://github.com/XRPLF/rippled/releases).
 
 ### Set Up Conan
 
-After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python,
-Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
-
-These instructions assume a basic familiarity with Conan and CMake. If you are
-unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
-[Getting Started][conan-getting-started] walkthrough.
+Once your [development environment](./docs/build/environment.md) is ready, you
+may need to set up your Conan profile.
 
 #### Profiles
 
@@ -273,6 +250,10 @@ Prerequisites for the coverage report:
 - `llvm-cov` for Clang (installed with the compiler by default)
 - `Debug` build type
 
+In the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell),
+use one of the `gcc` shells: they ship a matching `gcov`, while the `clang`
+shells do not include `llvm-cov`.
+
 A coverage report is created when the following steps are completed, in order:
 
 1. `xrpld` binary built with instrumentation data, enabled by the `coverage`
@@ -389,6 +370,10 @@ After any updates or changes to dependencies, you may need to do the following:
 4. [Regenerate lockfile](./docs/build/advanced_conan.md#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
 
+If you are using the Nix development shell, prebuilt Conan binaries may be
+incompatible with it — see
+[Building xrpld in the Nix shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell).
+
 #### ERROR: Package not resolved
 
 If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
@@ -412,7 +397,6 @@ For example, if you want to build Debug:
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
-[cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
 [conan-getting-started]: https://docs.conan.io/en/latest/getting_started.html
 [unity-build]: https://en.wikipedia.org/wiki/Unity_build
 [gcovr]: https://gcovr.com/en/stable/getting-started.html

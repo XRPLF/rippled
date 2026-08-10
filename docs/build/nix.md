@@ -120,11 +120,19 @@ nix develop -c "$SHELL"
 >
 > If it doesn't, either adjust your shell configuration so it doesn't override `$PATH`, or use [direnv](#automatic-activation-with-direnv) (below), which loads the environment _after_ your shell config and so takes precedence regardless of the shell you use.
 
-## Building xrpld with Nix
+## Building xrpld in the Nix shell
 
 Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
 
-Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Linux):
+Two things differ from a system environment:
+
+**Prebuilt Conan packages.** There is no guarantee that binaries from the Conan cache will work when using Nix. If you encounter any errors, use `--build '*'` to force Conan to compile everything from source:
+
+```bash
+conan install .. --output-folder . --build '*' --settings build_type=Release
+```
+
+**Coverage builds.** `-Dcoverage=ON` works in the `gcc` shell (and `gcc-plain` on Linux):
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
@@ -141,14 +149,6 @@ The repository already ships an `.envrc` at its root that activates the Nix flak
 
 > [!NOTE]
 > direnv only caches the `.direnv` directory (already listed in `.gitignore`); no other repository files are affected.
-
-## Conan and Prebuilt Packages
-
-Please note that there is no guarantee that binaries from conan cache will work when using nix. If you encounter any errors, please use `--build '*'` to force conan to compile everything from source:
-
-```bash
-conan install .. --output-folder . --build '*' --settings build_type=Release
-```
 
 ## Updating `flake.lock` file
 
