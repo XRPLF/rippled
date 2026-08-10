@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -71,7 +71,14 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: account must be the same as issuer
     if (sleIssuance->getAccountID(sfIssuer) != account)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTClawback::preclaim : preflight already validated the "
+            "submitter is the issuer");
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
@@ -128,7 +135,14 @@ ConfidentialMPTClawback::doApply()
     auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTClawback::doApply : preclaim already validated these "
+            "objects exist");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const clawAmount = ctx_.tx[sfMPTAmount];
 
@@ -140,8 +154,9 @@ ConfidentialMPTClawback::doApply()
     if (!encZeroForHolder)
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTClawback failed to encrypt canonical zero for holder.";
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTClawback::doApply : canonical zero encryption cannot fail "
+            "for an already-valid holder public key");
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -150,8 +165,9 @@ ConfidentialMPTClawback::doApply()
     if (!encZeroForIssuer)
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTClawback failed to encrypt canonical zero for issuer.";
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTClawback::doApply : canonical zero encryption cannot fail "
+            "for an already-valid issuer public key");
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -167,7 +183,14 @@ ConfidentialMPTClawback::doApply()
         // Sanity check: the issuance must have an auditor public key if
         // auditing is enabled.
         if (!sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::ConfidentialMPTClawback::doApply : the holder's auditor balance implies "
+                "the issuance has an auditor public key");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const auditorPubKey = (*sleIssuance)[sfAuditorEncryptionKey];
 
@@ -176,8 +199,9 @@ ConfidentialMPTClawback::doApply()
         if (!encZeroForAuditor)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTClawback failed to encrypt canonical zero for auditor.";
+            UNREACHABLE(
+                "xrpl::ConfidentialMPTClawback::doApply : canonical zero encryption cannot "
+                "fail for an already-valid auditor public key");
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
