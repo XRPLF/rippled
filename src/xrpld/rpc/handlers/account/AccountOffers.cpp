@@ -108,7 +108,7 @@ doAccountOffers(rpc::JsonContext& context)
             return rpc::invalidFieldError(jss::marker);
 
         auto const hint = toUInt64(value);
-        if (!hint)
+        if (!hint.has_value())
             return rpc::invalidFieldError(jss::marker);
         startHint = *hint;
 

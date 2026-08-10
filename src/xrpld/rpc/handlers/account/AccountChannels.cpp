@@ -140,7 +140,7 @@ doAccountChannels(rpc::JsonContext& context)
             return rpcError(RpcInvalidParams);
 
         auto const hint = toUInt64(value);
-        if (!hint)
+        if (!hint.has_value())
             return rpcError(RpcInvalidParams);
         startHint = *hint;
 
