@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -59,7 +60,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
-        return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
+        return static_cast<bool>(
+            env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq))));
     }
 
     [[nodiscard]] static bool
@@ -84,11 +86,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const& indexes = page->getFieldV256(sfIndexes);
             return std::ranges::any_of(indexes, [&](auto const& index) {
-                return index == keylet::offer(account, offerSeq).key;
+                return index == keylet::offer(account, SeqProxy::rawSequence(offerSeq)).key;
             });
         };
 
-        auto const sle = env.le(keylet::offer(account.id(), offerSeq));
+        auto const sle = env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq)));
         if (!sle)
             return false;
         if (sle->getFieldAmount(sfTakerGets) != takerGets)
@@ -147,7 +149,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     static std::optional<uint256>
     getDefaultOfferDirKey(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
-        if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
+        if (auto const sle = env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq))))
             return Keylet(ltDIR_NODE, (*sle)[sfBookDirectory]).key;
 
         return {};
@@ -1244,7 +1246,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            auto const sleHybridOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(hybridOfferSeq)));
             if (!BEAST_EXPECT(sleHybridOffer))
                 return;
             auto const openDir =
@@ -1277,7 +1280,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             BEAST_EXPECT(offerExists(env, bob, regularOfferSeq));
             BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            auto const sleHybridOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(hybridOfferSeq)));
             if (!BEAST_EXPECT(sleHybridOffer))
                 return;
             auto const openDir =
@@ -1570,7 +1574,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(offer(bob, XRP(10), USD(10)), Txflags(tfHybrid), Domain(domainID));
             env.close();
 
-            auto const sleOffer = env.le(keylet::offer(bob.id(), bobOfferSeq));
+            auto const sleOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq)));
             BEAST_EXPECT(sleOffer);
             BEAST_EXPECT(sleOffer->getFieldH256(sfBookDirectory) == domainDir);
             BEAST_EXPECT(sleOffer->getFieldArray(sfAdditionalBooks).size() == 1);
@@ -1666,7 +1671,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         // Directly manipulate the offer SLE in the open ledger so that
         // sfAdditionalBooks is present but empty (size 0). This is the
         // malformed state that fixCleanup3_1_3 is designed to catch.
-        auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
+        auto const offerKey = keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq));
         env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
             auto const sle = view.read(offerKey);
             if (!sle)
@@ -1735,7 +1740,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close();
 
         // After crossing, Alice's remaining offer should be placed.
-        auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+        auto const sle = env.le(keylet::offer(alice_.id(), SeqProxy::rawSequence(aliceOfferSeq)));
         BEAST_EXPECT(sle);
         BEAST_EXPECT(sle->isFieldPresent(sfAdditionalBooks));
         BEAST_EXPECT(sle->getFieldArray(sfAdditionalBooks).size() == 1);
@@ -1873,7 +1878,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 env(offer(setup.bob, XRP(100), setup.usd(40)));
                 env.close();
 
-                auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
+                auto const sle =
+                    env.le(keylet::offer(setup.bob.id(), SeqProxy::rawSequence(bobOfferSeq)));
                 BEAST_EXPECT(sle);
 
                 auto const dirKey = sle->getFieldH256(sfBookDirectory);
@@ -1907,7 +1913,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
             env.close();
 
-            auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+            auto const sle =
+                env.le(keylet::offer(alice_.id(), SeqProxy::rawSequence(aliceOfferSeq)));
             BEAST_EXPECT(sle);
 
             auto const openDirKey =
@@ -2023,7 +2030,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
-        auto const oldOffer = env.le(keylet::offer(alice.id(), oldSeq));
+        auto const oldOffer = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(oldSeq)));
         if (!BEAST_EXPECT(oldOffer))
             return;
         BEAST_EXPECT(oldOffer->getFieldH256(sfDomainID) == domainA);
@@ -2038,7 +2045,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!offerExists(env, alice, oldSeq));
             BEAST_EXPECT(checkOffer(env, alice, newSeq, USD(100), XRP(2), 0, true));
-            auto const newOffer = env.le(keylet::offer(alice.id(), newSeq));
+            auto const newOffer = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(newSeq)));
             if (!BEAST_EXPECT(newOffer))
                 return;
             BEAST_EXPECT(newOffer->getFieldH256(sfDomainID) == domainB);

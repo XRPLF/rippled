@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -41,7 +42,7 @@ WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq) 
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::check(account, seq);
+    auto const keylet = keylet::check(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -99,7 +100,7 @@ WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::escrow(account, seq);
+    auto const keylet = keylet::escrow(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -126,7 +127,7 @@ WasmHostFunctionsImpl::mptokenIssuanceKeylet(AccountID const& issuer, std::uint3
     if (!issuer)
         return std::unexpected(HostFunctionError::InvalidAccount);
 
-    auto const keylet = keylet::mptokenIssuance(seq, issuer);
+    auto const keylet = keylet::mptokenIssuance(makeMptID(seq, issuer));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -147,7 +148,7 @@ WasmHostFunctionsImpl::nftokenOfferKeylet(AccountID const& account, std::uint32_
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::nftokenOffer(account, seq);
+    auto const keylet = keylet::nftokenOffer(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -156,7 +157,7 @@ WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq) 
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::offer(account, seq);
+    auto const keylet = keylet::offer(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -179,7 +180,7 @@ WasmHostFunctionsImpl::paychannelKeylet(
         return std::unexpected(HostFunctionError::InvalidAccount);
     if (account == destination)
         return std::unexpected(HostFunctionError::InvalidParams);
-    auto const keylet = keylet::payChannel(account, destination, seq);
+    auto const keylet = keylet::payChannel(account, destination, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -188,7 +189,7 @@ WasmHostFunctionsImpl::permissionedDomainKeylet(AccountID const& account, std::u
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::permissionedDomain(account, seq);
+    auto const keylet = keylet::permissionedDomain(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -206,7 +207,7 @@ WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::ticket(account, seq);
+    auto const keylet = keylet::ticket(account, SeqProxy::rawTicket(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -215,7 +216,7 @@ WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq) 
 {
     if (!account)
         return std::unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = keylet::vault(account, seq);
+    auto const keylet = keylet::vault(account, SeqProxy::rawSequence(seq));
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
