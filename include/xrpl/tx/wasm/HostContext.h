@@ -107,6 +107,9 @@ public:
     getTxNestedArrayLen(rust::Slice<std::uint8_t const> locator) const noexcept;
 
     [[nodiscard]] std::int32_t
+    getCurrentLedgerObjNestedArrayLen(rust::Slice<std::uint8_t const> locator) const noexcept;
+
+    [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
     // A call with no value to report answers 0, or a negative `HostFunctionError` code.

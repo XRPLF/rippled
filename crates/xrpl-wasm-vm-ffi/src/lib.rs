@@ -239,6 +239,10 @@ mod ffi {
         fn get_tx_nested_array_len(self: &HostContext, locator: &[u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getCurrentLedgerObjNestedArrayLen"]
+        fn get_current_ledger_obj_nested_array_len(self: &HostContext, locator: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -371,6 +375,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
         scalar(self.ctx.get_tx_nested_array_len(locator))
+    }
+
+    fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_current_ledger_obj_nested_array_len(locator))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

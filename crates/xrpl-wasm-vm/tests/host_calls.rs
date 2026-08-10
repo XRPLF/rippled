@@ -301,6 +301,22 @@ fn tx_inner_arr_len_reads_the_locator_and_returns_the_count() {
     assert_eq!(*host.tx_nested_arr_lens_asked.borrow(), vec![locator]);
 }
 
+/// The same read-input, scalar-out count over the current object, with its own answer
+/// set distinct from the transaction's.
+#[test]
+fn home_le_inner_arr_len_reads_the_locator_and_returns_the_count() {
+    let locator = vec![5u8, 0, 0, 0];
+    let host = FakeHost::new().answering_home_le_nested_arr_len(locator.clone(), 7);
+
+    let wat = module(
+        &[import::HOME_LE_INNER_ARR_LEN, ONE_PAGE],
+        "(i32.store (i32.const 0) (i32.const 5))
+         (call $home_le_inner_arr_len (i32.const 0) (i32.const 4))",
+    );
+    assert_eq!(status(&wat, &host), 7, "the array length");
+    assert_eq!(*host.home_le_nested_arr_lens_asked.borrow(), vec![locator]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
