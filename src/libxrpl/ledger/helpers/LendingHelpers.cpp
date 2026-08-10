@@ -120,17 +120,6 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
     return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSecondsInYear;
 }
 
-/* Checks if a value is already rounded to the specified scale.
- * Returns true if rounding down and rounding up produce the same result,
- * indicating no further precision exists beyond the scale.
- */
-bool
-isRounded(Asset const& asset, Number const& value, std::int32_t scale)
-{
-    return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
-        roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
-}
-
 namespace accrual {
 
 AccountingDeltas

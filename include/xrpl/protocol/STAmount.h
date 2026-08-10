@@ -772,6 +772,13 @@ roundToAsset(
     return roundToScale(ret, scale);
 }
 
+[[nodiscard]] inline bool
+isRounded(Asset const& asset, Number const& value, std::int32_t scale)
+{
+    return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
+        roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
+}
+
 //------------------------------------------------------------------------------
 
 inline bool
