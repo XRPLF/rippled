@@ -340,7 +340,7 @@ ServerHandler::onWSMessage(
     if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
         auto const wsInfoSub = std::static_pointer_cast<WSInfoSub>(session->appDefined);
-        wsInfoSub->getConsumer().charge(Resource::kFeeMalformedRpc);
+        wsInfoSub->getConsumer().charge(resource::kFeeMalformedRpc);
 
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
