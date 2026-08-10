@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
