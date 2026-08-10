@@ -98,6 +98,39 @@ creditBalance(
     return result;
 }
 
+Number
+creditBalanceExact(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& issuer,
+    Currency const& currency)
+{
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    if (!sleRippleState)
+        return Number{0};
+
+    STAmount balance = sleRippleState->getFieldAmount(sfBalance);
+    // Put balance in @p account's terms (sfBalance is stored in the line's
+    // own low/high convention).
+    if (account < issuer)
+        balance.negate();
+
+    // Defense in depth: pre-amendment sfDust is guaranteed zero
+    // (SoeDefault), but the explicit gate documents the invariant and
+    // keeps the read path symmetric with directSendNoFeeIOU's write-side
+    // gate.
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return Number{balance};
+
+    // sfDust follows sfBalance's sign convention, so the same negation
+    // applies.
+    Number dust = sleRippleState->at(sfDust);
+    if (account < issuer)
+        dust = -dust;
+
+    return Number{balance} + dust;
+}
+
 //------------------------------------------------------------------------------
 //
 // Freeze checking (IOU-specific)
