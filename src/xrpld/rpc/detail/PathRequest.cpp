@@ -934,7 +934,16 @@ PathRequest::doUpdate(
 
     if (hasCompletion())
     {
-        // Old ripple_path_find API gives destination_currencies
+        // Old ripple_path_find API lists destination_currencies. Build it only
+        // after the destination account is pinned and any incomplete shared
+        // progressive fill is drained under LoadScope — otherwise a WS partial
+        // (64-line) cache hit would silently omit currencies the dest can receive.
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
+        (void)cache->getRippleLines(*raDstAccount_);
+        while (cache->expandIncompleteLinesForSession(iIdentifier_))
+        {
+        }
+
         auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::Array);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);

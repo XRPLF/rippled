@@ -33,8 +33,11 @@ namespace xrpl {
  * - Global line budget bounds worst-case memory (hard stop when remaining == 0;
  *   no silent floor). Incomplete accounts grow on expandIncompleteLines.
  * - Hits use shared_lock; misses/expands load under unique lock (single-flight).
- * - Soft ledger advance keeps complete line vectors; incomplete progressive
- *   fills drop and reload (DirCursor is not stable across ledger page changes).
+ * - Soft ledger advance keeps complete line vectors. Incomplete progressive
+ *   fills never resume a DirCursor across ledgers (pages split/merge). Pinned
+ *   incomplete entries keep a reloadMinLines hint and drop line memory; the
+ *   next getRippleLines reloads from page 0 with that want. Unpinned incomplete
+ *   entries are dropped (no unique-lock re-walk on every close).
  * - Per-session account pins: an entry is freed only when every path_find that
  *   used it has ended. Shared hubs stay warm for remaining sessions (no LRU
  *   thrash during ramp-down). When the last subscription ends the whole cache
@@ -242,6 +245,13 @@ private:
          * the directory was fully scanned (or hit per-account cap).
          */
         PathFindTrustLine::DirCursor cursor{};
+
+        /**
+         * After soft advance of an incomplete pin: next loadOutgoing wants at
+         * least this many lines from page 0 (progress hint). 0 = normal chunk.
+         * Never used to resume a cross-ledger DirCursor.
+         */
+        std::size_t reloadMinLines{0};
 
         [[nodiscard]] std::size_t
         storedLineCount() const

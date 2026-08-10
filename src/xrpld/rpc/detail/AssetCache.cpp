@@ -124,10 +124,15 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
         return;
     }
 
-    // Soft retain complete vectors. Incomplete progressive fills cannot resume
-    // a DirCursor across ledgers: owner-dir pages split/merge, so {page,
-    // indexInPage} from an older ledger can dup or skip lines. Drop partial
-    // entries (pins re-established on next getRippleLines via SessionPin).
+    // Soft retain complete vectors (content reused within cacheReuseLedgers_).
+    //
+    // Incomplete progressive fills cannot resume a DirCursor across ledgers
+    // (owner-dir pages split/merge → dup/skip). Re-walking prevCount+chunk for
+    // every incomplete hub on every close destroyed 100-session path_find
+    // throughput. Option A:
+    //   - pinned incomplete: drop line memory, keep pinCount + reloadMinLines
+    //     progress hint; next getRippleLines reloads from page 0 with that want
+    //   - unpinned incomplete: erase entirely (no work on advance)
     for (auto it = lines_.begin(); it != lines_.end();)
     {
         if (it->second.cursor.complete)
@@ -135,13 +140,31 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
             ++it;
             continue;
         }
-        auto const n = it->second.storedLineCount();
-        if (n > 0)
-            totalLineCount_.fetch_sub(n, std::memory_order_relaxed);
-        it = lines_.erase(it);
+
+        auto const prevCount = it->second.storedLineCount();
+        if (prevCount > 0)
+            totalLineCount_.fetch_sub(prevCount, std::memory_order_relaxed);
+
+        if (it->second.pinCount == 0)
+        {
+            it = lines_.erase(it);
+            continue;
+        }
+
+        // Pinned: cheap stub — no owner-dir walk under this lock.
+        std::size_t hint = std::max(prevCount + lineChunkSize_, lineChunkSize_);
+        hint = std::min(hint, maxLinesPerAccount_);
+        // Keep any larger prior hint (should not happen, but be monotonic).
+        hint = std::max(hint, it->second.reloadMinLines);
+
+        it->second.lines = nullptr;
+        it->second.pending.clear();
+        it->second.cursor = {};
+        it->second.loadedSeq = newSeq;
+        it->second.reloadMinLines = hint;
+        ++it;
     }
 
-    // Complete vectors + sessionAccounts_ pins kept; incomplete reloaded next get.
     JLOG(journal_.debug()) << "advanceLedger " << oldSeq << " -> " << newSeq
                            << (sameSeqUpgrade ? " (open->closed)" : "") << " retained "
                            << lines_.size() << " accounts / "
@@ -312,18 +335,23 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     auto it = lines_.find(accountID);
 
     std::size_t preservedPins = 0;
+    std::size_t progressHint = 0;
     if (it != lines_.end())
     {
         auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-        if (age <= cacheReuseLedgers_)
+        // Reuse only when we have published line data for this ledger window.
+        // Soft-advance stubs (lines==null, reloadMinLines>0) must refill.
+        if (age <= cacheReuseLedgers_ && it->second.lines)
         {
             ++cacheHits_;
             return it->second.lines;
         }
-        // Stale: drop content but preserve pinCount across reload.
+        // Stale or progress stub: drop content but preserve pins + progress hint.
         preservedPins = it->second.pinCount;
+        progressHint = it->second.reloadMinLines;
         auto const size = it->second.storedLineCount();
-        totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+        if (size > 0)
+            totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
         lines_.erase(it);
     }
 
@@ -335,12 +363,13 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     entry.cursor = {};
     entry.lines = nullptr;
     entry.pending.clear();
+    entry.reloadMinLines = 0;
 
     auto const remaining = remainingBudgetUnlocked();
-    // First-load chunk: LoadScope override or configured lineChunkSize_.
-    // No silent floor when remaining == 0 — leave incomplete empty entry so a
-    // later expand can proceed if budget frees.
-    std::size_t want = std::min(effectiveChunkSize(), maxLinesPerAccount_);
+    // First-load want: LoadScope / lineChunkSize, or soft-advance progress hint
+    // so multi-close progressive fill compounds without re-walking on advance.
+    std::size_t want = std::max(effectiveChunkSize(), progressHint);
+    want = std::min(want, maxLinesPerAccount_);
     if (remaining < want)
         want = remaining;
 
@@ -372,9 +401,9 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
         }
         else
         {
-            JLOG(journal_.debug())
-                << "loadOutgoing chunked account=" << accountID
-                << " lines=" << (entry.lines ? entry.lines->size() : 0) << " complete=false";
+            JLOG(journal_.debug()) << "loadOutgoing chunked account=" << accountID
+                                   << " lines=" << (entry.lines ? entry.lines->size() : 0)
+                                   << " hint=" << progressHint << " complete=false";
         }
     }
 
@@ -393,6 +422,10 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
 std::shared_ptr<std::vector<PathFindTrustLine>>
 AssetCache::getOrLoadOutgoing(AccountID const& accountID)
 {
+    // LoadScope (one-shot) needs exclusive expand of incomplete hits — cannot
+    // finish under shared_lock.
+    bool const oneShotFull = tlsChunkOverride != 0;
+
     {
         std::shared_lock const sl(lock_);
         auto const curSeq = ledger_->header().seq;
@@ -401,19 +434,13 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
         {
             auto const age =
                 curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-            // Fast path only when there is nothing pending to publish.
-            if (age <= cacheReuseLedgers_ && it->second.pending.empty())
+            // Fast path: fresh published lines, no pending. Soft-advance stubs
+            // (lines==null) and one-shot incomplete hits fall through.
+            if (age <= cacheReuseLedgers_ && it->second.lines && it->second.pending.empty() &&
+                (it->second.cursor.complete || !oneShotFull))
             {
                 ++cacheHits_;
                 return it->second.lines;
-            }
-            if (age > cacheReuseLedgers_)
-            {
-                // Stale — fall through to unique lock reload.
-            }
-            else
-            {
-                // Fresh but has pending chunks — need unique lock to coalesce.
             }
         }
     }
@@ -424,9 +451,21 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
     if (it != lines_.end())
     {
         auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-        if (age <= cacheReuseLedgers_)
+        // Soft-advance progress stub: no lines yet — materialize via load.
+        if (age <= cacheReuseLedgers_ && it->second.lines)
         {
             ++cacheHits_;
+            // One-shot LoadScope: drain incomplete so destination_currencies /
+            // Pathfinder see the full per-account set (budget permitting), even
+            // when the shared cache only held a WS progressive partial.
+            if (oneShotFull && !it->second.cursor.complete)
+            {
+                while (!it->second.cursor.complete)
+                {
+                    if (expandAccountUnlocked(accountID, it->second) == 0)
+                        break;
+                }
+            }
             coalescePendingUnlocked(it->second);
             return it->second.lines;
         }
@@ -537,8 +576,20 @@ AssetCache::expandIncompleteLinesForSession(int sessionId)
             continue;
         if (remainingBudgetUnlocked() == 0)
             break;
-        if (expandAccountUnlocked(accountID, it->second) > 0)
+        // One expandAccount uses effectiveChunkSize() (LoadScope when set). Loop
+        // in the caller drains; still allow multi-chunk here when LoadScope is
+        // large so a single call can finish an account under budget.
+        while (!it->second.cursor.complete && remainingBudgetUnlocked() > 0)
+        {
+            auto const added = expandAccountUnlocked(accountID, it->second);
+            if (added == 0)
+                break;
             grew = true;
+            // Without LoadScope, one chunk per outer call keeps WS expands light;
+            // with LoadScope, keep going until complete (one-shot drain).
+            if (tlsChunkOverride == 0)
+                break;
+        }
     }
     return grew;
 }

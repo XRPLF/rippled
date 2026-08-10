@@ -255,11 +255,12 @@ class AssetCache_test : public beast::unit_test::Suite
     void
     testSoftAdvanceResetsIncompleteCursor()
     {
-        testcase("soft advance resets incomplete DirCursor (no cross-ledger resume)");
+        testcase("soft advance keeps progress hint; reload on next access (Option A)");
         using namespace test::jtx;
         Env env(*this);
         Account const alice{"alice"};
-        fundManyLines(env, alice, 6, "ic");
+        // Enough lines that a single first-load chunk cannot finish the account.
+        fundManyLines(env, alice, 10, "ic");
 
         auto cache = std::make_shared<AssetCache>(
             env.current(),
@@ -267,30 +268,86 @@ class AssetCache_test : public beast::unit_test::Suite
             /*maxTotalLines=*/100000,
             /*maxLinesPerAccount=*/1000,
             /*cacheReuseLedgers=*/12,
-            /*lineChunkSize=*/1);
+            /*lineChunkSize=*/2);
 
         {
             AssetCache::SessionPin pin{1};
-            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+            // First load only (2 lines) — do not call expandIncompleteLines()
+            // which would multi-chunk up to kPathExpandLinesPerWave and finish.
+            auto partialLines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(partialLines && partialLines->size() == 2);
         }
+        // pinCount remains until releaseSession (SessionPin only sets TLS).
         BEAST_EXPECT(cache->hasIncompleteLines());
-        auto const partial = cache->totalLineCount();
-        BEAST_EXPECT(partial >= 1);
-        BEAST_EXPECT(partial < 6);  // chunk size 1 → progressive
+        BEAST_EXPECT(cache->totalLineCount() == 2);
 
         env.close();
         cache->advanceLedger(env.closed(), /*forceClear=*/false);
-        // Incomplete partial entries erased; complete hubs would be retained.
+        // Option A: advance does not re-walk — drops line memory, keeps pin + hint.
         BEAST_EXPECT(cache->totalLineCount() == 0);
-        BEAST_EXPECT(!cache->hasIncompleteLines());
+        BEAST_EXPECT(cache->hasIncompleteLines());  // stub still incomplete
 
         {
             AssetCache::SessionPin pin{1};
-            // Next access reloads from the new ledger (no positional resume).
+            // On-demand reload from page 0 with want = prev(2) + chunk(2) = 4.
             auto lines = cache->getRippleLines(alice.id());
-            BEAST_EXPECT(lines && !lines->empty());
+            BEAST_EXPECT(lines && lines->size() == 4);
+        }
+        BEAST_EXPECT(cache->totalLineCount() == 4);
+        BEAST_EXPECT(cache->hasIncompleteLines());
+        cache->releaseSession(1);
+        // Last pin released → entry erased (releaseSession).
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(!cache->hasIncompleteLines());
+
+        // Unpinned incomplete is erased on soft advance (no progress-hint work).
+        {
+            auto unpinned = cache->getRippleLines(alice.id());  // no SessionPin
+            BEAST_EXPECT(unpinned && unpinned->size() == 2);
+        }
+        BEAST_EXPECT(cache->hasIncompleteLines());
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(!cache->hasIncompleteLines());
+    }
+
+    void
+    testLoadScopeDrainsIncompleteSharedHit()
+    {
+        testcase("LoadScope drains incomplete shared-cache hit (one-shot dest currencies)");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        fundManyLines(env, alice, 8, "ls");
+
+        // Shared progressive partial (WS-style chunk of 2).
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/100000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/2);
+
+        {
+            AssetCache::SessionPin pin{1};
+            auto partial = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(partial && partial->size() == 2);
+            BEAST_EXPECT(cache->hasIncompleteLines());
+        }
+
+        // One-shot LoadScope must finish the account on the same cache hit.
+        {
+            AssetCache::LoadScope oneShot{1000};
+            AssetCache::SessionPin pin{2};
+            auto full = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(full);
+            BEAST_EXPECT(full->size() == 8);
+            BEAST_EXPECT(!cache->hasIncompleteLinesForSession(2));
         }
         cache->releaseSession(1);
+        cache->releaseSession(2);
     }
 
     void
@@ -571,6 +628,7 @@ public:
         testSessionPinsSharedHub();
         testAdvanceLedgerSoftRetainAndForceClear();
         testSoftAdvanceResetsIncompleteCursor();
+        testLoadScopeDrainsIncompleteSharedHit();
         testReuseWindowExpiryReloads();
         testMaxLinesPerAccountAndChunk();
         testGlobalBudgetBlocksNewLines();
