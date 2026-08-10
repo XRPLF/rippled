@@ -55,6 +55,7 @@ This section contains changes targeting a future version.
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `gateway_balances`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string, instead of an `internal` error. [#7655](https://github.com/XRPLF/rippled/pull/7655)
+- `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
 
 ## XRP Ledger server version 3.1.0
 
