@@ -303,15 +303,26 @@ runParallel(
 
         // results[i] = keep for work[batch + i]
         auto results = std::make_shared<std::vector<char>>(count, 0);
-        auto remaining = std::make_shared<std::atomic<std::size_t>>(count);
-        std::mutex doneMutex;
-        std::condition_variable doneCv;
 
-        auto finishOne = [&doneMutex, &doneCv, remaining]() {
-            if (remaining->fetch_sub(1, std::memory_order_acq_rel) == 1)
+        // Barrier must outlive any helper still finishing notify after the
+        // coordinator sees remaining==0 and leaves wait (stack mutex/cv UAF):
+        // last helper does fetch_sub then needs to lock+notify; coordinator may
+        // already have observed remaining==0 (predicate / spurious wake) and
+        // destroyed stack sync objects. Shared ownership keeps them alive.
+        struct BatchBarrier
+        {
+            std::mutex mutex;
+            std::condition_variable cv;
+            std::atomic<std::size_t> remaining{0};
+        };
+        auto barrier = std::make_shared<BatchBarrier>();
+        barrier->remaining.store(count, std::memory_order_relaxed);
+
+        auto finishOne = [barrier]() {
+            if (barrier->remaining.fetch_sub(1, std::memory_order_acq_rel) == 1)
             {
-                std::lock_guard const lk(doneMutex);
-                doneCv.notify_one();
+                std::lock_guard const lk(barrier->mutex);
+                barrier->cv.notify_one();
             }
         };
 
@@ -323,9 +334,15 @@ runParallel(
             }
             catch (...)
             {
-                // Never leave the batch barrier hanging; ClaimGuard in runOne
-                // still clears inProgress_ on the request.
-                return false;
+                // Never leave the batch barrier hanging. ClaimGuard in runOne
+                // clears inProgress_ so the next wave can retry.
+                //
+                // Return true (keep): a false result is treated as onDrop and
+                // would permanently remove an open path_find subscription after
+                // a transient ledger error (e.g. SHAMapMissingNode). Serial
+                // runOne rethrows to LedgerMaster instead; parallel must not
+                // convert the same failure into a silent unsubscribe.
+                return true;
             }
         };
 
@@ -357,8 +374,9 @@ runParallel(
         }
 
         {
-            std::unique_lock lk(doneMutex);
-            doneCv.wait(lk, [&] { return remaining->load(std::memory_order_acquire) == 0; });
+            std::unique_lock lk(barrier->mutex);
+            barrier->cv.wait(
+                lk, [&] { return barrier->remaining.load(std::memory_order_acquire) == 0; });
         }
 
         for (std::size_t i = 0; i < count; ++i)

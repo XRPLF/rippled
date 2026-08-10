@@ -784,13 +784,28 @@ Config::loadFromString(std::string const& fileContents)
                 ": must be at least 1000");
         }
 
-        pathFindMaxLinesPerAccount =
-            sec.valueOr(Keys::kMaxLinesPerAccount, pathFindMaxLinesPerAccount);
-        if (pathFindMaxLinesPerAccount < 64 || pathFindMaxLinesPerAccount > pathFindMaxTotalLines)
+        // max_lines_per_account defaults to 50000. If the operator only sets
+        // max_total_lines to the documented minimum (1000), that default would
+        // exceed the total budget and refuse to start. When per-account is
+        // omitted, clamp the default under max_total_lines. Explicit values
+        // outside [64, max_total_lines] still error.
+        if (sec.exists(Keys::kMaxLinesPerAccount))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kMaxLinesPerAccount +
-                ": must be between 64 and max_total_lines inclusive");
+            pathFindMaxLinesPerAccount =
+                sec.valueOr(Keys::kMaxLinesPerAccount, pathFindMaxLinesPerAccount);
+            if (pathFindMaxLinesPerAccount < 64 ||
+                pathFindMaxLinesPerAccount > pathFindMaxTotalLines)
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid ") + Sections::kPathFind + " " +
+                    Keys::kMaxLinesPerAccount +
+                    ": must be between 64 and max_total_lines inclusive");
+            }
+        }
+        else
+        {
+            pathFindMaxLinesPerAccount =
+                std::min(pathFindMaxLinesPerAccount, pathFindMaxTotalLines);
         }
     }
 
