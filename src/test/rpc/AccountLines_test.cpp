@@ -808,7 +808,7 @@ public:
                 request[jss::params] = params;
 
                 auto const lines = env.rpc("json2", to_string(request));
-                BEAST_EXPECT(lines[jss::error][jss::code] == "invalidParams");
+                BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
                 BEAST_EXPECT(lines[jss::error][jss::message] == "Invalid field 'peer'.");
                 BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
                 BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
