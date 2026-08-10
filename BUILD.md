@@ -246,13 +246,13 @@ which is only enabled when the `coverage` option is set, e.g. with
 Prerequisites for the coverage report:
 
 - [gcovr tool][gcovr] (can be installed e.g. with [pip][python-pip])
-- `gcov` for GCC (installed with the compiler by default) or
-- `llvm-cov` for Clang (installed with the compiler by default)
+- `gcov` for GCC or `llvm-cov` for Clang, usually installed with the compiler
 - `Debug` build type
 
-In the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell),
-use one of the `gcc` shells: they ship a matching `gcov`, while the `clang`
-shells do not include `llvm-cov`.
+> [!NOTE]
+> Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell):
+> its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`,
+> or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
 
 A coverage report is created when the following steps are completed, in order:
 
