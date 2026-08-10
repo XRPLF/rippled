@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -1453,12 +1454,14 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId1, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId2, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1472,7 +1475,8 @@ public:
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftokenOffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -1493,7 +1497,8 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceToBroker =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::Destination(broker),
                 Txflags(tfSellNFToken));
@@ -1501,7 +1506,8 @@ public:
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftokenOffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
@@ -1522,12 +1528,14 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1542,7 +1550,7 @@ public:
         if (features[featureNFTokenMintOffer])
         {
             uint256 const aliceMintWithOfferIndex1 =
-                keylet::nftokenOffer(alice, env.seq(alice)).key;
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
