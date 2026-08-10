@@ -7,10 +7,10 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/TempDir.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -61,7 +61,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
     };
 
     SetupData
-    setupLedger(beast::TempDir const& td)
+    setupLedger(TempDir const& td)
     {
         using namespace test::jtx;
         SetupData retval = {.dbPath = td.path()};
@@ -330,7 +330,7 @@ public:
     void
     run() override
     {
-        beast::TempDir const td;
+        TempDir const td;
         auto sd = setupLedger(td);
 
         // test cases

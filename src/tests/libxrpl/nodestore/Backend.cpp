@@ -1,8 +1,8 @@
 #include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/TempDir.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -84,7 +84,7 @@ protected:
     }
 
     DummyScheduler scheduler_;
-    beast::TempDir const tempDir_;
+    TempDir const tempDir_;
     beast::Journal const journal_{TestSink::instance()};
     Section params_;
     Batch batch_;

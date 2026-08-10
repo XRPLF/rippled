@@ -3,8 +3,8 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/TempDir.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
@@ -319,7 +319,7 @@ port_wss_admin
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
             path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
@@ -341,13 +341,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -381,7 +381,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");

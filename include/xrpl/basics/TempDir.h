@@ -6,7 +6,7 @@
 #include <string>
 #include <system_error>
 
-namespace beast {
+namespace xrpl {
 
 /**
  * RAII temporary directory.
@@ -30,7 +30,7 @@ public:
      */
     TempDir()
     {
-        path_ = xrpl::uniqueRandomPath(std::filesystem::temp_directory_path());
+        path_ = uniqueRandomPath(std::filesystem::temp_directory_path());
         std::filesystem::create_directory(path_);
     }
 
@@ -66,4 +66,4 @@ public:
     }
 };
 
-}  // namespace beast
+}  // namespace xrpl
