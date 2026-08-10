@@ -30,7 +30,7 @@ makeReason(String const& reason, char const* file, int line)
     namespace fs = std::filesystem;
     s.append(fs::path{file}.filename().string());
     s.append("(");
-    s.append(boost::lexical_cast<std::string>(line));
+    s.append(std::to_string(line));
     s.append(")");
     return s;
 }
@@ -295,6 +295,20 @@ public:
         return runner_->arg();
     }
 
+protected:
+    /**
+     * Lets a suite compose other suites (e.g. an aggregator that reruns a
+     * group of related suites under its own name) via `SuiteInfo::run`.
+     *
+     * @return The runner this suite is executing under.
+     */
+    Runner&
+    runner() const
+    {
+        return *runner_;
+    }
+
+public:
     /**
      * DEPRECATED
      * @return `true` if the test condition indicates success(a false value)

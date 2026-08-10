@@ -87,7 +87,7 @@ public:
  * OutstandingAmount after application equals OutstandingAmount before
  * application plus the net holder balance delta.
  */
-class ValidMPTPayment
+class ValidMPTBalanceChanges
 {
     enum class Order { Before = 0, After = 1 };
     struct MPTData

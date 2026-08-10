@@ -1063,6 +1063,8 @@ ValidatorList::updatePublisherList(
         {
             // Increment list count for added keys
             ++keyListings_[*iNew];
+            // Key is now listed: free its untrusted slot if it had one.
+            validatorManifests_.promoteToTrusted(*iNew);
             ++iNew;
         }
         else if (iNew == publisherList.end() || (iOld != oldList.end() && *iOld < *iNew))
@@ -1101,7 +1103,8 @@ ValidatorList::updatePublisherList(
             continue;
         }
 
-        if (auto const r = validatorManifests_.applyManifest(std::move(*m));
+        if (auto const r = validatorManifests_.applyManifest(
+                std::move(*m), ManifestRateLimitCapPolicy::Uncapped);
             r == ManifestDisposition::Invalid)
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
@@ -1125,6 +1128,15 @@ ValidatorList::applyList(
 
     json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
+    // Reject an oversized manifest before decoding it, so we do not allocate
+    // memory for an input that cannot be a valid manifest. deserializeManifest
+    // also enforces the decoded-byte limit, but checking here avoids the
+    // base64 decode entirely.
+    if (manifest.size() > kMaxManifestBase64)
+    {
+        JLOG(j_.warn()) << "UNL manifest exceeds maximum size";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
     auto m = deserializeManifest(base64Decode(manifest));
     if (!m)
     {
@@ -1345,7 +1357,10 @@ ValidatorList::verify(
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(manifest));
+    // Publisher keys are configured/trusted (checked above), so bypass the
+    // untrusted cap.
+    auto const result = publisherManifests_.applyManifest(
+        std::move(manifest), ManifestRateLimitCapPolicy::Uncapped);
 
     if (revoked && result == ManifestDisposition::Accepted)
     {
