@@ -28,6 +28,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        "corrosion/0.6.1",
         "ed25519/2015.03",
         "fast_float/8.2.10",
         "grpc/1.81.1",
@@ -36,7 +37,6 @@ class Xrpl(ConanFile):
         "openssl/3.6.3",
         "soci/4.0.3",
         "zlib/1.3.2",
-        "corrosion/0.6.1",
     ]
 
     test_requires = [
