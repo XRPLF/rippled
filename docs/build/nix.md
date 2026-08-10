@@ -124,13 +124,31 @@ nix develop -c "$SHELL"
 
 Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
 
-Two things differ from a system environment:
-
-**Prebuilt Conan packages.** There is no guarantee that binaries from the Conan cache will work when using Nix. If you encounter any errors, add `--build '*'` to the `conan install` command in [Build and Test](../../BUILD.md#build-and-test) to force Conan to compile everything from source. Keep the rest of the command as it is there, so it rebuilds the `build_type` you are actually configuring.
-
-**Coverage builds.** `-Dcoverage=ON` works in the `gcc` shell (and `gcc-plain` on Linux):
+Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Linux):
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
+
+## Conan configuration
+
+The shell runs [`conan/init.sh`](../../conan/init.sh) on entry, so
+[Set Up Conan](../../BUILD.md#set-up-conan) is already done for you. It installs
+into the shell's own Conan home: `CONAN_HOME=~/.conan2-nix`.
+
+### Prebuilt packages
+
+On **Linux**, the binaries on the `xrplf` remote are built in this same Nix
+environment — CI runs in Docker images that bundle the dev shell's toolchain (see
+[`nix/docker`](../../nix/docker)) — so `.#gcc` and `.#clang` can reuse them. The
+`-plain` shells do not match that toolchain's glibc, so binaries from the remote
+are not a reliable match there.
+
+On **macOS**, CI builds with Apple Clang, so the remote holds nothing for the Nix
+`clang` toolchain and dependencies are compiled locally. We do not publish
+Nix-built macOS binaries because a Conan package ID records the compiler version
+but not the nixpkgs revision.
+
+To compile everything from source, add `--build '*'` to the `conan install`
+command.
 
 ## Automatic Activation with direnv
 
