@@ -43,7 +43,7 @@ let
       if ${conanDir}/init.sh; then
         printf '%s' "${conanDir}" >"$_xrpl_conan_stamp"
       else
-        echo "⚠️  Conan setup failed - run ./conan/init.sh from the repository root to retry."
+        echo "⚠️ Conan setup failed - run ./conan/init.sh from the repository root to retry."
       fi
     fi
     unset _xrpl_conan_stamp
@@ -52,7 +52,7 @@ let
   # Shown when entering a *-plain shell. These exist only on Linux (see below),
   # where the stock toolchain diverges from CI.
   plainWarningHook = ''
-    echo "⚠️  WARNING: this is the stock nixpkgs toolchain and does not match CI's glibc. Prefer 'nix develop .#gcc' / '.#clang' unless you need to skip the custom-glibc build."
+    echo "⚠️ WARNING: this is the stock nixpkgs toolchain and does not match CI's glibc. Prefer 'nix develop .#gcc' / '.#clang' unless you need to skip the custom-glibc build."
   '';
 
   # Tools to expose under version-suffixed names (see mkVersionedToolLinks).
