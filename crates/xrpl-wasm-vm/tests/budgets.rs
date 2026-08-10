@@ -144,6 +144,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $check_sig (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0))",
             6,
         ),
+        HostFunctionSpec::AccountKeylet => (
+            import::ACCOUNTROOT_ID,
+            "(call $accountroot_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 32))",
+            4,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

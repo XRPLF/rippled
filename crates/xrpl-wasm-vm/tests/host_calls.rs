@@ -359,6 +359,37 @@ fn check_sig_reads_all_three_regions_and_returns_the_verdict() {
     assert_eq!(status(&wat, &host), 0, "the invalid verdict");
 }
 
+/// A keylet getter: reads an account region and writes a 32-byte keylet back — the
+/// read-input-write-output path. The account reaches the host and the keylet lands
+/// where the guest asked.
+#[test]
+fn accountroot_id_reads_the_account_and_writes_the_keylet() {
+    // Guest memory is zeroed, so a 20-byte account read is all zeros.
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_account_keylet(account.clone(), support::Answer::filler(32));
+
+    let wat = module(
+        &[import::ACCOUNTROOT_ID, ONE_PAGE],
+        "(call $accountroot_id (i32.const 0) (i32.const 20) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.account_keylets_asked.borrow(), vec![account]);
+
+    // The keylet bytes land at the output pointer: filler is 0, 1, 2, ..., so the
+    // first four load as 0x03020100.
+    let wat = module(
+        &[import::ACCOUNTROOT_ID, ONE_PAGE],
+        "(drop (call $accountroot_id (i32.const 0) (i32.const 20) (i32.const 64) (i32.const 64)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(
+        status(&wat, &host),
+        0x03020100,
+        "the first four keylet bytes"
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

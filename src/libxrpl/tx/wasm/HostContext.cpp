@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -408,6 +409,22 @@ HostContext::checkSignature(
             return hfErrorToInt(valid.error());
 
         return *valid;
+    });
+}
+
+std::int32_t
+HostContext::accountKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (account.size() != AccountID::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.accountKeylet(AccountID::fromVoid(account.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
     });
 }
 

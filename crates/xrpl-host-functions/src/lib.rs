@@ -234,6 +234,12 @@ host_functions! {
         pubkey: &[u8],
     ) -> HostResult<i32>;
 
+    /// The 32-byte ledger key (keylet) of an account's `AccountRoot`, computed from a
+    /// 20-byte account id. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "accountroot_id"]
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

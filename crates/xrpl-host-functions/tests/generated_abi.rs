@@ -173,6 +173,15 @@ impl HostFunctions for FakeHost {
         Ok(i32::from(!signature.is_empty()))
     }
 
+    /// A keylet getter: reads an account, writes a 32-byte keylet; `InvalidAccount`
+    /// on an empty account.
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if account.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        put(out, &[account[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -259,6 +268,12 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(host.check_signature(b"msg", b"sig", b"pk"), Ok(1));
     assert_eq!(host.check_signature(b"msg", b"", b"pk"), Ok(0));
+    assert_eq!(host.account_keylet(&[7; 20], &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.account_keylet(&[], &mut out),
+        Err(HostError::InvalidAccount)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -345,6 +360,7 @@ fn the_spec_table_matches_the_declarations() {
             ("home_le_inner_arr_len", 70),
             ("le_inner_arr_len", 70),
             ("check_sig", 300),
+            ("accountroot_id", 350),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

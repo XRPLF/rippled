@@ -179,6 +179,11 @@ pub struct FakeHost {
     pub sig_valid: HostResult<i32>,
     /// Every (message, signature, pubkey) `check_signature` was asked to verify.
     pub sigs_checked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
+    /// What `account_keylet` answers, by account bytes. An unlisted account answers
+    /// `InvalidAccount`.
+    pub account_keylets: HashMap<Vec<u8>, Answer>,
+    /// Every account `account_keylet` was asked for.
+    pub account_keylets_asked: RefCell<Vec<Vec<u8>>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -233,6 +238,8 @@ impl Default for FakeHost {
             // Valid by default; the verification itself is the host's job, not the ABI's.
             sig_valid: Ok(1),
             sigs_checked: RefCell::new(Vec::new()),
+            account_keylets: HashMap::new(),
+            account_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -348,6 +355,11 @@ impl FakeHost {
 
     pub fn answering_check_sig(mut self, answer: HostResult<i32>) -> FakeHost {
         self.sig_valid = answer;
+        self
+    }
+
+    pub fn answering_account_keylet(mut self, account: Vec<u8>, answer: Answer) -> FakeHost {
+        self.account_keylets.insert(account, answer);
         self
     }
 
@@ -517,6 +529,16 @@ impl HostFunctions for FakeHost {
         self.sig_valid
     }
 
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.account_keylets_asked
+            .borrow_mut()
+            .push(account.to_vec());
+        match self.account_keylets.get(account) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -576,6 +598,7 @@ pub mod import {
     pub const HOME_LE_INNER_ARR_LEN: &str = r#"(import "host_lib" "home_le_inner_arr_len" (func $home_le_inner_arr_len (param i32 i32) (result i32)))"#;
     pub const LE_INNER_ARR_LEN: &str = r#"(import "host_lib" "le_inner_arr_len" (func $le_inner_arr_len (param i32 i32 i32) (result i32)))"#;
     pub const CHECK_SIG: &str = r#"(import "host_lib" "check_sig" (func $check_sig (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const ACCOUNTROOT_ID: &str = r#"(import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

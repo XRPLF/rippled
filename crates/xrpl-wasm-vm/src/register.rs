@@ -324,6 +324,24 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::AccountKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 acc_ptr: i32,
+                 acc_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::AccountKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let account = Region::new(acc_ptr, acc_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.account_keylet(account.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

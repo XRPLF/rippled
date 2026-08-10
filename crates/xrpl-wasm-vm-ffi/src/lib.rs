@@ -261,6 +261,10 @@ mod ffi {
         ) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "accountKeylet"]
+        fn account_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -405,6 +409,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn check_signature(&self, message: &[u8], signature: &[u8], pubkey: &[u8]) -> HostResult<i32> {
         scalar(self.ctx.check_signature(message, signature, pubkey))
+    }
+
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.account_keylet(account, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
