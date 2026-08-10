@@ -6,7 +6,6 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/boost-optional.h>  // IWYU pragma: keep
@@ -107,7 +106,7 @@ public:
         for (auto const& i : d)
         {
             DBConfig const sc(c, i.first);
-            BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
+            BEAST_EXPECT(sc.connectionString().ends_with(i.first + i.second));
         }
     }
     void
