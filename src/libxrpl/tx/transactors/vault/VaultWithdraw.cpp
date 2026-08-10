@@ -289,7 +289,7 @@ VaultWithdraw::doApply()
     }
 
     Number const assetsAvailableBefore = vault->at(sfAssetsAvailable);
-    Number const assetsTotalBefore = vault->at(sfAssetsTotal);
+    [[maybe_unused]] Number const assetsTotalBefore = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotalBefore - assetsAvailableBefore),

@@ -350,8 +350,8 @@ VaultClawback::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
-    Number const assetsAvailable = vault->at(sfAssetsAvailable);
-    Number const assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] Number const assetsAvailable = vault->at(sfAssetsAvailable);
+    [[maybe_unused]] Number const assetsTotal = vault->at(sfAssetsTotal);
 
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
