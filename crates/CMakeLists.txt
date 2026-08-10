@@ -13,6 +13,30 @@ configure_file(
 add_custom_target(xrpl_crates)
 add_dependencies(tidy_prerequisites xrpl_crates)
 
+# On macOS, ld warns `ignoring duplicate libraries` when linking a crate.
+# Corrosion is the source of both duplicates it names:
+#
+# * The crate archive and its cxxbridge archive, because
+#   `corrosion_add_cxxbridge` makes the two depend on each other, and CMake
+#   repeats a static library cycle on the link line so single-pass linkers can
+#   resolve it. (LINK_INTERFACE_MULTIPLICITY can only raise that count.)
+# * `-lSystem`, which Corrosion copies from rustc's `native-static-libs` even
+#   though the compiler driver always links libSystem.
+#
+# ld needs neither: it resolves the cycle from one copy of each archive and
+# links libSystem once. So silence the warning rather than rewrite Corrosion's
+# link interface, which the cycle is also part of. The option itself is old —
+# Xcode 15 is only where the warning became the default — and the check below
+# leaves it out on a linker that does not know it.
+if(is_macos)
+    include(CheckLinkerFlag)
+    check_linker_flag(
+        CXX
+        -Wl,-no_warn_duplicate_libraries
+        have_no_warn_duplicate_libraries
+    )
+endif()
+
 function(_unlink_libgcc_s crate)
     if(NOT (is_linux AND static))
         return()
@@ -60,6 +84,12 @@ function(add_xrpl_crate name)
     # validates INTERFACE_SOURCES on consuming targets. Clear it to skip the
     # existence check — build-time ordering is enforced by the custom commands.
     set_target_properties(${name}_cxxbridge PROPERTIES INTERFACE_SOURCES "")
+    if(have_no_warn_duplicate_libraries)
+        target_link_options(
+            ${name}_cxxbridge
+            INTERFACE -Wl,-no_warn_duplicate_libraries
+        )
+    endif()
     add_dependencies(xrpl_crates ${name}_cxxbridge)
 endfunction()
 
