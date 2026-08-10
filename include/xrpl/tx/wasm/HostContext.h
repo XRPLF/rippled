@@ -92,6 +92,11 @@ public:
         rust::Slice<std::uint8_t const> locator,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Answers the array's element count directly, or a negative `HostFunctionError`
+    // code (`NoArray` if the field is not an array).
+    [[nodiscard]] std::int32_t
+    getTxArrayLen(std::int32_t field) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 

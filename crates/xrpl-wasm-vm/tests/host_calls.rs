@@ -243,6 +243,20 @@ fn le_inner_reads_the_slot_and_locator_and_writes_the_field() {
     assert_eq!(*host.le_nested_asked.borrow(), vec![(3, locator)]);
 }
 
+/// A scalar-in, scalar-out call — no memory regions at all: the field selector
+/// reaches the host and the array length comes back as the status.
+#[test]
+fn tx_arr_len_passes_the_selector_and_returns_the_count() {
+    let host = FakeHost::new().answering_tx_arr_len(17, 5);
+
+    let wat = module(
+        &[import::TX_ARR_LEN, ONE_PAGE],
+        "(call $tx_arr_len (i32.const 17))",
+    );
+    assert_eq!(status(&wat, &host), 5, "the array length");
+    assert_eq!(*host.tx_arr_lens_asked.borrow(), vec![17]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

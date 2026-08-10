@@ -235,6 +235,9 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_tx_array_len(&self, _field: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

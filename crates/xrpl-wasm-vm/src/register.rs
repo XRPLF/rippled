@@ -221,6 +221,15 @@ pub(crate) fn register_host_functions(
                     )
                 },
             ),
+            HostFunctionSpec::GetTxArrayLen => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>, field: i32| -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetTxArrayLen, |c| {
+                        c.data().host.get_tx_array_len(field)
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

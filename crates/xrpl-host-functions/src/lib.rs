@@ -180,6 +180,13 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The number of elements in an array field of the transaction, selected by its
+    /// `SField` code. Answers the count directly, or a negative error (`NoArray` if
+    /// the field is not an array). Reads and writes no memory.
+    #[gas = 40]
+    #[wasm_name = "tx_arr_len"]
+    fn get_tx_array_len(&self, field: i32) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

@@ -145,6 +145,11 @@ pub struct FakeHost {
     pub le_nested: HashMap<(i32, Vec<u8>), Answer>,
     /// Every (cache slot, locator) `get_ledger_obj_nested_field` was asked for.
     pub le_nested_asked: RefCell<Vec<(i32, Vec<u8>)>>,
+    /// What `get_tx_array_len` answers, by field selector. An unlisted selector
+    /// answers `NoArray`.
+    pub tx_arr_lens: HashMap<i32, i32>,
+    /// Every field selector `get_tx_array_len` was asked for.
+    pub tx_arr_lens_asked: RefCell<Vec<i32>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -184,6 +189,8 @@ impl Default for FakeHost {
             home_le_nested_asked: RefCell::new(Vec::new()),
             le_nested: HashMap::new(),
             le_nested_asked: RefCell::new(Vec::new()),
+            tx_arr_lens: HashMap::new(),
+            tx_arr_lens_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -259,6 +266,11 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.le_nested.insert((cache_idx, locator), answer);
+        self
+    }
+
+    pub fn answering_tx_arr_len(mut self, field: i32, len: i32) -> FakeHost {
+        self.tx_arr_lens.insert(field, len);
         self
     }
 
@@ -365,6 +377,14 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn get_tx_array_len(&self, field: i32) -> HostResult<i32> {
+        self.tx_arr_lens_asked.borrow_mut().push(field);
+        match self.tx_arr_lens.get(&field) {
+            Some(&len) => Ok(len),
+            None => Err(HostError::NoArray),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -414,6 +434,8 @@ pub mod import {
         r#"(import "host_lib" "tx_inner" (func $tx_inner (param i32 i32 i32 i32) (result i32)))"#;
     pub const HOME_LE_INNER: &str = r#"(import "host_lib" "home_le_inner" (func $home_le_inner (param i32 i32 i32 i32) (result i32)))"#;
     pub const LE_INNER: &str = r#"(import "host_lib" "le_inner" (func $le_inner (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const TX_ARR_LEN: &str =
+        r#"(import "host_lib" "tx_arr_len" (func $tx_arr_len (param i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

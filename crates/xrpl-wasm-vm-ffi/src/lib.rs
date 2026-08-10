@@ -221,6 +221,11 @@ mod ffi {
             out: &mut [u8],
         ) -> i32;
 
+        /// Answers the array's element count directly, or a negative `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "getTxArrayLen"]
+        fn get_tx_array_len(self: &HostContext, field: i32) -> i32;
+
         #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
@@ -338,6 +343,10 @@ impl HostFunctions for CxxHost<'_> {
             self.ctx
                 .get_ledger_obj_nested_field(cache_idx, locator, out),
         )
+    }
+
+    fn get_tx_array_len(&self, field: i32) -> HostResult<i32> {
+        scalar(self.ctx.get_tx_array_len(field))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
