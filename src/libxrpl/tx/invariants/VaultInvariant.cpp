@@ -516,7 +516,7 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets available must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
         result = false;
     }
 
@@ -542,13 +542,13 @@ ValidVault::finalize(
 
     if (afterVault.assetsTotal < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets outstanding must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets outstanding must not be negative";
         result = false;
     }
 
     if (afterVault.assetsMaximum < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets maximum must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
     }
 

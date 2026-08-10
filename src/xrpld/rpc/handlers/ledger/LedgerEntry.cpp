@@ -18,6 +18,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -433,7 +434,8 @@ parseEscrow(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::escrow(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::escrow(*id, seqProxy).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
@@ -495,7 +497,8 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanBroker(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loanBroker(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -517,7 +520,8 @@ parseLoan(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loan(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::loan(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -600,7 +604,8 @@ parseOffer(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::offer(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::offer(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -662,7 +667,8 @@ parsePermissionedDomain(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
+    auto const seqProxy = SeqProxy::rawSequence(pd[jss::seq].asUInt());
+    return keylet::permissionedDomain(*account, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -766,7 +772,8 @@ parseTicket(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return getTicketIndex(*id, *seq);
+    auto const seqProxy = SeqProxy::rawTicket(*seq);
+    return keylet::ticket(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -788,7 +795,8 @@ parseVault(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::vault(*id, *seq).key;
+    auto const seqProxy = SeqProxy::rawSequence(*seq);
+    return keylet::vault(*id, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>

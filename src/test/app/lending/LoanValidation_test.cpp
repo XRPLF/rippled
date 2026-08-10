@@ -29,6 +29,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -58,7 +59,7 @@ private:
             Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
 
-            auto const keylet = keylet::loanBroker(alice, env.seq(alice));
+            auto const keylet = keylet::loanBroker(alice, SeqProxy::rawSequence(env.seq(alice)));
 
             using namespace std::chrono_literals;
             using namespace loan;
@@ -74,7 +75,7 @@ private:
             env(setTx);
             // Actual sequence will be based off the loan broker, but we
             // obviously don't have one of those if the amendment is disabled
-            auto const loanKeylet = keylet::loan(keylet.key, env.seq(alice));
+            auto const loanKeylet = keylet::loan(keylet.key, SeqProxy::rawSequence(env.seq(alice)));
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
             env(del(alice, loanKeylet.key), Ter(temDISABLED));
@@ -304,7 +305,8 @@ private:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(loanSequence));
 
         env(fset(issuer, asfGlobalFreeze));
         env.close();
@@ -402,7 +404,8 @@ private:
         });
 
         static constexpr std::uint32_t kLoanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(kLoanSequence));
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {

@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -68,7 +69,7 @@ private:
             return;
 
         auto const loanSequence = brokerPreLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         Number const principal = asset(1'000).value();
         Number const serviceFee = asset(2).value();
@@ -220,8 +221,8 @@ private:
         auto const brokerSle = env.le(result.brokerKeylet());
         if (!BEAST_EXPECT(brokerSle))
             return;
-        auto const loanKeylet =
-            keylet::loan(result.brokerKeylet().key, brokerSle->at(sfLoanSequence));
+        auto const loanKeylet = keylet::loan(
+            result.brokerKeylet().key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
         env(loan::set(
                 borrower, result.brokerKeylet().key, asset(10'000).value(), tfLoanOverpayment),
             Sig(sfCounterpartySignature, lender),
@@ -437,7 +438,8 @@ private:
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(set(borrower, broker.brokerID, principalRequested),
                 Sig(sfCounterpartySignature, lender),
@@ -690,7 +692,7 @@ private:
                 return;
             // Intentionally shadow the outer values
             auto const loanSequence = brokerState->at(sfLoanSequence);
-            auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const keylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             auto const interval = maxLoanTime / total;
             auto createJson = env.json(

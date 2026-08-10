@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -386,7 +387,7 @@ private:
             Sig(sfCounterpartySignature, lender),
             loanSetFee);
         env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
         BEAST_EXPECT(env.le(loanKeylet));
 
         // Repayment still works.
