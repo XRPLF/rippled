@@ -698,8 +698,7 @@ AMMWithdraw::withdraw(
             // blocked. The amendment removes that incidental dependency by
             // skipping the check outright. mptokenKey is already set above, so
             // a deleted MPToken is still recreated by createMPToken().
-            if (view.rules().enabled(fixCleanup3_4_0) &&
-                authHandling == AuthHandling::IgnoreAuth)
+            if (view.rules().enabled(fixCleanup3_4_0) && authHandling == AuthHandling::IgnoreAuth)
                 return tesSUCCESS;
 
             auto sleAccount = view.peek(keylet::account(account));
