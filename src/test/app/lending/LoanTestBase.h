@@ -150,7 +150,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(vaultSle);
+            return getVaultScale(vaultSle);
         }
     };
 

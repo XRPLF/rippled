@@ -7,7 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -172,14 +172,17 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
+    Number vaultTotalDelta;
     {
-        // Decrease the Total Value of the Vault:
-        auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-        auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+        // Decrease the Total Value of the Vault. Compute using local values
+        // (rather than mutating the Vault's proxies directly) so the actual
+        // field update can be applied once, via addVaultAssets below.
+        Number const vaultTotalBefore = vaultSle->at(sfAssetsTotal);
+        Number const vaultAvailableBefore = vaultSle->at(sfAssetsAvailable);
 
-        if (vaultTotalProxy < vaultDefaultAmount)
+        if (vaultTotalBefore < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
             JLOG(j.warn()) << "Vault total assets is less than the vault default amount";
@@ -189,33 +192,32 @@ LoanManage::defaultLoan(
 
         auto const vaultDefaultRounded = roundToAsset(
             vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
-        vaultTotalProxy -= vaultDefaultRounded;
+        Number vaultTotalAfter = vaultTotalBefore - vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
-        vaultAvailableProxy += defaultCovered;
-        if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
+        Number const vaultAvailableAfter = vaultAvailableBefore + defaultCovered;
+        if (vaultAvailableAfter > vaultTotalAfter && !vaultAsset.integral())
         {
-            auto const difference = vaultAvailableProxy - vaultTotalProxy;
-            JLOG(j.debug()) << "Vault assets available: " << *vaultAvailableProxy << "("
-                            << vaultAvailableProxy.value().exponent()
-                            << "), Total: " << *vaultTotalProxy << "("
-                            << vaultTotalProxy.value().exponent() << "), Difference: " << difference
+            auto const difference = vaultAvailableAfter - vaultTotalAfter;
+            JLOG(j.debug()) << "Vault assets available: " << vaultAvailableAfter << "("
+                            << vaultAvailableAfter.exponent() << "), Total: " << vaultTotalAfter
+                            << "(" << vaultTotalAfter.exponent() << "), Difference: " << difference
                             << "(" << difference.exponent() << ")";
-            if (vaultAvailableProxy.value().exponent() - difference.exponent() > 13)
+            if (vaultAvailableAfter.exponent() - difference.exponent() > 13)
             {
                 // If the difference is dust, bring the total up to match
                 // the available
                 JLOG(j.debug()) << "Difference between vault assets available and total is "
                                    "dust. Set both to the larger value.";
-                vaultTotalProxy = vaultAvailableProxy;
+                vaultTotalAfter = vaultAvailableAfter;
             }
         }
-        if (*vaultAvailableProxy > *vaultTotalProxy)
+        if (vaultAvailableAfter > vaultTotalAfter)
         {
             // LCOV_EXCL_START
             JLOG(j.fatal()) << "Vault assets available must not be greater "
                                "than assets outstanding. Available: "
-                            << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+                            << vaultAvailableAfter << ", Total: " << vaultTotalAfter;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -234,7 +236,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        view.update(vaultSle);
+        vaultTotalDelta = vaultTotalAfter - vaultTotalBefore;
     }
 
     // Update the LoanBroker object:
@@ -267,16 +269,19 @@ LoanManage::defaultLoan(
     loanSle->at(sfNextPaymentDueDate) = 0;
     view.update(loanSle);
 
-    // Return funds from the LoanBroker pseudo-account to the
-    // Vault pseudo-account:
-    return accountSend(
-        view,
-        brokerSle->at(sfAccount),
-        vaultSle->at(sfAccount),
-        STAmount{vaultAsset, defaultCovered},
-        j,
-        {},
-        WaiveTransferFee::Yes);
+    // Update the Vault's assets, and return funds from the LoanBroker
+    // pseudo-account to the Vault pseudo-account:
+    if (auto const ter = addVaultAssets(
+            view,
+            vaultSle,
+            brokerSle->at(sfAccount),
+            STAmount{vaultAsset, defaultCovered},
+            STAmount{vaultAsset, vaultTotalDelta},
+            j);
+        !isTesSuccess(ter))
+        return ter;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -292,7 +297,7 @@ LoanManage::impairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
@@ -332,7 +337,7 @@ LoanManage::unimpairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);

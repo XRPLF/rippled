@@ -350,8 +350,8 @@ VaultClawback::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
+    Number const assetsAvailable = vault->at(sfAssetsAvailable);
+    Number const assetsTotal = vault->at(sfAssetsTotal);
 
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
@@ -382,10 +382,6 @@ VaultClawback::doApply()
 
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
-
-    assetsTotal -= assetsRecovered;
-    assetsAvailable -= assetsRecovered;
-    view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
@@ -422,28 +418,22 @@ VaultClawback::doApply()
         // else quietly ignore, holder balance is not zero
     }
 
-    if (assetsRecovered > beast::kZero)
+    // Transfer assets from vault to issuer, and update the Vault's balances.
+    // clawbackVaultAssets requires a positive amount, so skip it entirely
+    // when assetsRecovered is zero (e.g. the Owner burning shares in an
+    // empty vault). The issuer always already holds its own asset, so the
+    // clawbackVaultAssets helper is used here rather than removeVaultAssets,
+    // whose doWithdraw-based self-holding creation would incorrectly reject
+    // this while the asset is locked.
+    // Mark the vault modified for the invariant checker, even without a
+    // field change, since it always sees the shares-burn above as a
+    // Vault-affecting change.
+    view().update(vault);
+    if (assetsRecovered != beast::kZero)
     {
-        // Transfer assets from vault to issuer.
-        if (auto const ter = accountSend(
-                view(), vaultAccount, accountID_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
+        if (auto const ter = clawbackVaultAssets(view(), vault, accountID_, assetsRecovered, j_);
             !isTesSuccess(ter))
             return ter;
-
-        // Sanity check
-        if (accountHolds(
-                view(),
-                vaultAccount,
-                assetsRecovered.asset(),
-                FreezeHandling::IgnoreFreeze,
-                AuthHandling::IgnoreAuth,
-                j_) < beast::kZero)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
     }
 
     associateAsset(*vault, vaultAsset);

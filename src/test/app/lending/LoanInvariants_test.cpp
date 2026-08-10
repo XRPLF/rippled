@@ -15,6 +15,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -581,7 +582,7 @@ private:
                     return std::nullopt;
                 if (!BEAST_EXPECT(tinyLoanSle->at(sfLoanScale) == -12) ||
                     !BEAST_EXPECT(bigLoanSle->at(sfLoanScale) == -11) ||
-                    !BEAST_EXPECT(getAssetsTotalScale(vaultSle) == -11))
+                    !BEAST_EXPECT(getVaultScale(vaultSle) == -11))
                     return std::nullopt;
 
                 // Use issuer clawback to reduce cover to the minimum the
@@ -708,7 +709,7 @@ private:
 
                 auto const coverAvail = brokerSle->at(sfCoverAvailable);
                 auto const debtTotal = brokerSle->at(sfDebtTotal);
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getVaultScale(vaultSle);
                 auto const debtScale = scale(debtTotal, asset);
 
                 // Sanity: debt scale differs from vault scale for this setup.
@@ -806,7 +807,7 @@ private:
                 auto const vaultSle = env.le(keylet::vault(c.broker.vaultID));
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getVaultScale(vaultSle);
                 BEAST_EXPECT(vaultScale == -11);
 
                 // Now try to create a tiny additional loan.  Principal is
