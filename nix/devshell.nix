@@ -37,7 +37,7 @@ let
   # Conan. The stamp holds a content-addressed store path, so init.sh re-runs
   # only when something in conan/ changes.
   conanHook = ''
-    export CONAN_HOME="$HOME/.conan2-nix"
+    export CONAN_HOME=~/.conan2-nix
     _xrpl_conan_stamp="$CONAN_HOME/.xrpld-devshell"
     if [ "$(cat "$_xrpl_conan_stamp" 2>/dev/null)" != "${conanDir}" ]; then
       if ${conanDir}/init.sh; then
