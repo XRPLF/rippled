@@ -13,7 +13,6 @@
 #include <openssl/err.h>
 #include <openssl/tls1.h>
 
-#include <functional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -84,13 +83,12 @@ public:
      *
      * @return error_code indicating failures, if any
      */
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
+    template <class T>
     boost::system::error_code
     preConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
@@ -104,11 +102,7 @@ public:
         return ec;
     }
 
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
+    template <class T>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.
@@ -118,6 +112,9 @@ public:
      */
     boost::system::error_code
     postConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
 
@@ -127,8 +124,9 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    std::bind(
-                        &rfc6125Verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                    [host, j = j_](bool preverified, boost::asio::ssl::verify_context& ctx) {
+                        return rfc6125Verify(host, preverified, ctx, j);
+                    },
                     ec);
             }
         }

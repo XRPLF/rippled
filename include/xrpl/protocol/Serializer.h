@@ -265,19 +265,9 @@ public:
         return v == data_;
     }
     bool
-    operator!=(Blob const& v) const
-    {
-        return v != data_;
-    }
-    bool
     operator==(Serializer const& v) const
     {
         return v.data_ == data_;
-    }
-    bool
-    operator!=(Serializer const& v) const
-    {
-        return v.data_ != data_;
     }
 
     static int
@@ -334,7 +324,7 @@ public:
     template <int N>
     explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
     {
-        static_assert(N > 0, "");
+        static_assert(N > 0);
     }
 
     [[nodiscard]] bool

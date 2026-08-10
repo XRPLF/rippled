@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
@@ -8,8 +9,7 @@
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/TxMetrics.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Resolver.h>
@@ -24,6 +24,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Writer.h>
@@ -53,6 +55,13 @@
 #include <vector>
 
 namespace xrpl {
+
+// The largest counts an operator can configure must still imply a message size
+// within the overall protocol message limit. The same check for the defaults
+// lives in Message.h.
+static_assert(
+    maximumManifestsMessageSize(Config::kMaxManifestCount, Config::kMaxManifestCount) <
+    kMaximumMessageSize);
 
 class PeerImp;
 class BasicConfig;
@@ -108,10 +117,11 @@ private:
     Setup setup_;
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
-    Resource::Manager& resourceManager_;
-    std::unique_ptr<PeerFinder::Manager> peerFinder_;
+    resource::Manager& resourceManager_;
+    peer_finder::StoreSqdb store_;
+    std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
-    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
+    hash_map<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
     std::atomic<Peer::id_t> nextId_;
@@ -139,7 +149,7 @@ public:
         Application& app,
         Setup setup,
         ServerHandler& serverHandler,
-        Resource::Manager& resourceManager,
+        resource::Manager& resourceManager,
         Resolver& resolver,
         boost::asio::io_context& ioContext,
         BasicConfig const& config,
@@ -155,13 +165,13 @@ public:
     void
     stop() override;
 
-    PeerFinder::Manager&
+    peer_finder::Manager&
     peerFinder()
     {
         return *peerFinder_;
     }
 
-    Resource::Manager&
+    resource::Manager&
     resourceManager()
     {
         return resourceManager_;
@@ -180,7 +190,7 @@ public:
         endpoint_type remoteEndpoint) override;
 
     void
-    connect(beast::IP::Endpoint const& remoteEndpoint) override;
+    connect(beast::ip::Endpoint const& remoteEndpoint) override;
 
     int
     limit() override;
@@ -194,14 +204,15 @@ public:
     PeerSequence
     getActivePeers() const override;
 
-    /** Get active peers excluding peers in toSkip.
-       @param toSkip peers to skip
-       @param active a number of active peers
-       @param disabled a number of peers with tx reduce-relay
-           feature disabled
-       @param enabledInSkip a number of peers with tx reduce-relay
-           feature enabled and in toSkip
-       @return active peers less peers in toSkip
+    /**
+     * Get active peers excluding peers in toSkip.
+     * @param toSkip peers to skip
+     * @param active a number of active peers
+     * @param disabled a number of peers with tx reduce-relay
+     *     feature disabled
+     * @param enabledInSkip a number of peers with tx reduce-relay
+     *     feature enabled and in toSkip
+     * @return active peers less peers in toSkip
      */
     PeerSequence
     getActivePeers(
@@ -249,13 +260,14 @@ public:
     addActive(std::shared_ptr<PeerImp> const& peer);
 
     void
-    remove(std::shared_ptr<PeerFinder::Slot> const& slot);
+    remove(std::shared_ptr<peer_finder::Slot> const& slot);
 
-    /** Called when a peer has connected successfully
-        This is called after the peer handshake has been completed and during
-        peer activation. At this point, the peer address and the public key
-        are known.
-    */
+    /**
+     * Called when a peer has connected successfully
+     * This is called after the peer handshake has been completed and during
+     * peer activation. At this point, the peer address and the public key
+     * are known.
+     */
     void
     activate(std::shared_ptr<PeerImp> const& peer);
 
@@ -382,7 +394,8 @@ public:
         return setup_.networkID;
     }
 
-    /** Updates message count for validator/peer. Sends TMSquelch if the number
+    /**
+     * Updates message count for validator/peer. Sends TMSquelch if the number
      * of messages for N peers reaches threshold T. A message is counted
      * if a peer receives the message for the first time and if
      * the message has been  relayed.
@@ -398,7 +411,8 @@ public:
         std::set<Peer::id_t>&& peers,
         protocol::MessageType type);
 
-    /** Overload to reduce allocation in case of single peer
+    /**
+     * Overload to reduce allocation in case of single peer
      */
     void
     updateSlotAndSquelch(
@@ -407,7 +421,8 @@ public:
         Peer::id_t peer,
         protocol::MessageType type);
 
-    /** Called when the peer is deleted. If the peer was selected to be the
+    /**
+     * Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
      * unsquelched.
      * @param id Peer's id
@@ -421,13 +436,15 @@ public:
         return txMetrics_.json();
     }
 
-    /** Add tx reduce-relay metrics. */
+    /**
+     * Add tx reduce-relay metrics.
+     */
     template <typename... Args>
     void
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+            return post(strand_, [this, args...] { addTxMetrics(args...); });
 
         txMetrics_.addMetrics(args...);
     }
@@ -442,75 +459,83 @@ private:
 
     std::shared_ptr<Writer>
     makeRedirectResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
+        std::shared_ptr<peer_finder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress);
 
     static std::shared_ptr<Writer>
     makeErrorResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
+        std::shared_ptr<peer_finder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
         std::string const& msg);
 
-    /** Handles crawl requests. Crawl returns information about the
-        node and its peers so crawlers can map the network.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles crawl requests. Crawl returns information about the
+     * node and its peers so crawlers can map the network.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processCrawl(http_request_type const& req, Handoff& handoff);
 
-    /** Handles validator list requests.
-        Using a /vl/<hex-encoded public key> URL, will retrieve the
-        latest validator list (or UNL) that this node has for that
-        public key, if the node trusts that public key.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles validator list requests.
+     * Using a /vl/<hex-encoded public key> URL, will retrieve the
+     * latest validator list (or UNL) that this node has for that
+     * public key, if the node trusts that public key.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processValidatorList(http_request_type const& req, Handoff& handoff);
 
-    /** Handles health requests. Health returns information about the
-        health of the node.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles health requests. Health returns information about the
+     * health of the node.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processHealth(http_request_type const& req, Handoff& handoff);
 
-    /** Handles non-peer protocol requests.
-
-        @return true if the request was handled.
-    */
+    /**
+     * Handles non-peer protocol requests.
+     *
+     * @return true if the request was handled.
+     */
     bool
     processRequest(http_request_type const& req, Handoff& handoff);
 
-    /** Returns information about peers on the overlay network.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] overlay=[0|1]
-    */
+    /**
+     * Returns information about peers on the overlay network.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] overlay=[0|1]
+     */
     json::Value
     getOverlayInfo() const;
 
-    /** Returns information about the local server.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] server=[0|1]
-    */
+    /**
+     * Returns information about the local server.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] server=[0|1]
+     */
     json::Value
     getServerInfo();
 
-    /** Returns information about the local server's performance counters.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] counts=[0|1]
-    */
+    /**
+     * Returns information about the local server's performance counters.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] counts=[0|1]
+     */
     json::Value
     getServerCounts();
 
-    /** Returns information about the local server's UNL.
-        Reported through the /crawl API
-        Controlled through the config section [crawl] unl=[0|1]
-    */
+    /**
+     * Returns information about the local server's UNL.
+     * Reported through the /crawl API
+     * Controlled through the config section [crawl] unl=[0|1]
+     */
     json::Value
     getUnlInfo();
 
@@ -537,12 +562,16 @@ private:
     void
     sendEndpoints();
 
-    /** Send once a second transactions' hashes aggregated by peers. */
+    /**
+     * Send once a second transactions' hashes aggregated by peers.
+     */
     void
     sendTxQueue() const;
 
-    /** Check if peers stopped relaying messages
-     * and if slots stopped receiving messages from the validator */
+    /**
+     * Check if peers stopped relaying messages
+     * and if slots stopped receiving messages from the validator
+     */
     void
     deleteIdlePeers();
 

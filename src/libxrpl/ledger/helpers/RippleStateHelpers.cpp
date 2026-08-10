@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -195,6 +196,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -281,7 +283,9 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, 1, j);
+    increaseOwnerCount(view, sleAccount, sponsorSle, 1, j);
+
+    addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
@@ -316,6 +320,9 @@ trustDelete(
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
+    removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
     view.erase(sleRippleState);
@@ -369,10 +376,14 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        adjustOwnerCount(view, sle, -1, j);
+        auto const currentSponsor =
+            getLedgerEntryReserveSponsor(view, state, bSenderHigh ? sfHighSponsor : sfLowSponsor);
+        decreaseOwnerCount(view, sle, currentSponsor, 1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
+
+        removeSponsorFromLedgerEntry(state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
         // Balance is zero, receiver reserve is clear.
         if (!after && !state->isFlag(receiverReserveFlag))
@@ -381,12 +392,14 @@ updateTrustLine(
     return false;
 }
 
+// Only used in tests
 TER
 issueIOU(
     ApplyView& view,
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -472,6 +485,7 @@ issueIOU(
         limit,
         0,
         0,
+        sponsorSle,
         j);
 }
 
@@ -620,7 +634,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 
 TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -632,30 +646,45 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    if (isGlobalFrozen(view, issuerId))
+    if (isGlobalFrozen(ctx.view, issuerId))
         return tecFROZEN;  // LCOV_EXCL_LINE
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::trustLine(srcId, dstId, currency);
-    auto const sleSrc = view.peek(keylet::account(srcId));
-    auto const sleDst = view.peek(keylet::account(dstId));
+    auto const sleSrc = ctx.view.peek(keylet::account(srcId));
+    auto const sleDst = ctx.view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
         return tecINTERNAL;  // LCOV_EXCL_LINE
     // If the line already exists, don't create it again.
-    if (view.read(index))
+    if (ctx.view.read(index))
         return tecDUPLICATE;
 
+    // A reserve sponsor only covers tx.Account's own objects.
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, sleDst);
+    if (!sponsorExp)
+        return sponsorExp.error();  // LCOV_EXCL_LINE
+    auto const sponsorSle = *sponsorExp;
+
     // Can the account cover the trust line reserve ?
-    std::uint32_t const ownerCount = sleDst->at(sfOwnerCount);
-    if (priorBalance < view.fees().accountReserve(ownerCount + 1))
-        return tecNO_LINE_INSUF_RESERVE;
+    if (auto const ret = checkReserve(
+            ctx,
+            sleDst,
+            priorBalance,
+            sponsorSle,
+            {.ownerCountDelta = 1},
+            journal,
+            tecNO_LINE_INSUF_RESERVE);
+        !isTesSuccess(ret))
+    {
+        return ret;
+    }
 
     return trustCreate(
-        view,
+        ctx.view,
         high,
         srcId,
         dstId,
@@ -669,19 +698,20 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
+        sponsorSle,
         journal);
 }
 
 TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)
 {
     if (issue.native())
     {
-        auto const sle = view.read(keylet::account(accountID));
+        auto const sle = ctx.view.read(keylet::account(accountID));
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -696,7 +726,7 @@ removeEmptyHolding(
     // If the account is the issuer, then no line should exist. Check anyway.
     // If a line does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == issue.account;
-    auto const line = view.peek(keylet::trustLine(accountID, issue));
+    auto const line = ctx.view.peek(keylet::trustLine(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
@@ -706,33 +736,43 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        auto sleLowAccount = ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleLowAccount, -1, journal);
+        auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
+
+        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfLowReserve);
+        removeSponsorFromLedgerEntry(line, sfLowSponsor);
     }
 
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        auto sleHighAccount = ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleHighAccount, -1, journal);
+        auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
+
+        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
         line->clearFlag(lsfHighReserve);
+        removeSponsorFromLedgerEntry(line, sfHighSponsor);
     }
 
     return trustDelete(
-        view, line, line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer(), journal);
+        ctx.view,
+        line,
+        line->at(sfLowLimit)->getIssuer(),
+        line->at(sfHighLimit)->getIssuer(),
+        journal);
 }
 
 TER
@@ -768,6 +808,9 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
+    auto const sponsorSle =
+        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
+
     if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
@@ -778,7 +821,7 @@ deleteAMMTrustLine(
     if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+    decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, 1, j);
 
     return tesSUCCESS;
 }

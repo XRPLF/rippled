@@ -105,7 +105,7 @@ private:
     using items_t = std::map<
         key_type,
         SleAction,
-        std::less<key_type>,
+        std::less<>,
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, SleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.

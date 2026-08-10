@@ -42,7 +42,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -80,7 +80,7 @@ public:
     void
     StartThread(void (*f)(void*), void* a) override
     {
-        ThreadParams* const p(new ThreadParams(f, a));
+        auto* const p = new ThreadParams(f, a);
         EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
 };
@@ -231,7 +231,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::NodeStore::RocksDBBackend::open : database is already "
+                "xrpl::node_store::RocksDBBackend::open : database is already "
                 "open");
             JLOG(journal.error()) << "database is already open";
             return;
@@ -279,7 +279,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
+        XRPL_ASSERT(db, "xrpl::node_store::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status = Status::Ok;
@@ -339,7 +339,7 @@ public:
     {
         XRPL_ASSERT(
             db,
-            "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
+            "xrpl::node_store::RocksDBBackend::storeBatch : non-null "
             "database");
         rocksdb::WriteBatch wb;
 
@@ -369,7 +369,7 @@ public:
     void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::forEach : non-null database");
+        XRPL_ASSERT(db, "xrpl::node_store::RocksDBBackend::forEach : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(db->NewIterator(options));
@@ -419,7 +419,9 @@ public:
         storeBatch(batch);
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {
@@ -466,6 +468,6 @@ registerRocksDBFactory(Manager& manager)
     static RocksDBFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
 
 #endif

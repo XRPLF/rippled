@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -289,8 +290,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         for (auto const& c : alice)
             human2Acc.emplace(c.human(), c);
 
-        for (int i = 0; i < accNum; ++i)
-            env.fund(XRP(1000), alice[i]);
+        for (auto const& account : alice)
+            env.fund(XRP(1000), account);
 
         // Create new from existing account with a single credential.
         pdomain::Credentials const credentials1{{.issuer = alice[2], .credType = "credential1"}};
@@ -552,11 +553,14 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             auto domain = pdomain::getNewDomain(env.meta());
             if (features[fixCleanup3_1_3])
             {
-                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), seq).key);
+                BEAST_EXPECT(
+                    domain ==
+                    keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(seq)).key);
             }
             else
             {
-                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), 0).key);
+                BEAST_EXPECT(
+                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(0)).key);
             }
         }
 

@@ -116,12 +116,6 @@ public:
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
-
-        friend bool
-        operator!=(Iterator const& lhs, Iterator const& rhs)
-        {
-            return !(lhs == rhs);
-        }
     };
 
     struct ConstIterator
@@ -138,11 +132,8 @@ public:
         {
         }
 
-        ConstIterator(Iterator const& orig)
+        ConstIterator(Iterator const& orig) : map(orig.map), ait(orig.ait), mit(orig.mit)
         {
-            map = orig.map;
-            ait = orig.ait;
-            mit = orig.mit;
         }
 
         const_reference
@@ -192,12 +183,6 @@ public:
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
-
-        friend bool
-        operator!=(ConstIterator const& lhs, ConstIterator const& rhs)
-        {
-            return !(lhs == rhs);
-        }
     };
 
 private:
@@ -231,11 +216,11 @@ private:
 
 public:
     PartitionedUnorderedMap(std::optional<std::size_t> partitions = std::nullopt)
-    {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ =
-            partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency();
+        : partitions_(
+              partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency())
+    {
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,

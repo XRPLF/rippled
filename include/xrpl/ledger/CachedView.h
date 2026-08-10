@@ -133,15 +133,16 @@ public:
 
 }  // namespace detail
 
-/** Wraps a DigestAwareReadView to provide caching.
-
-    @tparam Base A subclass of DigestAwareReadView
-*/
+/**
+ * Wraps a DigestAwareReadView to provide caching.
+ *
+ * @tparam Base A subclass of DigestAwareReadView
+ */
 template <class Base>
 class CachedView : public detail::CachedViewImpl
 {
 private:
-    static_assert(std::is_base_of_v<DigestAwareReadView, Base>, "");
+    static_assert(std::is_base_of_v<DigestAwareReadView, Base>);
 
     std::shared_ptr<Base const> sp_;
 
@@ -158,10 +159,11 @@ public:
     {
     }
 
-    /** Returns the base type.
-
-        @note This breaks encapsulation and bypasses the cache.
-    */
+    /**
+     * Returns the base type.
+     *
+     * @note This breaks encapsulation and bypasses the cache.
+     */
     std::shared_ptr<Base const> const&
     base() const
     {

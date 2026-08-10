@@ -65,7 +65,9 @@ gMakeZeroBuffer(std::size_t size)
     return b;
 }
 
-/** @brief Test helper that checks MPT flag settings after creation. */
+/**
+ * @brief Test helper that checks MPT flag settings after creation.
+ */
 class MptFlags
 {
 private:
@@ -86,7 +88,9 @@ public:
     operator()(Env& env) const;
 };
 
-/** @brief Test helper that checks MPT issuance or holder balances. */
+/**
+ * @brief Test helper that checks MPT issuance or holder balances.
+ */
 class MptBalance
 {
 private:
@@ -104,7 +108,9 @@ public:
     operator()(Env& env) const;
 };
 
-/** @brief Test helper that accepts any condition supplied by a callback. */
+/**
+ * @brief Test helper that accepts any condition supplied by a callback.
+ */
 class RequireAny
 {
 private:
@@ -121,7 +127,9 @@ public:
 
 using Holders = std::vector<Account>;
 
-/** @brief Arguments for building an MPTokenIssuanceCreate test transaction. */
+/**
+ * @brief Arguments for building an MPTokenIssuanceCreate test transaction.
+ */
 struct MPTCreate
 {
     static inline std::vector<Account> allHolders = {};
@@ -139,13 +147,15 @@ struct MPTCreate
     // if empty vector then pay to either authorize or all holders.
     std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay = std::nullopt;
     std::optional<std::uint32_t> flags = {0};
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for initializing funded MPT test accounts and issuance. */
+/**
+ * @brief Arguments for initializing funded MPT test accounts and issuance.
+ */
 struct MPTInit
 {
     // Default-initialized so designated-initializer call sites that omit
@@ -161,7 +171,9 @@ struct MPTInit
 };
 static MPTInit const kMptInitNoFund{.fund = false};
 
-/** @brief Full constructor arguments for MPTTester initialization. */
+/**
+ * @brief Full constructor arguments for MPTTester initialization.
+ */
 struct MPTInitDef
 {
     Env& env;
@@ -171,7 +183,7 @@ struct MPTInitDef
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = kMptDexFlags;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -179,7 +191,9 @@ struct MPTInitDef
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building an MPTokenIssuanceDestroy test transaction. */
+/**
+ * @brief Arguments for building an MPTokenIssuanceDestroy test transaction.
+ */
 struct MPTDestroy
 {
     std::optional<Account> issuer = std::nullopt;
@@ -190,7 +204,9 @@ struct MPTDestroy
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building an MPTokenAuthorize test transaction. */
+/**
+ * @brief Arguments for building an MPTokenAuthorize test transaction.
+ */
 struct MPTAuthorize
 {
     std::optional<Account> account = std::nullopt;
@@ -202,7 +218,9 @@ struct MPTAuthorize
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building an MPTokenIssuanceSet test transaction. */
+/**
+ * @brief Arguments for building an MPTokenIssuanceSet test transaction.
+ */
 struct MPTSet
 {
     std::optional<Account> account = std::nullopt;
@@ -211,7 +229,7 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
@@ -222,7 +240,9 @@ struct MPTSet
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building a ConfidentialMPTConvert test transaction. */
+/**
+ * @brief Arguments for building a ConfidentialMPTConvert test transaction.
+ */
 struct MPTConvert
 {
     std::optional<Account> account = std::nullopt;
@@ -250,7 +270,9 @@ struct MPTConvert
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building a ConfidentialMPTMergeInbox test transaction. */
+/**
+ * @brief Arguments for building a ConfidentialMPTMergeInbox test transaction.
+ */
 struct MPTMergeInbox
 {
     std::optional<Account> account = std::nullopt;
@@ -264,7 +286,9 @@ struct MPTMergeInbox
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building a ConfidentialMPTSend test transaction. */
+/**
+ * @brief Arguments for building a ConfidentialMPTSend test transaction.
+ */
 struct MPTConfidentialSend
 {
     std::optional<Account> account = std::nullopt;
@@ -293,7 +317,9 @@ struct MPTConfidentialSend
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building a ConfidentialMPTConvertBack test transaction. */
+/**
+ * @brief Arguments for building a ConfidentialMPTConvertBack test transaction.
+ */
 struct MPTConvertBack
 {
     std::optional<Account> account = std::nullopt;
@@ -316,7 +342,9 @@ struct MPTConvertBack
     std::optional<TER> err = std::nullopt;
 };
 
-/** @brief Arguments for building a ConfidentialMPTClawback test transaction. */
+/**
+ * @brief Arguments for building a ConfidentialMPTClawback test transaction.
+ */
 struct MPTConfidentialClawback
 {
     std::optional<Account> account = std::nullopt;
@@ -339,16 +367,24 @@ struct MPTConfidentialClawback
  */
 struct PedersenProofParams
 {
-    /** @brief The Pedersen commitment used by the proof. */
+    /**
+     * @brief The Pedersen commitment used by the proof.
+     */
     Buffer const pedersenCommitment;
 
-    /** @brief Either the spending balance or the value being transferred. */
+    /**
+     * @brief Either the spending balance or the value being transferred.
+     */
     uint64_t const amt;
 
-    /** @brief The encrypted amount linked to the Pedersen commitment. */
+    /**
+     * @brief The encrypted amount linked to the Pedersen commitment.
+     */
     Buffer const encryptedAmt;
 
-    /** @brief The blinding factor used to create the Pedersen commitment. */
+    /**
+     * @brief The blinding factor used to create the Pedersen commitment.
+     */
     Buffer const blindingFactor;
 };
 
@@ -365,13 +401,19 @@ struct PedersenProofParams
  */
 struct ConfidentialSendChainState
 {
-    /** @brief Decrypted spending balance after the previous send. */
+    /**
+     * @brief Decrypted spending balance after the previous send.
+     */
     std::uint64_t spending;
 
-    /** @brief Encrypted spending balance after the previous send. */
+    /**
+     * @brief Encrypted spending balance after the previous send.
+     */
     Buffer encSpending;
 
-    /** @brief sfConfidentialBalanceVersion after the previous send. */
+    /**
+     * @brief sfConfidentialBalanceVersion after the previous send.
+     */
     std::uint32_t version;
 };
 
@@ -566,6 +608,9 @@ public:
 
     [[nodiscard]] bool
     isTransferFeePresent() const;
+
+    [[nodiscard]] bool
+    checkImmutableFlags(std::uint32_t expectedFlags) const;
 
     [[nodiscard]] Account const&
     issuer() const

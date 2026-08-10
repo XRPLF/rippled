@@ -19,7 +19,7 @@ class ConfidentialMPTConvertBuilder;
  * @brief Transaction: ConfidentialMPTConvert
  *
  * Type: ttCONFIDENTIAL_MPT_CONVERT (85)
- * Delegable: Delegation::Delegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialTransfer
  * Privileges: NoPriv
  *
@@ -229,7 +229,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfMPTokenIssuanceID (SoeRequired)
