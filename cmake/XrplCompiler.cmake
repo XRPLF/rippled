@@ -188,9 +188,8 @@ else()
     endif()
 endif()
 
-# Linker warnings are errors in CI and the Nix dev shell, where our Conan profiles pin `os.version`.
-# Elsewhere a profile without it builds dependencies against the host SDK, so ld warns per object file
-# about the deployment target - suppress just that one. Windows is left out (link.exe needs /WX).
+# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
+# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
 if(is_macos OR is_linux)
     if(is_ci OR is_nix_compiler)
         if(is_macos)
