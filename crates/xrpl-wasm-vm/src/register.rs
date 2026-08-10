@@ -88,6 +88,21 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::CacheLedgerObj => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 id_ptr: i32,
+                 id_len: i32,
+                 cache_idx: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::CacheLedgerObj, |c| {
+                        let host = c.data().host;
+                        let obj_id = read_borrowed(c, Region::new(id_ptr, id_len))?;
+                        host.cache_ledger_obj(obj_id, cache_idx)
+                    })
+                },
+            ),
             HostFunctionSpec::GetCurrentLedgerObjField => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

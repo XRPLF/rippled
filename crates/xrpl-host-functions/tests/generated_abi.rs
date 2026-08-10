@@ -48,6 +48,11 @@ impl HostFunctions for FakeHost {
         Ok(i32::from(!amendment.is_empty()))
     }
 
+    /// Returns a slot: the requested one, or slot 1 when asked to pick.
+    fn cache_ledger_obj(&self, _obj_id: &[u8], cache_idx: i32) -> HostResult<i32> {
+        Ok(if cache_idx == 0 { 1 } else { cache_idx })
+    }
+
     /// Fails on a field it doesn't know, so the error channel is exercised too.
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         if field < 0 {
@@ -90,6 +95,8 @@ fn the_trait_is_implementable() {
     assert_eq!(out[..4], [10, 0, 0, 0]);
     assert_eq!(host.is_amendment_enabled(&[1; 32]), Ok(1));
     assert_eq!(host.is_amendment_enabled(&[]), Ok(0));
+    assert_eq!(host.cache_ledger_obj(&[1; 32], 0), Ok(1));
+    assert_eq!(host.cache_ledger_obj(&[1; 32], 5), Ok(5));
     assert_eq!(host.get_current_ledger_obj_field(3, &mut out), Ok(1));
     assert_eq!(out[0], 3);
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
@@ -164,6 +171,7 @@ fn the_spec_table_matches_the_declarations() {
             ("parent_ldgr_hash", 60),
             ("base_fee", 60),
             ("amendment_enabled", 100),
+            ("cache_le", 5000),
             ("home_le_field", 70),
             ("sha512_half", 2000),
             ("trace", 500),

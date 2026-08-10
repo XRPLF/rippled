@@ -59,6 +59,12 @@ public:
     [[nodiscard]] std::int32_t
     isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const noexcept;
 
+    // The object id must be a 32-byte uint256, else `InvalidParams`. `cacheIdx` selects
+    // the slot (0 = pick a free one). Answers the slot used, or a negative
+    // `HostFunctionError` code.
+    [[nodiscard]] std::int32_t
+    cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t cacheIdx) const noexcept;
+
     [[nodiscard]] std::int32_t
     getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out) const noexcept;
 

@@ -177,6 +177,12 @@ mod ffi {
         #[cxx_name = "isAmendmentEnabled"]
         fn is_amendment_enabled(self: &HostContext, amendment: &[u8]) -> i32;
 
+        /// Caches the object with `obj_id` in slot `cache_idx` (`0` = pick one) and
+        /// answers the slot used, or a negative `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "cacheLedgerObj"]
+        fn cache_ledger_obj(self: &HostContext, obj_id: &[u8], cache_idx: i32) -> i32;
+
         #[namespace = "xrpl"]
         #[cxx_name = "getCurrentLedgerObjField"]
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
@@ -225,9 +231,9 @@ fn reported(n: i32) -> HostResult<()> {
     Ok(())
 }
 
-/// A call whose answer is the scalar the guest reads directly (a flag): a
-/// non-negative value is that answer, a negative one its error code.
-fn flag(n: i32) -> HostResult<i32> {
+/// A call whose answer is a scalar the guest reads directly (a flag, a slot index):
+/// a non-negative value is that answer, a negative one its error code.
+fn scalar(n: i32) -> HostResult<i32> {
     if n < 0 {
         return Err(HostError::from_code(n));
     }
@@ -252,7 +258,11 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32> {
-        flag(self.ctx.is_amendment_enabled(amendment))
+        scalar(self.ctx.is_amendment_enabled(amendment))
+    }
+
+    fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32> {
+        scalar(self.ctx.cache_ledger_obj(obj_id, cache_idx))
     }
 
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
@@ -553,9 +563,9 @@ mod tests {
         assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
         assert_eq!(reported(0), Ok(()));
         assert_eq!(reported(-14), Err(HostError::NoMemExported));
-        assert_eq!(flag(1), Ok(1));
-        assert_eq!(flag(0), Ok(0));
-        assert_eq!(flag(-2), Err(HostError::FieldNotFound));
+        assert_eq!(scalar(1), Ok(1));
+        assert_eq!(scalar(0), Ok(0));
+        assert_eq!(scalar(-2), Err(HostError::FieldNotFound));
     }
 
     /// An exception caught on the C++ side arrives as `-1`, which has to reach the
@@ -565,7 +575,7 @@ mod tests {
     fn a_caught_cxx_exception_arrives_as_internal() {
         assert_eq!(bytes_written(-1), Err(HostError::Internal));
         assert_eq!(reported(-1), Err(HostError::Internal));
-        assert_eq!(flag(-1), Err(HostError::Internal));
+        assert_eq!(scalar(-1), Err(HostError::Internal));
     }
 
     // -----------------------------------------------------------------------

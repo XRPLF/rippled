@@ -128,6 +128,13 @@ host_functions! {
     #[wasm_name = "amendment_enabled"]
     fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32>;
 
+    /// Load the ledger object with the given 32-byte id into a cache slot, so later
+    /// calls can read its fields. `cache_idx` selects the slot (1-based); `0` asks the
+    /// host to assign a free one. Returns the slot used, or a negative error.
+    #[gas = 5000]
+    #[wasm_name = "cache_le"]
+    fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]

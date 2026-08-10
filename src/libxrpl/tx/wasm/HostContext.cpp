@@ -136,6 +136,22 @@ HostContext::isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const
 }
 
 std::int32_t
+HostContext::cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t cacheIdx)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (objId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const slot = hostFunctions_.cacheLedgerObj(uint256::fromVoid(objId.data()), cacheIdx);
+        if (!slot)
+            return hfErrorToInt(slot.error());
+
+        return *slot;
+    });
+}
+
+std::int32_t
 HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8_t> out)
     const noexcept
 {

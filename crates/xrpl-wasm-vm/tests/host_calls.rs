@@ -120,6 +120,25 @@ fn amendment_enabled_reads_the_input_and_returns_the_flag() {
     assert_eq!(status(&wat, &host), 0, "the disabled flag");
 }
 
+/// A call that reads an input region and takes a second scalar arg: both the object
+/// id and the requested slot reach the host, and the slot it chose comes back as the
+/// status.
+#[test]
+fn cache_le_passes_the_object_id_and_slot_through() {
+    let host = FakeHost::new().answering_cache_slot(Ok(4));
+
+    let wat = module(
+        &[import::CACHE_LE, ONE_PAGE],
+        "(call $cache_le (i32.const 64) (i32.const 32) (i32.const 7))",
+    );
+    assert_eq!(status(&wat, &host), 4, "the slot the host chose");
+    assert_eq!(
+        *host.cached.borrow(),
+        [(vec![0u8; 32], 7)],
+        "the id region and the requested slot reached the host"
+    );
+}
+
 /// The output region is wherever the guest points, not a fixed address.
 #[test]
 fn the_output_region_is_the_pointer_the_guest_gave() {
