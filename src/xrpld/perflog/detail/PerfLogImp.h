@@ -24,7 +24,9 @@
 
 namespace xrpl::perf {
 
-/** A box coupling data with a mutex for locking access to it. */
+/**
+ * A box coupling data with a mutex for locking access to it.
+ */
 template <typename T>
 struct Locked
 {
@@ -107,7 +109,7 @@ class PerfLogImp : public PerfLog
     Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
-    Counters counters_{xrpl::RPC::getHandlerNames(), JobTypes::instance()};
+    Counters counters_{xrpl::rpc::getHandlerNames(), JobTypes::instance()};
     std::ofstream logFile_;
     std::thread thread_;
     std::mutex mutex_;

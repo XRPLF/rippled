@@ -705,7 +705,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     {sfMaximumAmount, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfDomainID, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
@@ -734,7 +734,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfDomainID, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfTransferFee, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
     {sfIssuerEncryptionKey, SoeOptional},
     {sfAuditorEncryptionKey, SoeOptional},
 }))
@@ -1085,7 +1085,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
-    Delegation::Delegable,
+    Delegation::NotDelegable,
     featureConfidentialTransfer,
     NoPriv,
     ({
@@ -1163,6 +1163,35 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfHolder, SoeRequired},
     {sfMPTAmount, SoeRequired},
     {sfZKProof, SoeRequired},
+}))
+
+/** This transaction transfers sponsorship on an object/account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
+    Delegation::NotDelegable,
+    featureSponsor,
+    NoPriv,
+    ({
+    {sfObjectID, SoeOptional},
+    {sfSponsee, SoeOptional},
+}))
+
+/** This transaction creates a Sponsorship object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
+    Delegation::Delegable,
+    featureSponsor,
+    NoPriv,
+    ({
+    {sfCounterpartySponsor, SoeOptional},
+    {sfSponsee, SoeOptional},
+    {sfFeeAmountDelta, SoeOptional},
+    {sfMaxFee, SoeOptional},
+    {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

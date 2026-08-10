@@ -120,7 +120,8 @@ private:
         }
     }
 
-    /** Construct requested Serializable Type according to id.
+    /**
+     * Construct requested Serializable Type according to id.
      * The variadic args are: (SField), or (SerialIter, SField).
      * depth is ignored in former case.
      */
@@ -149,12 +150,6 @@ inline bool
 operator==(STVar const& lhs, STVar const& rhs)
 {
     return lhs.get().isEquivalent(rhs.get());
-}
-
-inline bool
-operator!=(STVar const& lhs, STVar const& rhs)
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl::detail

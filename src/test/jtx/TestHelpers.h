@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
@@ -42,6 +43,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -51,11 +53,12 @@
 
 namespace xrpl::test::jtx {
 
-/** Generic helper class for helper classes that set a field on a JTx.
-
- Not every helper will be able to use this because of conversions and other
- issues, but for classes where it's straightforward, this can simplify things.
-*/
+/**
+ * Generic helper class for helper classes that set a field on a JTx.
+ *
+ * Not every helper will be able to use this because of conversions and other
+ * issues, but for classes where it's straightforward, this can simplify things.
+ */
 template <
     class SField,
     // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
@@ -306,25 +309,18 @@ using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueTy
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
-/** General field definitions, or fields used in multiple transaction namespaces
+/**
+ * General field definitions, or fields used in multiple transaction namespaces
  */
 auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
-// TODO We only need this long "requires" clause as polyfill, for C++20
-// implementations which are missing <ranges> header. Replace with
-// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
-// when we have moved to better compilers.
-template <typename Input>
+template <std::ranges::range Input>
 auto
 makeVector(Input const& input)
-    requires requires(Input& v) {
-        std::begin(v);
-        std::end(v);
-    }
 {
-    return std::vector(std::begin(input), std::end(input));
+    return std::vector(std::ranges::begin(input), std::ranges::end(input));
 }
 
 // Functions used in debugging
@@ -378,6 +374,18 @@ checkArraySize(json::Value const& val, unsigned int size);
 // Helper function that returns the owner count on an account.
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsored owner count on an account.
+std::uint32_t
+sponsoredOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring owner count on an account.
+std::uint32_t
+sponsoringOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring account count on an account.
+std::uint32_t
+sponsoringAccountCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
 [[nodiscard]]
 inline bool
@@ -450,12 +458,8 @@ same(STPathSet const& st1, Args const&... args)
     if (st1.size() != st2.size())
         return false;
 
-    for (auto const& p : st2)
-    {
-        if (std::ranges::find(st1, p) == st1.end())
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(
+        st2, [&st1](auto const& p) { return std::ranges::find(st1, p) != st1.end(); });
 }
 
 json::Value
@@ -741,7 +745,9 @@ equal(Strand const& strand, Args&&... args)
 /***************************************************************/
 namespace check {
 
-/** Create a check. */
+/**
+ * Create a check.
+ */
 template <typename A>
     requires std::is_same_v<A, AccountID>
 json::Value
@@ -767,9 +773,9 @@ inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
 inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+getCheckIndex(AccountID const& account, std::uint32_t const sequence)
 {
-    return keylet::check(account, uSequence).key;
+    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
 }
 
 template <class Suite>
@@ -864,7 +870,7 @@ checkMetrics(
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
@@ -905,7 +911,7 @@ auto const kCoverRateLiquidation =
 
 auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/
@@ -961,7 +967,9 @@ pay(AccountID const& account,
 
 }  // namespace loan
 
-/** Set Expiration on a JTx. */
+/**
+ * Set Expiration on a JTx.
+ */
 class Expiration
 {
 private:
@@ -980,7 +988,9 @@ public:
     }
 };
 
-/** Set SourceTag on a JTx. */
+/**
+ * Set SourceTag on a JTx.
+ */
 class SourceTag
 {
 private:
@@ -998,7 +1008,9 @@ public:
     }
 };
 
-/** Set DestinationTag on a JTx. */
+/**
+ * Set DestinationTag on a JTx.
+ */
 class DestTag
 {
 private:

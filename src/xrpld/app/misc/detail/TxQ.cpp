@@ -15,6 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -408,6 +409,9 @@ TxQ::canBeHeld(
     // Disallow delegated transactions from being queued.
     if (tx.isFieldPresent(sfDelegate))
         return telCAN_NOT_QUEUE;
+    // Disallow fee-sponsored transactions from being queued.
+    if (isFeeSponsored(tx))
+        return telCAN_NOT_QUEUE;
 
     {
         // To be queued and relayed, the transaction needs to
@@ -769,7 +773,7 @@ TxQ::apply(
         return {terNO_ACCOUNT, false};
 
     // If the transaction needs a Ticket is that Ticket in the ledger?
-    SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
+    SeqProxy const acctSeqProx = SeqProxy::rawSequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
     if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
@@ -1601,9 +1605,9 @@ TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex>
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
     if (!sleAccount || sleAccount->getType() != ltACCOUNT_ROOT)
-        return SeqProxy::sequence(0);
+        return SeqProxy::rawSequence(0);
 
-    SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
+    SeqProxy const acctSeqProx = SeqProxy::rawSequence((*sleAccount)[sfSequence]);
 
     // If the account is not in the queue then acctSeqProx is good enough.
     auto const accountIter = byAccount_.find((*sleAccount)[sfAccount]);
@@ -1665,7 +1669,7 @@ TxQ::tryDirectApply(
     if (!sleAccount)
         return {};
 
-    SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
+    SeqProxy const acctSeqProx = SeqProxy::rawSequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
 
     // Can only directly apply if the transaction sequence matches the account

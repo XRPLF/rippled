@@ -14,47 +14,36 @@
 #include <functional>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
 namespace xrpl {
 
-/** The list of protocol versions we speak and we prefer to use.
-
-    @note The list must be sorted in strictly ascending order (and so
-          it may not contain any duplicates!)
-*/
+/**
+ * The list of protocol versions we speak and we prefer to use.
+ *
+ * @note The list must be sorted in strictly ascending order (and so
+ *       it may not contain any duplicates!)
+ */
 
 constexpr ProtocolVersion const kSupportedProtocolList[]{
     {2, 1},
     {2, 2},
+    {2, 3},
 };
 
-// This ugly construct ensures that supportedProtocolList is sorted in strictly
-// ascending order and doesn't contain any duplicates.
-// FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
+// There should be at least one protocol we're willing to speak.
 static_assert(
-    []() constexpr -> bool {
-        auto const len =
-            std::distance(std::begin(kSupportedProtocolList), std::end(kSupportedProtocolList));
+    !std::ranges::empty(kSupportedProtocolList),
+    "There must be at least one supported protocol.");
 
-        // There should be at least one protocol we're willing to speak.
-        if (len == 0)
-            return false;
-
-        // A list with only one entry is, by definition, sorted so we don't
-        // need to check it.
-        if (len != 1)
-        {
-            for (auto i = 0; i != len - 1; ++i)
-            {
-                if (kSupportedProtocolList[i] >= kSupportedProtocolList[i + 1])
-                    return false;
-            }
-        }
-
-        return true;
-    }(),
+// Searching for an adjacent pair where the first element is not less than the
+// second one proves the list is sorted in strictly ascending order, which in
+// turn means it holds no duplicates.
+static_assert(
+    std::ranges::adjacent_find(kSupportedProtocolList, std::ranges::greater_equal{}) ==
+        std::ranges::end(kSupportedProtocolList),
     "The list of supported protocols isn't properly sorted.");
 
 std::string

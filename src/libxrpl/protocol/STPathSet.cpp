@@ -13,6 +13,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -48,6 +49,12 @@ STPathElement::getHash(STPathElement const& element)
         hashIssuer += (hashIssuer * 911) ^ x;
 
     return (hashAccount ^ hashCurrency ^ hashIssuer);
+}
+
+[[nodiscard]] size_t
+STPathElement::getHash() const
+{
+    return STPathElement::getHash(*this);
 }
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
@@ -125,21 +132,15 @@ STPathSet::move(std::size_t n, void* buf)
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
-    value_.push_back(base);
+    STPath combined = base;
+    combined.pushBack(tail);
 
-    auto it = value_.rbegin();
-
-    STPath& newPath = *it;
-    newPath.pushBack(tail);
-
-    while (++it != value_.rend())
+    if (!seenHashes_.insert(combined).second)
     {
-        if (*it == newPath)
-        {
-            value_.pop_back();
-            return false;
-        }
+        return false;
     }
+
+    value_.push_back(std::move(combined));
     return true;
 }
 
@@ -159,13 +160,10 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : path_)
-    {
-        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(path_, [&](auto& p) {
+        return p.getAccountID() == account && p.getPathAsset() == asset &&
+            p.getIssuerID() == issuer;
+    });
 }
 
 json::Value

@@ -4,13 +4,14 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
-#include <cstdio>
+#include <charconv>
 #include <cstring>
 #include <iomanip>
 #include <ios>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <utility>
 
 namespace json {
@@ -76,20 +77,18 @@ valueToString(UInt value)
 std::string
 valueToString(double value)
 {
-    // Allocate a buffer that is more than large enough to store the 16 digits
-    // of precision requested below.
+    // Format with 16 significant digits.
+    // We need not request the alternative representation that always has a
+    // decimal point because JSON doesn't distinguish the concepts of reals and integers.
+    // A double never needs more than 32 characters in this form,
+    // so to_chars cannot actually run out of room here.
     char buffer[32];
-    // Print into the buffer. We need not request the alternative representation
-    // that always has a decimal point because JSON doesn't distinguish the
-    // concepts of reals and integers.
-#if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
-                                                       // to avoid warning.
-    sprintf_s(buffer, sizeof(buffer), "%.16g", value);
-#else
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-    snprintf(buffer, sizeof(buffer), "%.16g", value);
-#endif
-    return buffer;
+    auto const [ptr, ec] =
+        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general, 16);
+    XRPL_ASSERT(ec == std::errc{}, "json::valueToString(double) : conversion fits buffer");
+    if (ec != std::errc{})
+        return {};
+    return std::string(buffer, ptr);
 }
 
 std::string
