@@ -10,6 +10,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -92,6 +93,7 @@ LoanDelete::doApply()
     auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vaultSle->at(sfAsset);
 
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
     if (!view.dirRemove(
@@ -127,6 +129,8 @@ LoanDelete::doApply()
     }
     // Decrement the borrower's owner count
     decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
+
+    associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
