@@ -27,7 +27,7 @@ permissions:
 jobs:
   clippy:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-07b9c59
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,7 +42,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-07b9c59
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -70,7 +70,7 @@ jobs:
 
   doc:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-07b9c59
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

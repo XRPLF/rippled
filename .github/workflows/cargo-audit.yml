@@ -34,7 +34,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-07b9c59
     permissions:
       contents: read
       # Needed to open an issue on scheduled failures.
