@@ -317,6 +317,22 @@ fn home_le_inner_arr_len_reads_the_locator_and_returns_the_count() {
     assert_eq!(*host.home_le_nested_arr_lens_asked.borrow(), vec![locator]);
 }
 
+/// The nested array-length getter over a cached object: the slot leads, the locator
+/// is read from memory, and the two reach the host keyed together.
+#[test]
+fn le_inner_arr_len_reads_the_slot_and_locator_and_returns_the_count() {
+    let locator = vec![5u8, 0, 0, 0];
+    let host = FakeHost::new().answering_le_nested_arr_len(3, locator.clone(), 8);
+
+    let wat = module(
+        &[import::LE_INNER_ARR_LEN, ONE_PAGE],
+        "(i32.store (i32.const 0) (i32.const 5))
+         (call $le_inner_arr_len (i32.const 3) (i32.const 0) (i32.const 4))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the array length");
+    assert_eq!(*host.le_nested_arr_lens_asked.borrow(), vec![(3, locator)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

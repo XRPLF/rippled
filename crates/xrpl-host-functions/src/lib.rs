@@ -211,6 +211,12 @@ host_functions! {
     #[wasm_name = "home_le_inner_arr_len"]
     fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;
 
+    /// The number of elements in a nested array field of a previously cached ledger
+    /// object, selected by its cache slot and reached by a `locator`.
+    #[gas = 70]
+    #[wasm_name = "le_inner_arr_len"]
+    fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

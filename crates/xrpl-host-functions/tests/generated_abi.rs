@@ -155,6 +155,14 @@ impl HostFunctions for FakeHost {
         Ok(locator.len() as i32 + 1)
     }
 
+    /// The same, over a cached object keyed by slot.
+    fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32> {
+        if cache_idx <= 0 || locator.is_empty() {
+            return Err(HostError::LocatorMalformed);
+        }
+        Ok(cache_idx + locator.len() as i32)
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -229,6 +237,14 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(
         host.get_current_ledger_obj_nested_array_len(&[]),
+        Err(HostError::LocatorMalformed)
+    );
+    assert_eq!(
+        host.get_ledger_obj_nested_array_len(2, &[9, 0, 0, 0]),
+        Ok(6)
+    );
+    assert_eq!(
+        host.get_ledger_obj_nested_array_len(0, &[9, 0, 0, 0]),
         Err(HostError::LocatorMalformed)
     );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
@@ -315,6 +331,7 @@ fn the_spec_table_matches_the_declarations() {
             ("le_arr_len", 40),
             ("tx_inner_arr_len", 70),
             ("home_le_inner_arr_len", 70),
+            ("le_inner_arr_len", 70),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),
