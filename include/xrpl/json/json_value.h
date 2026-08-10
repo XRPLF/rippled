@@ -4,6 +4,7 @@
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <string>
@@ -548,6 +549,7 @@ public:
 class ValueIteratorBase
 {
 public:
+    using iterator_category = std::bidirectional_iterator_tag;
     using size_t = unsigned int;
     using difference_type = int;
     using SelfType = ValueIteratorBase;
