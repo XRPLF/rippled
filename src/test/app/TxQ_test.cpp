@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -19,6 +20,8 @@
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -60,8 +63,7 @@ namespace xrpl::test {
 
 class TxQPosNegFlows_test : public beast::unit_test::Suite
 {
-    // Same as corresponding values from TxQ.h
-    static constexpr FeeLevel64 kBaseFeeLevel{256};
+    static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
     static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
     static void
@@ -1176,7 +1178,7 @@ public:
         // bankrupt Alice. Fails, because an account can't have
         // more than the minimum reserve in flight before the
         // last queued transaction
-        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - 62;
         env(noop(alice), Seq(aliceSeq), Fee(aliceFee), Ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 10, 6, 5);
 
@@ -2336,6 +2338,79 @@ public:
     }
 
     void
+    testSponsorTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow sponsored transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions are not allowed to be queued.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 6, 5, 3);
+    }
+
+    void
+    testDelegateTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow delegate transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        env.fund(XRP(50000), alice, bob);
+        env.close();
+        env.fund(XRP(50000), carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        fillQueue(env, alice);
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions are not allowed to be queued.
+        env(pay(alice, carol, drops(1)), delegate::As(bob), Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(pay(alice, carol, drops(1)),
+            delegate::As(bob),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 8, 6, 4);
+    }
+
+    void
     testConsequences()
     {
         using namespace jtx;
@@ -2496,7 +2571,7 @@ public:
         auto fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2525,7 +2600,7 @@ public:
         fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -3150,7 +3225,7 @@ public:
 
         {
             auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(info.isMember(jss::result) && RPC::containsError(info[jss::result]));
+            BEAST_EXPECT(info.isMember(jss::result) && rpc::containsError(info[jss::result]));
         }
 
         env.close();
@@ -4555,7 +4630,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4613,7 +4688,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4662,6 +4737,8 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testSponsorTxCannotQueue();
+        testDelegateTxCannotQueue();
         testConsequences();
     }
 

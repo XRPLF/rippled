@@ -1,9 +1,24 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
+
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -77,47 +92,50 @@ operator&=(ApplyFlags& lhs, ApplyFlags const& rhs)
 
 //------------------------------------------------------------------------------
 
-/** Writeable view to a ledger, for applying a transaction.
-
-    This refinement of ReadView provides an interface where
-    the SLE can be "checked out" for modifications and put
-    back in an updated or removed state. Also added is an
-    interface to provide contextual information necessary
-    to calculate the results of transaction processing,
-    including the metadata if the view is later applied to
-    the parent (using an interface in the derived class).
-    The context info also includes values from the base
-    ledger such as sequence number and the network time.
-
-    This allows implementations to journal changes made to
-    the state items in a ledger, with the option to apply
-    those changes to the base or discard the changes without
-    affecting the base.
-
-    Typical usage is to call read() for non-mutating
-    operations.
-
-    For mutating operations the sequence is as follows:
-
-        // Add a new value
-        v.insert(sle);
-
-        // Check out a value for modification
-        sle = v.peek(k);
-
-        // Indicate that changes were made
-        v.update(sle)
-
-        // Or, erase the value
-        v.erase(sle)
-
-    The invariant is that insert, update, and erase may not
-    be called with any SLE which belongs to different view.
-*/
+/**
+ * Writeable view to a ledger, for applying a transaction.
+ *
+ * This refinement of ReadView provides an interface where
+ * the SLE can be "checked out" for modifications and put
+ * back in an updated or removed state. Also added is an
+ * interface to provide contextual information necessary
+ * to calculate the results of transaction processing,
+ * including the metadata if the view is later applied to
+ * the parent (using an interface in the derived class).
+ * The context info also includes values from the base
+ * ledger such as sequence number and the network time.
+ *
+ * This allows implementations to journal changes made to
+ * the state items in a ledger, with the option to apply
+ * those changes to the base or discard the changes without
+ * affecting the base.
+ *
+ * Typical usage is to call read() for non-mutating
+ * operations.
+ *
+ * For mutating operations the sequence is as follows:
+ *
+ *     // Add a new value
+ *     v.insert(sle);
+ *
+ *     // Check out a value for modification
+ *     sle = v.peek(k);
+ *
+ *     // Indicate that changes were made
+ *     v.update(sle)
+ *
+ *     // Or, erase the value
+ *     v.erase(sle)
+ *
+ * The invariant is that insert, update, and erase may not
+ * be called with any SLE which belongs to different view.
+ */
 class ApplyView : public ReadView
 {
 private:
-    /** Add an entry to a directory using the specified insert strategy */
+    /**
+     * Add an entry to a directory using the specified insert strategy
+     */
     std::optional<std::uint64_t>
     dirAdd(
         bool preserveOrder,
@@ -128,84 +146,89 @@ private:
 public:
     ApplyView() = default;
 
-    /** Returns the tx apply flags.
-
-        Flags can affect the outcome of transaction
-        processing. For example, transactions applied
-        to an open ledger generate "local" failures,
-        while transactions applied to the consensus
-        ledger produce hard failures (and claim a fee).
-    */
+    /**
+     * Returns the tx apply flags.
+     *
+     * Flags can affect the outcome of transaction
+     * processing. For example, transactions applied
+     * to an open ledger generate "local" failures,
+     * while transactions applied to the consensus
+     * ledger produce hard failures (and claim a fee).
+     */
     [[nodiscard]] virtual ApplyFlags
     flags() const = 0;
 
-    /** Prepare to modify the SLE associated with key.
-
-        Effects:
-
-            Gives the caller ownership of a modifiable
-            SLE associated with the specified key.
-
-        The returned SLE may be used in a subsequent
-        call to erase or update.
-
-        The SLE must not be passed to any other ApplyView.
-
-        @return `nullptr` if the key is not present
-    */
+    /**
+     * Prepare to modify the SLE associated with key.
+     *
+     * Effects:
+     *
+     *     Gives the caller ownership of a modifiable
+     *     SLE associated with the specified key.
+     *
+     * The returned SLE may be used in a subsequent
+     * call to erase or update.
+     *
+     * The SLE must not be passed to any other ApplyView.
+     *
+     * @return `nullptr` if the key is not present
+     */
     virtual SLE::pointer
     peek(Keylet const& k) = 0;
 
-    /** Remove a peeked SLE.
-
-        Requirements:
-
-            `sle` was obtained from prior call to peek()
-            on this instance of the RawView.
-
-        Effects:
-
-            The key is no longer associated with the SLE.
-    */
+    /**
+     * Remove a peeked SLE.
+     *
+     * Requirements:
+     *
+     *     `sle` was obtained from prior call to peek()
+     *     on this instance of the RawView.
+     *
+     * Effects:
+     *
+     *     The key is no longer associated with the SLE.
+     */
     virtual void
     erase(SLE::ref sle) = 0;
 
-    /** Insert a new state SLE
-
-        Requirements:
-
-            `sle` was not obtained from any calls to
-            peek() on any instances of RawView.
-
-            The SLE's key must not already exist.
-
-        Effects:
-
-            The key in the state map is associated
-            with the SLE.
-
-            The RawView acquires ownership of the shared_ptr.
-
-        @note The key is taken from the SLE
-    */
+    /**
+     * Insert a new state SLE
+     *
+     * Requirements:
+     *
+     *     `sle` was not obtained from any calls to
+     *     peek() on any instances of RawView.
+     *
+     *     The SLE's key must not already exist.
+     *
+     * Effects:
+     *
+     *     The key in the state map is associated
+     *     with the SLE.
+     *
+     *     The RawView acquires ownership of the shared_ptr.
+     *
+     * @note The key is taken from the SLE
+     */
     virtual void
     insert(SLE::ref sle) = 0;
 
-    /** Indicate changes to a peeked SLE
-
-        Requirements:
-
-            The SLE's key must exist.
-
-            `sle` was obtained from prior call to peek()
-            on this instance of the RawView.
-
-        Effects:
-
-            The SLE is updated
-
-        @note The key is taken from the SLE
-    */
+    /**
+     * Indicate changes to a peeked SLE
+     *
+     * Requirements:
+     *
+     *     The SLE's key must exist.
+     *
+     *     `sle` was obtained from prior call to peek()
+     *     on this instance of the RawView.
+     *
+     * Effects:
+     *
+     *     The SLE is updated
+     *
+     * @note The key is taken from the SLE
+     */
     /** @{ */
     virtual void
     update(SLE::ref sle) = 0;
@@ -235,7 +258,8 @@ public:
         XRPL_ASSERT(amount.holds<MPTIssue>(), "creditHookMPT: amount is for MPTIssue");
     }
 
-    /** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+    /**
+     * Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
      * Unlike IOU, MPT doesn't have bi-directional relationship with an issuer,
      * where a trustline limits an amount that can be issued to a holder.
      * Consequently, the credit step (last MPTEndpointStep or
@@ -275,27 +299,28 @@ public:
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, OwnerCounts const& cur, OwnerCounts const& next)
     {
     }
 
-    /** Append an entry to a directory
-
-        Entries in the directory will be stored in order of insertion, i.e. new
-        entries will always be added at the tail end of the last page.
-
-        @param directory the base of the directory
-        @param key the entry to insert
-        @param describe callback to add required entries to a new page
-
-        @return a \c std::optional which, if insertion was successful,
-                will contain the page number in which the item was stored.
-
-        @note this function may create a page (including a root page), if no
-              page with space is available. This function will only fail if the
-              page counter exceeds the protocol-defined maximum number of
-              allowable pages.
-    */
+    /**
+     * Append an entry to a directory
+     *
+     * Entries in the directory will be stored in order of insertion, i.e. new
+     * entries will always be added at the tail end of the last page.
+     *
+     * @param directory the base of the directory
+     * @param key the entry to insert
+     * @param describe callback to add required entries to a new page
+     *
+     * @return a @c std::optional which, if insertion was successful,
+     *         will contain the page number in which the item was stored.
+     *
+     * @note this function may create a page (including a root page), if no
+     *       page with space is available. This function will only fail if the
+     *       page counter exceeds the protocol-defined maximum number of
+     *       allowable pages.
+     */
     /** @{ */
     std::optional<std::uint64_t>
     dirAppend(
@@ -318,23 +343,24 @@ public:
     }
     /** @} */
 
-    /** Insert an entry to a directory
-
-        Entries in the directory will be stored in a semi-random order, but
-        each page will be maintained in sorted order.
-
-        @param directory the base of the directory
-        @param key the entry to insert
-        @param describe callback to add required entries to a new page
-
-        @return a \c std::optional which, if insertion was successful,
-                will contain the page number in which the item was stored.
-
-        @note this function may create a page (including a root page), if no
-              page with space is available.this function will only fail if the
-              page counter exceeds the protocol-defined maximum number of
-              allowable pages.
-    */
+    /**
+     * Insert an entry to a directory
+     *
+     * Entries in the directory will be stored in a semi-random order, but
+     * each page will be maintained in sorted order.
+     *
+     * @param directory the base of the directory
+     * @param key the entry to insert
+     * @param describe callback to add required entries to a new page
+     *
+     * @return a @c std::optional which, if insertion was successful,
+     *         will contain the page number in which the item was stored.
+     *
+     * @note this function may create a page (including a root page), if no
+     *       page with space is available.this function will only fail if the
+     *       page counter exceeds the protocol-defined maximum number of
+     *       allowable pages.
+     */
     /** @{ */
     std::optional<std::uint64_t>
     dirInsert(
@@ -355,21 +381,22 @@ public:
     }
     /** @} */
 
-    /** Remove an entry from a directory
-
-        @param directory the base of the directory
-        @param page the page number for this page
-        @param key the entry to remove
-        @param keepRoot if deleting the last entry, don't
-                        delete the root page (i.e. the directory itself).
-
-        @return \c true if the entry was found and deleted and
-                \c false otherwise.
-
-        @note This function will remove zero or more pages from the directory;
-              the root page will not be deleted even if it is empty, unless
-              \p keepRoot is not set and the directory is empty.
-    */
+    /**
+     * Remove an entry from a directory
+     *
+     * @param directory the base of the directory
+     * @param page the page number for this page
+     * @param key the entry to remove
+     * @param keepRoot if deleting the last entry, don't
+     *                 delete the root page (i.e. the directory itself).
+     *
+     * @return @c true if the entry was found and deleted and
+     *         @c false otherwise.
+     *
+     * @note This function will remove zero or more pages from the directory;
+     *       the root page will not be deleted even if it is empty, unless
+     *       \p keepRoot is not set and the directory is empty.
+     */
     /** @{ */
     bool
     dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
@@ -381,29 +408,51 @@ public:
     }
     /** @} */
 
-    /** Remove the specified directory, invoking the callback for every node. */
+    /**
+     * Remove the specified directory, invoking the callback for every node.
+     */
     bool
     dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const&);
 
-    /** Remove the specified directory, if it is empty.
-
-        @param directory the identifier of the directory node to be deleted
-        @return \c true if the directory was found and was successfully deleted
-                \c false otherwise.
-
-        @note The function should only be called with the root entry (i.e. with
-              the first page) of a directory.
-    */
+    /**
+     * Remove the specified directory, if it is empty.
+     *
+     * @param directory the identifier of the directory node to be deleted
+     * @return @c true if the directory was found and was successfully deleted
+     *         @c false otherwise.
+     *
+     * @note The function should only be called with the root entry (i.e. with
+     *       the first page) of a directory.
+     */
     bool
     emptyDirDelete(Keylet const& directory);
 };
 
-namespace directory {
-/** Helper functions for managing low-level directory operations.
-    These are not part of the ApplyView interface.
+/**
+ * Bundles the mutable ledger view and the transaction being applied.
+ *
+ * Passed together to avoid threading two separate parameters through every
+ * helper that needs both the view (for state reads/writes) and the
+ * transaction (for field inspection and metadata).
+ *
+ * Both members are non-owning references; the caller is responsible for
+ * ensuring that the referenced objects outlive the ApplyViewContext.
+ *
+ * TODO: replace with ApplyContext after it's untangled with xrpl/tx
+ */
+struct ApplyViewContext
+{
+    ApplyView& view;
+    STTx const& tx;
+};
 
-    Don't use them unless you really, really know what you're doing.
-    Instead use dirAdd, dirInsert, etc.
+namespace directory {
+/**
+ * Helper functions for managing low-level directory operations.
+ * These are not part of the ApplyView interface.
+ *
+ * Don't use them unless you really, really know what you're doing.
+ * Instead use dirAdd, dirInsert, etc.
  */
 
 std::uint64_t

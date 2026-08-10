@@ -8,6 +8,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <set>
 #include <string>
 
@@ -61,14 +62,12 @@ public:
             // check exception SFields
             {
                 auto const fieldExists = [&](std::string name) {
-                    for (auto& field : result[jss::result][jss::FIELDS])
-                    {
-                        if (field[0u].asString() == name)
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
+                    auto& fields = result[jss::result][jss::FIELDS];
+                    // json::Value is not a std::ranges range, so the iterator form is used.
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    return std::any_of(fields.begin(), fields.end(), [&](auto& field) {
+                        return field[0u].asString() == name;
+                    });
                 };
                 BEAST_EXPECT(fieldExists("Generic"));
                 BEAST_EXPECT(fieldExists("Invalid"));
@@ -433,7 +432,7 @@ public:
                 Env env(*this);
                 auto const firstResult = env.rpc("server_definitions");
                 auto const hash = firstResult[jss::result][jss::hash].asString();
-                auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+                auto const hashParam = std::string("{ ") + R"("hash": ")" + hash + "\"}";
 
                 auto const result = env.rpc("json", "server_definitions", hashParam);
                 BEAST_EXPECT(!result[jss::result].isMember(jss::error));
@@ -456,7 +455,7 @@ public:
                 std::string const hash =
                     "54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749"
                     "D1";
-                auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+                auto const hashParam = std::string("{ ") + R"("hash": ")" + hash + "\"}";
 
                 auto const result = env.rpc("json", "server_definitions", hashParam);
                 BEAST_EXPECT(!result[jss::result].isMember(jss::error));

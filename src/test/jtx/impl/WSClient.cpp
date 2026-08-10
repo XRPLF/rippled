@@ -2,6 +2,7 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Mutex.hpp>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -30,6 +31,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -111,10 +113,11 @@ class WSClientImpl : public WSClient
 
     bool peerClosed_ = false;
 
-    // synchronize destructor
-    bool b0_ = false;
-    std::mutex m0_;
-    std::condition_variable cv0_;
+    // disconnect() waits on this until the read loop ends (for any reason:
+    // the server acknowledged our close, or a timeout force-closed the socket).
+    static constexpr auto kDisconnectTimeout = std::chrono::seconds{1};
+    xrpl::Mutex<bool> readEnded_;
+    std::condition_variable readEndCv_;
 
     // synchronize message queue
     std::mutex m_;
@@ -126,23 +129,26 @@ class WSClientImpl : public WSClient
     void
     cleanup()
     {
-        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
-                              if (!peerClosed_)
-                              {
-                                  ws_.async_close(
-                                      {}, boost::asio::bind_executor(strand_, [&](error_code) {
-                                          try
-                                          {
-                                              stream_.cancel();
-                                          }
-                                          // NOLINTNEXTLINE(bugprone-empty-catch)
-                                          catch (boost::system::system_error const&)
-                                          {
-                                              // ignored
-                                          }
-                                      }));
-                              }
-                          }));
+        boost::asio::post(
+            ios_,  //
+            boost::asio::bind_executor(strand_, [this] {
+                if (!peerClosed_)
+                {
+                    ws_.async_close(
+                        {},  //
+                        boost::asio::bind_executor(strand_, [&](error_code) {
+                            try
+                            {
+                                stream_.cancel();
+                            }
+                            // NOLINTNEXTLINE(bugprone-empty-catch)
+                            catch (boost::system::system_error const&)
+                            {
+                                // ignored
+                            }
+                        }));
+                }
+            }));
         work_ = std::nullopt;
         thread_.join();
     }
@@ -172,9 +178,9 @@ public:
                     }));
             ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
             ws_.async_read(
-                rb_,
-                boost::asio::bind_executor(
-                    strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
+                rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                    onReadMsg(ec);
+                }));
         }
         catch (std::exception&)
         {
@@ -288,6 +294,44 @@ public:
         return rpcVersion_;
     }
 
+    void
+    disconnect() override
+    {
+        // Perform a graceful WebSocket closing handshake and block until the
+        // read loop ends, so the server observes a clean close (not a RST) and
+        // has finished tearing the connection down by the time we return.
+        // If the server already closed, the wait below returns immediately.
+        boost::asio::post(
+            ios_,
+            boost::asio::bind_executor(
+                strand_,  //
+                [this] {
+                    if (!peerClosed_)
+                    {
+                        ws_.async_close(
+                            boost::beast::websocket::close_code::normal,
+                            boost::asio::bind_executor(strand_, [](error_code) {}));
+                    }
+                }));
+
+        auto lock = readEnded_.lock<std::unique_lock>();
+        readEndCv_.wait_for(lock, kDisconnectTimeout, [&lock] { return *lock; });
+
+        // On timeout (server gone or not replying) force the socket closed so
+        // the outstanding read ends and the worker thread can later be joined.
+        if (!*lock)
+        {
+            boost::asio::post(
+                ios_,
+                boost::asio::bind_executor(
+                    strand_,  //
+                    [this] {
+                        boost::system::error_code ec;
+                        stream_.close(ec);
+                    }));
+        }
+    }
+
 private:
     void
     onReadMsg(error_code const& ec)
@@ -296,32 +340,30 @@ private:
         {
             if (ec == boost::beast::websocket::error::closed)
                 peerClosed_ = true;
+
+            *readEnded_.lock() = true;
+            readEndCv_.notify_all();
+
             return;
         }
 
         json::Value jv;
         json::Reader jr;
+
         jr.parse(bufferString(rb_.data()), jv);
         rb_.consume(rb_.size());
+
         auto m = std::make_shared<Msg>(std::move(jv));
         {
             std::scoped_lock const lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        ws_.async_read(
-            rb_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
-    }
 
-    // Called when the read op terminates
-    void
-    onReadDone()
-    {
-        std::scoped_lock const lock(m0_);
-        b0_ = true;
-        cv0_.notify_all();
+        ws_.async_read(
+            rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                onReadMsg(ec);
+            }));
     }
 };
 

@@ -30,10 +30,11 @@
 #include <expected>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
-namespace RPC {
+namespace rpc {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 {
@@ -106,7 +107,7 @@ LedgerHandler::check()
         {
             return RpcTooBusy;
         }
-        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
+        context_.loadType = binary ? resource::kFeeMediumBurdenRpc : resource::kFeeHeavyBurdenRpc;
     }
 
     if (*queue)
@@ -161,10 +162,10 @@ LedgerHandler::writeResult(json::Value& value)
         value[jss::warnings] = std::move(warnings);
 }
 
-}  // namespace RPC
+}  // namespace rpc
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
-doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
+doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
     auto begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
@@ -172,7 +173,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = RPC::ledgerFromRequest(ledger, context))
+    if (auto status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status.toErrorCode() == RpcInvalidParams)
@@ -349,13 +350,15 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     auto end = std::chrono::system_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    // Guard the per-item rates: an empty ledger has zero objects and/or zero
+    // transactions, and dividing by zero is undefined for these doubles.
+    auto const numObjects = response.ledger_objects().objects_size();
+    auto const numTxns = response.transactions_list().transactions_size();
+    std::string const msPerObj = numObjects > 0 ? std::to_string(duration / numObjects) : "n/a";
+    std::string const msPerTxn = numTxns > 0 ? std::to_string(duration / numTxns) : "n/a";
     JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
-                           << " - num objects = " << response.ledger_objects().objects_size()
-                           << " - num txns = " << response.transactions_list().transactions_size()
-                           << " - ms per obj "
-                           << duration / response.ledger_objects().objects_size()
-                           << " - ms per txn "
-                           << duration / response.transactions_list().transactions_size();
+                           << " - num objects = " << numObjects << " - num txns = " << numTxns
+                           << " - ms per obj " << msPerObj << " - ms per txn " << msPerTxn;
 
     return {response, status};
 }

@@ -94,6 +94,24 @@ ownerCount(Env const& env, Account const& account)
     return env.ownerCount(account);
 }
 
+std::uint32_t
+sponsoredOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoredOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoringOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringAccountCount(Env const& env, Account const& account)
+{
+    return env.sponsoringAccountCount(account);
+}
+
 /* Path finding */
 /******************************************************************************/
 void
@@ -193,10 +211,10 @@ findPathsRequest(
     using namespace jtx;
 
     auto& app = env.app();
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
-    Resource::Consumer c;
+    resource::Charge loadType = resource::kFeeReferenceRpc;
+    resource::Consumer c;
 
-    RPC::JsonContext context{
+    rpc::JsonContext context{
         {.j = env.journal,
          .app = app,
          .loadType = loadType,
@@ -206,7 +224,7 @@ findPathsRequest(
          .role = Role::USER,
          .coro = {},
          .infoSub = {},
-         .apiVersion = RPC::kApiVersionIfUnspecified},
+         .apiVersion = rpc::kApiVersionIfUnspecified},
         {},
         {}};
 
@@ -234,7 +252,7 @@ findPathsRequest(
     app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
         context.params = std::move(params);
         context.coro = coro;
-        RPC::doCommand(context, result);
+        rpc::doCommand(context, result);
         g.signal();
     });
 
@@ -338,7 +356,7 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 [[nodiscard]] bool
 expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits)
 {
-    if (auto const sle = env.le(keylet::line(account, value.get<Issue>())))
+    if (auto const sle = env.le(keylet::trustLine(account, value.get<Issue>())))
     {
         Issue const issue = value.get<Issue>();
         bool const accountLow = account < issue.account;
@@ -368,7 +386,7 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
 [[nodiscard]] bool
 expectHolding(Env& env, AccountID const& account, None const&, Issue const& issue)
 {
-    return !env.le(keylet::line(account, issue));
+    return !env.le(keylet::trustLine(account, issue));
 }
 
 [[nodiscard]] bool
@@ -388,7 +406,7 @@ expectHolding(Env& env, AccountID const& account, None const& value)
 [[nodiscard]] bool
 expectMPT(Env& env, AccountID const& account, STAmount const& value)
 {
-    auto const mptIssuanceID = keylet::mptIssuance(value.asset().get<MPTIssue>());
+    auto const mptIssuanceID = keylet::mptokenIssuance(value.asset().get<MPTIssue>());
     auto const mptToken = env.le(keylet::mptoken(mptIssuanceID.key, account));
     return mptToken && (*mptToken)[sfMPTAmount] == value.mpt().value();
 }
@@ -553,7 +571,7 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChan(account, dst, seqProxyValue);
+    auto const k = keylet::payChannel(account, dst, seqProxyValue);
     return k.key;
 }
 
@@ -725,7 +743,7 @@ issueHelperMPT(IssuerArgs const& args)
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
@@ -791,7 +809,7 @@ coverClawback(AccountID const& account, std::uint32_t flags)
     return jv;
 }
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/

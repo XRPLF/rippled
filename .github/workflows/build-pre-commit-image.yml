@@ -1,0 +1,38 @@
+name: Build `pre-commit` Docker image
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/build-pre-commit-image.yml"
+      - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
+  pull_request:
+    paths:
+      - ".github/workflows/build-pre-commit-image.yml"
+      - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
+  workflow_dispatch:
+
+concurrency:
+  # Read `on-trigger.yml` for the rationale behind this concurrency group name.
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-merge:
+    name: Build and push `pre-commit` image
+    permissions:
+      contents: read
+      packages: write
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@9e7e4e80af9e684c116b38369add8eea64451f32
+    with:
+      image_name: xrpld/pre-commit
+      dockerfile: bin/pre-commit/Dockerfile
+      base_image: ubuntu:26.04
+      push: ${{ github.event_name == 'push' }}

@@ -13,7 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class NullBackend : public Backend
 {
@@ -81,7 +81,9 @@ public:
     {
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {
@@ -123,4 +125,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

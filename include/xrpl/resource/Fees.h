@@ -2,9 +2,11 @@
 
 #include <xrpl/resource/Charge.h>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
-/** Schedule of fees charged for imposing load on the server. */
+/**
+ * Schedule of fees charged for imposing load on the server.
+ */
 /** @{ */
 extern Charge const kFeeMalformedRequest;  // A request that we can immediately tell is invalid.
 extern Charge const kFeeRequestNoReply;    // A request that we cannot satisfy.
@@ -29,4 +31,4 @@ extern Charge const kFeeWarning;  // The cost of receiving a warning.
 extern Charge const kFeeDrop;     // The cost of being dropped for excess load.
 /** @} */
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

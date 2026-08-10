@@ -1,15 +1,30 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -39,30 +54,32 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     NetClock::time_point seenTime_;
 
 public:
-    /** Construct a STValidation from a peer from serialized data.
-
-        @param sit Iterator over serialized data
-        @param lookupNodeID Invocable with signature
-                               NodeID(PublicKey const&)
-                            used to find the Node ID based on the public key
-                            that signed the validation. For manifest based
-                            validators, this should be the NodeID of the master
-                            public key.
-        @param checkSignature Whether to verify the data was signed properly
-
-        @note Throws if the object is not valid
-    */
+    /**
+     * Construct a STValidation from a peer from serialized data.
+     *
+     * @param sit Iterator over serialized data
+     * @param lookupNodeID Invocable with signature
+     *                        NodeID(PublicKey const&)
+     *                     used to find the Node ID based on the public key
+     *                     that signed the validation. For manifest based
+     *                     validators, this should be the NodeID of the master
+     *                     public key.
+     * @param checkSignature Whether to verify the data was signed properly
+     *
+     * @note Throws if the object is not valid
+     */
     template <class LookupNodeID>
     STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
 
-    /** Construct, sign and trust a new STValidation issued by this node.
-
-        @param signTime When the validation is signed
-        @param publicKey The current signing public key
-        @param secretKey The current signing secret key
-        @param nodeID ID corresponding to node's public master key
-        @param f callback function to "fill" the validation with necessary data
-    */
+    /**
+     * Construct, sign and trust a new STValidation issued by this node.
+     *
+     * @param signTime When the validation is signed
+     * @param publicKey The current signing public key
+     * @param secretKey The current signing secret key
+     * @param nodeID ID corresponding to node's public master key
+     * @param f callback function to "fill" the validation with necessary data
+     */
     template <typename F>
     STValidation(
         NetClock::time_point signTime,
@@ -72,35 +89,35 @@ public:
         F&& f);
 
     // Hash of the validated ledger
-    uint256
+    [[nodiscard]] uint256
     getLedgerHash() const;
 
     // Hash of consensus transaction set used to generate ledger
-    uint256
+    [[nodiscard]] uint256
     getConsensusHash() const;
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getSignTime() const;
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getSeenTime() const noexcept;
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getSignerPublic() const noexcept;
 
-    NodeID const&
+    [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isValid() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isFull() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isTrusted() const noexcept;
 
-    uint256
+    [[nodiscard]] uint256
     getSigningHash() const;
 
     void
@@ -112,13 +129,13 @@ public:
     void
     setSeen(NetClock::time_point s);
 
-    Blob
+    [[nodiscard]] Blob
     getSerialized() const;
 
-    Blob
+    [[nodiscard]] Blob
     getSignature() const;
 
-    std::string
+    [[nodiscard]] std::string
     render() const
     {
         std::stringstream ss;
@@ -168,14 +185,15 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
-/** Construct, sign and trust a new STValidation issued by this node.
-
-    @param signTime When the validation is signed
-    @param publicKey The current signing public key
-    @param secretKey The current signing secret key
-    @param nodeID ID corresponding to node's public master key
-    @param f callback function to "fill" the validation with necessary data
-*/
+/**
+ * Construct, sign and trust a new STValidation issued by this node.
+ *
+ * @param signTime When the validation is signed
+ * @param publicKey The current signing public key
+ * @param secretKey The current signing secret key
+ * @param nodeID ID corresponding to node's public master key
+ * @param f callback function to "fill" the validation with necessary data
+ */
 template <typename F>
 STValidation::STValidation(
     NetClock::time_point signTime,

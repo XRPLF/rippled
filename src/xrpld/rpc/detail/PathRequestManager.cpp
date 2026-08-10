@@ -26,9 +26,10 @@
 
 namespace xrpl {
 
-/** Get the current AssetCache, updating it if necessary.
-    Get the correct ledger to use.
-*/
+/**
+ * Get the current AssetCache, updating it if necessary.
+ * Get the correct ledger to use.
+ */
 std::shared_ptr<AssetCache>
 PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
@@ -125,7 +126,8 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             json::Value update = request->doUpdate(cache, false, continueCallback);
                             request->updateComplete();
                             update[jss::type] = "path_find";
-                            if ((ipSub = getSubscriber(request)))
+                            ipSub = getSubscriber(request);
+                            if (ipSub)
                             {
                                 ipSub->send(update, false);
                                 remove = false;
@@ -252,7 +254,7 @@ json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
@@ -283,7 +285,7 @@ PathRequestManager::makeLegacyPathRequest(
 
 json::Value
 PathRequestManager::doLegacyPathRequest(
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {

@@ -74,7 +74,7 @@ createHTTPPost(
 
     // CHECKME this uses a different version than the replies below use. Is
     //         this by design or an accident or should it be using
-    //         BuildInfo::getFullVersionString () as well?
+    //         build_info::getFullVersionString () as well?
 
     s << "POST " << (strPath.empty() ? "/" : strPath) << " HTTP/1.0\r\n"
       << "User-Agent: " << systemName() << "-json-rpc/v1\r\n"
@@ -149,7 +149,7 @@ private:
             return jvResult;
         }
 
-        return RPC::makeParamError(
+        return rpc::makeParamError(
             std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
     }
 
@@ -355,7 +355,7 @@ private:
             }
             catch (std::exception const&)
             {
-                return RPC::invalidFieldError(jss::limit);
+                return rpc::invalidFieldError(jss::limit);
             }
         }
 
@@ -369,7 +369,7 @@ private:
             }
             catch (std::exception const&)
             {
-                return RPC::invalidFieldError(jss::proof);
+                return rpc::invalidFieldError(jss::proof);
             }
         }
 
@@ -569,12 +569,10 @@ private:
         {
             if (jv.size() == 0)
                 return false;
-            for (auto const& j : jv)
-            {
-                if (!isValidJson2(j))
-                    return false;
-            }
-            return true;
+            // json::Value is not a std::ranges range, so the iterator form is used.
+            // NOLINTNEXTLINE(modernize-use-ranges)
+            return std::all_of(
+                jv.begin(), jv.end(), [this](auto const& j) { return isValidJson2(j); });
         }
         if (jv.isObject())
         {
@@ -1184,7 +1182,7 @@ private:
 
         std::string param = jvParams[index++].asString();
         if (param.empty())
-            return RPC::makeParamError("Invalid first parameter");
+            return rpc::makeParamError("Invalid first parameter");
 
         if (param[0] != 'r')
         {
@@ -1198,7 +1196,7 @@ private:
             }
 
             if (size <= index)
-                return RPC::makeParamError("Invalid hotwallet");
+                return rpc::makeParamError("Invalid hotwallet");
 
             param = jvParams[index++].asString();
         }
@@ -1589,7 +1587,7 @@ struct RPCCallImp
 
             jvResult["result"] = jvReply;
 
-            (callbackFuncP)(jvResult);
+            callbackFuncP(jvResult);
         }
 
         return false;
@@ -1728,7 +1726,7 @@ rpcClient(
 
             {
                 boost::asio::io_context isService;
-                RPCCall::fromNetwork(
+                rpc_call::fromNetwork(
                     isService,
                     setup.client.ip,
                     setup.client.port,
@@ -1745,7 +1743,9 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),
+                    [&jvOutput](json::Value const& jvInput) {
+                        RPCCallImp::callRPCHandler(&jvOutput, jvInput);
+                    },
                     headers);
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
@@ -1813,12 +1813,12 @@ rpcClient(
 
 //------------------------------------------------------------------------------
 
-namespace RPCCall {
+namespace rpc_call {
 
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs, RPC::kApiCommandLineVersion);
+    auto const result = rpcClient(vCmd, config, logs, rpc::kApiCommandLineVersion);
 
     std::cout << result.second.toStyledString();
 
@@ -1870,27 +1870,19 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        std::bind(
-            &RPCCallImp::onRequest,
-            strMethod,
-            jvParams,
-            headers,
-            strPath,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            j),
+        [strMethod, jvParams, headers, strPath, j](
+            boost::asio::streambuf& sb, std::string const& strHost) {
+            RPCCallImp::onRequest(strMethod, jvParams, headers, strPath, sb, strHost, j);
+        },
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        std::bind(
-            &RPCCallImp::onResponse,
-            callbackFuncP,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            j),
+        [callbackFuncP, j](
+            boost::system::error_code const& ecResult, int iStatus, std::string const& strData) {
+            return RPCCallImp::onResponse(callbackFuncP, ecResult, iStatus, strData, j);
+        },
         j);
 }
 
-}  // namespace RPCCall
+}  // namespace rpc_call
 
 }  // namespace xrpl

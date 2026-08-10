@@ -99,7 +99,7 @@ int
 Serializer::addRaw(void const* ptr, int len)
 {
     int const ret = data_.size();
-    data_.insert(data_.end(), (char const*)ptr, ((char const*)ptr) + len);
+    data_.insert(data_.end(), static_cast<char const*>(ptr), static_cast<char const*>(ptr) + len);
     return ret;
 }
 
@@ -444,7 +444,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
+    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>);
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);
