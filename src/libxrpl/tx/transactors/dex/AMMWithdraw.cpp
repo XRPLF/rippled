@@ -668,14 +668,14 @@ AMMWithdraw::withdraw(
             //   - The trustline/MPToken holds the holder's own returned asset,
             //     so failing does not protect them; it only denies them the
             //     asset and blocks the issuer.
-            // Pre-fixAMMClawbackReserve1 the check below compared against the
+            // Pre-fixCleanup3_4_0 the check below compared against the
             // issuer's balance (priorBalance is the issuer's preFeeBalance_ on
             // the clawback path): for IOU the issuer's XRP incidentally
             // satisfied it, while for MPT a low-XRP issuer could be wrongly
             // blocked. The amendment removes that incidental dependency by
             // skipping the check outright. mptokenKey is already set above, so
             // a deleted MPToken is still recreated by createMPToken().
-            if (view.rules().enabled(fixAMMClawbackReserve1) &&
+            if (view.rules().enabled(fixCleanup3_4_0) &&
                 authHandling == AuthHandling::IgnoreAuth)
                 return tesSUCCESS;
 

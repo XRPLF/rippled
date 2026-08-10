@@ -2519,7 +2519,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         // it auto-creates holds the holder's own returned asset, so refusing to
         // create it neither protects the holder nor serves the issuer -- it
         // just lets a holder veto the clawback and, for MPT, lets a low-XRP
-        // issuer be blocked. With fixAMMClawbackReserve1 the reserve check on
+        // issuer be blocked. With fixCleanup3_4_0 the reserve check on
         // the clawback path is skipped outright, so the outcome no longer
         // depends on either account incidentally holding enough XRP.
         testcase("test clawback bypasses recipient reserve");
@@ -2588,7 +2588,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
-        if (features[fixAMMClawbackReserve1])
+        if (features[fixCleanup3_4_0])
         {
             // The issuer-signed clawback intentionally bypasses the recipient
             // reserve check: neither the low-XRP issuer nor the under-reserved
@@ -2631,6 +2631,8 @@ class AMMClawback_test : public beast::unit_test::Suite
               // precision loss caught in transaction layer -> tecPRECISION_LOSS
               all - fixAMMClawbackRounding - featureMPTokensV2,
               all - featureMPTokensV2,
+              // exercise the pre-amendment (legacy) reserve-check path.
+              all - fixCleanup3_4_0,
               all})
         {
             testAMMClawbackSpecificAmount(features);
@@ -2645,9 +2647,6 @@ class AMMClawback_test : public beast::unit_test::Suite
             testLastHolderLPTokenBalance(features);
             testClawbackBypassesReserve(features);
         }
-
-        // exercise the pre-amendment (legacy) reserve-check path.
-        testClawbackBypassesReserve(all - fixAMMClawbackReserve1);
     }
 };
 BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);

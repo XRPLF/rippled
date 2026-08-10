@@ -1818,7 +1818,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         // asset is an MPT the holder does not yet hold, AMMWithdraw::withdraw
         // must still create the holder's MPToken ledger object -- deliberately,
         // even though the holder cannot satisfy the owner reserve (and here
-        // neither can the low-XRP issuer). fixAMMClawbackReserve1 bypasses the
+        // neither can the low-XRP issuer). fixCleanup3_4_0 bypasses the
         // reserve check on the clawback path but leaves createMPToken() intact,
         // so an under-reserved holder cannot dodge the compliance recovery by
         // holding a low reserve on the account.
@@ -1889,7 +1889,17 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.ownerCount(alice) == 2);
         BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
 
-        if (features[fixAMMClawbackReserve1])
+        // A withdrawal initiated by the under-reserved holder must still be
+        // blocked by the reserve check: the fixCleanup3_4_0 bypass is keyed to
+        // the clawback path (AuthHandling::IgnoreAuth), so a regular
+        // AMMWithdraw fails identically whether or not the amendment is
+        // enabled, and no MPToken is created.
+        amm.withdrawAll(alice, std::nullopt, Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+        if (features[fixCleanup3_4_0])
         {
             // Clawing USD returns a proportional amount of BTC to alice. The
             // reserve check is bypassed on the clawback path, yet createMPToken
@@ -1940,7 +1950,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testClawAssetCheck(all);
         testClawbackCreatesMPToken(all);
         // exercise the pre-amendment (legacy) reserve-check path.
-        testClawbackCreatesMPToken(all - fixAMMClawbackReserve1);
+        testClawbackCreatesMPToken(all - fixCleanup3_4_0);
     }
 };
 
