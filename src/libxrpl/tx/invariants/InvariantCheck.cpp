@@ -37,6 +37,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -95,9 +96,24 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
         auto const name = [&after] -> std::string {
             switch (after->getType())
             {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)  // 4996 is the standard deprecation warning code
+#elifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+                // These types are deprecated, which is why they are needed here. But builds with
+                // warnings as errors (which includes CI) will fail. So to use them, deprecation
+                // warnings need to be turned off for this block only.
                 case ltNICKNAME:
                 case ltCONTRACT:
                 case ltGENERATOR_MAP:
+#ifdef _MSC_VER
+#pragma warning(pop)
+#elifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
                     return "[DEPRECATED TYPE]";
                 default:
                     return ledgerEntryTypeName(*after);

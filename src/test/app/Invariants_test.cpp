@@ -2116,6 +2116,13 @@ class Invariants_test : public beast::unit_test::Suite
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
             env1.close();
 
+            auto const expectedTers = std::invoke([&] {
+                if (!fix313Enabled)
+                    return goodTers;
+                if (fixTecEnabled)
+                    return failTers;
+                return badTers;
+            });
             doInvariantCheck(
                 std::move(env1),
                 a1,
@@ -2138,7 +2145,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fix313Enabled ? (fixTecEnabled ? failTers : badTers) : goodTers);
+                expectedTers);
         }
 
         // hybrid offer missing sfAdditionalBooks

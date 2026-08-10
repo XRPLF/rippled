@@ -11,6 +11,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
