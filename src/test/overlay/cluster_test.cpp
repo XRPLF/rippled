@@ -3,9 +3,9 @@
 
 #include <xrpld/overlay/Cluster.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -150,7 +150,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty doesn't go to empty)
@@ -159,7 +159,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == name);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty updates to new non-empty)
@@ -168,8 +168,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(
-                member->compare("test") == 0);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*member == "test");  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 

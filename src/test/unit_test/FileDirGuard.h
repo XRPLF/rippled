@@ -1,18 +1,22 @@
 #pragma once
 
-#include <test/jtx/TestSuite.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/filesystem.hpp>
 
+#include <exception>
 #include <fstream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl::detail {
 
 /**
-    Create a directory and remove it when it's done
-*/
+ * Create a directory and remove it when it's done
+ */
 class DirGuard
 {
 protected:
@@ -89,8 +93,8 @@ public:
 };
 
 /**
-    Write a file in a directory and remove when done
-*/
+ * Write a file in a directory and remove when done
+ */
 class FileDirGuard : public DirGuard
 {
 protected:

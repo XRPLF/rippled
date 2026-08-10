@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -34,6 +33,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -433,7 +433,44 @@ ammPoolHolds(
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
-Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance)
+{
+    if (newLPTokenBalance <= beast::kZero)
+        return tesSUCCESS;
+    if (poolProductMean >= newLPTokenBalance)
+        return tesSUCCESS;
+    // Strong check failed. Allow the same relative tolerance as the invariant
+    // checker's weak check. Only return tecPRECISION_LOSS when both fail.
+    if (withinRelativeDistance(
+            poolProductMean, Number{newLPTokenBalance}, kAMMInvariantRelativeTolerance))
+        return tesSUCCESS;
+    return tecPRECISION_LOSS;
+}
+
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
+    beast::Journal const j)
+{
+    if (newLPTokenBalance <= beast::kZero)
+        return tesSUCCESS;
+    auto const [amount, amount2] = ammPoolHolds(
+        view,
+        ammAccountID,
+        asset1,
+        asset2,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
+    return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
+}
+
+std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
@@ -489,7 +526,7 @@ ammHolds(
         return std::make_optional(std::make_pair(asset1, asset2));
     }();
     if (!assets)
-        return Unexpected(tecAMM_INVALID_TOKENS);
+        return std::unexpected(tecAMM_INVALID_TOKENS);
     auto const [amount1, amount2] = ammPoolHolds(
         view,
         ammSle.getAccountID(sfAccount),
@@ -518,7 +555,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -565,9 +602,7 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    XRPL_ASSERT(
-        !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
-        "xrpl::getTradingFee : auction present");
+    XRPL_ASSERT(ammSle.isFieldPresent(sfAuctionSlot), "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot = safeDowncast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
@@ -610,7 +645,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::line(ammAccountID, issue.account, issue.currency));
+                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -785,7 +820,7 @@ initializeFeeAuctionVote(
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));
@@ -821,7 +856,7 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
     // Liquidity Provider (LP) must have one LPToken trustline
@@ -852,18 +887,18 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     {
         auto const ownerDir = view.read(currentIndex);
         if (!ownerDir)
-            return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
         for (auto const& key : ownerDir->getFieldV256(sfIndexes))
         {
             auto const sle = view.read(keylet::child(key));
             if (!sle)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const entryType = sle->getFieldU16(sfLedgerEntryType);
             // Only one AMM object
             if (entryType == ltAMM)
             {
                 if (hasAMM)
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 hasAMM = true;
                 continue;
             }
@@ -873,7 +908,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 continue;
             }
             if (entryType != ltRIPPLE_STATE)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);
             auto const highLimit = sle->getFieldAmount(sfHighLimit);
             auto const isLPTrustline =
@@ -889,12 +924,12 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 {
                     // LP has exactly one LPToken trustline
                     if (++nLPTokenTrustLines > 1)
-                        return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                        return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
                 // AMM account has at most two IOU trustlines
                 else if (++nIOUTrustLines > 2)
                 {
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
             }
             // Another Liquidity Provider LPToken trustline
@@ -905,7 +940,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
             // AMM account has at most two IOU trustlines
             else if (++nIOUTrustLines > 2)
             {
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             }
         }
         auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
@@ -913,15 +948,15 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
         {
             if (nLPTokenTrustLines != 1 || (nIOUTrustLines == 0 && nMPT == 0) ||
                 (nIOUTrustLines > 2 || nMPT > 2) || (nIOUTrustLines + nMPT) > 2)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             return true;
         }
         currentIndex = keylet::page(root, uNodeNext);
     }
-    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
@@ -931,7 +966,7 @@ verifyAndAdjustLPTokenBalance(
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
     if (!res.has_value())
     {
-        return Unexpected<TER>(res.error());
+        return std::unexpected<TER>(res.error());
     }
 
     if (res.value())
@@ -944,7 +979,7 @@ verifyAndAdjustLPTokenBalance(
         }
         else
         {
-            return Unexpected<TER>(tecAMM_INVALID_TOKENS);
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
         }
     }
     return true;

@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -24,6 +23,7 @@
 #include <xrpl/protocol/digest.h>
 
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -43,7 +43,7 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
 }
 
 [[nodiscard]]
-static Expected<bool, TER>
+static std::expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.header().parentCloseTime;
@@ -61,7 +61,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
             // delete expired credentials even if the transaction failed
             auto const err = deleteSLE(view, sleCred, j);
             if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
-                return Unexpected(err);
+                return std::unexpected(err);
             foundExpired = true;
         }
     }
@@ -97,7 +97,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
         }
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+            decreaseOwnerCountForObject(view, sleAccount, sleCredential, 1, j);
 
         return tesSUCCESS;
     };
@@ -346,9 +346,9 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
 }
 
 TER
-verifyDepositPreauth(
+checkDepositPreauth(
     STTx const& tx,
-    ApplyView& view,
+    ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
     SLE::const_ref sleDst,
@@ -360,9 +360,27 @@ verifyDepositPreauth(
     //  2. If src is deposit preauthorized by dst (either by account or by
     //  credentials).
 
-    bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
+    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
+    {
+        if (src != dst)
+        {
+            if (!view.exists(keylet::depositPreauth(dst, src)))
+            {
+                return !tx.isFieldPresent(sfCredentialIDs)
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
+            }
+        }
+    }
 
-    if (credentialsPresent)
+    return tesSUCCESS;
+}
+
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
+{
+    if (tx.isFieldPresent(sfCredentialIDs))
     {
         auto const foundExpired =
             credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j);
@@ -372,20 +390,22 @@ verifyDepositPreauth(
             return tecEXPIRED;
     }
 
-    if (sleDst && sleDst->isFlag(lsfDepositAuth))
-    {
-        if (src != dst)
-        {
-            if (!view.exists(keylet::depositPreauth(dst, src)))
-            {
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorizedDepositPreauth(
-                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
-            }
-        }
-    }
-
     return tesSUCCESS;
+}
+
+TER
+verifyDepositPreauth(
+    STTx const& tx,
+    ApplyView& view,
+    AccountID const& src,
+    AccountID const& dst,
+    SLE::const_ref sleDst,
+    beast::Journal j)
+{
+    if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))
+        return err;
+
+    return checkDepositPreauth(tx, view, src, dst, sleDst, j);
 }
 
 }  // namespace xrpl

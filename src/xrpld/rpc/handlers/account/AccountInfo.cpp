@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -84,7 +85,7 @@ injectSLE(json::Value& jv, SLE const& sle)
 
 // TODO(tom): what is that "default"?
 json::Value
-doAccountInfo(RPC::JsonContext& context)
+doAccountInfo(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
@@ -92,22 +93,22 @@ doAccountInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalidFieldError(jss::account);
+            return rpc::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalidFieldError(jss::ident);
+            return rpc::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
     {
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
@@ -116,7 +117,7 @@ doAccountInfo(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -154,7 +155,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // It doesn't make sense to request the queue
             // with any closed or validated ledger.
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -169,11 +170,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : kDisallowIncomingFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureClawback))
-        {
-            acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
-        }
+        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
+            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
@@ -209,7 +207,7 @@ doAccountInfo(RPC::JsonContext& context)
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -222,7 +220,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read(keylet::signers(accountID));
+            auto const sleSigners = ledger->read(keylet::signerList(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 
@@ -263,7 +261,7 @@ doAccountInfo(RPC::JsonContext& context)
 
                 // We expect txs to be returned sorted by SeqProxy.  Verify
                 // that with a couple of asserts.
-                SeqProxy prevSeqProxy = SeqProxy::sequence(0);
+                SeqProxy prevSeqProxy = SeqProxy::rawSequence(0);
                 for (auto const& tx : txs)
                 {
                     json::Value jvTx = json::ValueType::Object;
@@ -334,7 +332,7 @@ doAccountInfo(RPC::JsonContext& context)
     else
     {
         result[jss::account] = toBase58(accountID);
-        RPC::injectError(RpcActNotFound, result);
+        rpc::injectError(RpcActNotFound, result);
     }
 
     return result;

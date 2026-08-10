@@ -206,7 +206,7 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
 
 // See if a sync filter has a node
 SHAMapTreeNodePtr
-SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
+SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const
 {
     if (auto nodeData = filter->getNode(hash))
     {
@@ -232,7 +232,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 // Get a node without throwing
 // Used on maps where missing nodes are expected
 SHAMapTreeNodePtr
-SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
+SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const
 {
     auto node = cacheLookup(hash);
     if (node)
@@ -345,7 +345,7 @@ SHAMap::descend(
     SHAMapInnerNode* parent,
     SHAMapNodeID const& parentID,
     int branch,
-    SHAMapSyncFilter* filter) const
+    SHAMapSyncFilter const* filter) const
 {
     XRPL_ASSERT(parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
     XRPL_ASSERT(
@@ -374,7 +374,7 @@ SHAMapTreeNode*
 SHAMap::descendAsync(
     SHAMapInnerNode* parent,
     int branch,
-    SHAMapSyncFilter* filter,
+    SHAMapSyncFilter const* filter,
     bool& pending,
     descendCallback&& callback) const
 {
@@ -838,6 +838,7 @@ SHAMap::getHash() const
     auto hash = root_->getHash();
     if (hash.isZero())
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         const_cast<SHAMap&>(*this).unshare();
         hash = root_->getHash();
     }
@@ -885,7 +886,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
 }
 
 bool
-SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
+SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
 {
     if (hash == root_->getHash())
         return true;
@@ -918,17 +919,18 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
     return false;
 }
 
-/** Replace a node with a shareable node.
-
-    This code handles two cases:
-
-    1) An unshared, unshareable node needs to be made shareable
-       so immutable SHAMap's can have references to it.
-    2) An unshareable node is shared. This happens when you make
-       a mutable snapshot of a mutable SHAMap.
-
-    @note The node must have already been unshared by having the caller
-          first call SHAMapTreeNode::unshare().
+/**
+ * Replace a node with a shareable node.
+ *
+ * This code handles two cases:
+ *
+ * 1) An unshared, unshareable node needs to be made shareable
+ *    so immutable SHAMap's can have references to it.
+ * 2) An unshareable node is shared. This happens when you make
+ *    a mutable snapshot of a mutable SHAMap.
+ *
+ * @note The node must have already been unshared by having the caller
+ *       first call SHAMapTreeNode::unshare().
  */
 SHAMapTreeNodePtr
 SHAMap::writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const

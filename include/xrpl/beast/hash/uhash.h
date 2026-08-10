@@ -11,7 +11,7 @@ struct Uhash
 {
     Uhash() = default;
 
-    using result_type = typename Hasher::result_type;
+    using result_type = Hasher::result_type;
 
     template <class T>
     result_type

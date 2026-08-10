@@ -1,4 +1,4 @@
-name: Build Nix Docker images
+name: Build `nix` Docker images
 
 on:
   push:
@@ -6,19 +6,27 @@ on:
       - develop
     paths:
       - ".github/workflows/build-nix-images.yml"
-      - ".github/workflows/reusable-build-docker-image.yml"
-      - ".github/workflows/reusable-build-merge-docker-images.yml"
       - "flake.nix"
       - "flake.lock"
+      - "rust-toolchain.toml"
       - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/default-loader-path.sh"
+      - "bin/install-sanitizer-libs.sh"
   pull_request:
     paths:
       - ".github/workflows/build-nix-images.yml"
-      - ".github/workflows/reusable-build-docker-image.yml"
-      - ".github/workflows/reusable-build-merge-docker-images.yml"
       - "flake.nix"
       - "flake.lock"
+      - "rust-toolchain.toml"
       - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/default-loader-path.sh"
+      - "bin/install-sanitizer-libs.sh"
   workflow_dispatch:
 
 concurrency:
@@ -32,7 +40,7 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push nix-${{ matrix.distro.name }}
+    name: Build and push `nix-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
@@ -50,8 +58,9 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: ./.github/workflows/reusable-build-merge-docker-images.yml
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@9e7e4e80af9e684c116b38369add8eea64451f32
     with:
-      image_name: ghcr.io/xrplf/xrpld/nix-${{ matrix.distro.name }}
+      image_name: xrpld/nix-${{ matrix.distro.name }}
       dockerfile: nix/docker/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
+      push: ${{ github.event_name == 'push' }}

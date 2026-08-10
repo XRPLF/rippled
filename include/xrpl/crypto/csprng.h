@@ -1,17 +1,21 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <mutex>
 
 namespace xrpl {
 
-/** A cryptographically secure random number engine
-
-    The engine is thread-safe (it uses a lock to serialize
-    access) and will, automatically, mix in some randomness
-    from std::random_device.
-
-    Meets the requirements of UniformRandomNumberEngine
-*/
+/**
+ * A cryptographically secure random number engine
+ *
+ * The engine is thread-safe (it uses a lock to serialize
+ * access) and will, automatically, mix in some randomness
+ * from std::random_device.
+ *
+ * Meets the requirements of UniformRandomNumberEngine
+ */
 class CsprngEngine
 {
 private:
@@ -31,15 +35,21 @@ public:
     CsprngEngine();
     ~CsprngEngine();
 
-    /** Mix entropy into the pool */
+    /**
+     * Mix entropy into the pool
+     */
     void
     mixEntropy(void* buffer = nullptr, std::size_t count = 0);
 
-    /** Generate a random integer */
+    /**
+     * Generate a random integer
+     */
     result_type
     operator()();
 
-    /** Fill a buffer with the requested amount of random data */
+    /**
+     * Fill a buffer with the requested amount of random data
+     */
     void
     operator()(void* ptr, std::size_t count);
 
@@ -58,14 +68,15 @@ public:
     }
 };
 
-/** The default cryptographically secure PRNG
-
-    Use this when you need to generate random numbers or
-    data that will be used for encryption or passed into
-    cryptographic routines.
-
-    This meets the requirements of UniformRandomNumberEngine
-*/
+/**
+ * The default cryptographically secure PRNG
+ *
+ * Use this when you need to generate random numbers or
+ * data that will be used for encryption or passed into
+ * cryptographic routines.
+ *
+ * This meets the requirements of UniformRandomNumberEngine
+ */
 CsprngEngine&
 cryptoPrng();
 
