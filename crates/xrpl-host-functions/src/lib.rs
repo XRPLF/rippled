@@ -217,6 +217,23 @@ host_functions! {
     #[wasm_name = "le_inner_arr_len"]
     fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32>;
 
+    /// Verify `signature` over `message` under `pubkey`. Reads the three regions and
+    /// answers `1` if the signature is valid, `0` if not, or a negative error.
+    ///
+    /// GAS DISCREPANCY: this 300 is the value the C-ABI fork registered
+    /// (`rippled-wasm-host-functions`, WasmVM.cpp), which this port follows. The
+    /// prior C++ integration in this tree charged 35000 for the same call — 100x
+    /// more, and closer to the real cost of signature verification. The value is
+    /// consensus-critical, so confirm which is intended before this ships.
+    #[gas = 300]
+    #[wasm_name = "check_sig"]
+    fn check_signature(
+        &self,
+        message: &[u8],
+        signature: &[u8],
+        pubkey: &[u8],
+    ) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

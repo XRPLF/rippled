@@ -113,6 +113,13 @@ public:
     getLedgerObjNestedArrayLen(std::int32_t cacheIdx, rust::Slice<std::uint8_t const> locator)
         const noexcept;
 
+    // Answers 1/0 for a valid/invalid signature, or a negative `HostFunctionError`.
+    [[nodiscard]] std::int32_t
+    checkSignature(
+        rust::Slice<std::uint8_t const> message,
+        rust::Slice<std::uint8_t const> signature,
+        rust::Slice<std::uint8_t const> pubkey) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 

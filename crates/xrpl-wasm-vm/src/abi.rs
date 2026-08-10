@@ -257,6 +257,14 @@ mod tests {
         ) -> HostResult<i32> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn check_signature(
+            &self,
+            _message: &[u8],
+            _signature: &[u8],
+            _pubkey: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

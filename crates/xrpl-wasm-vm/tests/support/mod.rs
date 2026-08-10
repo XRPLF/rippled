@@ -175,6 +175,10 @@ pub struct FakeHost {
     pub le_nested_arr_lens: HashMap<(i32, Vec<u8>), i32>,
     /// Every (cache slot, locator) `get_ledger_obj_nested_array_len` was asked for.
     pub le_nested_arr_lens_asked: RefCell<Vec<(i32, Vec<u8>)>>,
+    /// What `check_signature` answers, whatever it is given.
+    pub sig_valid: HostResult<i32>,
+    /// Every (message, signature, pubkey) `check_signature` was asked to verify.
+    pub sigs_checked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -226,6 +230,9 @@ impl Default for FakeHost {
             home_le_nested_arr_lens_asked: RefCell::new(Vec::new()),
             le_nested_arr_lens: HashMap::new(),
             le_nested_arr_lens_asked: RefCell::new(Vec::new()),
+            // Valid by default; the verification itself is the host's job, not the ABI's.
+            sig_valid: Ok(1),
+            sigs_checked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -336,6 +343,11 @@ impl FakeHost {
         len: i32,
     ) -> FakeHost {
         self.le_nested_arr_lens.insert((cache_idx, locator), len);
+        self
+    }
+
+    pub fn answering_check_sig(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.sig_valid = answer;
         self
     }
 
@@ -496,6 +508,15 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn check_signature(&self, message: &[u8], signature: &[u8], pubkey: &[u8]) -> HostResult<i32> {
+        self.sigs_checked.borrow_mut().push((
+            message.to_vec(),
+            signature.to_vec(),
+            pubkey.to_vec(),
+        ));
+        self.sig_valid
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -554,6 +575,7 @@ pub mod import {
     pub const TX_INNER_ARR_LEN: &str = r#"(import "host_lib" "tx_inner_arr_len" (func $tx_inner_arr_len (param i32 i32) (result i32)))"#;
     pub const HOME_LE_INNER_ARR_LEN: &str = r#"(import "host_lib" "home_le_inner_arr_len" (func $home_le_inner_arr_len (param i32 i32) (result i32)))"#;
     pub const LE_INNER_ARR_LEN: &str = r#"(import "host_lib" "le_inner_arr_len" (func $le_inner_arr_len (param i32 i32 i32) (result i32)))"#;
+    pub const CHECK_SIG: &str = r#"(import "host_lib" "check_sig" (func $check_sig (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

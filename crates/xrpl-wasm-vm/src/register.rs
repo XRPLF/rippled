@@ -304,6 +304,26 @@ pub(crate) fn register_host_functions(
                     )
                 },
             ),
+            HostFunctionSpec::CheckSignature => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 msg_ptr: i32,
+                 msg_len: i32,
+                 sig_ptr: i32,
+                 sig_len: i32,
+                 pk_ptr: i32,
+                 pk_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::CheckSignature, |c| {
+                        let host = c.data().host;
+                        let message = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
+                        let signature = read_borrowed(c, Region::new(sig_ptr, sig_len))?;
+                        let pubkey = read_borrowed(c, Region::new(pk_ptr, pk_len))?;
+                        host.check_signature(message, signature, pubkey)
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

@@ -394,6 +394,24 @@ HostContext::getLedgerObjNestedArrayLen(
 }
 
 std::int32_t
+HostContext::checkSignature(
+    rust::Slice<std::uint8_t const> message,
+    rust::Slice<std::uint8_t const> signature,
+    rust::Slice<std::uint8_t const> pubkey) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const valid = hostFunctions_.checkSignature(
+            Slice{message.data(), message.size()},
+            Slice{signature.data(), signature.size()},
+            Slice{pubkey.data(), pubkey.size()});
+        if (!valid)
+            return hfErrorToInt(valid.error());
+
+        return *valid;
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

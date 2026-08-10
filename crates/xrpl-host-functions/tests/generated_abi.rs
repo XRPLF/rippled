@@ -163,6 +163,16 @@ impl HostFunctions for FakeHost {
         Ok(cache_idx + locator.len() as i32)
     }
 
+    /// Reads three regions and returns a verdict: valid unless the signature is empty.
+    fn check_signature(
+        &self,
+        _message: &[u8],
+        signature: &[u8],
+        _pubkey: &[u8],
+    ) -> HostResult<i32> {
+        Ok(i32::from(!signature.is_empty()))
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -247,6 +257,8 @@ fn the_trait_is_implementable() {
         host.get_ledger_obj_nested_array_len(0, &[9, 0, 0, 0]),
         Err(HostError::LocatorMalformed)
     );
+    assert_eq!(host.check_signature(b"msg", b"sig", b"pk"), Ok(1));
+    assert_eq!(host.check_signature(b"msg", b"", b"pk"), Ok(0));
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -332,6 +344,7 @@ fn the_spec_table_matches_the_declarations() {
             ("tx_inner_arr_len", 70),
             ("home_le_inner_arr_len", 70),
             ("le_inner_arr_len", 70),
+            ("check_sig", 300),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

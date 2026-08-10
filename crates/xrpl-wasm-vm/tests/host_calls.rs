@@ -333,6 +333,32 @@ fn le_inner_arr_len_reads_the_slot_and_locator_and_returns_the_count() {
     assert_eq!(*host.le_nested_arr_lens_asked.borrow(), vec![(3, locator)]);
 }
 
+/// A call that reads three input regions and returns a scalar verdict: the message,
+/// signature, and pubkey all reach the host, and the verdict comes back as the status.
+#[test]
+fn check_sig_reads_all_three_regions_and_returns_the_verdict() {
+    let host = FakeHost::new(); // valid by default
+
+    // message @0 len 3, signature @8 len 4, pubkey @16 len 5 — memory is zeroed.
+    let wat = module(
+        &[import::CHECK_SIG, ONE_PAGE],
+        "(call $check_sig
+            (i32.const 0) (i32.const 3)
+            (i32.const 8) (i32.const 4)
+            (i32.const 16) (i32.const 5))",
+    );
+    assert_eq!(status(&wat, &host), 1, "the valid verdict");
+    assert_eq!(
+        *host.sigs_checked.borrow(),
+        [(vec![0u8; 3], vec![0u8; 4], vec![0u8; 5])],
+        "the three regions reached the host at their declared lengths"
+    );
+
+    // An invalid signature comes back as 0 — a value, not an error.
+    let host = FakeHost::new().answering_check_sig(Ok(0));
+    assert_eq!(status(&wat, &host), 0, "the invalid verdict");
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

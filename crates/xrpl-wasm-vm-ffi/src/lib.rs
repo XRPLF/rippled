@@ -250,6 +250,16 @@ mod ffi {
             locator: &[u8],
         ) -> i32;
 
+        /// Answers `1`/`0` for a valid/invalid signature, or a negative `HostError`.
+        #[namespace = "xrpl"]
+        #[cxx_name = "checkSignature"]
+        fn check_signature(
+            self: &HostContext,
+            message: &[u8],
+            signature: &[u8],
+            pubkey: &[u8],
+        ) -> i32;
+
         #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
@@ -391,6 +401,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32> {
         scalar(self.ctx.get_ledger_obj_nested_array_len(cache_idx, locator))
+    }
+
+    fn check_signature(&self, message: &[u8], signature: &[u8], pubkey: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.check_signature(message, signature, pubkey))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
