@@ -185,7 +185,7 @@ addVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::addVaultAssets : valid Vault sle");
 
-    Asset const asset = vault->at(sfAsset);
+    [[maybe_unused]] Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::addVaultAssets : amount matches vault asset");
     XRPL_ASSERT(
         valueDelta.asset() == asset, "xrpl::addVaultAssets : valueDelta matches vault asset");
@@ -300,7 +300,7 @@ removeVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::removeVaultAssets : valid Vault sle");
 
-    Asset const asset = vault->at(sfAsset);
+    [[maybe_unused]] Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::removeVaultAssets : amount matches vault asset");
     XRPL_ASSERT(amount >= beast::kZero, "xrpl::removeVaultAssets : amount is non-negative");
 
