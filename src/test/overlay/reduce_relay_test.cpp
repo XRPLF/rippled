@@ -92,13 +92,13 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    [[nodiscard]] beast::IP::Endpoint
+    [[nodiscard]] beast::ip::Endpoint
     getRemoteAddress() const override
     {
         return {};
     }
     void
-    charge(Resource::Charge const& fee, std::string const& context = {}) override
+    charge(resource::Charge const& fee, std::string const& context = {}) override
     {
     }
     [[nodiscard]] bool
@@ -858,12 +858,8 @@ public:
     bool
     isSelected(Peer::id_t id)
     {
-        for (auto& v : validators_)
-        {
-            if (overlay_.isSelected(v, id))
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            validators_, [&](auto& v) { return overlay_.isSelected(v, id); });
     }
 
     /**
@@ -1614,7 +1610,7 @@ vp_base_squelch_max_selected_peers=2
                 env_.app().config().compression = c.compression;
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
-                beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+                beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
                 setEnv(outboundEnable);
                 auto request = xrpl::makeRequest(

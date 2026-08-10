@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -28,6 +29,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -45,6 +47,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -196,7 +199,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         auto isErr = [](json::Value const& j, ErrorCodeI code) {
             return j.isMember(jss::result) && j[jss::result].isMember(jss::error) &&
-                j[jss::result][jss::error] == RPC::getErrorInfo(code).token;
+                j[jss::result][jss::error] == rpc::getErrorInfo(code).token;
         };
 
         json::Value jParams;
@@ -422,56 +425,56 @@ class AccountTx_test : public beast::unit_test::Suite
             p[jss::limit] = 1.2;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = "10" should fail (string instead of integer)
             p[jss::limit] = "10";
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = true should fail (boolean instead of integer)
             p[jss::limit] = true;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = false should fail (boolean instead of integer)
             p[jss::limit] = false;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = -1 should fail (negative number)
             p[jss::limit] = -1;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
             p[jss::limit] = json::Value(json::ValueType::Array);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
             p[jss::limit] = json::Value(json::ValueType::Object);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = "malformed" should fail (malformed string)
             p[jss::limit] = "malformed";
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
             p[jss::limit] = json::Value(json::ValueType::Array);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {"limit": 10} should fail (object with
             // property)
@@ -479,7 +482,7 @@ class AccountTx_test : public beast::unit_test::Suite
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
-                RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = 10 should succeed (valid integer)
             p[jss::limit] = 10;
@@ -890,6 +893,426 @@ class AccountTx_test : public beast::unit_test::Suite
     }
 
     void
+    testDelegation()
+    {
+        testcase("Delegation Filtering");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        // Normal TX: Alice pays Carol (Signed by Alice's Master Key)
+        env(pay(alice, carol, XRP(10)));
+        env.close();
+
+        // Setup Delegation: Alice allows Bob to sign Payments for her
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        // Delegated TX: Alice pays Bob (Signed by Bob using Delegation)
+        env(pay(alice, bob, XRP(20)), delegate::As(bob));
+        env.close();
+
+        // Normal TX: Bob pays Carol (Signed by Bob for himself)
+        env(pay(bob, carol, XRP(30)));
+        env.close();
+
+        auto const countTxs = [&](AccountID const& account,
+                                  json::Value const& delegateParams,
+                                  std::optional<std::uint32_t> const limit = std::nullopt) -> int {
+            int count = 0;
+            json::Value marker;
+            bool haveMarker = false;
+            int pages = 0;
+
+            while (true)
+            {
+                json::Value params;
+                params[jss::account] = toBase58(account);
+                params[jss::ledger_index_min] = -1;
+                params[jss::ledger_index_max] = -1;
+
+                if (!delegateParams.isNull())
+                    params[jss::delegate] = delegateParams;
+                if (limit)
+                    params[jss::limit] = *limit;
+                if (haveMarker)
+                    params[jss::marker] = marker;
+
+                auto const res = env.rpc("json", "account_tx", to_string(params));
+                auto const& result = res[jss::result];
+
+                if (result.isMember(jss::transactions))
+                    count += result[jss::transactions].size();
+
+                if (!limit || !result.isMember(jss::marker))
+                    break;
+
+                marker = result[jss::marker];
+                haveMarker = true;
+                ++pages;
+                if (!BEAST_EXPECT(pages < 20))
+                    break;
+            }
+
+            return count;
+        };
+
+        auto const checkError = [&](json::Value const& delegateParams,
+                                    std::string const& errToken) {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::delegate] = delegateParams;
+            auto res = env.rpc("json", "account_tx", to_string(params));
+            BEAST_EXPECT(res[jss::result][jss::error] == errToken);
+        };
+
+        // Filter: Delegatee. Expects TX #2 (Signed by Bob)
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Filter: Delegatee + Counterparty Bob. Expects TX #2.
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = bob.human();
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Filter: Delegatee + Counterparty Carol. Expects 0.
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = carol.human();
+            BEAST_EXPECT(countTxs(alice.id(), p) == 0);
+        }
+
+        // Filter: Delegator. Expects TX #2.
+        // (Bob signed it, but Alice is the owner).
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
+        }
+
+        // Filter: Delegator + Counterparty Alice. Expects TX #2.
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counter_party] = alice.human();
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
+        }
+
+        // Filter: Authorizer. Expect: None.
+        // TX #2 has sfDelegate present, but Alice is the delegator/owner, not
+        // the delegate signer
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 0);
+        }
+
+        // Query Bob (Signer), Filter: Delegator, Counterparty: Carol
+        // Expect: None (Alice is Owner, not Carol)
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counter_party] = carol.human();
+            BEAST_EXPECT(countTxs(bob.id(), p) == 0);
+        }
+
+        // Query Bob (Signer), Filter: Delegatee
+        // Expect: None. Bob did not employ a delegatee for his own TXs (TX C).
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(bob.id(), p) == 0);
+        }
+
+        // "delegate" is not an object (e.g., string)
+        {
+            json::Value const p = "not_an_object";
+            checkError(p, "invalidParams");
+        }
+
+        // Missing "delegate_filter" inside object
+        {
+            json::Value const p(json::ValueType::Object);
+            checkError(p, "invalidParams");
+        }
+
+        // "delegate_filter" is not a string (e.g., int)
+        {
+            json::Value p;
+            p[jss::delegate_filter] = 123;
+            checkError(p, "invalidParams");
+        }
+
+        // "delegate_filter" has invalid value
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "random_string";
+            checkError(p, "invalidParams");
+        }
+
+        // "counterparty" is not a string
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = 123;
+            checkError(p, "invalidParams");
+        }
+
+        // "counterparty" is malformed base58
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = "not_an_account";
+            checkError(p, "actMalformed");
+        }
+
+        // Multi-signed non-delegated TX: Alice pays Carol via multi-sig.
+        // sfDelegate is absent and sfSigningPubKey is empty — the filter
+        // must skip it without crashing.
+        {
+            Account const daria{"daria"};
+            Account const edward{"edward"};
+            env.fund(XRP(1000), daria, edward);
+            env.close();
+            env(signers(alice, 2, {{daria, 1}, {edward, 1}}));
+            env.close();
+            env(pay(alice, carol, XRP(1)),
+                Fee(drops(env.current()->fees().increment * 2)),
+                Msig(daria, edward));
+            env.close();
+
+            // Alice's actor filter should still see only the 1 delegated tx,
+            // not the multi-signed one.
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Regular-key-signed non-delegated TX: Alice pays Bob, signed by Bob
+        // as Alice's regular key. This must not be treated as delegation.
+        {
+            env(regkey(alice, bob));
+            env.close();
+            env(pay(alice, bob, XRP(1)));
+            env.close();
+
+            json::Value actorFilter;
+            actorFilter[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter) == 1);
+            // limit: 1 forces pagination past newer non-delegated rows.
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter, 1) == 1);
+
+            actorFilter[jss::counter_party] = bob.human();
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter) == 1);
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter, 1) == 1);
+
+            json::Value authorizerFilter;
+            authorizerFilter[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter) == 1);
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter, 1) == 1);
+
+            authorizerFilter[jss::counter_party] = alice.human();
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter) == 1);
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter, 1) == 1);
+        }
+
+        // Pagination marker/delegate-filter consistency. A marker returned by a
+        // delegate-filtered query carries a `delegate` flag and is only valid
+        // for a follow-up request that repeats the filter; mixing the two
+        // marker conventions must be rejected with invalidParams.
+        {
+            json::Value actorFilter;
+            actorFilter[jss::delegate_filter] = "actor";
+
+            // Obtain a delegate-filtered marker (limit 1 forces pagination).
+            json::Value dp;
+            dp[jss::account] = alice.human();
+            dp[jss::ledger_index_min] = -1;
+            dp[jss::ledger_index_max] = -1;
+            dp[jss::delegate] = actorFilter;
+            dp[jss::limit] = 1;
+            auto const dRes = env.rpc("json", "account_tx", to_string(dp));
+            BEAST_EXPECT(dRes[jss::result].isMember(jss::marker));
+            json::Value const delegateMarker = dRes[jss::result][jss::marker];
+            BEAST_EXPECT(
+                delegateMarker.isMember(jss::delegate) && delegateMarker[jss::delegate].asBool());
+
+            // Reusing a delegate marker without the delegate filter is rejected.
+            {
+                json::Value p;
+                p[jss::account] = alice.human();
+                p[jss::ledger_index_min] = -1;
+                p[jss::ledger_index_max] = -1;
+                p[jss::limit] = 1;
+                p[jss::marker] = delegateMarker;
+                auto const r = env.rpc("json", "account_tx", to_string(p));
+                BEAST_EXPECT(r[jss::result][jss::error] == "invalidParams");
+            }
+
+            // Obtain a non-delegate marker; it must not carry the flag.
+            json::Value np;
+            np[jss::account] = alice.human();
+            np[jss::ledger_index_min] = -1;
+            np[jss::ledger_index_max] = -1;
+            np[jss::limit] = 1;
+            auto const nRes = env.rpc("json", "account_tx", to_string(np));
+            BEAST_EXPECT(nRes[jss::result].isMember(jss::marker));
+            json::Value const normalMarker = nRes[jss::result][jss::marker];
+            BEAST_EXPECT(!normalMarker.isMember(jss::delegate));
+
+            // Reusing a non-delegate marker with a delegate filter is rejected.
+            {
+                json::Value p;
+                p[jss::account] = alice.human();
+                p[jss::ledger_index_min] = -1;
+                p[jss::ledger_index_max] = -1;
+                p[jss::limit] = 1;
+                p[jss::delegate] = actorFilter;
+                p[jss::marker] = normalMarker;
+                auto const r = env.rpc("json", "account_tx", to_string(p));
+                BEAST_EXPECT(r[jss::result][jss::error] == "invalidParams");
+            }
+        }
+    }
+
+    void
+    testDelegationMultiSign()
+    {
+        testcase("Delegation filter with multi-signed delegatee");
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        Account const edward{"edward"};
+
+        env.fund(XRP(10000), alice, bob, carol, daria, edward);
+        env.close();
+
+        // Bob's identity is established via multi-sig (daria + edward)
+        env(signers(bob, 2, {{daria, 1}, {edward, 1}}));
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        // Delegated tx: Alice pays Carol, Bob signs via multi-sig
+        env(pay(alice, carol, XRP(10)), Fee(XRP(1)), delegate::As(bob), Msig(daria, edward));
+        env.close();
+
+        auto const countTxs = [&](AccountID const& account,
+                                  json::Value const& delegateParams) -> int {
+            json::Value params;
+            params[jss::account] = toBase58(account);
+            params[jss::ledger_index_min] = -1;
+            params[jss::ledger_index_max] = -1;
+            params[jss::delegate] = delegateParams;
+
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+
+            if (res[jss::result].isMember(jss::transactions))
+                return res[jss::result][jss::transactions].size();
+            return 0;
+        };
+
+        // Alice (owner) finds the tx with actor filter
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Alice (owner) + counterparty Bob finds the tx
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = bob.human();
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Bob (delegatee) finds the tx with authorizer filter
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
+        }
+
+        // Bob (delegatee) + counterparty Alice finds the tx
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counter_party] = alice.human();
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
+        }
+    }
+
+    void
+    testDelegationMarkerWithinPage()
+    {
+        testcase("Delegation filter marker within a single query page");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        auto const startLedger = env.closed()->header().seq + 1;
+
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+
+        json::Value p;
+        p[jss::delegate_filter] = "actor";
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::ledger_index_min] = startLedger;
+        params[jss::ledger_index_max] = -1;
+        params[jss::delegate] = p;
+        params[jss::limit] = 1;
+
+        auto const res = env.rpc("json", "account_tx", to_string(params));
+        auto const& result = res[jss::result];
+
+        // The first page emits only the first delegated payment. (as page limit is set to 1)
+        BEAST_EXPECT(result[jss::transactions].size() == 1);
+        BEAST_EXPECT(result.isMember(jss::marker));
+
+        // Following the marker resumes right after the first payment and
+        // returns the second one.
+        json::Value page2 = params;
+        page2[jss::marker] = result[jss::marker];
+        auto const res2 = env.rpc("json", "account_tx", to_string(page2));
+        BEAST_EXPECT(res2[jss::result][jss::transactions].size() == 1);
+    }
+
+    void
     testSponsorship()
     {
         // test all sponsored transactions are in sponsor and sponsee's account
@@ -973,6 +1396,9 @@ public:
         testContents();
         testAccountDelete();
         testMPT();
+        testDelegation();
+        testDelegationMultiSign();
+        testDelegationMarkerWithinPage();
         testSponsorship();
     }
 };

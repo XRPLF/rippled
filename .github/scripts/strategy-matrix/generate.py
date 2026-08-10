@@ -25,22 +25,18 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
     return " ".join(args)
 
 
-def runs_on_event(exclude_event_types: list[str], event: str | None) -> bool:
-    """Whether a config should run for the current event.
-
-    'exclude_event_types' is a list of GitHub event names (e.g.
-    ["pull_request"]) on which the config should NOT run; an empty list means
-    the config runs on every event. When no event is given (event is None), no
-    filtering is applied.
-    """
-    if event is None:
-        return True
-    return event not in exclude_event_types
-
-
 # ---------------------------------------------------------------------------
 # Input types — shapes of the JSON config files
 # ---------------------------------------------------------------------------
+
+
+# Every config must declare 'minimal'. Minimal configs form the reduced matrix
+# built for pull requests by default; the full matrix adds the rest. Packaging
+# configs declare it too, but packaging is gated in the workflow, not by it.
+#
+# Configs may also opt into 'benchmark' to smoke-run the benchmarks. Note that
+# the flag applies to every entry a config expands into, so only set it on
+# configs that expand to a single combination.
 
 
 @dataclasses.dataclass
@@ -50,13 +46,12 @@ class LinuxConfig:
     compiler: list[str]
     build_type: list[str]
     arch: list[str]
+    minimal: bool
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
     image: str = ""  # only used by package_configs entries
-    # List of GitHub event names (e.g. "pull_request") on which this config
-    # should NOT run. Empty means it runs on every event.
-    exclude_event_types: list[str] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -89,11 +84,10 @@ class PlatformConfig:
     """One entry in macos.json's or windows.json's 'configs' array."""
 
     build_type: list[str]
+    minimal: bool
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
+    benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
-    # List of GitHub event names (e.g. "pull_request") on which this config
-    # should NOT run. Empty means it runs on every event.
-    exclude_event_types: list[str] = dataclasses.field(default_factory=list)
 
     def __post_init__(self) -> None:
         if isinstance(self.build_type, str):
@@ -137,6 +131,7 @@ class MatrixEntry:
     cmake_args: str
     cmake_target: str
     build_only: bool
+    benchmark: bool
     build_type: str
     architecture: Architecture
     sanitizers: str
@@ -168,20 +163,18 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(
-    linux: LinuxFile, event: str | None = None
-) -> list[MatrixEntry]:
+def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a LinuxFile into a flat list of matrix entries.
 
     Each config entry is expanded over the cross-product of its
-    compiler, build_type, sanitizers, and architecture lists. Configs that
-    exclude the current event are skipped.
+    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
+    true, only configs flagged as minimal are included.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
-            if not runs_on_event(cfg.exclude_event_types, event):
+            if minimal and not cfg.minimal:
                 continue
             # An empty sanitizers list means "one entry with no sanitizer".
             effective_sanitizers = cfg.sanitizers or [""]
@@ -207,6 +200,7 @@ def expand_linux_matrix(
                         cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                         cmake_target="all",
                         build_only=False,
+                        benchmark=cfg.benchmark,
                         build_type=build_type,
                         architecture=arch_info,
                         sanitizers=sanitizer,
@@ -240,19 +234,17 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     return entries
 
 
-def expand_platform_matrix(
-    pf: PlatformFile, event: str | None = None
-) -> list[MatrixEntry]:
+def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a PlatformFile (macOS or Windows) into matrix entries.
 
-    Configs that exclude the current event are skipped.
+    When 'minimal' is true, only configs flagged as minimal are included.
     """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
     entries: list[MatrixEntry] = []
     for cfg in pf.configs:
-        if not runs_on_event(cfg.exclude_event_types, event):
+        if minimal and not cfg.minimal:
             continue
         for build_type in cfg.build_type:
             entries.append(
@@ -261,6 +253,7 @@ def expand_platform_matrix(
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
+                    benchmark=cfg.benchmark,
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
@@ -292,12 +285,12 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "-e",
-        "--event",
-        help="The GitHub event name that triggered the workflow (e.g. 'push', "
-        "'pull_request'). Configs are filtered by their 'event_type'. If "
-        "omitted, no filtering is applied.",
-        default=None,
+        "-m",
+        "--minimal",
+        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
+        "used for pull requests by default. If omitted, the full matrix is "
+        "emitted.",
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -308,15 +301,15 @@ if __name__ == "__main__":
     else:
         if args.config in ("linux", None):
             matrix += expand_linux_matrix(
-                LinuxFile.load(THIS_DIR / "linux.json"), args.event
+                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
             )
         if args.config in ("macos", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "macos.json"), args.event
+                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
             )
         if args.config in ("windows", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "windows.json"), args.event
+                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
             )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")

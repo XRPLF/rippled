@@ -230,9 +230,9 @@ public:
     std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
-    std::unique_ptr<Resource::Manager> resourceManager_;
+    std::unique_ptr<resource::Manager> resourceManager_;
 
-    std::unique_ptr<NodeStore::Database> nodeStore_;
+    std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> orderBookDB_;
     std::unique_ptr<PathRequestManager> pathRequestManager_;
@@ -375,7 +375,7 @@ public:
         , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
-              Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
+              resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
         , nodeStore_(shaMapStore_->makeNodeStore(
               config_->prefetchWorkers > 0 ? config_->prefetchWorkers : 4))
         , nodeFamily_(*this, *collectorManager_)
@@ -655,7 +655,7 @@ public:
         return tempNodeCache_;
     }
 
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         return *nodeStore_;
@@ -673,7 +673,7 @@ public:
         return *loadManager_;
     }
 
-    Resource::Manager&
+    resource::Manager&
     getResourceManager() override
     {
         return *resourceManager_;
@@ -860,9 +860,9 @@ public:
         if (config_->doImport)
         {
             auto j = logs_->journal("NodeObject");
-            NodeStore::DummyScheduler dummyScheduler;
-            std::unique_ptr<NodeStore::Database> source =
-                NodeStore::Manager::instance().makeDatabase(
+            node_store::DummyScheduler dummyScheduler;
+            std::unique_ptr<node_store::Database> source =
+                node_store::Manager::instance().makeDatabase(
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
@@ -1187,7 +1187,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             logs_->threshold(Severity::Debug);
     }
 
-    JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()
+    JLOG(journal_.info()) << "Process starting: " << build_info::getFullVersionString()
                           << ", Instance Cookie: " << instanceCookie_;
 
     if (numberOfThreads(*config_) < 2)
@@ -1457,9 +1457,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
-        RPC::JsonContext context{
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
             {.j = getJournal("RPCHandler"),
              .app = *this,
              .loadType = loadType,
@@ -1469,11 +1469,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiMaximumSupportedVersion},
+             .apiVersion = rpc::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
-        RPC::doCommand(context, jvResult);
+        rpc::doCommand(context, jvResult);
 
         if (!config_->quiet())
         {
@@ -1489,7 +1489,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 void
 ApplicationImp::start(bool withTimers)
 {
-    JLOG(journal_.info()) << "Application starting. Version is " << BuildInfo::getVersionString();
+    JLOG(journal_.info()) << "Application starting. Version is " << build_info::getVersionString();
 
     if (withTimers)
     {
