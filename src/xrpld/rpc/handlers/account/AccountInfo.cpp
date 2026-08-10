@@ -122,17 +122,18 @@ doAccountInfo(rpc::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 10> kLsFlags{
-        {{"defaultRipple", lsfDefaultRipple},
-         {"depositAuth", lsfDepositAuth},
-         {"disableMasterKey", lsfDisableMaster},
-         {"disallowIncomingXRP", lsfDisallowXRP},
-         {"globalFreeze", lsfGlobalFreeze},
-         {"noFreeze", lsfNoFreeze},
-         {"passwordSpent", lsfPasswordSpent},
-         {"requireAuthorization", lsfRequireAuth},
-         {"requireDestinationTag", lsfRequireDestTag},
-         {"allowTrustLineClawback", lsfAllowTrustLineClawback}}};
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 10>
+        kAccountRootFlags{
+            {{"defaultRipple", lsfDefaultRipple},
+             {"depositAuth", lsfDepositAuth},
+             {"disableMasterKey", lsfDisableMaster},
+             {"disallowIncomingXRP", lsfDisallowXRP},
+             {"globalFreeze", lsfGlobalFreeze},
+             {"noFreeze", lsfNoFreeze},
+             {"passwordSpent", lsfPasswordSpent},
+             {"requireAuthorization", lsfRequireAuth},
+             {"requireDestinationTag", lsfRequireDestTag},
+             {"allowTrustLineClawback", lsfAllowTrustLineClawback}}};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
         kDisallowIncomingFlags{
@@ -146,7 +147,8 @@ doAccountInfo(rpc::JsonContext& context)
 
     // TODO: consider replacing this with a static_assert in C++26 (via reflection)
     XRPL_ASSERT_PARTS(
-        kLsFlags.size() + kDisallowIncomingFlags.size() + 1 == getAccountRootFlags().size(),
+        kAccountRootFlags.size() + kDisallowIncomingFlags.size() + 1 ==
+            getAccountRootFlags().size(),
         "xrpl::doAccountInfo",
         "number of account flags");
 
@@ -168,7 +170,7 @@ doAccountInfo(rpc::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         json::Value acctFlags{json::ValueType::Object};
-        for (auto const& lsf : kLsFlags)
+        for (auto const& lsf : kAccountRootFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         for (auto const& lsf : kDisallowIncomingFlags)
