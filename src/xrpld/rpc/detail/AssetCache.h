@@ -75,8 +75,9 @@ public:
      * RAII: per-thread line load/expand budget (owner-dir chunk size).
      * - WebSocket path_find: leave default (kPathFindLineChunkSize) so lines
      *   fill slowly across updates.
-     * - One-shot ripple_path_find: set to maxLinesPerAccount so first load and
-     *   expandIncompleteLines pull as many lines as budget allows in one reply.
+     * - One-shot (ripple_path_find, transactionSign build_path): set to
+     *   maxLinesPerAccount so first load / expandIncompleteLines pull as many
+     *   lines as budget allows in a single request (not just 64).
      */
     class LoadScope
     {

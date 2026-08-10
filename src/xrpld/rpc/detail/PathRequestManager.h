@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -34,9 +35,10 @@ public:
         beast::insight::Collector::ptr const& collector);
 
     /**
-     * Cancel mid-close timer and detach async handlers so they cannot touch
-     * this after destruction (io_context threads join only after Application
-     * members are destroyed).
+     * Detach mid-close handlers, wait for any in-flight timer/JtRpc work that
+     * already holds a manager pointer, then cancel the timer. io_context
+     * threads may outlive this object; MidCloseBag keeps them from using a
+     * dangling PathRequestManager without holding bag->mutex across refresh.
      */
     ~PathRequestManager();
 
@@ -187,14 +189,21 @@ private:
 
     /**
      * Lifetime token for mid-close async_wait / JtRpc jobs. Handlers capture
-     * shared_ptr<MidCloseBag> and take bag->mutex before using manager.
-     * Destructor nulls manager under that mutex so cancel()'d handlers never
-     * touch a destroyed PathRequestManager (io threads outlive this object).
+     * shared_ptr<MidCloseBag>. bag->mutex is only held to publish/check manager
+     * and to enter/leave inFlight — never across runPeriodicRevalidate so
+     * network io_context threads are not stalled on a long refresh.
+     *
+     * Protocol: under mutex, if manager is non-null, ++inFlight and copy the
+     * pointer, unlock, use the pointer, then --inFlight and notify. Destructor
+     * nulls manager then waits until inFlight == 0 so no handler uses a
+     * destroyed PathRequestManager (io threads outlive this object).
      */
     struct MidCloseBag
     {
         std::mutex mutex;
+        std::condition_variable idle;
         PathRequestManager* manager{nullptr};
+        int inFlight{0};
     };
     std::shared_ptr<MidCloseBag> midCloseBag_;
 
@@ -206,6 +215,9 @@ private:
 
     // Serializes closed/create updateAll vs mid-close. Mid-close uses try_lock
     // so it never blocks behind a long closed wave (skips the tick instead).
+    // Closed/create uses lock() and can occupy a JobQueue worker while waiting;
+    // runParallel therefore only fans out when workers >= 3 and caps each batch
+    // at workers - 1 so that waiter cannot starve JtPathFindWork siblings.
     std::mutex waveMutex_;
 
     std::atomic<int> lastIdentifier_;

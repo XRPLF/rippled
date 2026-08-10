@@ -80,8 +80,12 @@ enum JobType {
 };
 
 /**
- * Concurrent JtPathFindWork slots (JobTypes limit and PathRequestManager fan-out).
- * rpc::tuning::kPathSteadyUpdateParallelism must equal this value.
+ * JobTypes limit for JtPathFindWork and the requested steady-revalidate
+ * parallelism (rpc::tuning::kPathSteadyUpdateParallelism must equal this).
+ *
+ * Effective concurrent units are still gated by JobQueue size in
+ * PathRequestManager::runParallel: serial when workers < 3, else at most
+ * workers - 1 per batch.
  */
 inline constexpr int kPathFindWorkLimit = 32;
 

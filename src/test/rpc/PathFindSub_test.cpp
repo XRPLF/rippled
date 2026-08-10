@@ -61,10 +61,11 @@ namespace test {
  * xrpl.rpc.AssetCache (direct cache unit tests including TSan-friendly
  * concurrency).
  *
- * updateAll is always scheduled on the JobQueue (JtClient) so
- * PathRequestManager's fork-join steady revalidate (JtPathFindWork) has free
- * worker threads. Calling updateAll on the test thread deadlocks when more than
- * one established session is revalidated in parallel.
+ * updateAll is scheduled on the JobQueue (JtClient) to mirror production
+ * (JtUpdatePf / JtRpc). Steady revalidate only fork-joins when JobQueue
+ * workers >= 3; with fewer workers it runs serially. Multi-session cases still
+ * go through the JobQueue so the workers < 3 serial path and the workers >= 3
+ * fan-out path are both exercised under realistic scheduling.
  */
 class PathFindSub_test : public beast::unit_test::Suite
 {
@@ -118,8 +119,10 @@ class PathFindSub_test : public beast::unit_test::Suite
     }
 
     /**
-     * Run updateAll on a JobQueue worker so JtPathFindWork fan-out has free
-     * threads. Returns false if the job did not finish in time.
+     * Run updateAll on a JobQueue worker (same pool that production uses for
+     * JtUpdatePf / JtRpc). With workers >= 3, steady revalidate may fan out
+     * JtPathFindWork from that worker; with workers < 3 it stays serial.
+     * Returns false if the job did not finish in time.
      */
     bool
     runUpdateAll(
@@ -136,7 +139,9 @@ class PathFindSub_test : public beast::unit_test::Suite
             });
         if (!queued)
         {
-            // Fallback: only safe with ≤1 established session (no fan-out).
+            // Queue full / stopping: run inline. Safe for multi-session when
+            // workers < 3 (serial path). Prefer the JobQueue path above for
+            // workers >= 3 so fan-out is exercised from a real pool thread.
             env.app().getPathRequestManager().updateAll(ledger, midClose);
             return true;
         }
@@ -157,22 +162,23 @@ class PathFindSub_test : public beast::unit_test::Suite
     }
 
     jtx::Env
-    makeEnv(bool multiWorker = true)
+    makeEnv(bool multiWorker = true, int workers = 4)
     {
         using namespace jtx;
-        return Env(*this, envconfig([multiWorker](std::unique_ptr<Config> cfg) {
-            // Multi-worker envs exercise parallel steady revalidate.
+        return Env(*this, envconfig([multiWorker, workers](std::unique_ptr<Config> cfg) {
             // Stand-alone without forceMultiThread → Application always builds
             // 1 JobQueue thread even if [workers] is higher (see Application.cpp).
+            // runParallel is serial for workers < 3 and may fan out for workers >= 3
+            // (batch ≤ workers - 1). Default multiWorker workers=4 exercises fan-out.
             if (multiWorker)
             {
                 cfg->forceMultiThread = true;
-                cfg->workers = 4;
+                cfg->workers = workers;
             }
             else
             {
                 cfg->forceMultiThread = false;
-                // Intentionally workers>1 while still single-threaded JobQueue —
+                // Intentionally cfg.workers=2 while JobQueue is still 1-thread —
                 // catches jobQueueWorkerCount checking workers before standalone.
                 cfg->workers = 2;
             }
@@ -309,7 +315,7 @@ class PathFindSub_test : public beast::unit_test::Suite
             BEAST_EXPECT(jr.isMember(jss::alternatives));
         }
 
-        // First-update wave for all new sessions (JobQueue so fan-out is safe).
+        // First-update wave for all new sessions (always serial; JobQueue path).
         BEAST_EXPECT(runUpdateAll(env, env.closed()));
         int firstWave = 0;
         for (auto& c : clients)
@@ -372,17 +378,10 @@ class PathFindSub_test : public beast::unit_test::Suite
     }
 
     void
-    testSingleWorkerMultiSessionNoHang()
+    multiSessionSteadyNoHang(jtx::Env& env, int expectedSessions)
     {
-        // Regression: runParallel used to fork-join JtPathFindWork from inside
-        // a JobQueue thread. Stand-alone without forceMultiThread always has
-        // exactly 1 JobQueue thread even when [workers] > 1 (Application order).
-        // jobQueueWorkerCount must match that, not prefer cfg.workers first.
-        testcase("single worker: multi-session steady wave does not hang");
         using namespace jtx;
         using namespace std::chrono_literals;
-        // workers=2 would mislead a wrong formula into thinking fan-out is safe.
-        Env env = makeEnv(/*multiWorker=*/false);
         Account const gw{"gateway"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -397,11 +396,11 @@ class PathFindSub_test : public beast::unit_test::Suite
         env(pay(gw, dan, gw["USD"](50)));
         env.close();
 
-        constexpr int kSessions = 3;
         std::vector<std::unique_ptr<WSClient>> clients;
         std::vector<std::pair<Account, Account>> pairs = {{alice, bob}, {carol, dan}, {alice, dan}};
+        BEAST_EXPECT(static_cast<int>(pairs.size()) >= expectedSessions);
 
-        for (int i = 0; i < kSessions; ++i)
+        for (int i = 0; i < expectedSessions; ++i)
         {
             clients.push_back(makeWSClient(env.app().config()));
             auto const& [src, dst] = pairs[static_cast<std::size_t>(i)];
@@ -410,8 +409,7 @@ class PathFindSub_test : public beast::unit_test::Suite
             BEAST_EXPECT(!jr.isMember(jss::error));
         }
 
-        // First wave (new sessions) then steady wave — both used to hang when
-        // steadyUpdates.size() > 1 on a 1-worker queue.
+        // First wave (new sessions) then steady wave.
         BEAST_EXPECT(runUpdateAll(env, env.closed()));
         for (auto& c : clients)
             drainPathFind(*c);
@@ -424,7 +422,94 @@ class PathFindSub_test : public beast::unit_test::Suite
                 ++refreshed;
             drainPathFind(*c);
         }
-        BEAST_EXPECT(refreshed == kSessions);
+        BEAST_EXPECT(refreshed == expectedSessions);
+
+        for (auto& c : clients)
+        {
+            json::Value closeReq;
+            closeReq[jss::subcommand] = "close";
+            (void)c->invoke("path_find", closeReq);
+        }
+    }
+
+    void
+    testSingleWorkerMultiSessionNoHang()
+    {
+        // Regression: stand-alone without forceMultiThread has 1 JobQueue
+        // thread even when cfg.workers > 1. jobQueueWorkerCount must report 1
+        // (standalone before workers) so runParallel stays serial (workers < 3).
+        // Fan-out on a 1-thread pool hangs forever on doneCv.
+        testcase("single worker: multi-session steady wave does not hang");
+        auto env = makeEnv(/*multiWorker=*/false);
+        multiSessionSteadyNoHang(env, /*expectedSessions=*/3);
+    }
+
+    void
+    testTwoWorkerMultiSessionNoHang()
+    {
+        // Regression: forceMultiThread + workers=2 is a real 2-thread JobQueue.
+        // runParallel must stay serial (workers < 3). Fan-out here hangs when a
+        // second updateAll blocks on waveMutex_ — zero threads left for
+        // JtPathFindWork while the parent waits on doneCv.
+        testcase("two workers: multi-session steady wave does not hang");
+        using namespace std::chrono_literals;
+        auto env = makeEnv(/*multiWorker=*/true, /*workers=*/2);
+
+        // Establish sessions and run a closed wave (serial: workers == 2 < 3).
+        multiSessionSteadyNoHang(env, /*expectedSessions=*/3);
+
+        // Re-open sessions and race closed + mid-close updateAll on the two
+        // workers (the historical hang shape).
+        using namespace jtx;
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+
+        constexpr int kSessions = 3;
+        std::vector<std::unique_ptr<WSClient>> clients;
+        std::vector<std::pair<Account, Account>> pairs = {{alice, bob}, {carol, dan}, {alice, dan}};
+        for (int i = 0; i < kSessions; ++i)
+        {
+            clients.push_back(makeWSClient(env.app().config()));
+            auto const& [src, dst] = pairs[static_cast<std::size_t>(i)];
+            auto jr = clients.back()->invoke(
+                "path_find", pfCreate(src, dst, dst["USD"](5), "USD"))[jss::result];
+            BEAST_EXPECT(!jr.isMember(jss::error));
+        }
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        for (auto& c : clients)
+            drainPathFind(*c);
+
+        auto doneClosed = std::make_shared<std::atomic<bool>>(false);
+        auto doneMid = std::make_shared<std::atomic<bool>>(false);
+        auto const closed = env.closed();
+        auto const open = env.current();
+        bool const q1 = env.app().getJobQueue().addJob(
+            JtClient, "PathFindSub-closed", [doneClosed, &env, closed]() {
+                env.app().getPathRequestManager().updateAll(closed, /*midClose=*/false);
+                doneClosed->store(true, std::memory_order_release);
+            });
+        bool const q2 =
+            env.app().getJobQueue().addJob(JtClient, "PathFindSub-mid", [doneMid, &env, open]() {
+                env.app().getPathRequestManager().updateAll(open, /*midClose=*/true);
+                doneMid->store(true, std::memory_order_release);
+            });
+        BEAST_EXPECT(q1 && q2);
+
+        bool bothDone = false;
+        for (int i = 0; i < 400; ++i)
+        {
+            if (doneClosed->load(std::memory_order_acquire) &&
+                doneMid->load(std::memory_order_acquire))
+            {
+                bothDone = true;
+                break;
+            }
+            std::this_thread::sleep_for(25ms);
+        }
+        BEAST_EXPECT(bothDone);
 
         for (auto& c : clients)
         {
@@ -643,6 +728,7 @@ public:
         testRevalidateAcrossCloses();
         testMultiSessionSharedCache();
         testSingleWorkerMultiSessionNoHang();
+        testTwoWorkerMultiSessionNoHang();
         testSixPathShape();
         testPartialLiquidityNoCoveringSpare();
         testStaggeredRediscoverySurvivesManyCloses();

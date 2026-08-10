@@ -70,8 +70,10 @@ private:
         add(JtClientWebsocket,  "clientWebsocket",      maxLimit,  2000ms,  5000ms);
         add(JtRpc,               "RPC",                  maxLimit,     0ms,     0ms);
         add(JtUpdatePf,         "updatePaths",                 1,     0ms,     0ms);
-        // Parallel path_find revalidate workers (path_find subscriptions).
-        // Limit is kPathFindWorkLimit (== kPathSteadyUpdateParallelism).
+        // Steady path_find revalidate units (fork-join siblings of updateAll).
+        // Limit is kPathFindWorkLimit (== kPathSteadyUpdateParallelism). Actual
+        // concurrency is also capped by JobQueue workers in runParallel
+        // (serial if workers < 3; else batch ≤ workers - 1).
         add(JtPathFindWork,     "pathFindWork", kPathFindWorkLimit,   0ms,     0ms);
         add(JtTransaction,       "transaction",          maxLimit,   250ms,  1000ms);
         add(JtBatch,             "batch",                maxLimit,   250ms,  1000ms);

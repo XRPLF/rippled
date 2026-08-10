@@ -60,13 +60,18 @@ PathRequestManager::PathRequestManager(
 
 PathRequestManager::~PathRequestManager()
 {
-    // Detach handlers before cancel so a later operation_aborted callback
-    // (run on io_context threads that outlive this member) sees manager==null.
+    // Stop new handlers from observing *this, cancel the timer, then wait for
+    // any handler that already took a manager pointer (inFlight) to finish.
+    // Do not hold bag->mutex across refresh — that stalled io_context threads.
     {
         std::lock_guard const lk(midCloseBag_->mutex);
         midCloseBag_->manager = nullptr;
     }
     midCloseTimer_.cancel();
+    {
+        std::unique_lock lk(midCloseBag_->mutex);
+        midCloseBag_->idle.wait(lk, [this] { return midCloseBag_->inFlight == 0; });
+    }
 }
 
 void
@@ -172,10 +177,18 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 namespace {
 
 /**
- * Match Application's JobQueue thread-count policy exactly (Application.cpp).
- * Order matters: stand-alone without forceMultiThread is always 1 worker even
- * when [workers] is set higher — checking workers first would allow runParallel
- * to fork-join and hang forever on the single real JobQueue thread.
+ * JobQueue thread count used by runParallel's fan-out gate.
+ *
+ * Must mirror ApplicationImp's JobQueue constructor (Application.cpp) for the
+ * cases we care about. Order matters: stand-alone without forceMultiThread is
+ * always 1 worker even when [workers] is set higher — checking workers first
+ * would report a multi-thread pool that does not exist and allow runParallel
+ * to fork-join on a single real thread (permanent hang on doneCv).
+ *
+ * When [workers] is unset, Application sizes the pool as
+ *   2 + min(hardware_concurrency, 4)  (or larger for huge nodes).
+ * We return the floor (2): underestimating only forces serial revalidate
+ * (safe). Overestimating would re-enable fork-join on too few threads.
  */
 [[nodiscard]] int
 jobQueueWorkerCount(Config const& cfg)
@@ -185,7 +198,7 @@ jobQueueWorkerCount(Config const& cfg)
         return 1;
     if (cfg.workers > 0)
         return cfg.workers;
-    // Non-standalone / multi-thread formula always yields >= 2.
+    // Conservative floor of Application's default multi-thread formula.
     return 2;
 }
 
@@ -193,13 +206,23 @@ jobQueueWorkerCount(Config const& cfg)
  * Run steady revalidates in bounded parallel batches via JobQueue.
  *
  * Matches project convention (no std::async): each unit is JtPathFindWork so
- * concurrency is visible to job accounting and capped by JobTypes limit (32).
+ * concurrency is visible to job accounting. Requested width is
+ * kPathSteadyUpdateParallelism (== kPathFindWorkLimit); effective width is:
+ *   workers < 3  → serial (no fork-join)
+ *   workers >= 3 → min(requested, workers - 1) per batch
+ *                  (1 unit inline + ≤ workers - 2 JtPathFindWork siblings)
  *
- * Fork-join from a JobQueue thread: queue count-1 workers, run one unit on
- * this thread, then wait. Requires workerCount >= 2 — updateAll itself runs
- * on a JobQueue worker (JtUpdatePf / JtRpc), so a single-worker queue would
- * never dispatch the sibling jobs and hang forever on doneCv. In that case
- * (stand-alone default, workers=1) fall back to serial execution.
+ * Fork-join from a JobQueue thread: queue siblings, run one unit on this
+ * thread, then wait on doneCv. That blocks a pool thread, so fan-out needs
+ * spare workers that can still drain JtPathFindWork.
+ *
+ * Deadlock class (workers == 2; or workers == 3 with batch > workers - 1):
+ *   - Thread A: updateAll holds waveMutex_, forks siblings, waits doneCv
+ *   - Thread B: second updateAll blocks on waveMutex_ (closed vs mid-close)
+ *   - No free worker left for JtPathFindWork → both wait forever
+ *
+ * Mitigations (thresholds above): serial for workers < 3; batch ≤ workers - 1
+ * reserves one pool thread for a concurrent waveMutex_ waiter.
  *
  * Completes the full work vector — do not abort mid-wave for new path_find
  * sessions (that stretched mean update gap under load).
@@ -231,20 +254,21 @@ runParallel(
         }
     };
 
-    // Fork-join blocks *this* JobQueue thread on doneCv while siblings run as
-    // JtPathFindWork. Need the waiter free + at least one other worker free, so
-    // require workerCount >= 3 (1 blocked parent + ≥2 available is ideal; with
-    // only 2 total, the single free worker is easily starved by other job types).
-    // workerCount < 2 also cannot self-dispatch siblings.
+    // Need: this parent (doneCv) + ≥1 sibling runner + spare for a concurrent
+    // waveMutex_ waiter. With only 2 workers the spare is gone as soon as a
+    // second updateAll blocks on the wave lock — permanent freeze.
     if (workerCount < 3 || parallelism <= 1)
     {
         runSerial(0, work.size());
         return;
     }
 
-    // Cap batch size: 1 unit runs inline on this thread; queue at most
-    // workerCount-1 siblings so the remaining pool can drain the barrier.
-    auto const par = static_cast<std::size_t>(std::max(1, std::min(parallelism, workerCount)));
+    // 1 unit inline on this thread; queue ≤ workerCount-2 siblings so that
+    // even if another JobQueue thread is blocked on waveMutex_, the remaining
+    // workers can still complete the barrier.
+    auto const maxBatch = static_cast<std::size_t>(workerCount - 1);
+    auto const par = static_cast<std::size_t>(
+        std::max(std::size_t{1}, std::min(static_cast<std::size_t>(parallelism), maxBatch)));
 
     for (std::size_t batch = 0; batch < work.size(); batch += par)
     {
@@ -306,8 +330,8 @@ runParallel(
             }
         }
 
-        // Last unit always runs on this thread (fork-join progress guarantee
-        // when workerCount >= 2 so siblings can drain on other workers).
+        // Last unit always runs on this thread so the barrier makes progress
+        // even when every other worker is busy (siblings drain on the rest).
         {
             auto const idx = count - 1;
             auto const& req = work[batch + idx];
@@ -340,21 +364,36 @@ PathRequestManager::scheduleMidCloseRefresh()
 
     auto bag = midCloseBag_;
     midCloseTimer_.expires_after(app_.config().pathMidCloseDelay);
-    // Capture bag (not raw this). Hold bag->mutex for the whole callback so
-    // ~PathRequestManager (which nulls manager under the same mutex) cannot
-    // destroy *this while we run — cancel() alone does not wait for handlers.
+    // Capture bag (not raw this). Enter inFlight only while using manager so
+    // ~PathRequestManager can wait without cancel() having to join io threads.
+    // Never hold bag->mutex across onMidCloseTimer / revalidate (io stall).
     midCloseTimer_.async_wait([bag](boost::system::error_code const& waitEc) {
-        std::lock_guard const lk(bag->mutex);
-        if (!bag->manager)
-            return;
-        bag->manager->onMidCloseTimer(waitEc);
+        PathRequestManager* self = nullptr;
+        {
+            std::lock_guard const lk(bag->mutex);
+            if (!bag->manager)
+                return;
+            self = bag->manager;
+            ++bag->inFlight;
+        }
+        struct InFlightGuard
+        {
+            MidCloseBag& bag;
+            ~InFlightGuard()
+            {
+                std::lock_guard const lk(bag.mutex);
+                --bag.inFlight;
+                bag.idle.notify_all();
+            }
+        } const inFlightGuard{*bag};
+        self->onMidCloseTimer(waitEc);
     });
 }
 
 void
 PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
 {
-    // Caller must hold midCloseBag_->mutex (timer path) so this stays alive.
+    // Caller has entered MidCloseBag::inFlight so *this stays alive.
     midCloseScheduled_.store(false, std::memory_order_release);
     if (waitEc || app_.isStopping() || !requestsPending())
         return;
@@ -366,11 +405,28 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
     if (!revalidateJobPending_.exchange(true, std::memory_order_acq_rel))
     {
         bool const queued = app_.getJobQueue().addJob(JtRpc, "PthFindReval", [bag]() {
-            // Hold bag mutex for the wave so destructor cannot free *this mid-run.
-            std::lock_guard const lk(bag->mutex);
-            auto* self = bag->manager;
-            if (!self)
-                return;
+            // Brief bag lock only to claim manager + inFlight. Release before
+            // runPeriodicRevalidate so io_context timer threads are never
+            // blocked for the whole wave waiting on bag->mutex.
+            PathRequestManager* self = nullptr;
+            {
+                std::lock_guard const lk(bag->mutex);
+                if (!bag->manager)
+                    return;
+                self = bag->manager;
+                ++bag->inFlight;
+            }
+            struct InFlightGuard
+            {
+                MidCloseBag& bag;
+                ~InFlightGuard()
+                {
+                    std::lock_guard const lk(bag.mutex);
+                    --bag.inFlight;
+                    bag.idle.notify_all();
+                }
+            } const inFlightGuard{*bag};
+
             try
             {
                 self->runPeriodicRevalidate();
@@ -695,7 +751,9 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
 
             if (!mustBreak && !app_.getJobQueue().isStopping())
             {
-                // Established sessions: bounded parallel revalidate (main gap win).
+                // Established sessions: steady revalidate (main gap win).
+                // runParallel is serial when JobQueue workers < 3, else batches
+                // of min(kPathSteadyUpdateParallelism, workers - 1).
                 // Closed: pin lastIndex_. Mid-close: do not pin.
                 // revalidateOnly ONLY for mid-close so closed waves can rediscover
                 // / recover failed searches (staggered / backoff in doUpdate).

@@ -302,8 +302,24 @@ checkPayment(
 
             if (auto ledger = app.getOpenLedger().current())
             {
+                // One-shot build_path must not use WS progressive defaults: a
+                // bare AssetCache only loads kPathFindLineChunkSize (64) lines
+                // per account and never expands, so payments involving larger
+                // accounts silently miss routes. Mirror doLegacyPathRequest /
+                // PathRequest::doUpdate (hasCompletion): full config limits +
+                // LoadScope up to max lines per account for the first load.
+                auto const& cfg = app.config();
+                auto cache = std::make_shared<AssetCache>(
+                    ledger,
+                    app.getJournal("AssetCache"),
+                    cfg.pathFindMaxTotalLines,
+                    cfg.pathFindMaxLinesPerAccount,
+                    cfg.pathCacheReuseLedgers,
+                    cfg.pathFindLineChunkSize);
+                AssetCache::LoadScope const fullAccountLines{cfg.pathFindMaxLinesPerAccount};
+
                 Pathfinder pf(
-                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
+                    cache,
                     srcAddressID,
                     *dstAccountID,
                     sendMax.asset(),
@@ -312,7 +328,7 @@ checkPayment(
                     std::nullopt,
                     domain,
                     app);
-                if (pf.findPaths(app.config().pathSearchOld))
+                if (pf.findPaths(cfg.pathSearchOld))
                 {
                     // submit build_path intentionally keeps the historical cap
                     // of 4 paths (not kPathFindMaxPaths / path_find's six).

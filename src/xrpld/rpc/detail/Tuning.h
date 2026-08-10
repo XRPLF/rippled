@@ -140,8 +140,9 @@ static constexpr std::size_t kPathFindMaxLinesPerAccount = 50'000;
 /**
  * Trust lines loaded per account per load/expand step for WebSocket path_find.
  * Owner-dir walks are resumable so large accounts fill over successive updates
- * instead of one spike. One-shot ripple_path_find uses LoadScope with
- * kPathFindMaxLinesPerAccount to load the full set in a single reply.
+ * instead of one spike. One-shot callers (ripple_path_find, transactionSign
+ * build_path) use AssetCache::LoadScope with kPathFindMaxLinesPerAccount to
+ * load the full set in a single request.
  *
  * Default for Config::pathFindLineChunkSize ([path_find] line_chunk_size).
  * Config range: 1–1024.
@@ -174,8 +175,15 @@ static constexpr std::uint32_t kPathCacheReuseLedgers = 6;
 static constexpr std::uint32_t kPathFullSearchInterval = 3;
 
 /**
- * Concurrent revalidates for established path_find sessions (not first update).
- * Dispatched as JtPathFindWork jobs (JobTypes limit = kPathFindWorkLimit).
+ * Requested concurrent revalidates for established path_find sessions (not
+ * first update). Dispatched as JtPathFindWork jobs (JobTypes limit =
+ * kPathFindWorkLimit; must stay equal to that constant).
+ *
+ * Effective fan-out in PathRequestManager::runParallel is lower:
+ *   - serial when JobQueue workers < 3
+ *   - otherwise min(this, workers - 1) units per batch (1 inline + ≤workers-2
+ *     siblings), so a concurrent waveMutex_ waiter cannot starve the barrier
+ *
  * Revalidate is mostly independent per request; AssetCache uses a shared_mutex
  * so hits/filters do not fully serialize workers.
  *

@@ -444,7 +444,8 @@ AssetCache::getRippleLines(AccountID const& accountID)
     //
     // Hot path (already pinned): shared_lock membership check only. Pathfinder
     // calls getRippleLines per hop under SessionPin; an unconditional unique_lock
-    // here would serialize kPathSteadyUpdateParallelism workers on every hop.
+    // here would serialize the steady-revalidate workers on every hop (up to
+    // min(kPathSteadyUpdateParallelism, jobQueueWorkers - 1) concurrent units).
     // Escalate to unique only on the first pin of this account for the session.
     if (tlsPinSessionId != 0)
     {
