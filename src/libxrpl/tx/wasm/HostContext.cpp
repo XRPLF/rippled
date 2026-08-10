@@ -3,7 +3,10 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -12,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <expected>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -54,6 +58,36 @@ answerScalar(rust::Slice<std::uint8_t> out, T value)
 {
     auto const wire = adjustWasmEndianess(value);
     return answer(out, reinterpret_cast<std::uint8_t const*>(&wire), sizeof(wire));
+}
+
+// Decode an asset from its wire bytes, whose length selects the kind: an MPT id, a
+// bare currency (which must be XRP), or a currency followed by an issuer (which must
+// not be XRP). Any other length is malformed. This mirrors `getDataAsset` in the
+// C-ABI wrapper the wasm engine replaces.
+std::expected<Asset, HostFunctionError>
+parseAsset(rust::Slice<std::uint8_t const> bytes)
+{
+    if (bytes.size() == MPTID::size())
+        return Asset{MPTID::fromVoid(bytes.data())};
+
+    if (bytes.size() == Currency::size())
+    {
+        auto const issue = Issue{Currency::fromVoid(bytes.data()), xrpAccount()};
+        if (!issue.native())
+            return std::unexpected(HostFunctionError::InvalidParams);
+        return Asset{issue};
+    }
+
+    if (bytes.size() == Currency::size() + AccountID::size())
+    {
+        auto const issue = Issue(
+            Currency::fromVoid(bytes.data()), AccountID::fromVoid(bytes.data() + Currency::size()));
+        if (issue.native())
+            return std::unexpected(HostFunctionError::InvalidParams);
+        return Asset{issue};
+    }
+
+    return std::unexpected(HostFunctionError::InvalidParams);
 }
 
 }  // namespace
@@ -421,6 +455,29 @@ HostContext::accountKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<
             return hfErrorToInt(HostFunctionError::InvalidParams);
 
         auto const value = hostFunctions_.accountKeylet(AccountID::fromVoid(account.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::ammKeylet(
+    rust::Slice<std::uint8_t const> asset1,
+    rust::Slice<std::uint8_t const> asset2,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const a1 = parseAsset(asset1);
+        if (!a1)
+            return hfErrorToInt(a1.error());
+
+        auto const a2 = parseAsset(asset2);
+        if (!a2)
+            return hfErrorToInt(a2.error());
+
+        auto const value = hostFunctions_.ammKeylet(*a1, *a2);
         if (!value)
             return hfErrorToInt(value.error());
 

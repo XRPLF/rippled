@@ -342,6 +342,27 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::AmmKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 a1_ptr: i32,
+                 a1_len: i32,
+                 a2_ptr: i32,
+                 a2_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::AmmKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let asset1 = Region::new(a1_ptr, a1_len);
+                        let asset2 = Region::new(a2_ptr, a2_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.amm_keylet(asset1.read(data)?, asset2.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

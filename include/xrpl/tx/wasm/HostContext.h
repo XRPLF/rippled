@@ -125,6 +125,14 @@ public:
     accountKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std::uint8_t> out)
         const noexcept;
 
+    // Each asset is decoded by length (24 = MPT, 20 = XRP, 40 = issue), else
+    // `InvalidParams`. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    ammKeylet(
+        rust::Slice<std::uint8_t const> asset1,
+        rust::Slice<std::uint8_t const> asset2,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 

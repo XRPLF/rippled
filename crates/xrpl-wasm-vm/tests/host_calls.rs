@@ -390,6 +390,30 @@ fn accountroot_id_reads_the_account_and_writes_the_keylet() {
     );
 }
 
+/// A keylet getter that reads two input regions: both assets reach the host as a
+/// pair, and the keylet lands where the guest asked.
+#[test]
+fn amm_id_reads_two_assets_and_writes_the_keylet() {
+    // Two distinct all-zero assets of different lengths (20 and 40 bytes).
+    let asset1 = vec![0u8; 20];
+    let asset2 = vec![0u8; 40];
+    let host = FakeHost::new().answering_amm_keylet(
+        asset1.clone(),
+        asset2.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::AMM_ID, ONE_PAGE],
+        "(call $amm_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 64) (i32.const 40)
+            (i32.const 128) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.amm_keylets_asked.borrow(), vec![(asset1, asset2)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

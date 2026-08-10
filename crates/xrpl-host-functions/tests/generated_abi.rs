@@ -182,6 +182,14 @@ impl HostFunctions for FakeHost {
         put(out, &[account[0]; HASH_LEN])
     }
 
+    /// A two-asset keylet getter; `InvalidParams` if the two assets are equal.
+    fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if asset1 == asset2 {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[asset1.len() as u8; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -274,6 +282,12 @@ fn the_trait_is_implementable() {
         host.account_keylet(&[], &mut out),
         Err(HostError::InvalidAccount)
     );
+    assert_eq!(host.amm_keylet(&[1; 20], &[2; 40], &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 20);
+    assert_eq!(
+        host.amm_keylet(&[1; 20], &[1; 20], &mut out),
+        Err(HostError::InvalidParams)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -361,6 +375,7 @@ fn the_spec_table_matches_the_declarations() {
             ("le_inner_arr_len", 70),
             ("check_sig", 300),
             ("accountroot_id", 350),
+            ("amm_id", 450),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

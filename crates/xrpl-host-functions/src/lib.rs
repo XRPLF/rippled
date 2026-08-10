@@ -240,6 +240,13 @@ host_functions! {
     #[wasm_name = "accountroot_id"]
     fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of an AMM, computed from its two assets. Each asset is a
+    /// byte slice whose length selects its kind (24 = MPT, 20 = XRP, 40 = issued
+    /// currency + issuer). Reads both asset regions and writes the keylet.
+    #[gas = 450]
+    #[wasm_name = "amm_id"]
+    fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
