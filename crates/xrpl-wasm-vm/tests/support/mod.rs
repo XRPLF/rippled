@@ -189,6 +189,11 @@ pub struct FakeHost {
     pub amm_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
     /// Every (asset1, asset2) pair `amm_keylet` was asked for.
     pub amm_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// What `check_keylet` answers, by (account bytes, seq). An unlisted key answers
+    /// `InvalidAccount`.
+    pub check_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (account, seq) `check_keylet` was asked for.
+    pub check_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -247,6 +252,8 @@ impl Default for FakeHost {
             account_keylets_asked: RefCell::new(Vec::new()),
             amm_keylets: HashMap::new(),
             amm_keylets_asked: RefCell::new(Vec::new()),
+            check_keylets: HashMap::new(),
+            check_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -377,6 +384,16 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.amm_keylets.insert((asset1, asset2), answer);
+        self
+    }
+
+    pub fn answering_check_keylet(
+        mut self,
+        account: Vec<u8>,
+        seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.check_keylets.insert((account, seq), answer);
         self
     }
 
@@ -566,6 +583,16 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.check_keylets_asked
+            .borrow_mut()
+            .push((account.to_vec(), seq));
+        match self.check_keylets.get(&(account.to_vec(), seq)) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -627,6 +654,7 @@ pub mod import {
     pub const CHECK_SIG: &str = r#"(import "host_lib" "check_sig" (func $check_sig (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const ACCOUNTROOT_ID: &str = r#"(import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const AMM_ID: &str = r#"(import "host_lib" "amm_id" (func $amm_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const CHECK_ID: &str = r#"(import "host_lib" "check_id" (func $check_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

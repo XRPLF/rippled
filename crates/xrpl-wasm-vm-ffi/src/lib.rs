@@ -269,6 +269,10 @@ mod ffi {
         fn amm_keylet(self: &HostContext, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "checkKeylet"]
+        fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -421,6 +425,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.amm_keylet(asset1, asset2, out))
+    }
+
+    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.check_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

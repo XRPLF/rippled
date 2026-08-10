@@ -414,6 +414,23 @@ fn amm_id_reads_two_assets_and_writes_the_keylet() {
     assert_eq!(*host.amm_keylets_asked.borrow(), vec![(asset1, asset2)]);
 }
 
+/// A keylet getter that reads an account region and also takes a scalar seq: both
+/// reach the host keyed together, and the keylet lands where the guest asked.
+#[test]
+fn check_id_reads_the_account_and_seq_and_writes_the_keylet() {
+    // Guest memory is zeroed, so a 20-byte account read is all zeros.
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_check_keylet(account.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::CHECK_ID, ONE_PAGE],
+        "(call $check_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.check_keylets_asked.borrow(), vec![(account, 5)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

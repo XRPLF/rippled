@@ -247,6 +247,13 @@ host_functions! {
     #[wasm_name = "amm_id"]
     fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `Check`, computed from a 20-byte account id and its
+    /// sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "check_id"]
+    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
