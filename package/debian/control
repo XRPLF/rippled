@@ -18,6 +18,8 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends}
 Description: XRP Ledger daemon
- Reference implementation of the XRP Ledger protocol.
- Participates in the peer-to-peer network, processes transactions,
- and maintains a local ledger copy.
+ xrpld is the reference implementation of the XRP Ledger protocol. It
+ participates in the peer-to-peer XRP Ledger network, processes
+ transactions, and maintains the ledger database.
+ This package also includes the validator-keys tool for validator key
+ management.
