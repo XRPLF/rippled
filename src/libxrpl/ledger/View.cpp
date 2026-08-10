@@ -407,8 +407,17 @@ canWithdraw(
         {
             if (credentialIDs.has_value())
             {
-                if (auto const ret = credentials::authorizedDepositPreauth(
-                        view, STVector256{*credentialIDs}, to);
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
                     !isTesSuccess(ret))
                     return ret;
             }

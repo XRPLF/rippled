@@ -161,7 +161,10 @@ dirLink(
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it.
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -187,6 +190,9 @@ canWithdraw(
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials passed in to already exist in the ledger, and
+ *      returns an internal error otherwise. Validate them beforehand with
+ *      credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
