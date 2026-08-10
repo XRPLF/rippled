@@ -41,7 +41,7 @@ Besides a compiler, building `xrpld` requires:
 | [Git](https://git-scm.com/downloads)        | any recent      |
 | [Python](https://www.python.org/downloads/) | 3.11            |
 | [Conan](https://conan.io/downloads.html)    | 2.17            |
-| [CMake](https://cmake.org/download/)        | 3.22            |
+| [CMake](https://cmake.org/download/)        | 3.16            |
 
 On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
 (see below). On Windows they have to be installed manually.
