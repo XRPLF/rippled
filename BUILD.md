@@ -56,6 +56,20 @@ releases](https://github.com/XRPLF/rippled/releases).
 Once your [development environment](./docs/build/environment.md) is ready, you
 may need to set up your Conan profile.
 
+Both steps below, plus our [`global.conf`](./conan/global.conf) defaults, can be
+applied in one command:
+
+```bash
+./conan/init.sh
+```
+
+It honours `CONAN_HOME` and never deletes an existing Conan home, so it is safe
+to re-run. Note that it overwrites `global.conf` and our profiles in that home.
+
+> [!TIP]
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this
+> whole section is already done for you — the script runs on entry.
+
 #### Profiles
 
 We recommend that you install our Conan profiles:
@@ -370,7 +384,7 @@ After any updates or changes to dependencies, you may need to do the following:
 
 If you are using the Nix development shell, prebuilt Conan binaries may be
 incompatible with it — see
-[Building xrpld in the Nix shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell).
+[Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
 
 #### ERROR: Package not resolved
 

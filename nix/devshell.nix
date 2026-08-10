@@ -30,6 +30,25 @@ let
   };
   customGccGcov = if pkgs.stdenv.isLinux then customCompilers.customGcov else plainGcov;
 
+  # Whole directory: init.sh locates the profiles relative to itself.
+  conanDir = ../conan;
+
+  # Own Conan home, so Nix-built packages never share a cache with a system
+  # Conan. The stamp holds a content-addressed store path, so init.sh re-runs
+  # only when it or a profile changes.
+  conanHook = ''
+    export CONAN_HOME="$HOME/.conan2-nix"
+    _xrpl_conan_stamp="$CONAN_HOME/.xrpld-devshell"
+    if [ "$(cat "$_xrpl_conan_stamp" 2>/dev/null)" != "${conanDir}" ]; then
+      if ${conanDir}/init.sh; then
+        printf '%s' "${conanDir}" >"$_xrpl_conan_stamp"
+      else
+        echo "⚠️  Conan setup failed - see 'Conan configuration' in docs/build/nix.md to finish it by hand."
+      fi
+    fi
+    unset _xrpl_conan_stamp
+  '';
+
   # Shown when entering a *-plain shell. These exist only on Linux (see below),
   # where the stock toolchain diverges from CI.
   plainWarningHook = ''
@@ -87,6 +106,7 @@ let
         shellHook = ''
           echo "Welcome to xrpld development shell";
           ${compilerVersionHook}
+          ${conanHook}
           ${warningHook}
         '';
       }

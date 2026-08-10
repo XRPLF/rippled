@@ -124,13 +124,52 @@ nix develop -c "$SHELL"
 
 Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
 
-Two things differ from a system environment:
-
-**Prebuilt Conan packages.** There is no guarantee that binaries from the Conan cache will work when using Nix. If you encounter any errors, add `--build '*'` to the `conan install` command in [Build and Test](../../BUILD.md#build-and-test) to force Conan to compile everything from source. Keep the rest of the command as it is there, so it rebuilds the `build_type` you are actually configuring.
-
-**Coverage builds.** `-Dcoverage=ON` works in the `gcc` shell (and `gcc-plain` on Linux):
+Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Linux):
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
+
+## Conan configuration
+
+The shell configures Conan for you: there is no `conan config install` or
+`conan remote add` to run by hand. It does this in a Conan home of its own, so
+the setup is self-contained and can be thrown away without touching a system
+Conan.
+
+On entry, the shell exports `CONAN_HOME=~/.conan2-nix` and, whenever the tracked
+configuration has changed since last time, runs
+[`conan/init.sh`](../../conan/init.sh) to install into it:
+
+- our [`global.conf`](../../conan/global.conf), the same one CI applies;
+- the [profiles](../../conan/profiles) from this repository;
+- the `xrplf` remote, which hosts some of our dependencies.
+
+That script is not Nix-specific — it honours `CONAN_HOME`, so you can run it in
+any environment to do the same setup:
+
+```bash
+./conan/init.sh
+```
+
+The separate home is deliberate. Packages built with the Nix toolchain are not
+interchangeable with ones a system Conan built against a different compiler and
+libc, and a single shared cache mixes the two silently. Keeping them apart also
+means you can start over by deleting `~/.conan2-nix`; the shell reinstalls
+everything on next entry.
+
+> [!NOTE]
+> `CONAN_HOME` is exported by the shell, so `conan` commands from the
+> [build instructions](../../BUILD.md#steps) act on `~/.conan2-nix`
+> automatically. Setting `CONAN_HOME` yourself after entering the shell still
+> wins, which is how [`conan/lockfile/regenerate.sh`](../../conan/lockfile/regenerate.sh)
+> gets its throwaway home.
+
+### Prebuilt packages
+
+There is no guarantee that binaries from the Conan remotes will work when using
+Nix. If you encounter any errors, add `--build '*'` to the `conan install`
+command in [Build and Test](../../BUILD.md#build-and-test) to force Conan to
+compile everything from source. Keep the rest of the command as it is there, so
+it rebuilds the `build_type` you are actually configuring.
 
 ## Automatic Activation with direnv
 
