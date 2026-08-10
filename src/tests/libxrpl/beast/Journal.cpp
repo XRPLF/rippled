@@ -81,4 +81,23 @@ TEST(Journal, debugThreshold)
     EXPECT_EQ(sink.count(), 5);
 }
 
+// A Journal holds a reference to its sink rather than a copy of the threshold,
+// so lowering the threshold has to take effect on a Journal that already exists.
+// The two tests above each build the Journal after setting the threshold, so
+// neither of them would notice if that stopped working.
+TEST(Journal, thresholdChangeAppliesToAnExistingJournal)
+{
+    CountingSink sink;
+    sink.threshold(Severity::Info);
+    Journal const j(sink);
+
+    j.debug() << " ";
+    EXPECT_EQ(sink.count(), 0);
+
+    sink.threshold(Severity::Debug);
+
+    j.debug() << " ";
+    EXPECT_EQ(sink.count(), 1);
+}
+
 }  // namespace beast

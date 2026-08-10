@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -9,19 +10,22 @@
 namespace beast {
 namespace {
 
-// Hashing the same input repeatedly builds up a larger object without holding
-// it in memory; several cases below rely on that to exercise xxHash's
-// buffered-update path.
+constexpr std::string_view kInput{"Hello, xxHash!"};
+
+// Returns @p text concatenated with itself @p times over.
+//
+// Used by the cases that hash a large object in one update, so that their
+// expected digest can be compared against the cases that feed the same bytes
+// in as many small updates.
 std::string
-repeat(std::string_view text, int times)
+repeat(std::string_view text, std::size_t times)
 {
     std::string out;
-    for (int i = 0; i < times; ++i)
+    out.reserve(text.size() * times);
+    for (std::size_t i = 0; i < times; ++i)
         out += text;
     return out;
 }
-
-constexpr std::string_view kInput{"Hello, xxHash!"};
 
 }  // namespace
 
@@ -50,6 +54,9 @@ TEST(XXHasher, withTwoSeeds)
     EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 14440132435660934800ULL);
 }
 
+// Feeds the bytes in as 100 small updates, never materialising the full object.
+// bigObjectWithOneUpdateWithoutSeed below hashes the same bytes in a single
+// update and must agree, which is what exercises xxHash's internal buffering.
 TEST(XXHasher, bigObjectWithMultipleSmallUpdatesWithoutSeed)
 {
     Xxhasher hasher{};
