@@ -18,6 +18,7 @@ TYPED_SFIELD(sfMethod,                   UINT8,      2)
 TYPED_SFIELD(sfTransactionResult,        UINT8,      3)
 TYPED_SFIELD(sfScale,                    UINT8,      4)
 TYPED_SFIELD(sfAssetScale,               UINT8,      5)
+TYPED_SFIELD(sfLEVersion,                UINT8,      6)
 
 // 8-bit integers (uncommon)
 TYPED_SFIELD(sfTickSize,                 UINT8,     16)
