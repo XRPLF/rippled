@@ -7336,11 +7336,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             env.close();
 
-            uint256 const sellOfferIndex = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const sellOfferIndex =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftID, XRP(10)), Txflags(tfSellNFToken));
             env.close();
 
-            uint256 const buyOfferIndex = keylet::nftokenOffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
             env(token::createOffer(buyer, nftID, XRP(40)), token::Owner(alice));
             env.close();
 
