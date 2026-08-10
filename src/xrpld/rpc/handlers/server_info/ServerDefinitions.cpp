@@ -64,7 +64,6 @@ ServerDefinitions::translate(std::string const& inp)
         return out;
     };
 
-    // TODO: use string::contains with C++23
     auto contains = [&](std::string_view s) -> bool { return inp.contains(s); };
 
     if (contains("UINT"))
