@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
@@ -779,9 +780,9 @@ inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
 inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+getCheckIndex(AccountID const& account, std::uint32_t const sequence)
 {
-    return keylet::check(account, uSequence).key;
+    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
 }
 
 template <class Suite>
@@ -876,7 +877,7 @@ checkMetrics(
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
@@ -917,7 +918,7 @@ auto const kCoverRateLiquidation =
 
 auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/

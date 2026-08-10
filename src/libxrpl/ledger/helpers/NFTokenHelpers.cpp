@@ -928,7 +928,7 @@ tokenOfferCreateApply(
         priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());
+    auto const offerID = keylet::nftokenOffer(acctID, seqProxy);
 
     // Create the offer:
     {

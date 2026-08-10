@@ -15,15 +15,13 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <boost/algorithm/hex.hpp>
-
 #include <cstdint>
 #include <expected>
-#include <iterator>
 #include <string>
 #include <string_view>
 
@@ -293,7 +291,7 @@ public:
     {
         if (!account)
             return std::unexpected(HostFunctionError::InvalidAccount);
-        auto const keylet = keylet::check(account, seq);
+        auto const keylet = keylet::check(account, SeqProxy::rawSequence(seq));
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
@@ -313,7 +311,7 @@ public:
     {
         if (!account)
             return std::unexpected(HostFunctionError::InvalidAccount);
-        auto const keylet = keylet::escrow(account, seq);
+        auto const keylet = keylet::escrow(account, SeqProxy::rawSequence(seq));
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
@@ -384,54 +382,10 @@ public:
 #endif
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) const override
+    void
+    trace(std::string_view const& msg, std::string_view const& data) const override
     {
-        if (!asHex)
-        {
-            log(msg, [&data] {
-                return std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
-            });
-        }
-        else
-        {
-            log(msg, [&data] {
-                std::string hex;
-                hex.reserve(data.size() * 2);
-                boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
-                return hex;
-            });
-        }
-
-        return 0;
-    }
-
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
-    traceNum(std::string_view const& msg, int64_t data) const override
-    {
-        log(msg, [data] { return data; });
-        return 0;
-    }
-
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
-    traceAccount(std::string_view const& msg, AccountID const& account) const override
-    {
-        log(msg, [&account] { return toBase58(account); });
-        return 0;
-    }
-
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Slice const& data) const override
-    {
-        log(msg, [&data] { return wasm_float::floatToString(data); });
-        return 0;
-    }
-
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
-    traceAmount(std::string_view const& msg, STAmount const& amount) const override
-    {
-        log(msg, [&amount] { return amount.getFullText(); });
-        return 0;
+        log(msg, [&data] { return data; });
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>

@@ -91,7 +91,11 @@ public:
     operator=(STObject&& other);
 
     STObject(SOTemplate const& type, SField const& name);
-    STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
+    STObject(
+        SOTemplate const& type,
+        SerialIter& sit,
+        SField const& name,
+        bool requireCanonicalOrder = false);
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
@@ -124,7 +128,7 @@ public:
     set(SOTemplate const&);
 
     bool
-    set(SerialIter& u, int depth = 0);
+    set(SerialIter& u, int depth = 0, bool requireCanonicalOrder = false);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;

@@ -33,6 +33,18 @@ std::string_view inline constexpr hfErrInternal = "HfInternal";
 std::string_view inline constexpr hfErrOutOfGas = "HfOutOfGas";
 std::string_view inline constexpr wasmiTrapOutOfFuel = "OutOfFuel";
 
+// Guest ABI, mirrored in the wasm stdlib: append only, never renumber. Starts at
+// 1 so a zeroed data_type is rejected rather than treated as Int64.
+enum class TraceDataType : std::int32_t {
+    Int64 = 1,
+    Uint64,
+    Xfloat,
+    Account,
+    Amount,
+    AsHex,   // raw bytes, hex-encoded by the host before printing
+    AsText,  // bytes printed verbatim as text
+};
+
 enum class HostFunctionError : int32_t {
     Success = 0,
     Unimplemented = -1,

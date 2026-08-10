@@ -47,7 +47,7 @@
 #include <tuple>
 #include <utility>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 std::uint64_t
 getStartHint(SLE::const_ref sle, AccountID const& accountID)
@@ -121,7 +121,7 @@ parseAccountIds(json::Value const& jvArray)
 }
 
 std::optional<json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context)
+readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
 {
     limit = range.rDefault;
     if (!context.params.isMember(jss::limit) || context.params[jss::limit].isNull())
@@ -129,11 +129,11 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
 
     auto const& jvLimit = context.params[jss::limit];
     if (!jvLimit.isUInt() && (!jvLimit.isInt() || jvLimit.asInt() < 0))
-        return RPC::expectedFieldError(jss::limit, "unsigned integer");
+        return rpc::expectedFieldError(jss::limit, "unsigned integer");
 
     limit = jvLimit.asUInt();
     if (limit == 0)
-        return RPC::invalidFieldError(jss::limit);
+        return rpc::invalidFieldError(jss::limit);
 
     if (!isUnlimited(context.role))
         limit = std::max(range.rmin, std::min(range.rmax, limit));
@@ -189,7 +189,7 @@ getSeedFromRPC(json::Value const& params, json::Value& error)
 
     if (count != 1)
     {
-        error = RPC::makeParamError(
+        error = rpc::makeParamError(
             "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
             ", " + std::string(jss::seed) + " or " + std::string(jss::seed_hex));
         return std::nullopt;
@@ -199,7 +199,7 @@ getSeedFromRPC(json::Value const& params, json::Value& error)
     auto const& param = params[seedType->first];
     if (!param.isString())
     {
-        error = RPC::expectedFieldError(seedType->first, "string");
+        error = rpc::expectedFieldError(seedType->first, "string");
         return std::nullopt;
     }
 
@@ -237,13 +237,13 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
 
     if (count == 0 || secretType == nullptr)
     {
-        error = RPC::missingFieldError(jss::secret);
+        error = rpc::missingFieldError(jss::secret);
         return {};
     }
 
     if (count > 1)
     {
-        error = RPC::makeParamError(
+        error = rpc::makeParamError(
             "Exactly one of the following must be specified: " + std::string(jss::passphrase) +
             ", " + std::string(jss::secret) + ", " + std::string(jss::seed) + " or " +
             std::string(jss::seed_hex));
@@ -257,7 +257,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
     {
         if (!params[jss::key_type].isString())
         {
-            error = RPC::expectedFieldError(jss::key_type, "string");
+            error = rpc::expectedFieldError(jss::key_type, "string");
             return {};
         }
 
@@ -267,11 +267,11 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
         {
             if (apiVersion > 1u)
             {
-                error = RPC::makeError(RpcBadKeyType);
+                error = rpc::makeError(RpcBadKeyType);
             }
             else
             {
-                error = RPC::invalidFieldError(jss::key_type);
+                error = rpc::invalidFieldError(jss::key_type);
             }
             return {};
         }
@@ -280,7 +280,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
         // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
         if (strcmp(secretType, jss::secret.cStr()) == 0)
         {
-            error = RPC::makeParamError(
+            error = rpc::makeParamError(
                 "The secret field is not allowed if " + std::string(jss::key_type) + " is used.");
             return {};
         }
@@ -293,7 +293,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
     // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
     if (strcmp(secretType, jss::seed_hex.cStr()) != 0)
     {
-        seed = RPC::parseXrplLibSeed(params[secretType]);
+        seed = rpc::parseXrplLibSeed(params[secretType]);
 
         if (seed)
         {
@@ -301,7 +301,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
             // requested another key type, return an error.
             if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
             {
-                error = RPC::makeError(RpcBadSeed, "Specified seed is for an Ed25519 wallet.");
+                error = rpc::makeError(RpcBadSeed, "Specified seed is for an Ed25519 wallet.");
                 return {};
             }
 
@@ -322,7 +322,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
         {
             if (!params[jss::secret].isString())
             {
-                error = RPC::expectedFieldError(jss::secret, "string");
+                error = rpc::expectedFieldError(jss::secret, "string");
                 return {};
             }
 
@@ -334,7 +334,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
     {
         if (!containsError(error))
         {
-            error = RPC::makeError(RpcBadSeed, RPC::invalidFieldMessage(secretType));
+            error = rpc::makeError(RpcBadSeed, rpc::invalidFieldMessage(secretType));
         }
 
         return {};
@@ -346,10 +346,10 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
     return generateKeyPair(*keyType, *seed);
 }
 
-std::pair<RPC::Status, LedgerEntryType>
+std::pair<rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params)
 {
-    std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::kOK, ltANY};
+    std::pair<rpc::Status, LedgerEntryType> result{rpc::Status::kOK, ltANY};
     if (params.isMember(jss::type))
     {
         static constexpr auto kTypes =
@@ -368,10 +368,10 @@ chooseLedgerEntryType(json::Value const& params)
         auto const& p = params[jss::type];
         if (!p.isString())
         {
-            result.first = RPC::Status{RpcInvalidParams, "Invalid field 'type', not string."};
+            result.first = rpc::Status{RpcInvalidParams, "Invalid field 'type', not string."};
             XRPL_ASSERT(
-                result.first.type() == RPC::Status::Type::ErrorCodeI,
-                "xrpl::RPC::chooseLedgerEntryType : first valid result type");
+                result.first.type() == rpc::Status::Type::ErrorCodeI,
+                "xrpl::rpc::chooseLedgerEntryType : first valid result type");
             return result;
         }
 
@@ -384,10 +384,10 @@ chooseLedgerEntryType(json::Value const& params)
         });
         if (iter == kTypes.end())
         {
-            result.first = RPC::Status{RpcInvalidParams, "Invalid field 'type'."};
+            result.first = rpc::Status{RpcInvalidParams, "Invalid field 'type'."};
             XRPL_ASSERT(
-                result.first.type() == RPC::Status::Type::ErrorCodeI,
-                "xrpl::RPC::chooseLedgerEntryType : second valid result "
+                result.first.type() == rpc::Status::Type::ErrorCodeI,
+                "xrpl::rpc::chooseLedgerEntryType : second valid result "
                 "type");
             return result;
         }
@@ -471,4 +471,4 @@ parseSubUnsubJson(
     return RpcSuccess;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

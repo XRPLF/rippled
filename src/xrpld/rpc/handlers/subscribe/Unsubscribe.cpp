@@ -18,7 +18,7 @@
 namespace xrpl {
 
 json::Value
-doUnsubscribe(RPC::JsonContext& context)
+doUnsubscribe(rpc::JsonContext& context)
 {
     InfoSub::pointer ispSub;
     json::Value jvResult(json::ValueType::Object);
@@ -110,7 +110,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (!context.params[accountsProposed].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
+        auto ids = rpc::parseAccountIds(context.params[accountsProposed]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, true);
@@ -121,7 +121,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (!context.params[jss::accounts].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
+        auto ids = rpc::parseAccountIds(context.params[jss::accounts]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, false);
@@ -165,11 +165,11 @@ doUnsubscribe(RPC::JsonContext& context)
 
             Book book;
 
-            if (auto const err = RPC::parseSubUnsubJson(book.in, jv, jss::taker_pays, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.in, jv, jss::taker_pays, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 
-            if (auto const err = RPC::parseSubUnsubJson(book.out, jv, jss::taker_gets, context.j);
+            if (auto const err = rpc::parseSubUnsubJson(book.out, jv, jss::taker_gets, context.j);
                 err != RpcSuccess)
                 return rpcError(err);
 

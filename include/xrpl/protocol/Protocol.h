@@ -139,7 +139,7 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / kTenthBipsPerUnity.value();
 }
 
-namespace Lending {
+namespace lending {
 /**
  * The maximum management fee rate allowed by a loan broker in 1/10 bips.
  *
@@ -236,7 +236,7 @@ static constexpr int kLoanPaymentsPerFeeIncrement = 5;
  * without an amendment
  */
 static constexpr int kLoanMaximumPaymentsPerTransaction = 100;
-}  // namespace Lending
+}  // namespace lending
 
 /**
  * The maximum length of a URI inside an NFT
@@ -315,6 +315,17 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
  * 10^19 > maxMPTokenAmount (2^64-1) > 10^18
  */
 constexpr std::uint8_t kVaultMaximumIouScale = 18;
+
+/**
+ * Vault ledger-entry schema versions. Assigned to newly created
+ * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
+ * activation are left without LEVersion (implicit legacy version 0,
+ * accrual-basis accounting).
+ */
+enum class VaultVersion : uint8_t {
+    Legacy = 0,
+    CashBasis,
+};
 
 /**
  * Maximum recursion depth for vault shares being put as an asset inside

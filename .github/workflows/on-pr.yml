@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Determine changed files
         # This step checks whether any files have changed that should
         # cause the next jobs to run. We do it this way rather than
@@ -82,6 +82,7 @@ jobs:
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
             .github/workflows/reusable-package.yml
             .github/workflows/reusable-strategy-matrix.yml
@@ -90,6 +91,7 @@ jobs:
             .clang-tidy
             .codecov.yml
             bin/check-tools.sh
+            bin/default-loader-path.sh
             cfg/**
             cmake/**
             conan/**
@@ -124,6 +126,11 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-autogen:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-autogen.yml
 
   check-levelization:
     needs: should-run
@@ -199,6 +206,7 @@ jobs:
   passed:
     if: failure() || cancelled()
     needs:
+      - check-autogen
       - check-levelization
       - check-rename
       - clang-tidy

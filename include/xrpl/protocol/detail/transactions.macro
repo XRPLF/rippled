@@ -754,7 +754,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     {sfMaximumAmount, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfDomainID, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
@@ -785,7 +785,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfDomainID, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfTransferFee, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
     {sfIssuerEncryptionKey, SoeOptional},
     {sfAuditorEncryptionKey, SoeOptional},
 }))
@@ -1169,7 +1169,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
-    Delegation::Delegable,
+    Delegation::NotDelegable,
     featureConfidentialTransfer,
     NoPriv,
     Emittance::emitable,
@@ -1280,9 +1280,9 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     ({
     {sfCounterpartySponsor, SoeOptional},
     {sfSponsee, SoeOptional},
-    {sfFeeAmount, SoeOptional},
+    {sfFeeAmountDelta, SoeOptional},
     {sfMaxFee, SoeOptional},
-    {sfRemainingOwnerCount, SoeOptional},
+    {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
 /** This transaction type creates the smart contract. */

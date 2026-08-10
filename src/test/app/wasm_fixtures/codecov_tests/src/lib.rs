@@ -4,19 +4,20 @@
 extern crate std;
 
 use core::panic;
-use xrpl_std::core::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
-use xrpl_std::core::current_tx::traits::TransactionCommonFields;
-use xrpl_std::core::keylets;
-use xrpl_std::core::locator::Locator;
-use xrpl_std::core::types::blob::DEFAULT_BLOB_SIZE;
-use xrpl_std::core::types::issue::Issue;
-use xrpl_std::core::types::issue::XrpIssue;
-use xrpl_std::core::types::mpt_id::MptId;
+use xrpl_escrow::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_std::current_tx::traits::TransactionCommonFields;
+use xrpl_std::fields::locator::Locator;
 use xrpl_std::host;
 use xrpl_std::host::error_codes;
+use xrpl_std::host::trace::TraceDataType;
 use xrpl_std::host::trace::{trace, trace_num as trace_number};
+use xrpl_std::ledger_entry_ids;
 use xrpl_std::sfield;
-use xrpl_std::types::XRPL_CONTRACT_DATA_SIZE;
+use xrpl_std::types::blob::DEFAULT_BLOB_SIZE;
+use xrpl_std::types::contract_data::XRPL_CONTRACT_DATA_SIZE;
+use xrpl_std::types::issue::Issue;
+use xrpl_std::types::issue::XrpIssue;
+use xrpl_std::types::mpt_id::MptId;
 
 mod host_bindings_loose;
 include!("host_bindings_loose.rs");
@@ -91,7 +92,7 @@ pub extern "C" fn escrow_finish() -> i32 {
     );
     let tx: EscrowFinish = get_current_escrow_finish();
     let account = tx.get_account().unwrap_or_panic(); // get_tx_field under the hood
-    let keylet = keylets::accountroot_id(&account).unwrap_or_panic(); // accountroot_id under the hood
+    let keylet = ledger_entry_ids::accountroot_id(&account).unwrap_or_panic(); // accountroot_id under the hood
     check_result(
         unsafe { host::cache_le(keylet.as_ptr(), keylet.len(), 0) },
         1,
@@ -243,44 +244,35 @@ pub extern "C" fn escrow_finish() -> i32 {
         )
     });
     let message = "testing trace";
-    check_result(
-        unsafe {
-            host::trace_acct(
-                message.as_ptr(),
-                message.len(),
-                account.0.as_ptr(),
-                account.0.len(),
-            )
-        },
-        0,
-        "trace_acct",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Account as i32,
+            account.0.as_ptr(),
+            account.0.len(),
+        )
+    };
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP
-    check_result(
-        unsafe {
-            host::trace_amt(
-                message.as_ptr(),
-                message.len(),
-                amount.as_ptr(),
-                amount.len(),
-            )
-        },
-        0,
-        "trace_amt",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Amount as i32,
+            amount.as_ptr(),
+            amount.len(),
+        )
+    };
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // 0 drops of XRP
-    check_result(
-        unsafe {
-            host::trace_amt(
-                message.as_ptr(),
-                message.len(),
-                amount.as_ptr(),
-                amount.len(),
-            )
-        },
-        0,
-        "trace_amt_zero",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Amount as i32,
+            amount.as_ptr(),
+            amount.len(),
+        )
+    };
 
     // ########################################
     // Step #2: Test set_data edge cases
@@ -589,18 +581,17 @@ pub extern "C" fn escrow_finish() -> i32 {
         )
     });
 
-    // string
-    check_result(
-        unsafe {
-            host_bindings_loose::trace_num(
-                locator.as_ptr() as i32 + 1_000_000_000,
-                locator.len() as i32,
-                42,
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_num_oob_str",
-    );
+    // Out-of-bounds message pointer; nothing to assert on now that trace is void.
+    let num_bytes = 42i64.to_le_bytes();
+    unsafe {
+        host_bindings_loose::trace_loose(
+            locator.as_ptr() as i32 + 1_000_000_000,
+            locator.len() as i32,
+            TraceDataType::Int64 as i32,
+            num_bytes.as_ptr() as i32,
+            num_bytes.len() as i32,
+        )
+    };
 
     // ########################################
     // Step #4: Test other host function edge cases
@@ -798,44 +789,34 @@ pub extern "C" fn escrow_finish() -> i32 {
             "mptoken_id_too_big_slice_mptid",
         )
     });
-    check_result(
-        unsafe {
-            host::trace(
-                message.as_ptr(),
-                message.len(),
-                locator.as_ptr().wrapping_add(1_000_000_000),
-                locator.len(),
-                0,
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_oob_slice",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::AsText as i32,
+            locator.as_ptr().wrapping_add(1_000_000_000),
+            locator.len(),
+        )
+    };
     let float: [u8; 8] = [0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00];
-    check_result(
-        unsafe {
-            host::trace_xfloat(
-                message.as_ptr(),
-                message.len(),
-                float.as_ptr().wrapping_add(1_000_000_000),
-                float.len(),
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_xfloat_oob_slice",
-    );
-    check_result(
-        unsafe {
-            host::trace_amt(
-                message.as_ptr(),
-                message.len(),
-                locator.as_ptr().wrapping_add(1_000_000_000),
-                locator.len(),
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_amt_oob_slice",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Xfloat as i32,
+            float.as_ptr().wrapping_add(1_000_000_000),
+            float.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Amount as i32,
+            locator.as_ptr().wrapping_add(1_000_000_000),
+            locator.len(),
+        )
+    };
     check_result(
         unsafe {
             host::float_cmp(
@@ -1607,129 +1588,116 @@ pub extern "C" fn escrow_finish() -> i32 {
             "nft_uri_wrong_size_account_id",
         )
     });
-    check_result(
-        unsafe {
-            host::trace_acct(
-                message.as_ptr(),
-                message.len(),
-                locator.as_ptr(),
-                locator.len(),
-            )
-        },
-        error_codes::INVALID_PARAMS,
-        "trace_acct_wrong_size_account_id",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Account as i32,
+            locator.as_ptr(),
+            locator.len(),
+        )
+    };
 
     // invalid Currency was already tested above
     // invalid string
 
-    check_result(
-        unsafe {
-            host::trace(
-                message.as_ptr().wrapping_add(1_000_000_000),
-                message.len(),
-                uint256.as_ptr(),
-                uint256.len(),
-                0,
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_oob_string",
-    );
-    check_result(
-        unsafe {
-            host::trace_xfloat(
-                message.as_ptr().wrapping_add(1_000_000_000),
-                message.len(),
-                float.as_ptr(),
-                float.len(),
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_xfloat_oob_string",
-    );
-    check_result(
-        unsafe {
-            host::trace_acct(
-                message.as_ptr().wrapping_add(1_000_000_000),
-                message.len(),
-                account.0.as_ptr(),
-                account.0.len(),
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_acct_oob_string",
-    );
-    check_result(
-        unsafe {
-            host::trace_amt(
-                message.as_ptr().wrapping_add(1_000_000_000),
-                message.len(),
-                amount.as_ptr(),
-                amount.len(),
-            )
-        },
-        error_codes::POINTER_OUT_OF_BOUNDS,
-        "trace_amt_oob_string",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr().wrapping_add(1_000_000_000),
+            message.len(),
+            TraceDataType::AsText as i32,
+            uint256.as_ptr(),
+            uint256.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr().wrapping_add(1_000_000_000),
+            message.len(),
+            TraceDataType::Xfloat as i32,
+            float.as_ptr(),
+            float.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr().wrapping_add(1_000_000_000),
+            message.len(),
+            TraceDataType::Account as i32,
+            account.0.as_ptr(),
+            account.0.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr().wrapping_add(1_000_000_000),
+            message.len(),
+            TraceDataType::Amount as i32,
+            amount.as_ptr(),
+            amount.len(),
+        )
+    };
 
     // trace too large
 
-    check_result(
-        unsafe {
-            host::trace(
-                locator.as_ptr(),
-                locator.len(),
-                locator.as_ptr(),
-                long_len,
-                0,
-            )
-        },
-        error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_too_long",
-    );
-    check_result(
-        unsafe { host::trace_num(locator.as_ptr(), long_len, 1) },
-        error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_num_too_long",
-    );
-    check_result(
-        unsafe { host::trace_xfloat(message.as_ptr(), long_len, float.as_ptr(), float.len()) },
-        error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_xfloat_too_long",
-    );
-    check_result(
-        unsafe {
-            host::trace_acct(
-                message.as_ptr(),
-                long_len,
-                account.0.as_ptr(),
-                account.0.len(),
-            )
-        },
-        error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_acct_too_long",
-    );
-    check_result(
-        unsafe { host::trace_amt(message.as_ptr(), long_len, amount.as_ptr(), amount.len()) },
-        error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_amt_too_long",
-    );
+    unsafe {
+        host::trace(
+            locator.as_ptr(),
+            locator.len(),
+            TraceDataType::AsText as i32,
+            locator.as_ptr(),
+            long_len,
+        )
+    };
+    let too_long_num = 1i64.to_le_bytes();
+    unsafe {
+        host::trace(
+            locator.as_ptr(),
+            long_len,
+            TraceDataType::Int64 as i32,
+            too_long_num.as_ptr(),
+            too_long_num.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            long_len,
+            TraceDataType::Xfloat as i32,
+            float.as_ptr(),
+            float.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            long_len,
+            TraceDataType::Account as i32,
+            account.0.as_ptr(),
+            account.0.len(),
+        )
+    };
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            long_len,
+            TraceDataType::Amount as i32,
+            amount.as_ptr(),
+            amount.len(),
+        )
+    };
 
     // trace amount errors
 
-    check_result(
-        unsafe {
-            host::trace_amt(
-                message.as_ptr(),
-                message.len(),
-                locator.as_ptr(),
-                locator.len(),
-            )
-        },
-        error_codes::INVALID_PARAMS,
-        "trace_amt_wrong_length",
-    );
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            TraceDataType::Amount as i32,
+            locator.as_ptr(),
+            locator.len(),
+        )
+    };
 
     // other misc errors
 
@@ -1749,34 +1717,28 @@ pub extern "C" fn escrow_finish() -> i32 {
             "mptoken_id_mptid_wrong_length",
         )
     });
-    check_result(
-        unsafe {
-            host::trace(
-                message.as_ptr(),
-                message.len(),
-                locator.as_ptr(),
-                locator.len(),
-                2,
-            )
-        },
-        error_codes::INVALID_PARAMS,
-        "trace_invalid_as_hex",
-    );
+    // Unknown data_type: the host logs "invalid arguments" and returns.
+    unsafe {
+        host::trace(
+            message.as_ptr(),
+            message.len(),
+            99,
+            locator.as_ptr(),
+            locator.len(),
+        )
+    };
 
     // ensure that the Slice index desync issue is fixed
     let empty: &[u8] = b"";
-    check_result(
-        unsafe {
-            host::trace_acct(
-                empty.as_ptr(),
-                empty.len(),
-                account.0.as_ptr(),
-                account.0.len(),
-            )
-        },
-        0,
-        "trace_acct_check_desync",
-    );
+    unsafe {
+        host::trace(
+            empty.as_ptr(),
+            empty.len(),
+            TraceDataType::Account as i32,
+            account.0.as_ptr(),
+            account.0.len(),
+        )
+    };
 
     1 // <-- If we get here, finish the escrow.
 }

@@ -18,7 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 namespace {
 
 /**
@@ -33,8 +33,8 @@ byRef(Function const& f)
         if (result.type() != json::ValueType::Object)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("xrpl::RPC::byRef : result is object");
-            result = RPC::makeObjectValue(result);
+            UNREACHABLE("xrpl::rpc::byRef : result is object");
+            result = rpc::makeObjectValue(result);
             // LCOV_EXCL_STOP
         }
 
@@ -49,7 +49,7 @@ handle(JsonContext& context, Object& object)
     XRPL_ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
-        "xrpl::RPC::handle : valid API version");
+        "xrpl::rpc::handle : valid API version");
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -383,10 +383,10 @@ private:
         unsigned minVer,
         unsigned maxVer)
     {
-        XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
+        XRPL_ASSERT(minVer <= maxVer, "xrpl::rpc::HandlerTable : valid API version range");
         XRPL_ASSERT(
-            maxVer <= RPC::kApiMaximumValidVersion,
-            "xrpl::RPC::HandlerTable : valid max API version");
+            maxVer <= rpc::kApiMaximumValidVersion,
+            "xrpl::rpc::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,
@@ -428,8 +428,8 @@ public:
     [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name) const
     {
-        if (version < RPC::kApiMinimumSupportedVersion ||
-            version > (betaEnabled ? RPC::kApiBetaVersion : RPC::kApiMaximumSupportedVersion))
+        if (version < rpc::kApiMinimumSupportedVersion ||
+            version > (betaEnabled ? rpc::kApiBetaVersion : rpc::kApiMaximumSupportedVersion))
             return nullptr;
 
         auto const range = table_.equal_range(name);
@@ -458,8 +458,8 @@ private:
     addHandler()
     {
         static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
-        static_assert(HandlerImpl::maxApiVer <= RPC::kApiMaximumValidVersion);
-        static_assert(RPC::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
+        static_assert(HandlerImpl::maxApiVer <= rpc::kApiMaximumValidVersion);
+        static_assert(rpc::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
                 table_.equal_range(HandlerImpl::name),
@@ -489,4 +489,4 @@ getHandlerNames()
     return HandlerTable::instance().getHandlerNames();
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc
