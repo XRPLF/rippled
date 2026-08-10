@@ -256,7 +256,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     }
 
     if (!isTesSuccess(result))
-        return result;  // LCOV_EXCL_LINE
+        return result;
 
     if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
     {
