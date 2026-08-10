@@ -187,6 +187,12 @@ host_functions! {
     #[wasm_name = "tx_arr_len"]
     fn get_tx_array_len(&self, field: i32) -> HostResult<i32>;
 
+    /// The number of elements in an array field of the current (escrow) ledger
+    /// object, as with [`Self::get_tx_array_len`].
+    #[gas = 40]
+    #[wasm_name = "home_le_arr_len"]
+    fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

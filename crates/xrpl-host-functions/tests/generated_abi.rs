@@ -123,6 +123,14 @@ impl HostFunctions for FakeHost {
         Ok(field)
     }
 
+    /// The same, over the current ledger object.
+    fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32> {
+        if field < 0 {
+            return Err(HostError::NoArray);
+        }
+        Ok(field + 1)
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -179,6 +187,11 @@ fn the_trait_is_implementable() {
     assert_eq!(out[..2], [3, 9]);
     assert_eq!(host.get_tx_array_len(3), Ok(3));
     assert_eq!(host.get_tx_array_len(-1), Err(HostError::NoArray));
+    assert_eq!(host.get_current_ledger_obj_array_len(3), Ok(4));
+    assert_eq!(
+        host.get_current_ledger_obj_array_len(-1),
+        Err(HostError::NoArray)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -259,6 +272,7 @@ fn the_spec_table_matches_the_declarations() {
             ("home_le_inner", 110),
             ("le_inner", 110),
             ("tx_arr_len", 40),
+            ("home_le_arr_len", 40),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

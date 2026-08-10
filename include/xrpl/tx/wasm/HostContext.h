@@ -98,6 +98,9 @@ public:
     getTxArrayLen(std::int32_t field) const noexcept;
 
     [[nodiscard]] std::int32_t
+    getCurrentLedgerObjArrayLen(std::int32_t field) const noexcept;
+
+    [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
     // A call with no value to report answers 0, or a negative `HostFunctionError` code.

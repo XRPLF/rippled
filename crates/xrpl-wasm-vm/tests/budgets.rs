@@ -114,6 +114,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
         HostFunctionSpec::GetTxArrayLen => {
             (import::TX_ARR_LEN, "(call $tx_arr_len (i32.const 1))", 1)
         }
+        HostFunctionSpec::GetCurrentLedgerObjArrayLen => (
+            import::HOME_LE_ARR_LEN,
+            "(call $home_le_arr_len (i32.const 1))",
+            1,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

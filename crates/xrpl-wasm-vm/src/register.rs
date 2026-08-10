@@ -230,6 +230,17 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::GetCurrentLedgerObjArrayLen => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>, field: i32| -> Result<i32, wasmi::Error> {
+                    charged(
+                        &mut caller,
+                        HostFunctionSpec::GetCurrentLedgerObjArrayLen,
+                        |c| c.data().host.get_current_ledger_obj_array_len(field),
+                    )
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

@@ -297,6 +297,23 @@ HostContext::getTxArrayLen(std::int32_t field) const noexcept
 }
 
 std::int32_t
+HostContext::getCurrentLedgerObjArrayLen(std::int32_t field) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const& knownSFields = SField::getKnownCodeToField();
+        auto const it = knownSFields.find(field);
+        if (it == knownSFields.end())
+            return hfErrorToInt(HostFunctionError::InvalidField);
+
+        auto const len = hostFunctions_.getCurrentLedgerObjArrayLen(*it->second);
+        if (!len)
+            return hfErrorToInt(len.error());
+
+        return *len;
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

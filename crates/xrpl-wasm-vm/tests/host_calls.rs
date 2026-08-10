@@ -257,6 +257,20 @@ fn tx_arr_len_passes_the_selector_and_returns_the_count() {
     assert_eq!(*host.tx_arr_lens_asked.borrow(), vec![17]);
 }
 
+/// The same scalar-in, scalar-out count over the current object, with its own answer
+/// set distinct from the transaction's.
+#[test]
+fn home_le_arr_len_passes_the_selector_and_returns_the_count() {
+    let host = FakeHost::new().answering_home_le_arr_len(17, 8);
+
+    let wat = module(
+        &[import::HOME_LE_ARR_LEN, ONE_PAGE],
+        "(call $home_le_arr_len (i32.const 17))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the array length");
+    assert_eq!(*host.home_le_arr_lens_asked.borrow(), vec![17]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
