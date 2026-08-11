@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -542,7 +543,8 @@ private:
                 if (!BEAST_EXPECT(brokerSle1))
                     return std::nullopt;
                 auto const tinyLoanSeq = brokerSle1->at(sfLoanSequence);
-                auto const tinyLoanKeylet = keylet::loan(c.broker.brokerID, tinyLoanSeq);
+                auto const tinyLoanKeylet =
+                    keylet::loan(c.broker.brokerID, SeqProxy::rawSequence(tinyLoanSeq));
 
                 env(set(c.borrower, c.broker.brokerID, Number{1, -2}),
                     Sig(sfCounterpartySignature, c.lender),
@@ -559,7 +561,8 @@ private:
                 if (!BEAST_EXPECT(brokerSle2))
                     return std::nullopt;
                 auto const bigLoanSeq = brokerSle2->at(sfLoanSequence);
-                auto const bigLoanKeylet = keylet::loan(c.broker.brokerID, bigLoanSeq);
+                auto const bigLoanKeylet =
+                    keylet::loan(c.broker.brokerID, SeqProxy::rawSequence(bigLoanSeq));
 
                 env(set(c.borrower, c.broker.brokerID, Number{500}),
                     Sig(sfCounterpartySignature, c.lender),

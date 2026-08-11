@@ -7,7 +7,6 @@
 #include <xrpl/beast/unit_test/runner.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <exception>
@@ -30,7 +29,7 @@ makeReason(String const& reason, char const* file, int line)
     namespace fs = boost::filesystem;
     s.append(fs::path{file}.filename().string());
     s.append("(");
-    s.append(boost::lexical_cast<std::string>(line));
+    s.append(std::to_string(line));
     s.append(")");
     return s;
 }

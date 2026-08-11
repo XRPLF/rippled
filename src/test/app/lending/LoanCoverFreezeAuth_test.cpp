@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -90,7 +91,7 @@ private:
         env(loanATx);
         env.close();
 
-        auto const loanAKeylet = keylet::loan(brokerKeylet.key, 1);
+        auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
         // Create Loan B
         auto loanBTx = env.jt(
@@ -104,7 +105,7 @@ private:
         env(loanBTx);
         env.close();
 
-        auto const loanBKeylet = keylet::loan(brokerKeylet.key, 2);
+        auto const loanBKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
 
         auto loanASle = env.le(loanAKeylet);
         if (!BEAST_EXPECT(loanASle))
@@ -224,7 +225,8 @@ private:
         if (!BEAST_EXPECT(sleBroker))
             return;
 
-        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         env(set(borrower, broker.brokerID, kPrincipalAmount),
             Sig(sfCounterpartySignature, lender),
@@ -324,7 +326,7 @@ private:
 
             BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'000));
 
-            auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+            auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
             env(set(borrower, brokerInfo.brokerID, 10'000),
                 Sig(sfCounterpartySignature, broker),
@@ -388,7 +390,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, iou, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(iou(100).value()),
@@ -468,7 +470,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
@@ -567,7 +569,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
