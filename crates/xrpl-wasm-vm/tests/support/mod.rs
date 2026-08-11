@@ -254,6 +254,11 @@ pub struct FakeHost {
     pub paychannel_keylets: HashMap<(Vec<u8>, Vec<u8>, i32), Answer>,
     /// Every (account, destination, seq) `paychannel_keylet` was asked for.
     pub paychannel_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>, i32)>>,
+    /// What `permissioned_domain_keylet` answers, by (account bytes, seq). An unlisted
+    /// key answers `InvalidAccount`.
+    pub domain_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (account, seq) `permissioned_domain_keylet` was asked for.
+    pub domain_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -338,6 +343,8 @@ impl Default for FakeHost {
             oracle_keylets_asked: RefCell::new(Vec::new()),
             paychannel_keylets: HashMap::new(),
             paychannel_keylets_asked: RefCell::new(Vec::new()),
+            domain_keylets: HashMap::new(),
+            domain_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -600,6 +607,16 @@ impl FakeHost {
     ) -> FakeHost {
         self.paychannel_keylets
             .insert((account, destination, seq), answer);
+        self
+    }
+
+    pub fn answering_permissioned_domain_keylet(
+        mut self,
+        account: Vec<u8>,
+        seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.domain_keylets.insert((account, seq), answer);
         self
     }
 
@@ -943,6 +960,20 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn permissioned_domain_keylet(
+        &self,
+        account: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (account.to_vec(), seq);
+        self.domain_keylets_asked.borrow_mut().push(key.clone());
+        match self.domain_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -1018,6 +1049,7 @@ pub mod import {
     pub const OFFER_ID: &str = r#"(import "host_lib" "offer_id" (func $offer_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const ORACLE_ID: &str = r#"(import "host_lib" "oracle_id" (func $oracle_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const PAYCHAN_ID: &str = r#"(import "host_lib" "paychan_id" (func $paychan_id (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const PERMISSIONED_DOMAIN_ID: &str = r#"(import "host_lib" "permissioned_domain_id" (func $permissioned_domain_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

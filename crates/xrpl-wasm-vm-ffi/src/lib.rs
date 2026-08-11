@@ -359,6 +359,15 @@ mod ffi {
         ) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "permissionedDomainKeylet"]
+        fn permissioned_domain_keylet(
+            self: &HostContext,
+            account: &[u8],
+            seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -602,6 +611,15 @@ impl HostFunctions for CxxHost<'_> {
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.paychannel_keylet(account, destination, seq, out))
+    }
+
+    fn permissioned_domain_keylet(
+        &self,
+        account: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.permissioned_domain_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
