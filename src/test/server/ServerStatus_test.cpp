@@ -56,8 +56,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
-        auto const sectionName =
-            boost::starts_with(proto, "h") ? Sections::kPortRpc : Sections::kPortWs;
+        auto const sectionName = proto.starts_with("h") ? Sections::kPortRpc : Sections::kPortWs;
         auto p = jtx::envconfig();
 
         p->overwrite(sectionName, Keys::kProtocol, proto);
@@ -71,9 +70,9 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
 
         p->overwrite(
-            boost::starts_with(proto, "h") ? Sections::kPortWs : Sections::kPortRpc,
+            proto.starts_with("h") ? Sections::kPortWs : Sections::kPortRpc,
             Keys::kProtocol,
-            boost::starts_with(proto, "h") ? "ws" : "http");
+            proto.starts_with("h") ? "ws" : "http");
 
         if (proto == "https")
         {
@@ -261,7 +260,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             }
         }
 
-        if (boost::starts_with(proto, "h"))
+        if (proto.starts_with("h"))
         {
             auto jrc = makeJSONRPCClient(env.app().config());
             jrr = jrc->invoke("ledger_accept", jp);
@@ -289,7 +288,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this, makeConfig(proto, admin, credentials)};
 
         json::Value jrr;
-        auto const protoWs = boost::starts_with(proto, "w");
+        auto const protoWs = proto.starts_with("w");
 
         // the set of checks we do are different depending
         // on how the admin config options are set
@@ -485,7 +484,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
-        if (boost::starts_with(clientProtocol, "h"))
+        if (clientProtocol.starts_with("h"))
         {
             doHTTPRequest(env, yield, clientProtocol == "https", resp, ec);
             BEAST_EXPECT(ec);

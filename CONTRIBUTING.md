@@ -225,8 +225,9 @@ environment, so you don't need to install most of the individual tools
 yourself. The version of each hook sourced from an external repository
 (`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
 locally uses exactly the same versions as CI. A few `local` hooks — most notably
-`clang-tidy` — run tools from your own environment; see
-[Installing clang-tidy](#installing-clang-tidy) for how to get those.
+`clang-tidy` and `cargo fmt` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) and
+[Rust](./docs/build/environment.md#rust) for how to get those.
 
 To get started, install `pre-commit` and enable the git hook scripts:
 
@@ -255,6 +256,7 @@ The hooks configured in this repository include, among others:
 - `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
 - `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
 - `gersemi` — CMake formatting
+- `cargo fmt` — Rust formatting for the crates in `crates/`
 - `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
 - `cspell` — spell checking
 
