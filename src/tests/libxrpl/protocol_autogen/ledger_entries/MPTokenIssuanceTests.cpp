@@ -32,7 +32,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
     auto const referenceHoldingValue = canonical_UINT256();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
@@ -53,7 +53,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
-    builder.setMutableFlags(mutableFlagsValue);
+    builder.setImmutableFlags(immutableFlagsValue);
     builder.setReferenceHolding(referenceHoldingValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
@@ -153,11 +153,11 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-        auto const actualOpt = entry.getMutableFlags();
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = entry.getImmutableFlags();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMutableFlags");
-        EXPECT_TRUE(entry.hasMutableFlags());
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+        EXPECT_TRUE(entry.hasImmutableFlags());
     }
 
     {
@@ -217,7 +217,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
     auto const referenceHoldingValue = canonical_UINT256();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
@@ -237,7 +237,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
-    sle->at(sfMutableFlags) = mutableFlagsValue;
+    sle->at(sfImmutableFlags) = immutableFlagsValue;
     sle->at(sfReferenceHolding) = referenceHoldingValue;
     sle->at(sfIssuerEncryptionKey) = issuerEncryptionKeyValue;
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
@@ -391,16 +391,16 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
+        auto const& expected = immutableFlagsValue;
 
-        auto const fromSleOpt = entryFromSle.getMutableFlags();
-        auto const fromBuilderOpt = entryFromBuilder.getMutableFlags();
+        auto const fromSleOpt = entryFromSle.getImmutableFlags();
+        auto const fromBuilderOpt = entryFromBuilder.getImmutableFlags();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfMutableFlags");
-        expectEqualField(expected, *fromBuilderOpt, "sfMutableFlags");
+        expectEqualField(expected, *fromSleOpt, "sfImmutableFlags");
+        expectEqualField(expected, *fromBuilderOpt, "sfImmutableFlags");
     }
 
     {
@@ -531,8 +531,8 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
-    EXPECT_FALSE(entry.hasMutableFlags());
-    EXPECT_FALSE(entry.getMutableFlags().has_value());
+    EXPECT_FALSE(entry.hasImmutableFlags());
+    EXPECT_FALSE(entry.getImmutableFlags().has_value());
     EXPECT_FALSE(entry.hasReferenceHolding());
     EXPECT_FALSE(entry.getReferenceHolding().has_value());
     EXPECT_FALSE(entry.hasIssuerEncryptionKey());

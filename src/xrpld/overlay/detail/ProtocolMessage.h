@@ -357,12 +357,32 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
+    if (header->messageType == protocol::mtPING &&
+        header->uncompressedSize + header->headerSize > kMaximumPingMessageSize)
+    {
+        result.second = make_error_code(boost::system::errc::message_size);
+        return result;
+    }
+
     // We don't have the whole message yet. This isn't an error but we have
     // nothing to do.
     if (header->totalWireSize > size)
     {
         hint = header->totalWireSize - size;
         return result;
+    }
+
+    // Drop an oversized TMManifests without penalty: consume the bytes and
+    // return no error, so the connection is preserved. The limit follows this
+    // node's configured manifests-per-message count.
+    if (header->messageType == protocol::mtMANIFESTS)
+    {
+        auto const maxSize = handler.maxManifestsMessageSize();
+        if (header->payloadWireSize > maxSize || header->uncompressedSize > maxSize)
+        {
+            result.first = header->totalWireSize;
+            return result;
+        }
     }
 
     bool success = false;

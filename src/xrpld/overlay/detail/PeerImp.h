@@ -32,6 +32,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/circular_buffer.hpp>
@@ -429,9 +430,10 @@ public:
     // Ledger
     //
 
-    uint256 const&
+    uint256
     getClosedLedgerHash() const override
     {
+        std::scoped_lock const sl{recentLock_};
         return closedLedgerHash_;
     }
 
@@ -464,6 +466,21 @@ public:
     compressionEnabled() const override
     {
         return compressionEnabled_ == Compressed::On;
+    }
+
+    /**
+     * Largest TMManifests message this node accepts, in bytes.
+     *
+     * Read by invokeProtocolMessage to drop oversized messages before
+     * parsing. Not part of the Peer interface: the message handler is a
+     * template parameter, so only PeerImp needs to provide this.
+     */
+    [[nodiscard]] std::size_t
+    maxManifestsMessageSize() const
+    {
+        return maximumManifestsMessageSize(
+            trustedManifestCount(app_.config().maxTrustedCount),
+            untrustedManifestCount(app_.config().maxUntrustedCount));
     }
 
     bool
