@@ -3946,8 +3946,7 @@ private:
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
                 auto const cleanup340 = env.current()->rules().enabled(fixCleanup3_4_0);
-                auto const minBidPrice =
-                    IOUAmount{Number{ammAlice.tokens()} * getFee(1) / kAuctionSlotMinFeeFraction};
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
                 auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));

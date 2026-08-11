@@ -195,9 +195,8 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     // Auction slot discounted fee
     auto const ammTradingFee = (*ammSle)[sfTradingFee];
     auto const discountedFee = ammTradingFee / kAuctionSlotDiscountedFeeFraction;
-    auto const tradingFee = getFee(ammTradingFee);
     // Min price
-    auto const minSlotPrice = lptAMMBalance * tradingFee / kAuctionSlotMinFeeFraction;
+    auto const minSlotPrice = ammAuctionMinSlotPrice(lptAMMBalance, ammTradingFee);
 
     static constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
 
@@ -265,8 +264,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         if (ctx.view().rules().enabled(fixCleanup3_4_0) && ammTradingFee == 0)
         {
             // Prevent zero-fee pools from granting auction slots at zero or dust prices.
-            effectivePrice =
-                std::max(effectivePrice, lptAMMBalance * getFee(1) / kAuctionSlotMinFeeFraction);
+            effectivePrice = std::max(effectivePrice, ammAuctionMinSlotPrice(lptAMMBalance, 1));
         }
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined

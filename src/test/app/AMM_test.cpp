@@ -3128,8 +3128,7 @@ private:
         // Zero-fee bid without an explicit price pays a floor with fixCleanup3_4_0.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const minBidPrice =
-                    IOUAmount{Number{ammAlice.tokens()} * getFee(1) / kAuctionSlotMinFeeFraction};
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
                 auto const cleanup340 = features[fixCleanup3_4_0];
                 auto const expectedPrice = cleanup340 ? minBidPrice : IOUAmount{0};
                 auto const expectedTokens = cleanup340
@@ -3156,8 +3155,7 @@ private:
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
                 auto const cleanup340 = features[fixCleanup3_4_0];
-                auto const minBidPrice =
-                    IOUAmount{Number{ammAlice.tokens()} * getFee(1) / kAuctionSlotMinFeeFraction};
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
                 auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
