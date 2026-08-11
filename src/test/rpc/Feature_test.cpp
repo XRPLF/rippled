@@ -307,9 +307,7 @@ class Feature_test : public beast::unit_test::Suite
                     (*it).isMember(jss::supported) &&
                         (*it)[jss::supported].asBool() == expectSupported,
                     (*it)[jss::name].asString() + " supported");
-                BEAST_EXPECTS(
-                    (*it).isMember(jss::obsolete) && (*it)[jss::obsolete].isBool(),
-                    (*it)[jss::name].asString() + " unknown obsolete");
+                BEAST_EXPECT(!(*it).isMember(jss::obsolete));
                 BEAST_EXPECT(!(*it).isMember(jss::vetoed));
                 BEAST_EXPECT(!(*it).isMember(jss::majority));
                 BEAST_EXPECT(!(*it).isMember(jss::count));
