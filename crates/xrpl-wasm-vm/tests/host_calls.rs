@@ -542,6 +542,35 @@ fn escrow_id_reads_the_account_and_seq_and_writes_the_keylet() {
     assert_eq!(*host.escrow_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// A keylet getter reading three regions — two accounts and a currency: all three
+/// reach the host as a triple, and the keylet lands where the guest asked.
+#[test]
+fn trustline_id_reads_two_accounts_and_a_currency() {
+    let account1 = vec![0u8; 20];
+    let account2 = vec![0u8; 20];
+    let currency = vec![0u8; 20];
+    let host = FakeHost::new().answering_trust_line_keylet(
+        account1.clone(),
+        account2.clone(),
+        currency.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::TRUSTLINE_ID, ONE_PAGE],
+        "(call $trustline_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 20) (i32.const 20)
+            (i32.const 40) (i32.const 20)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(
+        *host.trust_line_keylets_asked.borrow(),
+        vec![(account1, account2, currency)]
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

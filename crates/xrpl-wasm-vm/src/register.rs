@@ -494,6 +494,35 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::TrustLineKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 a1_ptr: i32,
+                 a1_len: i32,
+                 a2_ptr: i32,
+                 a2_len: i32,
+                 cur_ptr: i32,
+                 cur_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::TrustLineKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let account1 = Region::new(a1_ptr, a1_len);
+                        let account2 = Region::new(a2_ptr, a2_len);
+                        let currency = Region::new(cur_ptr, cur_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.trust_line_keylet(
+                                account1.read(data)?,
+                                account2.read(data)?,
+                                currency.read(data)?,
+                                buf,
+                            )
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

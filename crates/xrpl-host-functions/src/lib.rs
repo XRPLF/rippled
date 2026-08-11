@@ -303,6 +303,19 @@ host_functions! {
     #[wasm_name = "escrow_id"]
     fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `RippleState` (trust line), computed from two 20-byte
+    /// account ids and a 20-byte currency. Reads all three regions and writes the
+    /// keylet.
+    #[gas = 400]
+    #[wasm_name = "trustline_id"]
+    fn trust_line_keylet(
+        &self,
+        account1: &[u8],
+        account2: &[u8],
+        currency: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

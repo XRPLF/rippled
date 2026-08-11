@@ -265,6 +265,24 @@ impl HostFunctions for FakeHost {
         put(out, &[account[0]; HASH_LEN])
     }
 
+    /// A keylet from two accounts and a currency; `InvalidAccount` if either account
+    /// is empty, `InvalidParams` if they are equal or the currency is empty.
+    fn trust_line_keylet(
+        &self,
+        account1: &[u8],
+        account2: &[u8],
+        currency: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        if account1.is_empty() || account2.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        if account1 == account2 || currency.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[account1[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -408,6 +426,15 @@ fn the_trait_is_implementable() {
         host.escrow_keylet(&[], 5, &mut out),
         Err(HostError::InvalidAccount)
     );
+    assert_eq!(
+        host.trust_line_keylet(&[7; 20], &[8; 20], &[1; 20], &mut out),
+        Ok(HASH_LEN)
+    );
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.trust_line_keylet(&[7; 20], &[7; 20], &[1; 20], &mut out),
+        Err(HostError::InvalidParams)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -502,6 +529,7 @@ fn the_spec_table_matches_the_declarations() {
             ("deposit_preauth_id", 350),
             ("did_id", 350),
             ("escrow_id", 350),
+            ("trustline_id", 400),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

@@ -602,6 +602,29 @@ HostContext::escrowKeylet(
 }
 
 std::int32_t
+HostContext::trustLineKeylet(
+    rust::Slice<std::uint8_t const> account1,
+    rust::Slice<std::uint8_t const> account2,
+    rust::Slice<std::uint8_t const> currency,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (account1.size() != AccountID::size() || account2.size() != AccountID::size() ||
+            currency.size() != Currency::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.trustLineKeylet(
+            AccountID::fromVoid(account1.data()),
+            AccountID::fromVoid(account2.data()),
+            Currency::fromVoid(currency.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

@@ -305,6 +305,15 @@ mod tests {
         fn escrow_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn trust_line_keylet(
+            &self,
+            _account1: &[u8],
+            _account2: &[u8],
+            _currency: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

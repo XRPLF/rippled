@@ -177,6 +177,15 @@ public:
         std::int32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Both accounts and the currency must each be 20 bytes, else `InvalidParams`.
+    // Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    trustLineKeylet(
+        rust::Slice<std::uint8_t const> account1,
+        rust::Slice<std::uint8_t const> account2,
+        rust::Slice<std::uint8_t const> currency,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
