@@ -56,10 +56,15 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
+STObject::STObject(
+    SOTemplate const& type,
+    SerialIter& sit,
+    SField const& name,
+    bool requireCanonicalOrder)
+    : STBase(name)
 {
     v_.reserve(type.size());
-    set(sit);
+    set(sit, 0, requireCanonicalOrder);
     applyTemplate(type);  // May throw
 }
 
@@ -208,12 +213,13 @@ STObject::applyTemplateFromSField(SField const& sField)
 
 // return true = terminated with end-of-object
 bool
-STObject::set(SerialIter& sit, int depth)
+STObject::set(SerialIter& sit, int depth, bool requireCanonicalOrder)
 {
     bool reachedEndOfObject = false;
 
     v_.clear();
 
+    std::optional<int> prevFieldCode;
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
@@ -238,13 +244,19 @@ STObject::set(SerialIter& sit, int depth)
         }
 
         auto const& fn = SField::getField(type, field);
-
         if (fn.isInvalid())
         {
             JLOG(debugLog().error())
                 << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
+
+        if (requireCanonicalOrder && prevFieldCode.has_value() && fn.fieldCodeMem <= *prevFieldCode)
+        {
+            JLOG(debugLog().error()) << "Fields in object are not in canonical order";
+            Throw<std::runtime_error>("Fields in object are not in canonical order");
+        }
+        prevFieldCode = fn.fieldCodeMem;
 
         // Unflatten the field
         v_.emplace_back(sit, fn, depth + 1);

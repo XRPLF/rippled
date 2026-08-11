@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -86,7 +87,8 @@ private:
             Number const debtTotalBefore = brokerBefore->at(sfDebtTotal);
 
             auto const loanSequence = brokerBefore->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
                 kCounterparty(lender),
@@ -309,7 +311,8 @@ private:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -530,7 +533,8 @@ private:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -735,7 +739,7 @@ private:
         auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         // ---- LoanSet origination: whole-life formulas expected ----
         auto const vaultBeforeSet = env.le(broker.vaultKeylet());
@@ -943,7 +947,7 @@ private:
         auto const brokerBeforeLoan = env.le(brokerKeylet);
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         LoanParameters const loanParams{
             .account = borrower,

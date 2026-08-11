@@ -29,6 +29,7 @@
 #include <soci/use.h>
 
 #include <array>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
@@ -77,7 +78,9 @@ getManifests(
                 continue;
             }
 
-            cache.applyManifest(std::move(*mo));
+            // Only trusted manifests are persisted (see saveManifests), so
+            // anything loaded from the DB bypasses the untrusted cap.
+            cache.applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped);
         }
         else
         {
@@ -107,19 +110,27 @@ saveManifests(
 {
     soci::transaction tr(session);
     session << "DELETE FROM " << dbTable;
+    // Count skipped untrusted manifests and log one summary afterwards, since
+    // the cache can hold many and per-entry logging would flood at shutdown.
+    std::size_t skipped = 0;
     for (auto const& v : map)
     {
-        // Save all revocation manifests,
-        // but only save trusted non-revocation manifests.
-        if (!v.second.revoked() && !isTrusted(v.second.masterKey))
+        // Persist only trusted keys. Untrusted gossip is left out so a flood
+        // cannot survive a restart on disk.
+        if (!isTrusted(v.second.masterKey))
         {
-            JLOG(j.info()) << "Untrusted manifest in cache not saved to db";
+            ++skipped;
             continue;
         }
 
         saveManifest(session, dbTable, v.second.serialized);
     }
     tr.commit();
+
+    if (skipped != 0)
+    {
+        JLOG(j.info()) << skipped << " untrusted manifest(s) in cache not saved to db";
+    }
 }
 
 void
