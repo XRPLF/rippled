@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -103,7 +104,7 @@ private:
         auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
         BEAST_EXPECT(brokerSle);
         auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         env(createJtx);
         env.close();
@@ -424,7 +425,8 @@ private:
             txFee);
         env.close();
 
-        auto const brokerKeyLet = keylet::loanBroker(lender.id(), env.seq(lender));
+        auto const brokerKeyLet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         env(loan_broker::set(lender, vaultKeyLet.key), txFee);
         env.close();
@@ -441,7 +443,7 @@ private:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerKeyLet.key, loanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeyLet.key, SeqProxy::rawSequence(loanSequence));
 
         if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
         {

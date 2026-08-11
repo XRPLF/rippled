@@ -4121,7 +4121,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             if (accountId == kGenesisAccountId)
             {
                 auto stx = tx->getSTransaction();
-                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
+                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqProxy().value() == 1)
                     return true;
             }
 

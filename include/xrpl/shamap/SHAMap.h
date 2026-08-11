@@ -789,12 +789,6 @@ operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
     return x.item_ == y.item_;
 }
 
-inline bool
-operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
-{
-    return !(x == y);
-}
-
 inline SHAMap::ConstIterator
 SHAMap::begin() const
 {
