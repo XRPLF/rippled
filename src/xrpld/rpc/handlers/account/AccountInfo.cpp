@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
@@ -17,11 +18,11 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format/free_funcs.hpp>
 
 #include <array>
@@ -50,22 +51,16 @@ void
 injectSLE(json::Value& jv, SLE const& sle)
 {
     jv = sle.getJson(JsonOptions::Values::None);
-    if (sle.getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::injectSLE : sle is account root");
+    if (sle.isFieldPresent(sfEmailHash))
     {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash = sle.getFieldH128(sfEmailHash);
-            Blob const b(hash.begin(), hash.end());
-            std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name to this constant and move it
-            //             to a more visible location.
-            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
+        auto const& hash = sle.getFieldH128(sfEmailHash);
+        Blob const b(hash.begin(), hash.end());
+        std::string md5 = strHex(makeSlice(b));
+        md5 = toLower(md5);
+        // VFALCO TODO Give a name to this constant and move it
+        //             to a more visible location.
+        jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
     }
 }
 
@@ -260,7 +255,7 @@ doAccountInfo(rpc::JsonContext& context)
 
                 // We expect txs to be returned sorted by SeqProxy.  Verify
                 // that with a couple of asserts.
-                SeqProxy prevSeqProxy = SeqProxy::sequence(0);
+                SeqProxy prevSeqProxy = SeqProxy::rawSequence(0);
                 for (auto const& tx : txs)
                 {
                     json::Value jvTx = json::ValueType::Object;

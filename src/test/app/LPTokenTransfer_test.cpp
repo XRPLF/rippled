@@ -18,6 +18,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -313,7 +314,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // carol_ can always create a check with lptoken that has frozen
         // token
-        uint256 const carolChkId{keylet::check(carol_, env.seq(carol_)).key};
+        uint256 const carolChkId{keylet::check(carol_, SeqProxy::rawSequence(env.seq(carol_))).key};
         env(check::create(carol_, bob_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -330,7 +331,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a check
-        uint256 const bobChkId{keylet::check(bob_, env.seq(bob_)).key};
+        uint256 const bobChkId{keylet::check(bob_, SeqProxy::rawSequence(env.seq(bob_))).key};
         env(check::create(bob_, carol_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -362,7 +363,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a sell offer for lptoken
-        uint256 const sellOfferIndex = keylet::nftokenOffer(bob_, env.seq(bob_)).key;
+        uint256 const sellOfferIndex =
+            keylet::nftokenOffer(bob_, SeqProxy::rawSequence(env.seq(bob_))).key;
         env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), Txflags(tfSellNFToken));
         env.close();
 
@@ -423,7 +425,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob_ creates a buy offer with lptoken despite bob_'s USD is frozen
-            uint256 const buyOfferIndex = keylet::nftokenOffer(bob_, env.seq(bob_)).key;
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(bob_, SeqProxy::rawSequence(env.seq(bob_))).key;
             env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), token::Owner(carol_));
             env.close();
 

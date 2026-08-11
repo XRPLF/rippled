@@ -301,14 +301,15 @@ message TMLedgerData {
 }
 
 message TMPing {
+  // Previously used - don't reuse.
+  reserved 3, 4;
+
   enum pingType {
     ptPING = 0;  // we want a reply
     ptPONG = 1;  // this is a reply
   }
   required pingType type = 1;
-  optional uint32 seq = 2;       // detect stale replies, ensure other side is reading
-  optional uint64 pingTime = 3;  // know when we think we sent the ping
-  optional uint64 netTime = 4;
+  optional uint32 seq = 2;  // detect stale replies, ensure other side is reading
 }
 
 message TMSquelch {
