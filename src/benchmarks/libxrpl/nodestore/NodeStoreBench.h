@@ -297,12 +297,11 @@ struct BackendConfig
 inline std::vector<BackendConfig> const&
 backendConfigs()
 {
+    // Use factory settings for each DB
     static std::vector<BackendConfig> const kConfigs = {
         {.name = "nudb", .config = "type=nudb"},
 #if XRPL_ROCKSDB_AVAILABLE
-        {.name = "rocksdb",
-         .config = "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-                   "file_size_mb=8,file_size_mult=2"},
+        {.name = "rocksdb", .config = "type=rocksdb"},
 #endif
     };
     return kConfigs;
