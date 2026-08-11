@@ -203,7 +203,7 @@ fillJsonTx(
         uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
         uint32_t const netID = fill.context->app.getNetworkIDService().getNetworkID();
 
-        if (auto ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID))
+        if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
             txJson[jss::ctid] = *ctid;
     }
 

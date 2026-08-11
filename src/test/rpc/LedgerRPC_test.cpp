@@ -740,7 +740,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(txns[i].isMember(jss::ctid));
                 auto const expectedCtid =
-                    RPC::encodeCTID(jrr[jss::ledger][jss::ledger_index].asUInt(), i, netID);
+                    rpc::encodeCTID(jrr[jss::ledger][jss::ledger_index].asUInt(), i, netID);
                 // NOLINTBEGIN(bugprone-unchecked-optional-access)
                 if (BEAST_EXPECT(expectedCtid.has_value()))
                     BEAST_EXPECT(txns[i][jss::ctid] == expectedCtid.value());
