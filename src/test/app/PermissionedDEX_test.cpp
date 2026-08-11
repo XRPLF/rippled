@@ -180,10 +180,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testOfferCreate(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_4_0];
-
-        testcase << "OfferCreate"
-                 << (fixEnabled ? " (Cleanup3_4_0 enabled)" : " (Cleanup3_4_0 disabled)");
+        testcase("OfferCreate");
 
         // test preflight
         {
@@ -277,10 +274,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             // time advance
             env.close(std::chrono::seconds(20));
 
-            // Devin cannot create offer with expired cred. After fixCleanup3_4_0,
-            // doApply deletes the expired credential SLE and returns tecEXPIRED.
-            TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
-            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(expectedExpiredCredTer));
+            // After fixCleanup3_4_0, OfferCreate returns tecEXPIRED (and deletes
+            // the credential). Detailed coverage is in testExpiredCredentialCleanup.
+            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(tecEXPIRED));
             env.close();
         }
 
@@ -1465,17 +1461,14 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
-    // Test a hybrid offer after the owner's domain credential expires.
-    // Pre-fix, open-book traversal still treats the expired domain credential
-    // as unfunded. Post-fix, the open book remains usable while domain payments
-    // continue to fail.
+    // Test that a hybrid offer remains crossable in the open book after the
+    // owner's domain credential expires. A domain payment after expiry should
+    // fail (domain book evicts the offer in its sandbox), but the open book
+    // remains usable.
     void
     testHybridOpenBookAfterCredentialExpiry(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_3_0];
-
-        testcase << "Hybrid open book after credential expiry"
-                 << (fixEnabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
+        testcase("Hybrid open book after credential expiry");
 
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
@@ -1519,77 +1512,45 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close(std::chrono::seconds(100));
 
         // Confirm devin can no longer create domain offers.
-        TER const expectedExpiredCredTer =
-            features[fixCleanup3_4_0] ? tecEXPIRED : tecNO_PERMISSION;
-        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(expectedExpiredCredTer));
+        // After fixCleanup3_4_0, OfferCreate deletes the expired credential and
+        // returns tecEXPIRED (covered in depth by testExpiredCredentialCleanup).
+        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(tecEXPIRED));
         env.close();
 
         // The hybrid offer must still exist in the open book after expiry.
         BEAST_EXPECT(offerExists(env, devin, hybridOfferSeq));
 
-        if (fixEnabled)
-        {
-            // A non-domain open-book payment must cross (not evict) the
-            // remaining portion of devin's hybrid offer.
-            carolBalance = env.balance(carol, USD);
-            env(pay(alice, carol, USD(2)), Path(~USD), Sendmax(XRP(2)));
-            env.close();
+        // A non-domain open-book payment must cross (not evict) the
+        // remaining portion of devin's hybrid offer.
+        carolBalance = env.balance(carol, USD);
+        env(pay(alice, carol, USD(2)), Path(~USD), Sendmax(XRP(2)));
+        env.close();
 
-            // Carol received USD; the offer was crossed, not evicted.
-            BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(2));
-            // Offer still exists with 3 USD / 3 XRP remaining.
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
+        // Carol received USD; the offer was crossed, not evicted.
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(2));
+        // Offer still exists with 3 USD / 3 XRP remaining.
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
 
-            // A domain payment now fails because the domain book evicts devin's
-            // offer (his credential has expired).  The eviction is rolled back
-            // with the failed sandbox, so the offer is NOT permanently removed.
-            env(pay(alice, carol, USD(1)),
-                Path(~USD),
-                Sendmax(XRP(1)),
-                Domain(domainID),
-                Ter(tecPATH_PARTIAL));
-            env.close();
+        // A domain payment now fails because the domain book evicts devin's
+        // offer (his credential has expired).  The eviction is rolled back with
+        // the failed sandbox, so the offer is NOT permanently removed.
+        env(pay(alice, carol, USD(1)),
+            Path(~USD),
+            Sendmax(XRP(1)),
+            Domain(domainID),
+            Ter(tecPATH_PARTIAL));
+        env.close();
 
-            // Offer still intact in the open book; domain payment did not
-            // permanently delete it.
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
+        // Offer still intact in the open book; domain payment did not
+        // permanently delete it.
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
 
-            // The open book can still fully consume the remaining portion.
-            carolBalance = env.balance(carol, USD);
-            env(pay(alice, carol, USD(3)), Path(~USD), Sendmax(XRP(3)));
-            env.close();
-            BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(3));
-            BEAST_EXPECT(!offerExists(env, devin, hybridOfferSeq));
-        }
-        else
-        {
-            // Pre-fixCleanup3_3_0: open-book traversal also runs the domain
-            // eviction check, so the expired credential makes the hybrid offer
-            // unavailable even for regular payments.
-            carolBalance = env.balance(carol, USD);
-            env(pay(alice, carol, USD(2)), Path(~USD), Sendmax(XRP(2)), Ter(tecPATH_PARTIAL));
-            env.close();
-            BEAST_EXPECT(env.balance(carol, USD) == carolBalance);
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
-
-            // Domain traversal fails for the same expired credential and rolls
-            // back the attempted eviction.
-            env(pay(alice, carol, USD(1)),
-                Path(~USD),
-                Sendmax(XRP(1)),
-                Domain(domainID),
-                Ter(tecPATH_PARTIAL));
-            env.close();
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
-
-            // Further open-book attempts continue to fail and leave the offer
-            // intact.
-            carolBalance = env.balance(carol, USD);
-            env(pay(alice, carol, USD(3)), Path(~USD), Sendmax(XRP(3)), Ter(tecPATH_PARTIAL));
-            env.close();
-            BEAST_EXPECT(env.balance(carol, USD) == carolBalance);
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
-        }
+        // The open book can still fully consume the remaining portion.
+        carolBalance = env.balance(carol, USD);
+        env(pay(alice, carol, USD(3)), Path(~USD), Sendmax(XRP(3)));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(3));
+        BEAST_EXPECT(!offerExists(env, devin, hybridOfferSeq));
     }
 
     void
@@ -2310,7 +2271,7 @@ public:
 
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
-        testOfferCreate(all - fixCleanup3_4_0);
+        testOfferCreate(all - fixCleanup3_2_0);
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
@@ -2329,7 +2290,6 @@ public:
         testHybridBookStep(all);
         testHybridInvalidOffer(all - fixCleanup3_3_0);
         testHybridInvalidOffer(all);
-        testHybridOpenBookAfterCredentialExpiry(all - fixCleanup3_3_0);
         testHybridOpenBookAfterCredentialExpiry(all);
         testHybridOfferDirectories(all);
         testHybridMalformedOffer(all);
