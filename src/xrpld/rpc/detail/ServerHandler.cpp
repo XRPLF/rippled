@@ -564,14 +564,11 @@ ServerHandler::processSession(
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
-        [&]() -> std::string_view {
+        [&] -> std::string_view {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
-            {
-                auto const& val = iter->value();
-                return std::string_view(val.data(), val.size());
-            }
-            return std::string_view{};
+                return iter->value();
+            return {};
         }());
 
     if (beast::rfc2616::isKeepAlive(session->request()))
