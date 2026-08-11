@@ -330,9 +330,29 @@ invokeFloat(rust::Slice<std::uint8_t> out, Functor&& functor)
     }
 }
 
+template <bool Scalar, typename Functor>
+std::int32_t
+invoke(rust::Slice<std::uint8_t> out, Functor&& functor)
+{
+    auto const value = functor();
+    if (!value)
+    {
+        return hfErrorToInt(value.error());
+    }
+
+    if constexpr (Scalar)
+    {
+        return answerScalar(out, *value);
+    }
+    else
+    {
+        return answer(out, value->data(), value->size());
+    }
+}
+
 template <typename Functor>
 std::int32_t
-invokeFloat(Functor&& functor)
+invoke(Functor&& functor)
 {
     auto const value = functor();
     if (!value)
@@ -353,13 +373,7 @@ std::int32_t
 HostContext::getLedgerSqn(rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const sqn = hostFunctions_.getLedgerSqn();
-        if (!sqn)
-        {
-            return hfErrorToInt(sqn.error());
-        }
-
-        return answerScalar(out, *sqn);
+        return invoke<true>(out, [&] { return hostFunctions_.getLedgerSqn(); });
     });
 }
 
@@ -367,13 +381,7 @@ std::int32_t
 HostContext::getParentLedgerTime(rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const time = hostFunctions_.getParentLedgerTime();
-        if (!time)
-        {
-            return hfErrorToInt(time.error());
-        }
-
-        return answerScalar(out, *time);
+        return invoke<true>(out, [&] { return hostFunctions_.getParentLedgerTime(); });
     });
 }
 
@@ -381,13 +389,7 @@ std::int32_t
 HostContext::getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const hash = hostFunctions_.getParentLedgerHash();
-        if (!hash)
-        {
-            return hfErrorToInt(hash.error());
-        }
-
-        return answer(out, hash->data(), hash->size());
+        return invoke<false>(out, [&] { return hostFunctions_.getParentLedgerHash(); });
     });
 }
 
@@ -395,13 +397,7 @@ std::int32_t
 HostContext::getBaseFee(rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const fee = hostFunctions_.getBaseFee();
-        if (!fee)
-        {
-            return hfErrorToInt(fee.error());
-        }
-
-        return answerScalar(out, *fee);
+        return invoke<true>(out, [&] { return hostFunctions_.getBaseFee(); });
     });
 }
 
@@ -430,13 +426,7 @@ HostContext::isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const
 
         auto const name =
             std::string_view{reinterpret_cast<char const*>(amendment.data()), amendment.size()};
-        auto const enabled = hostFunctions_.isAmendmentEnabled(name);
-        if (!enabled)
-        {
-            return hfErrorToInt(enabled.error());
-        }
-
-        return *enabled;
+        return invoke([&] { return hostFunctions_.isAmendmentEnabled(name); });
     });
 }
 
@@ -449,14 +439,9 @@ HostContext::cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t 
         {
             return hfErrorToInt(HostFunctionError::InvalidParams);
         }
-
-        auto const slot = hostFunctions_.cacheLedgerObj(uint256::fromVoid(objId.data()), cacheIdx);
-        if (!slot)
-        {
-            return hfErrorToInt(slot.error());
-        }
-
-        return *slot;
+        return invoke([&] {
+            return hostFunctions_.cacheLedgerObj(uint256::fromVoid(objId.data()), cacheIdx);
+        });
     });
 }
 
@@ -601,16 +586,12 @@ HostContext::checkSignature(
     rust::Slice<std::uint8_t const> pubkey) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const valid = hostFunctions_.checkSignature(
-            Slice{message.data(), message.size()},
-            Slice{signature.data(), signature.size()},
-            Slice{pubkey.data(), pubkey.size()});
-        if (!valid)
-        {
-            return hfErrorToInt(valid.error());
-        }
-
-        return *valid;
+        return invoke([&] {
+            return hostFunctions_.checkSignature(
+                Slice{message.data(), message.size()},
+                Slice{signature.data(), signature.size()},
+                Slice{pubkey.data(), pubkey.size()});
+        });
     });
 }
 
@@ -643,14 +624,7 @@ HostContext::ammKeylet(
         {
             return hfErrorToInt(a2.error());
         }
-
-        auto const value = hostFunctions_.ammKeylet(*a1, *a2);
-        if (!value)
-        {
-            return hfErrorToInt(value.error());
-        }
-
-        return answer(out, value->data(), value->size());
+        return invoke<false>(out, [&] { return hostFunctions_.ammKeylet(*a1, *a2); });
     });
 }
 
@@ -780,15 +754,10 @@ HostContext::mptokenKeylet(
         {
             return hfErrorToInt(HostFunctionError::InvalidParams);
         }
-
-        auto const value = hostFunctions_.mptokenKeylet(
-            MPTID::fromVoid(mptid.data()), AccountID::fromVoid(holder.data()));
-        if (!value)
-        {
-            return hfErrorToInt(value.error());
-        }
-
-        return answer(out, value->data(), value->size());
+        return invoke<false>(out, [&] {
+            return hostFunctions_.mptokenKeylet(
+                MPTID::fromVoid(mptid.data()), AccountID::fromVoid(holder.data()));
+        });
     });
 }
 
@@ -904,13 +873,9 @@ HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::u
     const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const digest = hostFunctions_.computeSha512HalfHash(Slice{data.data(), data.size()});
-        if (!digest)
-        {
-            return hfErrorToInt(digest.error());
-        }
-
-        return answer(out, digest->data(), digest->size());
+        return invoke<false>(out, [&] {
+            return hostFunctions_.computeSha512HalfHash(Slice{data.data(), data.size()});
+        });
     });
 }
 
@@ -918,14 +883,10 @@ std::int32_t
 HostContext::trace(rust::Str msg, rust::Slice<std::uint8_t const> data, bool asHex) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const status = hostFunctions_.trace(
-            std::string_view{msg.data(), msg.size()}, Slice{data.data(), data.size()}, asHex);
-        if (!status)
-        {
-            return hfErrorToInt(status.error());
-        }
-
-        return *status;
+        return invoke([&] {
+            return hostFunctions_.trace(
+                std::string_view{msg.data(), msg.size()}, Slice{data.data(), data.size()}, asHex);
+        });
     });
 }
 
@@ -933,14 +894,9 @@ std::int32_t
 HostContext::traceNum(rust::Str msg, std::int64_t number) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const status =
-            hostFunctions_.traceNum(std::string_view{msg.data(), msg.size()}, number);
-        if (!status)
-        {
-            return hfErrorToInt(status.error());
-        }
-
-        return *status;
+        return invoke([&] {
+            return hostFunctions_.traceNum(std::string_view{msg.data(), msg.size()}, number);
+        });
     });
 }
 
@@ -948,13 +904,7 @@ std::int32_t
 HostContext::updateData(rust::Slice<std::uint8_t const> data) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        auto const stored = hostFunctions_.updateData(Slice{data.data(), data.size()});
-        if (!stored)
-        {
-            return hfErrorToInt(stored.error());
-        }
-
-        return *stored;
+        return invoke([&] { return hostFunctions_.updateData(Slice{data.data(), data.size()}); });
     });
 }
 
@@ -1132,7 +1082,7 @@ HostContext::floatCompare(rust::Slice<std::uint8_t const> x, rust::Slice<std::ui
     const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat([&] {
+        return invoke([&] {
             return hostFunctions_.floatCompare(
                 Slice{x.data(), x.size()}, Slice{y.data(), y.size()});
         });
