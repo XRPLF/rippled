@@ -2,6 +2,7 @@
 
 #include <xrpld/rpc/Context.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -14,7 +15,6 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
 #include <cstddef>
@@ -106,7 +106,7 @@ ServerDefinitions::translate(std::string const& inp)
         std::string token = inpToProcess.substr(0, pos);
         if (token.size() > 1)
         {
-            boost::algorithm::to_lower(token);
+            token = toLower(token);
             token[0] -= ('a' - 'A');
             out += token;
         }
