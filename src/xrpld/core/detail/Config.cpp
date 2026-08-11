@@ -20,7 +20,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/format/free_funcs.hpp>
@@ -185,7 +184,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
     for (auto& strValue : vLines)
     {
         if (bTrim)
-            boost::algorithm::trim(strValue);
+            strValue = trimWhitespace(strValue);
 
         if (strValue.empty() || strValue[0] == '#')
         {
