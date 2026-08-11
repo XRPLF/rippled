@@ -194,6 +194,14 @@ public:
         std::int32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // The MPT id must be 24 bytes and the holder 20, else `InvalidParams`. Writes the
+    // 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    mptokenKeylet(
+        rust::Slice<std::uint8_t const> mptid,
+        rust::Slice<std::uint8_t const> holder,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 

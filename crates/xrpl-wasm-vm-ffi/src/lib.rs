@@ -328,6 +328,10 @@ mod ffi {
         ) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "mptokenKeylet"]
+        fn mptoken_keylet(self: &HostContext, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -545,6 +549,10 @@ impl HostFunctions for CxxHost<'_> {
         out: &mut [u8],
     ) -> HostResult<usize> {
         bytes_written(self.ctx.mptoken_issuance_keylet(issuer, seq, out))
+    }
+
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.mptoken_keylet(mptid, holder, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

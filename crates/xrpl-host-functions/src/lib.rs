@@ -328,6 +328,12 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The 32-byte keylet of an `MPToken`, computed from a 24-byte MPT issuance id and
+    /// the 20-byte holder account. Reads both regions and writes the keylet.
+    #[gas = 500]
+    #[wasm_name = "mptoken_id"]
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

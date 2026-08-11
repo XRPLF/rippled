@@ -229,6 +229,11 @@ pub struct FakeHost {
     pub mpt_issuance_keylets: HashMap<(Vec<u8>, i32), Answer>,
     /// Every (issuer, seq) `mptoken_issuance_keylet` was asked for.
     pub mpt_issuance_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `mptoken_keylet` answers, by (mptid, holder) bytes. An unlisted key answers
+    /// `InvalidParams`.
+    pub mptoken_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
+    /// Every (mptid, holder) `mptoken_keylet` was asked for.
+    pub mptoken_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -303,6 +308,8 @@ impl Default for FakeHost {
             trust_line_keylets_asked: RefCell::new(Vec::new()),
             mpt_issuance_keylets: HashMap::new(),
             mpt_issuance_keylets_asked: RefCell::new(Vec::new()),
+            mptoken_keylets: HashMap::new(),
+            mptoken_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -513,6 +520,16 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.mpt_issuance_keylets.insert((issuer, seq), answer);
+        self
+    }
+
+    pub fn answering_mptoken_keylet(
+        mut self,
+        mptid: Vec<u8>,
+        holder: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.mptoken_keylets.insert((mptid, holder), answer);
         self
     }
 
@@ -805,6 +822,15 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        let key = (mptid.to_vec(), holder.to_vec());
+        self.mptoken_keylets_asked.borrow_mut().push(key.clone());
+        match self.mptoken_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -875,6 +901,7 @@ pub mod import {
     pub const ESCROW_ID: &str = r#"(import "host_lib" "escrow_id" (func $escrow_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const TRUSTLINE_ID: &str = r#"(import "host_lib" "trustline_id" (func $trustline_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const MPT_ISSUANCE_ID: &str = r#"(import "host_lib" "mpt_issuance_id" (func $mpt_issuance_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const MPTOKEN_ID: &str = r#"(import "host_lib" "mptoken_id" (func $mptoken_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

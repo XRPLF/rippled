@@ -645,6 +645,25 @@ HostContext::mptokenIssuanceKeylet(
 }
 
 std::int32_t
+HostContext::mptokenKeylet(
+    rust::Slice<std::uint8_t const> mptid,
+    rust::Slice<std::uint8_t const> holder,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (mptid.size() != MPTID::size() || holder.size() != AccountID::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.mptokenKeylet(
+            MPTID::fromVoid(mptid.data()), AccountID::fromVoid(holder.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

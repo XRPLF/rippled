@@ -296,6 +296,18 @@ impl HostFunctions for FakeHost {
         put(out, &[issuer[0]; HASH_LEN])
     }
 
+    /// A keylet from an MPT id and a holder; `InvalidParams` if the id is empty,
+    /// `InvalidAccount` if the holder is empty.
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if mptid.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        if holder.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        put(out, &[mptid[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -457,6 +469,15 @@ fn the_trait_is_implementable() {
         host.mptoken_issuance_keylet(&[], 5, &mut out),
         Err(HostError::InvalidAccount)
     );
+    assert_eq!(
+        host.mptoken_keylet(&[9; 24], &[8; 20], &mut out),
+        Ok(HASH_LEN)
+    );
+    assert_eq!(out[0], 9);
+    assert_eq!(
+        host.mptoken_keylet(&[], &[8; 20], &mut out),
+        Err(HostError::InvalidParams)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -553,6 +574,7 @@ fn the_spec_table_matches_the_declarations() {
             ("escrow_id", 350),
             ("trustline_id", 400),
             ("mpt_issuance_id", 350),
+            ("mptoken_id", 500),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

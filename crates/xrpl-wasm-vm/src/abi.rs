@@ -322,6 +322,14 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn mptoken_keylet(
+            &self,
+            _mptid: &[u8],
+            _holder: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

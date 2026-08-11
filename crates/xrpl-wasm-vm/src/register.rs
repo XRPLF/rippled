@@ -542,6 +542,27 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::MptokenKeylet => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 mpt_ptr: i32,
+                 mpt_len: i32,
+                 holder_ptr: i32,
+                 holder_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::MptokenKeylet, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let mptid = Region::new(mpt_ptr, mpt_len);
+                        let holder = Region::new(holder_ptr, holder_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.mptoken_keylet(mptid.read(data)?, holder.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
             HostFunctionSpec::Sha512Half => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),

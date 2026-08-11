@@ -589,6 +589,29 @@ fn mpt_issuance_id_reads_the_issuer_and_seq() {
     assert_eq!(*host.mpt_issuance_keylets_asked.borrow(), vec![(issuer, 5)]);
 }
 
+/// A keylet from a 24-byte MPT id and a 20-byte holder: both reach the host as a
+/// pair, and the keylet lands where the guest asked.
+#[test]
+fn mptoken_id_reads_the_mptid_and_holder() {
+    let mptid = vec![0u8; 24];
+    let holder = vec![0u8; 20];
+    let host = FakeHost::new().answering_mptoken_keylet(
+        mptid.clone(),
+        holder.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::MPTOKEN_ID, ONE_PAGE],
+        "(call $mptoken_id
+            (i32.const 0) (i32.const 24)
+            (i32.const 24) (i32.const 20)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.mptoken_keylets_asked.borrow(), vec![(mptid, holder)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
