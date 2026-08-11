@@ -165,7 +165,9 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, target) == 0);
+            // The consumed ticket's count is released; the SignerList set up
+            // above remains the target's only owned object.
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         }
     }
 

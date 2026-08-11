@@ -34,7 +34,15 @@ TransactionProposalCancel::preflight(PreflightContext const& ctx)
 TER
 TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleProposal = ctx.view.read(keylet::txProposal(ctx.tx[sfProposalID]));
+    uint256 const proposalID = ctx.tx[sfProposalID];
+
+    // Never read the zero keylet. Preflight already rejected a zero
+    // ProposalID, and no real proposal can have one (every ProposalID is a
+    // hash), so reaching here with zero is an internal error. (and a mathematical rarity. )
+    if (proposalID == beast::kZero)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const sleProposal = ctx.view.read(keylet::txProposal(proposalID));
     if (!sleProposal)
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCancel: proposal does not exist.";
@@ -73,11 +81,17 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 TER
 TransactionProposalCancel::doApply()
 {
+    uint256 const proposalID = ctx_.tx[sfProposalID];
+
+    // Never read the zero keylet; see the matching guard in preclaim.
+    if (proposalID == beast::kZero)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     // The below condition covers the case of TransactionProposalCancel
     // consuming the very ticket specified in the
     // sleProposal[sfProposedTransaction] field. This indicates the intent of
     // the Target-Account to cancel the ticket+associated-txProposal.
-    Keylet const proposalKeylet = keylet::txProposal(ctx_.tx[sfProposalID]);
+    Keylet const proposalKeylet = keylet::txProposal(proposalID);
     auto const sleProposal = view().peek(proposalKeylet);
     if (!sleProposal)
     {
