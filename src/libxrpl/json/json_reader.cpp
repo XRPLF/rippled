@@ -13,6 +13,7 @@
 #include <istream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace json {
 // Implementation of class Reader
@@ -77,7 +78,7 @@ Reader::parse(std::istream& sin, Value& root)
 
     // Since std::string is reference-counted, this at least does not
     // create an extra copy.
-    std::string const doc;
+    std::string doc;
     std::getline(sin, doc, (char)EOF);
     return parse(doc, root);
 }
@@ -612,7 +613,7 @@ Reader::decodeDouble(Token& token)
         return addError("Unable to parse token length", token);
     }
 
-    double const value = 0;
+    double value = 0;
     auto const [ptr, ec] = fast_float::from_chars(token.start, token.end, value);
 
     // Reject anything from_chars could not turn into a finite double:
@@ -895,7 +896,7 @@ Reader::getLocationLineAndColumn(Location location) const
 }
 
 std::string
-Reader::getFormattedErrorMessages()
+Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 

@@ -286,7 +286,7 @@ pub(crate) fn write_mant_exp(
     mantissa_out: Region,
     exponent_out: Region,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8], &mut [u8]) -> HostResult<usize>,
-) -> HostResult<i32> {
+) -> CallResult<i32> {
     let mem = memory(caller)?;
     let (data, state) = mem.data_and_store_mut(&mut *caller);
     let host: &dyn HostFunctions = state.host;
@@ -306,7 +306,7 @@ pub(crate) fn write_mant_exp(
         .get_mut(mant_range)
         .ok_or(HostError::PointerOutOfBounds)?;
     if mant_dst.len() < MANTISSA_BYTES {
-        return Err(HostError::BufferTooSmall);
+        return Err(HostError::BufferTooSmall.into());
     }
     mant_dst[..MANTISSA_BYTES].copy_from_slice(&state.out_buffer[..MANTISSA_BYTES]);
 
@@ -315,7 +315,7 @@ pub(crate) fn write_mant_exp(
         .get_mut(exp_range)
         .ok_or(HostError::PointerOutOfBounds)?;
     if exp_dst.len() < EXPONENT_BYTES {
-        return Err(HostError::BufferTooSmall);
+        return Err(HostError::BufferTooSmall.into());
     }
     exp_dst[..EXPONENT_BYTES]
         .copy_from_slice(&state.out_buffer[MANTISSA_BYTES..MANTISSA_BYTES + EXPONENT_BYTES]);

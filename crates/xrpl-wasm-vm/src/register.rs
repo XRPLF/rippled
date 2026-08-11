@@ -87,7 +87,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::IsAmendmentEnabled, |c| {
                         let host = c.data().host;
                         let amendment = read_borrowed(c, Region::new(ptr, len))?;
-                        host.is_amendment_enabled(amendment)
+                        Ok(host.is_amendment_enabled(amendment)?)
                     })
                 },
             ),
@@ -102,7 +102,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::CacheLedgerObj, |c| {
                         let host = c.data().host;
                         let obj_id = read_borrowed(c, Region::new(id_ptr, id_len))?;
-                        host.cache_ledger_obj(obj_id, cache_idx)
+                        Ok(host.cache_ledger_obj(obj_id, cache_idx)?)
                     })
                 },
             ),
@@ -229,7 +229,7 @@ pub(crate) fn register_host_functions(
                 op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>, field: i32| -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::GetTxArrayLen, |c| {
-                        c.data().host.get_tx_array_len(field)
+                        Ok(c.data().host.get_tx_array_len(field)?)
                     })
                 },
             ),
@@ -240,7 +240,7 @@ pub(crate) fn register_host_functions(
                     charged(
                         &mut caller,
                         HostFunctionSpec::GetCurrentLedgerObjArrayLen,
-                        |c| c.data().host.get_current_ledger_obj_array_len(field),
+                        |c| Ok(c.data().host.get_current_ledger_obj_array_len(field)?),
                     )
                 },
             ),
@@ -252,7 +252,7 @@ pub(crate) fn register_host_functions(
                  field: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::GetLedgerObjArrayLen, |c| {
-                        c.data().host.get_ledger_obj_array_len(cache_idx, field)
+                        Ok(c.data().host.get_ledger_obj_array_len(cache_idx, field)?)
                     })
                 },
             ),
@@ -266,7 +266,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::GetTxNestedArrayLen, |c| {
                         let host = c.data().host;
                         let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                        host.get_tx_nested_array_len(locator)
+                        Ok(host.get_tx_nested_array_len(locator)?)
                     })
                 },
             ),
@@ -283,7 +283,7 @@ pub(crate) fn register_host_functions(
                         |c| {
                             let host = c.data().host;
                             let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                            host.get_current_ledger_obj_nested_array_len(locator)
+                            Ok(host.get_current_ledger_obj_nested_array_len(locator)?)
                         },
                     )
                 },
@@ -302,7 +302,7 @@ pub(crate) fn register_host_functions(
                         |c| {
                             let host = c.data().host;
                             let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                            host.get_ledger_obj_nested_array_len(cache_idx, locator)
+                            Ok(host.get_ledger_obj_nested_array_len(cache_idx, locator)?)
                         },
                     )
                 },
@@ -323,7 +323,7 @@ pub(crate) fn register_host_functions(
                         let message = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
                         let signature = read_borrowed(c, Region::new(sig_ptr, sig_len))?;
                         let pubkey = read_borrowed(c, Region::new(pk_ptr, pk_len))?;
-                        host.check_signature(message, signature, pubkey)
+                        Ok(host.check_signature(message, signature, pubkey)?)
                     })
                 },
             ),
@@ -827,7 +827,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::UpdateData, |c| {
                         let host = c.data().host;
                         let data = read_borrowed(c, Region::new(ptr, len))?;
-                        host.update_data(data)
+                        Ok(host.update_data(data)?)
                     })
                 },
             ),
@@ -898,7 +898,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::GetNftFlags, |c| {
                         let host = c.data().host;
                         let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
-                        host.get_nft_flags(nft_id)
+                        Ok(host.get_nft_flags(nft_id)?)
                     })
                 },
             ),
@@ -912,7 +912,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::GetNftTransferFee, |c| {
                         let host = c.data().host;
                         let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
-                        host.get_nft_transfer_fee(nft_id)
+                        Ok(host.get_nft_transfer_fee(nft_id)?)
                     })
                 },
             ),
@@ -1077,7 +1077,7 @@ pub(crate) fn register_host_functions(
                         let host = c.data().host;
                         let x = read_borrowed(c, Region::new(x_ptr, x_len))?;
                         let y = read_borrowed(c, Region::new(y_ptr, y_len))?;
-                        host.float_compare(x, y)
+                        Ok(host.float_compare(x, y)?)
                     })
                 },
             ),

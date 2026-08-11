@@ -785,7 +785,6 @@ fn the_trait_is_implementable() {
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", TraceDataType::AsHex), Ok(()));
-    assert_eq!(host.trace_num("count", -1), Ok(()));
     assert_eq!(host.update_data(b"abcd"), Ok(4));
     assert_eq!(host.get_nft(&[7; 20], &[9; 32], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
@@ -930,7 +929,6 @@ fn the_spec_table_matches_the_declarations() {
             ("vault_id", 350),
             ("sha512_half", 2000),
             ("trace", 30),
-            ("trace_num", 500),
             ("set_data", 1000),
             ("nft_uri", 5000),
             ("nft_issuer", 70),

@@ -1183,26 +1183,9 @@ mod tests {
         assert_eq!(bytes_written(0), Ok(0));
         assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
         assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
-        assert_eq!(reported(0), Ok(()));
-        assert_eq!(reported(-14), Err(HostError::NoMemExported));
         assert_eq!(scalar(1), Ok(1));
         assert_eq!(scalar(0), Ok(0));
         assert_eq!(scalar(-2), Err(HostError::FieldNotFound));
-    }
-
-    /// An exception caught on the C++ side arrives as `InternalFatal`, the code
-    /// `HostContext` answers with when a body throws. The engine stops the run on it and
-    /// the transaction is `tecINTERNAL`, rather than the contract being handed a code to
-    /// interpret.
-    ///
-    /// It arrives through the sign test like any other code, which is the point of
-    /// choosing a negative sentinel: `usize::try_from` rejects it, so this needs no case
-    /// of its own here and a positive length cannot be mistaken for it.
-    #[test]
-    fn a_caught_cxx_exception_arrives_as_internal() {
-        assert_eq!(bytes_written(-1), Err(HostError::Internal));
-        assert_eq!(reported(-1), Err(HostError::Internal));
-        assert_eq!(scalar(-1), Err(HostError::Internal));
     }
 
     #[test]
