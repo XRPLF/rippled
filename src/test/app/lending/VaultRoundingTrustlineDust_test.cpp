@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
@@ -90,7 +91,8 @@ private:
         auto const brokerSle1 = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(brokerSle1))
             return std::nullopt;
-        Keylet const tinyLoanKeylet = keylet::loan(broker.brokerID, brokerSle1->at(sfLoanSequence));
+        Keylet const tinyLoanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle1->at(sfLoanSequence)));
 
         env(set(borrower, broker.brokerID, Number{1, -2}),
             Sig(sfCounterpartySignature, lender),
