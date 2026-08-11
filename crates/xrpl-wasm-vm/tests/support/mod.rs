@@ -204,6 +204,11 @@ pub struct FakeHost {
     pub delegate_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
     /// Every (account, authorize) `delegate_keylet` was asked for.
     pub delegate_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// What `deposit_preauth_keylet` answers, by (account, authorize) bytes. An
+    /// unlisted key answers `InvalidAccount`.
+    pub deposit_preauth_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
+    /// Every (account, authorize) `deposit_preauth_keylet` was asked for.
+    pub deposit_preauth_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -268,6 +273,8 @@ impl Default for FakeHost {
             credential_keylets_asked: RefCell::new(Vec::new()),
             delegate_keylets: HashMap::new(),
             delegate_keylets_asked: RefCell::new(Vec::new()),
+            deposit_preauth_keylets: HashMap::new(),
+            deposit_preauth_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -430,6 +437,17 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.delegate_keylets.insert((account, authorize), answer);
+        self
+    }
+
+    pub fn answering_deposit_preauth_keylet(
+        mut self,
+        account: Vec<u8>,
+        authorize: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.deposit_preauth_keylets
+            .insert((account, authorize), answer);
         self
     }
 
@@ -658,6 +676,22 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn deposit_preauth_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        let key = (account.to_vec(), authorize.to_vec());
+        self.deposit_preauth_keylets_asked
+            .borrow_mut()
+            .push(key.clone());
+        match self.deposit_preauth_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -722,6 +756,7 @@ pub mod import {
     pub const CHECK_ID: &str = r#"(import "host_lib" "check_id" (func $check_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const CREDENTIAL_ID: &str = r#"(import "host_lib" "credential_id" (func $credential_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const DELEGATE_ID: &str = r#"(import "host_lib" "delegate_id" (func $delegate_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const DEPOSIT_PREAUTH_ID: &str = r#"(import "host_lib" "deposit_preauth_id" (func $deposit_preauth_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

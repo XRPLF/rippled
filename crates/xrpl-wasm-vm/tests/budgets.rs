@@ -169,6 +169,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $delegate_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 32))",
             6,
         ),
+        HostFunctionSpec::DepositPreauthKeylet => (
+            import::DEPOSIT_PREAUTH_ID,
+            "(call $deposit_preauth_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 32))",
+            6,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

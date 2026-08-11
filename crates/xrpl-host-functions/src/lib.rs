@@ -278,6 +278,18 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `DepositPreauth`, computed from the 20-byte account and
+    /// the account it authorizes to deposit. Reads both account regions and writes the
+    /// keylet.
+    #[gas = 350]
+    #[wasm_name = "deposit_preauth_id"]
+    fn deposit_preauth_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

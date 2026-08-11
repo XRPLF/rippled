@@ -488,6 +488,31 @@ fn delegate_id_reads_both_accounts_and_writes_the_keylet() {
     );
 }
 
+/// The same two-account keylet shape as delegate, with its own answer set.
+#[test]
+fn deposit_preauth_id_reads_both_accounts_and_writes_the_keylet() {
+    let account = vec![0u8; 20];
+    let authorize = vec![0u8; 20];
+    let host = FakeHost::new().answering_deposit_preauth_keylet(
+        account.clone(),
+        authorize.clone(),
+        support::Answer::filler(32),
+    );
+
+    let wat = module(
+        &[import::DEPOSIT_PREAUTH_ID, ONE_PAGE],
+        "(call $deposit_preauth_id
+            (i32.const 0) (i32.const 20)
+            (i32.const 20) (i32.const 20)
+            (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(
+        *host.deposit_preauth_keylets_asked.borrow(),
+        vec![(account, authorize)]
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

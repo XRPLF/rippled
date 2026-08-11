@@ -157,6 +157,13 @@ public:
         rust::Slice<std::uint8_t const> authorize,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Both accounts must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    depositPreauthKeylet(
+        rust::Slice<std::uint8_t const> account,
+        rust::Slice<std::uint8_t const> authorize,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
