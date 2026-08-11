@@ -6387,20 +6387,41 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
 
             // Test 3: Check account_tx RPC response
+            // The transaction is not necessarily alice's, so query account_tx
+            // for the account that actually submitted it.
             json::Value accountTxParams;
-            accountTxParams[jss::account] = alice.human();
-            accountTxParams[jss::limit] = 1;
+            accountTxParams[jss::account] = txResult.isMember(jss::tx_json)
+                ? txResult[jss::tx_json][jss::Account].asString()
+                : txResult[jss::Account].asString();
 
             auto const accountTxResult = env.rpc("json", "account_tx", to_string(accountTxParams));
-            auto const& accountTx = accountTxResult[jss::result][jss::transactions][0u];
+            auto const& accountTxns = accountTxResult[jss::result][jss::transactions];
 
-            // Check if the latest transaction is ours (it should be, but
-            // account_tx can be ordering-dependent)
-            bool const isOurTransaction = (accountTx[jss::hash].asString() == txHash);
+            // account_tx ordering is not guaranteed, so find our transaction
+            // by hash rather than assuming it is the most recent one.
+            auto const entryHash = [](json::Value const& entry) -> std::string {
+                // api_version 1 nests the transaction under `tx`; later
+                // versions put the hash on the entry itself.
+                if (entry.isMember(jss::tx) && entry[jss::tx].isMember(jss::hash))
+                    return entry[jss::tx][jss::hash].asString();
+                if (entry.isMember(jss::tx_json) && entry[jss::tx_json].isMember(jss::hash))
+                    return entry[jss::tx_json][jss::hash].asString();
+                return entry[jss::hash].asString();
+            };
 
-            // Only check synthetic fields if this is our transaction
-            if (isOurTransaction)
+            json::Value const* accountTxPtr = nullptr;
+            for (unsigned i = 0; i < accountTxns.size(); ++i)
             {
+                if (entryHash(accountTxns[i]) == txHash)
+                {
+                    accountTxPtr = &accountTxns[i];
+                    break;
+                }
+            }
+
+            if (BEAST_EXPECT(accountTxPtr != nullptr))
+            {
+                auto const& accountTx = *accountTxPtr;
                 // Check synthetic fields in account_tx response
                 json::Value const* accountMeta = nullptr;
                 if (accountTx.isMember(jss::meta))
@@ -6518,20 +6539,41 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
 
             // Test 3: Check account_tx RPC response
+            // The transaction is not necessarily alice's, so query account_tx
+            // for the account that actually submitted it.
             json::Value accountTxParams;
-            accountTxParams[jss::account] = alice.human();
-            accountTxParams[jss::limit] = 1;
+            accountTxParams[jss::account] = txResult.isMember(jss::tx_json)
+                ? txResult[jss::tx_json][jss::Account].asString()
+                : txResult[jss::Account].asString();
 
             auto const accountTxResult = env.rpc("json", "account_tx", to_string(accountTxParams));
-            auto const& accountTx = accountTxResult[jss::result][jss::transactions][0u];
+            auto const& accountTxns = accountTxResult[jss::result][jss::transactions];
 
-            // Check if the latest transaction is ours (it should be, but
-            // account_tx can be ordering-dependent)
-            bool const isOurTransaction = (accountTx[jss::hash].asString() == txHash);
+            // account_tx ordering is not guaranteed, so find our transaction
+            // by hash rather than assuming it is the most recent one.
+            auto const entryHash = [](json::Value const& entry) -> std::string {
+                // api_version 1 nests the transaction under `tx`; later
+                // versions put the hash on the entry itself.
+                if (entry.isMember(jss::tx) && entry[jss::tx].isMember(jss::hash))
+                    return entry[jss::tx][jss::hash].asString();
+                if (entry.isMember(jss::tx_json) && entry[jss::tx_json].isMember(jss::hash))
+                    return entry[jss::tx_json][jss::hash].asString();
+                return entry[jss::hash].asString();
+            };
 
-            // Only check synthetic fields if this is our transaction
-            if (isOurTransaction)
+            json::Value const* accountTxPtr = nullptr;
+            for (unsigned i = 0; i < accountTxns.size(); ++i)
             {
+                if (entryHash(accountTxns[i]) == txHash)
+                {
+                    accountTxPtr = &accountTxns[i];
+                    break;
+                }
+            }
+
+            if (BEAST_EXPECT(accountTxPtr != nullptr))
+            {
+                auto const& accountTx = *accountTxPtr;
                 // Check synthetic fields in account_tx response
                 json::Value const* accountMeta = nullptr;
                 if (accountTx.isMember(jss::meta))
