@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -108,7 +109,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    auto const pseudoAcct = view().peek(keylet::account(pseudoID));
+    auto pseudoAcct = WAccountRootEntry(pseudoID, view());
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -163,7 +164,7 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
+    auto vaultPseudoSLE = WAccountRootEntry(pseudoID, view());
     if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -191,7 +192,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    view().erase(vaultPseudoSLE);
+    vaultPseudoSLE.erase();
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
@@ -203,7 +204,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const owner = view().peek(keylet::account(ownerID));
+    auto owner = WAccountRootEntry(ownerID, view());
     if (!owner)
     {
         // LCOV_EXCL_START

@@ -7,6 +7,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -341,7 +342,7 @@ LoanPay::doApply()
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
-    auto const brokerPayeeSle = view.peek(keylet::account(brokerPayee));
+    auto const brokerPayeeSle = WAccountRootEntry(brokerPayee, view);
     if (!sendBrokerFeeToOwner)
     {
         // If we can't send the fee to the owner, and the pseudo-account is

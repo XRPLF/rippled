@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -54,11 +55,11 @@ getTxReserveSponsorID(STTx const& tx);
  * Return a mutable SLE for the transaction's reserve sponsor account.
  *
  * @param ctx The apply-view context (view + tx)
- * @return The sponsor account SLE, a null pointer if the tx is not
+ * @return The sponsor account entry, nullopt if the tx is not
  *         reserve-sponsored, or tecINTERNAL if the sponsor account cannot
  *         be loaded (an already-checked invariant).
  */
-std::expected<SLE::pointer, TER>
+std::expected<std::optional<WAccountRootEntry>, TER>
 getTxReserveSponsor(ApplyViewContext ctx);
 
 /**
@@ -66,29 +67,29 @@ getTxReserveSponsor(ApplyViewContext ctx);
  *
  * @param view The ledger read view
  * @param tx   The transaction to inspect
- * @return The sponsor account SLE, a null pointer if the tx is not
+ * @return The sponsor account entry, nullopt if the tx is not
  *         reserve-sponsored, or tecINTERNAL if the sponsor account cannot
  *         be loaded (an already-checked invariant).
  */
-std::expected<SLE::const_pointer, TER>
+std::expected<std::optional<RAccountRootEntry>, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 /**
  * The transaction's reserve sponsor for the given account, if applicable.
  *
  * A reserve sponsor only covers the transaction submitter's own objects, so
- * this returns the tx reserve sponsor SLE only when accountSle is the tx's own
- * (non-pseudo) account; otherwise it returns a null sponsor pointer. This is
+ * this returns the tx reserve sponsor entry only when accountSle is the tx's
+ * own (non-pseudo) account; otherwise it returns nullopt. This is
  * the single source of truth for the "sponsor applies to tx.Account only" rule
  * that the sponsor-deriving helper overloads in AccountRootHelpers rely on.
  *
  * @param ctx The apply-view context (view + tx)
  * @param accountSle The account whose sponsor is being resolved
- * @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
+ * @return The sponsor entry (nullopt if unsponsored), or tecINTERNAL if the
  *         sponsor account cannot be loaded (an already-checked invariant)
  */
-[[nodiscard]] std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle);
+[[nodiscard]] std::expected<std::optional<WAccountRootEntry>, TER>
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, RAccountRootEntry const& accountSle);
 
 /**
  * Return the AccountID stored in the given sponsor field of a ledger entry, or nullopt if absent.
@@ -105,9 +106,9 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field = sfS
  * @param view  The mutable apply view
  * @param sle   The ledger entry whose sponsor field is inspected
  * @param field The field that holds the sponsor AccountID (defaults to sfSponsor)
- * @return The sponsor account SLE, or a null pointer if the entry is unsponsored.
+ * @return The sponsor account entry, or nullopt if the entry is unsponsored.
  */
-SLE::pointer
+std::optional<WAccountRootEntry>
 getLedgerEntryReserveSponsor(
     ApplyView& view,
     SLE::const_ref sle,

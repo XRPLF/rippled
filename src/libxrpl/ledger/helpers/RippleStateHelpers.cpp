@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -133,14 +134,14 @@ isFrozen(
 {
     if (isXRP(currency))
         return false;
-    auto sle = view.read(keylet::account(issuer));
-    if (sle && sle->isFlag(lsfGlobalFreeze))
+    auto const sleIssuer = RAccountRootEntry(issuer, view);
+    if (sleIssuer && sleIssuer->isFlag(lsfGlobalFreeze))
         return true;
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::trustLine(account, issuer, currency));
-        if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        auto const sleLine = view.read(keylet::trustLine(account, issuer, currency));
+        if (sleLine && sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
     return false;
@@ -283,7 +284,11 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    increaseOwnerCount(view, sleAccount, sponsorSle, 1, j);
+    WAccountRootEntry accountSle(bSetHigh ? uHighAccountID : uLowAccountID, view);
+    std::optional<WAccountRootEntry> sponsorAccSle;
+    if (sponsorSle)
+        sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
+    increaseOwnerCount(view, accountSle, sponsorAccSle, 1, j);
 
     addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
@@ -349,7 +354,7 @@ updateTrustLine(
     if (!state)
         return false;
 
-    auto sle = view.peek(keylet::account(sender));
+    auto sle = WAccountRootEntry(sender, view);
     if (!sle)
         return false;
 
@@ -376,7 +381,7 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        auto const currentSponsor =
+        auto currentSponsor =
             getLedgerEntryReserveSponsor(view, state, bSenderHigh ? sfHighSponsor : sfLowSponsor);
         decreaseOwnerCount(view, sle, currentSponsor, 1, j);
 
@@ -464,7 +469,7 @@ issueIOU(
 
     finalBalance.get<Issue>().account = noAccount();
 
-    auto const receiverAccount = view.peek(keylet::account(account));
+    auto const receiverAccount = WAccountRootEntry(account, view);
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -476,7 +481,7 @@ issueIOU(
         issue.account,
         account,
         index.key,
-        receiverAccount,
+        receiverAccount.mutableSle(),
         false,
         noRipple,
         false,
@@ -579,7 +584,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
-    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+    if (auto const issuerAccount = RAccountRootEntry(issue.account, view);
         issuerAccount && issuerAccount->isFlag(lsfRequireAuth))
     {
         if (trustLine)
@@ -603,8 +608,8 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     auto const& issuerId = issue.getIssuer();
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
-    auto const sleIssuer = view.read(keylet::account(issuerId));
-    if (sleIssuer == nullptr)
+    auto const sleIssuer = RAccountRootEntry(issuerId, view);
+    if (!sleIssuer.exists())
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {
@@ -653,8 +658,8 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::trustLine(srcId, dstId, currency);
-    auto const sleSrc = ctx.view.peek(keylet::account(srcId));
-    auto const sleDst = ctx.view.peek(keylet::account(dstId));
+    auto const sleSrc = WAccountRootEntry(srcId, ctx.view);
+    auto const sleDst = WAccountRootEntry(dstId, ctx.view);
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
@@ -689,7 +694,7 @@ addEmptyHolding(
         srcId,
         dstId,
         index.key,
-        sleDst,
+        sleDst.mutableSle(),
         /*bAuth=*/false,
         /*bNoRipple=*/true,
         /*bFreeze=*/false,
@@ -698,7 +703,7 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
-        sponsorSle,
+        sponsorSle ? sponsorSle->mutableSle() : SLE::pointer{},
         journal);
 }
 
@@ -711,7 +716,7 @@ removeEmptyHolding(
 {
     if (issue.native())
     {
-        auto const sle = ctx.view.read(keylet::account(accountID));
+        auto const sle = WAccountRootEntry(accountID, ctx.view);
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -736,11 +741,11 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        auto sleLowAccount = WAccountRootEntry(line->at(sfLowLimit)->getIssuer(), ctx.view);
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
+        auto currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
 
         decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
@@ -753,11 +758,11 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        auto sleHighAccount = WAccountRootEntry(line->at(sfHighLimit)->getIssuer(), ctx.view);
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
+        auto currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
 
         decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
@@ -788,8 +793,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    auto sleLow = view.peek(keylet::account(low));
-    auto sleHigh = view.peek(keylet::account(high));
+    auto sleLow = WAccountRootEntry(low, view);
+    auto sleHigh = WAccountRootEntry(high, view);
     if (!sleLow || !sleHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -808,7 +813,7 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    auto const sponsorSle =
+    auto sponsorSle =
         getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
     if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))

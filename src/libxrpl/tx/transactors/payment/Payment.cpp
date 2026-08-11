@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -502,7 +503,7 @@ Payment::doApply()
 
         if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
         {
-            auto const sponsor = view().peek(keylet::account(accountID_));
+            auto sponsor = WAccountRootEntry(accountID_, view());
             if (!sponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
@@ -517,8 +518,8 @@ Payment::doApply()
             }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
-            addSponsorToLedgerEntry(sleDst, sponsor);
-            view().update(sponsor);
+            addSponsorToLedgerEntry(sleDst, sponsor.sle());
+            sponsor.update();
         }
 
         view().insert(sleDst);
@@ -683,7 +684,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(accountID_));
+    auto sleSrc = WAccountRootEntry(accountID_, view());
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -716,7 +717,7 @@ Payment::doApply()
     // transaction types. Note, this is not amendment-gated because all writes
     // to pseudo-account discriminator fields **are** amendment gated, hence the
     // behaviour of this check will always match the active amendments.
-    if (isPseudoAccount(sleDst))
+    if (isPseudoAccount(RAccountRootEntry(sleDst, view())))
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the

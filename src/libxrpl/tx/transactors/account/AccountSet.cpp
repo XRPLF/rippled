@@ -6,6 +6,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -170,7 +171,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = RAccountRootEntry(id, ctx.view);
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -224,7 +225,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    auto sle = WAccountRootEntry(accountID_, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -582,7 +583,7 @@ AccountSet::doApply()
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
 
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

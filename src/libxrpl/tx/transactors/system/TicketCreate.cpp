@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
@@ -42,7 +43,7 @@ TER
 TicketCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
-    auto const sleAccountRoot = ctx.view.read(keylet::account(id));
+    auto const sleAccountRoot = RAccountRootEntry(id, ctx.view);
     if (!sleAccountRoot)
         return terNO_ACCOUNT;
 
@@ -67,7 +68,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(accountID_));
+    auto sleAccountRoot = WAccountRootEntry(accountID_, view());
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -125,7 +126,8 @@ TicketCreate::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    increaseOwnerCount(view(), sleAccountRoot, {}, ticketCount, viewJ);
+    std::optional<WAccountRootEntry> noSponsor;
+    increaseOwnerCount(view(), sleAccountRoot, noSponsor, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

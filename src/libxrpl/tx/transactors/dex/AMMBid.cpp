@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -119,7 +120,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
         {
-            if (!ctx.view.read(keylet::account(account[sfAccount])))
+            if (!RAccountRootEntry(account[sfAccount], ctx.view))
             {
                 JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
                 return terNO_ACCOUNT;

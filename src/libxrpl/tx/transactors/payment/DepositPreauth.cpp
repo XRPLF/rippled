@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -154,7 +155,7 @@ DepositPreauth::doApply()
     auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(accountID_));
+        auto sleOwner = WAccountRootEntry(accountID_, view());
         if (!sleOwner)
             return {tefINTERNAL};
 
@@ -199,7 +200,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto const sleOwner = view().peek(keylet::account(accountID_));
+        auto sleOwner = WAccountRootEntry(accountID_, view());
         if (!sleOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -282,7 +283,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    auto const sleOwner = view.peek(keylet::account(account));
+    auto sleOwner = WAccountRootEntry(account, view);
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

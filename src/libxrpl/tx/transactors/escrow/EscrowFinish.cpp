@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
@@ -305,12 +306,12 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
+    auto sled = WAccountRootEntry(destID, ctx_.view());
     if (!sled)
         return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(
+            ctx_.tx, ctx_.view(), accountID_, destID, sled.sle(), ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -371,7 +372,7 @@ EscrowFinish::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         lockedRate,
-                        sled,
+                        sled.mutableSle(),
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -397,7 +398,7 @@ EscrowFinish::doApply()
         }
     }
 
-    ctx_.view().update(sled);
+    sled.update();
 
     // Adjust source owner count (legacy position, pre-Sponsor)
     if (!sponsorEnabled)

@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -159,7 +160,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check if destination account exists
     auto const destination = ctx.tx[sfDestination];
-    auto const sleDst = ctx.view.read(keylet::account(destination));
+    auto const sleDst = RAccountRootEntry(destination, ctx.view);
     if (!sleDst)
         return tecNO_TARGET;
 
@@ -263,7 +264,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     // Check deposit preauth before the expensive ZK proof verification.
     // Uses read-only view.
     auto const preauthErr =
-        checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst, ctx.j);
+        checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst.sle(), ctx.j);
     if (!isTesSuccess(preauthErr))
         return preauthErr;
 
@@ -280,7 +281,7 @@ ConfidentialMPTSend::doApply()
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
 
-    auto const sleDestAcct = view().read(keylet::account(destination));
+    auto const sleDestAcct = WAccountRootEntry(destination, view());
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE

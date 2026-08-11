@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -52,7 +53,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    auto const sleAuthorize = ctx.view.read(keylet::account(ctx.tx[sfAuthorize]));
+    auto const sleAuthorize = RAccountRootEntry(ctx.tx[sfAuthorize], ctx.view);
     if (!sleAuthorize)
         return tecNO_TARGET;
 
@@ -72,7 +73,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(accountID_));
+    auto sleOwner = WAccountRootEntry(accountID_, ctx_.view());
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -170,7 +171,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     }
 
     // Only the delegating account's owner count was incremented on creation
-    auto const sleOwner = view.peek(keylet::account(delegator));
+    auto sleOwner = WAccountRootEntry(delegator, view);
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

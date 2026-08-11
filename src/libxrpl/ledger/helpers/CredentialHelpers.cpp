@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -77,7 +78,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 
     auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
-        auto const sleAccount = view.peek(keylet::account(account));
+        auto sleAccount = WAccountRootEntry(account, view);
         if (!sleAccount)
         {
             // LCOV_EXCL_START

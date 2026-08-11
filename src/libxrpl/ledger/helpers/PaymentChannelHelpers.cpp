@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -51,7 +52,7 @@ closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal 
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
+    auto sle = WAccountRootEntry(src, view);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -59,7 +60,7 @@ closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal 
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     decreaseOwnerCountForObject(view, sle, slep, 1, j);
-    view.update(sle);
+    sle.update();
 
     // Remove PayChan from ledger
     view.erase(slep);

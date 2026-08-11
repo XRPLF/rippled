@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -186,8 +187,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
     auto const clawAmount = ctx.tx[sfAmount];
     AccountID const holder = clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
 
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
-    auto const sleHolder = ctx.view.read(keylet::account(holder));
+    auto const sleIssuer = RAccountRootEntry(issuer, ctx.view);
+    auto const sleHolder = RAccountRootEntry(holder, ctx.view);
     if (!sleIssuer || !sleHolder)
         return terNO_ACCOUNT;
 

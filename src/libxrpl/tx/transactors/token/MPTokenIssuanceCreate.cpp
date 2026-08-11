@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -119,7 +120,7 @@ MPTokenIssuanceCreate::create(
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
-    auto const acct = ctx.view.peek(keylet::account(args.account));
+    auto acct = WAccountRootEntry(args.account, ctx.view);
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -127,7 +128,7 @@ MPTokenIssuanceCreate::create(
     auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
     if (!sponsorExp)
         return std::unexpected(sponsorExp.error());  // LCOV_EXCL_LINE
-    auto const sponsorSle = *sponsorExp;
+    auto sponsorSle = *sponsorExp;
 
     if (args.priorBalance)
     {
@@ -189,7 +190,8 @@ MPTokenIssuanceCreate::create(
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
-        addSponsorToLedgerEntry(mptIssuance, sponsorSle);
+        if (sponsorSle)
+            addSponsorToLedgerEntry(mptIssuance, sponsorSle->sle());
 
         ctx.view.insert(mptIssuance);
     }

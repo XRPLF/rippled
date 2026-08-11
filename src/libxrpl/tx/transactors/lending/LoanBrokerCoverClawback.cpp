@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -108,7 +109,7 @@ determineBrokerID(ReadView const& view, STTx const& tx)
     // Thus, Amount.issuer _should_ be the loan broker's
     // pseudo-account, but we don't know yet whether it is.
     auto const maybePseudo = dstAmount->getIssuer();
-    auto const sle = view.read(keylet::account(maybePseudo));
+    auto const sle = RAccountRootEntry(maybePseudo, view);
 
     // If the account was not found, the transaction can't go further.
     if (!sle)
@@ -319,7 +320,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
     // Check if the vault asset issuer has the correct flags
-    auto const sleIssuer = ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+    auto const sleIssuer = RAccountRootEntry(vaultAsset.getIssuer(), ctx.view);
     if (!sleIssuer)
     {
         // LCOV_EXCL_START

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -135,7 +136,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (asset.holds<MPTIssue>() || isXRP(asset))
             return false;
 
-        if (auto const issuerAccount = view.read(keylet::account(asset.getIssuer())))
+        if (auto const issuerAccount = RAccountRootEntry(asset.getIssuer(), view))
             return !issuerAccount->isFlag(lsfDefaultRipple);
 
         return false;
@@ -175,7 +176,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     auto isLPToken = [&](STAmount const& amount) -> bool {
-        if (auto const sle = ctx.view.read(keylet::account(amount.asset().getIssuer())))
+        if (auto const sle = RAccountRootEntry(amount.asset().getIssuer(), ctx.view))
             return sle->isFieldPresent(sfAMMID);
         return false;
     };
@@ -239,7 +240,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             [&](Issue const& issue) -> TER {
                 if (isXRP(issue))
                     return tesSUCCESS;
-                auto const sle = ctx.view.read(keylet::account(issue.account));
+                auto const sle = RAccountRootEntry(issue.account, ctx.view);
                 if (!sle)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 if (sle->isFlag(lsfAllowTrustLineClawback))

@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -213,8 +214,9 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
+    WAccountRootEntry accountSle(accountKeylet, view);
     decreaseOwnerCountForObject(
-        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
+        view, accountSle, signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 
@@ -309,7 +311,7 @@ SignerListSet::replaceSignerList()
             ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
-    auto const sle = view().peek(accountKeylet);
+    auto sle = WAccountRootEntry(accountKeylet, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

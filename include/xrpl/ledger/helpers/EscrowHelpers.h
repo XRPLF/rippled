@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -68,15 +69,18 @@ escrowUnlockApplyHelper<Issue>(
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
+        auto const destSle = RAccountRootEntry(sleDest, ctx.view);
+        auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
+        auto& sponsor = *sponsorSle;
+
         if (auto const ret = checkReserve(
                 ctx,
-                sleDest,
+                destSle,
                 xrpBalance,
-                *sponsorSle,
+                sponsor,
                 {.ownerCountDelta = 1},
                 journal,
                 tecNO_LINE_INSUF_RESERVE);
@@ -92,22 +96,22 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                ctx.view,                            // payment sandbox
-                recvLow,                             // is dest low?
-                issuer,                              // source
-                receiver,                            // destination
-                trustLineKey.key,                    // ledger index
-                sleDest,                             // Account to add to
-                false,                               // authorize account
-                !sleDest->isFlag(lsfDefaultRipple),  //
-                false,                               // freeze trust line
-                false,                               // deep freeze trust line
-                initialBalance,                      // zero initial balance
-                Issue(currency, receiver),           // limit of zero
-                0,                                   // quality in
-                0,                                   // quality out
-                *sponsorSle,                         // sponsor
-                journal);                            // journal
+                ctx.view,                                          // payment sandbox
+                recvLow,                                           // is dest low?
+                issuer,                                            // source
+                receiver,                                          // destination
+                trustLineKey.key,                                  // ledger index
+                sleDest,                                           // Account to add to
+                false,                                             // authorize account
+                !sleDest->isFlag(lsfDefaultRipple),                //
+                false,                                             // freeze trust line
+                false,                                             // deep freeze trust line
+                initialBalance,                                    // zero initial balance
+                Issue(currency, receiver),                         // limit of zero
+                0,                                                 // quality in
+                0,                                                 // quality out
+                sponsor ? sponsor->mutableSle() : SLE::pointer(),  // sponsor
+                journal);                                          // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -202,23 +206,28 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
+        auto const destSle = RAccountRootEntry(sleDest, ctx.view);
+        auto sponsorSle = getEffectiveTxReserveSponsor(ctx, destSle);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret = checkReserve(
-                ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
+        auto& sponsor = *sponsorSle;
+
+        if (auto const ret =
+                checkReserve(ctx, destSle, xrpBalance, sponsor, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(ctx.view, mptID, receiver, *sponsorSle, 0);
+        if (auto const ter = createMPToken(
+                ctx.view, mptID, receiver, sponsor ? sponsor->mutableSle() : SLE::pointer(), 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        increaseOwnerCount(ctx.view, sleDest, *sponsorSle, 1, journal);
+        WAccountRootEntry receiverSle(receiver, ctx.view);
+        increaseOwnerCount(ctx.view, receiverSle, sponsor, 1, journal);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)

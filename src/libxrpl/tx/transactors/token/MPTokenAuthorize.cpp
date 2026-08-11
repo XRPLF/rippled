@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -122,7 +123,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    auto const sleHolder = ctx.view.read(keylet::account(*holderID));
+    auto const sleHolder = RAccountRootEntry(*holderID, ctx.view);
     if (!sleHolder)
         return tecNO_DST;
 

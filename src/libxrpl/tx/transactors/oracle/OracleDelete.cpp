@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -67,7 +68,7 @@ OracleDelete::deleteOracle(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
+    auto sleOwner = WAccountRootEntry(account, view);
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

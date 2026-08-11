@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -202,7 +203,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
+    auto const sleIssuer = RAccountRootEntry(issuer, ctx.view);
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
@@ -342,7 +343,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    auto const sled = ctx.view.read(keylet::account(dest));
+    auto const sled = RAccountRootEntry(dest, ctx.view);
     if (!sled)
         return tecNO_DST;
 
@@ -428,7 +429,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(accountID_));
+    auto sle = WAccountRootEntry(accountID_, ctx_.view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -467,7 +468,7 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        auto const sled = WAccountRootEntry(ctx_.tx[sfDestination], ctx_.view());
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
         if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
@@ -555,7 +556,7 @@ EscrowCreate::doApply()
     // increment owner count
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
-    ctx_.view().update(sle);
+    sle.update();
     return tesSUCCESS;
 }
 

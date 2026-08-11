@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -585,7 +586,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
         if (feePayer.type == FeePayerType::SponsorCoSigned)
         {
-            auto const sponsorReserve = accountReserve(ctx.view, payerSle, ctx.j);
+            auto const sponsorReserve = accountReserve(ctx.view, feePayer.id, ctx.j);
             maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve;
         }
         else
@@ -651,7 +652,7 @@ Transactor::payFee()
     XRPAmount spendable = balance;
     if (feePayer.type == FeePayerType::SponsorCoSigned)
     {
-        auto const sponsorReserve = accountReserve(view(), sle, j_);
+        auto const sponsorReserve = accountReserve(view(), feePayer.id, j_);
         // max(balance - reserve, 0) with overflow handling
         spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
     }
@@ -699,7 +700,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
 {
     auto const id = tx.getAccountID(sfAccount);
 
-    auto const sle = view.read(keylet::account(id));
+    auto const sle = RAccountRootEntry(id, view);
 
     if (!sle)
     {
@@ -764,7 +765,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = RAccountRootEntry(id, ctx.view);
 
     if (!sle)
     {
@@ -833,7 +834,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
+    auto sleAccount = WAccountRootEntry(account, view);
     if (!sleAccount)
     {
         // LCOV_EXCL_START
@@ -883,19 +884,19 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(accountID_));
+    auto sle = WAccountRootEntry(accountID_, view());
 
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || accountID_ == beast::kZero,
+        sle.exists() || accountID_ == beast::kZero,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
         preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
-        TER result = consumeSeqProxy(sle);
+        TER result = consumeSeqProxy(sle.mutableSle());
         if (!isTesSuccess(result))
             return result;
 
@@ -906,7 +907,7 @@ Transactor::apply()
         if (sle->isFieldPresent(sfAccountTxnID))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
-        view().update(sle);
+        sle.update();
     }
 
     return doApply();
@@ -923,7 +924,7 @@ Transactor::checkSign(
     bool permitUncreatedAccount)
 {
     {
-        auto const sle = view.read(keylet::account(idAccount));
+        auto const sle = RAccountRootEntry(idAccount, view);
 
         if ((view.rules().enabled(featureLendingProtocol) ||
              view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
@@ -989,7 +990,7 @@ Transactor::checkSign(
 
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-    auto const sleAccount = view.read(keylet::account(idAccount));
+    auto const sleAccount = RAccountRootEntry(idAccount, view);
     if (!sleAccount)
     {
         // An account that does not exist yet can only be authorized by its own
@@ -1002,7 +1003,7 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
+    return checkSingleSign(view, idSigner, idAccount, sleAccount.sle(), j);
 }
 
 NotTEC
@@ -1151,7 +1152,7 @@ Transactor::checkMultiSign(
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        auto const sleTxSignerRoot = view.read(keylet::account(txSignerAcctID));
+        auto const sleTxSignerRoot = RAccountRootEntry(txSignerAcctID, view);
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
@@ -1294,7 +1295,7 @@ Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
-    auto const txnAcct = view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+    auto txnAcct = WAccountRootEntry(ctx_.tx.getAccountID(sfAccount), view());
 
     // The account should never be missing from the ledger.  But if it
     // is missing then we can't very well charge it a fee, can we?
@@ -1329,7 +1330,7 @@ Transactor::reset(XRPAmount fee)
     XRPAmount spendable = balance;
     if (feePayer.type == FeePayerType::SponsorCoSigned)
     {
-        auto const sponsorReserve = accountReserve(view(), payerSle, j_);
+        auto const sponsorReserve = accountReserve(view(), feePayer.id, j_);
         // max(balance - reserve, 0) with overflow handling
         spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
     }
@@ -1362,13 +1363,13 @@ Transactor::reset(XRPAmount fee)
         payerSle->setFieldAmount(feePayer.balanceField, feeAmountAfter);
     }
 
-    TER const ter{consumeSeqProxy(txnAcct)};
+    TER const ter{consumeSeqProxy(txnAcct.mutableSle())};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
     {
-        view().update(txnAcct);
-        if (payerSle != txnAcct)
+        txnAcct.update();
+        if (payerSle != txnAcct.mutableSle())
             view().update(payerSle);
     }
 

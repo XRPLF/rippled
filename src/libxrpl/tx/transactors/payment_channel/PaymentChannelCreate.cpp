@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -73,7 +74,7 @@ TER
 PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.read(keylet::account(account));
+    auto const sle = RAccountRootEntry(account, ctx.view);
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -94,7 +95,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 
     {
         // Check destination account
-        auto const sled = ctx.view.read(keylet::account(dst));
+        auto const sled = RAccountRootEntry(dst, ctx.view);
         if (!sled)
             return tecNO_DST;
 
@@ -122,7 +123,7 @@ TER
 PaymentChannelCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = WAccountRootEntry(account, ctx_.view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -212,7 +213,7 @@ PaymentChannelCreate::doApply()
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -152,7 +153,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    auto const sleAcct = ctx.view.peek(keylet::account(account));
+    auto sleAcct = WAccountRootEntry(account, ctx.view);
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -191,7 +192,7 @@ authorizeMPToken(
         auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, sleAcct);
         if (!sponsorExp)
             return sponsorExp.error();  // LCOV_EXCL_LINE
-        auto const sponsorSle = *sponsorExp;
+        auto sponsorSle = *sponsorExp;
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
@@ -232,7 +233,7 @@ authorizeMPToken(
 
         // Update owner count.
         increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, sponsorSle);
+        addSponsorToLedgerEntry(mptoken, sponsorSle ? sponsorSle->sle() : SLE::const_pointer{});
 
         return tesSUCCESS;
     }
@@ -362,7 +363,7 @@ requireAuth(
         }
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
-        auto const sleIssuer = view.read(keylet::account(mptIssuer));
+        auto const sleIssuer = RAccountRootEntry(mptIssuer, view);
         if (!sleIssuer)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -966,13 +967,16 @@ checkCreateMPT(
         {
             return err;
         }
-        auto const sleAcct = view.peek(keylet::account(holder));
+        auto sleAcct = WAccountRootEntry(holder, view);
         if (!sleAcct)
         {
             return tecINTERNAL;
         }
 
-        increaseOwnerCount(view, sleAcct, sponsorSle, 1, j);
+        std::optional<WAccountRootEntry> sponsorAccSle;
+        if (sponsorSle)
+            sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
+        increaseOwnerCount(view, sleAcct, sponsorAccSle, 1, j);
     }
     return tesSUCCESS;
 }

@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -25,7 +26,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
-            auto const sle = view.read(keylet::account(id));
+            auto const sle = RAccountRootEntry(id, view);
 
             if (sle && !sle->isFlag(lsfPasswordSpent))
             {
@@ -53,7 +54,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    auto sle = WAccountRootEntry(accountID_, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -73,7 +74,7 @@ SetRegularKey::doApply()
         sle->makeFieldAbsent(sfRegularKey);
     }
 
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

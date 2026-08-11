@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -640,7 +641,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
         [&](Issue const& issue) {
             if (isXRP(issue))
             {
-                if (auto const sle = view.read(keylet::account(ammAccountID)))
+                if (auto const sle = RAccountRootEntry(ammAccountID, view))
                     return (*sle)[sfBalance];
             }
             else if (
@@ -756,7 +757,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
+    auto sleAMMRoot = WAccountRootEntry(ammAccountID, sb);
     if (!sleAMMRoot)
     {
         // LCOV_EXCL_START
@@ -794,7 +795,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     sb.erase(ammSle);
-    sb.erase(sleAMMRoot);
+    sleAMMRoot.erase();
 
     return tesSUCCESS;
 }

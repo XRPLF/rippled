@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -43,7 +44,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
         {
-            if (auto const sle = ctx.view.read(keylet::account(issuer)); sle)
+            if (auto const sle = RAccountRootEntry(issuer, ctx.view); sle)
             {
                 if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
                     return tecNO_PERMISSION;
