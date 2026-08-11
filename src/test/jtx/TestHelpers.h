@@ -316,13 +316,6 @@ auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
-template <std::ranges::range Input>
-auto
-makeVector(Input const& input)
-{
-    return std::vector(std::ranges::begin(input), std::ranges::end(input));
-}
-
 // Functions used in debugging
 json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current = false);

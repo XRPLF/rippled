@@ -1,6 +1,4 @@
 
-#include <test/jtx/TestHelpers.h>
-
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
@@ -13,8 +11,9 @@
 #include <cstddef>
 #include <iostream>
 #include <random>
+#include <ranges>
+#include <string>
 #include <tuple>
-#include <vector>
 // cspell: words stdev
 
 namespace xrpl::test {
@@ -88,21 +87,41 @@ class Handler_test : public beast::unit_test::Suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
+        // Contiguous, so the timed loop's pick-a-name-by-index costs nothing
+        // and the measurement reflects getHandler() alone.
+        auto const names = xrpl::rpc::getHandlerNames();
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
+        // The lowest version still served. Asking for one outside the supported
+        // range would make getHandler() return at its bounds check, without
+        // searching, and the benchmark would then be timing that check.
+        constexpr unsigned kVersion = rpc::kApiMinimumSupportedVersion;
+
         std::size_t dummy = 0;
+        std::size_t misses = 0;
         auto const [mean, stdev, n] = time(
             1'000'000,
             [&](std::size_t i) {
-                auto const d = rpc::getHandler(1, false, names[i]);
+                auto const d = rpc::getHandler(kVersion, false, names[i]);
+                if (d == nullptr)
+                {
+                    ++misses;
+                    return;
+                }
                 dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });
 
         std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 
+        // A miss means the timed call did no lookup, so the figure above is not
+        // a measurement of one. Every name comes from getHandlerNames(), so a
+        // handler answering at kVersion is the only way this holds.
+        BEAST_EXPECTS(
+            misses == 0,
+            std::to_string(misses) + " of " + std::to_string(n) + " lookups at API version " +
+                std::to_string(kVersion) + " found no handler, so nothing was measured");
         BEAST_EXPECT(dummy != 0);
     }
 

@@ -12,13 +12,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <functional>
-#include <set>
-#include <string>
-
-namespace json {
-class Object;
-}  // namespace json
+#include <span>
+#include <string_view>
 
 namespace xrpl::rpc {
 
@@ -32,11 +27,14 @@ enum class Condition {
 
 struct Handler
 {
-    template <class JsonValue>
-    using Method = std::function<Status(JsonContext&, JsonValue&)>;
+    // A plain function pointer, not a std::function: every method is a free
+    // function known at compile time, so nothing needs to be captured. This
+    // also keeps Handler a literal type, letting the dispatch table be built
+    // and checked at compile time.
+    using Method = Status (*)(JsonContext&, json::Value&);
 
-    char const* name;
-    Method<json::Value> valueMethod;
+    std::string_view name;
+    Method valueMethod;
     Role role;
     rpc::Condition condition;
 
@@ -45,7 +43,7 @@ struct Handler
 };
 
 Handler const*
-getHandler(unsigned int version, bool betaEnabled, std::string const&);
+getHandler(unsigned int version, bool betaEnabled, std::string_view name);
 
 /**
  * Return a json::ValueType::Object with a single entry.
@@ -60,9 +58,12 @@ makeObjectValue(Value const& value, json::StaticString const& field = jss::messa
 }
 
 /**
- * Return names of all methods.
+ * Return the names of all methods, sorted and without duplicates.
+ *
+ * The names view refers to storage that outlives the program, so it is safe to
+ * hold on to.
  */
-std::set<char const*>
+std::span<std::string_view const>
 getHandlerNames();
 
 template <class T>

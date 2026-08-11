@@ -1,8 +1,5 @@
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/envconfig.h>
-
-#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -21,6 +18,7 @@
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <fstream>
@@ -30,7 +28,9 @@
 #include <memory>
 #include <ostream>
 #include <random>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -44,6 +44,21 @@ class PerfLog_test : public beast::unit_test::Suite
     enum class WithFile : bool { No = false, Yes = true };
 
     using path = boost::filesystem::path;
+
+    // The method names to count. PerfLog treats these as opaque keys, so these
+    // are made up rather than taken from the RPC dispatch table: this test then
+    // needs to know nothing about the RPC layer, and does not silently change
+    // shape when a method is added or removed.
+    //
+    // They are string literals because PerfLog stores views of these names and
+    // reads them back as C strings, so they must be null-terminated and outlive
+    // the PerfLog. Sorted, because the counters are reported in sorted order.
+    static constexpr std::array kMethodNames{
+        std::string_view{"method_a"},
+        std::string_view{"method_b"},
+        std::string_view{"method_c"},
+        std::string_view{"method_d"},
+        std::string_view{"method_e"}};
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -117,7 +132,7 @@ class PerfLog_test : public beast::unit_test::Suite
         {
             perf::PerfLog::Setup const setup{
                 .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
-            return perf::makePerfLog(setup, app, j, [this]() {
+            return perf::makePerfLog(setup, app, kMethodNames, j, [this]() {
                 signalStop();
                 return;
             });
@@ -310,9 +325,11 @@ public:
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
-        // Get the all the labels we can use for RPC interfaces without
-        // causing an assert.
-        std::vector<char const*> labels = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
+        // The labels we can use for RPC interfaces without causing an assert:
+        // exactly those the PerfLog was constructed with. Copied into a vector
+        // because they are shuffled below and then paired positionally with the
+        // request ids.
+        auto labels = std::ranges::to<std::vector>(kMethodNames);
         std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -347,7 +364,7 @@ public:
             for (auto& label : labels)
             {
                 // Expect every label in labels to have the same contents.
-                json::Value const& counter{countersJson[label]};
+                json::Value const& counter{countersJson[std::string{label}]};
                 BEAST_EXPECT(counter[jss::duration_us] == "0");
                 BEAST_EXPECT(counter[jss::errored] == "0");
                 BEAST_EXPECT(counter[jss::finished] == "0");
@@ -404,7 +421,7 @@ public:
             // their durations with the appropriate labels.
             {
                 // The first label is special.  It should have "errored" : "0".
-                json::Value const& first = rpc[labels[0]];
+                json::Value const& first = rpc[std::string{labels[0]}];
                 BEAST_EXPECT(first[jss::duration_us] != "0");
                 BEAST_EXPECT(first[jss::errored] == "0");
                 BEAST_EXPECT(first[jss::finished] == "1");
@@ -415,7 +432,7 @@ public:
             std::uint64_t prevDur = std::numeric_limits<std::uint64_t>::max();
             for (int i = 1; i < labels.size(); ++i)
             {
-                json::Value const& counter{rpc[labels[i]]};
+                json::Value const& counter{rpc[std::string{labels[i]}]};
                 std::uint64_t const dur{jsonToUInt64(counter[jss::duration_us])};
                 BEAST_EXPECT(dur != 0 && dur < prevDur);
                 prevDur = dur;
@@ -447,7 +464,7 @@ public:
             BEAST_EXPECT(only.size() == 2);
             BEAST_EXPECT(only.isObject());
             BEAST_EXPECT(only[jss::duration_us] != "0");
-            BEAST_EXPECT(only[jss::method] == labels[0]);
+            BEAST_EXPECT(only[jss::method] == std::string{labels[0]});
         };
 
         // Validate the final state of the PerfLog.

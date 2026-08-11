@@ -16,6 +16,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -27,22 +28,23 @@
 #include <memory>
 #include <mutex>
 #include <ostream>
-#include <set>
+#include <span>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace xrpl::perf {
 
-PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes const& jobTypes)
+PerfLogImp::Counters::Counters(std::span<std::string_view const> labels, JobTypes const& jobTypes)
 {
     {
         // populateRpc
         rpc.reserve(labels.size());
-        for (std::string const label : labels)
+        for (auto const& label : labels)
         {
-            auto const inserted = rpc.emplace(label, Rpc()).second;
+            auto const inserted = rpc.try_emplace(label).second;
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
@@ -101,7 +103,9 @@ PerfLogImp::Counters::countersJson() const
         totalRpc.errored += value.errored;
         p[jss::duration_us] = std::to_string(value.duration.count());
         totalRpc.duration += value.duration;
-        rpcobj[proc.first] = p;
+        // The key is a method name constant, which outlives the program, so it
+        // can be borrowed rather than duplicated into the object.
+        rpcobj[json::StaticString{proc.first.data()}] = p;
     }
 
     if (totalRpc.started != 0u)
@@ -196,7 +200,7 @@ PerfLogImp::Counters::currentJson() const
     for (auto m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
-        methodobj[jss::method] = m.first;
+        methodobj[jss::method] = json::StaticString{m.first.data()};
         methodobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
@@ -300,9 +304,14 @@ PerfLogImp::report()
 PerfLogImp::PerfLogImp(
     Setup setup,
     Application& app,
+    std::span<std::string_view const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : setup_(std::move(setup)), app_(app), j_(journal), signalStop_(std::move(signalStop))
+    : setup_(std::move(setup))
+    , app_(app)
+    , j_(journal)
+    , signalStop_(std::move(signalStop))
+    , counters_(methodNames, JobTypes::instance())
 {
     openLog();
 }
@@ -313,7 +322,7 @@ PerfLogImp::~PerfLogImp()
 }
 
 void
-PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
+PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 {
     auto counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
@@ -329,11 +338,11 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
         ++counter->second.value.started;
     }
     std::scoped_lock const lock(counters_.methodsMutex);
-    counters_.methods[requestId] = {counter->first.c_str(), steady_clock::now()};
+    counters_.methods[requestId] = {counter->first, steady_clock::now()};
 }
 
 void
-PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish)
+PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool finish)
 {
     auto counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
@@ -502,10 +511,11 @@ std::unique_ptr<PerfLog>
 makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
+    std::span<std::string_view const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {
-    return std::make_unique<PerfLogImp>(setup, app, journal, std::move(signalStop));
+    return std::make_unique<PerfLogImp>(setup, app, methodNames, journal, std::move(signalStop));
 }
 
 }  // namespace xrpl::perf

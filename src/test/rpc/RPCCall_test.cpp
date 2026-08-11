@@ -3,6 +3,9 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/MethodNames.h>
+#include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
@@ -12,11 +15,14 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <vector>
 
@@ -5923,10 +5929,38 @@ public:
         }
     }
 
+    // Every name in the command-line table must also name a server method, so
+    // that a command accepted on the command line can actually be dispatched.
+    //
+    // The reverse does not hold: a server method needs no command-line form.
+    // Three command-line names are also exempt because they are wrappers that
+    // forward a caller-supplied method rather than naming one themselves.
+    void
+    testCommandLineNamesAreDispatchable()
+    {
+        testcase("Command-line methods are dispatchable");
+
+        static constexpr std::array kWrappers{
+            rpc::method::kInternal, rpc::method::kJson, rpc::method::kJson2};
+
+        auto const dispatchable = rpc::getHandlerNames();
+        BEAST_EXPECT(!dispatchable.empty());
+
+        for (auto const& name : commandLineMethodNames())
+        {
+            if (std::ranges::find(kWrappers, name) != kWrappers.end())
+                continue;
+
+            // Both name lists are sorted, so a binary search suffices.
+            BEAST_EXPECTS(std::ranges::binary_search(dispatchable, name), std::string{name});
+        }
+    }
+
     void
     run() override
     {
         forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
+        testCommandLineNamesAreDispatchable();
     }
 };
 

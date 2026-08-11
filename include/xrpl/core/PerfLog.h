@@ -10,7 +10,9 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
+#include <string_view>
 
 namespace beast {
 class Journal;
@@ -68,7 +70,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcStart(std::string const& method, std::uint64_t requestId) = 0;
+    rpcStart(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log successful finish of RPC call
@@ -77,7 +79,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcFinish(std::string const& method, std::uint64_t requestId) = 0;
+    rpcFinish(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log errored RPC call
@@ -86,7 +88,7 @@ public:
      * @param requestId Unique identifier to track command
      */
     virtual void
-    rpcError(std::string const& method, std::uint64_t requestId) = 0;
+    rpcError(std::string_view method, std::uint64_t requestId) = 0;
 
     /**
      * Log queued job
@@ -151,10 +153,17 @@ public:
 PerfLog::Setup
 setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
 
+/**
+ * @param methodNames The RPC methods to count, one counter per name. The names
+ *        must outlive the returned object, which holds views of them. Callers
+ *        pass rpc::getHandlerNames(); it is an argument so that this layer needs
+ *        to know nothing about the RPC dispatch table.
+ */
 std::unique_ptr<PerfLog>
 makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
+    std::span<std::string_view const> methodNames,
     beast::Journal journal,
     std::function<void()>&& signalStop);
 
@@ -162,7 +171,7 @@ template <typename Func, class Rep, class Period>
 auto
 measureDurationAndLog(
     Func&& func,
-    std::string const& actionDescription,
+    std::string_view actionDescription,
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {
