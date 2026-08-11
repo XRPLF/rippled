@@ -163,4 +163,31 @@ toUInt64(std::string const& s);
 bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
+/**
+ * Whether a view can be passed on as a C string.
+ *
+ * A view is only usable that way if it covers a whole null-terminated string
+ * rather than a slice of one, since a reader given just the pointer stops at
+ * the first null. This asks exactly that question: rebuild the view from its
+ * data() as a C string, as such a reader would, and see if it comes back
+ * unchanged. A slice comes back longer, having run past its own end.
+ *
+ * The byte after a view is not part of it, so this is only well defined when
+ * @p str points into storage that is known to hold a null somewhere at or
+ * after its end -- a string literal, or the buffer of a std::string. For a
+ * view built from a bare pointer and length it reads out of bounds, and in a
+ * constant expression that is a compile error rather than undefined behaviour.
+ *
+ * @param str The view to test.
+ * @return Whether @p str is null-terminated.
+ */
+constexpr bool
+isNullTerminated(std::string_view str)
+{
+    // Reading past the view is the point, so the usual warning about data() not
+    // being null-terminated does not apply.
+    // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+    return std::string_view{str.data()} == str;
+}
+
 }  // namespace xrpl

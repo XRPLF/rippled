@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -46,15 +47,12 @@ PerfLogImp::Counters::Counters(std::span<std::string_view const> labels, JobType
         {
             // countersJson() reports these through json::StaticString, which
             // reads them as C strings, so each must be a view of a whole string
-            // literal rather than a slice of one. Rebuilding the view from its
-            // data() is what StaticString will do, and a slice loses its tail
-            // that way. Checked here, where the names arrive, rather than on
-            // every report. Callers pass a compile-time constant list and this
-            // runs once, before any thread starts, so a bad name faults every
-            // startup rather than some later request.
+            // literal rather than a slice of one. Checked here, where the names
+            // arrive, rather than on every report. Callers pass a compile-time
+            // constant list and this runs once, before any thread starts, so a
+            // bad name faults every startup rather than some later request.
             XRPL_ASSERT(
-                // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
-                std::string_view{label.data()} == label,
+                isNullTerminated(label),
                 "xrpl::perf::PerfLogImp::Counters::Counters : label is "
                 "null-terminated");
 

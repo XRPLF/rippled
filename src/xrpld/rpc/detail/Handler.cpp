@@ -8,6 +8,7 @@
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -424,13 +425,8 @@ static_assert(
 
 // The names are handed to json::StaticString, and read as C strings from there,
 // so each must be a view of a whole string literal rather than a slice of one.
-// Rebuilding the view from its data() as a C string is what StaticString will
-// do; a slice loses its tail that way, and an unterminated one does not compile.
 static_assert(
-    std::ranges::all_of(
-        kHandlers,
-        [](std::string_view name) { return std::string_view{name.data()} == name; },
-        &Handler::name),
+    std::ranges::all_of(kHandlers, isNullTerminated, &Handler::name),
     "xrpl::rpc : every handler name must be null-terminated");
 
 // The handler names, which are already distinct and sorted.
