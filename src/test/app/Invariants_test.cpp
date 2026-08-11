@@ -6264,11 +6264,12 @@ public:
         testAMMDeleteInvariants(defaultAmendments());
         testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
         testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3 | fixTecInvariant);
-        testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3 | fixTecInvariant);
+        testPermissionedDomainInvariants((defaultAmendments() - fixCleanup3_1_3) | fixTecInvariant);
         // Can't test without fixTecInvariant, because the invariant will assert
         // testPermissionedDomainInvariants((defaultAmendments() | fixCleanup3_1_3) -
-        // fixTecInvariant ); testPermissionedDomainInvariants(defaultAmendments() -
-        // fixCleanup3_1_3- fixTecInvariant);
+        //  fixTecInvariant );
+        // testPermissionedDomainInvariants((defaultAmendments() - fixCleanup3_1_3) -
+        //  fixTecInvariant);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testBookDirectoryExchangeRate();
