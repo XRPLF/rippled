@@ -11,7 +11,6 @@
 #include <functional>
 #include <memory>
 #include <span>
-#include <string>
 #include <string_view>
 
 namespace beast {
@@ -154,10 +153,13 @@ PerfLog::Setup
 setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
 
 /**
- * @param methodNames The RPC methods to count, one counter per name. The names
- *        must outlive the returned object, which holds views of them. Callers
- *        pass rpc::getHandlerNames(); it is an argument so that this layer needs
- *        to know nothing about the RPC dispatch table.
+ * @param methodNames The RPC methods to count, one counter per name. Each name
+ *        must be a view of a whole, null-terminated string literal rather than
+ *        a slice of one, because the counters are reported as JSON keys that
+ *        borrow the name and read it as a C string. The names must outlive the
+ *        returned object, which holds views of them. Callers pass
+ *        rpc::getHandlerNames(); it is an argument so that this layer needs to
+ *        know nothing about the RPC dispatch table.
  */
 std::unique_ptr<PerfLog>
 makePerfLog(

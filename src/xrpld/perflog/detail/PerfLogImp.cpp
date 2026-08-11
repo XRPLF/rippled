@@ -44,6 +44,20 @@ PerfLogImp::Counters::Counters(std::span<std::string_view const> labels, JobType
         rpc.reserve(labels.size());
         for (auto const& label : labels)
         {
+            // countersJson() reports these through json::StaticString, which
+            // reads them as C strings, so each must be a view of a whole string
+            // literal rather than a slice of one. Rebuilding the view from its
+            // data() is what StaticString will do, and a slice loses its tail
+            // that way. Checked here, where the names arrive, rather than on
+            // every report. Callers pass a compile-time constant list and this
+            // runs once, before any thread starts, so a bad name faults every
+            // startup rather than some later request.
+            XRPL_ASSERT(
+                // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
+                std::string_view{label.data()} == label,
+                "xrpl::perf::PerfLogImp::Counters::Counters : label is "
+                "null-terminated");
+
             auto const inserted = rpc.try_emplace(label).second;
             if (!inserted)
             {
@@ -103,8 +117,10 @@ PerfLogImp::Counters::countersJson() const
         totalRpc.errored += value.errored;
         p[jss::duration_us] = std::to_string(value.duration.count());
         totalRpc.duration += value.duration;
-        // The key is a method name constant, which outlives the program, so it
-        // can be borrowed rather than duplicated into the object.
+        // The key outlives the program and, per the constructor's assert, is
+        // null-terminated, so it can be borrowed as a C string rather than
+        // duplicated into the object.
+        // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         rpcobj[json::StaticString{proc.first.data()}] = p;
     }
 
@@ -200,6 +216,8 @@ PerfLogImp::Counters::currentJson() const
     for (auto m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
+        // Borrowed as a C string, as in countersJson() above.
+        // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         methodobj[jss::method] = json::StaticString{m.first.data()};
         methodobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());

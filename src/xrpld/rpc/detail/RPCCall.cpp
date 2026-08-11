@@ -47,7 +47,6 @@
 #include <iostream>
 #include <limits>
 #include <optional>
-#include <ranges>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -1464,26 +1463,6 @@ private:
         std::ranges::is_sorted(kSortedCommands, {}, &Command::name),
         "xrpl::RPCParser : kSortedCommands must be sorted");
 
-    // A name must select exactly one command, and must name a method the server
-    // can dispatch -- otherwise the command line would accept something that
-    // then goes nowhere. The latter is checked by RPCCall_test, which can see
-    // the handler table; here we can at least rule out duplicates and gaps.
-    static_assert(
-        []() {
-            for (std::size_t i = 0; i < kSortedCommands.size(); ++i)
-            {
-                auto const& command = kSortedCommands[i];
-                if (command.name.empty() || command.parse == nullptr ||
-                    command.minParams > command.maxParams)
-                    return false;
-                if (i > 0 && kSortedCommands[i - 1].name == command.name)
-                    return false;
-            }
-            return true;
-        }(),
-        "xrpl::RPCParser : every command needs a unique name, a parser, and a "
-        "valid parameter count range");
-
     // The command names, which are already distinct and sorted.
     static constexpr auto kCommandNames = [] {
         std::array<std::string_view, kSortedCommands.size()> names{};
@@ -1499,6 +1478,33 @@ public:
     methodNames()
     {
         return kCommandNames;
+    }
+
+    /**
+     * Whether the command table is well formed.
+     *
+     * A name must select exactly one command, and must name a method the server
+     * can dispatch -- otherwise the command line would accept something that
+     * then goes nowhere. The latter is checked by RPCCall_test, which can see
+     * the handler table; here we can at least rule out duplicates and gaps.
+     *
+     * This is a function the static_assert below the class calls, rather than
+     * the assert itself, because reading a pointer to a member of RPCParser is
+     * only a constant expression once RPCParser is complete.
+     */
+    static constexpr bool
+    commandsValid()
+    {
+        for (std::size_t i = 0; i < kSortedCommands.size(); ++i)
+        {
+            auto const& command = kSortedCommands[i];
+            if (command.name.empty() || command.parse == nullptr ||
+                command.minParams > command.maxParams)
+                return false;
+            if (i > 0 && kSortedCommands[i - 1].name == command.name)
+                return false;
+        }
+        return true;
     }
 
     //--------------------------------------------------------------------------
@@ -1544,6 +1550,12 @@ public:
         return (this->*(found->parse))(jvParams);
     }
 };
+
+// See the comment on commandsValid() for why this is out here.
+static_assert(
+    RPCParser::commandsValid(),
+    "xrpl::RPCParser : every command needs a unique name, a parser, and a valid "
+    "parameter count range");
 
 //------------------------------------------------------------------------------
 

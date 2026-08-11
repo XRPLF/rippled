@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
@@ -15,7 +16,6 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
-#include <ranges>
 #include <span>
 #include <string_view>
 
@@ -374,13 +374,19 @@ constexpr Handler kHandlerArray[]{
      .condition = Condition::NoCondition},
 };
 
-// The whole dispatch table: the array above plus the new-style handlers, which
-// carry their name and API range as members rather than as a table entry.
+// The class-based handlers, which carry their name and API range as static
+// members rather than as a table entry, so they cannot go in the array above.
+constexpr Handler kClassHandlerArray[]{
+    handlerFrom<LedgerHandler>(),
+    handlerFrom<VersionHandler>(),
+};
+
+// The whole dispatch table: the two arrays above, concatenated. Their sizes are
+// taken from the arrays so that adding a handler to either needs no change here.
 constexpr auto kHandlers = [] {
-    std::array<Handler, std::size(kHandlerArray) + 2> all{};
-    auto out = std::ranges::copy(kHandlerArray, all.begin()).out;
-    *out++ = handlerFrom<LedgerHandler>();
-    *out++ = handlerFrom<VersionHandler>();
+    std::array<Handler, std::size(kHandlerArray) + std::size(kClassHandlerArray)> all{};
+    auto const out = std::ranges::copy(kHandlerArray, all.begin()).out;
+    std::ranges::copy(kClassHandlerArray, out);
 
     // Sorted by name, so a handler can be found by binary search.
     std::ranges::sort(all, {}, &Handler::name);
@@ -418,15 +424,13 @@ static_assert(
 
 // The names are handed to json::StaticString, and read as C strings from there,
 // so each must be a view of a whole string literal rather than a slice of one.
+// Rebuilding the view from its data() as a C string is what StaticString will
+// do; a slice loses its tail that way, and an unterminated one does not compile.
 static_assert(
-    []() {
-        for (auto const& handler : kHandlers)
-        {
-            if (handler.name.data()[handler.name.size()] != '\0')
-                return false;
-        }
-        return true;
-    }(),
+    std::ranges::all_of(
+        kHandlers,
+        [](std::string_view name) { return std::string_view{name.data()} == name; },
+        &Handler::name),
     "xrpl::rpc : every handler name must be null-terminated");
 
 // The handler names, which are already distinct and sorted.

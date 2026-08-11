@@ -2,6 +2,7 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 #include <algorithm>
 #include <array>
@@ -11,7 +12,6 @@
 #include <cstddef>
 #include <iostream>
 #include <random>
-#include <ranges>
 #include <string>
 #include <tuple>
 // cspell: words stdev

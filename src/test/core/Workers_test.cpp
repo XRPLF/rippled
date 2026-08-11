@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <string_view>
 
 namespace xrpl {
@@ -31,7 +32,7 @@ class PerfLogTest : public PerfLog
     }
 
     void
-    rpcError(std::string_view method, std::uint64_t dur) override
+    rpcError(std::string_view method, std::uint64_t requestId) override
     {
     }
 
