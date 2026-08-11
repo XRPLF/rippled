@@ -441,16 +441,10 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
-        for (auto const& keyletInfo : kDirectAccountKeylets)
+        for (auto const& [keyletfunc, type, includeInTests] : kDirectAccountKeylets)
         {
-            // TODO: Use structured binding once LLVM 16 is the minimum
-            // supported version. See also:
-            // https://github.com/llvm/llvm-project/issues/48582
-            // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
-            if (!keyletInfo.includeInTests)
+            if (!includeInTests)
                 continue;
-            auto const& keyletfunc = keyletInfo.function;
-            auto const& type = keyletInfo.expectedLEName;
 
             using namespace std::string_literals;
 
