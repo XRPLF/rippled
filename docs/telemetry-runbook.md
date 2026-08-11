@@ -2482,7 +2482,7 @@ timeseries, 2 table, 1 state-timeline, 1 logs, 1 text, across 35 queries.
 | Manifests — Disposition & Producers     | `[DBG]`        | Disposition rate; accept-vs-reject; top-N master keys                                                                                                                                      |
 | Resource Fee Charges — Load Attribution | `[DBG]`        | Charge rate by reason; fee-weighted load; top-N peers by IP and public key                                                                                                                 |
 | Ledger Acquisition Efficiency           | `[DBG]`        | Duplicate ratio; good vs duplicate vs timeout                                                                                                                                              |
-| Peer Lifecycle & Disconnects            | `[DBG]`        | Disconnect reason breakdown; handshake and accept rate                                                                                                                                     |
+| Peer Lifecycle & Disconnects            | `[DBG]`        | Disconnect reason breakdown (Closed / Ping Timeout / Connect Timeout / Connection Refused); handshake and accept rate                                                                      |
 | Consensus Phase & Mode                  | `[DEFAULT OK]` | Phase transitions; operating-mode proxy; quorum and trusted-set size                                                                                                                       |
 | Slow Job Latency Breaches               | `[DEFAULT OK]` | Run p99, wait p99, breach rate by job (`LoadMonitor`, >500ms only)                                                                                                                         |
 | Error & Warning Stream                  | `[DEFAULT OK]` | WRN/ERR/FTL rate by partition; live log tail                                                                                                                                               |
@@ -2552,6 +2552,20 @@ Stream labels are only `service_name`, `service_instance_id`,
     target as a range query even with `instant: true`, so `lastNotNull` reads only
     the final bucket — a window total shows as a single-bucket count. Aggregate
     over `$__range` and reduce with `max`.
+11. **A `regexp` anchored on the log prefix silently drops most matches.** The
+    _Peer Disconnect Rate By Reason_ panel anchored its capture on `\] `, which
+    only matches a reason emitted immediately after the `[NNN] ` peer-id prefix.
+    `PeerImp` does not log that way: `PeerImp::fail` emits
+    `[NNN] <name> failed: <reason>` (`src/xrpld/overlay/detail/PeerImp.cpp:645`)
+    and the clean teardown emits `close: Closed` (`:635`). Only
+    `ConnectAttempt::fail`, which logs the bare reason
+    (`src/xrpld/overlay/detail/ConnectAttempt.cpp:136`), ever matched — so the
+    panel's `Timeout` series was connect-attempt timeouts only, `Ping Timeout`
+    (`PeerImp.cpp:762`) was invisible, and `PeerImp`'s own `Closed` was
+    uncounted. The panel now matches all three prefixes
+    (`(?:\] |failed: |close: )`) and distinguishes `Ping Timeout` from
+    `Connect Timeout`. When adding a log-derived panel, enumerate every producer
+    of the string being captured rather than sampling one.
 
 Also worth knowing: the **Grafana Cloud image renderer cannot query Loki** in this
 stack. A minimal probe dashboard with a hardcoded datasource uid, a literal
