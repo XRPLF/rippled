@@ -1,0 +1,114 @@
+# Verifies the committed snapshots of `bin/check-tools.sh` output for each Nix
+# environment (see nix/check-tools/). If the environment changes — a new image
+# tag, an updated flake.lock, a different tool list — without the matching
+# snapshot being regenerated and committed, this workflow fails so the drift is
+# caught in review.
+#
+# To regenerate the snapshots, see nix/check-tools/README.md.
+name: Check tools
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/check-tools.yml"
+      - ".github/scripts/strategy-matrix/linux.json"
+      - "bin/check-tools.sh"
+      - "nix/**"
+      - "flake.nix"
+      - "flake.lock"
+      - "rust-toolchain.toml"
+  push:
+    branches:
+      - "develop"
+    paths:
+      - ".github/workflows/check-tools.yml"
+      - ".github/scripts/strategy-matrix/linux.json"
+      - "bin/check-tools.sh"
+      - "nix/**"
+      - "flake.nix"
+      - "flake.lock"
+      - "rust-toolchain.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The nix-nixos image tag is pinned alongside the build matrix in linux.json,
+  # so snapshots are checked against the exact image CI builds against.
+  linux-image-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read nix image tag
+        id: tag
+        run: echo "tag=$(jq -r .image_tag .github/scripts/strategy-matrix/linux.json)" >>"${GITHUB_OUTPUT}"
+
+  # One job for all environments; they differ only in whether the tools come
+  # from the nix-nixos container (Linux) or `nix develop` (macOS).
+  check-tools:
+    needs: linux-image-tag
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            snapshot: nix/check-tools/nix-ubuntu-amd64.txt
+            nix_develop: false
+          - runner: ubuntu-24.04-arm
+            snapshot: nix/check-tools/nix-ubuntu-arm64.txt
+            nix_develop: false
+          - runner: macos-26-apple-clang-21
+            snapshot: nix/check-tools/macos.txt
+            nix_develop: true
+    runs-on: ${{ matrix.runner }}
+    # Linux runs inside the pinned nix-nixos image; macOS runs natively and uses
+    # the flake's dev shell instead (see the run step below).
+    container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-ubuntu:{0}', needs.linux-image-tag.outputs.tag) || null }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
+        with:
+          enable_ccache: false
+
+      - name: Regenerate snapshot
+        env:
+          CHECK_TOOLS_SKIP_CLONE: "1"
+          # check-tools.sh skips some macOS tools when CI is set; the snapshots
+          # capture the full `nix develop` environment, so unset it here.
+          CI: ""
+        run: |
+          if [ "${{ matrix.nix_develop }}" = "true" ]; then
+              # `nix develop` prints the dev-shell greeting first; keep only the
+              # check-tools.sh output (from the "Detected OS:" line onward).
+              nix --extra-experimental-features "nix-command flakes" develop \
+                  -c bash bin/check-tools.sh | sed -n '/^Detected OS:/,$p' >"${{ matrix.snapshot }}"
+          else
+              bash bin/check-tools.sh >"${{ matrix.snapshot }}"
+          fi
+
+      - name: Verify snapshot is up to date
+        run: |
+          if ! git diff --exit-code -- "${{ matrix.snapshot }}"; then
+              echo "::error::${{ matrix.snapshot }} is out of date. Regenerate it (see nix/check-tools/README.md) and commit the result."
+              exit 1
+          fi
+
+      - name: Upload regenerated snapshot
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: check-tools-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ matrix.snapshot }}

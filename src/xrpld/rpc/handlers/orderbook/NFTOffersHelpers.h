@@ -52,15 +52,15 @@ appendNftOfferJson(Application const& app, SLE::const_ref offer, json::Value& of
 //   marker: opaque                 // optional, resume previous query
 // }
 inline json::Value
-enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
+enumerateNFTOffers(rpc::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNftOffers, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kNftOffers, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
 
-    if (auto result = RPC::lookupLedger(ledger, context); !ledger)
+    if (auto result = rpc::lookupLedger(ledger, context); !ledger)
         return result;
 
     if (!ledger->exists(directory))
@@ -83,7 +83,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
         json::Value const& marker(context.params[jss::marker]);
 
         if (!marker.isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         if (!startAfter.parseHex(marker.asString()))
             return rpcError(RpcInvalidParams);
@@ -91,6 +91,17 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
         auto const sle = ledger->read(keylet::nftokenOffer(startAfter));
 
         if (!sle || nftId != sle->getFieldH256(sfNFTokenID))
+            return rpcError(RpcInvalidParams);
+
+        // Reject a marker that references an offer on the opposite side
+        // (buy vs. sell) of the directory being enumerated.  Without this
+        // check the marker's node hint points into the other directory, so
+        // forEachItemAfter never finds `startAfter` and instead scans every
+        // page of `directory` before returning invalidParams -- turning an
+        // O(1) rejection into an O(directory size) walk.
+        auto const offerDir =
+            sle->isFlag(lsfSellNFToken) ? keylet::nftSells(nftId) : keylet::nftBuys(nftId);
+        if (directory.key != offerDir.key)
             return rpcError(RpcInvalidParams);
 
         startHint = sle->getFieldU64(sfNFTokenOfferNode);
@@ -127,7 +138,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     for (auto const& offer : offers)
         appendNftOfferJson(context.app, offer, jsonOffers);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 

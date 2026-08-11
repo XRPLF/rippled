@@ -27,6 +27,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
@@ -36,6 +38,7 @@
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <vector>
 
 namespace xrpl::test {
@@ -1544,7 +1547,7 @@ public:
             env(check::create(owner, dest, XRP(1)));
             env.close();
 
-            auto const checkId = keylet::check(owner, checkSeq);
+            auto const checkId = keylet::check(owner, SeqProxy::rawSequence(checkSeq));
             if (!BEAST_EXPECT(env.le(checkId)))
                 return;
 
@@ -1617,6 +1620,86 @@ public:
     }
 
     void
+    testAccountObjectDoesntShowCancelledOffers()
+    {
+        testcase("AccountObjectDoesntShowCancelledOffers");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const eur = bob["EUR"];
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const rpcAccountObjects = [&](std::optional<uint32_t> limit = std::nullopt) {
+            json::Value params;
+            params[jss::account] = alice.human();
+            if (limit.has_value())
+            {
+                params[jss::limit] = *limit;
+            }
+            return env.rpc("json", "account_objects", to_string(params));
+        };
+
+        auto const numEntries = 33;
+        std::vector<uint32_t> seqs;
+        seqs.reserve(numEntries);
+        for ([[maybe_unused]] auto _ : std::ranges::iota_view{0, numEntries})
+        {
+            json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            params[jss::tx_json] = offer(alice, eur(1), XRP(2));
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
+            seqs.push_back(env.seq(alice));
+        }
+
+        auto res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == numEntries);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        for (auto const s : std::views::all(seqs) | std::views::take(numEntries - 1))
+        {
+            json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            params[jss::tx_json] = offerCancel(alice, s - 1);
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
+        }
+
+        res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 1);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        {
+            json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            json::Value txJson;
+            txJson[jss::TransactionType] = jss::NFTokenMint;
+            txJson[jss::Account] = to_string(alice.id());
+            txJson["NFTokenTaxon"] = 1;
+            params[jss::tx_json] = txJson;
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
+        }
+        env.close();
+
+        res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 2);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        res = rpcAccountObjects(1);
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 1);
+        BEAST_EXPECT(res[jss::result][jss::limit].asUInt() == 1);
+        BEAST_EXPECT(res[jss::result].isMember(jss::marker));
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1627,6 +1710,7 @@ public:
         testAccountNFTs();
         testAccountObjectMarker();
         testSponsoredFilter();
+        testAccountObjectDoesntShowCancelledOffers();
     }
 };
 
