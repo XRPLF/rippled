@@ -1663,13 +1663,158 @@ counters), observed from an existing cumulative source each collection cycle:
 
 ## 6. Known Issues
 
-| Issue                                                              | Impact                                           | Status                                                                                                              |
-| ------------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                |
-| `jobq_job_count` may not emit in standalone mode                   | Missing from Prometheus in some test configs     | Requires active job queue activity                                                                                  |
-| `rpc_requests` depends on `[insight]` config                       | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                                                                     |
-| Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                   |
-| `handler="other"` mixes several producers                          | Cannot separate `GetConsL1` from `GetConsL2`     | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram) |
+| Issue                                                                 | Impact                                                                                              | Status                                                                                                                |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                  |
+| `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                    |
+| `rpc_requests` depends on `[insight]` config                          | Zero series if StatsD not configured                                                                | Requires `[insight] server=statsd` in xrpld.cfg                                                                       |
+| Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                     |
+| `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)   |
+| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                 |
+| `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                     |
+| `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                            |
+| `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented) |
+| No metrics for ping RTT distribution, ping timeouts, or `mtENDPOINTS` | Peer keepalive and discovery health are not observable                                              | **NOT IMPLEMENTED** — see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                       |
+| 11 of 13 peer message families have no spans                          | `02` §2.3.2 catalogs `peer.message.*`, `peer.connect`, `peer.disconnect` that were never built      | **NOT IMPLEMENTED** — see [§6.4](#64-peer-span-coverage-gap-not-implemented)                                          |
+| PeerFinder exports 2 of ~17 available slot/cache readings             | Slot pressure, connection churn and discovery-cache health are not observable                       | **NOT IMPLEMENTED** — see [§6.5](#65-peerfinder-slot-and-cache-metrics-not-implemented)                               |
+
+### 6.0 `mtCLUSTER` is counted as `unknown`: NOT IMPLEMENTED
+
+`mtCLUSTER` is absent from `kTypeLookup`
+(`src/xrpld/overlay/detail/TrafficCount.cpp:11-27`), and `categorize()`'s
+fallback chain only inspects `TMLedgerData`, `TMGetLedger` and
+`TMGetObjectByHash` before returning `Category::Unknown` (`:135`). No call site
+ever passes `Category::Cluster`. Cluster traffic is therefore counted as
+`unknown`, and `overhead_cluster_bytes_in/out` and
+`overhead_cluster_messages_in/out` are always zero — including the 8 panel
+references across `network-traffic` and `overlay-traffic-detail` (both the local
+and grafanacloud copies).
+
+This also degrades `unknown_*` as an anomaly signal: on a clustered node it mixes
+genuinely unrecognized wire types with routine `mtCLUSTER` traffic.
+
+**Status**: Planned, not yet implemented. The fix is a one-line addition to
+`kTypeLookup`, but `TrafficCount.cpp` is shared overlay code rather than a
+telemetry-owned file, so it is scoped as a separate overlay change. Note that
+landing it moves volume out of `unknown_bytes_in`, so any threshold measured
+against that series needs re-baselining. Until then, treat `overhead_cluster_*`
+as "no data" rather than "no cluster traffic", and read the
+[Cluster](../docs/telemetry-glossary.md#cluster) glossary entry's guidance on
+sustained cluster overhead as not yet observable.
+
+### 6.1 `squelch_ignored` byte counts: NOT IMPLEMENTED
+
+`OverlayImpl::updateSlotAndSquelch` reports the `SquelchIgnored` category with a
+hardcoded size of `0` (`src/xrpld/overlay/detail/OverlayImpl.cpp:1460` and
+`:1489`), so `squelch_ignored_bytes_in` and `squelch_ignored_bytes_out` are
+always zero. Only `squelch_ignored_messages_in/out` carry signal. This is
+inconsistent with `SquelchSuppressed`, which passes the real wire size
+(`src/xrpld/overlay/detail/PeerImp.cpp:302`) — so the two squelch categories are
+not comparable on bytes.
+
+The message size is available at all four call sites (each holds the protobuf
+message and could call `Message::messageSize()`), but plumbing it through would
+require widening the two `OverlayImpl::updateSlotAndSquelch` overloads.
+
+**Status**: Deferred as a separate change — a public signature change on
+`OverlayImpl` is out of scope for the telemetry chain, since `OverlayImpl.h` is
+shared overlay code rather than a telemetry-owned file. Until it lands, read
+`squelch_ignored` on the `_messages_*` series only and do not build a
+bytes-per-message ratio from this category.
+
+### 6.2 Inbound/outbound byte-basis asymmetry: NOT IMPLEMENTED
+
+Inbound traffic is counted with the raw wire size as received
+(`src/xrpld/overlay/detail/PeerImp.cpp:1079`), while outbound traffic is counted
+from the possibly-compressed send buffer
+(`getBuffer(compressionEnabled_).size()`, `PeerImp.cpp:313`). When compression is
+enabled the two directions measure different things, so `total_bytes_in` versus
+`total_bytes_out` is not a like-for-like comparison, and neither is any
+`{category}_bytes_in` / `_bytes_out` pair.
+
+A related documentation defect sits in the same class: the `TrafficCount` header
+comment states that "messages whose category is not in `TrafficCount::categorize`
+are not included in the total" (`src/xrpld/overlay/detail/TrafficCount.h:28-31`),
+but `Category::Total` is incremented unconditionally at
+`src/xrpld/overlay/detail/PeerImp.cpp:1079`, _before_ the per-category split. The
+total does include uncategorized traffic; the comment is stale.
+
+**Status**: Planned, not yet implemented — neither the metric change nor the
+header-comment correction has landed, because `TrafficCount.h` is shared overlay
+code rather than a telemetry-owned file. Normalizing one direction would in any
+case silently redefine an existing series, so the likely resolution is to document
+the asymmetry at the class and leave both readings intact. Until then, compare
+`_bytes_in` against `_bytes_out` only when compression is known to be off.
+
+### 6.3 Peer keepalive and discovery traffic gaps: NOT IMPLEMENTED
+
+Three related gaps on the peer keepalive and discovery paths. All are byte/message
+counters only — none has a dedicated instrument, and none is traced.
+
+| Gap                                                                                           | Current state                                                                                                                       | What is missing                                                                                                        |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `mtPING` / `mtSTATUS_CHANGE` share `Category::Base` (`TrafficCount.cpp:12-13`) → `overhead_*` | Both message types land in one bucket                                                                                               | A distinct category for one of them, plus name-map, `counts_` and dashboard entries                                    |
+| Ping RTT                                                                                      | An 8-sample EWMA per peer (`PeerImp.cpp:1150-1163`), exported only as the single `peer_quality{metric="peer_latency_p90_ms"}` gauge | A histogram; the lone p90 hides a bimodal peer set                                                                     |
+| Ping failures                                                                                 | `fail("Ping Timeout")` (`PeerImp.cpp:762`) logs only; a wrong-cookie PONG (`PeerImp.cpp:1146`) is silently ignored                  | A counter for each                                                                                                     |
+| `mtENDPOINTS`                                                                                 | `overhead_overlay_*` bytes only                                                                                                     | Counters for endpoints received / handed out / malformed (`PeerImp.cpp:1265-1270` charges a fee but records no metric) |
+
+**Status**: Planned, not yet implemented. Adding these means a new metric family
+plus matching rows in this document, in
+[docs/telemetry-runbook.md](../docs/telemetry-runbook.md) § Metric Reference, and
+in `docker/telemetry/workload/expected_metrics.json` (Phase 10 branch — see the
+Cross-Phase Dependency Chain in
+[06-implementation-phases.md](./06-implementation-phases.md)), and dashboard
+panels following the conventions in `06` § Branch-to-Change Mapping.
+
+### 6.4 Peer span coverage gap: NOT IMPLEMENTED
+
+[02-design-decisions.md §2.3.2](./02-design-decisions.md#232-complete-span-catalog)
+catalogs `peer.connect`, `peer.disconnect`, `peer.message.send` and
+`peer.message.receive`. None was ever built: the implemented peer surface is the
+two spans in [§Peer Spans](#peer-spans) above (`peer.proposal.receive`,
+`peer.validation.receive`). Of the 13 protocol message families, only
+`mtGET_OBJECTS` has native instrumentation, and only transactions and consensus
+messages are traced.
+
+**Status**: NOT IMPLEMENTED. The span catalog in `02` §2.3.2 is a design
+inventory, not a statement of what emits; §2.3.2 now marks which entries are
+live. Instrumenting the remaining families would change the "~37 spans" count
+asserted in [§1.1](#11-complete-span-inventory-37-spans) and in
+`docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
+change rather than folded into a metric task.
+
+### 6.5 PeerFinder slot and cache metrics: NOT IMPLEMENTED
+
+`peer_finder::Manager` registers exactly two instruments —
+`peer_finder_active_inbound_peers` and `peer_finder_active_outbound_peers`
+(`src/libxrpl/peerfinder/PeerfinderManager.cpp:229-230`), listed in
+[§2.1](#21-gauges). The `Counts` class exposes roughly fifteen further readings
+that are never exported (`include/xrpl/peerfinder/detail/Counts.h`), and neither
+discovery cache has any instrument at all.
+
+| Reading                                             | Source                 | Why it matters                                                                                                         |
+| --------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `attempts()`, `attemptsNeeded()`                    | `Counts.h:68,79`       | Outbound connection churn; distinguishes "not trying" from "trying and failing"                                        |
+| `outMax()`, `outActive()`, `outboundSlotsFree()`    | `Counts.h:88,98,205`   | Outbound slot saturation                                                                                               |
+| `inMax()`, `inboundActive()`, `inboundSlotsFree()`  | `Counts.h:165,174,193` | Inbound slot saturation — the two exported gauges give the actives but not the caps, so utilization cannot be computed |
+| `acceptCount()`, `connectCount()`, `closingCount()` | `Counts.h:138,147,156` | Handshake pipeline depth; `closingCount()` rising is teardown backpressure                                             |
+| `fixed()`, `fixedActive()`                          | `Counts.h:107,116`     | Whether configured fixed peers are actually connected                                                                  |
+| `isConnectedToNetwork()`                            | `Counts.h:218`         | Binary reachability                                                                                                    |
+| `Livecache::size()`                                 | `Livecache.h:365`      | Size of the live endpoint pool used to answer `mtENDPOINTS`                                                            |
+| `Bootcache::size()`                                 | `Bootcache.h:121`      | Bootstrap-address pool; an empty bootcache is why a fresh node cannot find peers                                       |
+
+The two exported actives are also the only inputs to the "Inbound vs Outbound"
+panel specified for the Peer Quality dashboard
+([06 § Branch-to-Change Mapping, Task 9.12](./06-implementation-phases.md)), so
+that panel cannot show slot utilization as a percentage.
+
+**Status**: Planned, not yet implemented. These would extend the existing
+`beast::insight` registration in `PeerfinderManager.cpp` (arrow **B** in the
+[Data Flow Overview](#data-flow-overview)) rather than use the `XRPL_METRIC_*`
+macros, because `libxrpl` code cannot use those macros — see the pipeline note in
+[§2.5](#25-per-job-type-queue-gauges). `Livecache`/`Bootcache` currently receive
+no collector reference, so exporting their sizes needs one plumbed in or the
+values read via the existing `Manager` hook.
 
 ---
 
