@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -63,35 +64,81 @@ enum class WaiveMPTCanTransfer : bool { No = false, Yes };
 /**
  * Feature-agnostic trust-line dust primitive.
  *
- * A caller that maintains its own cached total of a trust line's balance can
- * ask the credit path (accountSend / directSendNoFeeIOU) to keep sfBalance
- * representable at a scale of the caller's choosing and park any sub-quantum
- * remainder in the trust line's sfDust field, then report back what actually
- * moved. Passing a DustSplit* is the opt-in; the credit path's default is
- * nullptr, which reproduces the classic behaviour exactly.
+ * A trust line is a single ledger entry (`ltRIPPLE_STATE`) shared between
+ * a non-issuer account and its issuer. An IOU payment `A -> B` for issuer
+ * `I` touches at most two trust lines: the sender's line
+ * `RIPPLE_STATE{A, I}` and the receiver's line `RIPPLE_STATE{B, I}`.
+ * Each non-issuer party can independently opt into dust semantics on
+ * their OWN line by providing a per-leg `LegPolicy`.
  *
- * The target-scale choice and the "receivable-invariance" contract (the
- * caller must reconcile any (balanceDelta - amount) drift with its own
- * accounting) belong to the caller. This type is intentionally feature-
- * agnostic: it says nothing about Vaults, AMMs, or any specific consumer.
+ * `DustSplit` is that opt-in: one struct with two optional per-leg
+ * sub-policies (`sender`, `receiver`). `accountSend` and its callees route
+ * each sub-policy to the corresponding `directSendNoFeeIOU` invocation.
+ * A leg without a sub-policy runs the classic pre-dust path
+ * byte-identically. The struct is intentionally consumer-agnostic — it
+ * says nothing about Vaults, AMMs, or any specific consumer.
  *
- * All output fields below are RECEIVER-POSITIVE: positive means the
- * receiver's holdings grew.
+ * Modes:
+ * - `Override`: the trust-line layer keeps sfBalance representable at
+ *   `overrideScale` and parks any sub-quantum remainder in sfDust. Any
+ *   previously-deferred sfDust is automatically promoted when the combined
+ *   sfDust + credit crosses a whole-quantum boundary. Callers supply
+ *   `overrideScale` from their own accounting; scale-drift up to one
+ *   decade may linger until the next operation that refines the scale.
+ * - `Drain` (sender-leg only): folds all of sfDust on the sender's line
+ *   into the outgoing transfer, then zeroes sfDust post-op. Used for
+ *   terminal removals where the sender is winding down; there is no
+ *   receiver-side counterpart because a receiver has no "reservoir to
+ *   drain".
+ *
+ * Reporting (out-fields on `LegPolicy`) is FROM THAT LEG'S NON-ISSUER
+ * PARTY'S PERSPECTIVE:
+ * - `sender`-leg reports SENDER-POSITIVE deltas (positive `balanceDelta`
+ *   means the sender's holdings grew, which is unusual — a normal send
+ *   makes the sender's `balanceDelta` negative and, if any deferred dust
+ *   was promoted into sfBalance, negates it further; the reported
+ *   `dustDelta` is `-sfDust_before` under `Drain`).
+ * - `receiver`-leg reports RECEIVER-POSITIVE deltas (positive
+ *   `balanceDelta` means the receiver's holdings grew — the normal case).
+ *
+ * This per-leg-party-positive convention lets a Vault consumer reconcile
+ * its own bookkeeping symmetrically: reads from `sender->balanceDelta` on
+ * a withdrawal/clawback line up in sign with reads from
+ * `receiver->balanceDelta` on a deposit, without a sign flip.
+ *
+ * Contract asserts (checked in debug):
+ * - `Drain` on the receiver leg is a caller error.
+ * - Attaching a policy to the issuer side of a direct payment (where one
+ *   party IS the issuer) is a caller error — the policy must correspond
+ *   to the non-issuer party's leg.
+ * - Any non-empty `DustSplit` requires `featureLendingProtocolV1_1`
+ *   enabled; a policy under an older rules set falls back to nullptr and
+ *   asserts in debug.
+ *
+ * Scope note: Vault is the sole consumer today. Adding a new consumer
+ * (AMM, LoanBroker, etc.) is purely additive: introduce a caller-side
+ * eligibility gate (analogous to `xrpl::vault_dust::useVaultDust`),
+ * construct a `DustSplit` in that consumer's transactor helpers, and
+ * reconcile the consumer's own bookkeeping using the reported deltas.
+ * The trust-line layer needs no per-consumer awareness.
  */
 struct DustSplit
 {
-    explicit DustSplit(int targetScale) : targetScale(targetScale)
+    struct LegPolicy
     {
-    }
+        enum class Mode { Override, Drain };
 
-    // --- in ---
-    int targetScale;  // exponent sfBalance must remain representable at
+        Mode mode = Mode::Override;
+        int overrideScale = 0;  // used only when mode == Override; exponent
+                                // sfBalance must remain representable at
 
-    // --- out ---
-    Number balanceDelta{};  // how much sfBalance moved
-    Number dustDelta{};     // how much sfDust moved. SIGNED: negative means
-                            // previously-deferred dust was promoted into
-                            // sfBalance by this operation.
+        // out (from this leg's non-issuer party's perspective):
+        Number balanceDelta{};
+        Number dustDelta{};
+    };
+
+    std::optional<LegPolicy> sender;
+    std::optional<LegPolicy> receiver;
 };
 
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
@@ -430,6 +477,10 @@ using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
  *
  * Calls static accountSendMultiIOU if saAmount represents Issue.
  * Calls static accountSendMultiMPT if saAmount represents MPTIssue.
+ *
+ * The optional `dust` split applies only to the sender's leg (the single
+ * shared sender trust line across all destinations). Only `dust->sender`
+ * is consulted; `dust->receiver` must be nullopt.
  */
 [[nodiscard]] TER
 accountSendMulti(
@@ -438,7 +489,8 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    DustSplit* dust = nullptr);
 
 [[nodiscard]] TER
 transferXRP(

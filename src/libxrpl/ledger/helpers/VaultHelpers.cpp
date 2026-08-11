@@ -191,7 +191,7 @@ addVaultAssets(
     // Forward to the dust-aware overlay for eligible Vaults (cash-basis +
     // IOU asset). Every other Vault runs the base body verbatim below,
     // byte-identical to a call with no overlay in the tree.
-    if (vault_dust::useVaultDust(vault))
+    if (vault_dust::useVaultDust(view, vault))
         return vault_dust::addVaultAssets(view, vault, sender, amount, valueDelta, j);
 
     [[maybe_unused]] Asset const asset = vault->at(sfAsset);
@@ -264,7 +264,7 @@ clawbackVaultAssets(
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::clawbackVaultAssets : valid Vault sle");
 
-    if (vault_dust::useVaultDust(vault))
+    if (vault_dust::useVaultDust(view, vault))
         return vault_dust::clawbackVaultAssets(view, vault, recipient, amount, j);
 
     Asset const asset = vault->at(sfAsset);
@@ -312,7 +312,7 @@ removeVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::removeVaultAssets : valid Vault sle");
 
-    if (vault_dust::useVaultDust(vault))
+    if (vault_dust::useVaultDust(ctx.view, vault))
         return vault_dust::removeVaultAssets(
             ctx, vault, senderAcct, dstAcct, priorBalance, amount, j, finalRemoval);
 
@@ -338,7 +338,7 @@ moveVaultAssets(
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::moveVaultAssets : valid Vault sle");
 
-    if (vault_dust::useVaultDust(vault))
+    if (vault_dust::useVaultDust(view, vault))
         return vault_dust::moveVaultAssets(view, vault, recipients, valueDelta, j);
 
     XRPL_ASSERT(recipients.size() > 1, "xrpl::moveVaultAssets : multiple recipients provided");
@@ -392,55 +392,24 @@ posteriorScale(SLE::const_ref vault, Number const& deltaToAssetsTotal)
     return scale(posterior, vault->at(sfAsset));
 }
 
-// Promote whole quanta of dust stranded on the Vault's custody line back
-// into sfBalance after a scale-refining accounting update, and move both
-// sfAssetsAvailable and sfAssetsTotal by the same amount (receivable-
-// preserving — this recognises deferred cash and creates no new
-// receivable).
-//
-// A no-op when the custody line does not exist, when sfDust is already
-// zero, or when the whole-quanta portion is zero at the Vault's current
-// scale.
-void
-renormaliseStrandedDust(ApplyView& view, SLE::ref vault)
-{
-    Asset const asset = vault->at(sfAsset);
-    AccountID const vaultAccount = vault->at(sfAccount);
-    auto const line = view.peek(keylet::trustLine(vaultAccount, asset.get<Issue>()));
-    if (!line || Number{line->at(sfDust)} == beast::kZero)
-        return;
-
-    bool const vaultIsHigh = vaultAccount > asset.getIssuer();
-    // sfDust is stored in the line's low/high convention (same as
-    // sfBalance); flip its sign so the truncation math below runs in the
-    // Vault's terms.
-    Number const dustInVaultTerms =
-        vaultIsHigh ? -Number{line->at(sfDust)} : Number{line->at(sfDust)};
-
-    int const targetScale = scale(Number{vault->at(sfAssetsTotal)}, asset);
-    Number const movable =
-        roundToAsset(asset, dustInVaultTerms, targetScale, Number::RoundingMode::Downward);
-    if (movable == beast::kZero)
-        return;
-
-    Number const movableLineTerms = vaultIsHigh ? -movable : movable;
-    STAmount const newBalance = line->getFieldAmount(sfBalance) + STAmount{asset, movableLineTerms};
-    line->setFieldAmount(sfBalance, newBalance);
-    line->at(sfDust) = Number{line->at(sfDust)} - movableLineTerms;
-    view.update(line);
-
-    vault->at(sfAssetsAvailable) += movable;
-    vault->at(sfAssetsTotal) += movable;
-    view.update(vault);
-}
-
 }  // namespace
 
 [[nodiscard]] bool
-useVaultDust(SLE::const_ref vault)
+useVaultDust(ReadView const& view, SLE::const_ref vault)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::vault_dust::useVaultDust : valid Vault sle");
+    // Defense in depth: a CashBasis Vault can only be created while
+    // featureLendingProtocolV1_1 is enabled, so in the current lifecycle
+    // the amendment-check is redundant. The explicit gate documents the
+    // invariant and keeps this gate symmetric with the write-side gate in
+    // directSendNoFeeIOU (TokenHelpers.cpp), the read-side gate in
+    // creditBalanceExact (RippleStateHelpers.cpp), and the transactor-
+    // level predicate in LoanPay.cpp — so a hypothetical replay/testing
+    // path that ever presented a CashBasis Vault under a rules() without
+    // the amendment could not accidentally engage sfDust logic.
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return false;
     Asset const asset = vault->at(sfAsset);
     return getVaultVersion(vault) == VaultVersion::CashBasis && !asset.integral();
 }
@@ -457,7 +426,7 @@ addVaultAssets(
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::vault_dust::addVaultAssets : valid Vault sle");
     XRPL_ASSERT(
-        useVaultDust(vault), "xrpl::vault_dust::addVaultAssets : useVaultDust precondition");
+        useVaultDust(view, vault), "xrpl::vault_dust::addVaultAssets : useVaultDust precondition");
 
     Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(
@@ -468,11 +437,17 @@ addVaultAssets(
     XRPL_ASSERT(
         amount >= beast::kZero, "xrpl::vault_dust::addVaultAssets : amount is non-negative");
 
-    // Route the credit through a DustSplit targeting the Vault's
-    // posterior scale (the scale implied by sfAssetsTotal + valueDelta):
-    // any sub-quantum remainder on the custody line lands in sfDust
-    // rather than being lost.
-    DustSplit split(posteriorScale(vault, Number{valueDelta}));
+    // Route the credit through a DustSplit's receiver-leg policy
+    // targeting the Vault's posterior scale (the scale implied by
+    // sfAssetsTotal + valueDelta): any sub-quantum remainder on the
+    // Vault's custody line lands in sfDust rather than being lost. The
+    // sender's line is written by the pre-credit debit leg and does not
+    // participate in the split — a depositor's own trust line is
+    // dust-unaware.
+    DustSplit split;
+    split.receiver = DustSplit::LegPolicy{
+        .mode = DustSplit::LegPolicy::Mode::Override,
+        .overrideScale = posteriorScale(vault, Number{valueDelta})};
     if (auto const ter = accountSend(
             view,
             sender,
@@ -491,14 +466,18 @@ addVaultAssets(
     // call would produce: sfAssetsAvailable moves by the aligned
     // balanceDelta, and sfAssetsTotal absorbs the sub-quantum residual so
     // (valueDelta - dustDelta) - balanceDelta == valueDelta - amount.
-    vault->at(sfAssetsAvailable) += split.balanceDelta;
-    vault->at(sfAssetsTotal) += Number{valueDelta} - split.dustDelta;
+    // receiver-leg deltas are receiver-positive, so we ADD them
+    // directly to the Vault's fields (the Vault IS the receiver here).
+    //
+    // Any dust stranded on the custody line by a scale-refining prior
+    // operation is renormalised by the credit-path re-split itself
+    // (`directSendNoFeeIOU` truncates the extended balance +
+    // credit at the Override target scale, so a decade-boundary crossing
+    // automatically promotes freed whole-quanta into sfBalance). No
+    // separate renormaliseStrandedDust pass is needed here.
+    vault->at(sfAssetsAvailable) += split.receiver->balanceDelta;
+    vault->at(sfAssetsTotal) += Number{valueDelta} - split.receiver->dustDelta;
     view.update(vault);
-
-    // A negative valueDelta could refine the Vault's scale and free
-    // stranded whole quanta on the custody line; promote them so the
-    // dust reservoir never lingers above one quantum.
-    renormaliseStrandedDust(view, vault);
 
     return tesSUCCESS;
 }
@@ -515,7 +494,8 @@ clawbackVaultAssets(
         vault && vault->getType() == ltVAULT,
         "xrpl::vault_dust::clawbackVaultAssets : valid Vault sle");
     XRPL_ASSERT(
-        useVaultDust(vault), "xrpl::vault_dust::clawbackVaultAssets : useVaultDust precondition");
+        useVaultDust(view, vault),
+        "xrpl::vault_dust::clawbackVaultAssets : useVaultDust precondition");
 
     Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(
@@ -533,8 +513,27 @@ clawbackVaultAssets(
     vault->at(sfAssetsAvailable) -= amount;
     view.update(vault);
 
+    // A clawback shrinks sfAssetsTotal, refining the Vault's scale, so
+    // any stranded whole quanta on the custody line's sfDust need to
+    // be promoted back into sfBalance. Drive this through a sender-leg
+    // Override policy targeting the Vault's posterior scale; the trust
+    // -line layer re-splits (sfBalance, sfDust) at that scale and
+    // reports any dust promotion or newly-deferred residual.
+    DustSplit split;
+    split.sender = DustSplit::LegPolicy{
+        .mode = DustSplit::LegPolicy::Mode::Override,
+        .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+
     if (auto const ter = accountSend(
-            view, vault->at(sfAccount), recipient, amount, j, {}, WaiveTransferFee::Yes);
+            view,
+            vault->at(sfAccount),
+            recipient,
+            amount,
+            j,
+            {},
+            WaiveTransferFee::Yes,
+            AllowMPTOverflow::No,
+            &split);
         !isTesSuccess(ter))
         return ter;
 
@@ -552,9 +551,17 @@ clawbackVaultAssets(
         // LCOV_EXCL_STOP
     }
 
-    // A clawback shrinks sfAssetsTotal, refining the Vault's scale;
-    // promote any dust that is now representable.
-    renormaliseStrandedDust(view, vault);
+    // Reconcile any dust promotion/deferral surfaced by the split.
+    // `promoted = -split.sender->dustDelta`; both fields shift by
+    // `promoted` (positive when previously-deferred dust became
+    // recognized cash, negative when whole-quanta balance was newly
+    // deferred to sfDust).
+    if (split.sender)
+    {
+        vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
+        vault->at(sfAssetsTotal) -= split.sender->dustDelta;
+        view.update(vault);
+    }
 
     return tesSUCCESS;
 }
@@ -574,7 +581,8 @@ removeVaultAssets(
         vault && vault->getType() == ltVAULT,
         "xrpl::vault_dust::removeVaultAssets : valid Vault sle");
     XRPL_ASSERT(
-        useVaultDust(vault), "xrpl::vault_dust::removeVaultAssets : useVaultDust precondition");
+        useVaultDust(ctx.view, vault),
+        "xrpl::vault_dust::removeVaultAssets : useVaultDust precondition");
 
     Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(
@@ -585,33 +593,17 @@ removeVaultAssets(
 
     if (finalRemoval == FinalRemoval::Yes)
     {
-        // Terminal branch: drain any residual sfDust on the custody line
-        // into the outgoing transfer so the line ends with
-        // sfBalance == 0 and sfDust == 0 — a precondition for the
-        // deletion guards downstream to permit cleanup. There is no other
-        // shareholder left to divide the reservoir with, so promote ALL
-        // of sfDust (not just whole quanta) into sfBalance and send it
-        // out along with `amount`. The custody line's own scale can
-        // absorb the promoted value; STAmount rounding of the extended
-        // credit stays within a fraction of one quantum, well below the
-        // magnitudes that VaultRounding tests exercise.
+        // Terminal branch: drive the drain through a sender-leg Drain
+        // policy on the outgoing withdrawal. The trust-line layer folds
+        // sfDust into the sender's sfBalance in place, inflates the
+        // outgoing amount so the destination receives `amount + dust`,
+        // and zeroes sfDust — leaving the custody line ready for
+        // downstream deletion guards.
         AccountID const vaultAccount = vault->at(sfAccount);
-        STAmount effectiveAmount = amount;
-        if (auto const line = ctx.view.peek(keylet::trustLine(vaultAccount, asset.get<Issue>()));
-            line && Number{line->at(sfDust)} != beast::kZero)
-        {
-            bool const vaultIsHigh = vaultAccount > asset.getIssuer();
-            Number const dustInVaultTerms =
-                vaultIsHigh ? -Number{line->at(sfDust)} : Number{line->at(sfDust)};
-            Number const dustLineTerms = vaultIsHigh ? -dustInVaultTerms : dustInVaultTerms;
-            STAmount const newBalance =
-                line->getFieldAmount(sfBalance) + STAmount{asset, dustLineTerms};
-            line->setFieldAmount(sfBalance, newBalance);
-            line->at(sfDust) = Number{0};
-            ctx.view.update(line);
 
-            effectiveAmount = amount + STAmount{asset, dustInVaultTerms};
-        }
+        DustSplit split;
+        split.sender =
+            DustSplit::LegPolicy{.mode = DustSplit::LegPolicy::Mode::Drain, .overrideScale = 0};
 
         // Hard-reset both accounting fields to exactly zero — the same
         // contract as the base helper's FinalRemoval::Yes branch.
@@ -619,32 +611,52 @@ removeVaultAssets(
         vault->at(sfAssetsAvailable) = 0;
         ctx.view.update(vault);
 
-        if (effectiveAmount == beast::kZero)
+        // Short-circuit only when both the whole-quanta amount and the
+        // sub-quantum reservoir on the custody line are zero. The
+        // dust-inclusive read helper collapses sfBalance + sfDust; when
+        // amount==0 the sfBalance component is also zero, so a zero
+        // extended balance means "nothing to drain".
+        if (amount == beast::kZero &&
+            creditBalanceExact(ctx.view, vaultAccount, asset.get<Issue>()) == beast::kZero)
             return tesSUCCESS;
 
-        return doWithdraw(ctx, senderAcct, dstAcct, vaultAccount, priorBalance, effectiveAmount, j);
+        return doWithdraw(ctx, senderAcct, dstAcct, vaultAccount, priorBalance, amount, j, &split);
     }
 
     // Non-terminal: same field mutation as the base helper (both fields
-    // drop by `amount`), then a plain doWithdraw. No DustSplit on the
-    // transfer itself: the split machinery re-splits the receiver's
-    // line, and the sub-quantum remainder that matters here is on the
-    // Vault's line (the sender), which the split does not touch.
-    // Renormalisation afterwards catches any dust promoted by the scale
-    // refinement.
+    // drop by `amount`), then a dust-aware doWithdraw driven by a
+    // sender-leg Override policy targeting the Vault's posterior
+    // scale. The trust-line layer re-splits (sfBalance, sfDust) on the
+    // custody line at the new scale and reports back any promoted /
+    // newly-deferred sub-quantum residual so the Vault's fields stay
+    // aligned.
     vault->at(sfAssetsTotal) -= amount;
     vault->at(sfAssetsAvailable) -= amount;
     ctx.view.update(vault);
 
     if (amount != beast::kZero)
     {
-        if (auto const ter =
-                doWithdraw(ctx, senderAcct, dstAcct, vault->at(sfAccount), priorBalance, amount, j);
+        DustSplit split;
+        split.sender = DustSplit::LegPolicy{
+            .mode = DustSplit::LegPolicy::Mode::Override,
+            .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+
+        if (auto const ter = doWithdraw(
+                ctx, senderAcct, dstAcct, vault->at(sfAccount), priorBalance, amount, j, &split);
             !isTesSuccess(ter))
             return ter;
-    }
 
-    renormaliseStrandedDust(ctx.view, vault);
+        // Reconcile promoted / deferred dust reported by the split.
+        // `promoted = -split.sender->dustDelta`; both fields move by
+        // that amount so the receivable (sfAssetsTotal -
+        // sfAssetsAvailable) tracks the line's newDust exactly.
+        if (split.sender)
+        {
+            vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
+            vault->at(sfAssetsTotal) -= split.sender->dustDelta;
+            ctx.view.update(vault);
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -661,7 +673,7 @@ moveVaultAssets(
         vault && vault->getType() == ltVAULT,
         "xrpl::vault_dust::moveVaultAssets : valid Vault sle");
     XRPL_ASSERT(
-        useVaultDust(vault), "xrpl::vault_dust::moveVaultAssets : useVaultDust precondition");
+        useVaultDust(view, vault), "xrpl::vault_dust::moveVaultAssets : useVaultDust precondition");
     XRPL_ASSERT(
         recipients.size() > 1, "xrpl::vault_dust::moveVaultAssets : multiple recipients provided");
 
@@ -683,23 +695,37 @@ moveVaultAssets(
     }
     STAmount const amount{asset, amountTotal};
 
-    // Same field mutation and transfer as the base helper: the Vault is
-    // the sender in this multi-payment, so DustSplit (which re-splits
-    // the receiver's line) does not apply here. Renormalisation
-    // afterwards picks up any dust freed by the scale refinement.
+    // Field mutations first (same as the base helper), then the multi-
+    // send with a sender-leg Override policy so any dust freed by the
+    // scale refinement (from valueDelta / amount) surfaces via the
+    // trust-line layer. accountSendMulti applies the sender-leg
+    // policy on the single shared sender-line debit; the multiple
+    // receiver-line credits are dust-unaware (the trust-line layer
+    // has no receiver-leg policy plumbed through the multi path).
     vault->at(sfAssetsTotal) += valueDelta;
     vault->at(sfAssetsAvailable) -= amount;
     view.update(vault);
 
     if (amount != beast::kZero)
     {
+        DustSplit split;
+        split.sender = DustSplit::LegPolicy{
+            .mode = DustSplit::LegPolicy::Mode::Override,
+            .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+
         if (auto const ter = accountSendMulti(
-                view, vault->at(sfAccount), asset, recipients, j, WaiveTransferFee::Yes);
+                view, vault->at(sfAccount), asset, recipients, j, WaiveTransferFee::Yes, &split);
             !isTesSuccess(ter))
             return ter;
-    }
 
-    renormaliseStrandedDust(view, vault);
+        // Reconcile promoted / deferred dust reported by the split.
+        if (split.sender)
+        {
+            vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
+            vault->at(sfAssetsTotal) -= split.sender->dustDelta;
+            view.update(vault);
+        }
+    }
 
     return tesSUCCESS;
 }

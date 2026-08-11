@@ -116,6 +116,11 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
                 balanceDelta.scale = amount.exponent();
+                // sfDust follows the same low/high convention as sfBalance;
+                // stash the "before" value so the sign-flipped delta reflects
+                // "after - before" (see the sign convention at end of this
+                // function).
+                balanceDelta.dustDelta = Number{before->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -161,6 +166,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // directly to get the scale.
                 if (amount.exponent() > balanceDelta.scale)
                     balanceDelta.scale = amount.exponent();
+                // Mirror the sfBalance accumulation so dustDelta ends up as
+                // "before - after" (later sign-flipped to "after - before").
+                balanceDelta.dustDelta -= Number{after->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -178,6 +186,12 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
     {
         XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
         balanceDelta.delta *= sign;
+        // dustDelta was accumulated using the same "before - after" idiom as
+        // balanceDelta.delta; apply the same sign flip so both fields
+        // represent "after - before" in the trust line's own low/high
+        // convention. For non-ltRIPPLE_STATE entries dustDelta stays at
+        // zero, so this multiplication is a no-op.
+        balanceDelta.dustDelta *= sign;
         deltas_[key] = balanceDelta;
     }
 }
@@ -202,8 +216,12 @@ ValidVault::deltaAssets(AccountID const& id) const
                 auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
+                // dustDelta shares the same convention, so flip it in lockstep.
                 if (result && id > issue.getIssuer())
+                {
                     result->delta = -result->delta;
+                    result->dustDelta = -result->dustDelta;
+                }
                 return result;
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
@@ -878,8 +896,34 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    // Use each side's EXTENDED balance (sfBalance + sfDust) for
+                    // the cash-flow comparison. Under featureLendingProtocolV1_1,
+                    // the vault's pseudo-account custody line can carry sfDust,
+                    // and any dust-aware withdrawal reshapes the sfBalance /
+                    // sfDust split inside directSendNoFeeIOU per the caller's
+                    // DustSplit policy — Override may promote sub-quantum
+                    // residual out of sfDust into sfBalance at the vault's
+                    // posterior scale; Drain folds sfDust into sfBalance for
+                    // the outgoing transfer and zeroes it. Both are purely
+                    // internal recognition moves on the pseudo-account leg
+                    // (no external cash flow beyond the requested amount), so
+                    // the sfBalance-only pseudo delta over-reports the vault's
+                    // outflow by the reshaped portion. Adding dustDelta
+                    // recovers the true custody-line change: extended pseudo
+                    // delta == negative destination extended delta, byte-for-
+                    // byte. For non-dust callers dustDelta is zero, so this
+                    // reduces to the base sfBalance comparison. See
+                    // VaultRoundingTrustlineDust_test::testNonTerminalWithdrawAfterDust
+                    // (src/test/app/lending/VaultRoundingTrustlineDust_test.cpp)
+                    // for the case this addresses.
+                    Number const extendedPseudoDelta =
+                        maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                    Number const extendedDestinationDelta =
+                        destinationDelta.delta + destinationDelta.dustDelta;
                     auto const localPseudoDeltaAssets =
-                        roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
+                        roundToAsset(vaultAsset, extendedPseudoDelta, localMinScale);
+                    auto const localDestinationDelta =
+                        roundToAsset(vaultAsset, extendedDestinationDelta, localMinScale);
                     // For IOU assets near a precision boundary the destination's STAmount
                     // exponent can shift, making part of the sent value unrepresentable at the
                     // receiver's new scale — that portion is irreversibly absorbed by the IOU
@@ -891,11 +935,10 @@ ValidVault::finalize(
                     auto const destroyedIsSubUlp = tolerateZeroDelta &&
                         roundToAsset(
                             vaultAsset,
-                            maybeVaultDeltaAssets->delta * -1 - destinationDelta.delta,
+                            extendedPseudoDelta * -1 - extendedDestinationDelta,
                             destinationScale,
                             Number::RoundingMode::Downward) == kZero;
-                    if (!destroyedIsSubUlp &&
-                        localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    if (!destroyedIsSubUlp && localPseudoDeltaAssets * -1 != localDestinationDelta)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "withdrawal must change vault and destination balance by equal "

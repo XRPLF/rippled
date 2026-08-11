@@ -324,27 +324,43 @@ moveVaultAssets(
  * The four helper overloads here are the ONLY code in the tree that
  * constructs a `xrpl::DustSplit`; every other caller uses the base
  * helpers verbatim.
+ *
+ * Storage note: `sfDust` is deliberately declared without
+ * `kSmdNeedsAsset` in include/xrpl/protocol/detail/sfields.macro; the
+ * asset scope is already implied by the enclosing RippleState entry, and
+ * omitting the flag keeps the trust-line encoding stable across pre-
+ * and post-amendment ledgers. See that macro's comment for the full
+ * rationale.
  */
 namespace vault_dust {
 
 /**
  * Whether this Vault's custody trust line participates in the sfDust
- * mechanism. True only for a cash-basis Vault
- * (sfLEVersion == VaultVersion::CashBasis) holding an IOU asset. A Vault
- * that pre-dates the amendment (Legacy) or that holds an integral asset
- * (XRP/MPT, which never produces sub-quantum remainders) is excluded, and
- * every dust-aware code path is skipped for it, unconditionally and
- * forever.
+ * mechanism. True only when featureLendingProtocolV1_1 is enabled in the
+ * ledger's active rules AND the Vault is cash-basis
+ * (sfLEVersion == VaultVersion::CashBasis) AND its asset is an IOU. A
+ * Vault that pre-dates the amendment (Legacy), a Vault holding an integral
+ * asset (XRP/MPT, which never produces sub-quantum remainders), or a
+ * hypothetical replay/testing path in which the amendment is not enabled
+ * is excluded — every dust-aware code path is skipped for it.
  *
+ * The amendment gate is redundant in normal operation (a CashBasis Vault
+ * cannot be created without the amendment) but is retained as
+ * defense-in-depth and kept in strict lockstep with the write-side gate in
+ * xrpl::directSendNoFeeIOU (TokenHelpers.cpp), the read-side gate in
+ * xrpl::creditBalanceExact (RippleStateHelpers.cpp), and the transactor-
+ * level predicate in LoanPay.cpp.
+ *
+ * @param view The ledger view (for amendment lookup).
  * @param vault The vault SLE.
  */
 [[nodiscard]] bool
-useVaultDust(SLE::const_ref vault);
+useVaultDust(ReadView const& view, SLE::const_ref vault);
 
 /**
  * Dust-aware overload of `xrpl::addVaultAssets`. Same signature as the
  * base version. The dispatcher in `xrpl::addVaultAssets` forwards here
- * when `useVaultDust(vault)` returns true.
+ * when `useVaultDust(view, vault)` returns true.
  *
  * The credit path uses a `DustSplit` targeting the Vault's posterior
  * scale (the scale implied by `sfAssetsTotal + valueDelta`, an upper
@@ -366,13 +382,14 @@ addVaultAssets(
 /**
  * Dust-aware overload of `xrpl::clawbackVaultAssets`. Same signature as
  * the base version. The dispatcher forwards here when
- * `useVaultDust(vault)` returns true.
+ * `useVaultDust(view, vault)` returns true.
  *
- * A clawback shrinks `sfAssetsTotal`, which can refine the Vault's scale
- * and strand previously sub-quantum dust at or above one whole quantum on
- * the custody line. This overload performs the base clawback and then
- * renormalises any stranded whole quanta from `sfDust` back into
- * `sfBalance`, keeping the receivable invariant.
+ * A clawback shrinks `sfAssetsTotal`, which can refine the Vault's
+ * scale. This overload drives the transfer through a sender-leg
+ * `DustSplit::LegPolicy::Mode::Override` at the Vault's posterior
+ * scale; the trust-line layer re-splits `sfBalance`/`sfDust` on the
+ * custody line and reports any promoted (or newly-deferred) sub-quantum
+ * residual so the Vault fields stay aligned with the extended balance.
  */
 [[nodiscard]] TER
 clawbackVaultAssets(
@@ -384,19 +401,22 @@ clawbackVaultAssets(
 
 /**
  * Dust-aware overload of `xrpl::removeVaultAssets`. Same signature as the
- * base version. The dispatcher forwards here when `useVaultDust(vault)`
- * returns true.
+ * base version. The dispatcher forwards here when
+ * `useVaultDust(ctx.view, vault)` returns true.
  *
- * Non-terminal (`FinalRemoval::No`): performs the base removal and then
- * renormalises any stranded whole quanta on the custody line, for the
- * same reason as `clawbackVaultAssets`.
+ * Non-terminal (`FinalRemoval::No`): drives the withdrawal through a
+ * sender-leg `DustSplit::LegPolicy::Mode::Override` at the Vault's
+ * posterior scale, so any dust stranded on the custody line by a
+ * scale-refining update is renormalised inside the trust-line layer
+ * (no separate promotion pass in Vault code).
  *
- * Terminal (`FinalRemoval::Yes`): drains the custody line's `sfDust`
- * reservoir into the outgoing transfer by reading
- * `creditBalanceExact` and sending the extended total, so the line ends
- * with `sfBalance == 0` and `sfDust == 0` — a precondition for the
- * subsequent Vault-cleanup guards to permit removal of the pseudo-account
- * and the RIPPLE_STATE entry.
+ * Terminal (`FinalRemoval::Yes`): drives the withdrawal through a
+ * sender-leg `DustSplit::LegPolicy::Mode::Drain`. The trust-line layer
+ * folds the custody line's `sfDust` reservoir into `sfBalance`,
+ * inflates the outgoing transfer by the reservoir so the destination
+ * receives `amount + drainedDust`, and zeroes `sfDust` — leaving the
+ * line with `sfBalance == 0` and `sfDust == 0`, a precondition for
+ * downstream Vault-cleanup deletion guards.
  */
 [[nodiscard]] TER
 removeVaultAssets(
@@ -411,14 +431,17 @@ removeVaultAssets(
 
 /**
  * Dust-aware overload of `xrpl::moveVaultAssets`. Same signature as the
- * base version. The dispatcher forwards here when `useVaultDust(vault)`
- * returns true.
+ * base version. The dispatcher forwards here when
+ * `useVaultDust(view, vault)` returns true.
  *
  * A multi-recipient move (typically a loan disbursement) is a
  * cash-out-plus-recognition on the Vault side; it shrinks
  * `sfAssetsAvailable` and may change `sfAssetsTotal` via `valueDelta`.
- * Both changes can refine the Vault's scale, so this overload renormalises
- * any newly-representable dust on the custody line after the transfers.
+ * Both changes can refine the Vault's scale, so this overload attaches
+ * a sender-leg `DustSplit::LegPolicy::Mode::Override` at the Vault's
+ * posterior scale to `accountSendMulti`; the trust-line layer
+ * renormalises any newly-representable dust on the custody line during
+ * the bulk sender-line debit.
  */
 [[nodiscard]] TER
 moveVaultAssets(

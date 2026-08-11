@@ -475,6 +475,11 @@ LoanPay::doApply()
     // Vaults still pre-round to the Vault's anterior scale here — that
     // byte-identical to the base branch. The predicate is inlined
     // deliberately: the transactor never mentions xrpl::vault_dust::.
+    // Kept in strict lockstep with xrpl::vault_dust::useVaultDust — the
+    // three conjuncts (amendment enabled, CashBasis LEVersion, non-integral
+    // asset) must match exactly, or the pre-rounding branch here and the
+    // dust-aware dispatch inside addVaultAssets will disagree about which
+    // representation of the amount they expect.
     bool const useDust = view.rules().enabled(featureLendingProtocolV1_1) &&
         getVaultVersion(vaultSle) == VaultVersion::CashBasis && !asset.integral();
 
@@ -632,9 +637,22 @@ LoanPay::doApply()
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // An unchanged assetsAvailable indicates that the amount paid to the
-        // vault was zero, or rounded to zero. That should be impossible, but I
-        // can't rule it out for extreme edge cases, so fail gracefully if it
-        // happens.
+        // vault was zero, or rounded to zero.
+        //
+        // Non-dust path (useDust == false): assetsAvailable is incremented by
+        // the pre-rounded amount, so a non-zero repayment always moves it —
+        // this branch should be unreachable. Fail gracefully if it happens.
+        //
+        // Dust path (useDust == true): assetsAvailable is incremented by
+        // split.balanceDelta, which is the whole-quanta portion of the raw
+        // repayment at the Vault's posterior scale. A repayment strictly
+        // below one quantum lands entirely in sfDust and produces
+        // split.balanceDelta == 0. That is a legitimate (if unusual) outcome
+        // — refuse it here because the invariants downstream and the
+        // subsequent conservation checks all assume assetsAvailable moved.
+        // Callers wanting to permit sub-quantum-only repayments would need to
+        // relax those follow-on checks first; today no such caller exists in
+        // the tree, and the current fixture never reaches this branch.
         //
         // LCOV_EXCL_START
         JLOG(j_.warn()) << "LoanPay: Vault assets available unchanged after rounding: "  //

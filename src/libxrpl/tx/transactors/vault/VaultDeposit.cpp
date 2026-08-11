@@ -315,6 +315,19 @@ VaultDeposit::doApply()
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
     // A deposit must not push the vault over its limit.
+    //
+    // Note: the limit is checked against the pre-mutation `sfAssetsTotal`
+    // plus the full `assetsDeposited`, which is very slightly conservative
+    // on the dust-aware path. A dust-aware credit routes any sub-quantum
+    // remainder into the custody line's sfDust, and only the whole-quanta
+    // portion moves into sfBalance / sfAssetsAvailable. sfAssetsTotal in
+    // that case grows by `assetsDeposited - split.dustDelta`, i.e. by up
+    // to one quantum less than what this pre-check assumes, so a deposit
+    // that would sit exactly on the limit after dust deferral is rejected
+    // here. Reordering to check after addVaultAssets would require
+    // rolling back the credit on failure (a non-trivial refund path) and
+    // is not worth the extra complexity for a boundary of at most one
+    // quantum.
     auto const maximum = *vault->at(sfAssetsMaximum);
     if (maximum != 0 && *vault->at(sfAssetsTotal) + assetsDeposited > maximum)
         return tecLIMIT_EXCEEDED;
@@ -353,6 +366,18 @@ VaultDeposit::doApply()
         !isTesSuccess(ter))
         return ter;
 
+    // Deposit is safe to associate even on the dust path (unlike LoanPay).
+    // A deposit passes amount == valueDelta to addVaultAssets, so the
+    // dust-aware overload writes back
+    // sfAssetsAvailable += split.balanceDelta,
+    // sfAssetsTotal     += valueDelta - split.dustDelta
+    //                    = amount - split.dustDelta
+    //                    = split.balanceDelta,
+    // i.e. both fields land at the same posterior scale. Their STAmount
+    // representation is already exact, so associateAsset's roundToAsset
+    // is a no-op here. See LoanPay.cpp's `!useDust` branch for the case
+    // that IS unsafe (amount != valueDelta, so the sub-quantum residual
+    // lives on sfAssetsTotal alone).
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;

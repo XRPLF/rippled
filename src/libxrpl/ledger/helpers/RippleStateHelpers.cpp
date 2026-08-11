@@ -763,18 +763,25 @@ removeEmptyHolding(
     auto const line = ctx.view.peek(keylet::trustLine(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
-        return tecHAS_OBLIGATIONS;
-    // A line can be balance-zero yet still hold non-zero sfDust: a debit
-    // can legally consume all representable balance and leave only dust.
-    // Refuse to delete such a line — dust is invisible to accountHolds,
-    // so deletion would silently destroy that value. Gated on the
-    // amendment as defense in depth (pre-amendment sfDust is always zero
-    // by construction, so the check is a no-op there, but the explicit
-    // gate documents the invariant).
-    if (!accountIsIssuer && ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
-        Number{line->at(sfDust)} != beast::kZero)
-        return tecHAS_OBLIGATIONS;
+
+    // Obligation checks apply only to non-issuer holdings: the issuer's
+    // own trust-line is bookkeeping for the counterparty, not a holding
+    // that carries an obligation to the issuer.
+    if (!accountIsIssuer)
+    {
+        if (line->at(sfBalance)->iou() != beast::kZero)
+            return tecHAS_OBLIGATIONS;
+        // A line can be balance-zero yet still hold non-zero sfDust: a
+        // debit can legally consume all representable balance and leave
+        // only dust. Refuse to delete such a line — dust is invisible to
+        // accountHolds, so deletion would silently destroy that value.
+        // Gated on the amendment as defense in depth (pre-amendment
+        // sfDust is always zero by construction, so the check is a no-op
+        // there, but the explicit gate documents the invariant).
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+            Number{line->at(sfDust)} != beast::kZero)
+            return tecHAS_OBLIGATIONS;
+    }
 
     // Adjust the owner count(s)
     if (line->isFlag(lsfLowReserve))

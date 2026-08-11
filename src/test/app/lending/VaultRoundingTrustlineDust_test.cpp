@@ -195,7 +195,7 @@ private:
         if (!BEAST_EXPECT(vaultSle))
             return;
         BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::Legacy);
-        BEAST_EXPECT(!vault_dust::useVaultDust(vaultSle));
+        BEAST_EXPECT(!vault_dust::useVaultDust(*env.current(), vaultSle));
         BEAST_EXPECT(readVaultDust(env, vaultKeylet) == beast::kZero);
     }
 
@@ -439,18 +439,301 @@ private:
     // §13.6 Re-normalisation
     //--------------------------------------------------------------------
 
-    // KNOWN GAP (see PR description): an earlier version of this test drove
-    // a non-terminal VaultWithdraw after a dust-producing repayment, and
-    // hit the pre-existing ValidVault invariant "withdrawal and assets
-    // outstanding must add up" (VaultInvariant.cpp) — i.e. VaultWithdraw's
-    // new maybeRenormaliseVaultDust call, in at least one parameter
-    // combination, produces a real-balance / sfAssetsTotal delta pairing
-    // that existing invariant does not expect. Root-causing that
-    // interaction needs more investigation than this pass had time for; it
-    // is reported rather than silently worked around by weakening this
-    // test. testBoundedDust in the shared suite already exercises
-    // boundedness after a scale-refining removal via LoanManage's default
-    // path, which does not hit this interaction.
+    // Exercise the interaction between a dust-producing repayment and a
+    // subsequent NON-terminal VaultWithdraw. Historically this combination
+    // tripped
+    //   "withdrawal must change vault and destination balance by equal
+    //   amount"
+    // in ValidVault (src/libxrpl/tx/invariants/VaultInvariant.cpp) when the
+    // withdrawal drove the Vault's posterior scale finer than the custody
+    // line's, allowing renormaliseStrandedDust to promote whole quanta
+    // from sfDust into sfBalance. That promotion is a pure recognition
+    // move (no external cash flow), so comparing sfBalance-only deltas
+    // between the pseudo (which sees the promotion) and the destination
+    // (which does not) mis-attributed a quantum-worth of drift to the
+    // wrong side. The fix compares each side's EXTENDED balance
+    // (sfBalance + sfDust) — see the "extended balance" branch of the
+    // destination check in @c ttVAULT_WITHDRAW.
+    //
+    // Under the current implementation the non-terminal branch mutates the
+    // Vault SLE and the pseudo-account's custody line by the same amount,
+    // and any renormalisation adds identical whole-quantum deltas to both
+    // T and A. The ValidVault destination check now uses extended balance
+    // and therefore holds even when M > 0.
+    void
+    testNonTerminalWithdrawAfterDust(FeatureBitset features)
+    {
+        testcase(
+            "Non-terminal VaultWithdraw after a dust-producing repayment satisfies ValidVault");
+
+        using namespace jtx;
+        Env env{*this, features | featureLendingProtocolV1_1};
+        auto const fx = makeDustFixture(env, "nontermwd");
+        if (!fx)
+            return;
+
+        payTinyLoanInFull(env, *fx);
+
+        Number const dustAfterRepay = readVaultDust(env, fx->broker.vaultKeylet());
+        if (dustAfterRepay == beast::kZero)
+            return;  // fixture did not generate dust this run
+
+        auto const vaultSleAfterRepay = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleAfterRepay))
+            return;
+        Number const availAfterRepay = vaultSleAfterRepay->at(sfAssetsAvailable);
+        Number const totalAfterRepay = vaultSleAfterRepay->at(sfAssetsTotal);
+
+        // Partial (non-terminal) withdrawal — take a chunk large enough
+        // to refine the Vault's posterior scale (10500 -> ~2), which is
+        // what triggers renormaliseStrandedDust to promote whole quanta
+        // out of the custody line's sfDust. Values chosen to leave
+        // outstanding shares (avoiding the terminal branch).
+        Vault const vault{env};
+        STAmount const withdrawAmount{fx->asset.raw(), Number{10'498}};
+        env(vault.withdraw(
+            {.depositor = fx->lender,
+             .id = fx->broker.vaultKeylet().key,
+             .amount = withdrawAmount}));
+        env.close();
+
+        // If ValidVault trips, the transaction is not committed — a
+        // successful commit is the primary oracle. But also cross-check
+        // the surviving invariant explicitly.
+        auto const vaultSleAfterWithdraw = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleAfterWithdraw))
+            return;
+
+        Number const availAfterWd = vaultSleAfterWithdraw->at(sfAssetsAvailable);
+        Number const totalAfterWd = vaultSleAfterWithdraw->at(sfAssetsTotal);
+
+        // Delta(sfAssetsTotal) must equal Delta(sfAssetsAvailable) —
+        // non-terminal removal subtracts `amount` from both, and any
+        // renormalisation adds the same movable delta to both.
+        BEAST_EXPECT((totalAfterWd - totalAfterRepay) == (availAfterWd - availAfterRepay));
+
+        // Dust must still be strictly less than one quantum at the new
+        // scale (O2).
+        Number const dustAfterWd = readVaultDust(env, fx->broker.vaultKeylet());
+        Number const q{1, getVaultScale(vaultSleAfterWithdraw)};
+        BEAST_EXPECT(dustAfterWd >= beast::kZero);
+        BEAST_EXPECT(dustAfterWd < q);
+    }
+
+    // Companion: another non-terminal step (a second partial withdraw)
+    // exercises the case where sfDust is non-zero going *into* the
+    // withdraw, potentially getting promoted by renormalisation. Same
+    // invariant contract: the ValidVault check must hold.
+    void
+    testSecondNonTerminalWithdrawAfterDust(FeatureBitset features)
+    {
+        testcase(
+            "Two successive non-terminal VaultWithdraws after dust-producing repayment satisfy "
+            "ValidVault");
+
+        using namespace jtx;
+        Env env{*this, features | featureLendingProtocolV1_1};
+        auto const fx = makeDustFixture(env, "twowd");
+        if (!fx)
+            return;
+
+        payTinyLoanInFull(env, *fx);
+
+        if (readVaultDust(env, fx->broker.vaultKeylet()) == beast::kZero)
+            return;
+
+        Vault const vault{env};
+        STAmount const firstWd{fx->asset.raw(), Number{5'000}};
+        env(vault.withdraw(
+            {.depositor = fx->lender, .id = fx->broker.vaultKeylet().key, .amount = firstWd}));
+        env.close();
+
+        auto const vaultSleMid = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleMid))
+            return;
+        Number const availMid = vaultSleMid->at(sfAssetsAvailable);
+        Number const totalMid = vaultSleMid->at(sfAssetsTotal);
+
+        STAmount const secondWd{fx->asset.raw(), Number{5'490}};
+        env(vault.withdraw(
+            {.depositor = fx->lender, .id = fx->broker.vaultKeylet().key, .amount = secondWd}));
+        env.close();
+
+        auto const vaultSleEnd = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleEnd))
+            return;
+
+        Number const availEnd = vaultSleEnd->at(sfAssetsAvailable);
+        Number const totalEnd = vaultSleEnd->at(sfAssetsTotal);
+
+        BEAST_EXPECT((totalEnd - totalMid) == (availEnd - availMid));
+
+        Number const dustEnd = readVaultDust(env, fx->broker.vaultKeylet());
+        Number const q{1, getVaultScale(vaultSleEnd)};
+        BEAST_EXPECT(dustEnd >= beast::kZero);
+        BEAST_EXPECT(dustEnd < q);
+    }
+
+    //--------------------------------------------------------------------
+    // Two-leg refactor tests (§ Two-leg DustSplit refactor)
+    //
+    // These exercise the plan's new sender-leg policies (Override on
+    // clawback / non-terminal withdrawal / move, Drain on terminal
+    // withdrawal) end-to-end via real transactors, so they cover both
+    // the trust-line layer's per-leg mechanics and the Vault-side
+    // reconciliation through split.sender->dustDelta.
+    //--------------------------------------------------------------------
+
+    // Sender-leg Override renormalisation: a scale-refining withdrawal
+    // promotes stranded dust from sfDust back into sfBalance, and the
+    // Vault's sfAssetsTotal / sfAssetsAvailable both grow by the
+    // promoted amount so the receivable invariant is preserved.
+    void
+    testSenderLegOverrideNonTerminalPromotes(FeatureBitset features)
+    {
+        testcase("Sender-leg Override renormalises stranded dust on non-terminal withdraw");
+
+        using namespace jtx;
+        Env env{*this, features | featureLendingProtocolV1_1};
+        auto const fx = makeDustFixture(env, "senderoverride");
+        if (!fx)
+            return;
+
+        // Generate dust via the tiny loan repayment.
+        payTinyLoanInFull(env, *fx);
+
+        Number const dustAfterRepay = readVaultDust(env, fx->broker.vaultKeylet());
+        if (dustAfterRepay == beast::kZero)
+            return;  // fixture didn't generate dust this run
+
+        auto const vaultSleAfterRepay = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleAfterRepay))
+            return;
+        int const scaleBefore = getVaultScale(vaultSleAfterRepay);
+        Number const totalBefore = vaultSleAfterRepay->at(sfAssetsTotal);
+        Number const availBefore = vaultSleAfterRepay->at(sfAssetsAvailable);
+
+        // Large partial withdrawal — refines the posterior scale so
+        // the dust reservoir crosses a decade boundary and gets
+        // promoted by the sender-leg Override re-split.
+        Vault const vault{env};
+        STAmount const withdrawAmount{fx->asset.raw(), Number{10'498}};
+        env(vault.withdraw(
+            {.depositor = fx->lender,
+             .id = fx->broker.vaultKeylet().key,
+             .amount = withdrawAmount}));
+        env.close();
+
+        auto const vaultSleAfterWd = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleAfterWd))
+            return;
+        int const scaleAfter = getVaultScale(vaultSleAfterWd);
+        Number const dustAfterWd = readVaultDust(env, fx->broker.vaultKeylet());
+
+        // The withdrawal was sized to refine the scale.
+        BEAST_EXPECT(scaleAfter < scaleBefore);
+
+        // The Vault's T and A both moved by the SAME extended delta —
+        // exactly the invariant the sender-leg Override reconciliation
+        // preserves (both fields shift by `-amount` plus the promoted
+        // dust). If Override's reconciliation were miscoded, T and A
+        // would diverge.
+        Number const totalAfter = vaultSleAfterWd->at(sfAssetsTotal);
+        Number const availAfter = vaultSleAfterWd->at(sfAssetsAvailable);
+        BEAST_EXPECT((totalAfter - totalBefore) == (availAfter - availBefore));
+
+        // The remaining dust on the custody line is bounded by one
+        // quantum at the new posterior scale (up to a decade of
+        // Override drift, which the O2 relaxation tolerates).
+        Number const bound{10, scaleAfter};
+        BEAST_EXPECT(dustAfterWd >= beast::kZero);
+        BEAST_EXPECT(dustAfterWd < bound);
+    }
+
+    // Sender-leg Drain end-to-end: a terminal removal empties the
+    // custody line's reservoir into the destination. Vault code does
+    // no manual sfDust write; the trust-line layer folds sfDust into
+    // sfBalance, adjusts the outgoing amount, and zeroes sfDust. Post-
+    // condition: line has sfBalance == 0 and sfDust == 0; the Vault SLE
+    // has sfAssetsTotal == 0 and sfAssetsAvailable == 0.
+    void
+    testSenderLegDrainTerminalRemoval(FeatureBitset features)
+    {
+        testcase("Sender-leg Drain drains reservoir end-to-end on terminal removal");
+
+        using namespace jtx;
+        Env env{*this, features | featureLendingProtocolV1_1};
+        auto const fx = makeDustFixture(env, "senderdrain");
+        if (!fx)
+            return;
+
+        // Seed a non-zero reservoir on the custody line by paying the
+        // first periodic instalment (returns interest with sub-quantum
+        // residual).
+        payTinyLoanInFull(env, *fx);
+
+        Number const dustBeforeTerminal = readVaultDust(env, fx->broker.vaultKeylet());
+        if (dustBeforeTerminal == beast::kZero)
+            return;  // fixture didn't produce dust this run
+        BEAST_EXPECT(dustBeforeTerminal > beast::kZero);
+
+        // The remainder of the tiny loan is outstanding, which keeps
+        // sfAssetsAvailable < sfAssetsTotal and blocks a terminal
+        // withdrawal (the lender's shares still back the outstanding
+        // principal). Advance time past the next payment due date +
+        // grace window (loan is 2 payments at 1-year intervals; one
+        // has been made) and default the loan so no principal is
+        // outstanding and the vault SLE's sfAssetsTotal drops to
+        // sfAssetsAvailable.
+        env.close(std::chrono::seconds(86400 * 800));
+        env(jtx::loan::manage(fx->lender, fx->tinyLoanKeylet.key, tfLoanDefault));
+        env.close();
+
+        auto const vaultSleBefore = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleBefore))
+            return;
+
+        Number const dustAfterDefault = readVaultDust(env, fx->broker.vaultKeylet());
+        if (dustAfterDefault == beast::kZero)
+            return;  // default consumed the reservoir; nothing left to test
+
+        Number const lenderBalanceBefore = env.balance(fx->lender, fx->asset).number();
+        Number const availBefore = Number{vaultSleBefore->at(sfAssetsAvailable)};
+
+        // Withdraw the full available balance in one shot. With the
+        // loan defaulted, sfAssetsAvailable == sfAssetsTotal and the
+        // lender holds all outstanding shares, so this burns every
+        // share and triggers FinalRemoval::Yes inside VaultWithdraw —
+        // the path that installs the Drain policy on the sender leg.
+        STAmount const allAssets{fx->asset.raw(), vaultSleBefore->at(sfAssetsAvailable)};
+        Vault const vault{env};
+        env(vault.withdraw(
+            {.depositor = fx->lender, .id = fx->broker.vaultKeylet().key, .amount = allAssets}));
+        env.close();
+
+        auto const vaultSleAfter = env.le(fx->broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSleAfter))
+            return;
+
+        // Vault SLE ends terminal: both totals reset to zero.
+        BEAST_EXPECT(Number{vaultSleAfter->at(sfAssetsAvailable)} == beast::kZero);
+        BEAST_EXPECT(Number{vaultSleAfter->at(sfAssetsTotal)} == beast::kZero);
+
+        // Custody line's sfDust must be zero — Drain zeroed it inside
+        // the trust-line layer, not via a manual fold in Vault code.
+        Number const dustAfter = readVaultDust(env, fx->broker.vaultKeylet());
+        BEAST_EXPECT(dustAfter == beast::kZero);
+
+        // The destination (lender) received at least the vault's
+        // pre-terminal sfAssetsAvailable plus the reservoir that was
+        // drained — the observable end-to-end effect of Drain mode:
+        // value that used to be stranded in sfDust reaches the
+        // destination in the same transaction.
+        Number const lenderBalanceAfter = env.balance(fx->lender, fx->asset).number();
+        Number const received = lenderBalanceAfter - lenderBalanceBefore;
+        BEAST_EXPECT(received >= availBefore);
+        BEAST_EXPECT(received >= availBefore + dustAfterDefault);
+    }
 
 public:
     void
@@ -463,6 +746,10 @@ public:
         testNullptrPathUnchanged(all_);
         testAccountHoldsExcludesDust(all_);
         testVaultDeleteRequiresZeroDust(all_);
+        testNonTerminalWithdrawAfterDust(all_);
+        testSecondNonTerminalWithdrawAfterDust(all_);
+        testSenderLegOverrideNonTerminalPromotes(all_);
+        testSenderLegDrainTerminalRemoval(all_);
     }
 };
 

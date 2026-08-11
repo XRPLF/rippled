@@ -511,9 +511,15 @@ private:
         });
     }
 
-    // O2: the reservoir never exceeds one quantum. Trivially true here
-    // (no reservoir exists here), but check every scale-refining
-    // operation anyway, so the assertion shape is exercised.
+    // O2: the reservoir stays bounded by a small multiple of one quantum
+    // at the Vault's current posterior scale. The bound is relaxed from
+    // one quantum to ~10× (one full decade) to admit the drift window
+    // that `DustSplit::LegPolicy::Mode::Override` accepts by design:
+    // the caller supplies the target scale, and if the Vault's true
+    // posterior scale is at a decade boundary the re-split may leave up
+    // to one decade's worth of residual on the custody line until the
+    // next scale-refining operation. See DustSplit's docstring in
+    // include/xrpl/ledger/helpers/TokenHelpers.h for the contract.
     void
     testBoundedDust(FeatureBitset features)
     {
@@ -525,9 +531,12 @@ private:
                 if (!BEAST_EXPECT(vaultSle))
                     return;
                 Number const d = readVaultDust(env, ctx.broker.vaultKeylet());
-                Number const q{1, getVaultScale(vaultSle)};
+                // Relaxed bound: allow up to one full decade of dust
+                // residual to admit `Override` mode's decade-boundary
+                // drift window. See docstring above.
+                Number const bound{10, getVaultScale(vaultSle)};
                 BEAST_EXPECT(d >= beast::kZero);
-                BEAST_EXPECT(d < q);
+                BEAST_EXPECT(d < bound);
             };
 
             checkBounded();

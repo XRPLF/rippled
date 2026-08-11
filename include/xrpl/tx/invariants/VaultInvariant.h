@@ -73,6 +73,17 @@ public:
     {
         Number delta = kNumZero;
         std::optional<int> scale;
+        // For @c ltRIPPLE_STATE entries under @c featureLendingProtocolV1_1,
+        // this captures the trust line's sfDust delta in the same low/high
+        // convention as @c delta. Used by the withdrawal destination check
+        // to compare against the extended balance (sfBalance + sfDust) on
+        // the vault's pseudo-account custody line, so a
+        // @c renormaliseStrandedDust promotion (which moves whole quanta
+        // from sfDust to sfBalance without a corresponding external cash
+        // flow) does not spuriously fail the "vault and destination balance
+        // change by equal amount" invariant. Left at zero for entries that
+        // do not carry sfDust.
+        Number dustDelta = kNumZero;
 
         // Compute the delta between two Numbers, taking the coarsest scale
         [[nodiscard]] static DeltaInfo

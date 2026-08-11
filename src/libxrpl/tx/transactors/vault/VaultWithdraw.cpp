@@ -395,6 +395,17 @@ VaultWithdraw::doApply()
     // (above): it rounds every asset-typed field on the Vault SLE to the
     // asset's canonical precision, which the mutation above does not do
     // itself.
+    //
+    // Withdraw is safe to associate even on the dust path (unlike LoanPay).
+    // The dust-aware removeVaultAssets subtracts `amount` from BOTH
+    // sfAssetsTotal and sfAssetsAvailable in the non-terminal branch, and
+    // hard-resets both to zero in the FinalRemoval::Yes branch, so neither
+    // field ends up with sub-STAmount precision. Any post-removal
+    // renormaliseStrandedDust adds an identical whole-quantum delta to
+    // both fields at the Vault's posterior scale — still STAmount-
+    // representable. See LoanPay.cpp's `!useDust` branch for the case
+    // that IS unsafe (amount != valueDelta, sub-quantum residual on
+    // sfAssetsTotal alone).
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
