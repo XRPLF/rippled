@@ -528,7 +528,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
+                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, 0, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;
