@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -33,8 +34,15 @@ public:
 
     ~TempFile()
     {
+        // use non-throwing calls in the destructor
         std::error_code ec;
-        std::filesystem::remove_all(file_.parent_path(), ec);
+        auto const dir = file_.parent_path();
+        std::filesystem::remove_all(dir, ec);
+        if (ec)
+        {
+            std::cerr << "Unable to remove temporary directory '" << dir.string()
+                      << "': " << ec.message() << '\n';
+        }
     }
 
     [[nodiscard]] std::filesystem::path const&
