@@ -214,6 +214,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
             5,
         ),
+        HostFunctionSpec::PaychannelKeylet => (
+            import::PAYCHAN_ID,
+            "(call $paychan_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 5) (i32.const 40) (i32.const 20))",
+            7,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

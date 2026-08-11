@@ -360,6 +360,20 @@ host_functions! {
     #[wasm_name = "oracle_id"]
     fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `PayChannel`, computed from the 20-byte source account,
+    /// the 20-byte destination account, and the channel's sequence number. `seq` is the
+    /// guest's `u32` carried as its `i32` bit pattern. Reads both account regions and
+    /// writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "paychan_id"]
+    fn paychannel_keylet(
+        &self,
+        account: &[u8],
+        destination: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

@@ -226,6 +226,15 @@ public:
         std::int32_t docId,
         rust::Slice<std::uint8_t> out) const noexcept;
 
+    // Both account ids must be 20 bytes, else `InvalidParams`. `seq` carries the
+    // guest's u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    [[nodiscard]] std::int32_t
+    paychannelKeylet(
+        rust::Slice<std::uint8_t const> account,
+        rust::Slice<std::uint8_t const> destination,
+        std::int32_t seq,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
     [[nodiscard]] std::int32_t
     sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out) const noexcept;
 
