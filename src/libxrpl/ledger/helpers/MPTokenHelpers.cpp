@@ -1000,6 +1000,7 @@ checkCreateMPT(
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
     SLE::ref sponsorSle,
+    std::uint32_t flags,
     beast::Journal j)
 {
     if (mptIssue.getIssuer() == holder)
@@ -1009,7 +1010,7 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, 0);
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, flags);
             !isTesSuccess(err))
         {
             return err;
@@ -1023,6 +1024,16 @@ checkCreateMPT(
         increaseOwnerCount(view, sleAcct, sponsorSle, 1, j);
     }
     return tesSUCCESS;
+}
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    return checkCreateMPT(view, mptIssue, holder, {}, 0, j);
 }
 
 std::int64_t
