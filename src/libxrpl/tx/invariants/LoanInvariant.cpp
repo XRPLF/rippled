@@ -51,8 +51,8 @@ ValidLoan::finalize(
             if (broker)
             {
                 auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
-                auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
-                // We don't check for LendingProtocolV1_1 amendment because a ClosedEnded Vault will not exist without the amendment enabled
+                // We don't check for LendingProtocolV1_1 amendment because a ClosedEnded Vault will
+                // not exist without the amendment enabled
                 if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
                 {
                     std::uint32_t const startDate = after->at(sfStartDate);
