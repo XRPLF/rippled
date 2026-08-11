@@ -245,7 +245,7 @@ public:
 
 /**
  * @brief Invariant: An account XRP balance must be in XRP and take a value
- *                   between 0 and INITIAL_XRP drops, inclusive.
+ *                   between 0 and kInitialXRP drops, inclusive.
  *
  * We iterate all account roots modified by the transaction and ensure that
  * their XRP balances are reasonable.
@@ -337,7 +337,7 @@ public:
 
 /**
  * @brief Invariant: an escrow entry must take a value between 0 and
- *                   INITIAL_XRP drops exclusive.
+ *                   kInitialXRP drops exclusive.
  */
 class NoZeroEscrow
 {
