@@ -48,7 +48,7 @@
 
 namespace xrpl {
 
-namespace STParsedJSONDetail {
+namespace st_parsed_json_detail {
 template <typename U, typename S>
 constexpr U
 toUnsigned(S value)
@@ -69,6 +69,17 @@ toUnsigned(U2 value)
     return static_cast<U1>(value);
 }
 
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
+}
+
 // LCOV_EXCL_START
 static inline std::string
 makeName(std::string const& object, std::string const& field)
@@ -76,13 +87,13 @@ makeName(std::string const& object, std::string const& field)
     if (field.empty())
         return object;
 
-    return object + "." + field;
+    return joinName(object, field);
 }
 
 static inline json::Value
 notAnObject(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
 
@@ -95,33 +106,33 @@ notAnObject(std::string const& object)
 static inline json::Value
 notAnArray(std::string const& object)
 {
-    return RPC::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
+    return rpc::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
 }
 
 static inline json::Value
 unknownField(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
+    return rpc::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
 static inline json::Value
 outOfRange(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is out of range.");
 }
 
 static inline json::Value
 badType(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has bad type.");
 }
 
 static inline json::Value
 invalidData(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has invalid data.");
 }
 
@@ -134,14 +145,14 @@ invalidData(std::string const& object)
 static inline json::Value
 arrayExpected(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
 
 static inline json::Value
 arrayTooBig(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams,
         "Field '" + makeName(object, field) + "' exceeds allowed JSON array size of " +
             std::to_string(kMaxParsedJsonArraySize) + " elements per field.");
@@ -150,20 +161,20 @@ arrayTooBig(std::string const& object, std::string const& field)
 static inline json::Value
 stringExpected(std::string const& object, std::string const& field)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a string.");
 }
 
 static inline json::Value
 tooDeep(std::string const& object)
 {
-    return RPC::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
+    return rpc::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
 static inline json::Value
 singletonExpected(std::string const& object, unsigned int index)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams,
         "Field '" + object + "[" + std::to_string(index) +
             "]' must be an object with a single key/object value.");
@@ -172,7 +183,7 @@ singletonExpected(std::string const& object, unsigned int index)
 static inline json::Value
 templateMismatch(SField const& sField)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams,
         "Object '" + sField.getName() + "' contents did not meet requirements for that type.");
 }
@@ -180,7 +191,7 @@ templateMismatch(SField const& sField)
 static inline json::Value
 nonObjectInArray(std::string const& item, json::UInt index)
 {
-    return RPC::makeError(
+    return rpc::makeError(
         RpcInvalidParams,
         "Item '" + item + "' at index " + std::to_string(index) +
             " is not an object.  Arrays may only contain objects.");
@@ -780,7 +791,7 @@ parseLeaf(
 
                         if (pathEl.isMember(jss::currency) && pathEl.isMember(jss::mpt_issuance_id))
                         {
-                            error = RPC::makeError(RpcInvalidParams, "Invalid Asset.");
+                            error = rpc::makeError(RpcInvalidParams, "Invalid Asset.");
                             return ret;
                         }
 
@@ -1036,8 +1047,8 @@ parseObject(
 
                     try
                     {
-                        auto ret =
-                            parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto ret = parseObject(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1054,8 +1065,8 @@ parseObject(
                 case STI_ARRAY:
                     try
                     {
-                        auto array =
-                            parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto array = parseArray(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));
@@ -1184,13 +1195,13 @@ parseArray(
     }
 }
 
-}  // namespace STParsedJSONDetail
+}  // namespace st_parsed_json_detail
 
 //------------------------------------------------------------------------------
 
 STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
-    using namespace STParsedJSONDetail;
+    using namespace st_parsed_json_detail;
     object = parseObject(name, json, sfGeneric, 0, error);
 }
 

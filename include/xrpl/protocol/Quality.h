@@ -14,15 +14,16 @@
 
 namespace xrpl {
 
-/** Represents a pair of input and output currencies.
-
-    The input currency can be converted to the output
-    currency by multiplying by the rate, represented by
-    Quality.
-
-    For offers, "in" is always TakerPays and "out" is
-    always TakerGets.
-*/
+/**
+ * Represents a pair of input and output currencies.
+ *
+ * The input currency can be converted to the output
+ * currency by multiplying by the rate, represented by
+ * Quality.
+ *
+ * For offers, "in" is always TakerPays and "out" is
+ * always TakerGets.
+ */
 template <class In, class Out>
 struct TAmounts
 {
@@ -36,7 +37,9 @@ struct TAmounts
     {
     }
 
-    /** Returns `true` if either quantity is not positive. */
+    /**
+     * Returns `true` if either quantity is not positive.
+     */
     [[nodiscard]] bool
     empty() const noexcept
     {
@@ -72,23 +75,17 @@ operator==(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-template <class In, class Out>
-bool
-operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
-{
-    return !(lhs == rhs);
-}
-
 //------------------------------------------------------------------------------
 
 // XRPL specific constant used for parsing qualities and other things
 #define QUALITY_ONE 1'000'000'000
 
-/** Represents the logical ratio of output currency to input currency.
-    Internally this is stored using a custom floating point representation,
-    as the inverse of the ratio, so that quality will be descending in
-    a sequence of actual values that represent qualities.
-*/
+/**
+ * Represents the logical ratio of output currency to input currency.
+ * Internally this is stored using a custom floating point representation,
+ * as the inverse of the ratio, so that quality will be descending in
+ * a sequence of actual values that represent qualities.
+ */
 class Quality
 {
 public:
@@ -109,26 +106,36 @@ private:
 public:
     Quality() = default;
 
-    /** Create a quality from the integer encoding of an STAmount */
+    /**
+     * Create a quality from the integer encoding of an STAmount
+     */
     explicit Quality(std::uint64_t value);
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     explicit Quality(Amounts const& amount);
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     template <class In, class Out>
     explicit Quality(TAmounts<In, Out> const& amount)
         : Quality(Amounts(toSTAmount(amount.in), toSTAmount(amount.out)))
     {
     }
 
-    /** Create a quality from the ratio of two amounts. */
+    /**
+     * Create a quality from the ratio of two amounts.
+     */
     template <class In, class Out>
     Quality(Out const& out, In const& in) : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
     {
     }
 
-    /** Advances to the next higher quality level. */
+    /**
+     * Advances to the next higher quality level.
+     */
     /** @{ */
     Quality&
     operator++();
@@ -137,7 +144,9 @@ public:
     operator++(int);
     /** @} */
 
-    /** Advances to the next lower quality level. */
+    /**
+     * Advances to the next lower quality level.
+     */
     /** @{ */
     Quality&
     operator--();
@@ -146,23 +155,27 @@ public:
     operator--(int);
     /** @} */
 
-    /** Returns the quality as STAmount. */
+    /**
+     * Returns the quality as STAmount.
+     */
     [[nodiscard]] STAmount
     rate() const
     {
         return amountFromQuality(value_);
     }
 
-    /** Returns the quality rounded up to the specified number
-        of decimal digits.
-    */
+    /**
+     * Returns the quality rounded up to the specified number
+     * of decimal digits.
+     */
     [[nodiscard]] Quality
     round(int tickSize) const;
 
-    /** Returns the scaled amount with in capped.
-        Math is avoided if the result is exact. The output is clamped
-        to prevent money creation.
-    */
+    /**
+     * Returns the scaled amount with in capped.
+     * Math is avoided if the result is exact. The output is clamped
+     * to prevent money creation.
+     */
     [[nodiscard]] Amounts
     ceilIn(Amounts const& amount, STAmount const& limit) const;
 
@@ -180,10 +193,11 @@ public:
     [[nodiscard]] TAmounts<In, Out>
     ceilInStrict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const;
 
-    /** Returns the scaled amount with out capped.
-        Math is avoided if the result is exact. The input is clamped
-        to prevent money creation.
-    */
+    /**
+     * Returns the scaled amount with out capped.
+     * Math is avoided if the result is exact. The input is clamped
+     * to prevent money creation.
+     */
     [[nodiscard]] Amounts
     ceilOut(Amounts const& amount, STAmount const& limit) const;
 
@@ -215,10 +229,11 @@ private:
         Round... round) const;
 
 public:
-    /** Returns `true` if lhs is lower quality than `rhs`.
-        Lower quality means the taker receives a worse deal.
-        Higher quality is better for the taker.
-    */
+    /**
+     * Returns `true` if lhs is lower quality than `rhs`.
+     * Lower quality means the taker receives a worse deal.
+     * Higher quality is better for the taker.
+     */
     friend bool
     operator<(Quality const& lhs, Quality const& rhs) noexcept
     {
@@ -247,12 +262,6 @@ public:
     operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.value_ == rhs.value_;
-    }
-
-    friend bool
-    operator!=(Quality const& lhs, Quality const& rhs) noexcept
-    {
-        return !(lhs == rhs);
     }
 
     friend std::ostream&
@@ -357,10 +366,11 @@ Quality::ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool r
     return ceilTAmountsHelper(amount, limit, amount.out, kCeilOutFnPtr, roundUp);
 }
 
-/** Calculate the quality of a two-hop path given the two hops.
-    @param lhs  The first leg of the path: input to intermediate.
-    @param rhs  The second leg of the path: intermediate to output.
-*/
+/**
+ * Calculate the quality of a two-hop path given the two hops.
+ * @param lhs  The first leg of the path: input to intermediate.
+ * @param rhs  The second leg of the path: intermediate to output.
+ */
 Quality
 composedQuality(Quality const& lhs, Quality const& rhs);
 

@@ -6,7 +6,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
@@ -17,7 +16,8 @@ namespace xrpl {
 template <StepAmount TIn, StepAmount TOut>
 class AMMOffer;
 
-/** AMMLiquidity class provides AMM offers to BookStep class.
+/**
+ * AMMLiquidity class provides AMM offers to BookStep class.
  * The offers are generated in two ways. If there are multiple
  * paths specified to the payment transaction then the offers
  * are generated based on the Fibonacci sequence with
@@ -59,7 +59,8 @@ public:
     AMMLiquidity&
     operator=(AMMLiquidity const&) = delete;
 
-    /** Generate AMM offer. Returns nullopt if clobQuality is provided
+    /**
+     * Generate AMM offer. Returns nullopt if clobQuality is provided
      * and it is better than AMM offer quality. Otherwise returns AMM offer.
      * If clobQuality is provided then AMM offer size is set based on the
      * quality.
@@ -104,12 +105,14 @@ public:
     }
 
 private:
-    /** Fetches current AMM balances.
+    /**
+     * Fetches current AMM balances.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
-    /** Generate AMM offers with the offer size based on Fibonacci sequence.
+    /**
+     * Generate AMM offers with the offer size based on Fibonacci sequence.
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.
      * The number of iterations with AMM offers is limited.
@@ -119,17 +122,13 @@ private:
     [[nodiscard]] TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
-    /** Generate max offer.
-     * If `fixAMMOverflowOffer` is active, the offer is generated as:
+    /**
+     * Generate max offer. The offer is generated as:
      * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
-     *
-     * If `fixAMMOverflowOffer` is not active, the offer is generated as:
-     * takerPays = max input amount;
-     * takerGets = swapIn(takerPays).
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
+    maxOffer(TAmounts<TIn, TOut> const& balances) const;
 };
 
 }  // namespace xrpl

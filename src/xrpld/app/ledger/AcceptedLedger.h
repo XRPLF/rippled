@@ -11,14 +11,15 @@
 
 namespace xrpl {
 
-/** A ledger that has become irrevocable.
-
-    An accepted ledger is a ledger that has a sufficient number of
-    validations to convince the local server that it is irrevocable.
-
-    The existence of an accepted ledger implies all preceding ledgers
-    are accepted.
-*/
+/**
+ * A ledger that has become irrevocable.
+ *
+ * An accepted ledger is a ledger that has a sufficient number of
+ * validations to convince the local server that it is irrevocable.
+ *
+ * The existence of an accepted ledger implies all preceding ledgers
+ * are accepted.
+ */
 /* VFALCO TODO digest this terminology clarification:
     Closed and accepted refer to ledgers that have not passed the
     validation threshold yet. Once they pass the threshold, they are
@@ -54,6 +55,15 @@ public:
     end() const
     {
         return transactions_.end();
+    }
+
+    /**
+     * The last accepted transaction. Precondition: size() > 0.
+     */
+    [[nodiscard]] AcceptedLedgerTx const&
+    back() const
+    {
+        return *transactions_.back();
     }
 
 private:

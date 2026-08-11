@@ -30,7 +30,9 @@
 
 namespace xrpl {
 
-/** Represents an active WebSocket connection. */
+/**
+ * Represents an active WebSocket connection.
+ */
 template <class Handler, class Impl>
 class BaseWSPeer : public BasePeer<Handler, Impl>, public WSSession
 {
@@ -48,9 +50,11 @@ private:
     boost::beast::multi_buffer rb_;
     boost::beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
-    /// The socket has been closed, or will close after the next write
-    /// finishes. Do not do any more writes, and don't try to close
-    /// again.
+    /**
+     * The socket has been closed, or will close after the next write
+     * finishes. Do not do any more writes, and don't try to close
+     * again.
+     */
     bool doClose_ = false;
     boost::beast::websocket::close_reason cr_;
     waitable_timer timer_;
@@ -192,7 +196,7 @@ BaseWSPeer<Handler, Impl>::run()
     startTimer();
     closeOnTimer_ = true;
     impl().ws_.set_option(boost::beast::websocket::stream_base::decorator([](auto& res) {
-        res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
+        res.set(boost::beast::http::field::server, build_info::getFullVersionString());
     }));
     impl().ws_.async_accept(
         request_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {

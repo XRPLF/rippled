@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -33,6 +34,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -373,11 +375,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToWithdraw = [&,
+                               &amountBalance = amountBalance,
+                               &amount2Balance = amount2Balance,
+                               &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalWithdrawLimit(
@@ -431,6 +432,29 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToWithdraw();
+        }
+        catch (std::runtime_error const& e)
+        {
+            // Defense in-depth for amount overflow/out-of-range: the withdrawal
+            // counterpart of the AMMDeposit guard. Unlike deposit, no known
+            // withdraw path can throw here - preclaim bounds the requested
+            // amounts by the pool balances, and the only historical throw
+            // (denom == 0 in singleWithdrawEPrice) is guarded under
+            // fixCleanup3_3_0. Gated by fixCleanup3_4_0 to preserve the
+            // legacy tefEXCEPTION pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "AMMWithdraw: amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+            // LCOV_EXCL_STOP
+        }
     }();
 
     if (!isTesSuccess(result))
@@ -658,15 +682,15 @@ AMMWithdraw::withdraw(
             auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            STAmount const balance = (*sleAccount)[sfBalance];
-            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
+            auto const balance = (*sleAccount)[sfBalance]->xrp();
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
-                (ownerCount < 2) ? XRPAmount(beast::kZero)
-                                 : view.fees().accountReserve(ownerCount + 1));
+                (ownerCount(sleAccount, journal) < 2)
+                    ? XRPAmount(beast::kZero)
+                    : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
+            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
@@ -683,7 +707,7 @@ AMMWithdraw::withdraw(
                 !isTesSuccess(err))
                 return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, journal);
+            if (auto const err = checkCreateMPT(view, mptIssue, account, {}, journal);
                 !isTesSuccess(err))
             {
                 return err;
@@ -700,7 +724,7 @@ AMMWithdraw::withdraw(
 
     // Withdraw amountWithdraw
     auto res = accountSend(
-        view, ammAccount, account, amountWithdrawActual, journal, WaiveTransferFee::Yes);
+        view, ammAccount, account, amountWithdrawActual, journal, {}, WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
@@ -719,7 +743,7 @@ AMMWithdraw::withdraw(
             return {res, STAmount{}, STAmount{}, STAmount{}};
 
         res = accountSend(
-            view, ammAccount, account, *amount2WithdrawActual, journal, WaiveTransferFee::Yes);
+            view, ammAccount, account, *amount2WithdrawActual, journal, {}, WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
             // LCOV_EXCL_START
@@ -759,7 +783,8 @@ adjustLPTokensIn(
     return adjustLPTokens(lptAMMBalance, lpTokensWithdraw, IsDeposit::No);
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/**
+ * Proportional withdrawal of pool assets for the amount of LPTokens.
  */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
@@ -823,7 +848,8 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     return {ter, true};
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/**
+ * Proportional withdrawal of pool assets for the amount of LPTokens.
  */
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::equalWithdrawTokens(
@@ -909,7 +935,8 @@ AMMWithdraw::equalWithdrawTokens(
     // LCOV_EXCL_STOP
 }
 
-/** All assets withdrawal with the constraints on the maximum amount
+/**
+ * All assets withdrawal with the constraints on the maximum amount
  * of each asset that the trader is willing to withdraw.
  *       a = (t/T) * A (5)
  *       b = (t/T) * B (6)
@@ -999,7 +1026,8 @@ AMMWithdraw::equalWithdrawLimit(
         tfee);
 }
 
-/** Withdraw single asset equivalent to the amount specified in Asset1Out.
+/**
+ * Withdraw single asset equivalent to the amount specified in Asset1Out.
  * t = T * (c - sqrt(c**2 - 4*R))/2
  *     where R = b/B, c = R*fee + 2 - fee
  * Use equation 7 to compute the t, given the amount in Asset1Out.
@@ -1045,7 +1073,8 @@ AMMWithdraw::singleWithdraw(
         tfee);
 }
 
-/** withdrawal of single asset specified in Asset1Out proportional
+/**
+ * withdrawal of single asset specified in Asset1Out proportional
  * to the share represented by the amount of LPTokens.
  * Use equation 8 to compute the amount of asset1, given the redeemed t
  *   represented by LPTokens. Let this be Y.
@@ -1089,7 +1118,8 @@ AMMWithdraw::singleWithdrawTokens(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Withdraw single asset with two constraints.
+/**
+ * Withdraw single asset with two constraints.
  * a. amount of asset1 if specified (not 0) in Asset1Out specifies the minimum
  *     amount of asset1 that the trader is willing to withdraw.
  * b. The effective price of asset traded out does not exceed the amount

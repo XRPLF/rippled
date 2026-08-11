@@ -13,18 +13,19 @@
 
 namespace xrpl {
 
-/** A class that simplifies iterating ledger directory pages
-
-    The Dir class provides a forward iterator for walking through
-    the uint256 values contained in ledger directories.
-
-    The Dir class also allows accelerated directory walking by
-    stepping directly from one page to the next using the next_page()
-    member function.
-
-    As of July 2024, the Dir class is only being used with NFTokenOffer
-    directories and for unit tests.
-*/
+/**
+ * A class that simplifies iterating ledger directory pages
+ *
+ * The Dir class provides a forward iterator for walking through
+ * the uint256 values contained in ledger directories.
+ *
+ * The Dir class also allows accelerated directory walking by
+ * stepping directly from one page to the next using the next_page()
+ * member function.
+ *
+ * As of July 2024, the Dir class is only being used with NFTokenOffer
+ * directories and for unit tests.
+ */
 class Dir
 {
 private:
@@ -57,12 +58,6 @@ public:
 
     bool
     operator==(ConstIterator const& other) const;
-
-    bool
-    operator!=(ConstIterator const& other) const
-    {
-        return !(*this == other);
-    }
 
     reference
     operator*() const;

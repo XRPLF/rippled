@@ -81,24 +81,25 @@ parseSection(Section const& section)
     return names;
 }
 
-/** TrustedVotes records the most recent votes from trusted validators.
-    We keep a record in an effort to avoid "flapping" while amendment voting
-    is in process.
-
-    If a trusted validator loses synchronization near a flag ledger their
-    amendment votes may be lost during that round.  If the validator is a
-    bit flaky, then this can cause an amendment to appear to repeatedly
-    gain and lose support.
-
-    TrustedVotes addresses the problem by holding on to the last vote seen
-    from every trusted validator.  So if any given validator is off line near
-    a flag ledger we can assume that they did not change their vote.
-
-    If we haven't seen any STValidations from a validator for several hours we
-    lose confidence that the validator hasn't changed their position.  So
-    there's a timeout.  We remove upVotes if they haven't been updated in
-    several hours.
-*/
+/**
+ * TrustedVotes records the most recent votes from trusted validators.
+ * We keep a record in an effort to avoid "flapping" while amendment voting
+ * is in process.
+ *
+ * If a trusted validator loses synchronization near a flag ledger their
+ * amendment votes may be lost during that round.  If the validator is a
+ * bit flaky, then this can cause an amendment to appear to repeatedly
+ * gain and lose support.
+ *
+ * TrustedVotes addresses the problem by holding on to the last vote seen
+ * from every trusted validator.  So if any given validator is off line near
+ * a flag ledger we can assume that they did not change their vote.
+ *
+ * If we haven't seen any STValidations from a validator for several hours we
+ * lose confidence that the validator hasn't changed their position.  So
+ * there's a timeout.  We remove upVotes if they haven't been updated in
+ * several hours.
+ */
 class TrustedVotes
 {
 private:
@@ -107,10 +108,11 @@ private:
     struct UpvotesAndTimeout
     {
         std::vector<uint256> upVotes;
-        /** An unseated timeout indicates that either
-            1. No validations have ever been received
-            2. The validator has not been heard from in long enough that the
-               timeout passed, and votes expired.
+        /**
+         * An unseated timeout indicates that either
+         * 1. No validations have ever been received
+         * 2. The validator has not been heard from in long enough that the
+         *    timeout passed, and votes expired.
          */
         std::optional<NetClock::time_point> timeout;
     };
@@ -279,32 +281,42 @@ public:
     }
 };
 
-/** Current state of an amendment.
-    Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
-    means the node will never announce its support.
-*/
+/**
+ * Current state of an amendment.
+ * Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
+ * means the node will never announce its support.
+ */
 struct AmendmentState
 {
-    /** If an amendment is down-voted, a server will not vote to enable it */
+    /**
+     * If an amendment is down-voted, a server will not vote to enable it
+     */
     AmendmentVote vote = AmendmentVote::Down;
 
-    /** Indicates that the amendment has been enabled.
-        This is a one-way switch: once an amendment is enabled
-        it can never be disabled, but it can be superseded by
-        a subsequent amendment.
-    */
+    /**
+     * Indicates that the amendment has been enabled.
+     * This is a one-way switch: once an amendment is enabled
+     * it can never be disabled, but it can be superseded by
+     * a subsequent amendment.
+     */
     bool enabled = false;
 
-    /** Indicates an amendment that this server has code support for. */
+    /**
+     * Indicates an amendment that this server has code support for.
+     */
     bool supported = false;
 
-    /** The name of this amendment, possibly empty. */
+    /**
+     * The name of this amendment, possibly empty.
+     */
     std::string name;
 
     explicit AmendmentState() = default;
 };
 
-/** The status of all amendments requested in a given window. */
+/**
+ * The status of all amendments requested in a given window.
+ */
 class AmendmentSet
 {
 private:
@@ -376,12 +388,13 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Track the list of "amendments"
-
-   An "amendment" is an option that can affect transaction processing rules.
-   Amendments are proposed and then adopted or rejected by the network. An
-   Amendment is uniquely identified by its AmendmentID, a 256-bit key.
-*/
+/**
+ * Track the list of "amendments"
+ *
+ * An "amendment" is an option that can affect transaction processing rules.
+ * Amendments are proposed and then adopted or rejected by the network. An
+ * Amendment is uniquely identified by its AmendmentID, a 256-bit key.
+ */
 class AmendmentTableImpl final : public AmendmentTable
 {
 private:
@@ -643,6 +656,7 @@ AmendmentState*
 AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const& lock)
 {
     // Forward to the const version of get.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<AmendmentState*>(std::as_const(*this).get(amendmentHash, lock));
 }
 

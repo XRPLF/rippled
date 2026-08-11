@@ -5,6 +5,7 @@
 #include <xrpl/beast/container/detail/aged_associative_container.h>
 #include <xrpl/beast/container/detail/aged_container_iterator.h>
 #include <xrpl/beast/container/detail/empty_base_optimization.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
@@ -43,23 +44,24 @@ TODO
 namespace beast {
 namespace detail {
 
-/** Associative container where each element is also indexed by time.
-
-    This container mirrors the interface of the standard library unordered
-    associative containers, with the addition that each element is associated
-    with a `when` `time_point` which is obtained from the value of the clock's
-    `now`. The function `touch` updates the time for an element to the current
-    time as reported by the clock.
-
-    An extra set of iterator types and member functions are provided in the
-    `chronological` memberspace that allow traversal in temporal or reverse
-    temporal order. This container is useful as a building block for caches
-    whose items expire after a certain amount of time. The chronological
-    iterators allow for fully customizable expiration strategies.
-
-    @see aged_unordered_set, aged_unordered_multiset
-    @see aged_unordered_map, aged_unordered_multimap
-*/
+/**
+ * Associative container where each element is also indexed by time.
+ *
+ * This container mirrors the interface of the standard library unordered
+ * associative containers, with the addition that each element is associated
+ * with a `when` `time_point` which is obtained from the value of the clock's
+ * `now`. The function `touch` updates the time for an element to the current
+ * time as reported by the clock.
+ *
+ * An extra set of iterator types and member functions are provided in the
+ * `chronological` memberspace that allow traversal in temporal or reverse
+ * temporal order. This container is useful as a building block for caches
+ * whose items expire after a certain amount of time. The chronological
+ * iterators allow for fully customizable expiration strategies.
+ *
+ * @see aged_unordered_set, aged_unordered_multiset
+ * @see aged_unordered_map, aged_unordered_multimap
+ */
 template <
     bool IsMulti,
     bool IsMap,
@@ -528,6 +530,7 @@ private:
     deleteElement(Element const* p)
     {
         ElementAllocatorTraits::destroy(config_.alloc(), p);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         ElementAllocatorTraits::deallocate(config_.alloc(), const_cast<Element*>(p), 1);
     }
 
@@ -1336,28 +1339,6 @@ public:
                KeyEqual,
                OtherAllocator> const& other) const
         requires MaybeMulti;
-
-    template <
-        bool OtherIsMulti,
-        bool OtherIsMap,
-        class OtherKey,
-        class OtherT,
-        class OtherDuration,
-        class OtherHash,
-        class OtherAllocator>
-    bool
-    operator!=(AgedUnorderedContainer<
-               OtherIsMulti,
-               OtherIsMap,
-               OtherKey,
-               OtherT,
-               OtherDuration,
-               OtherHash,
-               KeyEqual,
-               OtherAllocator> const& other) const
-    {
-        return !(this->operator==(other));
-    }
 
 private:
     bool
@@ -2708,7 +2689,9 @@ swap(
     lhs.swap(rhs);
 }
 
-/** Expire aged container items past the specified age. */
+/**
+ * Expire aged container items past the specified age.
+ */
 template <
     bool IsMulti,
     bool IsMap,
