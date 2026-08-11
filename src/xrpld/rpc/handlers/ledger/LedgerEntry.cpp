@@ -186,15 +186,17 @@ parseCheck(
     }
 
     auto const account =
-        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
         return std::unexpected(account.error());
 
-    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
         return std::unexpected(sequence.error());
 
-    return keylet::check(*account, *sequence).key;
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::check(*account, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -589,15 +591,18 @@ parseNFTokenOffer(
         return parseObjectID(params, fieldName);
     }
 
-    auto const owner = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!owner)
         return std::unexpected(owner.error());
 
-    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
         return std::unexpected(sequence.error());
 
-    return keylet::nftokenOffer(*owner, *sequence).key;
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::nftokenOffer(*owner, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -671,20 +676,22 @@ parsePayChannel(
     }
 
     auto const account =
-        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
         return std::unexpected(account.error());
 
     auto const destination =
-        LedgerEntryHelpers::requiredAccountID(params, jss::destination, "malformedAddress");
+        ledger_entry_helpers::requiredAccountID(params, jss::destination, "malformedAddress");
     if (!destination)
         return std::unexpected(destination.error());
 
-    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const sequence =
+        ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
         return std::unexpected(sequence.error());
 
-    return keylet::payChannel(*account, *destination, *sequence).key;
+    auto const seqProxy = SeqProxy::rawSequence(*sequence);
+    return keylet::payChannel(*account, *destination, seqProxy).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -777,7 +784,8 @@ parseSignerList(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+    auto const id =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!id)
         return std::unexpected(id.error());
 
