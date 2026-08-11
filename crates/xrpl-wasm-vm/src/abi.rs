@@ -32,6 +32,29 @@ pub(crate) fn charged(
     to_wire(charge(caller, op.gas()).and_then(|()| body(caller)))
 }
 
+/// [`charged`] for a call the guest gets no answer from: its wasm function has no
+/// result, so a soft error has nowhere to go and is dropped. The gas is charged first
+/// and charged whatever happens after, so the cost is all such a call leaves behind.
+///
+/// Only `trace` takes this path.
+pub(crate) fn charged_unreported(
+    caller: &mut Caller<'_, VmState<'_>>,
+    op: HostFunctionSpec,
+    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> HostResult<()>,
+) -> Result<(), wasmi::Error> {
+    dropped(charge(caller, op.gas()).and_then(|()| body(caller)))
+}
+
+/// [`to_wire`] for a call with no result: there is no return value to encode a soft
+/// error in, so it is dropped. The host-fatal ones still stop the run — those are a
+/// property of the run, not an answer to the call.
+fn dropped(result: HostResult<()>) -> Result<(), wasmi::Error> {
+    match result {
+        Err(error) if is_fatal(error) => Err(wasmi::Error::host(FatalHostError(error))),
+        _ => Ok(()),
+    }
+}
+
 fn to_wire(result: HostResult<i32>) -> Result<i32, wasmi::Error> {
     match result {
         Ok(value) => Ok(value),
@@ -69,7 +92,7 @@ fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
 }
 
 /// [`Region::read`] of the guest's memory, for a call that reads and writes nothing
-/// back (`trace`, `trace_num`).
+/// back (`trace`).
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
     input: Region,
@@ -180,6 +203,7 @@ mod tests {
     use crate::vm::TRANSFER_LIMIT_BYTES;
     use std::cell::Cell;
     use wasmi::StoreLimitsBuilder;
+    use xrpl_host_functions::TraceDataType;
 
     /// `charge_transfer` takes the store data, which has to hold a host.
     struct UncalledHost;
@@ -194,10 +218,7 @@ mod tests {
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn trace(&self, _msg: &str, _data: &[u8], _as_hex: bool) -> HostResult<()> {
-            unreachable!("no unit test in this module calls the host")
-        }
-        fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> {
+        fn trace(&self, _msg: &str, _data: &[u8], _data_type: TraceDataType) -> HostResult<()> {
             unreachable!("no unit test in this module calls the host")
         }
     }
@@ -263,6 +284,30 @@ mod tests {
             } else {
                 assert!(!is_fatal(error), "{error:?} must reach the guest as a code");
                 assert_eq!(wire(Err(error)), error.code());
+            }
+        }
+    }
+
+    /// The result-less path splits the same set differently: the fatal errors still
+    /// stop the run, and every other one is dropped, since `trace` has no return value
+    /// to carry it. Over `HostError::ALL` for the reason above — a code added to the
+    /// ABI arrives asserted against both paths.
+    #[test]
+    fn a_call_with_no_result_drops_a_soft_error_and_traps_on_a_fatal_one() {
+        assert!(dropped(Ok(())).is_ok());
+
+        for &error in HostError::ALL {
+            if MUST_TRAP.contains(&error) {
+                let trap = dropped(Err(error)).expect_err("a fatal error must stop the run");
+                let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
+                    panic!("{error:?}: expected a FatalHostError payload, got: {trap}")
+                });
+                assert_eq!(*payload, FatalHostError(error));
+            } else {
+                assert!(
+                    dropped(Err(error)).is_ok(),
+                    "{error:?} has no channel to the guest and must be dropped"
+                );
             }
         }
     }

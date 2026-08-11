@@ -4,8 +4,11 @@
 
 mod support;
 
-use support::{Answer, FakeHost, ONE_PAGE, code, failure, import, module, status};
-use xrpl_host_functions::{HASH_LEN, HostError};
+use support::{
+    Answer, COMPLETED, EMPTY_REGION, FakeHost, ONE_PAGE, code, failure, import, module, status,
+    traced,
+};
+use xrpl_host_functions::{HASH_LEN, HostError, TraceDataType};
 use xrpl_wasm_vm::{MAX_FIELD_BYTES, RunError};
 
 /// One page, so anything at or past 65536 is out of bounds.
@@ -185,7 +188,11 @@ fn the_field_cap_precedes_the_buffer_fit_check() {
 }
 
 // ---------------------------------------------------------------------------
-// Input regions (`read_borrowed`, via `trace`)
+// Input regions (`Region::read`, via `sha512_half`)
+//
+// `sha512_half`'s first pair is an input region like any other, and it is the
+// input the guest gets a status back from: `trace`, the other reader, answers
+// nothing at all. So the codes are pinned here and the silence below.
 // ---------------------------------------------------------------------------
 
 /// An input region is bounds-checked the same way an output region is. Every case
@@ -196,15 +203,18 @@ fn an_input_region_running_past_memory_is_refused() {
 
     for (ptr, len) in [(PAGE, 1), (PAGE - 3, 4), (PAGE - 1, CAP)] {
         let wat = module(
-            &[import::TRACE_NUM, ONE_PAGE],
-            &format!("(call $trace_num (i32.const {ptr}) (i32.const {len}) (i64.const 0))"),
+            &[import::SHA512_HALF, ONE_PAGE],
+            &format!(
+                "(call $sha512_half (i32.const {ptr}) (i32.const {len})
+                                    (i32.const 0) (i32.const {HASH_LEN}))"
+            ),
         );
         assert_eq!(
             status(&wat, &host),
             code(HostError::PointerOutOfBounds),
             "ptr {ptr} len {len}"
         );
-        assert!(host.traces().is_empty(), "the host must not be called");
+        assert!(host.digested.borrow().is_empty(), "the host is not called");
     }
 }
 
@@ -214,8 +224,11 @@ fn a_negative_input_pointer_or_length_is_refused() {
 
     for (ptr, len) in [(-1, 1), (0, -1), (i32::MIN, 1)] {
         let wat = module(
-            &[import::TRACE_NUM, ONE_PAGE],
-            &format!("(call $trace_num (i32.const {ptr}) (i32.const {len}) (i64.const 0))"),
+            &[import::SHA512_HALF, ONE_PAGE],
+            &format!(
+                "(call $sha512_half (i32.const {ptr}) (i32.const {len})
+                                    (i32.const 0) (i32.const {HASH_LEN}))"
+            ),
         );
         assert_eq!(
             status(&wat, &host),
@@ -229,19 +242,27 @@ fn a_negative_input_pointer_or_length_is_refused() {
 #[test]
 fn an_input_past_the_field_cap_is_refused() {
     let host = FakeHost::new();
+    let digest = |len: i64| {
+        module(
+            &[import::SHA512_HALF, ONE_PAGE],
+            &format!(
+                "(call $sha512_half (i32.const 0) (i32.const {len})
+                                    (i32.const 2048) (i32.const {HASH_LEN}))"
+            ),
+        )
+    };
 
-    let wat = module(
-        &[import::TRACE_NUM, ONE_PAGE],
-        &format!("(call $trace_num (i32.const 0) (i32.const {OVER_CAP}) (i64.const 0))"),
+    assert_eq!(
+        status(&digest(OVER_CAP), &host),
+        code(HostError::DataFieldTooLarge)
     );
-    assert_eq!(status(&wat, &host), code(HostError::DataFieldTooLarge));
-    assert!(host.traces().is_empty());
+    assert!(host.digested.borrow().is_empty());
 
-    let wat = module(
-        &[import::TRACE_NUM, ONE_PAGE],
-        &format!("(call $trace_num (i32.const 0) (i32.const {CAP}) (i64.const 0))"),
+    assert_eq!(
+        status(&digest(CAP), &host),
+        HASH_LEN as i32,
+        "the cap itself is allowed"
     );
-    assert_eq!(status(&wat, &host), 0, "the cap itself is allowed");
 }
 
 /// The two directions check in opposite orders: an input's length is known before
@@ -252,9 +273,10 @@ fn the_field_cap_precedes_the_bounds_check_on_an_input() {
     let host = FakeHost::new();
 
     let reading = module(
-        &[import::TRACE_NUM, ONE_PAGE],
+        &[import::SHA512_HALF, ONE_PAGE],
         &format!(
-            "(call $trace_num (i32.const 0) (i32.const {}) (i64.const 0))",
+            "(call $sha512_half (i32.const 0) (i32.const {})
+                                (i32.const 0) (i32.const {HASH_LEN}))",
             PAGE + 1
         ),
     );
@@ -267,30 +289,46 @@ fn the_field_cap_precedes_the_bounds_check_on_an_input() {
     assert_eq!(status(&writing, &host), code(HostError::PointerOutOfBounds));
 }
 
-/// `trace` reads two regions, and either one being bad refuses the call.
+// ---------------------------------------------------------------------------
+// The reader with no result (`read_borrowed`, via `trace`)
+// ---------------------------------------------------------------------------
+
+/// `trace` reads two regions and either one being bad refuses the call. The same
+/// rule as above, and the guest is told nothing: the refusal is the host not being
+/// called, and the run carries on to the constant that follows.
 #[test]
-fn both_of_traces_regions_are_checked() {
+fn both_of_traces_regions_are_checked_silently() {
     let host = FakeHost::new();
-
-    let bad_msg = module(
-        &[import::TRACE, ONE_PAGE],
-        &format!(
-            "(call $trace (i32.const {PAGE}) (i32.const 1) (i32.const 0) (i32.const 1) (i32.const 0))"
+    let regions = [
+        (
+            format!("(i32.const {PAGE}) (i32.const 1)"),
+            EMPTY_REGION.to_owned(),
         ),
-    );
-    assert_eq!(status(&bad_msg, &host), code(HostError::PointerOutOfBounds));
-
-    let bad_data = module(
-        &[import::TRACE, ONE_PAGE],
-        &format!(
-            "(call $trace (i32.const 0) (i32.const 1) (i32.const {PAGE}) (i32.const 1) (i32.const 0))"
+        (
+            EMPTY_REGION.to_owned(),
+            format!("(i32.const {PAGE}) (i32.const 1)"),
         ),
-    );
-    assert_eq!(
-        status(&bad_data, &host),
-        code(HostError::PointerOutOfBounds)
-    );
-    assert!(host.traces().is_empty());
+        (
+            EMPTY_REGION.to_owned(),
+            format!("(i32.const 0) (i32.const {OVER_CAP})"),
+        ),
+        (
+            "(i32.const -1) (i32.const 1)".to_owned(),
+            EMPTY_REGION.to_owned(),
+        ),
+    ];
+
+    for (msg, data) in regions {
+        let wat = module(
+            &[import::TRACE, ONE_PAGE],
+            &traced(TraceDataType::AsHex, &msg, &data),
+        );
+        assert_eq!(status(&wat, &host), COMPLETED, "msg {msg} data {data}");
+        assert!(
+            host.traces().is_empty(),
+            "msg {msg} data {data}: the host must not be called"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------

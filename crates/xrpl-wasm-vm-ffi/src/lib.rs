@@ -28,7 +28,7 @@
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use xrpl_host_functions::{HostError, HostFunctions, HostResult};
+use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
@@ -111,6 +111,32 @@ mod ffi {
         detail: String,
     }
 
+    /// How `HostContext::trace` is to read its data buffer.
+    ///
+    /// **Declared here so that C++ does not declare it.** A shared enum is emitted into
+    /// the generated header as `xrpl::TraceDataType`, which is the definition
+    /// `HostContext.cpp` switches on — so the variants and their wire values are
+    /// written once, in Rust, for both languages.
+    ///
+    /// It is not the same type as [`xrpl_host_functions::TraceDataType`], and cannot
+    /// be: the ABI crate is `no_std` with no dependencies so that it also links into
+    /// the guest, and `cxx` is neither. [`crossed`] converts, in a `match` that is
+    /// exhaustive over the ABI's enum — so a data type added there fails to compile
+    /// until it is added here, which is the drift check the hand-written C++ copy
+    /// never had.
+    #[namespace = "xrpl"]
+    #[derive(Debug, Hash)]
+    #[repr(i32)]
+    enum TraceDataType {
+        Int64 = 1,
+        Uint64 = 2,
+        Xfloat = 3,
+        Account = 4,
+        Amount = 5,
+        AsHex = 6,
+        AsText = 7,
+    }
+
     extern "Rust" {
         /// Run `wasm`'s `function_name` export with `gas` fuel, servicing host calls
         /// through `host`.
@@ -167,14 +193,15 @@ mod ffi {
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
-        /// A call with no value to report answers `0`, or a negative `HostError`
-        /// code.
+        /// Renders `data` as `data_type` says and writes it to this node's log with
+        /// `msg`. Answers nothing at all: the guest's wasm function has no result, and
+        /// C++ swallows a malformed buffer rather than reporting it, so there is no
+        /// failure for this side to encode.
+        ///
+        /// The engine has already refused a code that names no type, so what crosses
+        /// here is always one of the variants.
         #[namespace = "xrpl"]
-        fn trace(self: &HostContext, msg: &str, data: &[u8], as_hex: bool) -> i32;
-
-        #[namespace = "xrpl"]
-        #[cxx_name = "traceNum"]
-        fn trace_num(self: &HostContext, msg: &str, number: i64) -> i32;
+        fn trace(self: &HostContext, msg: &str, data: &[u8], data_type: TraceDataType);
     }
 }
 
@@ -191,20 +218,28 @@ struct CxxHost<'a> {
 /// The conversion *is* the sign test — it fails on exactly the negative values — so
 /// there is no cast to argue about.
 ///
-/// Named functions rather than `From` impls, and not by preference: every type
+/// A named function rather than a `From` impl, and not by preference: every type
 /// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
-/// rule forbids the impl. Two readings of the same `i32` would want distinguishing
-/// names here in any case.
+/// rule forbids the impl.
 fn bytes_written(n: i32) -> HostResult<usize> {
     usize::try_from(n).map_err(|_| HostError::from_code(n))
 }
 
-/// A call with nothing to report: any non-negative answer is success.
-fn reported(n: i32) -> HostResult<()> {
-    if n < 0 {
-        return Err(HostError::from_code(n));
+/// The ABI's data type as the shared enum C++ was given a definition of.
+///
+/// A `match` rather than a cast through `code()`: the cast would compile for a variant
+/// nobody added to [`ffi::TraceDataType`] and hand C++ a value its `switch` does not
+/// name. This is the whole reason the two lists cannot drift.
+fn crossed(data_type: TraceDataType) -> ffi::TraceDataType {
+    match data_type {
+        TraceDataType::Int64 => ffi::TraceDataType::Int64,
+        TraceDataType::Uint64 => ffi::TraceDataType::Uint64,
+        TraceDataType::Xfloat => ffi::TraceDataType::Xfloat,
+        TraceDataType::Account => ffi::TraceDataType::Account,
+        TraceDataType::Amount => ffi::TraceDataType::Amount,
+        TraceDataType::AsHex => ffi::TraceDataType::AsHex,
+        TraceDataType::AsText => ffi::TraceDataType::AsText,
     }
-    Ok(())
 }
 
 impl HostFunctions for CxxHost<'_> {
@@ -220,12 +255,9 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.sha512_half(data, out))
     }
 
-    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()> {
-        reported(self.ctx.trace(msg, data, as_hex))
-    }
-
-    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
-        reported(self.ctx.trace_num(msg, number))
+    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+        self.ctx.trace(msg, data, crossed(data_type));
+        Ok(())
     }
 }
 
@@ -503,13 +535,30 @@ mod tests {
         assert_eq!(crossed.gas_used, 2);
     }
 
+    /// [`crossed`] being exhaustive makes the two lists hold the same *variants*;
+    /// this makes them hold the same *numbers*, which is what actually crosses. A
+    /// `match` arm pointed at the wrong variant would pass the compiler and fail
+    /// here.
+    ///
+    /// Over `TraceDataType::ALL`, so it is the whole set rather than a sample: a data
+    /// type added to the ABI arrives already asserted against the shared enum.
+    #[test]
+    fn every_data_type_crosses_as_the_same_wire_value() {
+        for &data_type in TraceDataType::ALL {
+            assert_eq!(
+                crossed(data_type).repr,
+                data_type.code(),
+                "{data_type:?} crosses as a different value than the ABI gives it"
+            );
+        }
+    }
+
     #[test]
     fn a_negative_answer_is_an_error_code_and_a_length_is_a_length() {
         assert_eq!(bytes_written(32), Ok(32));
         assert_eq!(bytes_written(0), Ok(0));
         assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
-        assert_eq!(reported(0), Ok(()));
-        assert_eq!(reported(-14), Err(HostError::NoMemExported));
+        assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
     }
 
     /// An exception caught on the C++ side arrives as `-1`, which has to reach the
@@ -518,7 +567,6 @@ mod tests {
     #[test]
     fn a_caught_cxx_exception_arrives_as_internal() {
         assert_eq!(bytes_written(-1), Err(HostError::Internal));
-        assert_eq!(reported(-1), Err(HostError::Internal));
     }
 
     // -----------------------------------------------------------------------

@@ -4,8 +4,12 @@
 
 mod support;
 
-use support::{FakeHost, ONE_PAGE, Trace, code, import, module, run, status};
-use xrpl_host_functions::{HASH_LEN, HostError};
+use support::{
+    COMPLETED, EMPTY_REGION, FakeHost, ONE_PAGE, Trace, code, failure, import, module, run, status,
+    traced,
+};
+use xrpl_host_functions::{HASH_LEN, HostError, TraceDataType};
+use xrpl_wasm_vm::RunError;
 
 /// A value the host writes must be readable by the guest at the pointer it gave,
 /// and the call's status is the byte count.
@@ -127,9 +131,10 @@ fn sha512_half_accepts_an_empty_input() {
     assert_eq!(*host.digested.borrow(), vec![Vec::<u8>::new()]);
 }
 
-/// `trace` reads two regions and a flag, and yields a status of 0.
+/// `trace` reads two regions and a type, and hands the guest back nothing — the
+/// module returns a constant of its own, which is what a completed run looks like.
 #[test]
-fn trace_passes_its_message_data_and_flag_through() {
+fn trace_passes_its_message_type_and_data_through() {
     let host = FakeHost::new();
 
     let wat = module(
@@ -139,54 +144,59 @@ fn trace_passes_its_message_data_and_flag_through() {
             r#"(data (i32.const 0) "note")"#,
             r#"(data (i32.const 16) "\01\02\03")"#,
         ],
-        "(call $trace (i32.const 0) (i32.const 4) (i32.const 16) (i32.const 3) (i32.const 1))",
+        &traced(
+            TraceDataType::AsHex,
+            "(i32.const 0) (i32.const 4)",
+            "(i32.const 16) (i32.const 3)",
+        ),
     );
-    assert_eq!(status(&wat, &host), 0, "trace yields a status of 0");
+    assert_eq!(status(&wat, &host), COMPLETED);
     assert_eq!(
         host.traces(),
-        vec![Trace::Message {
+        vec![Trace {
             msg: "note".to_owned(),
+            data_type: TraceDataType::AsHex,
             data: vec![1, 2, 3],
-            as_hex: true,
         }]
     );
 }
 
-/// The flag is `bool` in the declaration and `i32` on the wire: nonzero is true.
+/// The type is the guest's to choose and the host's to act on, so every code the
+/// ABI names has to arrive as the type it names.
 #[test]
-fn any_nonzero_flag_is_true() {
-    for (flag, expected) in [("0", false), ("1", true), ("2", true), ("-1", true)] {
+fn every_data_type_reaches_the_host_as_declared() {
+    for &data_type in TraceDataType::ALL {
+        let host = FakeHost::new();
+        let wat = module(
+            &[import::TRACE, ONE_PAGE],
+            &traced(data_type, EMPTY_REGION, EMPTY_REGION),
+        );
+        assert_eq!(status(&wat, &host), COMPLETED, "{data_type:?}");
+        assert_eq!(
+            host.traces().first().map(|t| t.data_type),
+            Some(data_type),
+            "{data_type:?}"
+        );
+    }
+}
+
+/// A code no type carries is the guest's mistake, and there is no channel to tell it
+/// so: the call is dropped and the run carries on.
+#[test]
+fn a_code_that_names_no_data_type_drops_the_call() {
+    for code in [0, -1, 8] {
         let host = FakeHost::new();
         let wat = module(
             &[import::TRACE, ONE_PAGE],
             &format!(
-                "(call $trace (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const {flag}))"
+                "(call $trace (i32.const 0) (i32.const 0) (i32.const {code}) (i32.const 0) (i32.const 0))
+                 (i32.const {COMPLETED})"
             ),
         );
-        assert_eq!(status(&wat, &host), 0);
-        let Some(Trace::Message { as_hex, .. }) = host.traces().first().cloned() else {
-            panic!("expected one traced message");
-        };
-        assert_eq!(as_hex, expected, "flag {flag}");
-    }
-}
-
-/// An `i64` parameter crosses as an `i64`, full width.
-#[test]
-fn trace_num_carries_a_full_width_i64() {
-    for number in [0, 1, -1, i64::MAX, i64::MIN] {
-        let host = FakeHost::new();
-        let wat = module(
-            &[import::TRACE_NUM, ONE_PAGE],
-            &format!("(call $trace_num (i32.const 0) (i32.const 0) (i64.const {number}))"),
-        );
-        assert_eq!(status(&wat, &host), 0);
-        assert_eq!(
-            host.traces(),
-            vec![Trace::Number {
-                msg: String::new(),
-                number,
-            }]
+        assert_eq!(status(&wat, &host), COMPLETED, "code {code}");
+        assert!(
+            host.traces().is_empty(),
+            "code {code}: the host is not called"
         );
     }
 }
@@ -198,15 +208,46 @@ fn a_message_that_is_not_utf8_is_refused() {
     let host = FakeHost::new();
 
     let wat = module(
-        &[
-            import::TRACE_NUM,
-            ONE_PAGE,
-            r#"(data (i32.const 0) "\ff\fe")"#,
-        ],
-        "(call $trace_num (i32.const 0) (i32.const 2) (i64.const 0))",
+        &[import::TRACE, ONE_PAGE, r#"(data (i32.const 0) "\ff\fe")"#],
+        &traced(
+            TraceDataType::AsText,
+            "(i32.const 0) (i32.const 2)",
+            EMPTY_REGION,
+        ),
     );
-    assert_eq!(status(&wat, &host), code(HostError::Decoding));
+    assert_eq!(status(&wat, &host), COMPLETED);
     assert!(host.traces().is_empty(), "the host must not be called");
+}
+
+/// The error a host with no result to report may still return: a soft one is the
+/// engine's to drop, since there is nowhere to put it and the contract asked
+/// nothing.
+#[test]
+fn a_soft_error_from_a_call_with_no_result_is_dropped() {
+    let host = FakeHost::new().failing_trace(HostError::InvalidParams);
+
+    let wat = module(
+        &[import::TRACE, ONE_PAGE],
+        &traced(TraceDataType::AsText, EMPTY_REGION, EMPTY_REGION),
+    );
+    assert_eq!(status(&wat, &host), COMPLETED);
+    assert_eq!(host.traces().len(), 1, "the host was called and failed");
+}
+
+/// A host-fatal error is not an answer to the call, so having no answer to give
+/// changes nothing: the run stops.
+#[test]
+fn a_fatal_error_from_a_call_with_no_result_still_stops_the_run() {
+    let host = FakeHost::new().failing_trace(HostError::Internal);
+
+    let wat = module(
+        &[import::TRACE, ONE_PAGE],
+        &traced(TraceDataType::AsText, EMPTY_REGION, EMPTY_REGION),
+    );
+    assert!(
+        matches!(failure(&wat, &host).error, RunError::Internal),
+        "a fatal host error must stop the run"
+    );
 }
 
 /// Several host calls in one run each see their own arguments: the two fields answer

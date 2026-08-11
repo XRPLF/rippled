@@ -1,8 +1,8 @@
-use crate::abi::{charged, read_borrowed, write_buffered, write_into};
+use crate::abi::{charged, charged_unreported, read_borrowed, write_buffered, write_into};
 use crate::region::Region;
 use crate::vm::VmState;
 use wasmi::{Caller, Linker};
-use xrpl_host_functions::{HostError, HostFunctionSpec};
+use xrpl_host_functions::{HostError, HostFunctionSpec, TraceDataType};
 
 /// The module name the guest imports under (`(import "host_lib" "ldgr_index" …)`),
 /// as the guest SDK and this fork's fixtures spell it.
@@ -73,40 +73,34 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            // The one arm with no result: the wasm function is `(param i32 i32 i32 i32
+            // i32)` and nothing more, so a malformed call is dropped rather than
+            // answered — an unreadable region, a `msg` that is not UTF-8 and a
+            // `data_type` naming no rendering all leave the guest none the wiser, and
+            // the host uncalled.
+            //
+            // Also the one arm whose parameters are not the declaration's order:
+            // `data_type` arrives third, between the two regions, as xrpld and the
+            // guest stdlib spell it. The wasm order is this closure's; the declaration
+            // order is the call's.
             HostFunctionSpec::Trace => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),
                 |mut caller: Caller<'_, VmState<'_>>,
                  msg_ptr: i32,
                  msg_len: i32,
+                 data_type: i32,
                  data_ptr: i32,
-                 data_len: i32,
-                 as_hex: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::Trace, |c| {
+                 data_len: i32|
+                 -> Result<(), wasmi::Error> {
+                    charged_unreported(&mut caller, HostFunctionSpec::Trace, |c| {
                         let host = c.data().host;
                         let msg = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
+                        let msg = core::str::from_utf8(msg).map_err(|_| HostError::Decoding)?;
+                        let data_type =
+                            TraceDataType::from_code(data_type).ok_or(HostError::InvalidParams)?;
                         let data = read_borrowed(c, Region::new(data_ptr, data_len))?;
-                        let msg = core::str::from_utf8(msg).map_err(|_| HostError::Decoding)?;
-                        host.trace(msg, data, as_hex != 0)?;
-                        Ok(0)
-                    })
-                },
-            ),
-            HostFunctionSpec::TraceNum => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 msg_ptr: i32,
-                 msg_len: i32,
-                 number: i64|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::TraceNum, |c| {
-                        let host = c.data().host;
-                        let msg = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
-                        let msg = core::str::from_utf8(msg).map_err(|_| HostError::Decoding)?;
-                        host.trace_num(msg, number)?;
-                        Ok(0)
+                        host.trace(msg, data, data_type)
                     })
                 },
             ),
