@@ -1,5 +1,8 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -9,8 +12,11 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
 
 #include <memory>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 namespace credentials {

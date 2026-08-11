@@ -8,6 +8,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STXChainBridge.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <typename ViewT>

@@ -8,6 +8,8 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <typename ViewT>

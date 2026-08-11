@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -9,6 +10,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <concepts>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
@@ -422,7 +426,7 @@ public:
     }
 
 protected:
-    view_ref_type view_{} {};
+    view_ref_type view_;
 
     // Keylet is only meaningful for writable views, which need it to build an
     // SLE that does not exist yet; read-only wrappers derive it from the entry.
@@ -432,7 +436,7 @@ protected:
     // No default member initializer: Keylet is not default-constructible, so
     // every writable constructor must initialize key_ explicitly.
     [[no_unique_address]]
-    std::conditional_t<kIsWritable, Keylet, Empty> key_{} {};
+    std::conditional_t<kIsWritable, Keylet, Empty> key_;
 
     sle_ptr_type sle_{};
     beast::Journal j_;
