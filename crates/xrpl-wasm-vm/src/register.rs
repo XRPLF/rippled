@@ -1,4 +1,6 @@
-use crate::abi::{charged, read_borrowed, write_buffered, write_into, write_mant_exp};
+use crate::abi::{
+    charged, read_borrowed, read_u32_arg, write_buffered, write_into, write_mant_exp,
+};
 use crate::region::Region;
 use crate::vm::VmState;
 use wasmi::{Caller, Linker};
@@ -369,15 +371,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::CheckKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.check_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.check_keylet(account, seq, buf)
                         })
                     })
                 },
@@ -481,15 +487,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::EscrowKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.escrow_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.escrow_keylet(account, seq, buf)
                         })
                     })
                 },
@@ -529,15 +539,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::MptokenIssuanceKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let issuer = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.mptoken_issuance_keylet(issuer.read(data)?, seq, buf)
+                            let issuer = issuer.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.mptoken_issuance_keylet(issuer, seq, buf)
                         })
                     })
                 },
@@ -569,15 +583,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::NftokenOfferKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.nftoken_offer_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.nftoken_offer_keylet(account, seq, buf)
                         })
                     })
                 },
@@ -588,15 +606,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::OfferKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.offer_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.offer_keylet(account, seq, buf)
                         })
                     })
                 },
@@ -607,15 +629,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 doc_id: i32,
+                 doc_ptr: i32,
+                 doc_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::OracleKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let doc_id = Region::new(doc_ptr, doc_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.oracle_keylet(account.read(data)?, doc_id, buf)
+                            let account = account.read(data)?;
+                            let doc_id = read_u32_arg(doc_id.read(data)?)?;
+                            host.oracle_keylet(account, doc_id, buf)
                         })
                     })
                 },
@@ -628,7 +654,8 @@ pub(crate) fn register_host_functions(
                  acc_len: i32,
                  dst_ptr: i32,
                  dst_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
@@ -636,11 +663,12 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
                         let destination = Region::new(dst_ptr, dst_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
                             host.paychannel_keylet(
                                 account.read(data)?,
                                 destination.read(data)?,
-                                seq,
+                                read_u32_arg(seq.read(data)?)?,
                                 buf,
                             )
                         })
@@ -653,7 +681,8 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
@@ -663,8 +692,11 @@ pub(crate) fn register_host_functions(
                         |c| {
                             let out = Region::new(out_ptr, out_len);
                             let account = Region::new(acc_ptr, acc_len);
+                            let seq = Region::new(seq_ptr, seq_len);
                             write_buffered(c, out, |host, data, buf| {
-                                host.permissioned_domain_keylet(account.read(data)?, seq, buf)
+                                let account = account.read(data)?;
+                                let seq = read_u32_arg(seq.read(data)?)?;
+                                host.permissioned_domain_keylet(account, seq, buf)
                             })
                         },
                     )
@@ -694,15 +726,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::TicketKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.ticket_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.ticket_keylet(account, seq, buf)
                         })
                     })
                 },
@@ -713,15 +749,19 @@ pub(crate) fn register_host_functions(
                 |mut caller: Caller<'_, VmState<'_>>,
                  acc_ptr: i32,
                  acc_len: i32,
-                 seq: i32,
+                 seq_ptr: i32,
+                 seq_len: i32,
                  out_ptr: i32,
                  out_len: i32|
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::VaultKeylet, |c| {
                         let out = Region::new(out_ptr, out_len);
                         let account = Region::new(acc_ptr, acc_len);
+                        let seq = Region::new(seq_ptr, seq_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.vault_keylet(account.read(data)?, seq, buf)
+                            let account = account.read(data)?;
+                            let seq = read_u32_arg(seq.read(data)?)?;
+                            host.vault_keylet(account, seq, buf)
                         })
                     })
                 },

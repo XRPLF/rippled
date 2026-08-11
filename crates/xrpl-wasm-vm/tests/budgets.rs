@@ -156,8 +156,8 @@ fn call_for(op: HostFunctionSpec) -> Call {
         ),
         HostFunctionSpec::CheckKeylet => (
             import::CHECK_ID,
-            "(call $check_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $check_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::CredentialKeylet => (
             import::CREDENTIAL_ID,
@@ -181,8 +181,8 @@ fn call_for(op: HostFunctionSpec) -> Call {
         ),
         HostFunctionSpec::EscrowKeylet => (
             import::ESCROW_ID,
-            "(call $escrow_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $escrow_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::TrustLineKeylet => (
             import::TRUSTLINE_ID,
@@ -191,8 +191,8 @@ fn call_for(op: HostFunctionSpec) -> Call {
         ),
         HostFunctionSpec::MptokenIssuanceKeylet => (
             import::MPT_ISSUANCE_ID,
-            "(call $mpt_issuance_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $mpt_issuance_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::MptokenKeylet => (
             import::MPTOKEN_ID,
@@ -201,28 +201,28 @@ fn call_for(op: HostFunctionSpec) -> Call {
         ),
         HostFunctionSpec::NftokenOfferKeylet => (
             import::NFT_OFFER_ID,
-            "(call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::OfferKeylet => (
             import::OFFER_ID,
-            "(call $offer_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $offer_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::OracleKeylet => (
             import::ORACLE_ID,
-            "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::PaychannelKeylet => (
             import::PAYCHAN_ID,
-            "(call $paychan_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 5) (i32.const 40) (i32.const 20))",
-            7,
+            "(call $paychan_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 40) (i32.const 20))",
+            8,
         ),
         HostFunctionSpec::PermissionedDomainKeylet => (
             import::PERMISSIONED_DOMAIN_ID,
-            "(call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::SignerListKeylet => (
             import::SIGNERS_ID,
@@ -231,13 +231,13 @@ fn call_for(op: HostFunctionSpec) -> Call {
         ),
         HostFunctionSpec::TicketKeylet => (
             import::TICKET_ID,
-            "(call $ticket_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $ticket_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::VaultKeylet => (
             import::VAULT_ID,
-            "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
-            5,
+            "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,

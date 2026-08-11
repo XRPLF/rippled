@@ -425,7 +425,8 @@ fn check_id_reads_the_account_and_seq_and_writes_the_keylet() {
 
     let wat = module(
         &[import::CHECK_ID, ONE_PAGE],
-        "(call $check_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $check_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.check_keylets_asked.borrow(), vec![(account, 5)]);
@@ -536,7 +537,8 @@ fn escrow_id_reads_the_account_and_seq_and_writes_the_keylet() {
 
     let wat = module(
         &[import::ESCROW_ID, ONE_PAGE],
-        "(call $escrow_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $escrow_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.escrow_keylets_asked.borrow(), vec![(account, 5)]);
@@ -583,7 +585,8 @@ fn mpt_issuance_id_reads_the_issuer_and_seq() {
 
     let wat = module(
         &[import::MPT_ISSUANCE_ID, ONE_PAGE],
-        "(call $mpt_issuance_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $mpt_issuance_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.mpt_issuance_keylets_asked.borrow(), vec![(issuer, 5)]);
@@ -621,7 +624,8 @@ fn nft_offer_id_reads_the_account_and_seq() {
 
     let wat = module(
         &[import::NFT_OFFER_ID, ONE_PAGE],
-        "(call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.nft_offer_keylets_asked.borrow(), vec![(account, 5)]);
@@ -637,7 +641,8 @@ fn offer_id_reads_the_account_and_seq() {
 
     let wat = module(
         &[import::OFFER_ID, ONE_PAGE],
-        "(call $offer_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $offer_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.offer_keylets_asked.borrow(), vec![(account, 5)]);
@@ -653,7 +658,8 @@ fn oracle_id_reads_the_account_and_doc_id() {
 
     let wat = module(
         &[import::ORACLE_ID, ONE_PAGE],
-        "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $oracle_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.oracle_keylets_asked.borrow(), vec![(account, 5)]);
@@ -674,7 +680,8 @@ fn paychan_id_reads_both_accounts_and_the_seq() {
 
     let wat = module(
         &[import::PAYCHAN_ID, ONE_PAGE],
-        "(call $paychan_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 24) (i32.const 5))
+         (call $paychan_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 20) (i32.const 24) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(
@@ -696,7 +703,8 @@ fn permissioned_domain_id_reads_the_account_and_seq() {
 
     let wat = module(
         &[import::PERMISSIONED_DOMAIN_ID, ONE_PAGE],
-        "(call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.domain_keylets_asked.borrow(), vec![(account, 5)]);
@@ -727,7 +735,8 @@ fn ticket_id_reads_the_account_and_seq() {
 
     let wat = module(
         &[import::TICKET_ID, ONE_PAGE],
-        "(call $ticket_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $ticket_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.ticket_keylets_asked.borrow(), vec![(account, 5)]);
@@ -742,7 +751,8 @@ fn vault_id_reads_the_account_and_seq() {
 
     let wat = module(
         &[import::VAULT_ID, ONE_PAGE],
-        "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+        "(i32.store (i32.const 20) (i32.const 5))
+         (call $vault_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 4) (i32.const 64) (i32.const 64))",
     );
     assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
     assert_eq!(*host.vault_keylets_asked.borrow(), vec![(account, 5)]);

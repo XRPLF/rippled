@@ -1406,24 +1406,24 @@ pub mod import {
     pub const CHECK_SIG: &str = r#"(import "host_lib" "check_sig" (func $check_sig (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const ACCOUNTROOT_ID: &str = r#"(import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const AMM_ID: &str = r#"(import "host_lib" "amm_id" (func $amm_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const CHECK_ID: &str = r#"(import "host_lib" "check_id" (func $check_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const CHECK_ID: &str = r#"(import "host_lib" "check_id" (func $check_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const CREDENTIAL_ID: &str = r#"(import "host_lib" "credential_id" (func $credential_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const DELEGATE_ID: &str = r#"(import "host_lib" "delegate_id" (func $delegate_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const DEPOSIT_PREAUTH_ID: &str = r#"(import "host_lib" "deposit_preauth_id" (func $deposit_preauth_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const DID_ID: &str =
         r#"(import "host_lib" "did_id" (func $did_id (param i32 i32 i32 i32) (result i32)))"#;
-    pub const ESCROW_ID: &str = r#"(import "host_lib" "escrow_id" (func $escrow_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const ESCROW_ID: &str = r#"(import "host_lib" "escrow_id" (func $escrow_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const TRUSTLINE_ID: &str = r#"(import "host_lib" "trustline_id" (func $trustline_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const MPT_ISSUANCE_ID: &str = r#"(import "host_lib" "mpt_issuance_id" (func $mpt_issuance_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const MPT_ISSUANCE_ID: &str = r#"(import "host_lib" "mpt_issuance_id" (func $mpt_issuance_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const MPTOKEN_ID: &str = r#"(import "host_lib" "mptoken_id" (func $mptoken_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const NFT_OFFER_ID: &str = r#"(import "host_lib" "nft_offer_id" (func $nft_offer_id (param i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const OFFER_ID: &str = r#"(import "host_lib" "offer_id" (func $offer_id (param i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const ORACLE_ID: &str = r#"(import "host_lib" "oracle_id" (func $oracle_id (param i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const PAYCHAN_ID: &str = r#"(import "host_lib" "paychan_id" (func $paychan_id (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const PERMISSIONED_DOMAIN_ID: &str = r#"(import "host_lib" "permissioned_domain_id" (func $permissioned_domain_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const NFT_OFFER_ID: &str = r#"(import "host_lib" "nft_offer_id" (func $nft_offer_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const OFFER_ID: &str = r#"(import "host_lib" "offer_id" (func $offer_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const ORACLE_ID: &str = r#"(import "host_lib" "oracle_id" (func $oracle_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const PAYCHAN_ID: &str = r#"(import "host_lib" "paychan_id" (func $paychan_id (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const PERMISSIONED_DOMAIN_ID: &str = r#"(import "host_lib" "permissioned_domain_id" (func $permissioned_domain_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SIGNERS_ID: &str = r#"(import "host_lib" "signers_id" (func $signers_id (param i32 i32 i32 i32) (result i32)))"#;
-    pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const VAULT_ID: &str = r#"(import "host_lib" "vault_id" (func $vault_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const VAULT_ID: &str = r#"(import "host_lib" "vault_id" (func $vault_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
