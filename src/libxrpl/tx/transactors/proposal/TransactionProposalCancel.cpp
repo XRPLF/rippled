@@ -73,22 +73,10 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 TER
 TransactionProposalCancel::doApply()
 {
-    // Normally the proposal preclaim checked is still on the ledger here,
-    // and this function deletes it. The guard below covers one future case
-    // (the Cosign auto-delete change, XLS-0103 §4.5): under that change,
-    // consuming a ticket automatically deletes the proposal keyed to it,
-    // and tickets are consumed in consumeSeqProxy, which runs before
-    // doApply. So a Cancel that pays with the very ticket its own proposal
-    // is keyed to finds the proposal already gone — which is success, not
-    // an error: what the Cancel asked for has already happened.
-    //
-    // The keylet comparison that recognizes this case is also an
-    // authorization proof. A proposal's ID is derived from (target account,
-    // ticket sequence), so if the missing proposal's ID matches (this
-    // account, the spent ticket), the canceller is the proposal's target —
-    // who may always cancel. There is no other way for the proposal to
-    // vanish between preclaim and doApply, so anything else is an internal
-    // error.
+    // The below condition covers the case of TransactionProposalCancel
+    // consuming the very ticket specified in the
+    // sleProposal[sfProposedTransaction] field. This indicates the intent of
+    // the Target-Account to cancel the ticket+associated-txProposal.
     Keylet const proposalKeylet = keylet::txProposal(ctx_.tx[sfProposalID]);
     auto const sleProposal = view().peek(proposalKeylet);
     if (!sleProposal)

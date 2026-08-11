@@ -7,6 +7,7 @@
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
@@ -142,5 +143,43 @@ isTerminal(
  */
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
+
+/**
+ * Whether tx carries the same payload as a proposal's stored
+ * ProposedTransaction (XLS-0103 §4.2.1).
+ *
+ * The payload is every field fixed at creation — everything except the
+ * signature containers the proposal lets evolve (TxnSignature, Signers,
+ * BatchSigners, CounterpartySignature, SponsorSignature) and SigningPubKey,
+ * which is stored empty and filled only if the target signs with its own
+ * key. So the completed transaction matches no matter which mix of collected
+ * or off-ledger signatures it carries, and any change to a non-signature
+ * field does not.
+ *
+ * @param proposedTx The proposal's ProposedTransaction field.
+ * @param tx The transaction to compare, typically an STTx.
+ */
+bool
+payloadMatches(STObject const& proposedTx, STObject const& tx);
+
+/**
+ * Whether tx may consume the Ticket a TransactionProposal is keyed to.
+ *
+ * While a proposal exists, its target's ticket is reserved: only the
+ * proposal's own proposed transaction may spend it (XLS-0103 §4.2.1), so
+ * that unrelated target-account activity cannot invalidate the proposal
+ * while signatures are being collected. The one other transaction allowed
+ * through is a TransactionProposalCancel naming this very proposal: it
+ * deletes the reservation itself, its submitter is necessarily the
+ * proposal's target (the ticket spent is the target's, and the proposal's ID
+ * is derived from target and ticket), who may always cancel — and cancelling
+ * while consuming the reserved ticket is the strongest form of refusal,
+ * revoking even signatures an observer may have copied (XLS-0103 §13.4).
+ *
+ * @param sleProposal The TransactionProposal keyed to the ticket tx spends.
+ * @param tx The transaction attempting to consume that ticket.
+ */
+bool
+mayConsumeReservedTicket(SLE const& sleProposal, STTx const& tx);
 
 }  // namespace xrpl::proposal

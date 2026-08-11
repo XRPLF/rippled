@@ -41,6 +41,7 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -754,6 +755,23 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefNO_TICKET;
         }
+
+        // While a TransactionProposal keyed to this Ticket exists, the
+        // Ticket is reserved: only the proposal's own proposed transaction
+        // (or a Cancel of that very proposal) may consume it, so unrelated
+        // activity cannot invalidate the proposal while signatures are being
+        // collected (XLS-0103 §4.2.1). Cancelling the proposal frees the
+        // Ticket, so this is a retry, not a final failure.
+        if (view.rules().enabled(featureCosign))
+        {
+            auto const sleProposal = view.read(keylet::txProposal(id, tSeqProx.value()));
+            if (sleProposal && !proposal::mayConsumeReservedTicket(*sleProposal, tx))
+            {
+                JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx
+                                << " is reserved by a TransactionProposal";
+                return terTICKET_RESERVED;
+            }
+        }
     }
 
     return tesSUCCESS;
@@ -864,8 +882,28 @@ Transactor::ticketDelete(
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
+    std::uint32_t const ticketSeq{(*sleTicket)[sfTicketSequence]};
+
     // Remove Ticket from ledger.
     view.erase(sleTicket);
+
+    // Once the Ticket is gone, a TransactionProposal keyed to it can never
+    // execute: its proposed transaction would fail with tefNO_TICKET. Clean
+    // up the stale proposal and release its Owner's reserve (XLS-0103 §4.5).
+    // The reservation check in checkSeqProxy means this is reached only by
+    // the proposal's own proposed transaction executing (or failing with a
+    // claimed-fee tec), by a Cancel of this very proposal paying with the
+    // reserved Ticket (XLS-0103 §13.4), or by AccountDelete sweeping the
+    // target account's Tickets.
+    if (view.rules().enabled(featureCosign))
+    {
+        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+        {
+            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+
     return tesSUCCESS;
 }
 

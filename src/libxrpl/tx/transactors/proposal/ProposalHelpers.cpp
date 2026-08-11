@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -14,7 +15,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
 #include <optional>
@@ -77,6 +81,47 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
 
     view.erase(sleProposal);
     return tesSUCCESS;
+}
+
+bool
+payloadMatches(STObject const& proposedTx, STObject const& tx)
+{
+    XRPL_ASSERT(
+        proposedTx.isFieldPresent(sfTransactionType) && tx.isFieldPresent(sfTransactionType),
+        "xrpl::proposal::payloadMatches : transaction-shaped inputs");
+
+    // The signing-payload serialization omits exactly the signature
+    // containers a proposal lets evolve (TxnSignature, Signers, BatchSigners,
+    // CounterpartySignature, SponsorSignature), so it is the field set fixed
+    // at creation — except SigningPubKey, which signing payloads include but
+    // which is also mutable here (stored empty, filled if the target signs
+    // with its own key). Neutralize it on both sides before comparing.
+    auto const payloadBytes = [](STObject const& obj) {
+        STObject copy{obj};
+        copy.setFieldVL(sfSigningPubKey, Slice{});
+        Serializer s;
+        copy.addWithoutSigningFields(s);
+        return s.getData();
+    };
+
+    return payloadBytes(proposedTx) == payloadBytes(tx);
+}
+
+bool
+mayConsumeReservedTicket(SLE const& sleProposal, STTx const& tx)
+{
+    XRPL_ASSERT(
+        sleProposal.getType() == ltTRANSACTION_PROPOSAL,
+        "xrpl::proposal::mayConsumeReservedTicket : a TransactionProposal entry");
+
+    // Cancelling this very proposal deletes the reservation itself, so the
+    // Cancel may also be the transaction that consumes the reserved ticket
+    // (XLS-0103 §13.4). Spending the ticket proves the submitter is the
+    // proposal's target, who may always cancel (XLS-0103 §7.2).
+    if (tx.getTxnType() == ttTRANSACTION_PROPOSAL_CANCEL && tx[sfProposalID] == sleProposal.key())
+        return true;
+
+    return payloadMatches(sleProposal.getFieldObject(sfProposedTransaction), tx);
 }
 
 }  // namespace xrpl::proposal
