@@ -8,10 +8,13 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/LocalTxs.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
@@ -25,10 +28,12 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
+#include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -41,6 +46,7 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
@@ -53,6 +59,7 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_forwards.h>
@@ -64,6 +71,7 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -78,16 +86,17 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -126,15 +135,20 @@
 #include <cstdlib>
 #include <exception>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
