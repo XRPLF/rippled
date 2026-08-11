@@ -249,6 +249,14 @@ impl HostFunctions for FakeHost {
         put(out, &[authorize[0]; HASH_LEN])
     }
 
+    /// A single-account keylet, for a `DID`.
+    fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if account.is_empty() {
+            return Err(HostError::InvalidAccount);
+        }
+        put(out, &[account[0]; HASH_LEN])
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         let mut digest = [0; HASH_LEN];
         digest[0] = data.len() as u8;
@@ -380,6 +388,12 @@ fn the_trait_is_implementable() {
         host.deposit_preauth_keylet(&[7; 20], &[7; 20], &mut out),
         Err(HostError::InvalidParams)
     );
+    assert_eq!(host.did_keylet(&[7; 20], &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.did_keylet(&[], &mut out),
+        Err(HostError::InvalidAccount)
+    );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
@@ -472,6 +486,7 @@ fn the_spec_table_matches_the_declarations() {
             ("credential_id", 350),
             ("delegate_id", 350),
             ("deposit_preauth_id", 350),
+            ("did_id", 350),
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),

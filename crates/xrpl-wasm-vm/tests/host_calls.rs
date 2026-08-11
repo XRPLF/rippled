@@ -513,6 +513,20 @@ fn deposit_preauth_id_reads_both_accounts_and_writes_the_keylet() {
     );
 }
 
+/// A single-account keylet getter (like accountroot), with its own answer set.
+#[test]
+fn did_id_reads_the_account_and_writes_the_keylet() {
+    let account = vec![0u8; 20];
+    let host = FakeHost::new().answering_did_keylet(account.clone(), support::Answer::filler(32));
+
+    let wat = module(
+        &[import::DID_ID, ONE_PAGE],
+        "(call $did_id (i32.const 0) (i32.const 20) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.did_keylets_asked.borrow(), vec![account]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
