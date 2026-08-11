@@ -15,7 +15,7 @@
 
 namespace xrpl {
 
-class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
+class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
 {
     void
     testMPTokenIssuanceSetRotateIssuerKey(FeatureBitset features)
@@ -51,7 +51,7 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         }
 
         // Rotating the issuer key requires the key rotation amendment
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(bob),
@@ -126,7 +126,7 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         }
 
         // Rotating both keys, it requires the amendment
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(bob),
@@ -203,8 +203,9 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         });
 
         // A transaction carrying only the auditor key fails preflight
-        // pre-ConfidentialKeyRotation; post-ConfidentialKeyRotation it rotates the auditor key
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        // pre-ConfidentialMPTKeyRotation; post-ConfidentialMPTKeyRotation it rotates the auditor
+        // key
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .auditorPubKey = mptAlice.getPubKey(bob),
@@ -275,9 +276,9 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         });
 
         // Register the auditor key separately.
-        // pre-ConfidentialKeyRotation it fails preflight; post-ConfidentialKeyRotation it succeeds
-        // without touching any epoch because it's a first-time registration.
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        // pre-ConfidentialMPTKeyRotation it fails preflight; post-ConfidentialMPTKeyRotation it
+        // succeeds without touching any epoch because it's a first-time registration.
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .auditorPubKey = mptAlice.getPubKey(auditor),
@@ -335,10 +336,10 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(coaBefore > 0);
 
         // Registering the auditor key for the first time while confidential
-        // supply is circulating: pre-ConfidentialKeyRotation an auditor-only
-        // transaction fails preflight; post-ConfidentialKeyRotation it
+        // supply is circulating: pre-ConfidentialMPTKeyRotation an auditor-only
+        // transaction fails preflight; post-ConfidentialMPTKeyRotation it
         // succeeds as a first-time late-registration even COA > 0.
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .auditorPubKey = mptAlice.getPubKey(auditor),
@@ -373,11 +374,11 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
         });
 
         mptAlice.generateKeyPair(auditor);
-        // The issuer key was never registered. pre-ConfidentialKeyRotation an auditor-only
-        // transaction fails preflight; post-ConfidentialKeyRotation it passes preflight
+        // The issuer key was never registered. pre-ConfidentialMPTKeyRotation an auditor-only
+        // transaction fails preflight; post-ConfidentialMPTKeyRotation it passes preflight
         // but preclaim rejects registering an auditor key on an issuance
         // without an issuer key.
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .auditorPubKey = mptAlice.getPubKey(auditor),
@@ -435,7 +436,7 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
 
         // Rotating key requires the
         // amendment.
-        bool const rotationEnabled = features[featureConfidentialKeyRotation];
+        bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
             .issuerPubKey = mptAlice.getPubKey(carol),
@@ -459,7 +460,7 @@ class ConfidentialKeyRotation_test : public ConfidentialTransferTestBase
             (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) == coaBeforeRotation);
 
         // Re-enabling confidential balances while supply is circulating is
-        // rejected regardless of the ConfidentialKeyRotation amendment.
+        // rejected regardless of the ConfidentialMPTKeyRotation amendment.
         mptAlice.set({
             .account = alice,
             .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
@@ -487,10 +488,10 @@ public:
         FeatureBitset const all{testableAmendments()};
 
         testMPTokenIssuanceSetWithFeats(all);
-        testMPTokenIssuanceSetWithFeats(all - featureConfidentialKeyRotation);
+        testMPTokenIssuanceSetWithFeats(all - featureConfidentialMPTKeyRotation);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ConfidentialKeyRotation, app, xrpl);
+BEAST_DEFINE_TESTSUITE(ConfidentialMPTKeyRotation, app, xrpl);
 
 }  // namespace xrpl

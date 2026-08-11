@@ -145,15 +145,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
         return temMALFORMED;
 
-    // Pre-ConfidentialKeyRotation amendment, the auditor key could not be
+    // Pre-ConfidentialMPTKeyRotation amendment, the auditor key could not be
     // registered independently of the issuer key. The issuer could either:
     // - Register only the issuer key (in which case an auditor key could not be added later), or
     // - Register both the issuer and auditor keys simultaneously.
     //
-    // Post-ConfidentialKeyRotation amendment, the auditor key can be
+    // Post-ConfidentialMPTKeyRotation amendment, the auditor key can be
     // registered after the issuer key has already been registered.
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey &&
-        !ctx.rules.enabled(featureConfidentialKeyRotation))
+        !ctx.rules.enabled(featureConfidentialMPTKeyRotation))
         return temMALFORMED;
 
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
@@ -261,8 +261,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // Updating an existing encryption key requires the
-    // ConfidentialKeyRotation amendment.
-    bool const canRotateKey = ctx.view.rules().enabled(featureConfidentialKeyRotation);
+    // ConfidentialMPTKeyRotation amendment.
+    bool const canRotateKey = ctx.view.rules().enabled(featureConfidentialMPTKeyRotation);
 
     bool const txHasIssuerKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
     bool const txHasAuditorKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
@@ -271,7 +271,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (canRotateKey)
     {
-        // Post-ConfidentialKeyRotation amendment, the encryption keys can be updated.
+        // Post-ConfidentialMPTKeyRotation amendment, the encryption keys can be updated.
         // A first-time auditor key registration requires an issuer key,
         // either already on the issuance or set by the same transaction.
         bool const registersAuditorKey = txHasAuditorKey && !sleHasAuditorKey;
@@ -281,7 +281,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        // Pre-ConfidentialKeyRotation amendment, the encryption keys can not be updated.
+        // Pre-ConfidentialMPTKeyRotation amendment, the encryption keys can not be updated.
         // cannot update issuer public key
         if (txHasIssuerKey && sleHasIssuerKey)
             return tecNO_PERMISSION;
@@ -312,13 +312,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     bool const hasConfidentialOA =
         (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0;
 
-    // Pre-ConfidentialKeyRotation amendment, keys cannot be uploaded while
+    // Pre-ConfidentialMPTKeyRotation amendment, keys cannot be uploaded while
     // COA > 0. Post-amendment they can be uploaded even if COA > 0.
     if (!canRotateKey && (txHasIssuerKey || txHasAuditorKey) && hasConfidentialOA)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Enabling confidential balances when COA > 0 is not permitted, regardless of
-    // ConfidentialKeyRotation.
+    // ConfidentialMPTKeyRotation.
     if (enablesConfidentialAmount && hasConfidentialOA)
         return tecNO_PERMISSION;
 
@@ -423,7 +423,7 @@ MPTokenIssuanceSet::doApply()
     // Sets an encryption key on the issuance. Overwriting an existing key
     // (a rotation) increments the corresponding key epoch; a first-time
     // registration leaves the epoch absent (epoch 0), matching issuances
-    // whose keys were registered before the ConfidentialKeyRotation
+    // whose keys were registered before the ConfidentialMPTKeyRotation
     // amendment.
     auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) {
         auto const pubKey = ctx_.tx[~keyField];
