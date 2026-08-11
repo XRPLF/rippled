@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -105,7 +106,14 @@ verifySendProofs(
 {
     // Sanity check
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::detail::verifySendProofs : caller must pre-validate sender/destination/"
+            "issuance existence");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
@@ -204,7 +212,14 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: issuer isn't the sender
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTSend::preclaim : issuer derived from the MPT ID must match "
+            "the ledger's stored issuer");
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Check sender's MPToken existence
     auto const sleSenderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
@@ -238,7 +253,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         (!sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance) ||
          !sleDestinationMPToken->isFieldPresent(sfAuditorEncryptedBalance)))
     {
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTSend::preclaim : issuance-level auditing implies both "
+            "MPTokens already carry an auditor balance");
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Check lock
@@ -283,7 +303,14 @@ ConfidentialMPTSend::doApply()
     auto const sleDestAcct = view().read(keylet::account(destination));
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance || !sleDestAcct)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ConfidentialMPTSend::doApply : preclaim already validated these objects "
+            "exist");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Deposit preauth authorization was already verified in preclaim.
     // Remove any expired credentials.
@@ -353,7 +380,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedDestEc = rerandomizeCiphertext(
             destEc, (*sleDestinationMPToken)[sfHolderEncryptionKey], sendChallenge);
         if (!rerandomizedDestEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination inbox ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         auto newInbox = homomorphicAdd(curInbox, *rerandomizedDestEc);
@@ -374,7 +407,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedIssuerEc =
             rerandomizeCiphertext(issuerEc, (*sleIssuance)[sfIssuerEncryptionKey], sendChallenge);
         if (!rerandomizedIssuerEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination issuer ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicAdd(curIssuerEnc, *rerandomizedIssuerEc);
@@ -396,7 +435,13 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedAuditorEc = rerandomizeCiphertext(
             *auditorEc, (*sleIssuance)[sfAuditorEncryptionKey], sendChallenge);
         if (!rerandomizedAuditorEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination auditor ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *rerandomizedAuditorEc);

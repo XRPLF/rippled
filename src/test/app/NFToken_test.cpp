@@ -4792,6 +4792,87 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
     }
 
     void
+    testNftXxxOffersMarkerWrongSide(FeatureBitset features)
+    {
+        // A pagination marker passed to nft_buy_offers / nft_sell_offers must
+        // reference an offer on the same side (buy vs. sell) as the directory
+        // being enumerated.  A wrong-side marker is rejected with invalidParams.
+        //
+        // Note: the pre-fix code also returned invalidParams for a wrong-side
+        // marker, but only after scanning the entire target directory (an
+        // O(directory size) walk usable to burn CPU).  The fix short-circuits
+        // that scan.  The scan-avoidance is not observable from the RPC
+        // response, so this test locks the rejection contract (wrong-side ->
+        // error, same-side -> success) rather than the performance property.
+        testcase("nft_buy_offers and nft_sell_offers wrong-side marker");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(10000), issuer, buyer);
+        env.close();
+
+        // Mint a transferable NFT.
+        uint256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        // Create one sell offer (from the issuer, who owns the NFT) and one
+        // buy offer (from the buyer) for the same NFT.
+        env(token::createOffer(issuer, nftID, XRP(100)), Txflags(tfSellNFToken));
+        env(token::createOffer(buyer, nftID, XRP(50)), token::Owner(issuer));
+        env.close();
+
+        // Grab the index of the single offer on each side from the RPC
+        // response so we can use it as a marker.
+        auto firstOfferIndex = [this, &env, &nftID](char const* request) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            json::Value const result = env.rpc("json", request, to_string(params))[jss::result];
+            BEAST_EXPECT(result.isMember(jss::offers) && result[jss::offers].size() == 1);
+            return result[jss::offers][0u][jss::nft_offer_index].asString();
+        };
+
+        std::string const sellOfferIndex = firstOfferIndex("nft_sell_offers");
+        std::string const buyOfferIndex = firstOfferIndex("nft_buy_offers");
+
+        auto queryWithMarker = [&env, &nftID](char const* request, std::string const& marker) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            params[jss::marker] = marker;
+            return env.rpc("json", request, to_string(params))[jss::result];
+        };
+
+        // A marker referencing an offer on the wrong side is rejected with
+        // invalidParams.
+        {
+            // Sell-side marker passed to nft_buy_offers.
+            json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+        {
+            // Buy-side marker passed to nft_sell_offers.
+            json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+
+        // A same-side marker is still accepted.  With a single offer on each
+        // side, resuming after it simply yields no further offers.
+        {
+            json::Value const result = queryWithMarker("nft_buy_offers", buyOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+        {
+            json::Value const result = queryWithMarker("nft_sell_offers", sellOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+    }
+
+    void
     testNFTokenNegOffer(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -7427,6 +7508,7 @@ protected:
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
+        testNftXxxOffersMarkerWrongSide(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
