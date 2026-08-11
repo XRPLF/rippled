@@ -3757,8 +3757,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 {.transferFee = 25000,
                  .ownerCount = 1,
                  .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanMutateTransferFee});
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
