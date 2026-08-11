@@ -289,6 +289,76 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $nft_serial (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4))",
             4,
         ),
+        HostFunctionSpec::FloatFromInt => (
+            import::FLOAT_FROM_INT,
+            "(call $float_from_int (i64.const 0) (i32.const 0) (i32.const 8) (i32.const 0))",
+            4,
+        ),
+        HostFunctionSpec::FloatFromUint => (
+            import::FLOAT_FROM_UINT,
+            "(call $float_from_uint (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatFromStamount => (
+            import::FLOAT_FROM_STAMOUNT,
+            "(call $float_from_stamount (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatFromStnumber => (
+            import::FLOAT_FROM_STNUMBER,
+            "(call $float_from_stnumber (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatToInt => (
+            import::FLOAT_TO_INT,
+            "(call $float_to_int (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatToMantExp => (
+            import::FLOAT_TO_MANT_EXP,
+            "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 4))",
+            6,
+        ),
+        HostFunctionSpec::FloatFromMantExp => (
+            import::FLOAT_FROM_MANT_EXP,
+            "(call $float_from_mant_exp (i64.const 0) (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatCompare => (
+            import::FLOAT_CMP,
+            "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
+            4,
+        ),
+        HostFunctionSpec::FloatAdd => (
+            import::FLOAT_ADD,
+            "(call $float_add (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatSubtract => (
+            import::FLOAT_SUB,
+            "(call $float_sub (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatMultiply => (
+            import::FLOAT_MULT,
+            "(call $float_mult (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatDivide => (
+            import::FLOAT_DIV,
+            "(call $float_div (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatRoot => (
+            import::FLOAT_ROOT,
+            "(call $float_root (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
+            6,
+        ),
+        HostFunctionSpec::FloatPower => (
+            import::FLOAT_POW,
+            "(call $float_pow (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
+            6,
+        ),
     };
     Call {
         import,

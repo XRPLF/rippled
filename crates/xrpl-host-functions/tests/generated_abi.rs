@@ -455,6 +455,126 @@ impl HostFunctions for FakeHost {
         }
         put(out, &nft_id[0].to_le_bytes())
     }
+
+    /// A scalar-in float: writes the low byte of `x` as a stand-in float.
+    fn float_from_int(&self, x: i64, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        put(out, &[x as u8])
+    }
+
+    /// A byte-in float; `InvalidParams` on an empty region.
+    fn float_from_uint(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// The same, for a serialized amount.
+    fn float_from_stamount(&self, amount: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if amount.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[amount[0]])
+    }
+
+    /// The same, for a serialized number.
+    fn float_from_stnumber(&self, number: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if number.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[number[0]])
+    }
+
+    /// A float rounded to an integer, written as bytes.
+    fn float_to_int(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// Writes a mantissa (its first byte) and an exponent (its first byte) to two
+    /// regions, returning their combined length.
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize> {
+        if x.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        let m = put(mantissa_out, &[x[0]])?;
+        let e = put(exponent_out, &[x[0]])?;
+        Ok(m + e)
+    }
+
+    /// A two-scalar-in float.
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        _exponent: i32,
+        _mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        put(out, &[mantissa as u8])
+    }
+
+    /// Reads two floats and returns a scalar; `InvalidParams` if either is empty.
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+        if x.is_empty() || y.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        Ok(i32::from(x[0]) - i32::from(y[0]))
+    }
+
+    /// A binary float operator; `InvalidParams` if either operand is empty.
+    fn float_add(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() || y.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// The same shape, for subtraction.
+    fn float_subtract(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() || y.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// The same shape, for multiplication.
+    fn float_multiply(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() || y.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// The same shape, for division.
+    fn float_divide(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() || y.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// A one-float-and-integer operator; `InvalidParams` on an empty operand.
+    fn float_root(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
+
+    /// The same shape, for exponentiation.
+    fn float_power(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        if x.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[x[0]])
+    }
 }
 
 #[test]
@@ -687,6 +807,26 @@ fn the_trait_is_implementable() {
     assert_eq!(host.get_nft_flags(&[]), Err(HostError::InvalidParams));
     assert_eq!(host.get_nft_transfer_fee(&[9; 32]), Ok(9));
     assert_eq!(host.get_nft_sequence(&[9; 32], &mut out), Ok(1));
+    assert_eq!(host.float_from_int(5, 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_uint(&[3; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_stamount(&[3; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_stnumber(&[3; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_to_int(&[3; 8], 0, &mut out), Ok(1));
+    let mut mant = [0u8; 8];
+    let mut exp = [0u8; 4];
+    assert_eq!(host.float_to_mant_exp(&[3; 8], &mut mant, &mut exp), Ok(2));
+    assert_eq!(host.float_from_mant_exp(5, 0, 0, &mut out), Ok(1));
+    assert_eq!(host.float_compare(&[9; 8], &[4; 8]), Ok(5));
+    assert_eq!(
+        host.float_compare(&[], &[4; 8]),
+        Err(HostError::InvalidParams)
+    );
+    assert_eq!(host.float_add(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_subtract(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_multiply(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_divide(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_root(&[3; 8], 2, 0, &mut out), Ok(1));
+    assert_eq!(host.float_power(&[3; 8], 2, 0, &mut out), Ok(1));
 
     assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
 }
@@ -798,6 +938,20 @@ fn the_spec_table_matches_the_declarations() {
             ("nft_flags", 60),
             ("nft_xfer_fee", 60),
             ("nft_serial", 60),
+            ("float_from_int", 100),
+            ("float_from_uint", 130),
+            ("float_from_stamount", 150),
+            ("float_from_stnumber", 150),
+            ("float_to_int", 130),
+            ("float_to_mant_exp", 130),
+            ("float_from_mant_exp", 100),
+            ("float_cmp", 80),
+            ("float_add", 160),
+            ("float_sub", 160),
+            ("float_mult", 300),
+            ("float_div", 300),
+            ("float_root", 5500),
+            ("float_pow", 5500),
         ]
     );
 }

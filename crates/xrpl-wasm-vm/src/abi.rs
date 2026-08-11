@@ -174,6 +174,69 @@ pub(crate) fn write_buffered(
     Ok(n)
 }
 
+/// The mantissa and exponent widths `float_to_mant_exp` writes: an `i64` and an `i32`.
+/// Fixed by the ABI, not the guest, so the split is a constant rather than a reported
+/// length.
+const MANTISSA_BYTES: usize = 8;
+const EXPONENT_BYTES: usize = 4;
+
+/// Service `float_to_mant_exp`, the one call that writes two output regions: the host
+/// fills the run's output buffer with the mantissa followed by the exponent, and each
+/// is copied to its own guest region once every rule has passed.
+///
+/// Like [`write_buffered`], the host reads its input from the guest's memory and writes
+/// to a scratch buffer, so the input stays borrowed rather than copied. The two output
+/// regions are judged after the input, and the mantissa's region before the exponent's,
+/// so the first fault reported is the leftmost.
+pub(crate) fn write_mant_exp(
+    caller: &mut Caller<'_, VmState<'_>>,
+    mantissa_out: Region,
+    exponent_out: Region,
+    call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8], &mut [u8]) -> HostResult<usize>,
+) -> HostResult<i32> {
+    let mem = memory(caller)?;
+    let (data, state) = mem.data_and_store_mut(&mut *caller);
+    let host: &dyn HostFunctions = state.host;
+
+    // The scratch buffer is split at the fixed mantissa width: the host fills the first
+    // eight bytes with the mantissa and the next four with the exponent.
+    let (mant_buf, exp_buf) = state.out_buffer.split_at_mut(MANTISSA_BYTES);
+    let mant_buf = &mut mant_buf[..MANTISSA_BYTES];
+    let exp_buf = &mut exp_buf[..EXPONENT_BYTES];
+
+    let total = call(host, data, mant_buf, exp_buf)?;
+
+    // Copy the mantissa, then the exponent, each only if its whole value fits its
+    // region — a region too small is `BufferTooSmall`, with nothing written.
+    let mant_range = mantissa_out.range()?;
+    let mant_dst = data
+        .get_mut(mant_range)
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if mant_dst.len() < MANTISSA_BYTES {
+        return Err(HostError::BufferTooSmall);
+    }
+    mant_dst[..MANTISSA_BYTES].copy_from_slice(&state.out_buffer[..MANTISSA_BYTES]);
+
+    let exp_range = exponent_out.range()?;
+    let exp_dst = data
+        .get_mut(exp_range)
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if exp_dst.len() < EXPONENT_BYTES {
+        return Err(HostError::BufferTooSmall);
+    }
+    exp_dst[..EXPONENT_BYTES]
+        .copy_from_slice(&state.out_buffer[MANTISSA_BYTES..MANTISSA_BYTES + EXPONENT_BYTES]);
+
+    charge_transfer(state, MANTISSA_BYTES + EXPONENT_BYTES)?;
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        reason = "the total is 12, far inside i32"
+    )]
+    let total = total as i32;
+    Ok(total)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -403,6 +466,99 @@ mod tests {
             unreachable!("no unit test in this module calls the host")
         }
         fn get_nft_sequence(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_int(&self, _x: i64, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_uint(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_stamount(
+            &self,
+            _amount: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_stnumber(
+            &self,
+            _number: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_to_int(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_to_mant_exp(
+            &self,
+            _x: &[u8],
+            _mantissa_out: &mut [u8],
+            _exponent_out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_mant_exp(
+            &self,
+            _mantissa: i64,
+            _exponent: i32,
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_compare(&self, _x: &[u8], _y: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_add(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_subtract(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_multiply(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_divide(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_root(&self, _x: &[u8], _n: i32, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_power(
+            &self,
+            _x: &[u8],
+            _n: i32,
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
     }

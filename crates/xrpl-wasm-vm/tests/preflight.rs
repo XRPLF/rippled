@@ -98,7 +98,7 @@ fn a_disabled_feature_does_not_pass() {
 
 /// Every host function the ABI declares, spelled as a guest imports it. The count
 /// is asserted against the ABI so a function added to it cannot be left out here.
-const ALL_IMPORTS: [&str; 48] = [
+const ALL_IMPORTS: [&str; 62] = [
     import::LDGR_INDEX,
     import::PARENT_LDGR_TIME,
     import::PARENT_LDGR_HASH,
@@ -147,6 +147,20 @@ const ALL_IMPORTS: [&str; 48] = [
     import::NFT_FLAGS,
     import::NFT_XFER_FEE,
     import::NFT_SERIAL,
+    import::FLOAT_FROM_INT,
+    import::FLOAT_FROM_UINT,
+    import::FLOAT_FROM_STAMOUNT,
+    import::FLOAT_FROM_STNUMBER,
+    import::FLOAT_TO_INT,
+    import::FLOAT_TO_MANT_EXP,
+    import::FLOAT_FROM_MANT_EXP,
+    import::FLOAT_CMP,
+    import::FLOAT_ADD,
+    import::FLOAT_SUB,
+    import::FLOAT_MULT,
+    import::FLOAT_DIV,
+    import::FLOAT_ROOT,
+    import::FLOAT_POW,
 ];
 
 #[test]

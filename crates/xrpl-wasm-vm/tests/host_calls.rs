@@ -866,6 +866,112 @@ fn nft_serial_reads_the_id_and_writes_four_bytes() {
     assert_eq!(*host.nft_sequences_asked.borrow(), vec![nft_id]);
 }
 
+/// A float built from an i64 scalar and no input region: the value and mode reach the
+/// host, and the float bytes it answers land where the guest asked. `float_from_int`
+/// carries a genuine `i64` parameter, so this pins that the wide scalar survives.
+#[test]
+fn float_from_int_passes_the_value_and_writes_the_float() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+
+    let wat = module(
+        &[import::FLOAT_FROM_INT, ONE_PAGE],
+        "(call $float_from_int (i64.const 42) (i32.const 64) (i32.const 8) (i32.const 3))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the float length");
+    assert_eq!(*host.float_from_int_asked.borrow(), vec![(42, 3)]);
+}
+
+/// A float built from an 8-byte input region: the integer bytes and mode reach the
+/// host, and the float bytes it answers land where the guest asked.
+#[test]
+fn float_from_uint_reads_the_input_and_writes_the_float() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+
+    let wat = module(
+        &[import::FLOAT_FROM_UINT, ONE_PAGE],
+        "(call $float_from_uint (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 1))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the float length");
+    assert_eq!(
+        *host.float_from_uint_asked.borrow(),
+        vec![(vec![0u8; 8], 1)]
+    );
+}
+
+/// The one call that writes two output regions: the mantissa lands in the first, the
+/// exponent in the second, and the status is their combined length.
+#[test]
+fn float_to_mant_exp_writes_both_regions() {
+    let host =
+        FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // Mantissa to offset 64, exponent to offset 80; read the first byte of each back.
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 80) (i32.const 4))",
+    );
+    assert_eq!(status(&wat, &host), 12, "the mantissa and exponent lengths");
+    assert_eq!(*host.float_to_mant_exp_asked.borrow(), vec![vec![0u8; 8]]);
+
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        "(drop (call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 80) (i32.const 4)))
+         (i32.load8_u (i32.const 80))",
+    );
+    assert_eq!(status(&wat, &host), 9, "the exponent's first byte");
+}
+
+/// A comparison that reads two float regions and returns a scalar verdict, no output
+/// region involved.
+#[test]
+fn float_cmp_reads_both_and_returns_the_verdict() {
+    let host = FakeHost::new().answering_float_compare(Ok(-1));
+
+    let wat = module(
+        &[import::FLOAT_CMP, ONE_PAGE],
+        "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
+    );
+    assert_eq!(status(&wat, &host), -1, "the comparison verdict");
+    assert_eq!(
+        *host.float_compare_asked.borrow(),
+        vec![(vec![0u8; 8], vec![0u8; 8])]
+    );
+}
+
+/// A binary operator that reads two float regions and a mode, and writes the result:
+/// both operands and the mode reach the host, tagged by operator.
+#[test]
+fn float_add_reads_both_operands_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+
+    let wat = module(
+        &[import::FLOAT_ADD, ONE_PAGE],
+        "(call $float_add (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the result length");
+    assert_eq!(
+        *host.float_binops_asked.borrow(),
+        vec![("add", vec![0u8; 8], vec![0u8; 8], 2)]
+    );
+}
+
+/// A unary operator that reads one float region, an integer, and a mode: all three
+/// reach the host, tagged by operator.
+#[test]
+fn float_root_reads_the_float_the_degree_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+
+    let wat = module(
+        &[import::FLOAT_ROOT, ONE_PAGE],
+        "(call $float_root (i32.const 0) (i32.const 8) (i32.const 3) (i32.const 64) (i32.const 8) (i32.const 1))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the result length");
+    assert_eq!(
+        *host.float_unops_asked.borrow(),
+        vec![("root", vec![0u8; 8], 3, 1)]
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

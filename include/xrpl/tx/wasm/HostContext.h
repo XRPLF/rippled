@@ -314,6 +314,101 @@ public:
     [[nodiscard]] std::int32_t
     getNFTSequence(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
         const noexcept;
+
+    // Float / number arithmetic. A float is an XRPL `Number` in serialized form;
+    // `mode` is a rounding mode. Each writes the result float bytes unless noted.
+
+    [[nodiscard]] std::int32_t
+    floatFromInt(std::int64_t x, std::int32_t mode, rust::Slice<std::uint8_t> out) const noexcept;
+
+    // The integer region must be eight bytes, else `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    floatFromUint(
+        rust::Slice<std::uint8_t const> x,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // `amount` must be a serialized `STAmount`, else `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    floatFromSTAmount(
+        rust::Slice<std::uint8_t const> amount,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // `number` must be a serialized `STNumber`, else `InvalidParams`.
+    [[nodiscard]] std::int32_t
+    floatFromSTNumber(
+        rust::Slice<std::uint8_t const> number,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // Rounds the float to an integer, written as its eight little-endian bytes.
+    [[nodiscard]] std::int32_t
+    floatToInt(rust::Slice<std::uint8_t const> x, std::int32_t mode, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
+    // Writes the mantissa (eight little-endian bytes) and the exponent (four little-
+    // endian bytes) to two output regions; returns their total size.
+    [[nodiscard]] std::int32_t
+    floatToMantExp(
+        rust::Slice<std::uint8_t const> x,
+        rust::Slice<std::uint8_t> mantissaOut,
+        rust::Slice<std::uint8_t> exponentOut) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatFromMantExp(
+        std::int64_t mantissa,
+        std::int32_t exponent,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // Returns a negative, zero, or positive scalar as `x` is less than, equal to, or
+    // greater than `y`, or a negative `HostFunctionError` code on failure.
+    [[nodiscard]] std::int32_t
+    floatCompare(rust::Slice<std::uint8_t const> x, rust::Slice<std::uint8_t const> y)
+        const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatAdd(
+        rust::Slice<std::uint8_t const> x,
+        rust::Slice<std::uint8_t const> y,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatSubtract(
+        rust::Slice<std::uint8_t const> x,
+        rust::Slice<std::uint8_t const> y,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatMultiply(
+        rust::Slice<std::uint8_t const> x,
+        rust::Slice<std::uint8_t const> y,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatDivide(
+        rust::Slice<std::uint8_t const> x,
+        rust::Slice<std::uint8_t const> y,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatRoot(
+        rust::Slice<std::uint8_t const> x,
+        std::int32_t n,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    [[nodiscard]] std::int32_t
+    floatPower(
+        rust::Slice<std::uint8_t const> x,
+        std::int32_t n,
+        std::int32_t mode,
+        rust::Slice<std::uint8_t> out) const noexcept;
 };
 
 }  // namespace xrpl

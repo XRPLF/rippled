@@ -312,6 +312,35 @@ pub struct FakeHost {
     pub nft_sequences: HashMap<Vec<u8>, Answer>,
     /// Every nft id `get_nft_sequence` was asked for.
     pub nft_sequences_asked: RefCell<Vec<Vec<u8>>>,
+
+    /// What every float-producing call writes.
+    pub float_answer: Answer,
+    /// Every `(x, mode)` `float_from_int` was asked for.
+    pub float_from_int_asked: RefCell<Vec<(i64, i32)>>,
+    /// Every `(x, mode)` `float_from_uint` was asked for.
+    pub float_from_uint_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// Every `(amount, mode)` `float_from_stamount` was asked for.
+    pub float_from_stamount_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// Every `(number, mode)` `float_from_stnumber` was asked for.
+    pub float_from_stnumber_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// Every `(x, mode)` `float_to_int` was asked for.
+    pub float_to_int_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// The mantissa and exponent bytes `float_to_mant_exp` writes to its two regions.
+    pub float_mant_exp_answer: (Vec<u8>, Vec<u8>),
+    /// Every float `float_to_mant_exp` was asked for.
+    pub float_to_mant_exp_asked: RefCell<Vec<Vec<u8>>>,
+    /// Every `(mantissa, exponent, mode)` `float_from_mant_exp` was asked for.
+    pub float_from_mant_exp_asked: RefCell<Vec<(i64, i32, i32)>>,
+    /// What `float_compare` answers, whatever floats it is given.
+    pub float_compare_answer: HostResult<i32>,
+    /// Every `(x, y)` `float_compare` was asked for.
+    pub float_compare_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// Every `(x, y, mode)` the four binary float operators were asked for, tagged by
+    /// operator name.
+    pub float_binops_asked: RefCell<Vec<(&'static str, Vec<u8>, Vec<u8>, i32)>>,
+    /// Every `(x, n, mode)` `float_root` and `float_power` were asked for, tagged by
+    /// operator name.
+    pub float_unops_asked: RefCell<Vec<(&'static str, Vec<u8>, i32, i32)>>,
 }
 
 impl Default for FakeHost {
@@ -414,6 +443,19 @@ impl Default for FakeHost {
             nft_fee_asked: RefCell::new(Vec::new()),
             nft_sequences: HashMap::new(),
             nft_sequences_asked: RefCell::new(Vec::new()),
+            float_answer: Answer::filler(8),
+            float_from_int_asked: RefCell::new(Vec::new()),
+            float_from_uint_asked: RefCell::new(Vec::new()),
+            float_from_stamount_asked: RefCell::new(Vec::new()),
+            float_from_stnumber_asked: RefCell::new(Vec::new()),
+            float_to_int_asked: RefCell::new(Vec::new()),
+            float_mant_exp_answer: (vec![0u8; 8], vec![0u8; 4]),
+            float_to_mant_exp_asked: RefCell::new(Vec::new()),
+            float_from_mant_exp_asked: RefCell::new(Vec::new()),
+            float_compare_answer: Ok(0),
+            float_compare_asked: RefCell::new(Vec::new()),
+            float_binops_asked: RefCell::new(Vec::new()),
+            float_unops_asked: RefCell::new(Vec::new()),
         }
     }
 }
@@ -752,6 +794,21 @@ impl FakeHost {
 
     pub fn answering_nft_sequence(mut self, nft_id: Vec<u8>, answer: Answer) -> FakeHost {
         self.nft_sequences.insert(nft_id, answer);
+        self
+    }
+
+    pub fn answering_float(mut self, answer: Answer) -> FakeHost {
+        self.float_answer = answer;
+        self
+    }
+
+    pub fn answering_float_mant_exp(mut self, mantissa: Vec<u8>, exponent: Vec<u8>) -> FakeHost {
+        self.float_mant_exp_answer = (mantissa, exponent);
+        self
+    }
+
+    pub fn answering_float_compare(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.float_compare_answer = answer;
         self
     }
 
@@ -1201,6 +1258,114 @@ impl HostFunctions for FakeHost {
             None => Err(HostError::InvalidParams),
         }
     }
+
+    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_from_int_asked.borrow_mut().push((x, mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_from_uint_asked
+            .borrow_mut()
+            .push((x.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_from_stamount_asked
+            .borrow_mut()
+            .push((amount.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_from_stnumber_asked
+            .borrow_mut()
+            .push((number.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_to_int_asked
+            .borrow_mut()
+            .push((x.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.float_to_mant_exp_asked.borrow_mut().push(x.to_vec());
+        let (mantissa, exponent) = &self.float_mant_exp_answer;
+        mantissa_out[..mantissa.len()].copy_from_slice(mantissa);
+        exponent_out[..exponent.len()].copy_from_slice(exponent);
+        Ok(mantissa.len() + exponent.len())
+    }
+
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        exponent: i32,
+        mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        self.float_from_mant_exp_asked
+            .borrow_mut()
+            .push((mantissa, exponent, mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+        self.float_compare_asked
+            .borrow_mut()
+            .push((x.to_vec(), y.to_vec()));
+        self.float_compare_answer
+    }
+
+    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_binops_asked
+            .borrow_mut()
+            .push(("add", x.to_vec(), y.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_binops_asked
+            .borrow_mut()
+            .push(("sub", x.to_vec(), y.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_binops_asked
+            .borrow_mut()
+            .push(("mult", x.to_vec(), y.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_binops_asked
+            .borrow_mut()
+            .push(("div", x.to_vec(), y.to_vec(), mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_unops_asked
+            .borrow_mut()
+            .push(("root", x.to_vec(), n, mode));
+        self.float_answer.fill(out)
+    }
+
+    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        self.float_unops_asked
+            .borrow_mut()
+            .push(("pow", x.to_vec(), n, mode));
+        self.float_answer.fill(out)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1275,6 +1440,21 @@ pub mod import {
     pub const NFT_XFER_FEE: &str =
         r#"(import "host_lib" "nft_xfer_fee" (func $nft_xfer_fee (param i32 i32) (result i32)))"#;
     pub const NFT_SERIAL: &str = r#"(import "host_lib" "nft_serial" (func $nft_serial (param i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_FROM_INT: &str = r#"(import "host_lib" "float_from_int" (func $float_from_int (param i64 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_FROM_UINT: &str = r#"(import "host_lib" "float_from_uint" (func $float_from_uint (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_FROM_STAMOUNT: &str = r#"(import "host_lib" "float_from_stamount" (func $float_from_stamount (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_FROM_STNUMBER: &str = r#"(import "host_lib" "float_from_stnumber" (func $float_from_stnumber (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_TO_INT: &str = r#"(import "host_lib" "float_to_int" (func $float_to_int (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_TO_MANT_EXP: &str = r#"(import "host_lib" "float_to_mant_exp" (func $float_to_mant_exp (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_FROM_MANT_EXP: &str = r#"(import "host_lib" "float_from_mant_exp" (func $float_from_mant_exp (param i64 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_CMP: &str =
+        r#"(import "host_lib" "float_cmp" (func $float_cmp (param i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_ADD: &str = r#"(import "host_lib" "float_add" (func $float_add (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_SUB: &str = r#"(import "host_lib" "float_sub" (func $float_sub (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_MULT: &str = r#"(import "host_lib" "float_mult" (func $float_mult (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_DIV: &str = r#"(import "host_lib" "float_div" (func $float_div (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_ROOT: &str = r#"(import "host_lib" "float_root" (func $float_root (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const FLOAT_POW: &str = r#"(import "host_lib" "float_pow" (func $float_pow (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
 }
 
 /// One page of linear memory, exported under the name the engine looks for.

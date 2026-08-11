@@ -463,4 +463,104 @@ host_functions! {
     #[gas = 60]
     #[wasm_name = "nft_serial"]
     fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    // A "float" here is an XRPL `Number` in its serialized form: a byte blob the guest
+    // holds opaquely and hands back to these functions. Inputs and outputs that are
+    // floats are byte regions; `mode` is the rounding mode, a scalar the guest chooses.
+
+    /// A float built from the signed integer `x` under rounding `mode`. Writes the
+    /// float bytes; no input region.
+    #[gas = 100]
+    #[wasm_name = "float_from_int"]
+    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the unsigned integer in the 8-byte region `x` under rounding
+    /// `mode`. Reads the integer region and writes the float bytes.
+    #[gas = 130]
+    #[wasm_name = "float_from_uint"]
+    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the serialized `STAmount` in `amount` under rounding `mode`.
+    /// Reads the amount region and writes the float bytes.
+    #[gas = 150]
+    #[wasm_name = "float_from_stamount"]
+    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the serialized `STNumber` in `number` under rounding `mode`.
+    /// Reads the number region and writes the float bytes.
+    #[gas = 150]
+    #[wasm_name = "float_from_stnumber"]
+    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` rounded to a signed integer under rounding `mode`. Reads the float
+    /// region and writes the integer as its eight little-endian bytes.
+    #[gas = 130]
+    #[wasm_name = "float_to_int"]
+    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` split into its mantissa and exponent. Reads the float region and
+    /// writes the mantissa (eight little-endian bytes) and the exponent (four little-
+    /// endian bytes) to two separate output regions.
+    #[gas = 130]
+    #[wasm_name = "float_to_mant_exp"]
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// A float built from `mantissa` and `exponent` under rounding `mode`. Writes the
+    /// float bytes; no input region.
+    #[gas = 100]
+    #[wasm_name = "float_from_mant_exp"]
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        exponent: i32,
+        mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// Compares floats `x` and `y`, returning a negative, zero, or positive scalar as
+    /// `x` is less than, equal to, or greater than `y`. Reads both float regions.
+    #[gas = 80]
+    #[wasm_name = "float_cmp"]
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32>;
+
+    /// The float sum `x + y` under rounding `mode`. Reads both float regions and writes
+    /// the result bytes.
+    #[gas = 160]
+    #[wasm_name = "float_add"]
+    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float difference `x - y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 160]
+    #[wasm_name = "float_sub"]
+    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float product `x * y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 300]
+    #[wasm_name = "float_mult"]
+    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float quotient `x / y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 300]
+    #[wasm_name = "float_div"]
+    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The `n`-th root of the float `x` under rounding `mode`. Reads the float region
+    /// and writes the result bytes.
+    #[gas = 5500]
+    #[wasm_name = "float_root"]
+    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` raised to the power `n` under rounding `mode`. Reads the float
+    /// region and writes the result bytes.
+    #[gas = 5500]
+    #[wasm_name = "float_pow"]
+    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
 }

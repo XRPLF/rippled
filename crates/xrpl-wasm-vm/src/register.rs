@@ -1,4 +1,4 @@
-use crate::abi::{charged, read_borrowed, write_buffered, write_into};
+use crate::abi::{charged, read_borrowed, write_buffered, write_into, write_mant_exp};
 use crate::region::Region;
 use crate::vm::VmState;
 use wasmi::{Caller, Linker};
@@ -894,6 +894,281 @@ pub(crate) fn register_host_functions(
                         let nft_id = Region::new(nft_ptr, nft_len);
                         write_buffered(c, out, |host, data, buf| {
                             host.get_nft_sequence(nft_id.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatFromInt => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x: i64,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatFromInt, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        write_into(c, out, |host, out| host.float_from_int(x, mode, out))
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatFromUint => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatFromUint, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_from_uint(x.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatFromStamount => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatFromStamount, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let amount = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_from_stamount(amount.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatFromStnumber => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatFromStnumber, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let number = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_from_stnumber(number.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatToInt => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatToInt, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_to_int(x.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatToMantExp => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 mant_ptr: i32,
+                 mant_len: i32,
+                 exp_ptr: i32,
+                 exp_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatToMantExp, |c| {
+                        let mantissa = Region::new(mant_ptr, mant_len);
+                        let exponent = Region::new(exp_ptr, exp_len);
+                        let x = Region::new(in_ptr, in_len);
+                        write_mant_exp(c, mantissa, exponent, |host, data, mant, exp| {
+                            host.float_to_mant_exp(x.read(data)?, mant, exp)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatFromMantExp => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 mantissa: i64,
+                 exponent: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatFromMantExp, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        write_into(c, out, |host, out| {
+                            host.float_from_mant_exp(mantissa, exponent, mode, out)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatCompare => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x_ptr: i32,
+                 x_len: i32,
+                 y_ptr: i32,
+                 y_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatCompare, |c| {
+                        let host = c.data().host;
+                        let x = read_borrowed(c, Region::new(x_ptr, x_len))?;
+                        let y = read_borrowed(c, Region::new(y_ptr, y_len))?;
+                        host.float_compare(x, y)
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatAdd => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x_ptr: i32,
+                 x_len: i32,
+                 y_ptr: i32,
+                 y_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatAdd, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(x_ptr, x_len);
+                        let y = Region::new(y_ptr, y_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_add(x.read(data)?, y.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatSubtract => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x_ptr: i32,
+                 x_len: i32,
+                 y_ptr: i32,
+                 y_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatSubtract, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(x_ptr, x_len);
+                        let y = Region::new(y_ptr, y_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_subtract(x.read(data)?, y.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatMultiply => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x_ptr: i32,
+                 x_len: i32,
+                 y_ptr: i32,
+                 y_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatMultiply, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(x_ptr, x_len);
+                        let y = Region::new(y_ptr, y_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_multiply(x.read(data)?, y.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatDivide => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 x_ptr: i32,
+                 x_len: i32,
+                 y_ptr: i32,
+                 y_len: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatDivide, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(x_ptr, x_len);
+                        let y = Region::new(y_ptr, y_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_divide(x.read(data)?, y.read(data)?, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatRoot => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 n: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatRoot, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_root(x.read(data)?, n, mode, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::FloatPower => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 in_ptr: i32,
+                 in_len: i32,
+                 n: i32,
+                 out_ptr: i32,
+                 out_len: i32,
+                 mode: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::FloatPower, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let x = Region::new(in_ptr, in_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.float_power(x.read(data)?, n, mode, buf)
                         })
                     })
                 },

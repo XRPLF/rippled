@@ -419,6 +419,77 @@ mod ffi {
         #[namespace = "xrpl"]
         #[cxx_name = "getNFTSequence"]
         fn get_nft_sequence(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromInt"]
+        fn float_from_int(self: &HostContext, x: i64, mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromUint"]
+        fn float_from_uint(self: &HostContext, x: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromSTAmount"]
+        fn float_from_stamount(self: &HostContext, amount: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromSTNumber"]
+        fn float_from_stnumber(self: &HostContext, number: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatToInt"]
+        fn float_to_int(self: &HostContext, x: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatToMantExp"]
+        fn float_to_mant_exp(
+            self: &HostContext,
+            x: &[u8],
+            mantissa_out: &mut [u8],
+            exponent_out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromMantExp"]
+        fn float_from_mant_exp(
+            self: &HostContext,
+            mantissa: i64,
+            exponent: i32,
+            mode: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatCompare"]
+        fn float_compare(self: &HostContext, x: &[u8], y: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatAdd"]
+        fn float_add(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatSubtract"]
+        fn float_subtract(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatMultiply"]
+        fn float_multiply(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatDivide"]
+        fn float_divide(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatRoot"]
+        fn float_root(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatPower"]
+        fn float_power(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
     }
 }
 
@@ -712,6 +783,73 @@ impl HostFunctions for CxxHost<'_> {
 
     fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_nft_sequence(nft_id, out))
+    }
+
+    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_int(x, mode, out))
+    }
+
+    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_uint(x, mode, out))
+    }
+
+    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_stamount(amount, mode, out))
+    }
+
+    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_stnumber(number, mode, out))
+    }
+
+    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_to_int(x, mode, out))
+    }
+
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.float_to_mant_exp(x, mantissa_out, exponent_out))
+    }
+
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        exponent: i32,
+        mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
+    }
+
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.float_compare(x, y))
+    }
+
+    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_add(x, y, mode, out))
+    }
+
+    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_subtract(x, y, mode, out))
+    }
+
+    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_multiply(x, y, mode, out))
+    }
+
+    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_divide(x, y, mode, out))
+    }
+
+    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_root(x, n, mode, out))
+    }
+
+    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_power(x, n, mode, out))
     }
 }
 

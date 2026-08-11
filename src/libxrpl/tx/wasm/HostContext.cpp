@@ -6,6 +6,9 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -15,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <expected>
 #include <string_view>
 #include <utility>
@@ -88,6 +92,36 @@ parseAsset(rust::Slice<std::uint8_t const> bytes)
     }
 
     return std::unexpected(HostFunctionError::InvalidParams);
+}
+
+// Decode a `uint64` from its eight wire bytes, in the wire's byte order. The region
+// must be exactly eight bytes, mirroring `getDataUnsigned` in the C-ABI wrapper.
+std::expected<std::uint64_t, HostFunctionError>
+parseUint64(rust::Slice<std::uint8_t const> bytes)
+{
+    if (bytes.size() != sizeof(std::uint64_t))
+        return std::unexpected(HostFunctionError::InvalidParams);
+
+    std::uint64_t x = 0;
+    std::memcpy(&x, bytes.data(), sizeof(x));
+    return adjustWasmEndianess(x);
+}
+
+// Deserialize an `ST` object from its wire bytes; `InvalidParams` if the bytes are not
+// a well-formed one. Mirrors the try/catch around `SerialIter` in the C-ABI wrapper.
+template <class T>
+std::expected<T, HostFunctionError>
+parseST(rust::Slice<std::uint8_t const> bytes)
+{
+    try
+    {
+        SerialIter sit{Slice{bytes.data(), bytes.size()}};
+        return T{sit, sfGeneric};
+    }
+    catch (std::exception const&)
+    {
+        return std::unexpected(HostFunctionError::InvalidParams);
+    }
 }
 
 }  // namespace
@@ -968,6 +1002,240 @@ HostContext::getNFTSequence(rust::Slice<std::uint8_t const> nftId, rust::Slice<s
             return hfErrorToInt(value.error());
 
         return answerScalar(out, *value);
+    });
+}
+
+std::int32_t
+HostContext::floatFromInt(std::int64_t x, std::int32_t mode, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatFromInt(x, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatFromUint(
+    rust::Slice<std::uint8_t const> x,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const parsed = parseUint64(x);
+        if (!parsed)
+            return hfErrorToInt(parsed.error());
+
+        auto const value = hostFunctions_.floatFromUint(*parsed, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatFromSTAmount(
+    rust::Slice<std::uint8_t const> amount,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const parsed = parseST<STAmount>(amount);
+        if (!parsed)
+            return hfErrorToInt(parsed.error());
+
+        auto const value = hostFunctions_.floatFromSTAmount(*parsed, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatFromSTNumber(
+    rust::Slice<std::uint8_t const> number,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const parsed = parseST<STNumber>(number);
+        if (!parsed)
+            return hfErrorToInt(parsed.error());
+
+        auto const value = hostFunctions_.floatFromSTNumber(*parsed, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatToInt(
+    rust::Slice<std::uint8_t const> x,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatToInt(Slice{x.data(), x.size()}, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answerScalar(out, *value);
+    });
+}
+
+std::int32_t
+HostContext::floatToMantExp(
+    rust::Slice<std::uint8_t const> x,
+    rust::Slice<std::uint8_t> mantissaOut,
+    rust::Slice<std::uint8_t> exponentOut) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatToMantExp(Slice{x.data(), x.size()});
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        // The engine copies each region only if the whole value fits, so writing the
+        // true lengths here and summing them matches its accounting.
+        auto const r1 = answerScalar(mantissaOut, value->first);
+        auto const r2 = answerScalar(exponentOut, value->second);
+        return r1 + r2;
+    });
+}
+
+std::int32_t
+HostContext::floatFromMantExp(
+    std::int64_t mantissa,
+    std::int32_t exponent,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatFromMantExp(mantissa, exponent, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatCompare(rust::Slice<std::uint8_t const> x, rust::Slice<std::uint8_t const> y)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value =
+            hostFunctions_.floatCompare(Slice{x.data(), x.size()}, Slice{y.data(), y.size()});
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return *value;
+    });
+}
+
+std::int32_t
+HostContext::floatAdd(
+    rust::Slice<std::uint8_t const> x,
+    rust::Slice<std::uint8_t const> y,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value =
+            hostFunctions_.floatAdd(Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatSubtract(
+    rust::Slice<std::uint8_t const> x,
+    rust::Slice<std::uint8_t const> y,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatSubtract(
+            Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatMultiply(
+    rust::Slice<std::uint8_t const> x,
+    rust::Slice<std::uint8_t const> y,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatMultiply(
+            Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatDivide(
+    rust::Slice<std::uint8_t const> x,
+    rust::Slice<std::uint8_t const> y,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value =
+            hostFunctions_.floatDivide(Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatRoot(
+    rust::Slice<std::uint8_t const> x,
+    std::int32_t n,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatRoot(Slice{x.data(), x.size()}, n, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::floatPower(
+    rust::Slice<std::uint8_t const> x,
+    std::int32_t n,
+    std::int32_t mode,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const value = hostFunctions_.floatPower(Slice{x.data(), x.size()}, n, mode);
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
     });
 }
 
