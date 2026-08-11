@@ -80,7 +80,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
                 return tecHAS_OBLIGATIONS;
             }
-            if (ctx.view.rules().enabled(featureSingleAssetVault) && sleMpt->isFlag(lsfMPTLocked))
+            if ((ctx.view.rules().enabled(featureSingleAssetVault) ||
+                 ctx.view.rules().enabled(fixCleanup3_4_0)) &&
+                sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
 
             if (ctx.view.rules().enabled(featureConfidentialTransfer))

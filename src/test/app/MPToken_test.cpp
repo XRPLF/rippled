@@ -789,7 +789,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             // locks up bob's mptoken again
             mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-            if (!features[featureSingleAssetVault])
+            if (!features[featureSingleAssetVault] && !features[fixCleanup3_4_0])
             {
                 // Delete bob's mptoken even though it is locked
                 mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
@@ -7703,7 +7703,9 @@ public:
         testSetValidation(all - featurePermissionedDomains);
         testSetValidation(all);
 
+        testSetEnabled(all - featureSingleAssetVault - fixCleanup3_4_0);
         testSetEnabled(all - featureSingleAssetVault);
+        testSetEnabled(all - fixCleanup3_4_0);
         testSetEnabled(all);
 
         // MPT clawback
