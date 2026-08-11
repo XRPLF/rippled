@@ -33,7 +33,7 @@ namespace detail {
  * an ApplyView, so every wrapper over that view shares one entry.
  *
  * @note The const_cast is what makes reaching ApplyView::peek() possible, and
- *       it is safe only because rippled never instantiates a ReadView as a
+ *       it is safe only because xrpld never instantiates a ReadView as a
  *       genuinely const object -- every view is a non-const object that some
  *       call sites merely observe through a const reference. If an actually
  *       const-qualified view type is ever introduced (an immutable snapshot,
