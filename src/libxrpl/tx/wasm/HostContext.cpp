@@ -874,4 +874,101 @@ HostContext::updateData(rust::Slice<std::uint8_t const> data) const noexcept
     });
 }
 
+std::int32_t
+HostContext::getNFT(
+    rust::Slice<std::uint8_t const> account,
+    rust::Slice<std::uint8_t const> nftId,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (account.size() != AccountID::size() || nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFT(
+            AccountID::fromVoid(account.data()), uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::getNFTIssuer(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFTIssuer(uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
+HostContext::getNFTTaxon(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFTTaxon(uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answerScalar(out, *value);
+    });
+}
+
+std::int32_t
+HostContext::getNFTFlags(rust::Slice<std::uint8_t const> nftId) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFTFlags(uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return *value;
+    });
+}
+
+std::int32_t
+HostContext::getNFTTransferFee(rust::Slice<std::uint8_t const> nftId) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFTTransferFee(uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return *value;
+    });
+}
+
+std::int32_t
+HostContext::getNFTSequence(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+    const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (nftId.size() != uint256::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        auto const value = hostFunctions_.getNFTSequence(uint256::fromVoid(nftId.data()));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answerScalar(out, *value);
+    });
+}
+
 }  // namespace xrpl

@@ -259,6 +259,36 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $set_data (i32.const 0) (i32.const 8))",
             2,
         ),
+        HostFunctionSpec::GetNft => (
+            import::NFT_URI,
+            "(call $nft_uri (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 32) (i32.const 52) (i32.const 12))",
+            6,
+        ),
+        HostFunctionSpec::GetNftIssuer => (
+            import::NFT_ISSUER,
+            "(call $nft_issuer (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 20))",
+            4,
+        ),
+        HostFunctionSpec::GetNftTaxon => (
+            import::NFT_TAXON,
+            "(call $nft_taxon (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::GetNftFlags => (
+            import::NFT_FLAGS,
+            "(call $nft_flags (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::GetNftTransferFee => (
+            import::NFT_XFER_FEE,
+            "(call $nft_xfer_fee (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::GetNftSequence => (
+            import::NFT_SERIAL,
+            "(call $nft_serial (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4))",
+            4,
+        ),
     };
     Call {
         import,

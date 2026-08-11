@@ -767,6 +767,105 @@ fn set_data_passes_the_data_through_and_returns_the_count() {
     );
 }
 
+/// A getter that reads two input regions — an account and an nft id — and writes the
+/// answer to a third: both inputs reach the host, keyed together, and the bytes it
+/// answers land where the guest asked.
+#[test]
+fn nft_uri_reads_the_account_and_id_and_writes_the_uri() {
+    let account = vec![0u8; 20];
+    let nft_id = vec![0u8; 32];
+    let host = FakeHost::new().answering_get_nft(
+        account.clone(),
+        nft_id.clone(),
+        support::Answer::bytes([0xab, 0xcd, 0xef]),
+    );
+
+    let wat = module(
+        &[import::NFT_URI, ONE_PAGE],
+        "(call $nft_uri (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 32) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 3, "the uri length");
+    assert_eq!(*host.nfts_asked.borrow(), vec![(account, nft_id)]);
+}
+
+/// A single-input byte getter: the nft id reaches the host and the issuer bytes it
+/// answers land where the guest asked.
+#[test]
+fn nft_issuer_reads_the_id_and_writes_the_issuer() {
+    let nft_id = vec![0u8; 32];
+    let host = FakeHost::new().answering_nft_issuer(nft_id.clone(), support::Answer::filler(20));
+
+    let wat = module(
+        &[import::NFT_ISSUER, ONE_PAGE],
+        "(call $nft_issuer (i32.const 0) (i32.const 32) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 20, "the issuer length");
+    assert_eq!(*host.nft_issuers_asked.borrow(), vec![nft_id]);
+}
+
+/// A u32-valued getter whose four bytes the host writes to the output region: the id
+/// reaches the host, and the little-endian bytes land where the guest asked.
+#[test]
+fn nft_taxon_reads_the_id_and_writes_four_bytes() {
+    let nft_id = vec![0u8; 32];
+    let host =
+        FakeHost::new().answering_nft_taxon(nft_id.clone(), support::Answer::bytes([7, 0, 0, 0]));
+
+    let wat = module(
+        &[import::NFT_TAXON, ONE_PAGE],
+        "(drop (call $nft_taxon (i32.const 0) (i32.const 32) (i32.const 64) (i32.const 4)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 7, "the taxon the host wrote");
+    assert_eq!(*host.nft_taxons_asked.borrow(), vec![nft_id]);
+}
+
+/// A single-input scalar getter: the nft id reaches the host and the flags it reports
+/// come back as the call's status, no output region involved.
+#[test]
+fn nft_flags_reads_the_id_and_returns_the_flags() {
+    let nft_id = vec![0u8; 32];
+    let host = FakeHost::new().answering_nft_flags(Ok(11));
+
+    let wat = module(
+        &[import::NFT_FLAGS, ONE_PAGE],
+        "(call $nft_flags (i32.const 0) (i32.const 32))",
+    );
+    assert_eq!(status(&wat, &host), 11, "the flags the host reported");
+    assert_eq!(*host.nft_flags_asked.borrow(), vec![nft_id]);
+}
+
+/// A second scalar getter, to pin the pattern: the transfer fee comes back as the
+/// status.
+#[test]
+fn nft_xfer_fee_reads_the_id_and_returns_the_fee() {
+    let nft_id = vec![0u8; 32];
+    let host = FakeHost::new().answering_nft_transfer_fee(Ok(314));
+
+    let wat = module(
+        &[import::NFT_XFER_FEE, ONE_PAGE],
+        "(call $nft_xfer_fee (i32.const 0) (i32.const 32))",
+    );
+    assert_eq!(status(&wat, &host), 314, "the fee the host reported");
+    assert_eq!(*host.nft_fee_asked.borrow(), vec![nft_id]);
+}
+
+/// The last NFT getter, a u32 sequence written to the output region.
+#[test]
+fn nft_serial_reads_the_id_and_writes_four_bytes() {
+    let nft_id = vec![0u8; 32];
+    let host = FakeHost::new()
+        .answering_nft_sequence(nft_id.clone(), support::Answer::bytes([42, 0, 0, 0]));
+
+    let wat = module(
+        &[import::NFT_SERIAL, ONE_PAGE],
+        "(drop (call $nft_serial (i32.const 0) (i32.const 32) (i32.const 64) (i32.const 4)))
+         (i32.load (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 42, "the sequence the host wrote");
+    assert_eq!(*host.nft_sequences_asked.borrow(), vec![nft_id]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

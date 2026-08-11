@@ -406,6 +406,55 @@ impl HostFunctions for FakeHost {
     fn update_data(&self, data: &[u8]) -> HostResult<i32> {
         Ok(data.len() as i32)
     }
+
+    /// Reads an account and an nft id, writes a byte value; `InvalidParams` if either
+    /// is empty.
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if account.is_empty() || nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[account[0]; HASH_LEN])
+    }
+
+    /// Reads an nft id, writes a byte value; `InvalidParams` on an empty id.
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &[nft_id[0]; HASH_LEN])
+    }
+
+    /// The same, for the taxon.
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &nft_id[0].to_le_bytes())
+    }
+
+    /// Reads an nft id and returns a scalar; `InvalidParams` on an empty id.
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32> {
+        if nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        Ok(i32::from(nft_id[0]))
+    }
+
+    /// The same, for the transfer fee.
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32> {
+        if nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        Ok(i32::from(nft_id[0]))
+    }
+
+    /// The same byte-output shape, for the sequence number.
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        if nft_id.is_empty() {
+            return Err(HostError::InvalidParams);
+        }
+        put(out, &nft_id[0].to_le_bytes())
+    }
 }
 
 #[test]
@@ -621,6 +670,23 @@ fn the_trait_is_implementable() {
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
     assert_eq!(host.trace_num("count", -1), Ok(()));
     assert_eq!(host.update_data(b"abcd"), Ok(4));
+    assert_eq!(host.get_nft(&[7; 20], &[9; 32], &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 7);
+    assert_eq!(
+        host.get_nft(&[], &[9; 32], &mut out),
+        Err(HostError::InvalidParams)
+    );
+    assert_eq!(host.get_nft_issuer(&[9; 32], &mut out), Ok(HASH_LEN));
+    assert_eq!(out[0], 9);
+    assert_eq!(
+        host.get_nft_issuer(&[], &mut out),
+        Err(HostError::InvalidParams)
+    );
+    assert_eq!(host.get_nft_taxon(&[9; 32], &mut out), Ok(1));
+    assert_eq!(host.get_nft_flags(&[9; 32]), Ok(9));
+    assert_eq!(host.get_nft_flags(&[]), Err(HostError::InvalidParams));
+    assert_eq!(host.get_nft_transfer_fee(&[9; 32]), Ok(9));
+    assert_eq!(host.get_nft_sequence(&[9; 32], &mut out), Ok(1));
 
     assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
 }
@@ -726,6 +792,12 @@ fn the_spec_table_matches_the_declarations() {
             ("trace", 500),
             ("trace_num", 500),
             ("set_data", 1000),
+            ("nft_uri", 5000),
+            ("nft_issuer", 70),
+            ("nft_taxon", 60),
+            ("nft_flags", 60),
+            ("nft_xfer_fee", 60),
+            ("nft_serial", 60),
         ]
     );
 }

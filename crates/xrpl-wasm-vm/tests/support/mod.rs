@@ -286,6 +286,32 @@ pub struct FakeHost {
     pub update_data_answer: HostResult<i32>,
     /// Every data blob `update_data` was given.
     pub update_data_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_nft` answers, by (account, nft id) bytes. An unlisted key answers
+    /// `InvalidParams`.
+    pub nfts: HashMap<(Vec<u8>, Vec<u8>), Answer>,
+    /// Every (account, nft id) `get_nft` was asked for.
+    pub nfts_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// What `get_nft_issuer` answers, by nft id. An unlisted id answers `InvalidParams`.
+    pub nft_issuers: HashMap<Vec<u8>, Answer>,
+    /// Every nft id `get_nft_issuer` was asked for.
+    pub nft_issuers_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_nft_taxon` answers, by nft id. An unlisted id answers `InvalidParams`.
+    pub nft_taxons: HashMap<Vec<u8>, Answer>,
+    /// Every nft id `get_nft_taxon` was asked for.
+    pub nft_taxons_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_nft_flags` answers, whatever nft id it is given.
+    pub nft_flags_answer: HostResult<i32>,
+    /// Every nft id `get_nft_flags` was asked for.
+    pub nft_flags_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_nft_transfer_fee` answers, whatever nft id it is given.
+    pub nft_fee_answer: HostResult<i32>,
+    /// Every nft id `get_nft_transfer_fee` was asked for.
+    pub nft_fee_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `get_nft_sequence` answers, by nft id. An unlisted id answers
+    /// `InvalidParams`.
+    pub nft_sequences: HashMap<Vec<u8>, Answer>,
+    /// Every nft id `get_nft_sequence` was asked for.
+    pub nft_sequences_asked: RefCell<Vec<Vec<u8>>>,
 }
 
 impl Default for FakeHost {
@@ -376,6 +402,18 @@ impl Default for FakeHost {
             traces: RefCell::new(Vec::new()),
             update_data_answer: Ok(0),
             update_data_asked: RefCell::new(Vec::new()),
+            nfts: HashMap::new(),
+            nfts_asked: RefCell::new(Vec::new()),
+            nft_issuers: HashMap::new(),
+            nft_issuers_asked: RefCell::new(Vec::new()),
+            nft_taxons: HashMap::new(),
+            nft_taxons_asked: RefCell::new(Vec::new()),
+            nft_flags_answer: Ok(0),
+            nft_flags_asked: RefCell::new(Vec::new()),
+            nft_fee_answer: Ok(0),
+            nft_fee_asked: RefCell::new(Vec::new()),
+            nft_sequences: HashMap::new(),
+            nft_sequences_asked: RefCell::new(Vec::new()),
         }
     }
 }
@@ -679,6 +717,41 @@ impl FakeHost {
 
     pub fn answering_update_data(mut self, answer: HostResult<i32>) -> FakeHost {
         self.update_data_answer = answer;
+        self
+    }
+
+    pub fn answering_get_nft(
+        mut self,
+        account: Vec<u8>,
+        nft_id: Vec<u8>,
+        answer: Answer,
+    ) -> FakeHost {
+        self.nfts.insert((account, nft_id), answer);
+        self
+    }
+
+    pub fn answering_nft_issuer(mut self, nft_id: Vec<u8>, answer: Answer) -> FakeHost {
+        self.nft_issuers.insert(nft_id, answer);
+        self
+    }
+
+    pub fn answering_nft_taxon(mut self, nft_id: Vec<u8>, answer: Answer) -> FakeHost {
+        self.nft_taxons.insert(nft_id, answer);
+        self
+    }
+
+    pub fn answering_nft_flags(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.nft_flags_answer = answer;
+        self
+    }
+
+    pub fn answering_nft_transfer_fee(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.nft_fee_answer = answer;
+        self
+    }
+
+    pub fn answering_nft_sequence(mut self, nft_id: Vec<u8>, answer: Answer) -> FakeHost {
+        self.nft_sequences.insert(nft_id, answer);
         self
     }
 
@@ -1085,6 +1158,49 @@ impl HostFunctions for FakeHost {
         self.update_data_asked.borrow_mut().push(data.to_vec());
         self.update_data_answer
     }
+
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        let key = (account.to_vec(), nft_id.to_vec());
+        self.nfts_asked.borrow_mut().push(key.clone());
+        match self.nfts.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
+
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.nft_issuers_asked.borrow_mut().push(nft_id.to_vec());
+        match self.nft_issuers.get(nft_id) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
+
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.nft_taxons_asked.borrow_mut().push(nft_id.to_vec());
+        match self.nft_taxons.get(nft_id) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
+
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32> {
+        self.nft_flags_asked.borrow_mut().push(nft_id.to_vec());
+        self.nft_flags_answer
+    }
+
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32> {
+        self.nft_fee_asked.borrow_mut().push(nft_id.to_vec());
+        self.nft_fee_answer
+    }
+
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.nft_sequences_asked.borrow_mut().push(nft_id.to_vec());
+        match self.nft_sequences.get(nft_id) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidParams),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1150,6 +1266,15 @@ pub mod import {
         r#"(import "host_lib" "trace_num" (func $trace_num (param i32 i32 i64) (result i32)))"#;
     pub const SET_DATA: &str =
         r#"(import "host_lib" "set_data" (func $set_data (param i32 i32) (result i32)))"#;
+    pub const NFT_URI: &str = r#"(import "host_lib" "nft_uri" (func $nft_uri (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const NFT_ISSUER: &str = r#"(import "host_lib" "nft_issuer" (func $nft_issuer (param i32 i32 i32 i32) (result i32)))"#;
+    pub const NFT_TAXON: &str =
+        r#"(import "host_lib" "nft_taxon" (func $nft_taxon (param i32 i32 i32 i32) (result i32)))"#;
+    pub const NFT_FLAGS: &str =
+        r#"(import "host_lib" "nft_flags" (func $nft_flags (param i32 i32) (result i32)))"#;
+    pub const NFT_XFER_FEE: &str =
+        r#"(import "host_lib" "nft_xfer_fee" (func $nft_xfer_fee (param i32 i32) (result i32)))"#;
+    pub const NFT_SERIAL: &str = r#"(import "host_lib" "nft_serial" (func $nft_serial (param i32 i32 i32 i32) (result i32)))"#;
 }
 
 /// One page of linear memory, exported under the name the engine looks for.

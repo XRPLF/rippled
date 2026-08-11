@@ -278,6 +278,42 @@ public:
     // stored, or a negative `HostFunctionError` code.
     [[nodiscard]] std::int32_t
     updateData(rust::Slice<std::uint8_t const> data) const noexcept;
+
+    // The account id must be 20 bytes and the nft id 32 bytes, else `InvalidParams`.
+    // Writes the token's URI bytes.
+    [[nodiscard]] std::int32_t
+    getNFT(
+        rust::Slice<std::uint8_t const> account,
+        rust::Slice<std::uint8_t const> nftId,
+        rust::Slice<std::uint8_t> out) const noexcept;
+
+    // The nft id must be 32 bytes, else `InvalidParams`. Writes the 20-byte issuer
+    // account encoded in the id.
+    [[nodiscard]] std::int32_t
+    getNFTIssuer(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
+    // The nft id must be 32 bytes, else `InvalidParams`. Writes the taxon as its four
+    // little-endian bytes.
+    [[nodiscard]] std::int32_t
+    getNFTTaxon(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+        const noexcept;
+
+    // The nft id must be 32 bytes, else `InvalidParams`. Returns the flags, or a
+    // negative `HostFunctionError` code.
+    [[nodiscard]] std::int32_t
+    getNFTFlags(rust::Slice<std::uint8_t const> nftId) const noexcept;
+
+    // The nft id must be 32 bytes, else `InvalidParams`. Returns the transfer fee, or a
+    // negative `HostFunctionError` code.
+    [[nodiscard]] std::int32_t
+    getNFTTransferFee(rust::Slice<std::uint8_t const> nftId) const noexcept;
+
+    // The nft id must be 32 bytes, else `InvalidParams`. Writes the sequence number as
+    // its four little-endian bytes.
+    [[nodiscard]] std::int32_t
+    getNFTSequence(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out)
+        const noexcept;
 };
 
 }  // namespace xrpl

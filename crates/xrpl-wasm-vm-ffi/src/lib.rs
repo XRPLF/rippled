@@ -395,6 +395,30 @@ mod ffi {
         #[namespace = "xrpl"]
         #[cxx_name = "updateData"]
         fn update_data(self: &HostContext, data: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFT"]
+        fn get_nft(self: &HostContext, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTIssuer"]
+        fn get_nft_issuer(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTTaxon"]
+        fn get_nft_taxon(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTFlags"]
+        fn get_nft_flags(self: &HostContext, nft_id: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTTransferFee"]
+        fn get_nft_transfer_fee(self: &HostContext, nft_id: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTSequence"]
+        fn get_nft_sequence(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
     }
 }
 
@@ -664,6 +688,30 @@ impl HostFunctions for CxxHost<'_> {
 
     fn update_data(&self, data: &[u8]) -> HostResult<i32> {
         scalar(self.ctx.update_data(data))
+    }
+
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft(account, nft_id, out))
+    }
+
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_issuer(nft_id, out))
+    }
+
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_taxon(nft_id, out))
+    }
+
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_nft_flags(nft_id))
+    }
+
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_nft_transfer_fee(nft_id))
+    }
+
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_sequence(nft_id, out))
     }
 }
 

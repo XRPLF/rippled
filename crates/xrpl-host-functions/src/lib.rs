@@ -427,4 +427,40 @@ host_functions! {
     #[gas = 1000]
     #[wasm_name = "set_data"]
     fn update_data(&self, data: &[u8]) -> HostResult<i32>;
+
+    /// The URI of the `NFToken` with id `nft_id` (32 bytes) held by the 20-byte
+    /// `account`. Reads both regions and writes the URI bytes.
+    #[gas = 5000]
+    #[wasm_name = "nft_uri"]
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 20-byte issuer account encoded in the `NFToken` id `nft_id` (32 bytes).
+    /// Reads the id region and writes the issuer bytes.
+    #[gas = 70]
+    #[wasm_name = "nft_issuer"]
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The taxon encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id region
+    /// and writes the taxon as its four little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "nft_taxon"]
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The flags encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id region
+    /// and returns the flags as the call's scalar result.
+    #[gas = 60]
+    #[wasm_name = "nft_flags"]
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32>;
+
+    /// The transfer fee encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id
+    /// region and returns the fee as the call's scalar result.
+    #[gas = 60]
+    #[wasm_name = "nft_xfer_fee"]
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32>;
+
+    /// The sequence number encoded in the `NFToken` id `nft_id` (32 bytes). Reads the
+    /// id region and writes the sequence as its four little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "nft_serial"]
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
 }

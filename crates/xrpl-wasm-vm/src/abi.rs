@@ -387,6 +387,24 @@ mod tests {
         fn update_data(&self, _data: &[u8]) -> HostResult<i32> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_nft(&self, _account: &[u8], _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_issuer(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_taxon(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_flags(&self, _nft_id: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_transfer_fee(&self, _nft_id: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_sequence(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
     }
 
     fn state(budget: u64) -> VmState<'static> {

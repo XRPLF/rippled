@@ -795,6 +795,109 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::GetNft => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 acc_ptr: i32,
+                 acc_len: i32,
+                 nft_ptr: i32,
+                 nft_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNft, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let account = Region::new(acc_ptr, acc_len);
+                        let nft_id = Region::new(nft_ptr, nft_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.get_nft(account.read(data)?, nft_id.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::GetNftIssuer => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 nft_ptr: i32,
+                 nft_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNftIssuer, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let nft_id = Region::new(nft_ptr, nft_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.get_nft_issuer(nft_id.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::GetNftTaxon => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 nft_ptr: i32,
+                 nft_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNftTaxon, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let nft_id = Region::new(nft_ptr, nft_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.get_nft_taxon(nft_id.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
+            HostFunctionSpec::GetNftFlags => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 nft_ptr: i32,
+                 nft_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNftFlags, |c| {
+                        let host = c.data().host;
+                        let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
+                        host.get_nft_flags(nft_id)
+                    })
+                },
+            ),
+            HostFunctionSpec::GetNftTransferFee => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 nft_ptr: i32,
+                 nft_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNftTransferFee, |c| {
+                        let host = c.data().host;
+                        let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
+                        host.get_nft_transfer_fee(nft_id)
+                    })
+                },
+            ),
+            HostFunctionSpec::GetNftSequence => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 nft_ptr: i32,
+                 nft_len: i32,
+                 out_ptr: i32,
+                 out_len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::GetNftSequence, |c| {
+                        let out = Region::new(out_ptr, out_len);
+                        let nft_id = Region::new(nft_ptr, nft_len);
+                        write_buffered(c, out, |host, data, buf| {
+                            host.get_nft_sequence(nft_id.read(data)?, buf)
+                        })
+                    })
+                },
+            ),
         }?;
     }
     Ok(())
