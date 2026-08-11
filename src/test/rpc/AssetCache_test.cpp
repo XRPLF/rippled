@@ -114,6 +114,63 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->totalLineCount() == 0);
     }
 
+    /**
+     * Accounts with no trust lines must still publish an empty complete vector
+     * so reuse hits. Leaving lines==null re-scanned the owner dir under the
+     * exclusive lock on every Pathfinder hop.
+     */
+    void
+    testEmptyAccountCachedNotRescanned()
+    {
+        testcase("empty account: complete miss is cached, not re-scanned");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const bare{"bare"};  // funded, no trust lines
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), bare, alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](10)));
+        env.close();
+
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/10000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/64);
+
+        auto const misses0 = cache->cacheMisses();
+        auto const hits0 = cache->cacheHits();
+
+        {
+            AssetCache::SessionPin pin{1};
+            auto first = cache->getRippleLines(bare.id());
+            // API still returns nullptr for empty (no lines to walk).
+            BEAST_EXPECT(!first);
+            BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+            BEAST_EXPECT(!cache->hasIncompleteLines());
+            BEAST_EXPECT(!cache->hasIncompleteLinesForSession(1));
+
+            // Second lookup must reuse the empty complete entry (hit), not miss.
+            auto second = cache->getRippleLines(bare.id());
+            BEAST_EXPECT(!second);
+            BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+            BEAST_EXPECT(cache->cacheHits() >= hits0 + 1);
+        }
+        cache->releaseSession(1);
+
+        // Non-empty account still loads normally after empty caching.
+        {
+            AssetCache::SessionPin pin{2};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && !lines->empty());
+        }
+        cache->releaseSession(2);
+    }
+
     void
     testPendingExpandWhileShared()
     {
@@ -624,6 +681,7 @@ public:
     run() override
     {
         testBudgetZeroEmptyStubAndExpand();
+        testEmptyAccountCachedNotRescanned();
         testPendingExpandWhileShared();
         testSessionPinsSharedHub();
         testAdvanceLedgerSoftRetainAndForceClear();

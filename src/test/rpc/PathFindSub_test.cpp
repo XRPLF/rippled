@@ -813,6 +813,76 @@ class PathFindSub_test : public beast::unit_test::Suite
         (void)wscB->invoke("path_find", closeReq);
     }
 
+    /**
+     * Soft auto-source cap is 16. Pure alphabetical order puts "XRP" after
+     * many 3-letter IOU codes, so multi-currency accounts would drop XRP and
+     * miss the usual cheapest route. XRP must be retained under the soft cap.
+     */
+    void
+    testAutoSourceKeepsXrpUnderSoftCap()
+    {
+        testcase("auto source: XRP retained under soft cap with many IOUs");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv();
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gateway"};
+        // More than kMaxAutoSrcCurSub (16) IOU currencies that sort before "XRP".
+        constexpr int kIouCount = 20;
+        env.fund(XRP(1000000), alice, bob, gw);
+        env.close();
+
+        for (int i = 0; i < kIouCount; ++i)
+        {
+            // "A00".."A19" — all lexicographically before "XRP".
+            char code[4] = {
+                'A', static_cast<char>('0' + (i / 10)), static_cast<char>('0' + (i % 10)), '\0'};
+            auto const iou = gw[code];
+            env.trust(iou(10000), alice);
+            env(pay(gw, alice, iou(100)));
+        }
+        // Only viable payment path: spend XRP into bob's gw/USD via book.
+        // None of the Axx IOUs have books, so dropping XRP under the soft cap
+        // would yield no alternatives.
+        env.trust(gw["USD"](10000), bob);
+        env(pay(gw, bob, gw["USD"](1)));
+        env(offer(gw, XRP(100), gw["USD"](100)));
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+        // No source_currencies → auto set (soft-capped at 16).
+        auto jr = wsc->invoke("path_find", pfCreate(alice, bob, gw["USD"](10)))[jss::result];
+        BEAST_EXPECT(!jr.isMember(jss::error));
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        auto upd = waitPathFindUpdate(*wsc, 5s, true);
+        BEAST_EXPECT(upd);
+
+        bool sawXrpSource = false;
+        if (upd && upd->isMember(jss::alternatives) && (*upd)[jss::alternatives].isArray())
+        {
+            for (auto const& alt : (*upd)[jss::alternatives])
+            {
+                if (!alt.isMember(jss::source_amount))
+                    continue;
+                auto const& sa = alt[jss::source_amount];
+                // Native XRP is often a drops string; IOUs are objects with currency.
+                if (sa.isString() ||
+                    (sa.isObject() &&
+                     (!sa.isMember(jss::currency) || sa[jss::currency].asString() == "XRP")))
+                {
+                    sawXrpSource = true;
+                    break;
+                }
+            }
+        }
+        BEAST_EXPECT(sawXrpSource);
+
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wsc->invoke("path_find", closeReq);
+    }
+
 public:
     void
     run() override
@@ -826,6 +896,7 @@ public:
         testStaggeredRediscoverySurvivesManyCloses();
         testMidCloseRevalidateOnly();
         testMidClosePreservesNewSubscriptionSignal();
+        testAutoSourceKeepsXrpUnderSoftCap();
     }
 };
 

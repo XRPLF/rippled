@@ -702,8 +702,12 @@ PathRequest::findPaths(
         }
 
         // accountSourceAssets returns a hash_set (unspecified order). Build a
-        // deterministic list so soft truncation is stable across runs: XRP
-        // first, then currency/MPT codes sorted by hex.
+        // deterministic list so soft truncation is stable across runs.
+        //
+        // XRP MUST sort first: pure to_string order places "XRP" near the end
+        // of 3-letter codes, so the WS soft cap (16 / 12 under load) would
+        // discard XRP for multi-currency accounts — usually the cheapest route.
+        // Remaining assets: currency/MPT codes sorted by string for stability.
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
         bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
@@ -713,6 +717,10 @@ PathRequest::findPaths(
         for (auto const& asset : assets)
             ordered.push_back(asset);
         std::sort(ordered.begin(), ordered.end(), [](PathAsset const& a, PathAsset const& b) {
+            bool const aXrp = a.isXRP();
+            bool const bXrp = b.isXRP();
+            if (aXrp != bXrp)
+                return aXrp;  // XRP before every IOU/MPT
             return to_string(a) < to_string(b);
         });
 

@@ -282,6 +282,10 @@ AssetCache::expandAccountUnlocked(AccountID const& accountID, LineEntry& entry)
         // No matching lines in this span; cursor still advanced / completed.
         if (have >= maxLinesPerAccount_)
             entry.cursor.complete = true;
+        // Complete with nothing published yet → empty vector so later lookups
+        // reuse instead of re-scanning (same as first-load empty complete).
+        if (entry.cursor.complete && !entry.lines && entry.pending.empty())
+            entry.lines = std::make_shared<std::vector<PathFindTrustLine>>();
         return 0;
     }
 
@@ -339,8 +343,10 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     if (it != lines_.end())
     {
         auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-        // Reuse only when we have published line data for this ledger window.
-        // Soft-advance stubs (lines==null, reloadMinLines>0) must refill.
+        // Reuse published results within the reuse window — including empty
+        // complete vectors (accounts with no trust lines). Soft-advance stubs
+        // keep lines==null and must refill; budget-blocked incomplete misses
+        // also leave lines null so a later load can admit rows.
         if (age <= cacheReuseLedgers_ && it->second.lines)
         {
             ++cacheHits_;
@@ -387,8 +393,15 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
             if (entry.lines->size() >= maxLinesPerAccount_)
                 entry.cursor.complete = true;
         }
+        else if (entry.cursor.complete)
+        {
+            // Directory fully scanned with zero matching lines. Publish an
+            // empty vector (not null) so reuse hits and Pathfinder does not
+            // re-walk the owner directory under unique_lock on every hop.
+            entry.lines = std::make_shared<std::vector<PathFindTrustLine>>();
+        }
     }
-    // else: remaining == 0 → empty, incomplete (cursor still at start)
+    // else: remaining == 0 → empty, incomplete (cursor still at start; lines null)
 
     if (!entry.cursor.complete)
     {
@@ -434,8 +447,9 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
         {
             auto const age =
                 curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-            // Fast path: fresh published lines, no pending. Soft-advance stubs
-            // (lines==null) and one-shot incomplete hits fall through.
+            // Fast path: fresh published results (including empty complete),
+            // no pending. Soft-advance stubs (lines==null) and one-shot
+            // incomplete hits fall through.
             if (age <= cacheReuseLedgers_ && it->second.lines && it->second.pending.empty() &&
                 (it->second.cursor.complete || !oneShotFull))
             {

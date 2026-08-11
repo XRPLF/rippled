@@ -228,6 +228,8 @@ private:
     {
         /**
          * Published line vector (may be held by concurrent Pathfinder readers).
+         * Non-null empty vector = complete scan found no lines (cacheable miss).
+         * Null = not yet published: soft-advance stub or budget-blocked load.
          */
         std::shared_ptr<std::vector<PathFindTrustLine>> lines;
         /**
