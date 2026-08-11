@@ -305,6 +305,10 @@ mod ffi {
         fn did_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "escrowKeylet"]
+        fn escrow_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -496,6 +500,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.did_keylet(account, out))
+    }
+
+    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.escrow_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

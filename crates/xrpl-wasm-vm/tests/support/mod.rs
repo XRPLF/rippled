@@ -214,6 +214,11 @@ pub struct FakeHost {
     pub did_keylets: HashMap<Vec<u8>, Answer>,
     /// Every account `did_keylet` was asked for.
     pub did_keylets_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `escrow_keylet` answers, by (account bytes, seq). An unlisted key answers
+    /// `InvalidAccount`.
+    pub escrow_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (account, seq) `escrow_keylet` was asked for.
+    pub escrow_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -282,6 +287,8 @@ impl Default for FakeHost {
             deposit_preauth_keylets_asked: RefCell::new(Vec::new()),
             did_keylets: HashMap::new(),
             did_keylets_asked: RefCell::new(Vec::new()),
+            escrow_keylets: HashMap::new(),
+            escrow_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -460,6 +467,16 @@ impl FakeHost {
 
     pub fn answering_did_keylet(mut self, account: Vec<u8>, answer: Answer) -> FakeHost {
         self.did_keylets.insert(account, answer);
+        self
+    }
+
+    pub fn answering_escrow_keylet(
+        mut self,
+        account: Vec<u8>,
+        seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.escrow_keylets.insert((account, seq), answer);
         self
     }
 
@@ -712,6 +729,15 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        let key = (account.to_vec(), seq);
+        self.escrow_keylets_asked.borrow_mut().push(key.clone());
+        match self.escrow_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -779,6 +805,7 @@ pub mod import {
     pub const DEPOSIT_PREAUTH_ID: &str = r#"(import "host_lib" "deposit_preauth_id" (func $deposit_preauth_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const DID_ID: &str =
         r#"(import "host_lib" "did_id" (func $did_id (param i32 i32 i32 i32) (result i32)))"#;
+    pub const ESCROW_ID: &str = r#"(import "host_lib" "escrow_id" (func $escrow_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
