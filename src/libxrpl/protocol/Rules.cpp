@@ -45,7 +45,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
         // amendments must also be added to useRulesGuards.
         bool const enableLargeNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-        // If enableLargeNumbers is true, then useRulesGuard must also return true.
+        // If enableLargeNumbers is true, then useRulesGuards must also return true.
         // However, the reverse is not true. Other amendments can cause the rules guard to be used,
         // even though large numbers are _not_ used.
         XRPL_ASSERT(
@@ -191,12 +191,6 @@ Rules::operator==(Rules const& other) const
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;
-}
-
-bool
-Rules::operator!=(Rules const& other) const
-{
-    return !(*this == other);
 }
 
 bool

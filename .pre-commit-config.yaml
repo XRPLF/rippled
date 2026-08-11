@@ -55,7 +55,7 @@ repos:
         types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5
+    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -68,7 +68,7 @@ repos:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 39e2973981e6d2f9b6c543b0086a2d2393abdc89 # frozen: v3.9.4
+    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
     hooks:
       - id: prettier
         args: [--end-of-line=auto]

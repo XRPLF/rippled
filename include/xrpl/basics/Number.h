@@ -304,7 +304,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *      on-ledger are non-negative. This is due to implementation details of
  *      several operations which use unsigned arithmetic internally. This is
  *      sufficient to represent all valid XRP values (where the absolute value
- *      can not exceed INITIAL_XRP: 10^17), and MPT values (where the absolute
+ *      can not exceed kInitialXRP: 10^17), and MPT values (where the absolute
  *      value can not exceed maxMPTokenAmount: 2^63-1).
  *
  * ---- Mantissa Range Switching ----
@@ -364,6 +364,8 @@ public:
     static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
+    static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
     // May need to make unchecked private
     struct Unchecked
@@ -445,12 +447,6 @@ public:
     {
         return x.negative_ == y.negative_ && x.mantissa_ == y.mantissa_ &&
             x.exponent_ == y.exponent_;
-    }
-
-    friend constexpr bool
-    operator!=(Number const& x, Number const& y) noexcept
-    {
-        return !(x == y);
     }
 
     friend constexpr bool
@@ -591,6 +587,13 @@ public:
     std::pair<T, int>
     normalizeToRange() const;
 
+    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
+    // is negative, returns the positive value. This takes a little extra work
+    // because converting std::numeric_limits<std::int64_t>::min() flirts with
+    // UB, and can vary across compilers.
+    static internalrep
+    externalToInternal(rep mantissa);
+
 private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
@@ -645,13 +648,6 @@ private:
     // exponent could go out of range, so it will be checked.
     [[nodiscard]] Number
     shiftExponent(int exponentDelta) const;
-
-    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
-    // is negative, returns the positive value. This takes a little extra work
-    // because converting std::numeric_limits<std::int64_t>::min() flirts with
-    // UB, and can vary across compilers.
-    static internalrep
-    externalToInternal(rep mantissa);
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept

@@ -44,7 +44,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class NuDBBackend : public Backend
 {
@@ -136,7 +136,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::NodeStore::NuDBBackend::open : database is already "
+                "xrpl::node_store::NuDBBackend::open : database is already "
                 "open");
             JLOG(j.error()) << "database is already open";
             return;
@@ -441,4 +441,4 @@ registerNuDBFactory(Manager& manager)
     static NuDBFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
