@@ -236,7 +236,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, Account("unknown"), {"Payment"}), Ter(tecNO_TARGET));
         }
 
-        // Delegating to a pseudo-account is not allowed, should return tecNO_PERMISSION
+        // Delegating to a pseudo-account is not allowed, should return tecPSEUDO_ACCOUNT
         {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = gw, .asset = xrpIssue()});
@@ -246,7 +246,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault);
             Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
-            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecNO_PERMISSION));
+            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecPSEUDO_ACCOUNT));
         }
 
         // non-delegable transaction
@@ -2167,11 +2167,12 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
 
-            // Field is not permitted, permitted fields for delegation is defined in
-            // permissions.macro.
+            // tfMPTSetCanLock is a valid MPTokenIssuanceSet flag but is not
+            // covered by the MPTokenIssuanceLock granular permission, so a
+            // delegate holding only that permission cannot set it.
             mpt.set(
                 {.account = alice,
-                 .mutableFlags = 2,
+                 .flags = tfMPTSetCanLock,
                  .delegate = bob,
                  .err = terNO_DELEGATE_PERMISSION});
 
@@ -2749,7 +2750,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 57;
+        std::size_t const expectedDelegableCount = 56;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

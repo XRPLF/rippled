@@ -162,12 +162,6 @@ operator==(PrettyAmount const& lhs, PrettyAmount const& rhs)
     return lhs.value() == rhs.value();
 }
 
-inline bool
-operator!=(PrettyAmount const& lhs, PrettyAmount const& rhs)
-{
-    return !operator==(lhs, rhs);
-}
-
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount);
 
