@@ -1660,12 +1660,16 @@ Transactor::operator()()
         std::tie(result, fee, canApply) = processPersistentChanges(result, fee);
     }
 
-    ScopeExit const logger{[&] {
+    auto const logger = [this](
+                            TER result,
+                            bool canApply,
+                            std::optional<TxMeta> metadata = std::nullopt) -> ApplyResult {
         JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
-    }};
+        return {result, canApply, metadata};
+    };
 
     if (!canApply)
-        return {result, canApply};
+        return logger(result, canApply);
 
     // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
     // proceed to apply the tx
@@ -1690,7 +1694,7 @@ Transactor::operator()()
     // We ran through the invariant checker, which can, in some cases,
     // return a tef error code. Don't apply the transaction in that case.
     if (!isTecClaim(result) && !isTesSuccess(result))
-        return {result, false};
+        return logger(result, false);
 
     std::optional<TxMeta> metadata;
 
@@ -1714,11 +1718,9 @@ Transactor::operator()()
     metadata = ctx_.apply(result);
 
     if ((ctx_.flags() & TapDryRun) != 0u)
-    {
-        return {result, false, metadata};
-    }
+        return logger(result, false, metadata);
 
-    return {result, canApply, metadata};
+    return logger(result, canApply, metadata);
 }
 
 }  // namespace xrpl
