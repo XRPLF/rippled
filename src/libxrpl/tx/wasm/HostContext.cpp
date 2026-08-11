@@ -684,6 +684,26 @@ HostContext::nftokenOfferKeylet(
 }
 
 std::int32_t
+HostContext::offerKeylet(
+    rust::Slice<std::uint8_t const> account,
+    std::int32_t seq,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (account.size() != AccountID::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        // The guest's u32 seq arrives as its i32 bit pattern; recover it.
+        auto const value = hostFunctions_.offerKeylet(
+            AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {
