@@ -69,7 +69,8 @@ private:
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,
-        bool enforce);
+        bool enforce,
+        bool fixOverrideFreeze);
 
     static bool
     validateFrozenState(
@@ -78,7 +79,8 @@ private:
         STTx const& tx,
         beast::Journal const& j,
         bool enforce,
-        bool globalFreeze);
+        bool globalFreeze,
+        bool fixOverrideFreeze);
 };
 
 }  // namespace xrpl
