@@ -543,8 +543,10 @@ splitMessageParts(
     // reaching here can exceed maxSize but never the protocol limit.
     if (size > kMaximumMessageSize)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("xrpl::splitMessageParts : maximum message size exceeded");
         return 0;
+        // LCOV_EXCL_STOP
     }
 
     messages.emplace_back(

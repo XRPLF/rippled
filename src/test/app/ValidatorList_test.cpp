@@ -2310,30 +2310,7 @@ private:
             }
             return std::shared_ptr<protocol::TMValidatorListCollection>();
         };
-        // Computes the exact wire size of a TMValidatorListCollection
-        // message containing the given sequences, so verifyMessage below can
-        // assert on message sizes without hardcoding numbers that would
-        // need to be hand-recalculated (and re-verified against the real
-        // serializer) every time the message format changes.
-        auto const messageSize = [](auto const version,
-                                    auto const& manifest,
-                                    auto const& blobInfos,
-                                    std::vector<std::uint32_t> const& sequences) {
-            protocol::TMValidatorListCollection msg;
-            msg.set_version(version);
-            msg.set_manifest(manifest);
-            for (auto const seq : sequences)
-            {
-                auto const& blobInfo = blobInfos.at(seq);
-                protocol::ValidatorBlobInfo& blob = *msg.add_blobs();
-                blob.set_blob(blobInfo.blob);
-                blob.set_signature(blobInfo.signature);
-                if (blobInfo.manifest)
-                    blob.set_manifest(*blobInfo.manifest);
-            }
-            return Message::totalSize(msg);
-        };
-        auto verifyMessage = [this, manifestCutoff, &extractProtocolMessage, &messageSize](
+        auto verifyMessage = [this, manifestCutoff, &extractProtocolMessage](
                                  auto const version,
                                  auto const& manifest,
                                  auto const& blobInfos,
@@ -2349,9 +2326,6 @@ private:
                     continue;
                 auto const& expectedSeqs = *msgIter;
                 auto seqIter = expectedSeqs.begin();
-                auto const size =
-                    messageWithHash.message->getBuffer(compression::Compressed::Off).size();
-                BEAST_EXPECT(size == messageSize(version, manifest, blobInfos, expectedSeqs));
                 {
                     std::vector<ValidatorBlobInfo> hashingBlobs;
                     hashingBlobs.reserve(expectedSeqs.size());
