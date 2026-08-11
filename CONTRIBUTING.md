@@ -83,6 +83,7 @@ If you create new source files, they must be organized as follows:
   `src/libxrpl`.
 - All other non-test files must go under `src/xrpld`.
 - All test source files must go under `src/test`.
+- All benchmark source files must go under `src/benchmarks`.
 
 The source must be formatted according to the style guide below. The easiest
 way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
@@ -347,11 +348,13 @@ run-clang-tidy -p build -allow-no-checks src tests
 ```
 
 This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
-If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
 
 ```
-run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
 ```
+
+`-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
 ## Contracts and instrumentation
 

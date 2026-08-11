@@ -62,7 +62,8 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
     auto lockedMaps = ledgerMaps_.lock();
-    bool const alreadyHad = lockedMaps->byHash->canonicalizeReplaceCache(ledger->header().hash, ledger);
+    bool const alreadyHad =
+        lockedMaps->byHash->canonicalizeReplaceCache(ledger->header().hash, ledger);
     if (validated)
         lockedMaps->byIndex[ledger->header().seq] = ledger->header().hash;
 

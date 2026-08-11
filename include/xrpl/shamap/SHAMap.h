@@ -3,7 +3,6 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -95,6 +94,21 @@ enum class SHAMapState {
  *
  * See https://en.wikipedia.org/wiki/Merkle_tree
  */
+
+/**
+ * Holds a SHAMap node's identity, leaf status, and serialized data. Used by
+ * getNodeFat to return node data for peer synchronization.
+ */
+struct SHAMapNodeData
+{
+    SHAMapNodeID nodeID;
+    // The `data` field (a Blob, 8-byte aligned) needs 4 bytes of padding after the `nodeID` field
+    // (36 bytes, 4-byte aligned) regardless of what comes between them, so `isLeaf` costs nothing
+    // extra here. Moving it after `data` would add 8 bytes to the size of this struct instead.
+    bool isLeaf;
+    Blob data;
+};
+
 class SHAMap
 {
 private:
@@ -289,10 +303,10 @@ public:
     std::vector<std::pair<SHAMapNodeID, uint256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
-    bool
+    [[nodiscard]] bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<std::pair<SHAMapNodeID, Blob>>& data,
+        std::vector<SHAMapNodeData>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 
@@ -321,10 +335,45 @@ public:
     void
     serializeRoot(Serializer& s) const;
 
+    /**
+     * Add a root node to the SHAMap during synchronization.
+     *
+     * This function is used when receiving the root node of a SHAMap from a peer during ledger
+     * synchronization. The node must already have been deserialized.
+     *
+     * @param hash The expected hash of the root node.
+     * @param rootNode A deserialized root node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the rootNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function.
+     */
     SHAMapAddNode
-    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter);
+    addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
+
+    /**
+     * Add a known node at a specific position in the SHAMap during synchronization.
+     *
+     * This function is used when receiving nodes from peers during ledger synchronization. The node
+     * is inserted at the position specified by nodeID. The node must already have been
+     * deserialized.
+     *
+     * @param nodeID The position in the tree where this node belongs.
+     * @param treeNode A deserialized tree node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function. This also means that the nodeID must be consistent with the node's content.
+     */
     SHAMapAddNode
-    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter const* filter);
+    addKnownNode(
+        SHAMapNodeID const& nodeID,
+        SHAMapTreeNodePtr treeNode,
+        SHAMapSyncFilter const* filter);
 
     // status functions
     void
@@ -738,12 +787,6 @@ operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
         "xrpl::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
         "inputs map do match");
     return x.item_ == y.item_;
-}
-
-inline bool
-operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
-{
-    return !(x == y);
 }
 
 inline SHAMap::ConstIterator

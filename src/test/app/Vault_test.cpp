@@ -51,6 +51,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1602,8 +1603,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2206,9 +2206,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});
@@ -2252,7 +2250,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // Enable CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            mptt.set({.flags = tfMPTSetCanTrade});
             env.close();
 
             env(offer(alice, XRP(1), asset(10)));
@@ -3128,7 +3126,7 @@ class Vault_test : public beast::unit_test::Suite
         Vault const vault{env};
         env.fund(XRP(1000), owner);
 
-        auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
         for (int i = 0; i < 256; ++i)
         {
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
@@ -3936,7 +3934,7 @@ class Vault_test : public beast::unit_test::Suite
         // Deposit 100 IOU → 1000 shares. Borrow 40 → assetsAvailable=60.
         // Clawback 80 IOU → clamped to 60, then share math uses truncation.
         testCase(1, [&, this](Env& env, Data d) {
-            using namespace loanBroker;
+            using namespace loan_broker;
             using namespace loan;
 
             testcase("Scale clawback clamped with outstanding loan");
@@ -3950,7 +3948,8 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanBroker(d.owner.id(), env.seq(d.owner));
+            auto const brokerKeylet =
+                keylet::loanBroker(d.owner.id(), SeqProxy::rawSequence(env.seq(d.owner)));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4410,7 +4409,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackBurnShares()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this, beast::Severity::Warning);
 
@@ -4464,12 +4463,13 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
-            auto const& brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+            auto const& brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             env(set(owner, vaultKeylet.key));
             env.close();
 
-            auto const& loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto const& loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
@@ -4670,7 +4670,7 @@ class Vault_test : public beast::unit_test::Suite
     testVaultClawbackAssets()
     {
         using namespace test::jtx;
-        using namespace loanBroker;
+        using namespace loan_broker;
         using namespace loan;
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
@@ -4857,7 +4857,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4915,7 +4916,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4970,7 +4972,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5024,7 +5027,8 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5072,7 +5076,8 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5179,7 +5184,8 @@ class Vault_test : public beast::unit_test::Suite
             PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             env(set(owner, vaultKeylet.key));
             env.close();
 
@@ -5313,7 +5319,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 3;
@@ -5381,7 +5387,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5453,7 +5459,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // These values will be rounded to 15 significant digits
             {
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 try
                 {
                     auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5477,7 +5484,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e40";  // max int64 * 10^40
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5491,7 +5499,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-40";  // max int64 * 10^-40
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5505,7 +5514,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-100";  // max int64 * 10^-100
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5524,9 +5534,9 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // 2. Mantissa larger than uint64 max
-            env.setParseFailureExpected(true);
             try
             {
+                auto const g = env.getParseFailureGuard(true);
                 tx[sfAssetsMaximum] = "18446744073709551617e5";  // uint64 max + 1
                 env(tx);
                 BEAST_EXPECTS(false, "Expected parse_error for mantissa larger than uint64 max");
@@ -5537,7 +5547,6 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     e.what() == "invalidParamsField 'tx_json.AssetsMaximum' has invalid data."s);
             }
-            env.setParseFailureExpected(false);
         }
     }
 
@@ -6092,9 +6101,10 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
+        f.brokerID =
+            keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender))).key;
         {
-            using namespace loanBroker;
+            using namespace loan_broker;
             env(set(f.lender, vaultKeylet.key),
                 kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
             env.close();
@@ -6104,7 +6114,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
-        f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
+        f.loanKeylet =
+            keylet::loan(f.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         {
             using namespace loan;
@@ -7591,7 +7602,7 @@ class Vault_test : public beast::unit_test::Suite
 
         Vault const vault{env};
 
-        auto const keylet = keylet::vault(owner.id(), 1);
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(1));
         auto delTx = vault.del({.owner = owner, .id = keylet.key});
 
         // Test VaultDelete with featureLendingProtocolV1_1 disabled
@@ -7623,7 +7634,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled no vault");
-            auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
@@ -7642,6 +7653,83 @@ class Vault_test : public beast::unit_test::Suite
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
             delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
             env(delTx, Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
+    testVaultCreateLEVersion()
+    {
+        using namespace test::jtx;
+
+        Account const owner{"owner"};
+        PrettyAsset const xrpAsset = xrpIssue();
+
+        {
+            testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(!sleVault->isFieldPresent(sfLEVersion));
+        }
+
+        {
+            testcase(
+                "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
+                "VaultVersion::CashBasis");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(sleVault->isFieldPresent(sfLEVersion));
+            BEAST_EXPECT(sleVault->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
+        }
+
+        {
+            testcase("VaultCreate rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            tx[sfLEVersion] = 2;
+            env(tx, Ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+        }
+
+        {
+            testcase("VaultSet rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfLEVersion] = 2;
+            env(setTx, Ter(temMALFORMED));
             env.close();
         }
     }
@@ -8318,6 +8406,7 @@ public:
         testVaultEscrowedMPT();
         testAssetsMaximum();
         testVaultDeleteMemoData();
+        testVaultCreateLEVersion();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();

@@ -3,7 +3,10 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
+#include <algorithm>
 
 namespace xrpl {
 
@@ -607,8 +610,42 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::scoped_lock const lock(mutex_);
-        v.reserve(cache_.size());
+        // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
+        // absurd. (Note that if this somehow ever happens, one more allocation will be done under
+        // lock, which is undesirable, but really should be almost impossible.)
+        std::size_t allocationIterations = 0;
+        std::unique_lock lock(mutex_);
+        for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
+             size = cache_.size())
+        {
+            ScopeUnlock const unlock(lock);
+            if (allocationIterations > 0)
+            {
+                JLOG(journal_.info())
+                    << "getKeys(): Cache grew beyond allocated capacity after "
+                    << allocationIterations << " prior attempt(s). Have " << v.capacity()
+                    << ", need " << size << ". Retrying allocation";
+            }
+            // Allocate the current size plus a little extra, in case the cache grows while
+            // allocating. Each time another allocation is needed, the extra also gets bigger until
+            // it ultimately doubles the size + 1.
+            constexpr std::size_t baseShift = 5;
+            auto const bufferOffset = std::min(allocationIterations, std::size_t{baseShift});
+            auto const bufferShift = baseShift - bufferOffset;
+            size += (size >> bufferShift) + 1;
+            v.reserve(size);
+            ++allocationIterations;
+        }
+        if (v.capacity() < cache_.size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TaggedCache::getKeys(): failed to allocate sufficient capacity");
+            v.reserve(cache_.size());
+            // LCOV_EXCL_STOP
+        }
+        XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
+        XRPL_ASSERT(
+            v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
         for (auto const& _ : cache_)
             v.push_back(_.first);
     }
