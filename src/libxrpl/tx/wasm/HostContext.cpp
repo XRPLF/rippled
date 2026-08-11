@@ -29,13 +29,12 @@ namespace xrpl {
 namespace {
 
 // What a host call answers when it could not be served at all: every method below hands it
-// to `guarded` as the answer for a body that throws. The engine reads -1 as its fatal
-// `Internal`, stops the run and reports `tecINTERNAL`.
+// to `guarded` as the answer for a body that throws. The engine converts -1 into a fault,
+// stops the run and reports `tecINTERNAL`, rather than handing the code to the contract.
 //
-// `HostFunctionError` spells -1 `Unimplemented`, so the two share a code. They also share
-// a meaning worth keeping together - "the host could not serve this call, and the contract
-// has no business interpreting why" - and they must share a fate. Named here so a call
-// site reads as what it is rather than as "unimplemented".
+// Named here because `Unimplemented` is not what a thrown exception is. What -1 carries is
+// the meaning the two conditions share - "the host could not serve this call, and the
+// contract has no business interpreting why" - and it is the fate they share too.
 constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::Unimplemented);
 
 // Copy `value` into `out` only if the whole of it fits, and answer its true length either

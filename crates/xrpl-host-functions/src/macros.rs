@@ -16,18 +16,13 @@
 /// construction. `HostFunctionSpec::ALL` is complete the same way, from the
 /// `host_functions!` block.
 macro_rules! host_errors {
-    ($($variant:ident = $code:literal,)+) => {
+    ($($(#[$doc:meta])* $variant:ident = $code:literal,)+) => {
         /// Error codes a host function may return.
         ///
-        /// The discriminants mirror `HostFunctionError` in
-        /// `include/xrpl/tx/wasm/WasmCommon.h`, so a negative `i32` crossing the wasm
-        /// boundary means the same thing to the guest, the Rust host, and the existing
-        /// C++ code. The full set is kept (not just the ones the PoC uses today) to
-        /// preserve that shared meaning.
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         #[repr(i32)]
         pub enum HostError {
-            $($variant = $code,)+
+            $($(#[$doc])* $variant = $code,)+
         }
 
         impl HostError {
@@ -45,12 +40,16 @@ macro_rules! host_errors {
                 self as i32
             }
 
-            /// Reconstruct a `HostError` from its wire code; unknown/positive values
-            /// map to `Internal`.
+            /// Reconstruct a `HostError` from its wire code.
+            ///
+            /// A code this ABI does not define is `Unimplemented`: an answer the
+            /// caller cannot act on is the call not having been served. Positive
+            /// values are not errors at all and go the same way, since this is
+            /// reached only once a negative return has been read as a failure.
             pub const fn from_code(code: i32) -> HostError {
                 match code {
                     $($code => HostError::$variant,)+
-                    _ => HostError::Internal,
+                    _ => HostError::Unimplemented,
                 }
             }
         }

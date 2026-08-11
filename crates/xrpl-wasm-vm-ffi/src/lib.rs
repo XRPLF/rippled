@@ -561,12 +561,13 @@ mod tests {
         assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
     }
 
-    /// An exception caught on the C++ side arrives as `-1`, which has to reach the
-    /// engine as a *fatal* error so the run stops and the transaction is
-    /// `tecINTERNAL` — not as a code handed to the contract to interpret.
+    /// An exception caught on the C++ side arrives as `-1`, the same code
+    /// `HostFunctionError` spells `Unimplemented`. The engine stops the run on it and
+    /// the transaction is `tecINTERNAL`, rather than the contract being handed a code
+    /// to interpret.
     #[test]
-    fn a_caught_cxx_exception_arrives_as_internal() {
-        assert_eq!(bytes_written(-1), Err(HostError::Internal));
+    fn a_caught_cxx_exception_arrives_as_unimplemented() {
+        assert_eq!(bytes_written(-1), Err(HostError::Unimplemented));
     }
 
     // -----------------------------------------------------------------------

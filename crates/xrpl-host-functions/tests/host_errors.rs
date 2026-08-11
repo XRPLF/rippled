@@ -19,7 +19,7 @@ fn the_error_table_matches_the_declarations() {
     assert_eq!(
         table,
         [
-            (HostError::Internal, -1),
+            (HostError::Unimplemented, -1),
             (HostError::FieldNotFound, -2),
             (HostError::BufferTooSmall, -3),
             (HostError::NoArray, -4),
@@ -29,7 +29,7 @@ fn the_error_table_matches_the_declarations() {
             (HostError::SlotsFull, -8),
             (HostError::EmptySlot, -9),
             (HostError::LedgerObjNotFound, -10),
-            (HostError::Decoding, -11),
+            (HostError::OutOfTransferLimit, -11),
             (HostError::DataFieldTooLarge, -12),
             (HostError::PointerOutOfBounds, -13),
             (HostError::NoMemExported, -14),
@@ -39,11 +39,23 @@ fn the_error_table_matches_the_declarations() {
             (HostError::IndexOutOfBounds, -18),
             (HostError::FloatInputMalformed, -19),
             (HostError::FloatComputationError, -20),
-            (HostError::NoRuntime, -21),
-            (HostError::OutOfGas, -22),
-            (HostError::OutOfTransferLimit, -23),
         ]
     );
+}
+
+/// The set is `-1 ..= -20` and nothing else: this enum is xrpld's `HostFunctionError`
+/// and every entry is a code some contract may read, so a condition with no number to
+/// answer with is not one of these — it is a `Fault` in the engine.
+#[test]
+fn every_code_is_in_the_shared_range() {
+    let outside: Vec<HostError> = HostError::ALL
+        .iter()
+        .copied()
+        .filter(|error| !(-20..=-1).contains(&error.code()))
+        .collect();
+
+    assert!(outside.is_empty(), "outside -1..=-20: {outside:?}");
+    assert_eq!(HostError::ALL.len(), 20);
 }
 
 /// Every code a guest can be handed comes back as the error that produced it, so a
@@ -57,14 +69,18 @@ fn every_wire_code_round_trips_back_to_its_error() {
     }
 }
 
-/// A code from outside the set is `Internal`: a host that answers something this
-/// ABI does not define has failed in a way the caller cannot act on, and success is
-/// not an error at all.
+/// A code from outside the set is `Unimplemented`: a host answering something this
+/// ABI does not define has not served the call, whatever it meant by it, and success
+/// is not an error at all.
 #[test]
-fn a_code_outside_the_set_is_internal() {
+fn a_code_outside_the_set_is_unimplemented() {
     let unassigned = -(HostError::ALL.len() as i32) - 1;
 
     for code in [unassigned, i32::MIN, 0, 1, i32::MAX] {
-        assert_eq!(HostError::from_code(code), HostError::Internal, "{code}");
+        assert_eq!(
+            HostError::from_code(code),
+            HostError::Unimplemented,
+            "{code}"
+        );
     }
 }

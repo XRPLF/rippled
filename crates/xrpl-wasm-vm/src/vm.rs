@@ -5,9 +5,9 @@ use wasmi::{
     Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
     TrapCode,
 };
-use xrpl_host_functions::{HostError, HostFunctions};
+use xrpl_host_functions::HostFunctions;
 
-use crate::abi::FatalHostError;
+use crate::abi::{FatalHostError, Fault};
 use crate::preflight::entry_point_fault;
 use crate::register::register_host_functions;
 
@@ -184,7 +184,7 @@ fn failed(store: &Store<VmState<'_>>, gas: u64, error: RunError) -> RunFailure {
 /// this before naming a failure after itself.
 fn guest_halted(error: &wasmi::Error) -> Option<RunError> {
     if let Some(fatal) = error.downcast_ref::<FatalHostError>() {
-        return Some(host_fatal(fatal.0));
+        return Some(fatal.0.into());
     }
     (error.as_trap_code() == Some(TrapCode::OutOfFuel)).then_some(RunError::OutOfGas)
 }
@@ -205,41 +205,19 @@ fn instantiation_failure(error: &wasmi::Error) -> RunError {
     }
 }
 
-/// The outcome a host-fatal `HostError` is.
+/// The outcome a [`Fault`] is: the one place a stopped call becomes a stopped run.
 ///
-/// Exhaustive rather than closed with a wildcard, so a variant added to the ABI
-/// must be placed here before this compiles. That is one direction of the agreement
-/// with [`crate::abi::is_fatal`], which picks the channel; the other — an existing
-/// variant moved into `is_fatal`'s set, landing in the soft arm and reported as
-/// `Internal` — is `tests::every_fatal_error_has_an_outcome_of_its_own`.
-///
-/// The soft arm is otherwise unreachable: a guest-visible error is a return code
-/// and never becomes a trap for [`guest_halted`] to unwrap.
-fn host_fatal(error: HostError) -> RunError {
-    match error {
-        HostError::OutOfGas => RunError::OutOfGas,
-        HostError::Internal => RunError::Internal,
-        HostError::NoMemExported => RunError::NoMemory,
-        HostError::FieldNotFound
-        | HostError::BufferTooSmall
-        | HostError::NoArray
-        | HostError::NotLeafField
-        | HostError::LocatorMalformed
-        | HostError::SlotOutRange
-        | HostError::SlotsFull
-        | HostError::EmptySlot
-        | HostError::LedgerObjNotFound
-        | HostError::Decoding
-        | HostError::DataFieldTooLarge
-        | HostError::PointerOutOfBounds
-        | HostError::InvalidParams
-        | HostError::InvalidAccount
-        | HostError::InvalidField
-        | HostError::IndexOutOfBounds
-        | HostError::FloatInputMalformed
-        | HostError::FloatComputationError
-        | HostError::NoRuntime
-        | HostError::OutOfTransferLimit => RunError::Internal,
+/// Total and one arm each, because a `Fault` is only ever a condition that stops the
+/// run — the guest-visible codes cannot reach here, which is what
+/// [`crate::abi::CallError`] buys. A fault added later has no arm and does not
+/// compile.
+impl From<Fault> for RunError {
+    fn from(fault: Fault) -> RunError {
+        match fault {
+            Fault::OutOfGas => RunError::OutOfGas,
+            Fault::Internal => RunError::Internal,
+            Fault::NoMemory => RunError::NoMemory,
+        }
     }
 }
 
@@ -357,34 +335,10 @@ pub fn run<'h>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::is_fatal;
 
     #[test]
     fn the_engine_is_one_engine() {
         assert!(Engine::same(wasm_engine(), wasm_engine()));
-    }
-
-    #[test]
-    fn every_fatal_error_has_an_outcome_of_its_own() {
-        for &error in HostError::ALL {
-            let named = !matches!(host_fatal(error), RunError::Internal)
-                || matches!(error, HostError::Internal);
-            assert_eq!(
-                is_fatal(error),
-                named,
-                "{error:?}: abi::is_fatal {}, host_fatal {}",
-                if is_fatal(error) {
-                    "traps it"
-                } else {
-                    "passes it to the guest"
-                },
-                if named {
-                    "names its outcome"
-                } else {
-                    "groups it with the soft errors"
-                }
-            );
-        }
     }
 
     /// The only place these numbers appear as literals; every other test derives

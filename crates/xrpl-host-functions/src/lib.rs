@@ -21,7 +21,7 @@ mod macros;
 use xrpl_host_functions_macros::host_functions;
 
 host_errors! {
-    Internal = -1,
+    Unimplemented = -1,
     FieldNotFound = -2,
     BufferTooSmall = -3,
     NoArray = -4,
@@ -31,7 +31,7 @@ host_errors! {
     SlotsFull = -8,
     EmptySlot = -9,
     LedgerObjNotFound = -10,
-    Decoding = -11,
+    OutOfTransferLimit = -11,
     DataFieldTooLarge = -12,
     PointerOutOfBounds = -13,
     NoMemExported = -14,
@@ -41,9 +41,6 @@ host_errors! {
     IndexOutOfBounds = -18,
     FloatInputMalformed = -19,
     FloatComputationError = -20,
-    NoRuntime = -21,
-    OutOfGas = -22,
-    OutOfTransferLimit = -23,
 }
 
 /// Convenience alias for the trait's fallible returns.

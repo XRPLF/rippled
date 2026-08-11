@@ -96,11 +96,12 @@ pub(crate) fn register_host_functions(
                     charged_unreported(&mut caller, HostFunctionSpec::Trace, |c| {
                         let host = c.data().host;
                         let msg = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
-                        let msg = core::str::from_utf8(msg).map_err(|_| HostError::Decoding)?;
+                        let msg =
+                            core::str::from_utf8(msg).map_err(|_| HostError::InvalidParams)?;
                         let data_type =
                             TraceDataType::from_code(data_type).ok_or(HostError::InvalidParams)?;
                         let data = read_borrowed(c, Region::new(data_ptr, data_len))?;
-                        host.trace(msg, data, data_type)
+                        Ok(host.trace(msg, data, data_type)?)
                     })
                 },
             ),
