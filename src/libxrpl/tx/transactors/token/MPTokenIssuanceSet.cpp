@@ -269,21 +269,27 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     bool const sleHasIssuerKey = sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey);
     bool const sleHasAuditorKey = sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey);
 
-    // cannot update issuer public key
-    if (!canRotateKey && txHasIssuerKey && sleHasIssuerKey)
-        return tecNO_PERMISSION;
+    if (canRotateKey)
+    {
+        // Post-ConfidentialKeyRotation amendment, the encryption keys can be updated.
+        // A first-time auditor key registration requires an issuer key,
+        // either already on the issuance or set by the same transaction.
+        bool const registersAuditorKey = txHasAuditorKey && !sleHasAuditorKey;
+        bool const issuerKeyExists = sleHasIssuerKey || txHasIssuerKey;
+        if (registersAuditorKey && !issuerKeyExists)
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // Pre-ConfidentialKeyRotation amendment, the encryption keys can not be updated.
+        // cannot update issuer public key
+        if (txHasIssuerKey && sleHasIssuerKey)
+            return tecNO_PERMISSION;
 
-    // cannot update auditor public key
-    if (!canRotateKey && txHasAuditorKey && sleHasAuditorKey)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
-
-    // A first-time auditor key registration
-    // requires an issuer key, either already on the issuance or set by the
-    // same transaction.
-    bool const registersAuditorKey = txHasAuditorKey && !sleHasAuditorKey;
-    bool const issuerKeyExists = sleHasIssuerKey || txHasIssuerKey;
-    if (canRotateKey && registersAuditorKey && !issuerKeyExists)
-        return tecNO_PERMISSION;
+        // cannot update auditor public key
+        if (txHasAuditorKey && sleHasAuditorKey)
+            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+    }
 
     if (enablesConfidentialAmount && sleMptIssuance->isFieldPresent(sfTransferFee) &&
         (*sleMptIssuance)[sfTransferFee] > 0u)
