@@ -386,6 +386,12 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The 32-byte keylet of a `SignerList`, computed from its 20-byte owner account.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "signers_id"]
+    fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]

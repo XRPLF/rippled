@@ -224,6 +224,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 32) (i32.const 32))",
             5,
         ),
+        HostFunctionSpec::SignerListKeylet => (
+            import::SIGNERS_ID,
+            "(call $signers_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 32))",
+            4,
+        ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
             "(call $sha512_half (i32.const 0) (i32.const 4) (i32.const 0) (i32.const 32))",

@@ -259,6 +259,11 @@ pub struct FakeHost {
     pub domain_keylets: HashMap<(Vec<u8>, i32), Answer>,
     /// Every (account, seq) `permissioned_domain_keylet` was asked for.
     pub domain_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `signer_list_keylet` answers, by account bytes. An unlisted account
+    /// answers `InvalidAccount`.
+    pub signer_list_keylets: HashMap<Vec<u8>, Answer>,
+    /// Every account `signer_list_keylet` was asked for.
+    pub signer_list_keylets_asked: RefCell<Vec<Vec<u8>>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -345,6 +350,8 @@ impl Default for FakeHost {
             paychannel_keylets_asked: RefCell::new(Vec::new()),
             domain_keylets: HashMap::new(),
             domain_keylets_asked: RefCell::new(Vec::new()),
+            signer_list_keylets: HashMap::new(),
+            signer_list_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -617,6 +624,11 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.domain_keylets.insert((account, seq), answer);
+        self
+    }
+
+    pub fn answering_signer_list_keylet(mut self, account: Vec<u8>, answer: Answer) -> FakeHost {
+        self.signer_list_keylets.insert(account, answer);
         self
     }
 
@@ -974,6 +986,16 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        self.signer_list_keylets_asked
+            .borrow_mut()
+            .push(account.to_vec());
+        match self.signer_list_keylets.get(account) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -1050,6 +1072,7 @@ pub mod import {
     pub const ORACLE_ID: &str = r#"(import "host_lib" "oracle_id" (func $oracle_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const PAYCHAN_ID: &str = r#"(import "host_lib" "paychan_id" (func $paychan_id (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const PERMISSIONED_DOMAIN_ID: &str = r#"(import "host_lib" "permissioned_domain_id" (func $permissioned_domain_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const SIGNERS_ID: &str = r#"(import "host_lib" "signers_id" (func $signers_id (param i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

@@ -702,6 +702,22 @@ fn permissioned_domain_id_reads_the_account_and_seq() {
     assert_eq!(*host.domain_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// An account-only keylet: the account reaches the host and the answered bytes land
+/// where the guest asked, with no scalar in the shape.
+#[test]
+fn signers_id_reads_the_account() {
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_signer_list_keylet(account.clone(), support::Answer::filler(32));
+
+    let wat = module(
+        &[import::SIGNERS_ID, ONE_PAGE],
+        "(call $signers_id (i32.const 0) (i32.const 20) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.signer_list_keylets_asked.borrow(), vec![account]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
