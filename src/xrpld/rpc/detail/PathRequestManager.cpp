@@ -165,7 +165,11 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 
     // Only authoritative (validated/closed or closed create waves) mutate the
     // shared cache. Non-authoritative callers (WS create / legacy doCreate) must
-    // not force-clear hubs for every other live session.
+    // not force-clear hubs for every other live session — they share the live
+    // cache view (soft reuse). Pathfinder snapshots cache->getLedger() at
+    // construct; line loads take AssetCache locks so advance is not racy, but
+    // create may observe a slightly older closed view than the open ledger
+    // passed in (intentional reuse window, not a second mutable cache).
     if (!authoritative)
         return assetCache_;
 
@@ -194,32 +198,6 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 namespace {
 
 /**
- * JobQueue thread count used by runParallel's fan-out gate.
- *
- * Must mirror ApplicationImp's JobQueue constructor (Application.cpp) for the
- * cases we care about. Order matters: stand-alone without forceMultiThread is
- * always 1 worker even when [workers] is set higher — checking workers first
- * would report a multi-thread pool that does not exist and allow runParallel
- * to fork-join on a single real thread (permanent hang on doneCv).
- *
- * When [workers] is unset, Application sizes the pool as
- *   2 + min(hardware_concurrency, 4)  (or larger for huge nodes).
- * We return the floor (2): underestimating only forces serial revalidate
- * (safe). Overestimating would re-enable fork-join on too few threads.
- */
-[[nodiscard]] int
-jobQueueWorkerCount(Config const& cfg)
-{
-    // Must match ApplicationImp JobQueue sizing — do not reorder.
-    if (cfg.standalone() && !cfg.forceMultiThread)
-        return 1;
-    if (cfg.workers > 0)
-        return cfg.workers;
-    // Conservative floor of Application's default multi-thread formula.
-    return 2;
-}
-
-/**
  * Run steady revalidates in bounded parallel batches via JobQueue.
  *
  * Matches project convention (no std::async): each unit is JtPathFindWork so
@@ -228,6 +206,10 @@ jobQueueWorkerCount(Config const& cfg)
  *   workers < 3  → serial (no fork-join)
  *   workers >= 3 → min(requested, workers - 1) per batch
  *                  (1 unit inline + ≤ workers - 2 JtPathFindWork siblings)
+ *
+ * workerCount comes from JobQueue::getWorkerCount() (actual pool size), not a
+ * re-derived Config estimate — the old floor of 2 forced serial revalidate on
+ * every default multi-thread node (real pools are typically 2+min(hw,4) ≥ 3).
  *
  * Fork-join from a JobQueue thread: queue siblings, run one unit on this
  * thread, then wait on doneCv. That blocks a pool thread, so fan-out needs
@@ -239,7 +221,8 @@ jobQueueWorkerCount(Config const& cfg)
  *   - No free worker left for JtPathFindWork → both wait forever
  *
  * Mitigations (thresholds above): serial for workers < 3; batch ≤ workers - 1
- * reserves one pool thread for a concurrent waveMutex_ waiter.
+ * reserves one pool thread for a concurrent waveMutex_ waiter. Safe with
+ * mid-close try_lock (skips rather than blocking a third pool thread forever).
  *
  * Completes the full work vector — do not abort mid-wave for new path_find
  * sessions (that stretched mean update gap under load).
@@ -263,7 +246,13 @@ runParallel(
         for (std::size_t i = begin; i < end; ++i)
         {
             if (jobQueue.isStopping())
+            {
+                // Release claims for work we never started so inProgress_ cannot
+                // stick forever across shutdown (needsUpdate would stay false).
+                for (std::size_t j = i; j < end; ++j)
+                    work[j]->updateComplete();
                 break;
+            }
             bool const keep = runOne(work[i], pinIndex, revalidateOnly);
             ++processed;
             if (!keep)
@@ -290,7 +279,12 @@ runParallel(
     for (std::size_t batch = 0; batch < work.size(); batch += par)
     {
         if (jobQueue.isStopping())
+        {
+            // Release claims for batches we never started.
+            for (std::size_t i = batch; i < work.size(); ++i)
+                work[i]->updateComplete();
             break;
+        }
 
         auto const end = std::min(batch + par, work.size());
         auto const count = end - batch;
@@ -856,7 +850,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                     app_.getJobQueue(),
                     steadyUpdates,
                     rpc::tuning::kPathSteadyUpdateParallelism,
-                    jobQueueWorkerCount(app_.config()),
+                    app_.getJobQueue().getWorkerCount(),
                     runOne,
                     pinSteady,
                     revalidateOnly,

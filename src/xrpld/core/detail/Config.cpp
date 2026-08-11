@@ -740,12 +740,17 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto const sec = section(Sections::kPathFind);
 
-        pathCacheReuseLedgers = sec.valueOr(Keys::kCacheReuseLedgers, pathCacheReuseLedgers);
-        if (pathCacheReuseLedgers > 64)
+        // Parse as signed so negative config values reject cleanly. valueOr on
+        // uint32_t cannot express a lower bound of 0 (unsigned wrap / cast).
+        if (auto const raw = sec.get<std::int64_t>(Keys::kCacheReuseLedgers))
         {
-            Throw<std::runtime_error>(
-                std::string("Invalid ") + Sections::kPathFind + " " + Keys::kCacheReuseLedgers +
-                ": must be between 0 and 64 inclusive");
+            if (*raw < 0 || *raw > 64)
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid ") + Sections::kPathFind + " " + Keys::kCacheReuseLedgers +
+                    ": must be between 0 and 64 inclusive");
+            }
+            pathCacheReuseLedgers = static_cast<std::uint32_t>(*raw);
         }
 
         pathFindLineChunkSize = sec.valueOr(Keys::kLineChunkSize, pathFindLineChunkSize);

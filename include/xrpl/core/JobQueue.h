@@ -241,6 +241,15 @@ public:
     void
     rendezvous();
 
+    /**
+     * Number of worker threads configured for this queue (Workers desired
+     * count). Stable after construction under normal operation; used by
+     * path_find fan-out to decide serial vs fork-join without re-deriving
+     * Application's sizing formula from Config.
+     */
+    [[nodiscard]] int
+    getWorkerCount() const noexcept;
+
     void
     stop();
 

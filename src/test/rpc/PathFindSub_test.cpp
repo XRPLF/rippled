@@ -41,8 +41,10 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <thread>
@@ -132,11 +134,19 @@ class PathFindSub_test : public beast::unit_test::Suite
         bool midClose = false)
     {
         using namespace std::chrono_literals;
+        // cv notify — avoid 200×25ms wall sleep that can exceed unit-test budget
+        // under load while still allowing a short absolute deadline.
         auto done = std::make_shared<std::atomic<bool>>(false);
+        auto mtx = std::make_shared<std::mutex>();
+        auto cv = std::make_shared<std::condition_variable>();
         bool const queued = env.app().getJobQueue().addJob(
-            JtClient, "PathFindSub-updateAll", [done, &env, ledger, midClose]() {
+            JtClient, "PathFindSub-updateAll", [done, mtx, cv, &env, ledger, midClose]() {
                 env.app().getPathRequestManager().updateAll(ledger, midClose);
-                done->store(true, std::memory_order_release);
+                {
+                    std::lock_guard const lk(*mtx);
+                    done->store(true, std::memory_order_release);
+                }
+                cv->notify_one();
             });
         if (!queued)
         {
@@ -146,13 +156,8 @@ class PathFindSub_test : public beast::unit_test::Suite
             env.app().getPathRequestManager().updateAll(ledger, midClose);
             return true;
         }
-        for (int i = 0; i < 200; ++i)
-        {
-            if (done->load(std::memory_order_acquire))
-                return true;
-            std::this_thread::sleep_for(25ms);
-        }
-        return done->load(std::memory_order_acquire);
+        std::unique_lock lk(*mtx);
+        return cv->wait_for(lk, 5s, [&] { return done->load(std::memory_order_acquire); });
     }
 
     void

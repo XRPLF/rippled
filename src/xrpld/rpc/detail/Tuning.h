@@ -181,9 +181,10 @@ static constexpr std::uint32_t kPathFullSearchInterval = 3;
  * kPathFindWorkLimit; must stay equal to that constant).
  *
  * Effective fan-out in PathRequestManager::runParallel is lower:
- *   - serial when JobQueue workers < 3
+ *   - serial when JobQueue::getWorkerCount() < 3 (stand-alone / workers=1–2)
  *   - otherwise min(this, workers - 1) units per batch (1 inline + ≤workers-2
  *     siblings), so a concurrent waveMutex_ waiter cannot starve the barrier
+ *   - uses the live pool size, not a Config re-estimate (defaults are often ≥3)
  *
  * Revalidate is mostly independent per request; AssetCache uses a shared_mutex
  * so hits/filters do not fully serialize workers.

@@ -21,6 +21,12 @@
 
 namespace xrpl {
 
+int
+JobQueue::getWorkerCount() const noexcept
+{
+    return workers_.getNumberOfThreads();
+}
+
 JobQueue::JobQueue(
     int threadCount,
     beast::insight::Collector::ptr const& collector,

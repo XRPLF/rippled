@@ -540,7 +540,7 @@ Pathfinder::rankPaths(
     auto const rankCap = static_cast<std::size_t>(
         app_.getFeeTrack().isLoadedLocal() ? rpc::tuning::kPathRankMaxCandidatesLoaded
                                            : rpc::tuning::kPathRankMaxCandidates);
-    auto const toRank = std::min(paths.size(), rankCap);
+    auto toRank = std::min(paths.size(), rankCap);
 
     // When truncating, do not rank pure insertion order (later gPathTable
     // expansions would never be liquidity-tested). Pre-order by length — free
@@ -572,34 +572,48 @@ Pathfinder::rankPaths(
         return largestAmount(dstAmount_);
     }();
 
+    auto rankOne = [&](std::size_t pathIndex) {
+        auto const& currentPath = paths[pathIndex];
+        if (currentPath.empty())
+            return;
+        STAmount liquidity;
+        uint64_t uQuality = 0;
+        auto const resultCode = getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
+        if (!isTesSuccess(resultCode))
+        {
+            JLOG(j_.debug()) << "findPaths: dropping : " << transToken(resultCode) << ": "
+                             << currentPath.getJson(JsonOptions::Values::None);
+            return;
+        }
+        JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
+                         << currentPath.getJson(JsonOptions::Values::None);
+        rankedPaths.push_back(
+            {.quality = uQuality,
+             .length = currentPath.size(),
+             .liquidity = liquidity,
+             .index = static_cast<int>(pathIndex)});
+    };
+
     for (std::size_t r = 0; r < toRank; ++r)
     {
         if (continueCallback && !continueCallback())
             return;
-        auto const i = order[r];
-        auto const& currentPath = paths[i];
-        if (!currentPath.empty())
-        {
-            STAmount liquidity;
-            uint64_t uQuality = 0;
-            auto const resultCode =
-                getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
-            if (!isTesSuccess(resultCode))
-            {
-                JLOG(j_.debug()) << "findPaths: dropping : " << transToken(resultCode) << ": "
-                                 << currentPath.getJson(JsonOptions::Values::None);
-            }
-            else
-            {
-                JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
-                                 << currentPath.getJson(JsonOptions::Values::None);
+        rankOne(order[r]);
+    }
 
-                rankedPaths.push_back(
-                    {.quality = uQuality,
-                     .length = currentPath.size(),
-                     .liquidity = liquidity,
-                     .index = static_cast<int>(i)});
-            }
+    // Length-first truncation can skip the only liquid route (often longer).
+    // If the first pass found nothing and we truncated, rank the remainder so
+    // payment build_path / path_find do not silently return empty alternatives.
+    if (rankedPaths.empty() && paths.size() > toRank)
+    {
+        JLOG(j_.debug()) << "rankPaths empty after truncating to " << toRank
+                         << "; ranking remaining " << (paths.size() - toRank) << " candidates";
+        rankedPaths.reserve(paths.size());
+        for (std::size_t r = toRank; r < paths.size(); ++r)
+        {
+            if (continueCallback && !continueCallback())
+                return;
+            rankOne(order[r]);
         }
     }
 

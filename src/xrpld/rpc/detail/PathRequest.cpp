@@ -99,7 +99,7 @@ PathRequest::PathRequest(
 void
 PathRequest::detachFromManager() noexcept
 {
-    owner_ = nullptr;
+    owner_.store(nullptr, std::memory_order_release);
 }
 
 PathRequest::~PathRequest()
@@ -107,8 +107,8 @@ PathRequest::~PathRequest()
     // WS disconnect or last strong-ref drop: unhook from the manager so the
     // shared AssetCache can be released when no sessions remain. owner_ is
     // null if ~PathRequestManager already detached this session.
-    if (owner_)
-        owner_->removePathRequest(this);
+    if (auto* owner = owner_.exchange(nullptr, std::memory_order_acq_rel))
+        owner->removePathRequest(this);
 
     using namespace std::chrono;
     auto stream = journal_.info();
@@ -535,8 +535,8 @@ PathRequest::doClose()
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
     // Detach immediately so AssetCache can reclaim if this was the last session
     // (do not wait for ~PathRequest / next updateAll scavenge).
-    if (owner_)
-        owner_->removePathRequest(this);
+    if (auto* owner = owner_.load(std::memory_order_acquire))
+        owner->removePathRequest(this);
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
@@ -687,6 +687,8 @@ PathRequest::findPaths(
         // Soft cap is for WS subscriptions only so concurrent Pathfinder waves
         // stay bounded. One-shot ripple_path_find never silent-truncates under
         // load — clients expect a complete auto source set (or a hard error).
+        // Soft truncation is reported via path_source_currencies_truncated so
+        // clients know the alternative set is incomplete, not empty-of-routes.
         std::size_t const hardMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCur);
         std::size_t softMax = hardMax;
         if (!hasCompletion())
@@ -714,6 +716,7 @@ PathRequest::findPaths(
             return to_string(a) < to_string(b);
         });
 
+        bool softTruncated = false;
         for (auto const& asset : ordered)
         {
             bool overHard = false;
@@ -747,8 +750,17 @@ PathRequest::findPaths(
             if (overHard)
                 return false;
             if (atSoft)
+            {
+                softTruncated = true;
                 break;
+            }
         }
+        // Stash for doUpdate warning (findPaths has no status object here).
+        sourceCurrenciesTruncated_ = softTruncated;
+    }
+    else
+    {
+        sourceCurrenciesTruncated_ = false;
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
@@ -1147,21 +1159,27 @@ PathRequest::doUpdate(
 
     // Incomplete owner-dir fill for accounts this session pinned (not cache-global).
     // Do not overwrite path_revalidate_failed (stale restore takes precedence).
-    if (!newStatus.isMember(jss::error) && !newStatus.isMember(jss::warning) &&
-        cache->hasIncompleteLinesForSession(iIdentifier_))
-        newStatus[jss::warning] = "path_lines_partial";
+    // Soft auto-source truncation is also a warning (not an error): results are
+    // still valid for the included currencies, just not exhaustive.
+    if (!newStatus.isMember(jss::error) && !newStatus.isMember(jss::warning))
+    {
+        if (sourceCurrenciesTruncated_)
+            newStatus[jss::warning] = "path_source_currencies_truncated";
+        else if (cache->hasIncompleteLinesForSession(iIdentifier_))
+            newStatus[jss::warning] = "path_lines_partial";
+    }
 
     if (fast && quickReply_ == steady_clock::time_point{})
     {
         quickReply_ = steady_clock::now();
-        if (owner_)
-            owner_->reportFast(duration_cast<milliseconds>(quickReply_ - created_));
+        if (auto* owner = owner_.load(std::memory_order_acquire))
+            owner->reportFast(duration_cast<milliseconds>(quickReply_ - created_));
     }
     else if (!fast && fullReply_ == steady_clock::time_point{})
     {
         fullReply_ = steady_clock::now();
-        if (owner_)
-            owner_->reportFull(duration_cast<milliseconds>(fullReply_ - created_));
+        if (auto* owner = owner_.load(std::memory_order_acquire))
+            owner->reportFull(duration_cast<milliseconds>(fullReply_ - created_));
     }
 
     {

@@ -20,6 +20,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <map>
@@ -194,7 +195,9 @@ private:
 
     // Nullable so ~PathRequestManager can detach live sessions before destroy
     // (WS InfoSub may outlive the manager briefly during Application teardown).
-    PathRequestManager* owner_;
+    // Atomic: detachFromManager races with ~PathRequest / reportFast / doClose
+    // (manager dtor or force-drop vs WS teardown on another thread).
+    std::atomic<PathRequestManager*> owner_;
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;
@@ -215,6 +218,11 @@ private:
     std::optional<uint256> domain_;
 
     bool convertAll_{};
+
+    /**
+     * Set when WS auto source-currency soft cap truncates the account set.
+     */
+    bool sourceCurrenciesTruncated_{false};
 
     mutable std::recursive_mutex indexLock_;
     /**
