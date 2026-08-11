@@ -9,6 +9,7 @@
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -24,7 +25,6 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/icl/interval_set.hpp>
@@ -372,7 +372,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                 std::string ip;
                 while (std::getline(ss, ip, ','))
                 {
-                    boost::algorithm::trim(ip);
+                    ip = trimWhitespace(ip);
                     auto const addr = boost::asio::ip::make_address(ip);
 
                     if (addr.is_unspecified())
