@@ -24,7 +24,7 @@
 #include <exception>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 namespace {
 
@@ -114,7 +114,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     {
         // Count all jobs at jtCLIENT priority or higher.
         int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
-        if (jobCount > Tuning::kMaxJobQueueClients)
+        if (jobCount > tuning::kMaxJobQueueClients)
         {
             JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return RpcTooBusy;
@@ -179,8 +179,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
 
-        if (context.loadType == Resource::kFeeReferenceRpc)
-            context.loadType = Resource::kFeeExceptionRpc;
+        if (context.loadType == resource::kFeeReferenceRpc)
+            context.loadType = resource::kFeeExceptionRpc;
 
         injectError(RpcInternal, result);
         return RpcInternal;
@@ -190,7 +190,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
 }  // namespace
 
 Status
-doCommand(RPC::JsonContext& context, json::Value& result)
+doCommand(rpc::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
@@ -226,7 +226,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
-    auto handler = RPC::getHandler(version, betaEnabled, method);
+    auto handler = rpc::getHandler(version, betaEnabled, method);
 
     if (handler == nullptr)
         return Role::FORBID;
@@ -234,4 +234,4 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

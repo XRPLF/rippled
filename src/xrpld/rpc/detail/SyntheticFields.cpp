@@ -8,7 +8,7 @@
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
-namespace RPC {
+namespace rpc {
 
 void
 insertAllSyntheticInJson(
@@ -34,5 +34,5 @@ insertAllSyntheticInJson(
     insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

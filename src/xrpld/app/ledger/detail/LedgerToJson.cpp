@@ -135,14 +135,14 @@ fillJsonTx(
     {
         copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
             txJson[jss::meta] = stMeta->getJson(JsonOptions::Values::None);
 
             // Insert all synthetic fields
-            RPC::insertAllSyntheticInJson(
+            rpc::insertAllSyntheticInJson(
                 txJson[jss::meta],
                 fill.ledger,
                 txn,
@@ -165,13 +165,13 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
-        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        rpc::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
 
             // Insert all synthetic fields
-            RPC::insertAllSyntheticInJson(
+            rpc::insertAllSyntheticInJson(
                 txJson[jss::metaData],
                 fill.ledger,
                 txn,
@@ -323,7 +323,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kApiMaximumSupportedVersion));
+                                       : rpc::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))

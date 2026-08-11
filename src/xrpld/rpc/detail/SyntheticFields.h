@@ -10,7 +10,7 @@ namespace xrpl {
 
 class ReadView;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -35,5 +35,5 @@ insertAllSyntheticInJson(
     TxMeta const&);
 /** @} */
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl
