@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <random>
@@ -104,6 +105,35 @@ uniqueRandomPath(
             return candidate;
     }
     Throw<std::runtime_error>("Unable to generate a unique path under '" + base.string() + "'");
+}
+
+TempDir::TempDir() : path_(uniqueRandomPath(std::filesystem::temp_directory_path()))
+{
+    std::filesystem::create_directory(path_);
+}
+
+TempDir::~TempDir()
+{
+    // use non-throwing calls in the destructor
+    std::error_code ec;
+    std::filesystem::remove_all(path_, ec);
+    if (ec)
+    {
+        std::cerr << "Unable to remove temporary directory '" << path_.string()
+                  << "': " << ec.message() << '\n';
+    }
+}
+
+std::string
+TempDir::path() const
+{
+    return path_.string();
+}
+
+std::string
+TempDir::file(std::string const& name) const
+{
+    return (path_ / name).string();
 }
 
 }  // namespace xrpl

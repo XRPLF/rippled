@@ -1,6 +1,7 @@
 #include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
@@ -12,7 +13,6 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 #include <nodestore/TestBase.h>
-#include <test_helpers/TempDir.h>
 
 #include <algorithm>
 #include <atomic>
