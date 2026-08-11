@@ -71,7 +71,13 @@ struct TxSettings
     /**
      * The amendment gating this transaction, or uint256{} if always available.
      */
-    uint256 amendment;
+    // The `{}` looks redundant, because BaseUInt's default constructor already
+    // zeroes the value. It is not: without a default member initializer here,
+    // every partial designated initializer in transactions.macro trips the
+    // missing-designated-field-initializers warning, which the build treats as
+    // an error.
+    // NOLINTNEXTLINE(readability-redundant-member-init)
+    uint256 amendment{};
 
     /**
      * Operations this transaction is permitted to perform.
