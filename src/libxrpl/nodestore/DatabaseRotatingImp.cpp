@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <utility>
 
@@ -93,7 +94,17 @@ void
 DatabaseRotatingImp::setRotationInFlight(LedgerIndex inFlight)
 {
     rotationInFlight_.store(inFlight, std::memory_order_release);
-    JLOG(j_.debug()) << "Rotating: copy-forward on archive reads from " << inFlight << " forward";
+    std::ostringstream msg;
+    msg << "Rotating: copy-forward on archive reads ";
+    if (inFlight == 0)
+    {
+        msg << "disabled";
+    }
+    else
+    {
+        msg << "from " << inFlight << " forward";
+    }
+    JLOG(j_.debug()) << msg.str();
 }
 
 LedgerIndex

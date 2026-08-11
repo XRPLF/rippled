@@ -265,7 +265,7 @@ SHAMapStoreImp::fdRequired() const
 void
 SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectType> expectedType)
 {
-    XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
+    XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::rescueNode : rescued node must be clean");
     // Reachable from the validated state map in memory, but present in
     // neither backend: its only on-disk copy lived in a backend removed by
     // an earlier rotation, and it was never rewritten because it is clean
@@ -302,6 +302,10 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
         JLOG(journal_.warn())
             << "copyNode: unable to re-store node with unsupported/unknown type, hash=" << hash
             << " type=" << static_cast<int>(nodeType);
+        // We do not expect to see Inner nodes rescued without an expected type. Analysis and
+        // experimentation so far indicate that it just doesn't happen, specifically in
+        // freshenCaches. This UNREACHABLE is as much a developer alert as it is a safety check. If
+        // it does happen, we want to know about it. It won't affect production deployments.
         UNREACHABLE("SHAMapStoreImp::rescueNode : unsupported node type");
         return;
         // LCOV_EXCL_STOP
@@ -413,17 +417,10 @@ SHAMapStoreImp::run()
             // from the doomed archive cannot be left RAM-only when the
             // archive is deleted. RAII so the early returns below (and any
             // exception) also clear the flag.
-            struct RotationExposureGuard
-            {
-                node_store::DatabaseRotating& db;
-                ~RotationExposureGuard()
-                {
-                    db.setRotationInFlight(0);
-                }
-            };
-            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
+            ScopeExit const clearRotationInFlight{[this] { dbRotating_->setRotationInFlight(0); }};
             // Anything before lastRotated is going to get deleted soon, so we don't care about
             // moving it to the writable DB.
+            XRPL_ASSERT(lastRotated != 0, "SHAMapStoreImp::run : valid lastRotated");
             dbRotating_->setRotationInFlight(lastRotated);
 
             clearPrior(lastRotated);
