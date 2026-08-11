@@ -2245,62 +2245,86 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDEX deleted offer fallback";
 
-        auto const checkDeletedOfferFallback =
-            [this](FeatureBitset features, bool const isDelete, bool const expectInvariantFailure) {
-                Env env(*this, features);
+        // Matrix over fixCleanup3_4_0 × isDelete × (after null / after = offer on pd1).
+        // Tx is always OfferCreate on pd2, so tracking pd1 must fail the invariant
+        // iff that domain lands in the set finalize consults.
+        auto const check = [this](
+                               FeatureBitset features,
+                               bool const afterIsNull,
+                               bool const isDelete,
+                               bool const expectInvariantFailure) {
+            Env env(*this, features);
 
-                Account const a1{"A1"};
-                Account const a2{"A2"};
-                env.fund(XRP(1000), a1, a2);
-                env.close();
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
 
-                [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
-                [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
-                env.close();
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
+            env.close();
 
-                Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                auto sleOffer = std::make_shared<SLE>(offerKey);
-                sleOffer->setAccountID(sfAccount, a2);
-                sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
-                sleOffer->setFieldH256(sfDomainID, pd1);
+            auto sleOffer =
+                std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
+            sleOffer->setAccountID(sfAccount, a2);
+            sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+            sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+            sleOffer->setFieldH256(sfDomainID, pd1);
 
-                CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
+            CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
 
-                ValidPermissionedDEX invariant;
+            ValidPermissionedDEX invariant;
+            if (afterIsNull)
+            {
+                // Defensive path: after is null, before holds the offer on pd1.
                 invariant.visitEntry(isDelete, sleOffer, nullptr);
+            }
+            else
+            {
+                // Normal / real-erase path: after is the offer on pd1.
+                invariant.visitEntry(isDelete, nullptr, sleOffer);
+            }
 
-                STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
-                                  tx.setFieldH256(sfDomainID, pd2);
-                                  tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                                  tx.setFieldAmount(sfTakerGets, XRP(1));
-                              }};
+            STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                              tx.setFieldH256(sfDomainID, pd2);
+                              tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                              tx.setFieldAmount(sfTakerGets, XRP(1));
+                          }};
 
-                test::StreamSink sink{beast::Severity::Warning};
-                beast::Journal const jlog{sink};
-                bool const passed =
-                    invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
-                BEAST_EXPECT(passed != expectInvariantFailure);
-                if (expectInvariantFailure)
-                {
-                    BEAST_EXPECT(
-                        sink.messages().str().contains("transaction consumed wrong domains"));
-                }
-                else
-                {
-                    BEAST_EXPECT(sink.messages().str().empty());
-                }
-            };
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            bool const passed =
+                invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
+            BEAST_EXPECT(passed != expectInvariantFailure);
+            if (expectInvariantFailure)
+            {
+                BEAST_EXPECT(sink.messages().str().contains("transaction consumed wrong domains"));
+            }
+            else
+            {
+                BEAST_EXPECT(sink.messages().str().empty());
+            }
+        };
 
-        // Pre-fixCleanup3_4_0: null after is ignored (original after-only).
-        // Post-fixCleanup3_4_0: fall back to before; with isDelete the domain
-        // only lands in domainsOld_, so finalize (which uses domains_) still
-        // passes — use !isDelete below to observe the fallback.
-        checkDeletedOfferFallback(defaultAmendments() - fixCleanup3_4_0, true, false);
-        checkDeletedOfferFallback(defaultAmendments(), true, false);
+        auto const pre = defaultAmendments() - fixCleanup3_4_0;
+        auto const post = defaultAmendments() | fixCleanup3_4_0;
 
-        // Post-fixCleanup3_4_0 + !isDelete: fallback fills domains_ → fail.
-        checkDeletedOfferFallback(defaultAmendments(), false, true);
+        // after == null
+        // pre-340: early return (original after-only) → never tracks → pass
+        check(pre, true, true, false);
+        check(pre, true, false, false);
+        // post-340: fall back to before; isDelete → only domainsOld_ → pass
+        //           !isDelete → domains_ → fail
+        check(post, true, true, false);
+        check(post, true, false, true);
+
+        // after == offer on pd1 (no null fallback involved)
+        // pre-340: finalize uses domainsOld_ (always inserted) → fail
+        check(pre, false, true, true);
+        check(pre, false, false, true);
+        // post-340: isDelete → only domainsOld_ → pass; !isDelete → domains_ → fail
+        check(post, false, true, false);
+        check(post, false, false, true);
     }
 
     void
