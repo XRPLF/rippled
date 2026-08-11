@@ -39,7 +39,7 @@ This section contains changes targeting a future version.
   - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
-- `noripple_check`: The `transactions` field is no longer included in the response if the response is an error or if there are no `problems` ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
+- `noripple_check`: The `transactions` field is no longer included in error responses; it is still returned (possibly as an empty array) whenever `transactions` is `true` and the request succeeds. A malformed `account` is now rejected before the ledger is looked up, so that error response no longer carries the `ledger_hash`, `ledger_index`, and `validated` fields ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
 
 ### Bugfixes
 
