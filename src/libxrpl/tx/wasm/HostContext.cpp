@@ -1,5 +1,6 @@
 #include <xrpl/tx/wasm/HostContext.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>

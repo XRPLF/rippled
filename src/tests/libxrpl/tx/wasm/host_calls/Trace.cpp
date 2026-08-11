@@ -8,7 +8,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/MockHostFunctions.h>
 #include <tx/wasm/WasmFixture.h>
 // For `TraceDataType`, which the bridge declares and this header defines.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
