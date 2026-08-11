@@ -45,7 +45,9 @@ std::int32_t
 answer(rust::Slice<std::uint8_t> out, std::uint8_t const* value, std::size_t size)
 {
     if (size <= out.size())
+    {
         std::memcpy(out.data(), value, size);
+    }
     return static_cast<std::int32_t>(size);
 }
 
@@ -72,22 +74,28 @@ std::expected<Asset, HostFunctionError>
 parseAsset(rust::Slice<std::uint8_t const> bytes)
 {
     if (bytes.size() == MPTID::size())
+    {
         return Asset{MPTID::fromVoid(bytes.data())};
+    }
 
     if (bytes.size() == Currency::size())
     {
         auto const issue = Issue{Currency::fromVoid(bytes.data()), xrpAccount()};
         if (!issue.native())
+        {
             return std::unexpected(HostFunctionError::InvalidParams);
+        }
         return Asset{issue};
     }
 
     if (bytes.size() == Currency::size() + AccountID::size())
     {
-        auto const issue = Issue(
-            Currency::fromVoid(bytes.data()), AccountID::fromVoid(bytes.data() + Currency::size()));
+        auto const issue = Issue{
+            Currency::fromVoid(bytes.data()), AccountID::fromVoid(bytes.data() + Currency::size())};
         if (issue.native())
+        {
             return std::unexpected(HostFunctionError::InvalidParams);
+        }
         return Asset{issue};
     }
 
@@ -100,9 +108,11 @@ std::expected<std::uint64_t, HostFunctionError>
 parseUint64(rust::Slice<std::uint8_t const> bytes)
 {
     if (bytes.size() != sizeof(std::uint64_t))
+    {
         return std::unexpected(HostFunctionError::InvalidParams);
+    }
 
-    std::uint64_t x = 0;
+    std::uint64_t x{};
     std::memcpy(&x, bytes.data(), sizeof(x));
     return adjustWasmEndianess(x);
 }
@@ -126,7 +136,7 @@ parseST(rust::Slice<std::uint8_t const> bytes)
 
 }  // namespace
 
-HostContext::HostContext(HostFunctions& hostFunctions) : hostFunctions_(hostFunctions)
+HostContext::HostContext(HostFunctions& hostFunctions) : hostFunctions_{hostFunctions}
 {
 }
 
@@ -136,7 +146,9 @@ HostContext::getLedgerSqn(rust::Slice<std::uint8_t> out) const noexcept
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const sqn = hostFunctions_.getLedgerSqn();
         if (!sqn)
+        {
             return hfErrorToInt(sqn.error());
+        }
 
         return answerScalar(out, *sqn);
     });
@@ -148,7 +160,9 @@ HostContext::getParentLedgerTime(rust::Slice<std::uint8_t> out) const noexcept
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const time = hostFunctions_.getParentLedgerTime();
         if (!time)
+        {
             return hfErrorToInt(time.error());
+        }
 
         return answerScalar(out, *time);
     });
@@ -160,7 +174,9 @@ HostContext::getParentLedgerHash(rust::Slice<std::uint8_t> out) const noexcept
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const hash = hostFunctions_.getParentLedgerHash();
         if (!hash)
+        {
             return hfErrorToInt(hash.error());
+        }
 
         return answer(out, hash->data(), hash->size());
     });
@@ -172,7 +188,9 @@ HostContext::getBaseFee(rust::Slice<std::uint8_t> out) const noexcept
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const fee = hostFunctions_.getBaseFee();
         if (!fee)
+        {
             return hfErrorToInt(fee.error());
+        }
 
         return answerScalar(out, *fee);
     });
@@ -190,17 +208,23 @@ HostContext::isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const
             auto const enabled =
                 hostFunctions_.isAmendmentEnabled(uint256::fromVoid(amendment.data()));
             if (enabled && *enabled == 1)
+            {
                 return *enabled;
+            }
         }
 
         if (amendment.size() > 64)
+        {
             return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+        }
 
         auto const name =
-            std::string_view(reinterpret_cast<char const*>(amendment.data()), amendment.size());
+            std::string_view{reinterpret_cast<char const*>(amendment.data()), amendment.size()};
         auto const enabled = hostFunctions_.isAmendmentEnabled(name);
         if (!enabled)
+        {
             return hfErrorToInt(enabled.error());
+        }
 
         return *enabled;
     });
@@ -212,11 +236,15 @@ HostContext::cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t 
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (objId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const slot = hostFunctions_.cacheLedgerObj(uint256::fromVoid(objId.data()), cacheIdx);
         if (!slot)
+        {
             return hfErrorToInt(slot.error());
+        }
 
         return *slot;
     });
@@ -229,11 +257,15 @@ HostContext::getTxField(std::int32_t field, rust::Slice<std::uint8_t> out) const
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const value = hostFunctions_.getTxField(*it->second);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -247,11 +279,15 @@ HostContext::getCurrentLedgerObjField(std::int32_t field, rust::Slice<std::uint8
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const value = hostFunctions_.getCurrentLedgerObjField(*it->second);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -267,11 +303,15 @@ HostContext::getLedgerObjField(
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const value = hostFunctions_.getLedgerObjField(cacheIdx, *it->second);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -285,7 +325,9 @@ HostContext::getTxNestedField(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         // A path of i32 steps: non-empty and a whole number of them.
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         // Copy into an aligned int32 buffer rather than aliasing the slice, whose
         // bytes carry no int32 alignment guarantee. The wire byte order is kept; the
@@ -297,7 +339,9 @@ HostContext::getTxNestedField(
 
         auto const value = hostFunctions_.getTxNestedField(fl);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -310,7 +354,9 @@ HostContext::getCurrentLedgerObjNestedField(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
         std::vector<std::int32_t> locBuf(steps);
@@ -319,7 +365,9 @@ HostContext::getCurrentLedgerObjNestedField(
 
         auto const value = hostFunctions_.getCurrentLedgerObjNestedField(fl);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -333,7 +381,9 @@ HostContext::getLedgerObjNestedField(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
         std::vector<std::int32_t> locBuf(steps);
@@ -342,7 +392,9 @@ HostContext::getLedgerObjNestedField(
 
         auto const value = hostFunctions_.getLedgerObjNestedField(cacheIdx, fl);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -355,11 +407,15 @@ HostContext::getTxArrayLen(std::int32_t field) const noexcept
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const len = hostFunctions_.getTxArrayLen(*it->second);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -372,11 +428,15 @@ HostContext::getCurrentLedgerObjArrayLen(std::int32_t field) const noexcept
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const len = hostFunctions_.getCurrentLedgerObjArrayLen(*it->second);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -389,11 +449,15 @@ HostContext::getLedgerObjArrayLen(std::int32_t cacheIdx, std::int32_t field) con
         auto const& knownSFields = SField::getKnownCodeToField();
         auto const it = knownSFields.find(field);
         if (it == knownSFields.end())
+        {
             return hfErrorToInt(HostFunctionError::InvalidField);
+        }
 
         auto const len = hostFunctions_.getLedgerObjArrayLen(cacheIdx, *it->second);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -404,7 +468,9 @@ HostContext::getTxNestedArrayLen(rust::Slice<std::uint8_t const> locator) const 
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
         std::vector<std::int32_t> locBuf(steps);
@@ -413,7 +479,9 @@ HostContext::getTxNestedArrayLen(rust::Slice<std::uint8_t const> locator) const 
 
         auto const len = hostFunctions_.getTxNestedArrayLen(fl);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -425,7 +493,9 @@ HostContext::getCurrentLedgerObjNestedArrayLen(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
         std::vector<std::int32_t> locBuf(steps);
@@ -434,7 +504,9 @@ HostContext::getCurrentLedgerObjNestedArrayLen(
 
         auto const len = hostFunctions_.getCurrentLedgerObjNestedArrayLen(fl);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -447,7 +519,9 @@ HostContext::getLedgerObjNestedArrayLen(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (locator.empty() || (locator.size() & 3) != 0)
+        {
             return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        }
 
         std::uint32_t const steps = locator.size() / sizeof(std::int32_t);
         std::vector<std::int32_t> locBuf(steps);
@@ -456,7 +530,9 @@ HostContext::getLedgerObjNestedArrayLen(
 
         auto const len = hostFunctions_.getLedgerObjNestedArrayLen(cacheIdx, fl);
         if (!len)
+        {
             return hfErrorToInt(len.error());
+        }
 
         return *len;
     });
@@ -474,7 +550,9 @@ HostContext::checkSignature(
             Slice{signature.data(), signature.size()},
             Slice{pubkey.data(), pubkey.size()});
         if (!valid)
+        {
             return hfErrorToInt(valid.error());
+        }
 
         return *valid;
     });
@@ -486,11 +564,15 @@ HostContext::accountKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.accountKeylet(AccountID::fromVoid(account.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -505,15 +587,21 @@ HostContext::ammKeylet(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const a1 = parseAsset(asset1);
         if (!a1)
+        {
             return hfErrorToInt(a1.error());
+        }
 
         auto const a2 = parseAsset(asset2);
         if (!a2)
+        {
             return hfErrorToInt(a2.error());
+        }
 
         auto const value = hostFunctions_.ammKeylet(*a1, *a2);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -527,13 +615,17 @@ HostContext::checkKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.checkKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -548,14 +640,18 @@ HostContext::credentialKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (subject.size() != AccountID::size() || issuer.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.credentialKeylet(
             AccountID::fromVoid(subject.data()),
             AccountID::fromVoid(issuer.data()),
             Slice{credentialType.data(), credentialType.size()});
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -569,12 +665,16 @@ HostContext::delegateKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size() || authorize.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.delegateKeylet(
             AccountID::fromVoid(account.data()), AccountID::fromVoid(authorize.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -588,12 +688,16 @@ HostContext::depositPreauthKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size() || authorize.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.depositPreauthKeylet(
             AccountID::fromVoid(account.data()), AccountID::fromVoid(authorize.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -605,11 +709,15 @@ HostContext::didKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std:
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.didKeylet(AccountID::fromVoid(account.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -623,13 +731,17 @@ HostContext::escrowKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.escrowKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -645,14 +757,18 @@ HostContext::trustLineKeylet(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account1.size() != AccountID::size() || account2.size() != AccountID::size() ||
             currency.size() != Currency::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.trustLineKeylet(
             AccountID::fromVoid(account1.data()),
             AccountID::fromVoid(account2.data()),
             Currency::fromVoid(currency.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -666,13 +782,17 @@ HostContext::mptokenIssuanceKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (issuer.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.mptokenIssuanceKeylet(
             AccountID::fromVoid(issuer.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -686,12 +806,16 @@ HostContext::mptokenKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (mptid.size() != MPTID::size() || holder.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.mptokenKeylet(
             MPTID::fromVoid(mptid.data()), AccountID::fromVoid(holder.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -705,13 +829,17 @@ HostContext::nftokenOfferKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.nftokenOfferKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -725,13 +853,17 @@ HostContext::offerKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.offerKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -745,13 +877,17 @@ HostContext::oracleKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 docId arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.oracleKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(docId));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -766,7 +902,9 @@ HostContext::paychannelKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size() || destination.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.paychannelKeylet(
@@ -774,7 +912,9 @@ HostContext::paychannelKeylet(
             AccountID::fromVoid(destination.data()),
             static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -788,13 +928,17 @@ HostContext::permissionedDomainKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.permissionedDomainKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -807,11 +951,15 @@ HostContext::signerListKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.signerListKeylet(AccountID::fromVoid(account.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -825,13 +973,17 @@ HostContext::ticketKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.ticketKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -845,13 +997,17 @@ HostContext::vaultKeylet(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         // The guest's u32 seq arrives as its i32 bit pattern; recover it.
         auto const value = hostFunctions_.vaultKeylet(
             AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(seq));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -864,7 +1020,9 @@ HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::u
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const digest = hostFunctions_.computeSha512HalfHash(Slice{data.data(), data.size()});
         if (!digest)
+        {
             return hfErrorToInt(digest.error());
+        }
 
         return answer(out, digest->data(), digest->size());
     });
@@ -877,7 +1035,9 @@ HostContext::trace(rust::Str msg, rust::Slice<std::uint8_t const> data, bool asH
         auto const status = hostFunctions_.trace(
             std::string_view{msg.data(), msg.size()}, Slice{data.data(), data.size()}, asHex);
         if (!status)
+        {
             return hfErrorToInt(status.error());
+        }
 
         return *status;
     });
@@ -890,7 +1050,9 @@ HostContext::traceNum(rust::Str msg, std::int64_t number) const noexcept
         auto const status =
             hostFunctions_.traceNum(std::string_view{msg.data(), msg.size()}, number);
         if (!status)
+        {
             return hfErrorToInt(status.error());
+        }
 
         return *status;
     });
@@ -902,7 +1064,9 @@ HostContext::updateData(rust::Slice<std::uint8_t const> data) const noexcept
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const stored = hostFunctions_.updateData(Slice{data.data(), data.size()});
         if (!stored)
+        {
             return hfErrorToInt(stored.error());
+        }
 
         return *stored;
     });
@@ -916,12 +1080,16 @@ HostContext::getNFT(
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size() || nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFT(
             AccountID::fromVoid(account.data()), uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -933,11 +1101,15 @@ HostContext::getNFTIssuer(rust::Slice<std::uint8_t const> nftId, rust::Slice<std
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFTIssuer(uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -949,11 +1121,15 @@ HostContext::getNFTTaxon(rust::Slice<std::uint8_t const> nftId, rust::Slice<std:
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFTTaxon(uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answerScalar(out, *value);
     });
@@ -964,11 +1140,15 @@ HostContext::getNFTFlags(rust::Slice<std::uint8_t const> nftId) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFTFlags(uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return *value;
     });
@@ -979,11 +1159,15 @@ HostContext::getNFTTransferFee(rust::Slice<std::uint8_t const> nftId) const noex
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFTTransferFee(uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return *value;
     });
@@ -995,11 +1179,15 @@ HostContext::getNFTSequence(rust::Slice<std::uint8_t const> nftId, rust::Slice<s
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (nftId.size() != uint256::size())
+        {
             return hfErrorToInt(HostFunctionError::InvalidParams);
+        }
 
         auto const value = hostFunctions_.getNFTSequence(uint256::fromVoid(nftId.data()));
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answerScalar(out, *value);
     });
@@ -1012,7 +1200,9 @@ HostContext::floatFromInt(std::int64_t x, std::int32_t mode, rust::Slice<std::ui
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatFromInt(x, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1027,11 +1217,15 @@ HostContext::floatFromUint(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const parsed = parseUint64(x);
         if (!parsed)
+        {
             return hfErrorToInt(parsed.error());
+        }
 
         auto const value = hostFunctions_.floatFromUint(*parsed, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1046,11 +1240,15 @@ HostContext::floatFromSTAmount(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const parsed = parseST<STAmount>(amount);
         if (!parsed)
+        {
             return hfErrorToInt(parsed.error());
+        }
 
         auto const value = hostFunctions_.floatFromSTAmount(*parsed, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1065,11 +1263,15 @@ HostContext::floatFromSTNumber(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const parsed = parseST<STNumber>(number);
         if (!parsed)
+        {
             return hfErrorToInt(parsed.error());
+        }
 
         auto const value = hostFunctions_.floatFromSTNumber(*parsed, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1084,7 +1286,9 @@ HostContext::floatToInt(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatToInt(Slice{x.data(), x.size()}, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answerScalar(out, *value);
     });
@@ -1099,7 +1303,9 @@ HostContext::floatToMantExp(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatToMantExp(Slice{x.data(), x.size()});
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         // The engine copies each region only if the whole value fits, so writing the
         // true lengths here and summing them matches its accounting.
@@ -1119,7 +1325,9 @@ HostContext::floatFromMantExp(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatFromMantExp(mantissa, exponent, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1133,7 +1341,9 @@ HostContext::floatCompare(rust::Slice<std::uint8_t const> x, rust::Slice<std::ui
         auto const value =
             hostFunctions_.floatCompare(Slice{x.data(), x.size()}, Slice{y.data(), y.size()});
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return *value;
     });
@@ -1150,7 +1360,9 @@ HostContext::floatAdd(
         auto const value =
             hostFunctions_.floatAdd(Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1167,7 +1379,9 @@ HostContext::floatSubtract(
         auto const value = hostFunctions_.floatSubtract(
             Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1184,7 +1398,9 @@ HostContext::floatMultiply(
         auto const value = hostFunctions_.floatMultiply(
             Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1201,7 +1417,9 @@ HostContext::floatDivide(
         auto const value =
             hostFunctions_.floatDivide(Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1217,7 +1435,9 @@ HostContext::floatRoot(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatRoot(Slice{x.data(), x.size()}, n, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
@@ -1233,7 +1453,9 @@ HostContext::floatPower(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         auto const value = hostFunctions_.floatPower(Slice{x.data(), x.size()}, n, mode);
         if (!value)
+        {
             return hfErrorToInt(value.error());
+        }
 
         return answer(out, value->data(), value->size());
     });
