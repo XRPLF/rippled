@@ -316,6 +316,18 @@ host_functions! {
         out: &mut [u8],
     ) -> HostResult<usize>;
 
+    /// The 32-byte keylet of an `MPTokenIssuance`, computed from the 20-byte issuer
+    /// account and its sequence number. `seq` is the guest's `u32` carried as its
+    /// `i32` bit pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "mpt_issuance_id"]
+    fn mptoken_issuance_keylet(
+        &self,
+        issuer: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
     #[wasm_name = "sha512_half"]
