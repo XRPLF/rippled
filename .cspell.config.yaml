@@ -30,7 +30,9 @@ ignoreRegExpList:
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
-  - filename: "**/*_test.cpp" # all test files
+  - filename:
+      - "**/*_test.cpp" # legacy boost.test files
+      - "src/tests/**/*.cpp" # gtest test files
     ignoreRegExpList:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
@@ -65,6 +67,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - canonicalised
   - changespq
   - checkme
   - choco
@@ -72,6 +75,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - clippy
   - cmaketoolchain
   - coeffs
   - coldwallet
@@ -128,6 +132,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
@@ -161,6 +166,7 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
   - lseq
   - lsmf
   - ltype
@@ -170,7 +176,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -198,6 +203,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
@@ -214,6 +220,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - oxalica
   - pargs
   - partitioner
   - paychan
@@ -259,6 +266,9 @@ words:
   - rocksdb
   - Rohrs
   - roundings
+  - rustc
+  - rustfmt
+  - rustup
   - sahyadri
   - Satoshi
   - scons
@@ -302,6 +312,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - toolchain
   - tparam
   - trixie
   - tx
@@ -334,6 +345,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
@@ -353,6 +365,7 @@ words:
   - xchain
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld

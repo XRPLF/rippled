@@ -229,6 +229,12 @@ public:
     static constexpr int kMaxJobQueueTx = 1000;
     static constexpr int kMinJobQueueTx = 100;
 
+    // Optional override for the per-connection subscription cap. Unset means
+    // use the built-in default (kMaxSubscriptionsPerConnection in InfoSub.h).
+    // Kept as an override here, rather than the default itself, so the core
+    // module need not depend on the server module that owns the constant.
+    std::optional<std::size_t> maxSubscriptionsPerConnection;
+
     // Amendment majority time
     std::chrono::seconds amendmentMajorityTime = kDefaultAmendmentMajorityTime;
 
@@ -277,7 +283,7 @@ public:
     std::size_t txRelayPercentage = 25;
 
     // These override the command line client settings
-    std::optional<beast::IP::Endpoint> rpcIp;
+    std::optional<beast::ip::Endpoint> rpcIp;
 
     std::unordered_set<uint256, beast::Uhash<>> features;
 
@@ -288,6 +294,23 @@ public:
 
     // How long can a peer remain in the "diverged" state
     std::chrono::seconds maxDivergedTime{300};
+
+    // Optional overrides for how many manifests are kept in the cache and
+    // carried in one TMManifests message, split by whether this node lists the
+    // validator. Unset means use the built-in defaults (kMaxUntrustedCount and
+    // kMaxTrustedCount in Manifest.h). Kept as overrides here, rather than the
+    // defaults themselves, so the core module need not depend on the server
+    // module that owns the constants.
+    std::optional<std::size_t> maxUntrustedCount;
+    std::optional<std::size_t> maxTrustedCount;
+
+    // Bounds for both counts above. The lower bound leaves room for a small
+    // network or a deliberately tight limit; note that setting a count below
+    // what peers actually send means their manifest messages are dropped for
+    // being oversized. The upper bound keeps the implied message size well
+    // under the overall protocol message limit.
+    static constexpr std::size_t kMinManifestCount = 50;
+    static constexpr std::size_t kMaxManifestCount = 1000;
 
     // Enable the beta API version
     bool betaRpcApi = false;

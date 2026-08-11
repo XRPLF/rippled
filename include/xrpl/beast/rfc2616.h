@@ -229,12 +229,6 @@ public:
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
     }
 
-    bool
-    operator!=(ListIterator const& other) const
-    {
-        return !(*this == other);
-    }
-
     reference
     operator*() const
     {
@@ -358,12 +352,13 @@ template <class = void>
 bool
 tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
-    for (auto const& item : makeList(value))
-    {
-        if (ciEqual(item, token))
-            return true;
-    }
-    return false;
+    auto const list = makeList(value);
+    // ListIterator is not default-constructible, so it does not model a std::ranges
+    // sentinel/range; the classic std::any_of (which only needs an input iterator)
+    // is used instead.
+    // NOLINTNEXTLINE(modernize-use-ranges)
+    return std::any_of(
+        list.begin(), list.end(), [&token](auto const& item) { return ciEqual(item, token); });
 }
 
 template <bool IsRequest, class Body, class Fields>

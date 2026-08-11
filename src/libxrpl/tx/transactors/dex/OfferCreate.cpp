@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -307,10 +308,23 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
+            auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
+
+            // Check if the issuer has lsfDisallowIncomingTrustline set.
+            // If so, the account must already have a trustline to receive tokens.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                issuerAccount->isFlag(lsfDisallowIncomingTrustline))
+            {
+                if (!trustLine)
+                {
+                    JLOG(j.debug()) << "delay: can't receive IOUs from issuer with "
+                                       "DisallowIncomingTrustline set";
+                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                }
+            }
+
             if (issuerAccount->isFlag(lsfRequireAuth))
             {
-                auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
-
                 if (!trustLine)
                 {
                     return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
@@ -332,8 +346,6 @@ OfferCreate::checkAcceptAsset(
                     return ((flags & TapRetry) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
                 }
             }
-
-            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -647,7 +659,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqValue();
+    auto const offerSequence = ctx_.tx.getSeqProxy();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -661,7 +673,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = sb.peek(keylet::offer(accountID_, *cancelSequence));
+        auto const seqProxy = SeqProxy::rawSequence(*cancelSequence);
+        auto const sleCancel = sb.peek(keylet::offer(accountID_, seqProxy));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -946,7 +959,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
-    sleOffer->setFieldU32(sfSequence, offerSequence);
+    sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
     sleOffer->setFieldAmount(sfTakerGets, saTakerGets);
