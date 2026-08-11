@@ -439,6 +439,137 @@ These metrics serve multiple external consumer categories identified during rese
 
 ---
 
+## Task 9.14: Overlay Traffic Accounting Defects (Documentation Only)
+
+> **Status**: DOCUMENTED, NOT FIXED. Reference: [09 §6.0-§6.2](./09-data-collection-reference.md#6-known-issues)
+
+**Objective**: Record four pre-existing overlay traffic-accounting defects so
+dashboard readers are not misled. All four originate in `develop`-owned overlay
+files, so **no code fix lands on this branch**.
+
+| #   | Defect                                 | Effect                                                                                    | Fix location (NOT this branch)                   |
+| --- | -------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1   | `mtCLUSTER` missing from `kTypeLookup` | `overhead_cluster_*` always zero; 8 panels flatline; cluster traffic counted as `unknown` | `TrafficCount.cpp:11-27`                         |
+| 2   | Stale `Total` header comment           | Claims uncategorized traffic is excluded; it is included                                  | `TrafficCount.h:28-31`                           |
+| 3   | `SquelchIgnored` reported with size 0  | `squelch_ignored_bytes_*` always zero, inconsistent with `SquelchSuppressed`              | `OverlayImpl.cpp:1460,1489` (+ signature change) |
+| 4   | In/out byte-basis asymmetry            | `_bytes_in` vs `_bytes_out` not comparable under compression                              | `PeerImp.cpp:1079` vs `:313`                     |
+
+**Why deferred**: Defect 3 requires widening the two
+`OverlayImpl::updateSlotAndSquelch` overloads — a public signature change on
+shared overlay code. Defects 1, 2 and 4 sit in `TrafficCount.{h,cpp}`, likewise
+not telemetry-owned. Routing them through the telemetry chain would hide overlay
+changes from overlay reviewers and couple them to a 12-PR merge timeline.
+
+**Key modified files**: `OpenTelemetryPlan/09-data-collection-reference.md` only.
+
+**Exit Criteria**:
+
+- [x] Each defect documented with file:line evidence in `09` §6
+- [x] `overhead_cluster_*` documented as "no data", not "no cluster traffic"
+- [ ] Follow-up overlay-owned branch raised for the four code fixes
+- [ ] Re-baseline any threshold keyed on `unknown_bytes_in` when defect 1 lands
+
+---
+
+## Task 9.15: Peer Keepalive and Discovery Instrumentation
+
+> **Status**: NOT IMPLEMENTED — awaiting a decision on whether `XRPL_METRIC_*`
+> call sites may be added to `src/xrpld/overlay/detail/PeerImp.cpp` from this
+> branch. Reference: [09 §6.3](./09-data-collection-reference.md#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)
+
+**Objective**: Make peer keepalive and peer-discovery health observable. Today
+`mtPING`, `mtSTATUS_CHANGE` and `mtENDPOINTS` are byte counters only.
+
+| Proposed metric                 | Type      | Labels                           | Record site                                         |
+| ------------------------------- | --------- | -------------------------------- | --------------------------------------------------- |
+| `peer_ping_rtt_ms`              | Histogram | none (see note)                  | `PeerImp.cpp:1150-1163`, where the EWMA is computed |
+| `peer_ping_timeouts_total`      | Counter   | `reason="timeout"\|"bad_cookie"` | `PeerImp.cpp:762` and `:1146`                       |
+| `peer_endpoints_received_total` | Counter   | `result="accepted"\|"malformed"` | `PeerImp.cpp:1265-1270`                             |
+
+**Design notes / open questions**:
+
+- A histogram needs an explicit bucket view: the SDK default tops out at 10000,
+  and these are milliseconds. Follow the µs-ladder precedent in
+  `MetricsRegistry.cpp` (see [09 § GetObject Request Path](./09-data-collection-reference.md#getobject-request-path-synchronous-countershistograms)).
+- `peer_id` as a label is unbounded cardinality — rejected. A bounded
+  `peer_role`-style label is the alternative if per-peer attribution is needed.
+- Splitting `mtPING` out of `Category::Base` is a `TrafficCount.cpp` change and
+  therefore blocked with Task 9.14.
+- Per the runbook's "Adding a New Metric" contract, `_total` is reserved for
+  monotonic counters; a histogram takes no suffix.
+
+**Key files (if approved)**: `src/xrpld/overlay/detail/PeerImp.cpp`,
+`09-data-collection-reference.md`, `docs/telemetry-runbook.md` § Metric Reference,
+`docker/telemetry/grafana/dashboards/peer-quality.json`, and
+`docker/telemetry/workload/expected_metrics.json` (**Phase 10 branch**).
+
+**Exit Criteria**:
+
+- [ ] Decision recorded on editing `PeerImp.cpp` from the telemetry chain
+- [ ] Three instruments emitting, with an explicit histogram bucket view
+- [ ] Rows added to `09` §5b, runbook § Metric Reference, and `expected_metrics.json`
+- [ ] Peer Quality dashboard panels follow the Task 9.12 conventions (`$node`, Title Case, legend dimensions)
+- [ ] `check_otel_naming.py` passes (Rules D and E cover the new labels)
+
+---
+
+## Task 9.16: PeerFinder Slot and Cache Metrics
+
+> **Status**: NOT IMPLEMENTED. Reference: [09 §6.5](./09-data-collection-reference.md#65-peerfinder-slot-and-cache-metrics-not-implemented)
+
+**Objective**: Export the PeerFinder slot counts and discovery-cache sizes.
+Only 2 of ~17 available readings are exported today.
+
+**What to do**: Extend the existing `Stats` struct in
+`src/libxrpl/peerfinder/PeerfinderManager.cpp:227-236` with gauges for the
+`Counts` accessors listed in [09 §6.5](./09-data-collection-reference.md#65-peerfinder-slot-and-cache-metrics-not-implemented)
+(slot caps and frees, attempt counts, handshake pipeline depth, fixed-peer state,
+network reachability), plus `Livecache::size()` and `Bootcache::size()`.
+
+**Pipeline constraint**: `PeerfinderManager.cpp` is in `libxrpl`, which **cannot**
+use the `XRPL_METRIC_*` macros. These must go through `beast::insight` —
+arrow **B**, not **C**. Naming follows `GroupImp::makeName()` +
+`OTelCollectorImp::formatName()`, so the `"Peer_Finder"` group yields
+`peer_finder_<name>` lowercased.
+
+**Known obstacle**: `Livecache` and `Bootcache` hold no collector reference, so
+their sizes must either be read through the existing `Manager` hook or have a
+collector plumbed in.
+
+**Exit Criteria**:
+
+- [ ] Slot caps exported so utilization (`active / max`) is computable
+- [ ] Both cache sizes exported
+- [ ] "Inbound vs Outbound" panel on `peer-quality` extended to show utilization %
+- [ ] Rows added to `09` §2.1, runbook § Metric Reference, `expected_metrics.json` (Phase 10)
+
+---
+
+## Task 9.17: Peer Span Coverage (Deferred to Phase 11)
+
+> **Status**: NOT IMPLEMENTED — design only, pending approval. Reference:
+> [09 §6.4](./09-data-collection-reference.md#64-peer-span-coverage-gap-not-implemented)
+> and [02 §2.3.2](./02-design-decisions.md#232-complete-span-catalog)
+
+**Objective**: Close the gap between the `02` §2.3.2 span catalog and what
+actually emits. `peer.connect`, `peer.disconnect`, `peer.message.send` and
+`peer.message.receive` were catalogued from the start and never built; 11 of 13
+protocol message families have no spans.
+
+**Scope warning**: This is larger than Tasks 9.14-9.16 combined and changes the
+"~37 spans" figure asserted in `09` §1.1 and in
+`docker/telemetry/workload/expected_spans.json`. `trace_peer` is also **on by
+default** and already flagged as high-volume, so adding per-message spans has a
+volume cost that needs measuring before commitment.
+
+**Exit Criteria**:
+
+- [x] `02` §2.3.2 marked Live / Not built / Renamed against the real inventory
+- [ ] User approval to proceed with span implementation
+- [ ] Volume impact measured under `trace_peer=1` before any span is added
+
+---
+
 ## Exit Criteria
 
 - [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline

@@ -123,44 +123,56 @@ path in Phase 1b through Phase 5.
 
 ### 2.3.2 Complete Span Catalog
 
-| Span name                      | Description                             |
-| ------------------------------ | --------------------------------------- |
-| `tx.receive`                   | Transaction received from network       |
-| `tx.validate`                  | Transaction signature/format validation |
-| `tx.process`                   | Full transaction processing             |
-| `tx.relay`                     | Transaction relay to peers              |
-| `tx.apply`                     | Apply transaction to ledger             |
-| `consensus.round`              | Complete consensus round                |
-| `consensus.phase.open`         | Open phase - collecting transactions    |
-| `consensus.phase.establish`    | Establish phase - reaching agreement    |
-| `consensus.phase.accept`       | Accept phase - applying consensus       |
-| `consensus.proposal.receive`   | Receive peer proposal                   |
-| `consensus.proposal.send`      | Send our proposal                       |
-| `consensus.validation.receive` | Receive peer validation                 |
-| `consensus.validation.send`    | Send our validation                     |
-| `rpc.request`                  | HTTP/WebSocket request handling         |
-| `rpc.command.*`                | Specific RPC command (dynamic)          |
-| `peer.connect`                 | Peer connection establishment           |
-| `peer.disconnect`              | Peer disconnection                      |
-| `peer.message.send`            | Send protocol message                   |
-| `peer.message.receive`         | Receive protocol message                |
-| `ledger.acquire`               | Ledger acquisition from network         |
-| `ledger.build`                 | Build new ledger                        |
-| `ledger.validate`              | Ledger validation                       |
-| `ledger.close`                 | Close ledger                            |
-| `ledger.replay`                | Ledger replay executed                  |
-| `ledger.delta`                 | Delta-based ledger acquired             |
-| `pathfind.request`             | Path request initiated                  |
-| `pathfind.compute`             | Path computation executed               |
-| `txq.enqueue`                  | Transaction queued                      |
-| `txq.apply`                    | Queued transaction applied              |
-| `fee.escalate`                 | Fee escalation triggered                |
-| `validator.list.fetch`         | UNL list fetched                        |
-| `validator.manifest`           | Manifest update processed               |
-| `amendment.vote`               | Amendment voting executed               |
-| `shamap.sync`                  | State tree synchronization              |
-| `job.enqueue`                  | Job added to queue                      |
-| `job.execute`                  | Job execution                           |
+> **Status column.** This catalog is the design inventory; it is not a
+> statement of what currently emits. `Live` means the span is present in the
+> implemented inventory ([09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-37-spans)),
+> which is the authoritative list. `Renamed`/`Split` means the concept shipped
+> under a different name than planned here. **Not built** means no span is
+> emitted for it today.
+>
+> The four `peer.*` entries are the peer-span coverage gap: only
+> `peer.proposal.receive` and `peer.validation.receive` exist, so protocol
+> message send/receive and connection lifecycle are untraced. See
+> [09 §6.4](./09-data-collection-reference.md#64-peer-span-coverage-gap-not-implemented).
+
+| Span name                      | Description                             | Status                                           |
+| ------------------------------ | --------------------------------------- | ------------------------------------------------ |
+| `tx.receive`                   | Transaction received from network       | Live                                             |
+| `tx.validate`                  | Transaction signature/format validation | **Not built**                                    |
+| `tx.process`                   | Full transaction processing             | Live                                             |
+| `tx.relay`                     | Transaction relay to peers              | **Not built**                                    |
+| `tx.apply`                     | Apply transaction to ledger             | Live                                             |
+| `consensus.round`              | Complete consensus round                | Live                                             |
+| `consensus.phase.open`         | Open phase - collecting transactions    | Live                                             |
+| `consensus.phase.establish`    | Establish phase - reaching agreement    | Renamed `consensus.establish`                    |
+| `consensus.phase.accept`       | Accept phase - applying consensus       | Renamed `consensus.accept`                       |
+| `consensus.proposal.receive`   | Receive peer proposal                   | Live                                             |
+| `consensus.proposal.send`      | Send our proposal                       | Live                                             |
+| `consensus.validation.receive` | Receive peer validation                 | Live                                             |
+| `consensus.validation.send`    | Send our validation                     | Live                                             |
+| `rpc.request`                  | HTTP/WebSocket request handling         | Split into `rpc.http_request` / `rpc.ws_message` |
+| `rpc.command.*`                | Specific RPC command (dynamic)          | Live                                             |
+| `peer.connect`                 | Peer connection establishment           | **Not built**                                    |
+| `peer.disconnect`              | Peer disconnection                      | **Not built**                                    |
+| `peer.message.send`            | Send protocol message                   | **Not built**                                    |
+| `peer.message.receive`         | Receive protocol message                | **Not built**                                    |
+| `ledger.acquire`               | Ledger acquisition from network         | Live                                             |
+| `ledger.build`                 | Build new ledger                        | Live                                             |
+| `ledger.validate`              | Ledger validation                       | Live                                             |
+| `ledger.close`                 | Close ledger                            | Renamed `consensus.ledger_close`                 |
+| `ledger.replay`                | Ledger replay executed                  | **Not built**                                    |
+| `ledger.delta`                 | Delta-based ledger acquired             | **Not built**                                    |
+| `pathfind.request`             | Path request initiated                  | Live                                             |
+| `pathfind.compute`             | Path computation executed               | Live                                             |
+| `txq.enqueue`                  | Transaction queued                      | Live                                             |
+| `txq.apply`                    | Queued transaction applied              | Renamed `txq.apply_direct` / `txq.accept_tx`     |
+| `fee.escalate`                 | Fee escalation triggered                | **Not built**                                    |
+| `validator.list.fetch`         | UNL list fetched                        | **Not built**                                    |
+| `validator.manifest`           | Manifest update processed               | **Not built**                                    |
+| `amendment.vote`               | Amendment voting executed               | **Not built**                                    |
+| `shamap.sync`                  | State tree synchronization              | **Not built**                                    |
+| `job.enqueue`                  | Job added to queue                      | **Not built**                                    |
+| `job.execute`                  | Job execution                           | **Not built**                                    |
 
 ### 2.3.3 Attribute Naming Conventions
 

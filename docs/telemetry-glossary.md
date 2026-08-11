@@ -9,7 +9,12 @@ documentation.
 > **Related docs**:
 > [docs/telemetry-runbook.md](./telemetry-runbook.md) (operator runbook).
 
-<!-- This file is generated from tasks/telemetry_terms.py. Edit the terms there. -->
+<!-- This file was originally generated from tasks/telemetry_terms.py. That
+     generator is NOT in the repository (`tasks/` is gitignored) and no copy
+     survives, so this file is now maintained by hand. Follow the existing entry
+     shape: an `<a id="...">` anchor, a `###` term heading, one plain-language
+     paragraph, then `**Scope:**` and optionally `**What is observable:**` and
+     `**See also:**`. Terms are alphabetical within each category. -->
 
 ## Contents
 
@@ -1016,7 +1021,9 @@ A cluster is a set of servers run by the same operator that trust each other, ex
 
 **Scope:** cluster-wide — shared across a co-operated cluster of nodes run by one operator.
 
-**See also:** [Cluster on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/clustering)
+**What is observable:** cluster overhead is **not** measurable today. Cluster messages are counted under `unknown` rather than `overhead_cluster`, so the `overhead_cluster_*` series read zero on a clustered node — treat them as "no data", not "no cluster traffic". The churn guidance above cannot yet be acted on.
+
+**See also:** [Cluster on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/clustering) · [Data collection reference §6.0](../OpenTelemetryPlan/09-data-collection-reference.md#60-mtcluster-is-counted-as-unknown-not-implemented)
 
 <a id="disconnect-reason"></a>
 
@@ -1085,6 +1092,18 @@ The overlay is xrpld's peer-to-peer messaging layer connecting nodes. All inter-
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Overlay on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
+
+<a id="ping-pong-keepalive"></a>
+
+### Ping / pong keepalive
+
+Each peer connection is probed on a timer: the node sends a ping carrying a random cookie and expects a pong echoing it back. The round-trip is smoothed into a per-peer latency estimate that feeds peer scoring, and a peer that leaves a ping unanswered before the next probe is dropped as a ping timeout. A pong bearing the wrong cookie is ignored, so a peer answering incorrectly eventually times out too. Ping timeouts are distinct from connect timeouts, which happen while an outbound connection is still being established and so involve no established peer.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**What is observable:** only the p90 of the smoothed per-peer latency (`peer_quality{metric="peer_latency_p90_ms"}`) — there is no distribution, ping timeouts and wrong-cookie pongs have no counter, and ping bytes are not separable from status-change bytes because both share the `overhead` traffic category.
+
+**See also:** [Data collection reference §6.3](../OpenTelemetryPlan/09-data-collection-reference.md#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)
 
 <a id="proof-path"></a>
 
@@ -1161,6 +1180,10 @@ A single consistent reading of everything PeerFinder knows about this node's pee
 Squelching is a relay-control mechanism: a node tells peers to stop sending it a particular validator's messages when it already has a good source, reducing redundant forwarding. High suppressed counts mean squelch is saving bandwidth; ignored directives (peers not honoring squelch) should stay low.
 
 **Scope:** per node — measured on and specific to this individual server.
+
+**What is observable:** read ignored directives on `squelch_ignored_messages_in/out` only. The paired `squelch_ignored_bytes_*` series are always zero because the ignored-squelch callback records no size, so bandwidth wasted by peers ignoring squelch cannot be quantified — and `squelch_ignored` is therefore not comparable on bytes against `squelch_suppressed`, which does record real sizes.
+
+**See also:** [Data collection reference §6.1](../OpenTelemetryPlan/09-data-collection-reference.md#61-squelch_ignored-byte-counts-not-implemented)
 
 <a id="trusted-untrusted-duplicate"></a>
 
