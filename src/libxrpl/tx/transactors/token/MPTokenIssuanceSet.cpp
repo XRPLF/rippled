@@ -278,6 +278,16 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         bool const issuerKeyExists = sleHasIssuerKey || txHasIssuerKey;
         if (registersAuditorKey && !issuerKeyExists)
             return tecNO_PERMISSION;
+
+        // Rotating a key to its current value is not permitted: a key epoch
+        // increment must always correspond to an actual key change.
+        if (txHasIssuerKey && sleHasIssuerKey &&
+            ctx.tx[sfIssuerEncryptionKey] == (*sleMptIssuance)[sfIssuerEncryptionKey])
+            return tecDUPLICATE;
+
+        if (txHasAuditorKey && sleHasAuditorKey &&
+            ctx.tx[sfAuditorEncryptionKey] == (*sleMptIssuance)[sfAuditorEncryptionKey])
+            return tecDUPLICATE;
     }
     else
     {

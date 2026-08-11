@@ -161,6 +161,47 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
 
         if (rotationEnabled)
         {
+            // Rotating the issuer key to its current value fails.
+            // Current issuer key is bob, duplicate.
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(bob),
+                .err = tecDUPLICATE,
+            });
+
+            // Rotating the auditor key to its current value fails.
+            // Current auditor key is alice, duplicate.
+            mptAlice.set({
+                .account = alice,
+                .auditorPubKey = mptAlice.getPubKey(alice),
+                .err = tecDUPLICATE,
+            });
+
+            // The whole transaction fails when one key is unchanged, even if
+            // the other key is rotated to a new value.
+            // Current issuer key is bob, duplicate.
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(bob),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+                .err = tecDUPLICATE,
+            });
+
+            // Current auditor key is alice, duplicate.
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(auditor),
+                .auditorPubKey = mptAlice.getPubKey(alice),
+                .err = tecDUPLICATE,
+            });
+
+            // Nothing changed: keys and epochs are untouched
+            {
+                auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
+                BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
+                BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfAuditorKeyEpoch] == 1u);
+            }
+
             // A second rotation increments both epochs again
             mptAlice.set({
                 .account = alice,
