@@ -612,6 +612,21 @@ fn mptoken_id_reads_the_mptid_and_holder() {
     assert_eq!(*host.mptoken_keylets_asked.borrow(), vec![(mptid, holder)]);
 }
 
+/// Another account-and-sequence keylet, with its own answer set.
+#[test]
+fn nft_offer_id_reads_the_account_and_seq() {
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_nft_offer_keylet(account.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::NFT_OFFER_ID, ONE_PAGE],
+        "(call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.nft_offer_keylets_asked.borrow(), vec![(account, 5)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
