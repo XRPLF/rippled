@@ -25,6 +25,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -193,7 +194,7 @@ struct Regression_test : public beast::unit_test::Suite
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+            cfg->section(Sections::kTransactionQueue).set(Keys::kMinimumTxnInLedgerStandalone, "3");
             cfg->fees.referenceFee = 10;
             return cfg;
         }));
@@ -233,11 +234,11 @@ struct Regression_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            auto& s = cfg->section("transaction_queue");
-            s.set("minimum_txn_in_ledger_standalone", "4294967295");
-            s.set("minimum_txn_in_ledger", "4294967295");
-            s.set("target_txn_in_ledger", "4294967295");
-            s.set("normal_consensus_increase_percent", "4294967295");
+            auto& s = cfg->section(Sections::kTransactionQueue);
+            s.set(Keys::kMinimumTxnInLedgerStandalone, "4294967295");
+            s.set(Keys::kMinimumTxnInLedger, "4294967295");
+            s.set(Keys::kTargetTxnInLedger, "4294967295");
+            s.set(Keys::kNormalConsensusIncreasePercent, "4294967295");
 
             return cfg;
         }));

@@ -27,8 +27,6 @@
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <chrono>
 #include <string>
 
@@ -206,13 +204,13 @@ class NoRippleCheck_test : public beast::unit_test::Suite
 
             if (user)
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You appear to have set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should probably set"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You appear to have set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should probably set"));
             }
             else
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You should immediately set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should clear"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You should immediately set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should clear"));
             }
         }
         else
@@ -289,9 +287,9 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             // be better if we could add this functionality to Env somehow
             // or otherwise disable endpoint charging for certain test
             // cases.
-            using namespace xrpl::Resource;
+            using namespace xrpl::resource;
             using namespace std::chrono;
-            using namespace beast::IP;
+            using namespace beast::ip;
             auto c = env.app().getResourceManager().newInboundEndpoint(
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
@@ -304,7 +302,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::kNoRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::rpc::tuning::kNoRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();

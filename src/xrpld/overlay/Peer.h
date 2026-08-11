@@ -7,29 +7,39 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+
 namespace xrpl {
 
-namespace Resource {
+namespace resource {
 class Charge;
-}  // namespace Resource
+}  // namespace resource
 
 enum class ProtocolFeature {
     ValidatorListPropagation,
     ValidatorList2Propagation,
     LedgerReplay,
+    LedgerNodeDepth,
 };
 
-/** Represents a peer connection in the overlay. */
+/**
+ * Represents a peer connection in the overlay.
+ */
 class Peer
 {
 public:
     using ptr = std::shared_ptr<Peer>;
 
-    /** Uniquely identifies a peer.
-        This can be stored in tables to find the peer later. Callers
-        can discover if the peer is no longer connected and make
-        adjustments as needed.
-    */
+    /**
+     * Uniquely identifies a peer.
+     * This can be stored in tables to find the peer later. Callers
+     * can discover if the peer is no longer connected and make
+     * adjustments as needed.
+     */
     using id_t = std::uint32_t;
 
     virtual ~Peer() = default;
@@ -41,24 +51,32 @@ public:
     virtual void
     send(std::shared_ptr<Message> const& m) = 0;
 
-    [[nodiscard]] virtual beast::IP::Endpoint
+    [[nodiscard]] virtual beast::ip::Endpoint
     getRemoteAddress() const = 0;
 
-    /** Send aggregated transactions' hashes. */
+    /**
+     * Send aggregated transactions' hashes.
+     */
     virtual void
     sendTxQueue() = 0;
 
-    /** Aggregate transaction's hash. */
+    /**
+     * Aggregate transaction's hash.
+     */
     virtual void
     addTxQueue(uint256 const&) = 0;
 
-    /** Remove hash from the transactions' hashes queue. */
+    /**
+     * Remove hash from the transactions' hashes queue.
+     */
     virtual void
     removeTxQueue(uint256 const&) = 0;
 
-    /** Adjust this peer's load balance based on the type of load imposed. */
+    /**
+     * Adjust this peer's load balance based on the type of load imposed.
+     */
     virtual void
-    charge(Resource::Charge const& fee, std::string const& context) = 0;
+    charge(resource::Charge const& fee, std::string const& context) = 0;
 
     //
     // Identity
@@ -67,7 +85,9 @@ public:
     [[nodiscard]] virtual id_t
     id() const = 0;
 
-    /** Returns `true` if this connection is a member of the cluster. */
+    /**
+     * Returns `true` if this connection is a member of the cluster.
+     */
     [[nodiscard]] virtual bool
     cluster() const = 0;
 
@@ -98,7 +118,7 @@ public:
     // Ledger
     //
 
-    [[nodiscard]] virtual uint256 const&
+    [[nodiscard]] virtual uint256
     getClosedLedgerHash() const = 0;
     [[nodiscard]] virtual bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const = 0;

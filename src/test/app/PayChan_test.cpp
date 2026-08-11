@@ -13,6 +13,10 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/handlers/Handlers.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -20,6 +24,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -35,20 +40,24 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -57,13 +66,14 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::Suite
 {
-    static std::pair<uint256, std::shared_ptr<SLE const>>
+    static std::pair<uint256, SLE::const_pointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
         auto const sle = view.read(keylet::account(account));
         if (!sle)
             return {};
-        auto const k = keylet::payChan(account, dst, (*sle)[sfSequence] - 1);
+        auto const k =
+            keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
         return {k.key, view.read(k)};
     }
 
@@ -496,7 +506,7 @@ struct PayChan_test : public beast::unit_test::Suite
         // Owner closes, will close after settleDelay
         env(claim(alice, chan), Txflags(tfClose));
         BEAST_EXPECT(channelExists(*env.current(), chan));
-        env.close(settleTimepoint - settleDelay / 2);
+        env.close(settleTimepoint - (settleDelay / 2));
         {
             // receiver can still claim
             auto const chanBal = channelBalance(*env.current(), chan);
@@ -869,7 +879,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.close();
 
             // Setup deposit authorization
-            env(deposit::authCredentials(bob, {{carol, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = carol, .credType = credType}}));
             env.close();
 
             // Fail, credentials doesn’t belong to root account
@@ -1324,10 +1334,10 @@ struct PayChan_test : public beast::unit_test::Suite
         auto sliceToHex = [](Slice const& slice) {
             std::string s;
             s.reserve(2 * slice.size());
-            for (int i = 0; i < slice.size(); ++i)
+            for (std::uint8_t const byte : slice)
             {
-                s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
-                s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+                s += "0123456789ABCDEF"[((byte & 0xf0) >> 4)];
+                s += "0123456789ABCDEF"[((byte & 0x0f) >> 0)];
             }
             return s;
         };
@@ -1589,6 +1599,146 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     void
+    testChannelVerifyLoadType(FeatureBitset features)
+    {
+        testcase("channel_verify sets kFEE_HEAVY_BURDEN_RPC load type");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(10000), alice, bob);
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chanStr = to_string(channel(alice, bob, env.seq(alice)));
+
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+
+        // Step 1: get a valid signature from channel_authorize
+        auto const authResult = env.rpc("channel_authorize", "alice", chanStr, "1000");
+        auto const sig = authResult[jss::result][jss::signature].asString();
+        BEAST_EXPECT(!sig.empty());
+        auto const pkHex = strHex(pk.slice());
+
+        // Step 2: build rpc::JsonContext directly so we can inspect loadType
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {},
+            {}};
+        json::Value params;
+        params[jss::public_key] = pkHex;
+        params[jss::channel_id] = chanStr;
+        params[jss::amount] = "1000";
+        params[jss::signature] = sig;
+        context.params = std::move(params);
+
+        // Confirm default before calling handler
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
+        json::Value result;
+        Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.coro = coro;
+            result = doChannelVerify(context);
+            g.signal();
+        });
+
+        using namespace std::chrono_literals;
+        BEAST_EXPECT(g.waitFor(5s));
+        // Signature must verify correctly
+        BEAST_EXPECT(result[jss::signature_verified].asBool());
+        // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
+        // Before fix: this will FAIL because loadType stays kFEE_REFERENCE_RPC (20)
+        // After fix:  this will PASS because loadType is kFEE_HEAVY_BURDEN_RPC (3000)
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
+        // Confirm the charge is 150x heavier than the current (broken) default
+        BEAST_EXPECT(context.loadType.cost() == resource::kFeeHeavyBurdenRpc.cost());  // 3000
+        BEAST_EXPECT(context.loadType.cost() != resource::kFeeReferenceRpc.cost());    // not 20
+    }
+
+    void
+    testChannelAuthorizeLoadType(FeatureBitset features)
+    {
+        testcase("channel_authorize sets kFEE_HEAVY_BURDEN_RPC load type");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(10000), alice, bob);
+
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const chanStr = to_string(channel(alice, bob, env.seq(alice)));
+
+        env(create(alice, bob, XRP(1000), settleDelay, pk));
+        env.close();
+
+        auto& app = env.app();
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
+        rpc::JsonContext context{
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::ADMIN,  // channel_authorize requires ADMIN or canSign()
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {},
+            {}};
+        json::Value params;
+        params[jss::channel_id] = chanStr;
+        params[jss::amount] = "1000";
+        params[jss::secret] = alice.name();  // use account name as seed
+        context.params = std::move(params);
+
+        // Confirm default before calling handler
+        BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
+        json::Value result;
+        Gate g;
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.coro = coro;
+            result = doChannelAuthorize(context);
+            g.signal();
+        });
+
+        using namespace std::chrono_literals;
+
+        BEAST_EXPECT(g.waitFor(5s));
+        // Must return a valid signature
+        BEAST_EXPECT(result.isMember(jss::signature));
+        BEAST_EXPECT(!result[jss::signature].asString().empty());
+        // KEY ASSERTION: loadType must be kFEE_HEAVY_BURDEN_RPC after the fix
+        // Before fix: FAILS — stays at kFEE_REFERENCE_RPC (charge=20)
+        // After fix:  PASSES — set to kFEE_HEAVY_BURDEN_RPC (charge=3000)
+        BEAST_EXPECT(context.loadType == resource::kFeeHeavyBurdenRpc);
+    }
+
+    void
     testMalformedPK(FeatureBitset features)
     {
         testcase("malformed pk");
@@ -1665,9 +1815,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 100s;
         auto const pk = alice.pk();
 
-        auto inOwnerDir = [](ReadView const& view,
-                             Account const& acc,
-                             std::shared_ptr<SLE const> const& chan) -> bool {
+        auto inOwnerDir =
+            [](ReadView const& view, Account const& acc, SLE::const_ref chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
@@ -1985,6 +2134,8 @@ struct PayChan_test : public beast::unit_test::Suite
         testMetaAndOwnership(features);
         testAccountDelete(features);
         testUsingTickets(features);
+        testChannelVerifyLoadType(features);
+        testChannelAuthorizeLoadType(features);
     }
 
 public:
@@ -1992,7 +2143,10 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testableAmendments()};
+        // fixCleanup3_2_0 changes payment-channel error codes (tem* -> tec*)
+        // and channel-closing semantics. This suite asserts the
+        // pre-amendment behavior, so run it with the amendment disabled.
+        FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
         testWithFeats(all);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);

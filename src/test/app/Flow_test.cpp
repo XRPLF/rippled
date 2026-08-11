@@ -35,6 +35,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -43,7 +44,6 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -58,7 +58,7 @@ getNoRippleFlag(
     jtx::Account const& dst,
     Currency const& cur)
 {
-    if (auto sle = env.le(keylet::line(src, dst, cur)))
+    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const flag = (src.id() > dst.id()) ? lsfHighNoRipple : lsfLowNoRipple;
         return sle->isFlag(flag);
@@ -548,7 +548,7 @@ struct Flow_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(1000)));
             env(pay(gw, bob, eur(1000)));
 
-            Keylet const bobUsdOffer = keylet::offer(bob, env.seq(bob));
+            Keylet const bobUsdOffer = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob)));
             env(offer(bob, usd(1), drops(2)), Txflags(tfPassive));
             env(offer(bob, drops(1), eur(1000)), Txflags(tfPassive));
 
@@ -572,7 +572,7 @@ struct Flow_test : public beast::unit_test::Suite
                 env.require(Balance(bob, eur(999)));
 
                 // Show that bob's USD offer is now a blocker.
-                std::shared_ptr<SLE const> const usdOffer = env.le(bobUsdOffer);
+                SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
                     std::uint64_t const bookRate = [&usdOffer]() {
@@ -707,15 +707,15 @@ struct Flow_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });

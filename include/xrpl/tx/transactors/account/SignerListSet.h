@@ -1,19 +1,28 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <tuple>
 #include <vector>
 
 namespace xrpl {
 
 /**
-See the README.md for an overview of the SignerListSet transaction that
-this class implements.
-*/
+ * See the README.md for an overview of the SignerListSet transaction that
+ * this class implements.
+ */
 class SignerListSet : public Transactor
 {
 private:
@@ -42,10 +51,7 @@ public:
     preCompute() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

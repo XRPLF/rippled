@@ -1,7 +1,15 @@
 #pragma once
 
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -23,9 +31,6 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 
@@ -33,10 +38,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -70,10 +69,9 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     //
     // See also Transactor::operator().
     //
-    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    createGuards(rules, stNumberSO, rulesGuard, mantissaScaleGuard);
+    createGuards(rules, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {
@@ -183,7 +181,11 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
+                            return result;
+
+                        if (NotTEC const result =
+                                Transactor::invokeCheckPermission<T>(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))
@@ -249,7 +251,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZero)
     , potentialSpend_(beast::kZero)
-    , seqProx_(SeqProxy::sequence(0))
+    , seqProx_(SeqProxy::rawSequence(0))
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(

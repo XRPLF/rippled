@@ -14,6 +14,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -32,7 +33,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
 
@@ -71,7 +71,7 @@ isVaultPseudoAccountFrozen(
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
+    auto const mptIssuance = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
@@ -332,11 +332,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -436,8 +432,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
 
 TER
 doWithdraw(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -445,23 +440,24 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
+    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
     else
     {
-        auto dstSle = view.read(keylet::account(dstAcct));
-        if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
+        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
 
     // Sanity check
     if (accountHolds(
-            view,
+            ctx.view,
             sourceAcct,
             amount.asset(),
             FreezeHandling::IgnoreFreeze,
@@ -474,9 +470,18 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
+    // A reserve sponsor only covers tx.Account's own objects, so resolve the
+    // sponsor against the destination. accountSend can auto-create a holding
+    // for dstAcct; keying on the destination ensures a third-party destination's
+    // holding is never stamped with the tx's reserve sponsor.
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
+    return accountSend(
+        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER
@@ -488,7 +493,7 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    std::shared_ptr<SLE> sleDirNode{};
+    SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;

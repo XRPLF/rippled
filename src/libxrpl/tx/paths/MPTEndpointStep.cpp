@@ -264,7 +264,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
+    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -312,7 +312,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
+    check(StrandContext const& ctx, SLE::const_ref sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -328,8 +328,7 @@ public:
 //------------------------------------------------------------------------------
 
 TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc)
-    const
+MPTEndpointPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -393,7 +392,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
 }
 
 TER
-MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const&)
+MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, SLE::const_ref)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a MPToken.  Offer crossing does not
@@ -411,7 +410,8 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirectio
         // for the reserve since the offer doesn't go on the books
         // if crossed. Insufficient reserve is allowed if the offer
         // crossed. See CreateOffer::applyGuts() for reserve check.
-        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, j_); !isTesSuccess(err))
+        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, {}, j_);
+            !isTesSuccess(err))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
             resetCache(srcDebtDir);
@@ -435,7 +435,7 @@ MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
         return {toAmount<MPTAmount>(maxFlow), DebtDirection::Redeems};
 
     // From an issuer to a holder
-    if (auto const sle = sb.read(keylet::mptIssuance(mptIssue_)))
+    if (auto const sle = sb.read(keylet::mptokenIssuance(mptIssue_)))
     {
         // If issuer is the source account, and it is direct payment then
         // MPTEndpointStep is the only step. Provide available maxFlow.

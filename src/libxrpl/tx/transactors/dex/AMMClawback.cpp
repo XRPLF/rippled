@@ -27,7 +27,6 @@
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <tuple>
 
@@ -137,7 +136,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
                     !sleIssuer->isFlag(lsfNoFreeze);
             },
             [&](MPTIssue const& issue) {
-                auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
 
                 return sleIssuance && sleIssuance->isFlag(lsfMPTCanClawback) &&
                     sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount];
@@ -257,7 +256,17 @@ AMMClawback::applyGuts(Sandbox& sb)
     }
 
     if (!isTesSuccess(result))
-        return result;  // LCOV_EXCL_LINE
+        return result;
+
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter =
+                checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+    }
 
     auto const res =
         AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
@@ -344,6 +353,13 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
         auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
+        // The requested clawback amount is likely too small and results in
+        // one-sided pool withdrawal due to round off. Fail so the issuer can
+        // clawback a larger amount.
+        if (rules.enabled(fixCleanup3_4_0) &&
+            (amountRounded == beast::kZero || amount2Rounded == beast::kZero))
+            return {tecAMM_FAILED, STAmount{}, STAmount{}, STAmount{}};
+
         return AMMWithdraw::withdraw(
             sb,
             ammSle,
@@ -383,10 +399,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 }
 
 void
-AMMClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

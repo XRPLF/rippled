@@ -145,13 +145,73 @@ else()
         INTERFACE
             -rdynamic
             $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-            # link to static libc/c++ iff: * static option set and * NOT APPLE (AppleClang does not support static
-            # libc/c++) and * NOT SANITIZERS (sanitizers typically don't work with static libc/c++)
-            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${SANITIZERS_ENABLED}>>>:
+            # link to static libc/c++ if:
+            # * static option set and
+            # * NOT APPLE (AppleClang does not support static libc/c++)
+            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:
             -static-libstdc++
             -static-libgcc
             >
     )
+
+    # On aarch64, libatomic is required for atomic operations. It is not needed on x86_64.
+    # Linking it statically on Linux
+    if(is_arm64 AND is_linux)
+        target_link_options(
+            common
+            INTERFACE -Wl,--push-state -Wl,-Bstatic -latomic -Wl,--pop-state
+        )
+    endif()
+
+    # Keep -stdlib=libstdc++ off the compile commands, but preserve it for linking.
+    #
+    # Conan turns `compiler.libcxx=libstdc++` into `-stdlib=libstdc++` and puts it in
+    # CMAKE_CXX_FLAGS, which CMake passes to BOTH compile and link steps. On a normal Clang
+    # the compile step consumes it while choosing the C++ stdlib include paths. The Nixpkgs
+    # Clang wrapper supplies those paths itself (via -nostdinc++), so at compile time the
+    # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
+    # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
+    if(
+        is_nix_compiler
+        AND is_linux
+        AND is_clang
+        AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"
+    )
+        string(
+            REPLACE "-stdlib=libstdc++"
+            ""
+            CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS}"
+        )
+        string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+        add_link_options($<$<LINK_LANGUAGE:CXX>:-stdlib=libstdc++>)
+    endif()
+endif()
+
+# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
+# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
+if(is_macos OR is_linux)
+    if(is_ci OR is_nix_compiler)
+        if(is_macos)
+            set(fatal_warnings_flag "-Wl,-fatal_warnings")
+        else()
+            set(fatal_warnings_flag "-Wl,--fatal-warnings")
+        endif()
+        message(
+            STATUS
+            "Treating all linker warnings as errors (${fatal_warnings_flag})"
+        )
+        target_link_options(common INTERFACE "${fatal_warnings_flag}")
+        unset(fatal_warnings_flag)
+    elseif(is_macos)
+        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
+        message(
+            STATUS
+            "Silencing macOS deployment target mismatch warnings (${silence_flag})"
+        )
+        target_link_options(common INTERFACE "${silence_flag}")
+        unset(silence_flag)
+    endif()
 endif()
 
 # Antithesis instrumentation will only be built and deployed using machines running Linux.

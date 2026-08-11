@@ -163,29 +163,81 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (SoeOptional)
+     * @brief Get sfImmutableFlags (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getMutableFlags() const
+    getImmutableFlags() const
     {
-        if (hasMutableFlags())
+        if (hasImmutableFlags())
         {
-            return this->tx_->at(sfMutableFlags);
+            return this->tx_->at(sfImmutableFlags);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfMutableFlags is present.
+     * @brief Check if sfImmutableFlags is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasMutableFlags() const
+    hasImmutableFlags() const
     {
-        return this->tx_->isFieldPresent(sfMutableFlags);
+        return this->tx_->isFieldPresent(sfImmutableFlags);
+    }
+
+    /**
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getIssuerEncryptionKey() const
+    {
+        if (hasIssuerEncryptionKey())
+        {
+            return this->tx_->at(sfIssuerEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfIssuerEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getAuditorEncryptionKey() const
+    {
+        if (hasAuditorEncryptionKey())
+        {
+            return this->tx_->at(sfAuditorEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfAuditorEncryptionKey);
     }
 };
 
@@ -229,7 +281,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfMPTokenIssuanceID (SoeRequired)
@@ -287,13 +341,35 @@ public:
     }
 
     /**
-     * @brief Set sfMutableFlags (SoeOptional)
+     * @brief Set sfImmutableFlags (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
-    setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfMutableFlags] = value;
+        object_[sfImmutableFlags] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfIssuerEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfAuditorEncryptionKey] = value;
         return *this;
     }
 

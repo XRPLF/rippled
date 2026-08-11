@@ -1,10 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+
+namespace xrpl::node_store {
 
 class DatabaseNodeImp : public Database
 {
@@ -22,9 +40,35 @@ public:
         beast::Journal j)
         : Database(scheduler, readThreads, config, j), backend_(std::move(backend))
     {
+        std::optional<int> cacheSize, cacheAge;
+
+        if (config.exists(Keys::kCacheSize))
+        {
+            cacheSize = get<int>(config, Keys::kCacheSize);
+            if (cacheSize.value() < 0)
+                Throw<std::runtime_error>("Specified negative value for cache_size");
+        }
+
+        if (config.exists(Keys::kCacheAge))
+        {
+            cacheAge = get<int>(config, Keys::kCacheAge);
+            if (cacheAge.value() < 0)
+                Throw<std::runtime_error>("Specified negative value for cache_age");
+        }
+
+        if (cacheSize.has_value() || cacheAge.has_value())
+        {
+            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+                "DatabaseNodeImp",
+                cacheSize.value_or(0),
+                std::chrono::minutes(cacheAge.value_or(0)),
+                stopwatch(),
+                j);
+        }
+
         XRPL_ASSERT(
             backend_,
-            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -73,7 +117,13 @@ public:
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback) override;
 
+    void
+    sweep() override;
+
 private:
+    // Cache for database objects. This cache is not always initialized. Check
+    // for null before using.
+    std::shared_ptr<TaggedCache<uint256, NodeObject>> cache_;
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
 
@@ -88,4 +138,4 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

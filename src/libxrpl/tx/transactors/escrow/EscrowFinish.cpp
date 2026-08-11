@@ -26,11 +26,11 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -111,7 +111,7 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -173,7 +173,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -204,7 +204,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -229,7 +230,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
@@ -341,6 +343,16 @@ EscrowFinish::doApply()
         }
     }
 
+    // With the Sponsor amendment, release the escrow reserve before delivery.
+    // Token delivery can auto-create a destination holding, and the same
+    // sponsor (or the same account, for a self-escrow) may cover both the
+    // escrow being removed and the holding being created. Without the
+    // amendment, keep the legacy order: releasing early changes the reserve
+    // arithmetic for self-escrows and would break consensus if not gated.
+    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
+    if (sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -360,7 +372,7 @@ EscrowFinish::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         lockedRate,
                         sled,
                         preFeeBalance_,
@@ -390,10 +402,9 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    // Adjust source owner count (legacy position, pre-Sponsor)
+    if (!sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
@@ -401,10 +412,7 @@ EscrowFinish::doApply()
 }
 
 void
-EscrowFinish::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

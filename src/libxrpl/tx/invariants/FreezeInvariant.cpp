@@ -16,16 +16,13 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <memory>
+#include <algorithm>
 #include <utility>
 
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -76,9 +73,10 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
 
-    for (auto const& [issue, changes] : balanceChanges_)
-    {
+    return std::ranges::all_of(balanceChanges_, [&](auto const& entry) {
+        auto const& [issue, changes] = entry;
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so xrpld doesn't crash in release.
@@ -90,26 +88,15 @@ TransfersNotFrozen::finalize(
                 enforce,
                 "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
-            if (enforce)
-            {
-                return false;
-            }
-            continue;
+            return !enforce;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
-        {
-            return false;
-        }
-    }
-
-    return true;
+        return validateIssuerChanges(issuerSle, changes, tx, j, enforce, fixOverrideFreeze);
+    });
 }
 
 bool
-TransfersNotFrozen::isValidEntry(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
 {
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
@@ -135,8 +122,8 @@ TransfersNotFrozen::isValidEntry(
 
 STAmount
 TransfersNotFrozen::calculateBalanceChange(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after,
+    SLE::const_ref before,
+    SLE::const_ref after,
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
@@ -180,9 +167,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(
-    std::shared_ptr<SLE const> const& after,
-    STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
@@ -198,7 +183,7 @@ TransfersNotFrozen::recordBalanceChanges(
         {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
@@ -211,11 +196,12 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    std::shared_ptr<SLE const> const& issuer,
+    SLE::const_ref issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
-    bool enforce)
+    bool enforce,
+    bool fixOverrideFreeze)
 {
     if (!issuer)
     {
@@ -241,7 +227,7 @@ TransfersNotFrozen::validateIssuerChanges(
         {
             bool const high = change.line->at(sfLowLimit).getIssuer() == issuer->at(sfAccount);
 
-            if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze))
+            if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze, fixOverrideFreeze))
             {
                 return false;
             }
@@ -257,26 +243,29 @@ TransfersNotFrozen::validateFrozenState(
     STTx const& tx,
     beast::Journal const& j,
     bool enforce,
-    bool globalFreeze)
+    bool globalFreeze,
+    bool fixOverrideFreeze)
 {
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
     bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
-    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
-
     if (!frozen)
     {
         return true;
     }
 
-    // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
+    // Pre-fixCleanup3_4_0: the isAMMLine check incorrectly blocked clawback on
+    // individually-frozen or deep-frozen AMM trust lines.
+    // Post-fixCleanup3_4_0: AMMClawbacks are allowed to override all freeze types.
+    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
+    if ((fixOverrideFreeze || !isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
-                        << " a frozen trustline for AMMClawback " << tx.getTransactionID();
+                        << " a frozen trustline for a freeze privileged transaction "
+                        << tx.getTransactionID();
         return true;
     }
 
