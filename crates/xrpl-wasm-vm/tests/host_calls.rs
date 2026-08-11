@@ -733,6 +733,21 @@ fn ticket_id_reads_the_account_and_seq() {
     assert_eq!(*host.ticket_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// The last account-and-sequence keylet, with its own answer set, for a vault.
+#[test]
+fn vault_id_reads_the_account_and_seq() {
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_vault_keylet(account.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::VAULT_ID, ONE_PAGE],
+        "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.vault_keylets_asked.borrow(), vec![(account, 5)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
