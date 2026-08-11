@@ -18,7 +18,7 @@ enum Delegation { Delegable, NotDelegable };
  * These are declared per-transaction in transactions.macro (via
  * TxSettings::privileges) and enforced in InvariantCheck.cpp.
  */
-// Bitwise flags, 86 files, used in macros files
+// Bitwise flags, used in macro files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Privilege {
     NoPriv = 0x0000,              // The transaction can not do any of the enumerated operations
@@ -71,7 +71,7 @@ struct TxSettings
     /**
      * The amendment gating this transaction, or uint256{} if always available.
      */
-    uint256 amendment{};
+    uint256 amendment;
 
     /**
      * Operations this transaction is permitted to perform.

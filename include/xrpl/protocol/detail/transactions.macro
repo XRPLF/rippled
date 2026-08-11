@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable = Delegable;
- *         uint256 amendment{};
+ *         uint256 amendment;
  *         Privilege privileges = NoPriv;
  *     };
  *
@@ -29,6 +29,10 @@
  * order; use `({})` when none of them do:
  *
  *     ({.delegable = Delegation::NotDelegable, .amendment = featureFoo})
+ *
+ * You must use designated initializers, as shown above. Positional
+ * initialization such as `({Delegation::NotDelegable})` is not supported,
+ * because the code generator reads these settings by member name.
  *
  * The `privileges` setting is a bitfield defining which operations the
  * transaction can perform. The values are defined in TxSettings.h and

@@ -105,6 +105,15 @@ def parse_settings(settings_str):
     if len(re.findall(r"\.\w+", body)) != len(seen):
         raise ValueError(f"Could not parse every setting in {settings_str!r}")
 
+    # A blob with content but no designated initializer is positional, which
+    # would otherwise be read as "all defaults" and silently generate the
+    # wrong output.
+    if body.strip() and not seen:
+        raise ValueError(
+            "TxSettings requires designated initializers (.member = value), "
+            f"got {settings_str!r}"
+        )
+
     return settings
 
 
