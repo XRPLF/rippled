@@ -262,7 +262,7 @@ SHAMapStoreImp::fdRequired() const
     return fdRequired_;
 }
 
-    XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::rescueNode : rescued node must be clean");
+void
 SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectType> expectedType)
 {
     XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
