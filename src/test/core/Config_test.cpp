@@ -3,7 +3,6 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/TempDir.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -13,6 +12,8 @@
 #include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
+
+#include <test_helpers/TempDir.h>
 
 #include <array>
 #include <cstddef>

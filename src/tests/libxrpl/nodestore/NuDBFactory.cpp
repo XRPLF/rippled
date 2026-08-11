@@ -1,5 +1,4 @@
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/TempDir.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -9,6 +8,7 @@
 #include <helpers/CaptureSink.h>
 #include <helpers/TestSink.h>
 #include <nodestore/TestBase.h>
+#include <test_helpers/TempDir.h>
 
 #include <array>
 #include <cstddef>

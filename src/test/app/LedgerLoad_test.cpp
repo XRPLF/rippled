@@ -7,7 +7,6 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/TempDir.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -18,6 +17,8 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/erase.hpp>
+
+#include <test_helpers/TempDir.h>
 
 #include <cassert>
 #include <filesystem>

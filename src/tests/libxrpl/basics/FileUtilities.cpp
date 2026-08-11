@@ -17,11 +17,12 @@ namespace {
 class TempFile
 {
 public:
-    explicit TempFile(std::filesystem::path file, std::string const& contents)
-        : dir_(uniqueRandomPath(std::filesystem::temp_directory_path(), "xrpl-file-utilities-"))
-        , file_(dir_ / file)
+    explicit TempFile(std::string const& file, std::string const& contents)
+        : file_(
+              uniqueRandomPath(std::filesystem::temp_directory_path(), "xrpl-file-utilities-") /
+              file)
     {
-        std::filesystem::create_directory(dir_);
+        std::filesystem::create_directory(file_.parent_path());
 
         std::ofstream output(file_);
         if (!output)
@@ -33,8 +34,7 @@ public:
     ~TempFile()
     {
         std::error_code ec;
-        std::filesystem::remove(file_, ec);
-        std::filesystem::remove(dir_, ec);
+        std::filesystem::remove_all(file_.parent_path(), ec);
     }
 
     [[nodiscard]] std::filesystem::path const&
@@ -44,7 +44,6 @@ public:
     }
 
 private:
-    std::filesystem::path dir_;
     std::filesystem::path file_;
 };
 

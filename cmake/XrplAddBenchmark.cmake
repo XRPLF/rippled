@@ -35,4 +35,12 @@ function(xrpl_add_benchmark name)
         "${CMAKE_CURRENT_SOURCE_DIR}/${name}"
         PRIVATE
     )
+
+    # Helpers shared with the test binaries, reached as <test_helpers/...>.
+    isolate_headers(
+        ${target}
+        "${CMAKE_SOURCE_DIR}/src"
+        "${CMAKE_SOURCE_DIR}/src/test_helpers"
+        PRIVATE
+    )
 endfunction()

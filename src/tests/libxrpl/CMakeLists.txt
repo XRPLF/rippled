@@ -21,6 +21,14 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Helpers shared with the other test and benchmark binaries, as
+# <test_helpers/...>.
+isolate_headers(
+    xrpl_tests
+    "${CMAKE_SOURCE_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/src/test_helpers"
+    PRIVATE
+)
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not

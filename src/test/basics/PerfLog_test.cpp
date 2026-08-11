@@ -247,6 +247,8 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
+            using std::filesystem::perms;
+
             Fixture fixture{env_.app(), j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
@@ -267,8 +269,7 @@ public:
 
             std::filesystem::permissions(
                 fixture.logFile(),
-                std::filesystem::perms::owner_write | std::filesystem::perms::others_write |
-                    std::filesystem::perms::group_write,
+                perms::owner_write | perms::others_write | perms::group_write,
                 std::filesystem::perm_options::remove);
 
             // If the test is running as root, then the write protect may have
@@ -295,8 +296,7 @@ public:
             // Fix file permissions so the file can be cleaned up.
             std::filesystem::permissions(
                 fixture.logFile(),
-                std::filesystem::perms::owner_write | std::filesystem::perms::others_write |
-                    std::filesystem::perms::group_write,
+                perms::owner_write | perms::others_write | perms::group_write,
                 std::filesystem::perm_options::add);
         }
     }

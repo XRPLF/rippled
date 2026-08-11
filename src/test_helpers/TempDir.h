@@ -3,6 +3,7 @@
 #include <xrpl/basics/FileUtilities.h>
 
 #include <filesystem>
+#include <iostream>
 #include <string>
 #include <system_error>
 
@@ -16,7 +17,7 @@ namespace xrpl {
  */
 class TempDir
 {
-    std::filesystem::path path_;
+    std::filesystem::path path_{uniqueRandomPath(std::filesystem::temp_directory_path())};
 
 public:
 #if !GENERATING_DOCS
@@ -30,7 +31,6 @@ public:
      */
     TempDir()
     {
-        path_ = uniqueRandomPath(std::filesystem::temp_directory_path());
         std::filesystem::create_directory(path_);
     }
 
@@ -42,7 +42,11 @@ public:
         // use non-throwing calls in the destructor
         std::error_code ec;
         std::filesystem::remove_all(path_, ec);
-        // TODO: warn/notify if ec set ?
+        if (ec)
+        {
+            std::cerr << "Unable to remove temporary directory '" << path_.string()
+                      << "': " << ec.message() << '\n';
+        }
     }
 
     /**
