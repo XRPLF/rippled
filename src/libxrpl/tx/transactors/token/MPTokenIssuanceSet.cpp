@@ -420,41 +420,32 @@ MPTokenIssuanceSet::doApply()
         }
     }
 
-    if (auto const pubKey = ctx_.tx[~sfIssuerEncryptionKey])
-    {
+    // Sets an encryption key on the issuance. Overwriting an existing key
+    // (a rotation) increments the corresponding key epoch; a first-time
+    // registration leaves the epoch absent (epoch 0), matching issuances
+    // whose keys were registered before the ConfidentialKeyRotation
+    // amendment.
+    auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) {
+        auto const pubKey = ctx_.tx[~keyField];
+        if (!pubKey)
+            return;
+
         // This is enforced in preflight.
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        // Only increment the issuer key epoch on a rotation. A first-time registration leaves
-        // it absent (epoch 0), matching issuances whose keys were registered
-        // before the ConfidentialKeyRotation amendment.
         // NOTE: presence must be checked before the key is overwritten below.
-        bool const isRotation = sle->isFieldPresent(sfIssuerEncryptionKey);
+        bool const isRotation = sle->isFieldPresent(keyField);
 
-        sle->setFieldVL(sfIssuerEncryptionKey, *pubKey);
-
-        if (isRotation)
-            (*sle)[sfIssuerKeyEpoch] = (*sle)[~sfIssuerKeyEpoch].valueOr(0) + 1;
-    }
-
-    if (auto const pubKey = ctx_.tx[~sfAuditorEncryptionKey])
-    {
-        // This is enforced in preflight.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
-
-        // Only increment the auditor key epoch on a rotation. First time registration leaves it
-        // absent.
-        bool const isRotation = sle->isFieldPresent(sfAuditorEncryptionKey);
-
-        sle->setFieldVL(sfAuditorEncryptionKey, *pubKey);
+        sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)
-            (*sle)[sfAuditorKeyEpoch] = (*sle)[~sfAuditorKeyEpoch].valueOr(0) + 1;
-    }
+            (*sle)[epochField] = (*sle)[~epochField].valueOr(0) + 1;
+    };
+
+    setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
+    setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
 
     view().update(sle);
 
