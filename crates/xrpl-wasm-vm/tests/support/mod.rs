@@ -264,6 +264,11 @@ pub struct FakeHost {
     pub signer_list_keylets: HashMap<Vec<u8>, Answer>,
     /// Every account `signer_list_keylet` was asked for.
     pub signer_list_keylets_asked: RefCell<Vec<Vec<u8>>>,
+    /// What `ticket_keylet` answers, by (account bytes, seq). An unlisted key answers
+    /// `InvalidAccount`.
+    pub ticket_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (account, seq) `ticket_keylet` was asked for.
+    pub ticket_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -352,6 +357,8 @@ impl Default for FakeHost {
             domain_keylets_asked: RefCell::new(Vec::new()),
             signer_list_keylets: HashMap::new(),
             signer_list_keylets_asked: RefCell::new(Vec::new()),
+            ticket_keylets: HashMap::new(),
+            ticket_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -629,6 +636,16 @@ impl FakeHost {
 
     pub fn answering_signer_list_keylet(mut self, account: Vec<u8>, answer: Answer) -> FakeHost {
         self.signer_list_keylets.insert(account, answer);
+        self
+    }
+
+    pub fn answering_ticket_keylet(
+        mut self,
+        account: Vec<u8>,
+        seq: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.ticket_keylets.insert((account, seq), answer);
         self
     }
 
@@ -996,6 +1013,15 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        let key = (account.to_vec(), seq);
+        self.ticket_keylets_asked.borrow_mut().push(key.clone());
+        match self.ticket_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -1073,6 +1099,7 @@ pub mod import {
     pub const PAYCHAN_ID: &str = r#"(import "host_lib" "paychan_id" (func $paychan_id (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const PERMISSIONED_DOMAIN_ID: &str = r#"(import "host_lib" "permissioned_domain_id" (func $permissioned_domain_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SIGNERS_ID: &str = r#"(import "host_lib" "signers_id" (func $signers_id (param i32 i32 i32 i32) (result i32)))"#;
+    pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

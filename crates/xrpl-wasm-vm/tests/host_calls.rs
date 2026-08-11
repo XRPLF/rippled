@@ -718,6 +718,21 @@ fn signers_id_reads_the_account() {
     assert_eq!(*host.signer_list_keylets_asked.borrow(), vec![account]);
 }
 
+/// Another account-and-sequence keylet, with its own answer set, for a ticket.
+#[test]
+fn ticket_id_reads_the_account_and_seq() {
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_ticket_keylet(account.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::TICKET_ID, ONE_PAGE],
+        "(call $ticket_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.ticket_keylets_asked.borrow(), vec![(account, 5)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

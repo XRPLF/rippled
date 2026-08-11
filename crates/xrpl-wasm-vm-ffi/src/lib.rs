@@ -372,6 +372,10 @@ mod ffi {
         fn signer_list_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "ticketKeylet"]
+        fn ticket_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -628,6 +632,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.signer_list_keylet(account, out))
+    }
+
+    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.ticket_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
