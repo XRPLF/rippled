@@ -806,7 +806,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
             jvResult[jss::engine_result_code] = tpTrans->getResult();
             jvResult[jss::engine_result_message] = sHuman;
 
-            RPC::populateAugmentedSubmitFields(jvResult, tpTrans);
+            rpc::populateAugmentedSubmitFields(jvResult, tpTrans);
         }
     }
     catch (std::exception&)

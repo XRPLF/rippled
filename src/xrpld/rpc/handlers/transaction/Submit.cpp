@@ -153,7 +153,7 @@ doSubmit(rpc::JsonContext& context)
             jvResult[jss::engine_result_code] = transaction->getResult();
             jvResult[jss::engine_result_message] = sHuman;
 
-            RPC::populateAugmentedSubmitFields(jvResult, transaction);
+            rpc::populateAugmentedSubmitFields(jvResult, transaction);
         }
 
         return jvResult;
