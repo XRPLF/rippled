@@ -312,26 +312,6 @@ invokeNFT(rust::Slice<std::uint8_t const> nftId, Functor&& functor)
 
 template <bool Scalar, typename Functor>
 std::int32_t
-invokeFloat(rust::Slice<std::uint8_t> out, Functor&& functor)
-{
-    auto const value = functor();
-    if (!value)
-    {
-        return hfErrorToInt(value.error());
-    }
-
-    if constexpr (Scalar)
-    {
-        return answerScalar(out, *value);
-    }
-    else
-    {
-        return answer(out, value->data(), value->size());
-    }
-}
-
-template <bool Scalar, typename Functor>
-std::int32_t
 invoke(rust::Slice<std::uint8_t> out, Functor&& functor)
 {
     auto const value = functor();
@@ -977,7 +957,7 @@ HostContext::floatFromInt(std::int64_t x, std::int32_t mode, rust::Slice<std::ui
     const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(out, [&] { return hostFunctions_.floatFromInt(x, mode); });
+        return invoke<false>(out, [&] { return hostFunctions_.floatFromInt(x, mode); });
     });
 }
 
@@ -993,7 +973,7 @@ HostContext::floatFromUint(
         {
             return hfErrorToInt(parsed.error());
         }
-        return invokeFloat<false>(out, [&] { return hostFunctions_.floatFromUint(*parsed, mode); });
+        return invoke<false>(out, [&] { return hostFunctions_.floatFromUint(*parsed, mode); });
     });
 }
 
@@ -1009,8 +989,7 @@ HostContext::floatFromSTAmount(
         {
             return hfErrorToInt(parsed.error());
         }
-        return invokeFloat<false>(
-            out, [&] { return hostFunctions_.floatFromSTAmount(*parsed, mode); });
+        return invoke<false>(out, [&] { return hostFunctions_.floatFromSTAmount(*parsed, mode); });
     });
 }
 
@@ -1026,8 +1005,7 @@ HostContext::floatFromSTNumber(
         {
             return hfErrorToInt(parsed.error());
         }
-        return invokeFloat<false>(
-            out, [&] { return hostFunctions_.floatFromSTNumber(*parsed, mode); });
+        return invoke<false>(out, [&] { return hostFunctions_.floatFromSTNumber(*parsed, mode); });
     });
 }
 
@@ -1038,7 +1016,7 @@ HostContext::floatToInt(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<true>(
+        return invoke<true>(
             out, [&] { return hostFunctions_.floatToInt(Slice{x.data(), x.size()}, mode); });
     });
 }
@@ -1072,7 +1050,7 @@ HostContext::floatFromMantExp(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(
+        return invoke<false>(
             out, [&] { return hostFunctions_.floatFromMantExp(mantissa, exponent, mode); });
     });
 }
@@ -1097,7 +1075,7 @@ HostContext::floatAdd(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(out, [&] {
+        return invoke<false>(out, [&] {
             return hostFunctions_.floatAdd(
                 Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         });
@@ -1112,7 +1090,7 @@ HostContext::floatSubtract(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(out, [&] {
+        return invoke<false>(out, [&] {
             return hostFunctions_.floatSubtract(
                 Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         });
@@ -1127,7 +1105,7 @@ HostContext::floatMultiply(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(out, [&] {
+        return invoke<false>(out, [&] {
             return hostFunctions_.floatMultiply(
                 Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         });
@@ -1142,7 +1120,7 @@ HostContext::floatDivide(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(out, [&] {
+        return invoke<false>(out, [&] {
             return hostFunctions_.floatDivide(
                 Slice{x.data(), x.size()}, Slice{y.data(), y.size()}, mode);
         });
@@ -1157,7 +1135,7 @@ HostContext::floatRoot(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(
+        return invoke<false>(
             out, [&] { return hostFunctions_.floatRoot(Slice{x.data(), x.size()}, n, mode); });
     });
 }
@@ -1170,7 +1148,7 @@ HostContext::floatPower(
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invokeFloat<false>(
+        return invoke<false>(
             out, [&] { return hostFunctions_.floatPower(Slice{x.data(), x.size()}, n, mode); });
     });
 }
