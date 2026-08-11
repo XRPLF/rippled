@@ -34,7 +34,8 @@ macro_rules! host_errors {
             /// split iterates this and a code added to the ABI cannot slip past it.
             pub const ALL: &'static [HostError] = &[$(HostError::$variant,)+];
 
-            /// The negative wire value the guest sees as the function's return code.
+            /// The negative wire value a failed call returns. Every code but
+            /// `InternalFatal` is one a guest reads off that value.
             #[inline]
             pub const fn code(self) -> i32 {
                 self as i32
@@ -42,14 +43,15 @@ macro_rules! host_errors {
 
             /// Reconstruct a `HostError` from its wire code.
             ///
-            /// A code this ABI does not define is `Unimplemented`: an answer the
-            /// caller cannot act on is the call not having been served. Positive
-            /// values are not errors at all and go the same way, since this is
-            /// reached only once a negative return has been read as a failure.
+            /// A code this ABI does not define is `InternalFatal`: an answer the
+            /// caller cannot act on is the call not having been served, and that is
+            /// the variant which says so. Positive values are not errors at all and go
+            /// the same way, since this is reached only once a negative return has
+            /// been read as a failure.
             pub const fn from_code(code: i32) -> HostError {
                 match code {
                     $($code => HostError::$variant,)+
-                    _ => HostError::Unimplemented,
+                    _ => HostError::InternalFatal,
                 }
             }
         }

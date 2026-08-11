@@ -39,23 +39,36 @@ fn the_error_table_matches_the_declarations() {
             (HostError::IndexOutOfBounds, -18),
             (HostError::FloatInputMalformed, -19),
             (HostError::FloatComputationError, -20),
+            (HostError::InternalFatal, i32::MIN),
         ]
     );
 }
 
-/// The set is `-1 ..= -20` and nothing else: this enum is xrpld's `HostFunctionError`
-/// and every entry is a code some contract may read, so a condition with no number to
-/// answer with is not one of these — it is a `Fault` in the engine.
+/// The guest-facing set is `-1 ..= -20` and nothing else: those entries are xrpld's
+/// `HostFunctionError`, and each is a code some contract may read.
+///
+/// `InternalFatal` is the one deliberate exception, exempted by name rather than by
+/// widening the range: a condition with no number a contract can act on needs no number
+/// in the range a contract reads, and holding it at `i32::MIN` is what keeps it from
+/// ever colliding with a code appended to xrpld's list.
 #[test]
-fn every_code_is_in_the_shared_range() {
-    let outside: Vec<HostError> = HostError::ALL
+fn every_code_but_the_sentinel_is_in_the_shared_range() {
+    let shared: Vec<HostError> = HostError::ALL
+        .iter()
+        .copied()
+        .filter(|&error| error != HostError::InternalFatal)
+        .collect();
+
+    let outside: Vec<HostError> = shared
         .iter()
         .copied()
         .filter(|error| !(-20..=-1).contains(&error.code()))
         .collect();
 
     assert!(outside.is_empty(), "outside -1..=-20: {outside:?}");
-    assert_eq!(HostError::ALL.len(), 20);
+    assert_eq!(shared.len(), 20);
+    assert_eq!(HostError::InternalFatal.code(), i32::MIN);
+    assert_eq!(HostError::ALL.len(), 21);
 }
 
 /// Every code a guest can be handed comes back as the error that produced it, so a
@@ -69,17 +82,20 @@ fn every_wire_code_round_trips_back_to_its_error() {
     }
 }
 
-/// A code from outside the set is `Unimplemented`: a host answering something this
-/// ABI does not define has not served the call, whatever it meant by it, and success
-/// is not an error at all.
+/// A code from outside the set is `InternalFatal`: a host answering something this ABI
+/// does not define has not served the call, whatever it meant by it, and success is not
+/// an error at all.
+///
+/// `-21` is the code xrpld would append next, so it is the one that decides whether a
+/// list this crate has not caught up with reaches a guest or stops the run. `i32::MIN +
+/// 1` is next to the sentinel and unassigned, which is what makes the sentinel a value
+/// rather than a range.
 #[test]
-fn a_code_outside_the_set_is_unimplemented() {
-    let unassigned = -(HostError::ALL.len() as i32) - 1;
-
-    for code in [unassigned, i32::MIN, 0, 1, i32::MAX] {
+fn a_code_outside_the_set_is_internal_fatal() {
+    for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {
         assert_eq!(
             HostError::from_code(code),
-            HostError::Unimplemented,
+            HostError::InternalFatal,
             "{code}"
         );
     }

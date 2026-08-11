@@ -292,7 +292,10 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
             return std::unexpected(refused);
         });
 
-    for (auto const error : {HostFunctionError::Unimplemented, HostFunctionError::NoMemExported})
+    for (auto const error :
+         {HostFunctionError::InternalFatal,
+          HostFunctionError::Unimplemented,
+          HostFunctionError::NoMemExported})
     {
         refused = error;
 

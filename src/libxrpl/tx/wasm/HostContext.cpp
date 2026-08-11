@@ -29,13 +29,8 @@ namespace xrpl {
 namespace {
 
 // What a host call answers when it could not be served at all: every method below hands it
-// to `guarded` as the answer for a body that throws. The engine converts -1 into a fault,
-// stops the run and reports `tecINTERNAL`, rather than handing the code to the contract.
-//
-// Named here because `Unimplemented` is not what a thrown exception is. What -1 carries is
-// the meaning the two conditions share - "the host could not serve this call, and the
-// contract has no business interpreting why" - and it is the fate they share too.
-constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::Unimplemented);
+// to `guarded` as the answer for a body that throws.
+constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::InternalFatal);
 
 // Copy `value` into `out` only if the whole of it fits, and answer its true length either
 // way. A value too large for the guest's buffer must reach it in no part: a prefix would

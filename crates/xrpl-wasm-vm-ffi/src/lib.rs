@@ -561,13 +561,24 @@ mod tests {
         assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
     }
 
-    /// An exception caught on the C++ side arrives as `-1`, the same code
-    /// `HostFunctionError` spells `Unimplemented`. The engine stops the run on it and
-    /// the transaction is `tecINTERNAL`, rather than the contract being handed a code
-    /// to interpret.
+    /// An exception caught on the C++ side arrives as `InternalFatal`, the code
+    /// `HostContext` answers with when a body throws. The engine stops the run on it and
+    /// the transaction is `tecINTERNAL`, rather than the contract being handed a code to
+    /// interpret.
+    ///
+    /// It arrives through the sign test like any other code, which is the point of
+    /// choosing a negative sentinel: `usize::try_from` rejects it, so this needs no case
+    /// of its own here and a positive length cannot be mistaken for it.
     #[test]
-    fn a_caught_cxx_exception_arrives_as_unimplemented() {
-        assert_eq!(bytes_written(-1), Err(HostError::Unimplemented));
+    fn a_caught_cxx_exception_arrives_as_internal_fatal() {
+        assert_eq!(bytes_written(i32::MIN), Err(HostError::InternalFatal));
+    }
+
+    /// A code the ABI does not define goes the same way, so a C++ list this crate has
+    /// not caught up with stops the run rather than reaching the guest.
+    #[test]
+    fn an_undefined_code_arrives_as_internal_fatal() {
+        assert_eq!(bytes_written(-21), Err(HostError::InternalFatal));
     }
 
     // -----------------------------------------------------------------------

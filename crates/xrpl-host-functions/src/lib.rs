@@ -41,6 +41,9 @@ host_errors! {
     IndexOutOfBounds = -18,
     FloatInputMalformed = -19,
     FloatComputationError = -20,
+    /// Internal fatal error.
+    /// User code will never see this error but keep it reserved to not rely on the value.
+    InternalFatal = -2147483648,
 }
 
 /// Convenience alias for the trait's fallible returns.

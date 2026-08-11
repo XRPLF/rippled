@@ -41,13 +41,15 @@ pub(crate) type CallResult<T> = Result<T, CallError>;
 
 /// Which channel a host's answer takes, decided once, here.
 ///
-/// Two of the twenty codes stop the run instead of reaching the contract that asked.
-/// Both say the call was not served at all — the host could not do it, or there is
-/// nowhere to put the answer — and a contract has no business interpreting either, so
-/// it is told nothing and the run ends. Every other code is the contract's to read.
+/// Three codes stop the run instead of reaching the contract that asked. Each says the
+/// call was not served at all — the host could not do it, it has not been wired, or
+/// there is nowhere to put the answer — and a contract has no business interpreting
+/// any of them, so it is told nothing and the run ends. Every other code is the
+/// contract's to read.
 impl From<HostError> for CallError {
     fn from(error: HostError) -> CallError {
         match error {
+            HostError::InternalFatal => CallError::Fatal(Fault::Internal),
             HostError::Unimplemented => CallError::Fatal(Fault::Internal),
             HostError::NoMemExported => CallError::Fatal(Fault::NoMemory),
             code => CallError::Code(code),
@@ -307,7 +309,8 @@ mod tests {
     /// The codes a host may answer that a contract must not see, and the fault each
     /// becomes. Written out rather than derived from `From<HostError>`, which is what
     /// they are asserting.
-    const STOPS_THE_RUN: [(HostError, Fault); 2] = [
+    const STOPS_THE_RUN: [(HostError, Fault); 3] = [
+        (HostError::InternalFatal, Fault::Internal),
         (HostError::Unimplemented, Fault::Internal),
         (HostError::NoMemExported, Fault::NoMemory),
     ];

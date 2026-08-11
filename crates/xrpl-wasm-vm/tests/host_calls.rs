@@ -238,7 +238,7 @@ fn a_soft_error_from_a_call_with_no_result_is_dropped() {
 /// changes nothing: the run stops.
 #[test]
 fn a_fatal_error_from_a_call_with_no_result_still_stops_the_run() {
-    let host = FakeHost::new().failing_trace(HostError::Unimplemented);
+    let host = FakeHost::new().failing_trace(HostError::InternalFatal);
 
     let wat = module(
         &[import::TRACE, ONE_PAGE],

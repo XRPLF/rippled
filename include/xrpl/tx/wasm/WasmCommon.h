@@ -44,6 +44,15 @@ enum class HostFunctionError : int32_t {
     IndexOutOfBounds = -18,
     FloatInputMalformed = -19,
     FloatComputationError = -20,
+
+    // The call was not served at all, so the engine stops the run and the transaction is
+    // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
+    // answers it for a host body that throws.
+    //
+    // Outside the -1 ..= -20 range that a contract reads, and the only entry that is: it
+    // needs no number in that range, and INT32_MIN cannot collide with a code appended
+    // above. Negative so that a reader treating it as an ordinary failure is still right.
+    InternalFatal = std::numeric_limits<int32_t>::min(),
 };
 
 template <typename T>
