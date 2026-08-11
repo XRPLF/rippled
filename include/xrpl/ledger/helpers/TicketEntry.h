@@ -26,16 +26,7 @@ public:
 
     explicit TicketEntry(
         AccountID const& id,
-        std::uint32_t ticketSeq,
-        Base::view_ref_type view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::ticket(id, ticketSeq), view, j)
-    {
-    }
-
-    explicit TicketEntry(
-        AccountID const& id,
-        SeqProxy ticketSeq,
+        SeqProxy const& ticketSeq,
         Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::ticket(id, ticketSeq), view, j)

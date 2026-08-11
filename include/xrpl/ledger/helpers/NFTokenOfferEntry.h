@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 #include <cstdint>
 
@@ -25,7 +26,7 @@ public:
 
     explicit NFTokenOfferEntry(
         AccountID const& owner,
-        std::uint32_t seq,
+        SeqProxy const& seq,
         Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenOffer(owner, seq), view, j)

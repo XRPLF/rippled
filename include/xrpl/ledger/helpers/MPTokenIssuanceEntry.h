@@ -29,7 +29,7 @@ public:
         AccountID const& issuer,
         Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::mptokenIssuance(seq, issuer), view, j)
+        : Base(keylet::mptokenIssuance(makeMptID(seq, issuer)), view, j)
     {
     }
 

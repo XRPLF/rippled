@@ -6,12 +6,41 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMEntry.h>
 #include <xrpl/ledger/helpers/AccountRootEntry.h>
+#include <xrpl/ledger/helpers/AmendmentsEntry.h>
+#include <xrpl/ledger/helpers/BridgeEntry.h>
+#include <xrpl/ledger/helpers/CheckEntry.h>
+#include <xrpl/ledger/helpers/CredentialEntry.h>
+#include <xrpl/ledger/helpers/DIDEntry.h>
+#include <xrpl/ledger/helpers/DelegateEntry.h>
+#include <xrpl/ledger/helpers/DepositPreauthEntry.h>
+#include <xrpl/ledger/helpers/DirectoryNodeEntry.h>
+#include <xrpl/ledger/helpers/EscrowEntry.h>
+#include <xrpl/ledger/helpers/FeeSettingsEntry.h>
+#include <xrpl/ledger/helpers/LedgerHashesEntry.h>
+#include <xrpl/ledger/helpers/LoanBrokerEntry.h>
+#include <xrpl/ledger/helpers/LoanEntry.h>
+#include <xrpl/ledger/helpers/MPTokenEntry.h>
+#include <xrpl/ledger/helpers/MPTokenIssuanceEntry.h>
+#include <xrpl/ledger/helpers/NFTokenOfferEntry.h>
+#include <xrpl/ledger/helpers/NFTokenPageEntry.h>
+#include <xrpl/ledger/helpers/NegativeUNLEntry.h>
 #include <xrpl/ledger/helpers/OfferEntry.h>
+#include <xrpl/ledger/helpers/OracleEntry.h>
+#include <xrpl/ledger/helpers/PayChannelEntry.h>
+#include <xrpl/ledger/helpers/PermissionedDomainEntry.h>
+#include <xrpl/ledger/helpers/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/helpers/SignerListEntry.h>
+#include <xrpl/ledger/helpers/SponsorshipEntry.h>
 #include <xrpl/ledger/helpers/TicketEntry.h>
+#include <xrpl/ledger/helpers/VaultEntry.h>
+#include <xrpl/ledger/helpers/XChainOwnedClaimIDEntry.h>
+#include <xrpl/ledger/helpers/XChainOwnedCreateAccountClaimIDEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 #include <type_traits>
 
@@ -122,10 +151,10 @@ class SLEWrapper_test : public beast::unit_test::Suite
 
         // Entry that does not exist yet: newSLE() -> insert().
         {
-            WTicketEntry ticket(keylet::ticket(alice.id(), 1), av);
+            WTicketEntry ticket(keylet::ticket(alice.id(), SeqProxy::rawTicket(1)), av);
             BEAST_EXPECT(!ticket.exists());
             BEAST_EXPECT(!ticket.canModify());
-            BEAST_EXPECT(ticket.key() == keylet::ticket(alice.id(), 1).key);
+            BEAST_EXPECT(ticket.key() == keylet::ticket(alice.id(), SeqProxy::rawTicket(1)).key);
             BEAST_EXPECT(ticket.type() == ltTICKET);
             BEAST_EXPECT(ticket.keylet().type == ltTICKET);
 

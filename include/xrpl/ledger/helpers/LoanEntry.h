@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 #include <cstdint>
 
@@ -24,7 +25,7 @@ public:
 
     explicit LoanEntry(
         uint256 const& loanBrokerID,
-        std::uint32_t loanSeq,
+        SeqProxy const& loanSeq,
         Base::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::loan(loanBrokerID, loanSeq), view, j)
