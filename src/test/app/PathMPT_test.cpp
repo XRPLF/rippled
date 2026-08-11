@@ -117,10 +117,10 @@ public:
             MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 100});
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -130,39 +130,39 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
-        // Test RPC::Tuning::max_src_cur source currencies.
+        // Test rpc::tuning::max_src_cur source currencies.
         std::vector<MPTID> numSrc;
-        numSrc.reserve(RPC::Tuning::kMaxSrcCur);
-        for (std::uint8_t i = 0; i < RPC::Tuning::kMaxSrcCur; ++i)
+        numSrc.reserve(rpc::tuning::kMaxSrcCur);
+        for (std::uint8_t i = 0; i < rpc::tuning::kMaxSrcCur; ++i)
             numSrc.push_back(makeMptID(i, bob));
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_src_cur source currencies.
-        numSrc.push_back(makeMptID(RPC::Tuning::kMaxSrcCur, bob));
+        // Test more than rpc::tuning::max_src_cur source currencies.
+        numSrc.push_back(makeMptID(rpc::tuning::kMaxSrcCur, bob));
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
-        // Test RPC::Tuning::max_auto_src_cur source currencies.
+        // Test rpc::tuning::max_auto_src_cur source currencies.
         numSrc.clear();
-        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
+        for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
         {
             auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
@@ -170,18 +170,18 @@ public:
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_auto_src_cur source currencies.
+        // Test more than rpc::tuning::max_auto_src_cur source currencies.
         auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));

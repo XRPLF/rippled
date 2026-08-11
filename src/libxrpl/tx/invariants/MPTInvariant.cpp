@@ -282,12 +282,13 @@ ValidMPTIssuance::finalize(
                                        "but created bad number of mptokens";
                     return false;
                 }
-                //  At most one MPToken may be created on withdraw/clawback since:
+                //  At most two MPToken may be created on withdraw/clawback since:
                 //  - Liquidity Provider must have at least one token in order
-                //    participate in AMM pool liquidity.
+                //    participate in AMM pool liquidity or have LPTokens only.
                 //  - At most two MPTokens may be deleted if AMM pool, which has exactly
                 //    two tokens, is empty after withdraw/clawback.
-                if (mptokensCreated_ > 1 || mptokensDeleted_ > 2)
+                SOMETIMES(mptokensCreated_ == 2, "AMM withdraw/clawback recreated two MPTokens");
+                if (mptokensCreated_ > 2 || mptokensDeleted_ > 2)
                 {
                     JLOG(j.fatal()) << "Invariant failed: MPT authorize  succeeded "
                                        "but created/deleted bad number of mptokens";

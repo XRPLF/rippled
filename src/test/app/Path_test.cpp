@@ -53,6 +53,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 
@@ -152,10 +153,10 @@ public:
         using namespace jtx;
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -165,7 +166,7 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
 
@@ -195,7 +196,7 @@ public:
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = std::move(params);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
 
@@ -268,10 +269,10 @@ public:
         env.close();
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
-        Resource::Consumer c;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
+        resource::Consumer c;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = env.journal,
              .app = app,
              .loadType = loadType,
@@ -281,49 +282,49 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kApiVersionIfUnspecified},
+             .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
-        // Test RPC::Tuning::max_src_cur source currencies.
+        // Test rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_src_cur source currencies.
+        // Test more than rpc::tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur + 1);
+            context.params = rpf(Account("alice"), Account("bob"), rpc::tuning::kMaxSrcCur + 1);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
-        // Test RPC::Tuning::max_auto_src_cur source currencies.
-        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
+        // Test rpc::tuning::max_auto_src_cur source currencies.
+        for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
             env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
-        // Test more than RPC::Tuning::max_auto_src_cur source currencies.
+        // Test more than rpc::tuning::max_auto_src_cur source currencies.
         env.trust(Account("alice")["AUD"](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);
             context.coro = coro;
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
@@ -1920,6 +1921,103 @@ public:
     }
 
     void
+    testAssembleAddDeduplication()
+    {
+        testcase("STPathSet::assembleAdd deduplication — O(N^2) regression");
+
+        static constexpr std::string_view kAccount1 = "A3F19C7B2E5D08146FB93A7C0E2D5184BC6F3A09";
+        static constexpr std::string_view kAccount2 = "1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D";
+        static constexpr std::string_view kAccount3 = "F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6";
+        static constexpr std::string_view kAccount4 = "4B6209E7F1A3C85D0E94B27Af3D6018C5A7E92B4";
+        static constexpr std::string_view kAccount5 = "9E2D7041BCA3F6589D013E7B2A4C6F80159D3E7A";
+        static constexpr std::string_view kAccount6 = "7C5A91E384F2D06BA19C4E73D820F516B3A9C0E4";
+        static constexpr std::string_view kAccount7 = "2F8B043C6A1E9D75B0C38E14F6A2D509731BC4E8";
+        static constexpr std::string_view kAccount8 = "E61D9A30F47C285BA0D31E96C7B4F802513A8D6F";
+
+        static constexpr AccountID kAccountID1{kAccount1};
+        static constexpr AccountID kAccountID2{kAccount2};
+        static constexpr AccountID kAccountID3{kAccount3};
+        static constexpr AccountID kAccountID4{kAccount4};
+        static constexpr AccountID kAccountID5{kAccount5};
+        static constexpr AccountID kAccountID6{kAccount6};
+        static constexpr AccountID kAccountID7{kAccount7};
+        static constexpr AccountID kAccountID8{kAccount8};
+
+        auto ps = STPathSet{};
+
+        auto createPathElements = [](auto const& account1, auto const& account2) {
+            auto base = STPath{};
+            base.pushBack(
+                STPathElement{STPathElement::TypeAccount, account1, xrpCurrency(), account1});
+            auto tail =
+                STPathElement{STPathElement::TypeAccount, account2, xrpCurrency(), account2};
+            return std::make_pair(base, tail);
+        };
+
+        {
+            auto [base, tail] = createPathElements(kAccountID1, kAccountID2);
+
+            for (auto i = 0uz; i < 10000; ++i)
+            {
+                ps.assembleAdd(base, tail);
+            }
+
+            BEAST_EXPECT(ps.size() == 1);
+        }
+
+        {
+            auto [base, tail] = createPathElements(kAccountID3, kAccountID4);
+            ps.assembleAdd(base, tail);
+        }
+
+        {
+            auto [base, tail] = createPathElements(kAccountID5, kAccountID6);
+            ps.assembleAdd(base, tail);
+        }
+
+        {
+            auto [base, tail] = createPathElements(kAccountID7, kAccountID8);
+
+            auto before = ps.size();
+
+            for (auto i = 0uz; i < 10000; ++i)
+            {
+                ps.assembleAdd(base, tail);
+            }
+
+            BEAST_EXPECT(ps.size() - before == 1);
+        }
+
+        {
+            auto [base, tail] = createPathElements(kAccountID1, kAccountID3);
+            auto copy = base;
+            copy.pushBack(tail);
+
+            auto before = ps.size();
+
+            ps.pushBack(copy);
+            ps.assembleAdd(base, tail);
+
+            BEAST_EXPECT(ps.size() - before == 1);
+        }
+
+        {
+            auto [base, tail] = createPathElements(kAccountID2, kAccountID4);
+            auto copy = base;
+            copy.pushBack(tail);
+
+            auto before = ps.size();
+
+            ps.emplaceBack(copy);
+            ps.assembleAdd(base, tail);
+
+            BEAST_EXPECT(ps.size() - before == 1);
+        }
+
+        BEAST_EXPECT(ps.size() == 6);
+    }
+
+    void
     run() override
     {
         sourceCurrenciesLimit();
@@ -1932,6 +2030,7 @@ public:
         issuesPathNegativeRippleClientIssue23Smaller();
         issuesPathNegativeRippleClientIssue23Larger();
         qualityPathsQualitySetAndTest();
+        testAssembleAddDeduplication();
         trustAutoClearTrustNormalClear();
         trustAutoClearTrustAutoClear();
         norippleCombinations();

@@ -73,7 +73,7 @@ PathRequest::PathRequest(
 PathRequest::PathRequest(
     Application& app,
     std::function<void(void)> completion,
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
     beast::Journal journal)
@@ -344,7 +344,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::kMaxSrcCur)
+            jvSrcCurrencies.size() > rpc::tuning::kMaxSrcCur)
         {
             jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
@@ -565,7 +565,7 @@ PathRequest::findPaths(
                     [&]<typename TAsset>(TAsset const& a) {
                         if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::kMaxAutoSrcCur)
+                            if (sourceAssets.size() >= rpc::tuning::kMaxAutoSrcCur)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {

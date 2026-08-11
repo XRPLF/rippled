@@ -417,8 +417,7 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view)
         // for the reserve since the offer doesn't go on the books
         // if crossed. Insufficient reserve is allowed if the offer
         // crossed. See CreateOffer::applyGuts() for reserve check.
-        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, {}, j_);
-            !isTesSuccess(err))
+        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, j_); !isTesSuccess(err))
         {
             // Unreachable: offer-crossing checks reject an offer whose owner
             // could fail to create the MPToken.

@@ -33,7 +33,7 @@ class Transaction;
 class TxMeta;
 class STTx;
 
-namespace RPC {
+namespace rpc {
 
 template <class L>
 json::Value
@@ -243,5 +243,5 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     return jvObj;
 }
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl
