@@ -244,6 +244,11 @@ pub struct FakeHost {
     pub offer_keylets: HashMap<(Vec<u8>, i32), Answer>,
     /// Every (account, seq) `offer_keylet` was asked for.
     pub offer_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
+    /// What `oracle_keylet` answers, by (account bytes, doc id). An unlisted key
+    /// answers `InvalidAccount`.
+    pub oracle_keylets: HashMap<(Vec<u8>, i32), Answer>,
+    /// Every (account, doc id) `oracle_keylet` was asked for.
+    pub oracle_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `sha512_half` answers, whatever it is given.
     pub digest: Answer,
     /// Every field selector `get_current_ledger_obj_field` was asked for.
@@ -324,6 +329,8 @@ impl Default for FakeHost {
             nft_offer_keylets_asked: RefCell::new(Vec::new()),
             offer_keylets: HashMap::new(),
             offer_keylets_asked: RefCell::new(Vec::new()),
+            oracle_keylets: HashMap::new(),
+            oracle_keylets_asked: RefCell::new(Vec::new()),
             digest: Answer::filler(32),
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
@@ -564,6 +571,16 @@ impl FakeHost {
         answer: Answer,
     ) -> FakeHost {
         self.offer_keylets.insert((account, seq), answer);
+        self
+    }
+
+    pub fn answering_oracle_keylet(
+        mut self,
+        account: Vec<u8>,
+        doc_id: i32,
+        answer: Answer,
+    ) -> FakeHost {
+        self.oracle_keylets.insert((account, doc_id), answer);
         self
     }
 
@@ -883,6 +900,15 @@ impl HostFunctions for FakeHost {
         }
     }
 
+    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        let key = (account.to_vec(), doc_id);
+        self.oracle_keylets_asked.borrow_mut().push(key.clone());
+        match self.oracle_keylets.get(&key) {
+            Some(answer) => answer.fill(out),
+            None => Err(HostError::InvalidAccount),
+        }
+    }
+
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
         self.digested.borrow_mut().push(data.to_vec());
         self.digest.fill(out)
@@ -956,6 +982,7 @@ pub mod import {
     pub const MPTOKEN_ID: &str = r#"(import "host_lib" "mptoken_id" (func $mptoken_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const NFT_OFFER_ID: &str = r#"(import "host_lib" "nft_offer_id" (func $nft_offer_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const OFFER_ID: &str = r#"(import "host_lib" "offer_id" (func $offer_id (param i32 i32 i32 i32 i32) (result i32)))"#;
+    pub const ORACLE_ID: &str = r#"(import "host_lib" "oracle_id" (func $oracle_id (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE: &str =
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;

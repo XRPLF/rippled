@@ -345,6 +345,10 @@ mod ffi {
         fn offer_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "oracleKeylet"]
+        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
         fn sha512_half(self: &HostContext, data: &[u8], out: &mut [u8]) -> i32;
 
@@ -574,6 +578,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.offer_keylet(account, seq, out))
+    }
+
+    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.oracle_keylet(account, doc_id, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

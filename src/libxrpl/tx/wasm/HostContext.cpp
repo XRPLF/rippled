@@ -704,6 +704,26 @@ HostContext::offerKeylet(
 }
 
 std::int32_t
+HostContext::oracleKeylet(
+    rust::Slice<std::uint8_t const> account,
+    std::int32_t docId,
+    rust::Slice<std::uint8_t> out) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        if (account.size() != AccountID::size())
+            return hfErrorToInt(HostFunctionError::InvalidParams);
+
+        // The guest's u32 docId arrives as its i32 bit pattern; recover it.
+        auto const value = hostFunctions_.oracleKeylet(
+            AccountID::fromVoid(account.data()), static_cast<std::uint32_t>(docId));
+        if (!value)
+            return hfErrorToInt(value.error());
+
+        return answer(out, value->data(), value->size());
+    });
+}
+
+std::int32_t
 HostContext::sha512Half(rust::Slice<std::uint8_t const> data, rust::Slice<std::uint8_t> out)
     const noexcept
 {

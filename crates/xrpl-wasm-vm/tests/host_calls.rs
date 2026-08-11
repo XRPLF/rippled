@@ -643,6 +643,22 @@ fn offer_id_reads_the_account_and_seq() {
     assert_eq!(*host.offer_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// The account-and-scalar keylet, keyed on a document id rather than a sequence; its
+/// own answer set, to keep it distinct from the other account-and-scalar getters.
+#[test]
+fn oracle_id_reads_the_account_and_doc_id() {
+    let account = vec![0u8; 20];
+    let host =
+        FakeHost::new().answering_oracle_keylet(account.clone(), 5, support::Answer::filler(32));
+
+    let wat = module(
+        &[import::ORACLE_ID, ONE_PAGE],
+        "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 5) (i32.const 64) (i32.const 64))",
+    );
+    assert_eq!(status(&wat, &host), 32, "the 32-byte keylet length");
+    assert_eq!(*host.oracle_keylets_asked.borrow(), vec![(account, 5)]);
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
