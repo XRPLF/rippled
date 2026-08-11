@@ -64,7 +64,6 @@ ServerDefinitions::translate(std::string const& inp)
         return out;
     };
 
-    // TODO: use string::contains with C++23
     auto contains = [&](std::string_view s) -> bool { return inp.contains(s); };
 
     if (contains("UINT"))
@@ -108,7 +107,7 @@ ServerDefinitions::translate(std::string const& inp)
         if (token.size() > 1)
         {
             boost::algorithm::to_lower(token);
-            token.data()[0] -= ('a' - 'A');
+            token[0] -= ('a' - 'A');
             out += token;
         }
         else
@@ -382,7 +381,7 @@ getServerDefinitionsJson()
 }
 
 json::Value
-doServerDefinitions(RPC::JsonContext& context)
+doServerDefinitions(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
@@ -390,7 +389,7 @@ doServerDefinitions(RPC::JsonContext& context)
     if (params.isMember(jss::hash))
     {
         if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
-            return RPC::invalidFieldError(jss::hash);
+            return rpc::invalidFieldError(jss::hash);
     }
 
     auto const& defs = detail::getDefinitions();

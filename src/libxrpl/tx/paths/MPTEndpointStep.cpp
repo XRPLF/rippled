@@ -410,7 +410,8 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirectio
         // for the reserve since the offer doesn't go on the books
         // if crossed. Insufficient reserve is allowed if the offer
         // crossed. See CreateOffer::applyGuts() for reserve check.
-        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, j_); !isTesSuccess(err))
+        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, {}, j_);
+            !isTesSuccess(err))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
             resetCache(srcDebtDir);
@@ -434,7 +435,7 @@ MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
         return {toAmount<MPTAmount>(maxFlow), DebtDirection::Redeems};
 
     // From an issuer to a holder
-    if (auto const sle = sb.read(keylet::mptIssuance(mptIssue_)))
+    if (auto const sle = sb.read(keylet::mptokenIssuance(mptIssue_)))
     {
         // If issuer is the source account, and it is direct payment then
         // MPTEndpointStep is the only step. Provide available maxFlow.

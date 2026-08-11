@@ -8,6 +8,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -27,7 +28,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
-            RPC::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
@@ -37,23 +38,24 @@ parseVault(json::Value const& params, json::Value& jvResult)
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
-            RPC::injectError(RpcActMalformed, jvResult);
+            rpc::injectError(RpcActMalformed, jvResult);
             return std::nullopt;
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
         {
-            RPC::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
 
-        uNodeIndex = keylet::vault(*id, params[jss::seq].asUInt()).key;
+        auto const seq = SeqProxy::rawSequence(params[jss::seq].asUInt());
+        uNodeIndex = keylet::vault(*id, seq).key;
     }
     else
     {
         // Invalid combination of fields vault_id/owner/seq
-        RPC::injectError(RpcInvalidParams, jvResult);
+        rpc::injectError(RpcInvalidParams, jvResult);
         return std::nullopt;
     }
 
@@ -61,10 +63,10 @@ parseVault(json::Value const& params, json::Value& jvResult)
 }
 
 json::Value
-doVaultInfo(RPC::JsonContext& context)
+doVaultInfo(rpc::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = RPC::lookupLedger(lpLedger, context);
+    auto jvResult = rpc::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -79,7 +81,7 @@ doVaultInfo(RPC::JsonContext& context)
     auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
-        : lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+        : lpLedger->read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
     if (!sleVault || !sleIssuance)
     {
         jvResult[jss::error] = "entryNotFound";

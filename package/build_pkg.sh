@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an RPM or Debian package from a pre-built xrpld binary.
+# Build an RPM or Debian package from the pre-built xrpld and validator-keys
+# binaries.
 #
-# Flags override env vars; env vars override defaults. Env vars are intended
-# for CMake/systemd/CI integration; flags are for explicit invocation.
+# Flags override env vars; env vars override defaults.
 
 usage() {
     cat <<'EOF'
 Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
-  --src-dir DIR             repo root                  [SRC_DIR;           default: $PWD]
-  --build-dir DIR           directory holding xrpld    [BUILD_DIR;         default: $PWD/build]
-  --pkg-version STR         version, e.g. 3.2.0-b1     [PKG_VERSION;       default: parsed from xrpld --version]
-  --pkg-release N           package release number     [PKG_RELEASE;       default: 1]
-  --source-date-epoch SECS  reproducibility timestamp  [SOURCE_DATE_EPOCH; default: latest git commit ctime]
-  -h, --help                show this help and exit
+  --src-dir DIR            repo root                 [SRC_DIR;           default: ${PWD}]
+  --build-dir DIR          directory holding the
+                           xrpld and validator-keys
+                           binaries                  [BUILD_DIR;         default: ${PWD}/build]
+  --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
+  --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
+  -h, --help               show this help and exit
 EOF
 }
 
@@ -30,8 +31,7 @@ need_arg() {
 # Seed from env. CLI parsing below overrides these directly.
 SRC_DIR="${SRC_DIR:-}"
 BUILD_DIR="${BUILD_DIR:-}"
-PKG_VERSION="${PKG_VERSION:-}"
-PKG_RELEASE="${PKG_RELEASE:-}"
+PKG_RELEASE="${PKG_RELEASE:-1}"
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -44,11 +44,6 @@ while [[ $# -gt 0 ]]; do
         --build-dir)
             need_arg "$@"
             BUILD_DIR="$2"
-            shift 2
-            ;;
-        --pkg-version)
-            need_arg "$@"
-            PKG_VERSION="$2"
             shift 2
             ;;
         --pkg-release)
@@ -74,19 +69,90 @@ while [[ $# -gt 0 ]]; do
 done
 
 SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
-BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
-PKG_RELEASE="${PKG_RELEASE:-1}"
-
-if [[ -z "${PKG_VERSION}" ]]; then
-    PKG_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3; exit}')"
+BUILD_DIR="${BUILD_DIR:-${PWD}/build}"
+if [[ ! -d "${BUILD_DIR}" ]]; then
+    echo "build_pkg.sh: build directory not found: ${BUILD_DIR}" >&2
+    echo "Build the binaries before packaging, or set BUILD_DIR to the directory containing them." >&2
+    exit 1
 fi
+BUILD_DIR="$(cd "${BUILD_DIR}" && pwd)"
 
-if [[ -z "${PKG_VERSION}" ]]; then
-    echo "PKG_VERSION is empty (not provided and could not be derived)." >&2
+xrpld_binary="${BUILD_DIR}/xrpld"
+validator_keys_binary="${BUILD_DIR}/validator-keys"
+
+# Report both binaries at once: they share a single BUILD_DIR, so telling the
+# reader to point it at one of them in isolation is advice they cannot follow.
+missing=()
+[[ -x "${xrpld_binary}" ]] || missing+=(xrpld)
+[[ -x "${validator_keys_binary}" ]] || missing+=(validator-keys)
+
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "build_pkg.sh: missing or not executable in ${BUILD_DIR}: ${missing[*]}" >&2
+    echo "Both binaries come from a single CMake build directory configured with" >&2
+    echo "-Dxrpld=ON -Dvalidator_keys=ON. Build them, then point BUILD_DIR at that" >&2
+    echo "directory." >&2
     exit 1
 fi
 
-VERSION="${PKG_VERSION}"
+# Shipping validator-keys means shipping its notice, so treat it as required
+# rather than letting a package go out without the attribution.
+validator_keys_license="${BUILD_DIR}/validator-keys-LICENSE"
+if [[ ! -f "${validator_keys_license}" ]]; then
+    echo "build_pkg.sh: missing ${validator_keys_license}." >&2
+    echo "cmake/XrplValidatorKeys.cmake copies it out of the fetched" >&2
+    echo "validator-keys-tool source, so reconfigure with -Dvalidator_keys=ON." >&2
+    exit 1
+fi
+
+# The binary must also *run* here. Packaging happens in a vanilla distro
+# container, so this is what catches a binary still pointing at the Nix store's
+# ELF loader (see patch_nix_binary in cmake/PatchNixBinary.cmake); xrpld is
+# covered implicitly by the version query below.
+if ! "${validator_keys_binary}" --version >/dev/null; then
+    echo "build_pkg.sh: ${validator_keys_binary} exists but does not run here." >&2
+    exit 1
+fi
+
+xrpld_version="$("${xrpld_binary}" --version | awk 'NR == 1 { print $3 }')"
+
+if [[ -z "${xrpld_version}" ]]; then
+    echo "build_pkg.sh: unable to derive xrpld version from ${xrpld_binary} --version." >&2
+    exit 1
+fi
+
+# The version as the package formats consume it: identical to xrpld_version
+# except a pre-release uses '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
+# the final 3.2.0; a no-op for a final release. Lowercase = derived internally,
+# not an input (cf. pkg_type).
+pkg_version="${xrpld_version}"
+pre_release=""
+if [[ "${xrpld_version}" == *-* ]]; then
+    pre_release="${xrpld_version#*-}"
+    pkg_version="${xrpld_version%%-*}~${pre_release}"
+fi
+
+# BuildInfo already SemVer-validates the binary's version. Packaging adds one
+# narrower constraint: after pre-release normalization, the package version must
+# not contain '-' because RPM forbids it in Version and Debian uses it as the
+# upstream/revision separator.
+if [[ "${pkg_version}" == *-* ]]; then
+    echo "build_pkg.sh: unsupported xrpld version '${xrpld_version}'." >&2
+    echo "Package version '${pkg_version}' cannot contain '-'." >&2
+    echo "Use a single-token pre-release like 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
+
+if [[ -z "${pre_release}" && "${xrpld_version}" == *+* ]]; then
+    echo "build_pkg.sh: unsupported xrpld version '${xrpld_version}'." >&2
+    echo "Build metadata is only supported on bN/rcN pre-releases." >&2
+    exit 1
+fi
+
+if [[ -n "${pre_release}" && ! "${pre_release}" =~ ^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
+    echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
+    echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
 
 if command -v apt-get >/dev/null 2>&1; then
     pkg_type=deb
@@ -98,31 +164,15 @@ else
 fi
 
 if [[ -z "${SOURCE_DATE_EPOCH}" ]]; then
-    if git -C "$SRC_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        SOURCE_DATE_EPOCH="$(git -C "$SRC_DIR" log -1 --format=%ct)"
+    if git -C "${SRC_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        SOURCE_DATE_EPOCH="$(git -C "${SRC_DIR}" log -1 --format=%ct)"
     else
         SOURCE_DATE_EPOCH="$(date +%s)"
     fi
 fi
 
 export SOURCE_DATE_EPOCH
-CHANGELOG_DATE="$(date -u -R -d "@$SOURCE_DATE_EPOCH")"
-
-# Split VERSION at the first '-' into base and optional pre-release suffix.
-# Examples: "3.2.0" -> ("3.2.0", ""); "3.2.0-b1" -> ("3.2.0", "b1").
-VER_BASE="${VERSION%%-*}"
-VER_SUFFIX="${VERSION#*-}"
-[[ "${VER_SUFFIX}" == "${VERSION}" ]] && VER_SUFFIX=""
-
-# Reject multi-segment suffixes (e.g. "beta-1", "rc1-15-gabc123"). The RPM
-# Release field forbids '-', and the convention here is single-token suffixes
-# like b1 or rc2. Fail early with a clear message rather than letting either
-# rpmbuild blow up or silently mangling dashes into dots.
-if [[ "${VER_SUFFIX}" == *-* ]]; then
-    echo "build_pkg.sh: multi-segment pre-release in VERSION='${VERSION}' (suffix '${VER_SUFFIX}')." >&2
-    echo "Use single-token suffixes like 3.2.0-b1 or 3.2.0-rc2." >&2
-    exit 1
-fi
+CHANGELOG_DATE="$(date -u -R -d "@${SOURCE_DATE_EPOCH}")"
 
 SHARED="${SRC_DIR}/package/shared"
 DEBIAN_DIR="${SRC_DIR}/package/debian"
@@ -132,7 +182,9 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${xrpld_binary}" "${dest}/xrpld"
+    cp "${validator_keys_binary}" "${dest}/validator-keys"
+    cp "${validator_keys_license}" "${dest}/validator-keys-LICENSE"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"
@@ -142,10 +194,6 @@ stage_common() {
     cp "${SHARED}/xrpld.sysusers" "${dest}/xrpld.sysusers"
     cp "${SHARED}/xrpld.tmpfiles" "${dest}/xrpld.tmpfiles"
     cp "${SHARED}/xrpld.logrotate" "${dest}/xrpld.logrotate"
-    cp "${SHARED}/update-xrpld" "${dest}/update-xrpld"
-    cp "${SHARED}/update-xrpld.service" "${dest}/update-xrpld.service"
-    cp "${SHARED}/update-xrpld.timer" "${dest}/update-xrpld.timer"
-    cp "${SHARED}/50-xrpld.preset" "${dest}/50-xrpld.preset"
 }
 
 build_rpm() {
@@ -156,20 +204,11 @@ build_rpm() {
     cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
     stage_common "${topdir}/SOURCES"
 
-    # RPM Version can't contain '-'. A pre-release goes in Release with a
-    # leading "0." so 3.2.0-b1 sorts before the final 3.2.0-<pkg_release>.
-    # The order is "0.<pkg_release>.<suffix>" (e.g. 0.1.b6) — the Fedora/EPEL
-    # convention. Reversing to "0.<suffix>.<pkg_release>" (e.g. 0.b6.1) breaks
-    # rpmvercmp against the former because numeric segments outrank alphabetic
-    # ones, so "0.1.b5" would sort newer than "0.b6.1".
-    local rpm_release="${PKG_RELEASE}"
-    [[ -n "${VER_SUFFIX}" ]] && rpm_release="0.${PKG_RELEASE}.${VER_SUFFIX}"
-
     set -x
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
-        --define "xrpld_version ${VER_BASE}" \
-        --define "xrpld_release ${rpm_release}" \
+        --define "pkg_version ${pkg_version}" \
+        --define "pkg_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
 
@@ -181,31 +220,31 @@ build_deb() {
     stage_common "${staging}"
     cp -r "${DEBIAN_DIR}" "${staging}/debian"
 
-    # Debhelper auto-discovers these only from debian/.
     cp "${staging}/xrpld.service" "${staging}/debian/xrpld.service"
     cp "${staging}/xrpld.sysusers" "${staging}/debian/xrpld.sysusers"
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
-    cp "${staging}/update-xrpld.service" "${staging}/debian/xrpld.update-xrpld.service"
-    cp "${staging}/update-xrpld.timer" "${staging}/debian/xrpld.update-xrpld.timer"
 
-    # Debian '~' marks a pre-release; 3.2.0~b1 sorts before 3.2.0.
-    local deb_full_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}-${PKG_RELEASE}"
+    # Choose the Debian repository component for this package.
+    #   3.2.0 -> stable, *-b0[+metadata] -> develop,
+    #   bN/rcN pre-releases -> unstable.
+    local deb_component
+    if [[ -z "${pre_release}" ]]; then
+        deb_component="stable"
+    elif [[ "${pre_release}" =~ ^b0(\+.*)?$ ]]; then
+        deb_component="develop"
+    elif [[ "${pre_release}" =~ ^(b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
+        deb_component="unstable"
+    else
+        echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
+        echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
+        exit 1
+    fi
 
-    # Derive release channel from the version suffix:
-    #   (none)      -> stable    (tagged release)
-    #   b0          -> develop   (develop-branch build)
-    #   b<N>, rc<N> -> unstable  (pre-release)
-    local deb_distribution
-    case "${VER_SUFFIX}" in
-        "") deb_distribution="stable" ;;
-        b0) deb_distribution="develop" ;;
-        *) deb_distribution="unstable" ;;
-    esac
-
+    # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${deb_full_version}) ${deb_distribution}; urgency=medium
-  * Release ${VERSION}.
+xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_component}; urgency=medium
+  * Release ${xrpld_version}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
 EOF

@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 
 #if BOOST_OS_LINUX
@@ -32,7 +33,9 @@ class SlabAllocator
 
     static_assert(alignof(Type) == 8 || alignof(Type) == 4);
 
-    /** A block of memory that is owned by a slab allocator */
+    /**
+     * A block of memory that is owned by a slab allocator
+     */
     struct SlabBlock
     {
         // A mutex to protect the freelist for this block:
@@ -79,7 +82,9 @@ class SlabAllocator
         SlabBlock&
         operator=(SlabBlock&& other) = delete;
 
-        /** Determines whether the given pointer belongs to this allocator */
+        /**
+         * Determines whether the given pointer belongs to this allocator
+         */
         bool
         own(std::uint8_t const* pIn) const noexcept
         {
@@ -106,14 +111,15 @@ class SlabAllocator
             return ret;
         }
 
-        /** Return an item to this allocator's freelist.
-
-            @param ptr The pointer to the chunk of memory being deallocated.
-
-            @note This is a dangerous, private interface; the item being
-                  returned should belong to this allocator. Debug builds
-                  will check and assert if this is not the case. Release
-                  builds will not.
+        /**
+         * Return an item to this allocator's freelist.
+         *
+         * @param ptr The pointer to the chunk of memory being deallocated.
+         *
+         * @note This is a dangerous, private interface; the item being
+         *       returned should belong to this allocator. Debug builds
+         *       will check and assert if this is not the case. Release
+         *       builds will not.
          */
         void
         deallocate(std::uint8_t* ptr) noexcept
@@ -144,13 +150,14 @@ private:
     std::size_t const slabSize_;
 
 public:
-    /** Constructs a slab allocator able to allocate objects of a fixed size
-
-        @param count the number of items the slab allocator can allocate; note
-                     that a count of 0 is valid and means that the allocator
-                     is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when minimal memory usage is needed) and
-                     allows for graceful failure.
+    /**
+     * Constructs a slab allocator able to allocate objects of a fixed size
+     *
+     * @param count the number of items the slab allocator can allocate; note
+     *              that a count of 0 is valid and means that the allocator
+     *              is, effectively, disabled. This can be very useful in some
+     *              contexts (e.g. when minimal memory usage is needed) and
+     *              allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
         std::size_t extra,
@@ -178,17 +185,20 @@ public:
     //        shutdown process up could make this possible.
     ~SlabAllocator() = default;
 
-    /** Returns the size of the memory block this allocator returns. */
+    /**
+     * Returns the size of the memory block this allocator returns.
+     */
     [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;
     }
 
-    /** Returns a suitably aligned pointer, if one is available.
-
-        @return a pointer to a block of memory from the allocator, or
-                nullptr if the allocator can't satisfy this request.
+    /**
+     * Returns a suitably aligned pointer, if one is available.
+     *
+     * @return a pointer to a block of memory from the allocator, or
+     *         nullptr if the allocator can't satisfy this request.
      */
     std::uint8_t*
     allocate() noexcept
@@ -249,12 +259,13 @@ public:
         return slab->allocate();
     }
 
-    /** Returns the memory block to the allocator.
-
-        @param ptr A pointer to a memory block.
-        @param size If non-zero, a hint as to the size of the block.
-        @return true if this memory block belonged to the allocator and has
-                     been released; false otherwise.
+    /**
+     * Returns the memory block to the allocator.
+     *
+     * @param ptr A pointer to a memory block.
+     * @param size If non-zero, a hint as to the size of the block.
+     * @return true if this memory block belonged to the allocator and has
+     *              been released; false otherwise.
      */
     bool
     deallocate(std::uint8_t* ptr) noexcept
@@ -277,7 +288,9 @@ public:
     }
 };
 
-/** A collection of slab allocators of various sizes for a given type. */
+/**
+ * A collection of slab allocators of various sizes for a given type.
+ */
 template <typename Type>
 class SlabAllocatorSet
 {
@@ -344,13 +357,14 @@ public:
 
     ~SlabAllocatorSet() = default;
 
-    /** Returns a suitably aligned pointer, if one is available.
-
-        @param extra The number of extra bytes, above and beyond the size of
-                     the object, that should be returned by the allocator.
-
-        @return a pointer to a block of memory, or nullptr if the allocator
-                can't satisfy this request.
+    /**
+     * Returns a suitably aligned pointer, if one is available.
+     *
+     * @param extra The number of extra bytes, above and beyond the size of
+     *              the object, that should be returned by the allocator.
+     *
+     * @return a pointer to a block of memory, or nullptr if the allocator
+     *         can't satisfy this request.
      */
     std::uint8_t*
     allocate(std::size_t extra) noexcept
@@ -367,12 +381,13 @@ public:
         return nullptr;
     }
 
-    /** Returns the memory block to the allocator.
-
-        @param ptr A pointer to a memory block.
-
-        @return true if this memory block belonged to one of the allocators
-                     in this set and has been released; false otherwise.
+    /**
+     * Returns the memory block to the allocator.
+     *
+     * @param ptr A pointer to a memory block.
+     *
+     * @return true if this memory block belonged to one of the allocators
+     *              in this set and has been released; false otherwise.
      */
     bool
     deallocate(std::uint8_t* ptr) noexcept

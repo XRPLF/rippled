@@ -1,6 +1,7 @@
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
@@ -20,22 +21,30 @@ namespace xrpl {
 void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (isFeatureEnabled(fixCleanup3_3_0) && !after)
+    // Post-fixCleanup3_4_0: skip when after is null. Pre-amendment: fall back
+    // to before so fully-consumed offers remain visible to the invariant.
+    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
         return;
+
+    auto trackDomain = [this, isDelete](uint256 const& domain) {
+        domainsOld_.insert(domain);
+        if (!isDelete)
+            domains_.insert(domain);
+    };
 
     auto const sle = after ? after : before;
 
     if (sle && sle->getType() == ltDIR_NODE)
     {
         if (sle->isFieldPresent(sfDomainID))
-            domains_.insert(sle->getFieldH256(sfDomainID));
+            trackDomain(sle->getFieldH256(sfDomainID));
     }
 
     if (sle && sle->getType() == ltOFFER)
     {
         if (sle->isFieldPresent(sfDomainID))
         {
-            domains_.insert(sle->getFieldH256(sfDomainID));
+            trackDomain(sle->getFieldH256(sfDomainID));
         }
         else
         {
@@ -46,6 +55,7 @@ ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::cons
 
         // pre-fixCleanup3_1_3: hybrid offer missing domain, missing
         // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
+        // `after` may be null when falling back to `before` for a deleted entry
         if (after && after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
@@ -93,7 +103,8 @@ ValidPermissionedDEX::finalize(
 
     // for both payment and offercreate, there shouldn't be another domain
     // that's different from the domain specified
-    for (auto const& d : domains_)
+    auto const& domains = view.rules().enabled(fixCleanup3_4_0) ? domains_ : domainsOld_;
+    for (auto const& d : domains)
     {
         if (d != domain)
         {

@@ -93,7 +93,7 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
     response<string_body> msg;
     msg.version(request.version());
     msg.result(status);
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
     msg.body() = "Invalid protocol.";
@@ -129,7 +129,7 @@ ServerHandler::ServerHandler(
     boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     CollectorManager& cm)
     : app_(app)
     , resourceManager_(resourceManager)
@@ -337,7 +337,7 @@ ServerHandler::onWSMessage(
 {
     json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
+    if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
@@ -426,11 +426,11 @@ ServerHandler::processSession(
 
     // Requests without "command" are invalid.
     json::Value jr(json::ValueType::Object);
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
+    resource::Charge loadType = resource::kFeeReferenceRpc;
     try
     {
-        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().betaRpcApi);
-        if (apiVersion == RPC::kApiInvalidVersion ||
+        auto apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
+        if (apiVersion == rpc::kApiInvalidVersion ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
@@ -439,7 +439,7 @@ ServerHandler::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::kApiInvalidVersion ? jss::invalid_API_version
+            jr[jss::error] = apiVersion == rpc::kApiInvalidVersion ? jss::invalid_API_version
                                                                    : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
@@ -451,11 +451,11 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::kFeeMalformedRpc);
+            is->getConsumer().charge(resource::kFeeMalformedRpc);
             return jr;
         }
 
-        auto required = RPC::roleRequired(
+        auto required = rpc::roleRequired(
             apiVersion,
             app_.config().betaRpcApi,
             jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
@@ -463,16 +463,16 @@ ServerHandler::processSession(
             required,
             session->port(),
             jv,
-            beast::IP::fromAsio(session->remoteEndpoint().address()),
+            beast::ip::fromAsio(session->remoteEndpoint().address()),
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::kFeeMalformedRpc;
+            loadType = resource::kFeeMalformedRpc;
             jr[jss::result] = rpcError(RpcForbidden);
         }
         else
         {
-            RPC::JsonContext context{
+            rpc::JsonContext context{
                 {.j = app_.getJournal("RPCHandler"),
                  .app = app_,
                  .loadType = loadType,
@@ -487,7 +487,7 @@ ServerHandler::processSession(
                 {.user = is->user(), .forwardedFor = is->forwardedFor()}};
 
             auto start = std::chrono::system_clock::now();
-            RPC::doCommand(context, jr[jss::result]);
+            rpc::doCommand(context, jr[jss::result]);
             auto end = std::chrono::system_clock::now();
             logDuration(jv, end - start, journal_);
         }
@@ -495,7 +495,7 @@ ServerHandler::processSession(
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        jr[jss::result] = RPC::makeError(RpcInternal);
+        jr[jss::result] = rpc::makeError(RpcInternal);
         JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                << "Input JSON: " << json::Compact{json::Value{jv}};
         // LCOV_EXCL_STOP
@@ -601,7 +601,7 @@ void
 ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
-    beast::IP::Endpoint const& remoteIPAddress,
+    beast::ip::Endpoint const& remoteIPAddress,
     Output const& output,
     std::shared_ptr<JobQueue::Coro> coro,
     std::string_view forwardedFor,
@@ -612,7 +612,7 @@ ServerHandler::processRequest(
     json::Value jsonOrig;
     {
         json::Reader reader;
-        if ((request.size() > RPC::Tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
+        if ((request.size() > rpc::tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
             httpReply(
@@ -652,21 +652,21 @@ ServerHandler::processRequest(
             continue;
         }
 
-        unsigned apiVersion = RPC::kApiVersionIfUnspecified;
+        unsigned apiVersion = rpc::kApiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
-            apiVersion = RPC::getAPIVersionNumber(
+            apiVersion = rpc::getAPIVersionNumber(
                 jsonRPC[jss::params][json::UInt(0)], app_.config().betaRpcApi);
         }
 
-        if (apiVersion == RPC::kApiVersionIfUnspecified && batch)
+        if (apiVersion == rpc::kApiVersionIfUnspecified && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
+            apiVersion = rpc::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
         }
 
-        if (apiVersion == RPC::kApiInvalidVersion)
+        if (apiVersion == rpc::kApiInvalidVersion)
         {
             if (!batch)
             {
@@ -685,7 +685,7 @@ ServerHandler::processRequest(
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
         {
-            required = RPC::roleRequired(
+            required = rpc::roleRequired(
                 apiVersion, app_.config().betaRpcApi, jsonRPC[jss::method].asString());
         }
 
@@ -700,7 +700,7 @@ ServerHandler::processRequest(
             role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
         }
 
-        Resource::Consumer usage;
+        resource::Consumer usage;
         if (isUnlimited(role))
         {
             usage = resourceManager_.newUnlimitedEndpoint(remoteIPAddress);
@@ -725,7 +725,7 @@ ServerHandler::processRequest(
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReply(403, "Forbidden", output, rpcJ);
@@ -739,7 +739,7 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReply(400, "Null method", output, rpcJ);
@@ -754,7 +754,7 @@ ServerHandler::processRequest(
         json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReply(400, "method is not string", output, rpcJ);
@@ -769,7 +769,7 @@ ServerHandler::processRequest(
         std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
                 httpReply(400, "method is empty", output, rpcJ);
@@ -797,7 +797,7 @@ ServerHandler::processRequest(
             }
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(resource::kFeeMalformedRpc);
                 httpReply(400, "params unparsable", output, rpcJ);
                 return;
             }
@@ -806,7 +806,7 @@ ServerHandler::processRequest(
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::kFeeMalformedRpc);
+                    usage.charge(resource::kFeeMalformedRpc);
                     httpReply(400, "params unparsable", output, rpcJ);
                     return;
                 }
@@ -822,7 +822,7 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(resource::kFeeMalformedRpc);
                 if (!batch)
                 {
                     httpReply(400, "ripplerpc is not a string", output, rpcJ);
@@ -853,9 +853,9 @@ ServerHandler::processRequest(
         params[jss::command] = strMethod;
         JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
+        resource::Charge loadType = resource::kFeeReferenceRpc;
 
-        RPC::JsonContext context{
+        rpc::JsonContext context{
             {.j = journal_,
              .app = app_,
              .loadType = loadType,
@@ -874,12 +874,12 @@ ServerHandler::processRequest(
 
         try
         {
-            RPC::doCommand(context, result);
+            rpc::doCommand(context, result);
         }
         catch (std::exception const& ex)
         {
             // LCOV_EXCL_START
-            result = RPC::makeError(RpcInternal);
+            result = rpc::makeError(RpcInternal);
             JLOG(journal_.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << json::Compact{json::Value{params}};
@@ -984,7 +984,7 @@ ServerHandler::processRequest(
                 reply[jss::error][jss::error_code].isInt())
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
-                return RPC::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
+                return rpc::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
             }
         }
         // Return OK.
@@ -1043,7 +1043,7 @@ ServerHandler::statusResponse(http_request_type const& request) const
         msg.body() = "<HTML><BODY>Server cannot accept clients: " + reason + "</BODY></HTML>";
     }
     msg.version(request.version());
-    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Server", build_info::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
     msg.prepare_payload();
@@ -1179,9 +1179,8 @@ parsePorts(Config const& config, std::ostream& log)
     }
     else
     {
-        auto const count = std::count_if(result.cbegin(), result.cend(), [](Port const& p) {
-            return p.protocol.contains("peer");
-        });
+        auto const count = std::ranges::count_if(
+            result, [](Port const& p) { return p.protocol.contains("peer"); });
 
         if (count > 1)
         {
@@ -1209,7 +1208,7 @@ setupClient(ServerHandler::Setup& setup)
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.contains("https");
-    if (beast::IP::isUnspecified(iter->ip))
+    if (beast::ip::isUnspecified(iter->ip))
     {
         // VFALCO HACK! to make localhost work
         setup.client.ip = iter->ip.is_v6() ? "::1" : "127.0.0.1";
@@ -1257,7 +1256,7 @@ makeServerHandler(
     boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
-    Resource::Manager& resourceManager,
+    resource::Manager& resourceManager,
     CollectorManager& cm)
 {
     return std::make_unique<ServerHandler>(

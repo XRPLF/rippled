@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -130,7 +131,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto const sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqProxy();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
@@ -146,7 +147,8 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto const sequence = tx.getSeqValue();
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -156,9 +158,8 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner, 2, j_);
-    auto const ownerCount = owner->at(sfOwnerCount);
-    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
+    increaseOwnerCount(view(), owner, {}, 2, j_);
+    if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
@@ -168,7 +169,8 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -194,10 +196,10 @@ VaultCreate::doApply()
             return std::nullopt;
         return asset.holds<MPTIssue>()
             ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
-            : keylet::line(pseudoId, asset.get<Issue>()).key;
+            : keylet::trustLine(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
-        view(),
+        applyViewContext,
         j_,
         {
             .priorBalance = std::nullopt,
@@ -208,7 +210,6 @@ VaultCreate::doApply()
             .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
             .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
@@ -217,7 +218,7 @@ VaultCreate::doApply()
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
-    vault->at(sfSequence) = sequence;
+    vault->at(sfSequence) = sequence.value();
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
@@ -240,11 +241,13 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
+    if (view().rules().enabled(featureLendingProtocolV1_1))
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    if (auto const err = authorizeMPToken(
+            applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -252,7 +255,13 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
+                applyViewContext,
+                preFeeBalance_,
+                mptIssuanceID,
+                pseudoId,
+                ctx_.journal,
+                {},
+                accountID_);
             !isTesSuccess(err))
             return err;
     }

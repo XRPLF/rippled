@@ -25,6 +25,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -57,6 +58,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -83,6 +85,13 @@ private:
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
         return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+    }
+
+    // Seed from the local testableAmendments() which strips SAV and Lending.
+    static std::vector<FeatureBitset>
+    amendmentCombinations(std::initializer_list<uint256> features)
+    {
+        return jtx::amendmentCombinations(features, testableAmendments());
     }
 
     void
@@ -746,18 +755,19 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env(fset(gw_, asfGlobalFreeze));
-                if (!features[featureAMMClawback])
+                auto const freezeBlocksAll =
+                    features[featureAMMClawback] || features[fixCleanup3_3_0];
+                if (!freezeBlocksAll)
                 {
                     // If the issuer set global freeze, the holder still can
-                    // deposit the other non-frozen token when AMMClawback is
-                    // not enabled.
+                    // deposit the other non-frozen token when neither
+                    // AMMClawback nor fixCleanup3_3_0 is enabled.
                     ammAlice.deposit(carol_, XRP(100));
                 }
                 else
                 {
                     // If the issuer set global freeze, the holder cannot
-                    // deposit the other non-frozen token when AMMClawback is
-                    // enabled.
+                    // deposit the other non-frozen token.
                     ammAlice.deposit(
                         carol_, XRP(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
                 }
@@ -786,16 +796,18 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 env(trust(gw_, carol_["USD"](0), tfSetFreeze));
                 env.close();
-                if (!features[featureAMMClawback])
+                auto const freezeBlocksAll =
+                    features[featureAMMClawback] || features[fixCleanup3_3_0];
+                if (!freezeBlocksAll)
                 {
-                    // Can deposit non-frozen token if AMMClawback is not
-                    // enabled
+                    // Can deposit non-frozen token if neither AMMClawback
+                    // nor fixCleanup3_3_0 is enabled
                     ammAlice.deposit(carol_, XRP(100));
                 }
                 else
                 {
                     // Cannot deposit non-frozen token if the other token is
-                    // frozen when AMMClawback is enabled
+                    // frozen
                     ammAlice.deposit(
                         carol_, XRP(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
                 }
@@ -810,8 +822,18 @@ private:
                     STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0},
                     tfSetFreeze));
                 env.close();
-                // Can deposit non-frozen token
-                ammAlice.deposit(carol_, XRP(100));
+                // Post-fixCleanup3_3_0: checkDepositFreeze checks both pool
+                // assets against the AMM account, so depositing the
+                // non-frozen token is also blocked.
+                if (!features[fixCleanup3_3_0])
+                {
+                    ammAlice.deposit(carol_, XRP(100));
+                }
+                else
+                {
+                    ammAlice.deposit(
+                        carol_, XRP(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+                }
                 ammAlice.deposit(carol_, 1'000'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
                 ammAlice.deposit(
                     carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
@@ -861,11 +883,10 @@ private:
             AMM amm(env, alice_, XRP(10), gw_["USD"](10), Ter(tesSUCCESS));
             env.close();
 
-            if (features[featureAMMClawback])
+            if (features[featureAMMClawback] || features[fixCleanup3_3_0])
             {
-                // if featureAMMClawback is enabled, bob_ can not deposit XRP
-                // because he's not authorized to hold the paired token
-                // gw_["USD"].
+                // bob_ can not deposit XRP because he's not authorized to
+                // hold the paired token gw_["USD"].
                 amm.deposit(
                     bob_, XRP(10), std::nullopt, std::nullopt, std::nullopt, Ter(tecNO_AUTH));
             }
@@ -1734,36 +1755,57 @@ private:
         });
 
         // Globally frozen asset
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit({.account = gw_, .asset1In = USD(1'000), .asset2In = XRP(1'000)});
-            env(fset(gw_, asfGlobalFreeze));
-            env.close();
-            // Can withdraw non-frozen token
-            for (auto const& account : {alice_, gw_})
-            {
-                ammAlice.withdraw(account, XRP(100));
-                ammAlice.withdraw(account, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
-                ammAlice.withdraw(account, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
-            }
-        });
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const fix330 = env.current()->rules().enabled(fixCleanup3_3_0);
+                ammAlice.deposit({.account = gw_, .asset1In = USD(1'000), .asset2In = XRP(1'000)});
+                env(fset(gw_, asfGlobalFreeze));
+                env.close();
+                // Can withdraw non-frozen token
+                for (auto const& account : {alice_, gw_})
+                {
+                    ammAlice.withdraw(account, XRP(100));
+                    // Post-fixCleanup3_3_0 the issuer can withdraw their own
+                    // frozen token from the pool.
+                    auto const frozenErr =
+                        (fix330 && account == gw_) ? Ter(tesSUCCESS) : Ter(tecFROZEN);
+                    ammAlice.withdraw(account, USD(100), std::nullopt, std::nullopt, frozenErr);
+                    ammAlice.withdraw(account, 1'000, std::nullopt, std::nullopt, frozenErr);
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            amendmentCombinations({fixCleanup3_3_0}));
 
         // Individually frozen (AMM) account
-        testAMM([&](AMM& ammAlice, Env& env) {
-            env(trust(gw_, alice_["USD"](0), tfSetFreeze));
-            env.close();
-            // Can withdraw non-frozen token
-            ammAlice.withdraw(alice_, XRP(100));
-            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
-            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
-            env(trust(gw_, alice_["USD"](0), tfClearFreeze));
-            // Individually frozen AMM
-            env(trust(
-                gw_, STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0}, tfSetFreeze));
-            // Can withdraw non-frozen token
-            ammAlice.withdraw(alice_, XRP(100));
-            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
-            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
-        });
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const fix330 = env.current()->rules().enabled(fixCleanup3_3_0);
+                env(trust(gw_, alice_["USD"](0), tfSetFreeze));
+                env.close();
+                // Can withdraw non-frozen token
+                ammAlice.withdraw(alice_, XRP(100));
+                // Post-fixCleanup3_3_0 regular freeze no longer blocks
+                // self-withdrawal; only deep freeze does.
+                auto const indivFreezeErr = fix330 ? Ter(tesSUCCESS) : Ter(tecFROZEN);
+                ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, indivFreezeErr);
+                ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, indivFreezeErr);
+                env(trust(gw_, alice_["USD"](0), tfClearFreeze));
+                // Individually frozen AMM — still blocked regardless of
+                // fixCleanup3_3_0 because the AMM account itself is frozen.
+                env(trust(
+                    gw_,
+                    STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0},
+                    tfSetFreeze));
+                ammAlice.withdraw(alice_, XRP(100));
+                ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+                ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            amendmentCombinations({fixCleanup3_3_0}));
 
         // Carol withdraws more than she owns
         testAMM([&](AMM& ammAlice, Env&) {
@@ -1842,8 +1884,18 @@ private:
         // are rounded to all LP tokens.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const err =
-                    env.enabled(fixAMMv1_3) ? Ter(tecINVARIANT_FAILED) : Ter(tecAMM_BALANCE);
+                // Without fixAMMv1_3: sub-method returns tecAMM_BALANCE early.
+                // With fixAMMv1_3 but without fixCleanup3_3_0: sub-method succeeds
+                //   but invariant check catches the precision violation.
+                // With fixCleanup3_3_0: caught in the transaction layer before
+                //   the invariant checker runs.
+                auto const err = [&] {
+                    if (!env.enabled(fixAMMv1_3))
+                        return Ter(tecAMM_BALANCE);
+                    if (env.enabled(fixCleanup3_3_0))
+                        return Ter(tecPRECISION_LOSS);
+                    return Ter(tecINVARIANT_FAILED);
+                }();
                 ammAlice.withdraw(
                     alice_,
                     STAmount{USD, UINT64_C(9'999'999999999999), -12},
@@ -1851,7 +1903,7 @@ private:
                     std::nullopt,
                     err);
             },
-            {.features = {all, all - fixAMMv1_3}, .noLog = true});
+            {.features = {all, all - fixAMMv1_3, all - fixCleanup3_3_0}, .noLog = true});
 
         // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {
@@ -2229,6 +2281,32 @@ private:
             ammAlice.withdraw(alice_, XRPAmount{9'999'999'999});
             BEAST_EXPECT(ammAlice.expectBalances(XRPAmount{1}, USD(10'000), IOUAmount{100}));
         });
+
+        // singleWithdrawEPrice: crafted ePrice = lptAMMBalance*f/amountBalance
+        // makes the denominator (T*f - A*E) exactly zero.
+        // Pre-fixCleanup3_3_0: std::overflow_error escapes to the
+        // transactor backstop and is returned as tefEXCEPTION.
+        // Post-fixCleanup3_3_0: denominator check returns tecAMM_FAILED.
+        //
+        // Pool: USD(100)/EUR(100), baseFee=1000 (1%).
+        // Alice is the creator so her discounted fee is 100 (0.1%), f=0.001.
+        // ePrice = lptAMMBalance(100) * f(0.001) / amountBalance(100) = 0.001
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const err = env.enabled(fixCleanup3_3_0) || env.enabled(fixCleanup3_4_0)
+                    ? Ter(tecAMM_FAILED)
+                    : Ter(tefEXCEPTION);
+                ammAlice.withdraw(
+                    WithdrawArg{
+                        .account = alice_,
+                        .asset1Out = USD(0),
+                        .maxEP = IOUAmount{1, -3},  // ePrice=0.001 → denom=0
+                        .err = err});
+            },
+            {{USD(100), EUR(100)}},
+            1000,
+            std::nullopt,
+            {all - fixCleanup3_3_0 - fixCleanup3_4_0, all - fixCleanup3_4_0, all});
     }
 
     void
@@ -2387,8 +2465,8 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol_, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (std::uint32_t i = 0; i < info.size(); ++i)
-                BEAST_EXPECT(info[i][jss::account] != carol_.human());
+            for (auto const& entry : info)
+                BEAST_EXPECT(entry[jss::account] != carol_.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
         });
@@ -4360,7 +4438,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(ammAlice.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(ammAlice.ammAccount()) + "\"}"));
             auto const flags = info[jss::result][jss::account_data][jss::Flags].asUInt();
             BEAST_EXPECT(flags == (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
         });
@@ -5189,7 +5267,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(amm.ammAccount()) + "\"}"));
             try
             {
                 BEAST_EXPECT(
@@ -5671,38 +5749,16 @@ private:
         };
 
         // ledger is closed after each transaction, vote/withdraw don't fail
-        // regardless whether the amendment is enabled or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
         // ledger is not closed after each transaction
-        // vote/withdraw don't fail if the amendment is enabled
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, false);
-        // vote/withdraw fail if the amendment is not enabled
-        // second vote/withdraw still fail: second vote fails because
-        // the initial trading fee is 0, consequently second withdraw fails
-        // because the second vote fails
-        test(
-            all - fixInnerObjTemplate,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            0,
-            false);
         // if non-zero trading/discounted fee then vote/withdraw
-        // don't fail whether the ledger is closed or not and
-        // the amendment is enabled or not
+        // don't fail whether the ledger is closed or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
         // non-zero trading fee but discounted fee is 0, vote doesn't fail
         // but withdraw fails
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 9, false);
-        // second vote sets the trading fee to non-zero, consequently
-        // second withdraw doesn't fail even if the amendment is not
-        // enabled and the ledger is not closed
-        test(all - fixInnerObjTemplate, tesSUCCESS, tefEXCEPTION, tesSUCCESS, tesSUCCESS, 9, false);
     }
 
     void
@@ -5970,7 +6026,7 @@ private:
 
     void
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    testFixOverflowOffer(FeatureBitset featuresInitial)
+    testOverflowOffer(FeatureBitset featuresInitial)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -6205,7 +6261,7 @@ private:
              })
         {
             testcase(input.testCase);
-            for (auto const& features : {all - fixAMMOverflowOffer - fixAMMv1_1 - fixAMMv1_3, all})
+            for (auto const& features : {all - fixAMMv1_1 - fixAMMv1_3, all})
             {
                 Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
 
@@ -6254,11 +6310,6 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                if (!features[fixAMMOverflowOffer])
-                {
-                    BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));
-                }
-                else
                 {
                     BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
@@ -6624,11 +6675,11 @@ private:
             });
         }
 
-        if (features[featureAMMClawback])
+        if (features[featureAMMClawback] || features[fixCleanup3_3_0])
         {
             // Deposit one asset which is not the frozen token,
-            // but the other asset is frozen. We should get tecFROZEN error
-            // when feature AMMClawback is enabled.
+            // but the other asset is frozen. tecFROZEN when either
+            // AMMClawback or fixCleanup3_3_0 is enabled.
             Env env(*this, features);
             testAMMDeposit(env, [&](AMM& amm) {
                 amm.deposit(
@@ -6638,8 +6689,8 @@ private:
         else
         {
             // Deposit one asset which is not the frozen token,
-            // but the other asset is frozen. We will get tecSUCCESS
-            // when feature AMMClawback is not enabled.
+            // but the other asset is frozen. tesSUCCESS only when
+            // neither AMMClawback nor fixCleanup3_3_0 is enabled.
             Env env(*this, features);
             testAMMDeposit(env, [&](AMM& amm) {
                 amm.deposit(
@@ -7157,13 +7208,179 @@ private:
     }
 
     void
+    testDepositIntegralOverflow()
+    {
+        testcase("Deposit integral overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Found by Antithesis: two-asset deposit with a huge Amount against a
+        // tiny pool leg makes frac = Amount/amountBalance enormous, so the
+        // computed XRP-side deposit exceeds the integral asset's range and the
+        // conversion to an STAmount throws out of doApply.
+        //
+        // applyGuts catches std::runtime_error around the deposit math, which
+        // covers both ways the conversion can throw:
+        //   - value beyond int64 range: Number::operator rep() throws
+        //     std::overflow_error (a std::runtime_error); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN):
+        //     STAmount::canonicalize throws std::runtime_error.
+        // XRP(10) is 1e7 drops, so the computed XRP leg is 1e7 * frac:
+        //   asset1In 1e15 => frac ~1e15 => ~1e22 drops, past int64max; and
+        //   asset1In 1e11 => frac ~1e11 => ~1e18 drops, in [kMaxNativeN=1e17,
+        //   int64max) - the canonicalize band, which would otherwise escape.
+        //
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, applyGuts guards it
+        // and fails cleanly with tecAMM_FAILED.
+        auto const test = [this](FeatureBitset features, STAmount const& asset1In, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs
+            // at error (guarded) or fatal (legacy tefEXCEPTION). Disable the
+            // log threshold to keep the test output clean.
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            amm.deposit(
+                DepositArg{
+                    .account = alice_,
+                    .asset1In = asset1In,
+                    .asset2In = XRP(1),
+                    .err = Ter(expected)});
+        };
+
+        // int64-range band (overflow_error): legacy escapes as tefEXCEPTION,
+        // fixed returns a tec.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 15}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 15}, tecAMM_FAILED);
+        // canonicalize band (runtime_error): same behavior. Regression guard
+        // for the band a plain overflow_error catch would miss.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 11}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 11}, tecAMM_FAILED);
+    }
+
+    void
+    testDepositEPriceIntegralOverflow()
+    {
+        testcase("Deposit EPrice integral overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Found by Antithesis: a one-sided tfLimitLPToken deposit (Amount and
+        // EPrice) with Amount = 0 and a large EPrice makes the solved pool-side
+        // deposit enormous, so it exceeds the integral asset's range and the
+        // conversion to an STAmount throws out of doApply. This is the
+        // singleDepositEPrice sibling of testDepositIntegralOverflow.
+        //
+        // applyGuts catches std::runtime_error around the deposit math, which
+        // covers both ways the conversion can throw:
+        //   - value beyond int64 range: Number::operator rep() throws
+        //     std::overflow_error (a std::runtime_error); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN):
+        //     STAmount::canonicalize throws std::runtime_error.
+        //
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, applyGuts guards it
+        // and fails cleanly with tecAMM_FAILED.
+        auto const test = [this](FeatureBitset features, STAmount const& ePrice, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs
+            // at error (guarded) or fatal (legacy tefEXCEPTION). Disable the
+            // log threshold to keep the test output clean.
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            // Amount = 0 (XRP), EPrice large => tfLimitLPToken. The solved XRP
+            // leg blows past the integral range.
+            amm.deposit(
+                DepositArg{
+                    .account = alice_, .asset1In = XRP(0), .maxEP = ePrice, .err = Ter(expected)});
+        };
+
+        // For this XRP(10)/USD(1) pool the LPToken balance is
+        // sqrt(1e7 drops * 1) = 3162, so T^2/B = 1e7/1e7 = 1 and the solved
+        // XRP-side deposit is ~EPrice^2 drops.
+        //
+        // int64-range band (overflow_error): legacy escapes as tefEXCEPTION,
+        // fixed returns a tec. EPrice ~1e17 drops => solved deposit ~1e34 drops,
+        // past int64max, so Number::operator rep() throws.
+        auto const bigEP = STAmount{XRPAmount{99'999'999'999'999'999}};
+        test(all - fixCleanup3_4_0, bigEP, tefEXCEPTION);
+        test(all, bigEP, tecAMM_FAILED);
+        // canonicalize band (runtime_error): same behavior. Regression guard
+        // for the band a plain overflow_error catch would miss. EPrice 1e9 drops
+        // => solved deposit ~1e18 drops, in [kMaxNativeN=1e17, int64max), so
+        // STAmount::canonicalize throws.
+        auto const midEP = STAmount{XRPAmount{1'000'000'000}};
+        test(all - fixCleanup3_4_0, midEP, tefEXCEPTION);
+        test(all, midEP, tecAMM_FAILED);
+    }
+
+    void
+    testWithdrawIntegralNoOverflow()
+    {
+        testcase("Withdraw integral no overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Regression guard for the sibling of testDepositIntegralOverflow.
+        // AMMWithdraw::equalWithdrawLimit has the same
+        // getRoundedAsset(integralBalance, frac) structure as the deposit
+        // path and is likewise not wrapped in a try/catch. It is safe only
+        // because withdraw preclaim (checkAmount) rejects a requested Amount
+        // greater than the pool balance with tecAMM_BALANCE *before* the math
+        // runs, so frac = Amount / balance stays <= 1 and the Number ->
+        // integral STAmount conversion cannot overflow. Deposit has no such
+        // bound (depositing more than the pool holds is legal), which is why
+        // only the deposit path was exposed.
+        //
+        // This asserts the withdrawal analog of the deposit repro fails cleanly
+        // with a tec. If the preclaim bound is ever weakened, equalWithdrawLimit
+        // would be reached with a huge frac and Number::operator rep() would
+        // escape as tefEXCEPTION, failing this test.
+        auto const test = [this](FeatureBitset features) {
+            Env env(*this, features);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            // gw holds all LPTokens of a tiny XRP/USD pool.
+            AMM amm(env, gw_, XRP(10), USD(1));
+
+            // Two-asset limit withdraw (tfTwoAsset) requesting far more of the
+            // tiny USD leg than the pool holds - the mirror of the deposit
+            // repro. Rejected upstream, so no overflow is possible.
+            amm.withdraw(
+                WithdrawArg{
+                    .account = gw_,
+                    .asset1Out = STAmount{USD, 1, 15},
+                    .asset2Out = XRP(1),
+                    .err = Ter(tecAMM_BALANCE)});
+        };
+
+        // Bound holds regardless of the deposit-side fix amendment.
+        test(all - featureMPTokensV2);
+        test(all);
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{testableAmendments()};
         testInvalidInstance();
         testInstanceCreate();
-        testInvalidDeposit(all);
-        testInvalidDeposit(all - featureAMMClawback);
+        for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+            testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
@@ -7197,9 +7414,9 @@ private:
         testSelection(all - fixAMMv1_1 - fixAMMv1_3);
         testFixDefaultInnerObj();
         testMalformed();
-        testFixOverflowOffer(all);
-        testFixOverflowOffer(all - fixAMMv1_3);
-        testFixOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
+        testOverflowOffer(all);
+        testOverflowOffer(all - fixAMMv1_3);
+        testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
@@ -7213,8 +7430,8 @@ private:
         testAMMClawback(all - featureAMMClawback - featureSingleAssetVault);
         testAMMClawback(all - featureAMMClawback);
         testAMMClawback(all - fixAMMv1_1 - fixAMMv1_3 - featureAMMClawback);
-        testAMMDepositWithFrozenAssets(all);
-        testAMMDepositWithFrozenAssets(all - featureAMMClawback);
+        for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+            testAMMDepositWithFrozenAssets(f);
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - featureAMMClawback);
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - fixAMMv1_3 - featureAMMClawback);
         testFixReserveCheckOnWithdrawal(all);
@@ -7228,6 +7445,9 @@ private:
         testFailedPseudoAccount();
         testStaleAuthAccountsAfterReinit(all);
         testStaleAuthAccountsAfterReinit(all - fixCleanup3_2_0);
+        testDepositIntegralOverflow();
+        testDepositEPriceIntegralOverflow();
+        testWithdrawIntegralNoOverflow();
     }
 };
 

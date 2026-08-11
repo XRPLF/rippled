@@ -1,6 +1,5 @@
 #include <xrpl/tx/Transactor.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -18,10 +17,12 @@
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -41,17 +42,23 @@
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <map>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-/** Performs early sanity checks on the txid */
+/**
+ * Performs early sanity checks on the txid
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -106,7 +113,8 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/**
+ * Checks the validity of the transactor signing key.
  *
  * Normally called from preflight1.
  */
@@ -164,7 +172,61 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 
 }  // namespace detail
 
-/** Performs early sanity checks on the account and fee fields */
+static NotTEC
+preflight1Sponsor(PreflightContext const& ctx)
+{
+    bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsor);
+    bool const hasSponsorFlags = ctx.tx.isFieldPresent(sfSponsorFlags);
+    bool const hasSponsorSig = ctx.tx.isFieldPresent(sfSponsorSignature);
+
+    if ((hasSponsor || hasSponsorFlags || hasSponsorSig) && !ctx.rules.enabled(featureSponsor))
+        return temDISABLED;
+
+    if (hasSponsor != hasSponsorFlags)
+    {
+        JLOG(ctx.j.debug()) << "preflight1: sponsor and sponsor flags mismatch";
+        return temINVALID_FLAG;
+    }
+    if (hasSponsorSig && (!hasSponsor || !hasSponsorFlags))
+    {
+        JLOG(ctx.j.debug()) << "preflight1: sponsor signature without sponsor definition";
+        return temMALFORMED;
+    }
+
+    if (hasSponsorFlags)
+    {
+        auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
+        if (((sponsorFlags & spfSponsorFlagMask) != 0u) || sponsorFlags == 0)
+        {
+            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
+            return temINVALID_FLAG;
+        }
+
+        // Reserve sponsorship is only permitted for an explicit allow-list of
+        // transaction types, for v1. All other tx types reject spfSponsorReserve here.
+        if (isReserveSponsored(ctx.tx))
+        {
+            if (!isReserveSponsorAllowed(ctx.tx.getTxnType()))
+            {
+                JLOG(ctx.j.debug())
+                    << "preflight1: spfSponsorReserve not allowed for this transaction type";
+                return temINVALID_FLAG;
+            }
+        }
+    }
+
+    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == ctx.tx.getAccountID(sfAccount))
+    {
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the same as the account";
+        return temMALFORMED;
+    }
+
+    return tesSUCCESS;
+}
+
+/**
+ * Performs early sanity checks on the account and fee fields
+ */
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -175,6 +237,16 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
             return temBAD_SIGNER;
+
+        auto const& perm = Permission::getInstance();
+        auto const txType = ctx.tx.getTxnType();
+
+        // If the transaction is not delegable and does not have granular permissions, fail earlier
+        // with temINVALID. This is to prevent transactions that are not delegable at all from
+        // being processed further in the invokeCheckPermission function.
+        if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
+            !perm.hasGranularPermissions(txType))
+            return temINVALID;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
@@ -207,18 +279,25 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.getSeqProxy().isTicket() && ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // Reject if the inner batch flag and parentBatchId are inconsistent.
+    // A standalone tx with tfInnerBatchTxn but no parentBatchId is an
+    // attack attempt. A tx with parentBatchId but without tfInnerBatchTxn
+    // is a programming error.
+    if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+        return temINVALID_INNER_BATCH;
+
+    if (auto const ter = preflight1Sponsor(ctx); !isTesSuccess(ter))
+        return ter;
 
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
+/**
+ * Checks whether the signature appears valid
+ */
 NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
@@ -229,15 +308,19 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // It should be impossible for the InnerBatchTxn flag to be set without
-    // featureBatch being enabled
-    XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
-        "InnerBatch flag only set if feature enabled");
-    // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
+    // Skip the signature check on batch inner transactions. preflight1 already
+    // enforces both conditions; re-checking them as defense in depth guarantees
+    // we never return success (and so skip signature validation) for an inner
+    // transaction unless the amendment is enabled and it really sits inside a
+    // batch.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        if (!ctx.rules.enabled(featureBatchV1_1))
+            return temINVALID_FLAG;
+        if (!ctx.parentBatchId.has_value())
+            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
+    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
@@ -295,19 +378,71 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkPermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& heldGranularPermissions)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
+    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    return checkTxPermission(sle, tx);
+    if (isTesSuccess(checkTxPermission(sle, tx)))
+        return tesSUCCESS;
+
+    if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
+        return terNO_DELEGATE_PERMISSION;
+
+    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    if (heldGranularPermissions.empty())
+        return terNO_DELEGATE_PERMISSION;
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, heldGranularPermissions))
+        return terNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::checkSponsor(ReadView const& view, STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfSponsor))
+        return tesSUCCESS;
+
+    // Reserve sponsorship with permissioned delegation is disallowed.
+    if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
+        return temINVALID;
+
+    if (!view.exists(keylet::account(tx.getAccountID(sfSponsor))))
+        return terNO_ACCOUNT;
+
+    // Skip Sponsorship existence checks if the sponsor has signed the transaction - this
+    // transaction is valid regardless of the Sponsorship object.
+    // The use of the Sponsorship object is properly handled in
+    // getFeePayer/checkReserve/increaseOwnerCount/decreaseOwnerCount.
+    if (tx.isFieldPresent(sfSponsorSignature))
+        return tesSUCCESS;
+
+    // If the transaction contains sfDelegate, the Sponsorship object should be
+    // between the sponsor and the delegate.
+    auto const sponsorshipSle =
+        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getInitiator()));
+
+    // sponsorship object missing for pre-funded (no co-signing) tx
+    if (!sponsorshipSle)
+        return terNO_PERMISSION;
+
+    if (isFeeSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
+        return terNO_PERMISSION;
+
+    if (isReserveSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
+        return terNO_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -318,6 +453,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
+    //  * The additional cost of each multisignature on the sponsor.
     XRPAmount const baseFee = view.fees().base;
 
     // Each signer adds one more baseFee to the minimum required fee
@@ -325,7 +461,24 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::size_t const signerCount =
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
-    return baseFee + (signerCount * baseFee);
+    std::size_t sponsorSignerCount = 0;
+    if (tx.isFieldPresent(sfSponsorSignature))
+    {
+        auto const sponsorObj = tx.getFieldObject(sfSponsorSignature);
+        if (sponsorObj.isFieldPresent(sfSigners))
+            sponsorSignerCount += sponsorObj.getFieldArray(sfSigners).size();
+    }
+
+    return baseFee + ((signerCount + sponsorSignerCount) * baseFee);
+}
+
+XRPAmount
+Transactor::calculateBaseFee(
+    ReadView const& view,
+    STTx const& tx,
+    std::uint32_t extraBaseFeeMultiplier)
+{
+    return calculateBaseFee(view, tx) + view.fees().base * extraBaseFeeMultiplier;
 }
 
 // Returns the fee in fee units, not scaled for load.
@@ -395,12 +548,51 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::kZero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getFeePayer();
-    auto const sle = ctx.view.read(keylet::account(id));
-    if (!sle)
-        return terNO_ACCOUNT;
+    auto const feePayer = getFeePayer(ctx.view, ctx.tx);
+    auto const payerSle = ctx.view.read(feePayer.keylet);
 
-    auto const balance = (*sle)[sfBalance].xrp();
+    if (!payerSle)
+    {
+        if (feePayer.type == FeePayerType::SponsorPreFunded)
+        {
+            // Sanity check: already checked in checkSponsor
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+
+        return terNO_ACCOUNT;
+    }
+
+    XRPAmount maxSpendable = beast::kZero;
+
+    if (feePayer.type == FeePayerType::SponsorPreFunded)
+    {
+        if (payerSle->getType() != ltSPONSORSHIP)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (payerSle->isFieldPresent(feePayer.balanceField))
+            maxSpendable = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+
+        if (payerSle->isFieldPresent(sfMaxFee))
+        {
+            auto const cap = payerSle->getFieldAmount(sfMaxFee).xrp();
+            maxSpendable = std::min(maxSpendable, cap);
+        }
+    }
+    else
+    {
+        if (payerSle->getType() != ltACCOUNT_ROOT)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (feePayer.type == FeePayerType::SponsorCoSigned)
+        {
+            auto const sponsorReserve = accountReserve(ctx.view, payerSle, ctx.j);
+            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve;
+        }
+        else
+        {
+            maxSpendable = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+        }
+    }
 
     // NOTE: Because preclaim evaluates against a static readview, it
     // does not reflect fee deductions from other transactions paid by
@@ -409,12 +601,12 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     // transactions, this check may pass optimistically.
     // The fee shortfall will be handled by the Transactor::reset mechanism,
     // which caps the fee to the remaining actual balance.
-    if (balance < feePaid)
+    if (maxSpendable < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
+        JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(maxSpendable)
                             << " paid=" << to_string(feePaid);
 
-        if ((balance > beast::kZero) && !ctx.view.open())
+        if ((maxSpendable > beast::kZero) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
             return tecINSUFF_FEE;
@@ -431,16 +623,72 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const feePayer = ctx_.tx.getFeePayer();
-    auto const sle = view().peek(keylet::account(feePayer));
+    auto const feePayer = getFeePayer(view(), ctx_.tx);
+    auto const sle = view().peek(feePayer.keylet);
+
+    JLOG(j_.trace()) << "Fee payer: " + to_string(feePayer.id);
+
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Deduct the fee, so it's not available during the transaction.
-    // Will only write the account back if the transaction succeeds.
-    sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-    if (feePayer != accountID_)
-        view().update(sle);  // done in `apply()` for the account
+    if (feePaid == beast::kZero)
+        return tesSUCCESS;
+
+    XRPAmount balance = beast::kZero;
+    if (sle->isFieldPresent(feePayer.balanceField))
+    {
+        balance = sle->getFieldAmount(feePayer.balanceField).xrp();
+    }
+    else if (feePayer.balanceField != sfFeeAmount)
+    {
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    }
+
+    // A co-signed sponsor pays the fee out of its own account balance, but must
+    // never be charged into its account reserve, and a pre-funded sponsorship's
+    // fee is capped by sfMaxFee. Mirror the spendable amount computed in
+    // checkFee() so both limits are enforced on the apply path too.
+    XRPAmount spendable = balance;
+    if (feePayer.type == FeePayerType::SponsorCoSigned)
+    {
+        auto const sponsorReserve = accountReserve(view(), sle, j_);
+        // max(balance - reserve, 0) with overflow handling
+        spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
+    }
+    else if (feePayer.type == FeePayerType::SponsorPreFunded && sle->isFieldPresent(sfMaxFee))
+    {
+        auto const cap = sle->getFieldAmount(sfMaxFee).xrp();
+        spendable = std::min(spendable, cap);
+    }
+
+    // Only sponsor fee-payers reject here on insufficient funds. For an
+    // ordinary account, the fee falls through and is capped by reset(), which
+    // caps to the account's balance. That capping is wrong for sponsors: a
+    // co-signed sponsor would be charged into its own reserve, and a prefunded
+    // sponsorship's fee amount should be rejected rather than partially spent.
+    if (feePaid > spendable &&
+        (feePayer.type == FeePayerType::SponsorPreFunded ||
+         feePayer.type == FeePayerType::SponsorCoSigned))
+    {
+        if ((spendable > beast::kZero) && !view().open())
+            return tecINSUFF_FEE;
+
+        return terINSUF_FEE_B;
+    }
+
+    auto const feeAmountAfter = balance - feePaid;
+
+    if (feeAmountAfter == beast::kZero && feePayer.balanceField == sfFeeAmount)
+    {
+        // Because ltSponsorship.sfFeeAmount is soeOptional
+        sle->makeFieldAbsent(feePayer.balanceField);
+    }
+    else
+    {
+        sle->setFieldAmount(feePayer.balanceField, feeAmountAfter);
+    }
+
+    view().update(sle);
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
@@ -461,7 +709,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     }
 
     SeqProxy const tSeqProx = tx.getSeqProxy();
-    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const aSeq = SeqProxy::rawSequence((*sle)[sfSequence]);
 
     if (tSeqProx.isSeq())
     {
@@ -500,7 +748,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTicket(id, tSeqProx)))
+        if (!view.exists(keylet::ticket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
@@ -543,16 +791,17 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-    if (seqProx.isSeq())
+    SeqProxy const seqProxy = ctx_.tx.getSeqProxy();
+    if (seqProxy.isSeq())
     {
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+        sleAccount->setFieldU32(sfSequence, seqProxy.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
+    auto const keylet = keylet::ticket(accountID_, seqProxy);
+    return ticketDelete(view(), accountID_, keylet.key, j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -565,7 +814,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -614,7 +863,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, sleAccount, -1, j);
+    decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -671,23 +920,26 @@ Transactor::checkSign(
     std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
-    beast::Journal const j)
+    beast::Journal const j,
+    bool permitUncreatedAccount)
 {
     {
         auto const sle = view.read(keylet::account(idAccount));
 
-        if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        if ((view.rules().enabled(featureLendingProtocol) ||
+             view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
+            isPseudoAccount(sle))
         {
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
+            // Pseudo-accounts can't sign transactions. This check is gated on a
+            // few different amendments so that it takes effect as soon as any of
+            // them is activated.
             return tefBAD_AUTH;
         }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (parentBatchId && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatchV1_1))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -703,6 +955,21 @@ Transactor::checkSign(
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
         return tesSUCCESS;
+    }
+
+    if (sigObject.isFieldPresent(sfSponsorSignature))
+    {
+        // Co-signed sponsorship
+
+        // Sanity check: already checked in preflight1
+        if (!sigObject.isFieldPresent(sfSponsor))
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsorID = sigObject.getAccountID(sfSponsor);
+        auto const sponsorSignature = sigObject.getFieldObject(sfSponsorSignature);
+        if (auto const ret = checkSign(view, flags, std::nullopt, sponsorID, sponsorSignature, j);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     // If the pk is empty and not simulate or simulate and signers,
@@ -725,7 +992,16 @@ Transactor::checkSign(
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
-        return terNO_ACCOUNT;
+    {
+        // An account that does not exist yet can only be authorized by its own
+        // master key, and only where an un-created signer is permitted (a batch
+        // whose earlier inner creates the account). Otherwise it cannot sign.
+        if (!permitUncreatedAccount)
+            return terNO_ACCOUNT;
+        if (idAccount != idSigner)
+            return tefBAD_AUTH;
+        return tesSUCCESS;
+    }
 
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }
@@ -736,50 +1012,6 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
-}
-
-NotTEC
-Transactor::checkBatchSign(PreclaimContext const& ctx)
-{
-    NotTEC ret = tesSUCCESS;
-    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
-    for (auto const& signer : signers)
-    {
-        auto const idAccount = signer.getAccountID(sfAccount);
-
-        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
-        if (pkSigner.empty())
-        {
-            if (ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-        else
-        {
-            // LCOV_EXCL_START
-            if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;
-            // LCOV_EXCL_STOP
-
-            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-
-            // A batch can include transactions from an un-created account ONLY
-            // when the account master key is the signer
-            if (!sleAccount)
-            {
-                if (idAccount != idSigner)
-                    return tefBAD_AUTH;
-
-                return tesSUCCESS;
-            }
-
-            if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
-    return ret;
 }
 
 NotTEC
@@ -823,7 +1055,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signerList(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1003,7 +1235,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        if (auto const offer = view.peek(keylet::nftokenOffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == kExpiredOfferRemoveLimit)
@@ -1052,30 +1284,11 @@ removeDeletedTrustLines(
     }
 }
 
-static void
-removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
-{
-    // There could be at most two MPTs - one for each side of AMM pool
-    if (mpts.size() > 2)
-    {
-        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
-        return;
-    }
-
-    for (auto const& index : mpts)
-    {
-        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
-        {
-            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
-        }
-    }
-}
-
-/** Reset the context, discarding any changes made and adjust the fee.
-
-    @param fee The transaction fee to be charged.
-    @return A pair containing the transaction result and the actual fee charged.
+/**
+ * Reset the context, discarding any changes made and adjust the fee.
+ *
+ * @param fee The transaction fee to be charged.
+ * @return A pair containing the transaction result and the actual fee charged.
  */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -1089,22 +1302,49 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         return {tefINTERNAL, beast::kZero};
 
-    auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
+    auto const feePayer = getFeePayer(view(), ctx_.tx);
+    auto const payerSle = view().peek(feePayer.keylet);
+
     if (!payerSle)
         return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
 
-    auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
+    XRPAmount balance = beast::kZero;
+    if (payerSle->isFieldPresent(feePayer.balanceField))
+    {
+        balance = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+    }
+    else if (feePayer.balanceField != sfFeeAmount)
+    {
+        return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
+    }
+
+    if (feePayer.type == FeePayerType::SponsorPreFunded && payerSle->isFieldPresent(sfMaxFee))
+    {
+        auto const cap = payerSle->getFieldAmount(sfMaxFee).xrp();
+        fee = std::min(fee, cap);
+    }
+
+    // A co-signed sponsor must never be charged into its own account reserve,
+    // so the fee is capped to the balance above the reserve rather than to the
+    // full balance.
+    XRPAmount spendable = balance;
+    if (feePayer.type == FeePayerType::SponsorCoSigned)
+    {
+        auto const sponsorReserve = accountReserve(view(), payerSle, j_);
+        // max(balance - reserve, 0) with overflow handling
+        spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
+    }
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::kZero && (!view().open() || balance >= fee),
+        (fee == beast::kZero || balance != beast::kZero) && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than
     // the fee
-    if (fee > balance)
-        fee = balance;
+    if (fee > spendable)
+        fee = spendable;
 
     // Since we reset the context, we need to charge the fee and update
     // the account's sequence number (or consume the Ticket) again.
@@ -1112,7 +1352,17 @@ Transactor::reset(XRPAmount fee)
     // If for some reason we are unable to consume the ticket or sequence
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
-    payerSle->setFieldAmount(sfBalance, balance - fee);
+    auto const feeAmountAfter = balance - fee;
+    if (feeAmountAfter == beast::kZero && feePayer.balanceField == sfFeeAmount)
+    {
+        // Because ltSponsorship.sfFeeAmount is soeOptional
+        payerSle->makeFieldAbsent(feePayer.balanceField);
+    }
+    else
+    {
+        payerSle->setFieldAmount(feePayer.balanceField, feeAmountAfter);
+    }
+
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
 
@@ -1126,12 +1376,166 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
+FeePayer
+Transactor::getFeePayer(ReadView const& view, STTx const& tx)
+{
+    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
+    {
+        auto const sponsorID = tx.getAccountID(sfSponsor);
+        auto const sponseeID = tx.getInitiator();
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
+
+        // if pre-funded sponsorship exists, prefer it
+        if (view.exists(sponsorshipKeylet))
+        {
+            // pre funded
+            return FeePayer{
+                .id = sponsorID,
+                .keylet = sponsorshipKeylet,
+                .balanceField = sfFeeAmount,
+                .type = FeePayerType::SponsorPreFunded};
+        }
+
+        // Checked in Transactor::checkSponsor
+        XRPL_ASSERT(
+            tx.isFieldPresent(sfSponsorSignature),
+            "xrpl::getFeePayer has sponsor signature without a sponsorship object");
+
+        // co-signed
+        return FeePayer{
+            .id = sponsorID,
+            .keylet = keylet::account(sponsorID),
+            .balanceField = sfBalance,
+            .type = FeePayerType::SponsorCoSigned};
+    }
+
+    AccountID const payerID = tx.getInitiator();
+    auto const payerAccountKeylet = keylet::account(payerID);
+    auto const payerType =
+        tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
+
+    return FeePayer{
+        .id = payerID, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
+}
+
 // The sole purpose of this function is to provide a convenient, named
 // location to set a breakpoint, to be used when replaying transactions.
 void
 Transactor::trapTransaction(uint256 txHash) const
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
+}
+
+std::tuple<TER, XRPAmount, bool>
+Transactor::processPersistentChanges(TER result, XRPAmount fee)
+{
+    JLOG(j_.trace()) << "reapplying because of " << transToken(result);
+
+    // FIXME: This mechanism for doing work while returning a `tec` is
+    //        awkward and very limiting. A more general purpose approach
+    //        should be used, making it possible to do more useful work
+    //        when transactions fail with a `tec` code.
+
+    auto typesForResult = [](TER const ter) {
+        std::unordered_set<LedgerEntryType> types;
+        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+        {
+            types.insert(ltOFFER);
+        }
+        else if (ter == tecINCOMPLETE)
+        {
+            types.insert(ltRIPPLE_STATE);
+        }
+        else if (ter == tecEXPIRED)
+        {
+            types.insert(ltNFTOKEN_OFFER);
+            types.insert(ltCREDENTIAL);
+        }
+        return types;
+    };
+
+    // Build a list of ledger entry types to collect, based on the
+    // result code. Only deleted objects of these types will be
+    // re-applied after the context is reset.
+    auto const typesToCollect = typesForResult(result);
+
+    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    if (!typesToCollect.empty())
+    {
+        ctx_.visit(
+            [&typesToCollect, &deletedObjects](
+                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                if (isDelete)
+                {
+                    XRPL_ASSERT(
+                        before && after,
+                        "xrpl::Transactor::processPersistentChanges : non-null "
+                        "SLE inputs");
+                    if (before && after)
+                    {
+                        auto const type = before->getType();
+                        if (typesToCollect.contains(type))
+                        {
+                            // For offers, only collect unfunded removals
+                            // (where TakerPays is unchanged)
+                            if (type == ltOFFER &&
+                                before->getFieldAmount(sfTakerPays) !=
+                                    after->getFieldAmount(sfTakerPays))
+                                return;
+
+                            deletedObjects[type].push_back(index);
+                        }
+                    }
+                }
+            });
+    }
+
+    // Reset the context, potentially adjusting the fee.
+    {
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+    }
+
+    // Re-apply the collected deletions, but only if the reset succeeded
+    // and the post-reset result still allows the same deletion type.
+    auto const typesToApply = typesForResult(result);
+    if (isTecClaim(result) && !typesToApply.empty())
+    {
+        auto const viewJ = ctx_.registry.get().getJournal("View");
+        for (auto const& [type, ids] : deletedObjects)
+        {
+            if (ids.empty() || !typesToApply.contains(type))
+                continue;
+
+            switch (type)
+            {
+                case ltOFFER:
+                    removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltNFTOKEN_OFFER:
+                    removeExpiredNFTokenOffers(view(), ids, viewJ);
+                    break;
+                case ltRIPPLE_STATE:
+                    removeDeletedTrustLines(view(), ids, viewJ);
+                    break;
+                case ltCREDENTIAL:
+                    removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                // LCOV_EXCL_START
+                default:
+                    UNREACHABLE(
+                        "xrpl::Transactor::processPersistentChanges() : "
+                        "unexpected type");
+                    break;
+                    // LCOV_EXCL_STOP
+            }
+        }
+    }
+
+    return {result, fee, isTecClaim(result)};
 }
 
 [[nodiscard]] TER
@@ -1183,6 +1587,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
      */
     return ctx_.checkInvariants(result, fee);
 }
+
 //------------------------------------------------------------------------------
 ApplyResult
 Transactor::operator()()
@@ -1249,108 +1654,7 @@ Transactor::operator()()
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
         (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
-        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
-
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
-        std::vector<uint256> removedOffers;
-        std::vector<uint256> removedTrustLines;
-        std::vector<uint256> removedMPTs;
-        std::vector<uint256> expiredNFTokenOffers;
-        std::vector<uint256> expiredCredentials;
-
-        bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
-        bool const doNFTokenOffers = (result == tecEXPIRED);
-        bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
-        {
-            ctx_.visit([doOffers,
-                        &removedOffers,
-                        doLinesOrMPTs,
-                        &removedTrustLines,
-                        &removedMPTs,
-                        doNFTokenOffers,
-                        &expiredNFTokenOffers,
-                        doCredentials,
-                        &expiredCredentials](
-                           uint256 const& index,
-                           bool isDelete,
-                           SLE::const_ref before,
-                           SLE::const_ref after) {
-                if (isDelete)
-                {
-                    XRPL_ASSERT(
-                        before && after,
-                        "xrpl::Transactor::operator()::visit : non-null SLE "
-                        "inputs");
-                    if (doOffers && before && after && (before->getType() == ltOFFER) &&
-                        (before->getFieldAmount(sfTakerPays) == after->getFieldAmount(sfTakerPays)))
-                    {
-                        // Removal of offer found or made unfunded
-                        removedOffers.push_back(index);
-                    }
-
-                    if (doLinesOrMPTs && before && after)
-                    {
-                        // Removal of obsolete AMM trust line
-                        if (before->getType() == ltRIPPLE_STATE)
-                        {
-                            removedTrustLines.push_back(index);
-                        }
-                        else if (before->getType() == ltMPTOKEN)
-                        {
-                            removedMPTs.push_back(index);
-                        }
-                    }
-
-                    if (doNFTokenOffers && before && after &&
-                        (before->getType() == ltNFTOKEN_OFFER))
-                        expiredNFTokenOffers.push_back(index);
-
-                    if (doCredentials && before && after && (before->getType() == ltCREDENTIAL))
-                        expiredCredentials.push_back(index);
-                }
-            });
-        }
-
-        // Reset the context, potentially adjusting the fee.
-        {
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-        }
-
-        // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-        {
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredNFTokenOffers(
-                view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecINCOMPLETE)
-        {
-            removeDeletedTrustLines(
-                view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
-            removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredCredentials(
-                view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
-        }
-
-        applied = isTecClaim(result);
+        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
     }
 
     if (applied)

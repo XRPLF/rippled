@@ -1,7 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STBase.h>
@@ -9,8 +13,13 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
+#include <utility>
 #include <variant>
 
 namespace xrpl {
@@ -301,38 +310,46 @@ public:
     {
         std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
-        // @return true if transaction was found, false otherwise
-        //
-        // Call this function first to determine the type of the contained info.
-        // Calling the wrong getter function will throw an exception.
-        // See documentation for the getter functions for more details
+        /**
+         * @return true if transaction was found, false otherwise
+         *
+         * Call this function first to determine the type of the contained info.
+         * Calling the wrong getter function will throw an exception.
+         * See documentation for the getter functions for more details
+         */
         [[nodiscard]] bool
         isFound() const
         {
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
 
-        // @return key used to find transaction in nodestore
-        //
-        // Throws if isFound() returns false
+        /**
+         * @return key used to find transaction in nodestore
+         *
+         * @throws if isFound() returns false
+         */
         uint256 const&
         getNodestoreHash()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
         }
 
-        // @return sequence of ledger containing the transaction
-        //
-        // Throws is isFound() returns false
+        /**
+         * @return sequence of ledger containing the transaction
+         *
+         * @throws if isFound() returns false
+         */
         uint32_t
         getLedgerSequence()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).second;
         }
 
-        // @return range of ledgers searched
-        //
-        // Throws if isFound() returns true
+        /**
+         * @return range of ledgers searched
+         *
+         * @throws if isFound() returns true
+         */
         ClosedInterval<uint32_t> const&
         getLedgerRangeSearched()
         {
@@ -391,7 +408,9 @@ private:
     */
     bool applying_ = false;
 
-    /** different ways for transaction to be accepted */
+    /**
+     * different ways for transaction to be accepted
+     */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;

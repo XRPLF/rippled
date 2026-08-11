@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -72,7 +73,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -92,7 +93,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        auto const k = keylet::escrow(ctx.tx[sfOwner], seqProxy);
         auto const slep = ctx.view.read(k);
         if (!slep)
             return tecNO_TARGET;
@@ -117,7 +119,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], seqProxy);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
     {
@@ -181,7 +184,7 @@ EscrowCancel::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         kParityRate,
                         ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,
@@ -209,8 +212,7 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

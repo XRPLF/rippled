@@ -13,7 +13,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::BuildInfo {
+namespace xrpl::build_info {
 
 namespace {
 
@@ -23,7 +23,7 @@ namespace {
 //------------------------------------------------------------------------------
 // clang-format off
 // NOLINTNEXTLINE(readability-identifier-naming)
-char const* const versionString = "3.2.0-rc3"
+char const* const versionString = "3.4.0-b0"
     // clang-format on
     ;
 
@@ -173,4 +173,4 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace xrpl::BuildInfo
+}  // namespace xrpl::build_info

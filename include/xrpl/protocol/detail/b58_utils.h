@@ -1,12 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <span>
 #include <system_error>
 #include <tuple>
