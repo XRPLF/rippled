@@ -180,7 +180,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testOfferCreate(FeatureBitset features)
     {
-        testcase("OfferCreate");
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "OfferCreate"
+                 << (fixEnabled ? " (Cleanup3_4_0 enabled)" : " (Cleanup3_4_0 disabled)");
 
         // test preflight
         {
@@ -274,9 +277,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             // time advance
             env.close(std::chrono::seconds(20));
 
-            // After fixCleanup3_4_0, OfferCreate returns tecEXPIRED (and deletes
-            // the credential). Detailed coverage is in testExpiredCredentialCleanup.
-            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(tecEXPIRED));
+            // Devin cannot create offer with expired cred. After fixCleanup3_4_0,
+            // doApply deletes the expired credential SLE and returns tecEXPIRED.
+            TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
+            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(expectedExpiredCredTer));
             env.close();
         }
 
@@ -2271,7 +2275,7 @@ public:
 
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
-        testOfferCreate(all - fixCleanup3_2_0);
+        testOfferCreate(all - fixCleanup3_4_0);
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
