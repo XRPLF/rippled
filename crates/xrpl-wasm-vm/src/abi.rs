@@ -3,8 +3,65 @@ use crate::vm::{MAX_FIELD_BYTES, VmState};
 use wasmi::{Caller, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
+/// A condition that stops the run. It is a property of the run rather than an answer
+/// to a call, so it reaches no guest and carries no wire code — which is why it is
+/// not a [`HostError`]: no host can report one and no contract can read one.
+///
+/// The three are the outcomes a host call can end a run with, and
+/// `From<Fault> for RunError` in `vm.rs` is where each gets its name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct FatalHostError(pub(crate) HostError);
+pub(crate) enum Fault {
+    /// This call's charge would take the meter below zero. The guest exhausting the
+    /// meter with its own instructions reaches [`crate::vm::RunError::OutOfGas`] by
+    /// wasmi's `OutOfFuel` trap instead, never through here.
+    OutOfGas,
+    /// The call could not be served: either the host said so, or this engine's own
+    /// fuel meter did not answer.
+    Internal,
+    /// There is no linear memory to work in — the module exports none, or the call
+    /// came from a start section, which runs before there is an instance.
+    NoMemory,
+}
+
+/// How a host call fails: with a code the guest reads off the return value, or with a
+/// [`Fault`] that stops the run.
+///
+/// **The variant picks the channel.** [`to_wire`] reads it rather than asking a
+/// predicate, so the two cannot disagree, and a [`FatalHostError`] cannot be built
+/// around something a guest was supposed to see.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CallError {
+    Code(HostError),
+    Fatal(Fault),
+}
+
+/// A host call's result inside the engine: [`HostResult`] plus the faults only the
+/// engine can raise.
+pub(crate) type CallResult<T> = Result<T, CallError>;
+
+/// Which channel a host's answer takes, decided once, here.
+///
+/// Three codes stop the run instead of reaching the contract that asked. Each says the
+/// call was not served at all — the host could not do it, it has not been wired, or
+/// there is nowhere to put the answer — and a contract has no business interpreting
+/// any of them, so it is told nothing and the run ends. Every other code is the
+/// contract's to read.
+impl From<HostError> for CallError {
+    fn from(error: HostError) -> CallError {
+        match error {
+            HostError::InternalFatal => CallError::Fatal(Fault::Internal),
+            HostError::Unimplemented => CallError::Fatal(Fault::Internal),
+            HostError::NoMemExported => CallError::Fatal(Fault::NoMemory),
+            code => CallError::Code(code),
+        }
+    }
+}
+
+/// The payload a trap carries so [`crate::vm::run`] can name the outcome without
+/// parsing a message. Holds a [`Fault`], so by construction no guest-visible code can
+/// leave through this channel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct FatalHostError(pub(crate) Fault);
 
 impl wasmi::errors::HostError for FatalHostError {}
 
@@ -14,40 +71,62 @@ impl core::fmt::Display for FatalHostError {
     }
 }
 
-/// Whether a [`HostError`] stops the run instead of reaching the guest as a code.
-pub(crate) fn is_fatal(error: HostError) -> bool {
-    matches!(
-        error,
-        HostError::OutOfGas | HostError::Internal | HostError::NoMemExported
-    )
-}
-
 /// Charge the call's gas, run its body, put the result on the wire. The one path
 /// every registered closure takes, so gas cannot be forgotten.
 pub(crate) fn charged(
     caller: &mut Caller<'_, VmState<'_>>,
     op: HostFunctionSpec,
-    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> HostResult<i32>,
+    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> CallResult<i32>,
 ) -> Result<i32, wasmi::Error> {
     to_wire(charge(caller, op.gas()).and_then(|()| body(caller)))
 }
 
-fn to_wire(result: HostResult<i32>) -> Result<i32, wasmi::Error> {
+/// [`charged`] for a call the guest gets no answer from: its wasm function has no
+/// result, so a soft error has nowhere to go and is dropped. The gas is charged first
+/// and charged whatever happens after, so the cost is all such a call leaves behind.
+///
+/// Only `trace` takes this path.
+pub(crate) fn charged_unreported(
+    caller: &mut Caller<'_, VmState<'_>>,
+    op: HostFunctionSpec,
+    body: impl FnOnce(&mut Caller<'_, VmState<'_>>) -> CallResult<()>,
+) -> Result<(), wasmi::Error> {
+    dropped(charge(caller, op.gas()).and_then(|()| body(caller)))
+}
+
+/// [`to_wire`] for a call with no result: there is no return value to encode a code
+/// in, so it is dropped. A [`Fault`] still stops the run — that is a property of the
+/// run, not an answer to the call.
+fn dropped(result: CallResult<()>) -> Result<(), wasmi::Error> {
     match result {
-        Ok(value) => Ok(value),
-        Err(error) if is_fatal(error) => Err(wasmi::Error::host(FatalHostError(error))),
-        Err(error) => Ok(error.code()),
+        Err(CallError::Fatal(fault)) => Err(wasmi::Error::host(FatalHostError(fault))),
+        _ => Ok(()),
     }
 }
 
-/// Deduct `cost` fuel; `OutOfGas` if it would go negative.
-fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> Result<(), HostError> {
-    let remaining = caller.get_fuel().map_err(|_| HostError::Internal)?;
+fn to_wire(result: CallResult<i32>) -> Result<i32, wasmi::Error> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(CallError::Code(error)) => Ok(error.code()),
+        Err(CallError::Fatal(fault)) => Err(wasmi::Error::host(FatalHostError(fault))),
+    }
+}
+
+/// Deduct `cost` fuel; [`Fault::OutOfGas`] if it would go negative.
+///
+/// A meter that will not answer is this crate's own defect, not the contract's, so it
+/// is [`Fault::Internal`] rather than a number a guest could act on.
+fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> CallResult<()> {
+    let remaining = caller
+        .get_fuel()
+        .map_err(|_| CallError::Fatal(Fault::Internal))?;
     match remaining.checked_sub(cost) {
-        Some(left) => caller.set_fuel(left).map_err(|_| HostError::Internal),
+        Some(left) => caller
+            .set_fuel(left)
+            .map_err(|_| CallError::Fatal(Fault::Internal)),
         None => {
             let _ = caller.set_fuel(0);
-            Err(HostError::OutOfGas)
+            Err(CallError::Fatal(Fault::OutOfGas))
         }
     }
 }
@@ -64,18 +143,21 @@ fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     }
 }
 
-fn memory(caller: &Caller<'_, VmState<'_>>) -> Result<Memory, HostError> {
-    caller.data().memory.ok_or(HostError::NoMemExported)
+fn memory(caller: &Caller<'_, VmState<'_>>) -> CallResult<Memory> {
+    caller
+        .data()
+        .memory
+        .ok_or(CallError::Fatal(Fault::NoMemory))
 }
 
 /// [`Region::read`] of the guest's memory, for a call that reads and writes nothing
-/// back (`trace`, `trace_num`).
+/// back (`trace`).
 pub(crate) fn read_borrowed<'a>(
     caller: &'a Caller<'_, VmState<'_>>,
     input: Region,
-) -> HostResult<&'a [u8]> {
+) -> CallResult<&'a [u8]> {
     let mem = memory(caller)?;
-    input.read(mem.data(caller))
+    Ok(input.read(mem.data(caller))?)
 }
 
 /// Decode a guest `u32` argument — a keylet's sequence number or document id — from
@@ -100,7 +182,7 @@ pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
     out: Region,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
-) -> HostResult<i32> {
+) -> CallResult<i32> {
     let range = out.range()?;
     let cap = range.len();
     let mem = memory(caller)?;
@@ -118,10 +200,10 @@ pub(crate) fn write_into(
     let n = fill(host, buf)?;
 
     if n > MAX_FIELD_BYTES {
-        return Err(HostError::DataFieldTooLarge);
+        return Err(HostError::DataFieldTooLarge.into());
     }
     if n > cap {
-        return Err(HostError::BufferTooSmall);
+        return Err(HostError::BufferTooSmall.into());
     }
     charge_transfer(caller.data(), n)?;
     #[expect(
@@ -153,7 +235,7 @@ pub(crate) fn write_buffered(
     caller: &mut Caller<'_, VmState<'_>>,
     out: Region,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
-) -> HostResult<i32> {
+) -> CallResult<i32> {
     let mem = memory(caller)?;
     // One borrow split in two: the guest's bytes for the inputs, the store data for
     // the output buffer. Taking them together is what keeps the inputs borrowed
@@ -168,11 +250,11 @@ pub(crate) fn write_buffered(
     let range = out.range()?;
     let cap = range.len();
     if n > MAX_FIELD_BYTES {
-        return Err(HostError::DataFieldTooLarge);
+        return Err(HostError::DataFieldTooLarge.into());
     }
     let buf = data.get_mut(range).ok_or(HostError::PointerOutOfBounds)?;
     if n > cap {
-        return Err(HostError::BufferTooSmall);
+        return Err(HostError::BufferTooSmall.into());
     }
     charge_transfer(state, n)?;
     buf[..n].copy_from_slice(&state.out_buffer[..n]);
@@ -254,6 +336,7 @@ mod tests {
     use crate::vm::TRANSFER_LIMIT_BYTES;
     use std::cell::Cell;
     use wasmi::StoreLimitsBuilder;
+    use xrpl_host_functions::TraceDataType;
 
     /// `charge_transfer` takes the store data, which has to hold a host.
     struct UncalledHost;
@@ -452,10 +535,7 @@ mod tests {
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn trace(&self, _msg: &str, _data: &[u8], _as_hex: bool) -> HostResult<()> {
-            unreachable!("no unit test in this module calls the host")
-        }
-        fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> {
+        fn trace(&self, _msg: &str, _data: &[u8], _data_type: TraceDataType) -> HostResult<()> {
             unreachable!("no unit test in this module calls the host")
         }
         fn update_data(&self, _data: &[u8]) -> HostResult<i32> {
@@ -586,7 +666,7 @@ mod tests {
 
     /// `wasmi::Error` is not `PartialEq`, so a test expecting the guest-visible
     /// channel says so by going through here.
-    fn wire(result: HostResult<i32>) -> i32 {
+    fn wire(result: CallResult<i32>) -> i32 {
         to_wire(result)
             .unwrap_or_else(|trap| panic!("expected a guest-visible status, got a trap: {trap}"))
     }
@@ -595,47 +675,85 @@ mod tests {
     fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
         assert_eq!(wire(Ok(0)), 0);
         assert_eq!(wire(Ok(32)), 32);
-        assert_eq!(wire(Err(HostError::BufferTooSmall)), -3);
+        assert_eq!(wire(Err(HostError::BufferTooSmall.into())), -3);
     }
 
-    /// The fatal set as the tests *expect* it, not as [`is_fatal`] reports it:
-    /// deriving it from `is_fatal` would make both tests below vacuous, since a
-    /// condition wrongly classified as soft would simply be skipped.
-    const MUST_TRAP: [HostError; 3] = [
-        HostError::OutOfGas,
-        HostError::Internal,
-        HostError::NoMemExported,
+    /// The codes a host may answer that a contract must not see, and the fault each
+    /// becomes. Written out rather than derived from `From<HostError>`, which is what
+    /// they are asserting.
+    const STOPS_THE_RUN: [(HostError, Fault); 3] = [
+        (HostError::InternalFatal, Fault::Internal),
+        (HostError::Unimplemented, Fault::Internal),
+        (HostError::NoMemExported, Fault::NoMemory),
     ];
 
-    /// The trap carries the condition, so `run` can name the outcome without
-    /// parsing a message.
+    /// Every fault, so the two tests below are the whole set and not a sample.
+    /// `From<Fault> for RunError` is what forces a fault added later to be
+    /// considered; this is what forces it to be tested.
+    const ALL_FAULTS: [Fault; 3] = [Fault::OutOfGas, Fault::Internal, Fault::NoMemory];
+
     #[test]
-    fn a_host_fatal_error_becomes_a_trap_carrying_it() {
-        for error in MUST_TRAP {
-            let trap =
-                to_wire(Err(error)).expect_err("a fatal error must not reach the guest as a code");
-            let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
-                panic!("{error:?}: expected a FatalHostError payload, got: {trap}")
-            });
-            assert_eq!(*payload, FatalHostError(error));
+    fn a_code_that_stops_the_run_converts_to_its_fault() {
+        for (error, fault) in STOPS_THE_RUN {
+            assert_eq!(CallError::from(error), CallError::Fatal(fault), "{error:?}");
         }
     }
 
     /// Over `HostError::ALL`, so it is the whole ABI and not a sample: a code added
-    /// to the ABI arrives already asserted to be guest-visible, and making it fatal
-    /// is then a change someone has to come and make.
+    /// to the ABI arrives already asserted to reach the guest as itself, and stopping
+    /// the run on it is then a change someone has to come and make.
     ///
     /// `OutOfTransferLimit` is the row worth reading twice: the one budget a
     /// contract can be expected to handle, so it is told no rather than killed.
     #[test]
-    fn only_the_host_fatal_errors_trap() {
+    fn every_other_code_reaches_the_guest_as_itself() {
         for &error in HostError::ALL {
-            if MUST_TRAP.contains(&error) {
-                assert!(is_fatal(error), "{error:?} must stop the run");
-            } else {
-                assert!(!is_fatal(error), "{error:?} must reach the guest as a code");
-                assert_eq!(wire(Err(error)), error.code());
+            if STOPS_THE_RUN.iter().any(|&(stops, _)| stops == error) {
+                continue;
             }
+            assert_eq!(CallError::from(error), CallError::Code(error), "{error:?}");
+            assert_eq!(wire(Err(error.into())), error.code(), "{error:?}");
+        }
+    }
+
+    /// The trap carries the fault, so `run` can name the outcome without parsing a
+    /// message.
+    #[test]
+    fn a_fault_becomes_a_trap_carrying_it() {
+        for fault in ALL_FAULTS {
+            let trap = to_wire(Err(CallError::Fatal(fault)))
+                .expect_err("a fault must not reach the guest as a code");
+            let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
+                panic!("{fault:?}: expected a FatalHostError payload, got: {trap}")
+            });
+            assert_eq!(*payload, FatalHostError(fault));
+        }
+    }
+
+    /// The result-less path splits the same two channels differently: a fault still
+    /// stops the run, and every code is dropped, since `trace` has no return value to
+    /// carry it. Over `HostError::ALL` for the reason above — a code added to the ABI
+    /// arrives asserted against both paths.
+    #[test]
+    fn a_call_with_no_result_drops_a_code_and_traps_on_a_fault() {
+        assert!(dropped(Ok(())).is_ok());
+
+        for &error in HostError::ALL {
+            if let CallError::Code(code) = CallError::from(error) {
+                assert!(
+                    dropped(Err(CallError::Code(code))).is_ok(),
+                    "{error:?} has no channel to the guest and must be dropped"
+                );
+            }
+        }
+
+        for fault in ALL_FAULTS {
+            let trap =
+                dropped(Err(CallError::Fatal(fault))).expect_err("a fault must stop the run");
+            let payload = trap.downcast_ref::<FatalHostError>().unwrap_or_else(|| {
+                panic!("{fault:?}: expected a FatalHostError payload, got: {trap}")
+            });
+            assert_eq!(*payload, FatalHostError(fault));
         }
     }
 

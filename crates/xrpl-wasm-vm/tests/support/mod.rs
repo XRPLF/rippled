@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use xrpl_host_functions::{HostError, HostFunctions, HostResult};
+use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{RunFailure, RunOutcome};
 
 /// The entry point every test module exports.
@@ -83,18 +83,12 @@ impl Answer {
     }
 }
 
-/// One `trace` or `trace_num` call, as the host received it.
+/// One `trace` call, as the host received it.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Trace {
-    Message {
-        msg: String,
-        data: Vec<u8>,
-        as_hex: bool,
-    },
-    Number {
-        msg: String,
-        number: i64,
-    },
+pub struct Trace {
+    pub msg: String,
+    pub data_type: TraceDataType,
+    pub data: Vec<u8>,
 }
 
 /// A `HostFunctions` implementation that answers from what the test put in it and
@@ -280,8 +274,12 @@ pub struct FakeHost {
     pub fields_asked: RefCell<Vec<i32>>,
     /// Every input `sha512_half` was given.
     pub digested: RefCell<Vec<Vec<u8>>>,
-    /// Every `trace`/`trace_num` call, in order.
+    /// Every `trace` call, in order.
     pub traces: RefCell<Vec<Trace>>,
+    /// What `trace` fails with, after recording the call. `trace` has no result,
+    /// so this is how a test reaches what the engine does with an error it cannot
+    /// report.
+    pub trace_failure: Option<HostError>,
     /// What `update_data` answers, whatever data it is given.
     pub update_data_answer: HostResult<i32>,
     /// Every data blob `update_data` was given.
@@ -429,6 +427,7 @@ impl Default for FakeHost {
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
             traces: RefCell::new(Vec::new()),
+            trace_failure: None,
             update_data_answer: Ok(0),
             update_data_asked: RefCell::new(Vec::new()),
             nfts: HashMap::new(),
@@ -809,6 +808,11 @@ impl FakeHost {
 
     pub fn answering_float_compare(mut self, answer: HostResult<i32>) -> FakeHost {
         self.float_compare_answer = answer;
+        self
+    }
+
+    pub fn failing_trace(mut self, error: HostError) -> FakeHost {
+        self.trace_failure = Some(error);
         self
     }
 
@@ -1194,21 +1198,18 @@ impl HostFunctions for FakeHost {
         self.digest.fill(out)
     }
 
-    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()> {
-        self.traces.borrow_mut().push(Trace::Message {
+    /// Records before failing, so a test can tell a host that was called and then
+    /// failed from one that was never reached.
+    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+        self.traces.borrow_mut().push(Trace {
             msg: msg.to_owned(),
+            data_type,
             data: data.to_vec(),
-            as_hex,
         });
-        Ok(())
-    }
-
-    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
-        self.traces.borrow_mut().push(Trace::Number {
-            msg: msg.to_owned(),
-            number,
-        });
-        Ok(())
+        match self.trace_failure {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     }
 
     fn update_data(&self, data: &[u8]) -> HostResult<i32> {
@@ -1425,10 +1426,9 @@ pub mod import {
     pub const TICKET_ID: &str = r#"(import "host_lib" "ticket_id" (func $ticket_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const VAULT_ID: &str = r#"(import "host_lib" "vault_id" (func $vault_id (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const SHA512_HALF: &str = r#"(import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))"#;
+    /// No result, unlike every other import here: `trace` answers the guest nothing.
     pub const TRACE: &str =
-        r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const TRACE_NUM: &str =
-        r#"(import "host_lib" "trace_num" (func $trace_num (param i32 i32 i64) (result i32)))"#;
+        r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32)))"#;
     pub const SET_DATA: &str =
         r#"(import "host_lib" "set_data" (func $set_data (param i32 i32) (result i32)))"#;
     pub const NFT_URI: &str = r#"(import "host_lib" "nft_uri" (func $nft_uri (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
@@ -1459,6 +1459,32 @@ pub mod import {
 
 /// One page of linear memory, exported under the name the engine looks for.
 pub const ONE_PAGE: &str = r#"(memory (export "memory") 1)"#;
+
+/// What a module returns after a `trace`: the call leaves nothing on the stack, so a
+/// test asserting on the run rather than on an answer asserts this.
+pub const COMPLETED: i32 = 1;
+
+/// A `(ptr, len)` pair naming no bytes, for the half of a `trace` a test is not
+/// about.
+pub const EMPTY_REGION: &str = "(i32.const 0) (i32.const 0)";
+
+/// A `trace` of `data` as `data_type`. `msg` and `data` are each a `(ptr, len)`
+/// pair.
+pub fn trace_call(data_type: TraceDataType, msg: &str, data: &str) -> String {
+    format!(
+        "(call $trace {msg} (i32.const {code}) {data})",
+        code = data_type.code()
+    )
+}
+
+/// [`trace_call`] as a whole module body: the call, then the constant that stands
+/// in for the status it does not return.
+pub fn traced(data_type: TraceDataType, msg: &str, data: &str) -> String {
+    format!(
+        "{call}\n    (i32.const {COMPLETED})",
+        call = trace_call(data_type, msg, data)
+    )
+}
 
 /// A module of `parts`, wrapping `body` in an exported `finish` returning `i32`.
 pub fn module(parts: &[&str], body: &str) -> String {

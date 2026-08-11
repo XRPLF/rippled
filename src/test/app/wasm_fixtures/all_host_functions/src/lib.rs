@@ -25,10 +25,11 @@ extern crate std;
 // -700 to -799: Data Update Functions (1 function)
 //
 
-use xrpl_std::core::current_tx::escrow_finish::EscrowFinish;
-use xrpl_std::core::current_tx::traits::TransactionCommonFields;
+use xrpl_escrow::current_tx::escrow_finish::EscrowFinish;
+use xrpl_std::current_tx::traits::TransactionCommonFields;
 use xrpl_std::host;
-use xrpl_std::host::trace::{trace, trace_account_buf, trace_data, trace_num, DataRepr};
+use xrpl_std::host::trace::TraceDataType;
+use xrpl_std::host::trace::{trace, trace_acct_buf, trace_hex, trace_num};
 use xrpl_std::sfield;
 
 #[unsafe(no_mangle)]
@@ -131,7 +132,7 @@ fn test_ledger_header_functions() -> i32 {
         );
         return -103; // Parent ledger hash test failed - should be exactly 32 bytes
     }
-    let _ = trace_data("Parent ledger hash:", &hash_buffer, DataRepr::AsHex);
+    let _ = trace_hex("Parent ledger hash:", &hash_buffer);
 
     let _ = trace("SUCCESS: Ledger header functions");
     0
@@ -160,7 +161,7 @@ fn test_transaction_data_functions() -> i32 {
         );
         return -201; // Basic transaction field test failed
     }
-    let _ = trace_account_buf("Transaction Account:", &account_buffer);
+    let _ = trace_acct_buf("Transaction Account:", &account_buffer);
 
     // Test with Fee field (XRP amount - 8 bytes in new serialized format)
     // New format: XRP amounts are always 8 bytes (positive: value | cPositive flag, negative: just value)
@@ -181,11 +182,7 @@ fn test_transaction_data_functions() -> i32 {
         return -202; // Fee field test failed - XRP amounts should be exactly 8 bytes
     }
     let _ = trace_num("Transaction Fee length:", fee_len as i64);
-    let _ = trace_data(
-        "Transaction Fee (serialized XRP amount):",
-        &fee_buffer,
-        DataRepr::AsHex,
-    );
+    let _ = trace_hex("Transaction Fee (serialized XRP amount):", &fee_buffer);
 
     // Test with Sequence field (required, 4 bytes uint32)
     let mut seq_buffer = [0u8; 4];
@@ -204,7 +201,7 @@ fn test_transaction_data_functions() -> i32 {
         );
         return -203; // Sequence field test failed
     }
-    let _ = trace_data("Transaction Sequence:", &seq_buffer, DataRepr::AsHex);
+    let _ = trace_hex("Transaction Sequence:", &seq_buffer);
 
     // NOTE: get_tx_field2() through get_tx_field6() have been deprecated.
     // Use get_tx_field() with appropriate parameters for all transaction field access.
@@ -231,11 +228,7 @@ fn test_transaction_data_functions() -> i32 {
         // Expected - locator may not match transaction structure
     } else {
         let _ = trace_num("Nested field length:", nested_result as i64);
-        let _ = trace_data(
-            "Nested field:",
-            &nested_buffer[..nested_result as usize],
-            DataRepr::AsHex,
-        );
+        let _ = trace_hex("Nested field:", &nested_buffer[..nested_result as usize]);
     }
 
     // Test 2.3: get_tx_array_len() - Get array length
@@ -288,20 +281,18 @@ fn test_current_ledger_object_functions() -> i32 {
             "Current object balance length (XRP amount):",
             balance_result as i64,
         );
-        let _ = trace_data(
+        let _ = trace_hex(
             "Current object balance (serialized XRP amount):",
             &balance_buffer,
-            DataRepr::AsHex,
         );
     } else {
         let _ = trace_num(
             "Current object balance length (non-XRP amount):",
             balance_result as i64,
         );
-        let _ = trace_data(
+        let _ = trace_hex(
             "Current object balance:",
             &balance_buffer[..balance_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -321,7 +312,7 @@ fn test_current_ledger_object_functions() -> i32 {
             current_account_result as i64,
         );
     } else {
-        let _ = trace_account_buf("Current ledger object account:", &current_account_buffer);
+        let _ = trace_acct_buf("Current ledger object account:", &current_account_buffer);
     }
 
     // Test 3.2: get_current_ledger_obj_nested_field() - Nested field access
@@ -345,10 +336,9 @@ fn test_current_ledger_object_functions() -> i32 {
         );
     } else {
         let _ = trace_num("Current nested field length:", current_nested_result as i64);
-        let _ = trace_data(
+        let _ = trace_hex(
             "Current nested field:",
             &current_nested_buffer[..current_nested_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -505,20 +495,18 @@ fn test_any_ledger_object_functions() -> i32 {
             "Cached object balance length (XRP amount):",
             cached_balance_result as i64,
         );
-        let _ = trace_data(
+        let _ = trace_hex(
             "Cached object balance (serialized XRP amount):",
             &cached_balance_buffer,
-            DataRepr::AsHex,
         );
     } else {
         let _ = trace_num(
             "Cached object balance length (non-XRP amount):",
             cached_balance_result as i64,
         );
-        let _ = trace_data(
+        let _ = trace_hex(
             "Cached object balance:",
             &cached_balance_buffer[..cached_balance_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -544,10 +532,9 @@ fn test_any_ledger_object_functions() -> i32 {
         );
     } else {
         let _ = trace_num("Cached nested field length:", cached_nested_result as i64);
-        let _ = trace_data(
+        let _ = trace_hex(
             "Cached nested field:",
             &cached_nested_buffer[..cached_nested_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -604,7 +591,7 @@ fn test_keylet_generation_functions() -> i32 {
         );
         return -501; // Account keylet generation failed
     }
-    let _ = trace_data("Account keylet:", &accountroot_id_buffer, DataRepr::AsHex);
+    let _ = trace_hex("Account keylet:", &accountroot_id_buffer);
 
     // Test 5.2: credential_keylet() - Generate keylet for credential
     let mut credential_keylet_buffer = [0u8; 32];
@@ -628,10 +615,9 @@ fn test_keylet_generation_functions() -> i32 {
         );
         // This is expected to fail due to unusual parameter types
     } else {
-        let _ = trace_data(
+        let _ = trace_hex(
             "Credential keylet:",
             &credential_keylet_buffer[..credential_keylet_result as usize],
-            DataRepr::AsHex,
         );
     }
 
@@ -654,7 +640,7 @@ fn test_keylet_generation_functions() -> i32 {
         let _ = trace_num("ERROR: escrow_keylet failed:", escrow_keylet_result as i64);
         return -503; // Escrow keylet generation failed
     }
-    let _ = trace_data("Escrow keylet:", &escrow_keylet_buffer, DataRepr::AsHex);
+    let _ = trace_hex("Escrow keylet:", &escrow_keylet_buffer);
 
     // Test 5.4: oracle_keylet() - Generate keylet for oracle
     let mut oracle_keylet_buffer = [0u8; 32];
@@ -675,7 +661,7 @@ fn test_keylet_generation_functions() -> i32 {
         let _ = trace_num("ERROR: oracle_keylet failed:", oracle_keylet_result as i64);
         return -504; // Oracle keylet generation failed
     }
-    let _ = trace_data("Oracle keylet:", &oracle_keylet_buffer, DataRepr::AsHex);
+    let _ = trace_hex("Oracle keylet:", &oracle_keylet_buffer);
 
     let _ = trace("SUCCESS: Keylet generation functions");
     0
@@ -702,8 +688,8 @@ fn test_utility_functions() -> i32 {
         let _ = trace_num("ERROR: compute_sha512_half failed:", hash_result as i64);
         return -601; // SHA512 half computation failed
     }
-    let _ = trace_data("Input data:", test_data, DataRepr::AsHex);
-    let _ = trace_data("SHA512 half hash:", &hash_output, DataRepr::AsHex);
+    let _ = trace_hex("Input data:", test_data);
+    let _ = trace_hex("SHA512 half hash:", &hash_output);
 
     // Test 6.2: get_nft() - NFT data retrieval
     let escrow_finish = EscrowFinish;
@@ -729,46 +715,25 @@ fn test_utility_functions() -> i32 {
         // This is expected - test account likely doesn't own the dummy NFT
     } else {
         let _ = trace_num("NFT data length:", nft_result as i64);
-        let _ = trace_data(
-            "NFT data:",
-            &nft_buffer[..nft_result as usize],
-            DataRepr::AsHex,
-        );
+        let _ = trace_hex("NFT data:", &nft_buffer[..nft_result as usize]);
     }
 
     // Test 6.3: trace() - Debug logging with data
     let trace_message = b"Test trace message";
     let trace_data_payload = b"payload";
-    let trace_result = unsafe {
+    unsafe {
         host::trace(
             trace_message.as_ptr(),
             trace_message.len(),
+            TraceDataType::AsHex as i32,
             trace_data_payload.as_ptr(),
             trace_data_payload.len(),
-            1, // as_hex = true
         )
     };
 
-    if trace_result < 0 {
-        let _ = trace_num("ERROR: trace() failed:", trace_result as i64);
-        return -603; // Trace function failed
-    }
-    let _ = trace_num("Trace function bytes written:", trace_result as i64);
-
     // Test 6.4: trace_num() - Debug logging with number
     let test_number = 42i64;
-    let trace_num_result = trace_num("Test number trace", test_number);
-
-    use xrpl_std::host::Result;
-    match trace_num_result {
-        Result::Ok(_) => {
-            let _ = trace_num("Trace_num function succeeded", 0);
-        }
-        Result::Err(_) => {
-            let _ = trace_num("ERROR: trace_num() failed:", -604);
-            return -604; // Trace number function failed
-        }
-    }
+    trace_num("Test number trace", test_number);
 
     let _ = trace("SUCCESS: Utility functions");
     0
@@ -789,11 +754,7 @@ fn test_data_update_functions() -> i32 {
         return -701; // Data update failed
     }
 
-    let _ = trace_data(
-        "Successfully updated ledger entry with:",
-        update_payload,
-        DataRepr::AsHex,
-    );
+    let _ = trace_hex("Successfully updated ledger entry with:", update_payload);
     let _ = trace("SUCCESS: Data update functions");
     0
 }

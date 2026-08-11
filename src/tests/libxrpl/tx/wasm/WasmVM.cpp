@@ -234,14 +234,14 @@ TEST_F(WasmVMTest, DirtyHostIsRefusedBeforeContractRuns)
 // A soft host error is the contract's to interpret, so its code has to cross the boundary
 // unchanged: the engine must not renumber it, clamp it, or turn it into a failure of its own.
 //
-// Over the whole of `HostFunctionError` rather than a sample, because the C++ and Rust error
-// enums are two hand-maintained lists of the same wire numbers and they have already drifted
-// once — C++ spells -11 `OutOfTransferLimit` where the Rust ABI spells it `Decoding`. This is
-// the test that notices if either side renumbers.
+// Over the whole of `HostFunctionError` rather than a sample, because `HostFunctionError` and
+// the Rust ABI's `HostError` are two hand-maintained lists of the same wire numbers: -1
+// through -20 have to mean the same thing on both sides, and this is the test that notices if
+// either side renumbers.
 //
-// The two exclusions are the codes the Rust engine treats as host-fatal, which stop the run
-// instead of reaching the guest: -1 (its `Internal`, which C++ spells `Unimplemented`) and
-// -14 `NoMemExported`.
+// The two exclusions are the codes the Rust engine converts into a fault, which stops the run
+// instead of reaching the guest: -1 `Unimplemented` and -14 `NoMemExported`. Both say the call
+// was not served at all.
 TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
 {
     static constexpr HostFunctionError kSoftErrors[] = {
@@ -292,7 +292,10 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
             return std::unexpected(refused);
         });
 
-    for (auto const error : {HostFunctionError::Unimplemented, HostFunctionError::NoMemExported})
+    for (auto const error :
+         {HostFunctionError::InternalFatal,
+          HostFunctionError::Unimplemented,
+          HostFunctionError::NoMemExported})
     {
         refused = error;
 

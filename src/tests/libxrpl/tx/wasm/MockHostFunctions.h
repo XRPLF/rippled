@@ -46,16 +46,12 @@ struct MockHostFunctions : HostFunctions
         (Slice const& data),
         (const, override));
 
+    // Takes the rendered text, not the guest's buffer: rendering is `HostContext`'s, so what
+    // a test asserts here is the log line a node would write.
     MOCK_METHOD(
-        (std::expected<std::int32_t, HostFunctionError>),
+        void,
         trace,
-        (std::string_view const& msg, Slice const& data, bool asHex),
-        (const, override));
-
-    MOCK_METHOD(
-        (std::expected<std::int32_t, HostFunctionError>),
-        traceNum,
-        (std::string_view const& msg, std::int64_t number),
+        (std::string_view const& msg, std::string_view const& data),
         (const, override));
 };
 

@@ -3,15 +3,16 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 
+#include <fast_float/fast_float.h>  // IWYU pragma: keep
+#include <fast_float/parse_number.h>
+
 #include <algorithm>
 #include <cctype>
-#include <charconv>
 #include <cstdint>
 #include <cstdio>
 #include <istream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 
 namespace json {
 // Implementation of class Reader
@@ -76,7 +77,7 @@ Reader::parse(std::istream& sin, Value& root)
 
     // Since std::string is reference-counted, this at least does not
     // create an extra copy.
-    std::string doc;
+    std::string const doc;
     std::getline(sin, doc, (char)EOF);
     return parse(doc, root);
 }
@@ -605,8 +606,14 @@ Reader::decodeNumber(Token& token)
 bool
 Reader::decodeDouble(Token& token)
 {
-    double value = 0;
-    auto const [ptr, ec] = std::from_chars(token.start, token.end, value);
+    // Sanity check to avoid buffer overflow exploits.
+    if (token.end < token.start)
+    {
+        return addError("Unable to parse token length", token);
+    }
+
+    double const value = 0;
+    auto const [ptr, ec] = fast_float::from_chars(token.start, token.end, value);
 
     // Reject anything from_chars could not turn into a finite double:
     //   - ec != std::errc{}: no valid conversion, or an out-of-range magnitude
@@ -888,7 +895,7 @@ Reader::getLocationLineAndColumn(Location location) const
 }
 
 std::string
-Reader::getFormattedErrorMessages() const
+Reader::getFormattedErrorMessages()
 {
     std::string formattedMessage;
 

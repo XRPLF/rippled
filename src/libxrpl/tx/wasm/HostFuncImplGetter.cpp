@@ -124,7 +124,7 @@ getAnyFieldData(FieldValue const& variantObj)
         return Bytes((*u)->begin(), (*u)->end());
 
     // Unreachable: the variant only holds the two alternatives above. If not, it is an
-    // xrpld bug, and `guarded` turns the throw into the engine's fatal `Internal` ->
+    // xrpld bug, and `guarded` turns the throw into `InternalFatal`, which stops the run ->
     // tecINTERNAL.
     Throw<std::runtime_error>("field value variant holds neither alternative");  // LCOV_EXCL_LINE
 }

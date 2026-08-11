@@ -4,7 +4,9 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use xrpl_host_functions::{HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult};
+use xrpl_host_functions::{
+    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType,
+};
 
 /// Records what it was asked to do; enough to prove the trait is usable.
 ///
@@ -390,15 +392,10 @@ impl HostFunctions for FakeHost {
         put(out, &digest)
     }
 
-    fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()> {
+    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
         self.traced
             .borrow_mut()
-            .push(format!("{msg}/{}/{as_hex}", data.len()));
-        Ok(())
-    }
-
-    fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
-        self.traced.borrow_mut().push(format!("{msg}={number}"));
+            .push(format!("{msg}/{data_type:?}/{}", data.len()));
         Ok(())
     }
 
@@ -787,7 +784,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
-    assert_eq!(host.trace("hello", b"xy", true), Ok(()));
+    assert_eq!(host.trace("hello", b"xy", TraceDataType::AsHex), Ok(()));
     assert_eq!(host.trace_num("count", -1), Ok(()));
     assert_eq!(host.update_data(b"abcd"), Ok(4));
     assert_eq!(host.get_nft(&[7; 20], &[9; 32], &mut out), Ok(HASH_LEN));
@@ -828,7 +825,7 @@ fn the_trait_is_implementable() {
     assert_eq!(host.float_root(&[3; 8], 2, 0, &mut out), Ok(1));
     assert_eq!(host.float_power(&[3; 8], 2, 0, &mut out), Ok(1));
 
-    assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
+    assert_eq!(*host.traced.borrow(), ["hello/AsHex/2"]);
 }
 
 /// The error channel every declaration carries: an `Err` the VM turns into the
@@ -869,9 +866,12 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
     let mut out = [0u8; 4];
 
     assert_eq!(host.get_ledger_sqn(&mut out), Ok(4));
-    assert_eq!(host.trace_num("count", 1), Ok(()));
+    assert_eq!(
+        host.trace("count", &1i64.to_le_bytes(), TraceDataType::Int64),
+        Ok(())
+    );
 
-    assert_eq!(*fake.traced.borrow(), ["count=1"]);
+    assert_eq!(*fake.traced.borrow(), ["count/Int64/8"]);
 }
 
 /// The whole table, written out: the one place the ABI's wire names and gas costs
@@ -929,7 +929,7 @@ fn the_spec_table_matches_the_declarations() {
             ("ticket_id", 350),
             ("vault_id", 350),
             ("sha512_half", 2000),
-            ("trace", 500),
+            ("trace", 30),
             ("trace_num", 500),
             ("set_data", 1000),
             ("nft_uri", 5000),
@@ -954,6 +954,28 @@ fn the_spec_table_matches_the_declarations() {
             ("float_pow", 5500),
         ]
     );
+}
+
+/// The other half of the wire vocabulary, and the same change-detector argument: the
+/// codes are what a guest passes, so they are pinned as literals here. `ALL` is in code
+/// order, so the round trip pins the discriminants and not just the membership.
+#[test]
+fn every_trace_data_type_survives_the_wire() {
+    let codes: Vec<i32> = TraceDataType::ALL.iter().map(|t| t.code()).collect();
+
+    assert_eq!(codes, [1, 2, 3, 4, 5, 6, 7]);
+    for &data_type in TraceDataType::ALL {
+        assert_eq!(TraceDataType::from_code(data_type.code()), Some(data_type));
+    }
+}
+
+/// A code no declaration names is refused rather than read as a neighbouring type.
+/// Zero is the one worth naming: it is what a guest sends by omission.
+#[test]
+fn an_unnamed_trace_data_type_code_is_refused() {
+    for code in [0, -1, 8, i32::MAX, i32::MIN] {
+        assert_eq!(TraceDataType::from_code(code), None, "code {code}");
+    }
 }
 
 /// `ALL` is what a wasm engine iterates to register imports, so no two declarations

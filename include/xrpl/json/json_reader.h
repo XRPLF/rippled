@@ -74,8 +74,8 @@ public:
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
      */
-    [[nodiscard]] std::string
-    getFormattedErrorMessages() const;
+    static [[nodiscard]] std::string
+    getFormattedErrorMessages();
 
     static constexpr unsigned kNestLimit{25};
 
