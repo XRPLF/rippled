@@ -21,9 +21,9 @@ namespace xrpl {
 void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // Post-fixCleanup3_4_0: skip when after is null. Pre-amendment: fall back
-    // to before so fully-consumed offers remain visible to the invariant.
-    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
+    // Pre-fixCleanup3_4_0: after-only — null after is a no-op (original).
+    // Post-fixCleanup3_4_0: fall back to before when after is null.
+    if (!isFeatureEnabled(fixCleanup3_4_0) && !after)
         return;
 
     auto trackDomain = [this, isDelete](uint256 const& domain) {
