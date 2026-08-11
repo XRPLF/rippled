@@ -4144,6 +4144,8 @@ class MPToken_test : public beast::unit_test::Suite
         MPTIssue const issue{mptID};
         STAmount const amount{issue, std::uint64_t{2}};
         auto const max = std::numeric_limits<std::uint64_t>::max();
+        bool const fix340Enabled = features[fixCleanup3_4_0];
+        bool const v2Enabled = features[featureMPTokensV2];
 
         {
             ApplyViewImpl av(&*env.current(), TapNone);
@@ -4154,17 +4156,26 @@ class MPToken_test : public beast::unit_test::Suite
             sleIssuance->setFieldU64(sfOutstandingAmount, max - 1);
             av.update(sleIssuance);
 
+            // Without either amendment the addition wraps around silently,
+            // leaving OutstandingAmount at (max - 1) + 2 == 0.
+            TER expectedTer = tesSUCCESS;
+            std::uint64_t expectedOutstanding = 0;
+            if (v2Enabled || fix340Enabled)
+            {
+                expectedTer = v2Enabled ? TER{tecPATH_DRY} : TER{tecINTERNAL};
+                expectedOutstanding = max - 1;
+            }
+
             auto const ter = directSendNoFee(
                 av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
-            auto const expectedTer = features[featureMPTokensV2] ? tecPATH_DRY : tecINTERNAL;
             BEAST_EXPECTS(ter == expectedTer, "OutstandingAmount add overflow");
 
             sleIssuance = av.peek(keylet::mptokenIssuance(mptID));
             if (!BEAST_EXPECT(sleIssuance))
                 return;
             BEAST_EXPECTS(
-                sleIssuance->getFieldU64(sfOutstandingAmount) == max - 1,
-                "OutstandingAmount unchanged");
+                sleIssuance->getFieldU64(sfOutstandingAmount) == expectedOutstanding,
+                "OutstandingAmount not modified");
         }
 
         {
@@ -4176,9 +4187,23 @@ class MPToken_test : public beast::unit_test::Suite
             sle->setFieldU64(sfMPTAmount, max - 1);
             av.update(sle);
 
+            // Same wrap-around without the guard: (max - 1) + 2 == 0.
+            bool const rejected = v2Enabled || fix340Enabled;
+
             auto const ter = directSendNoFee(
                 av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
-            BEAST_EXPECTS(ter == tecINTERNAL, "MPTAmount add overflow");
+            BEAST_EXPECTS(
+                ter == (rejected ? TER{tecINTERNAL} : TER{tesSUCCESS}), "MPTAmount add overflow");
+
+            // The sender is the issuer, so OutstandingAmount was already
+            // credited before the receiver guard fired; only the receiver
+            // balance must be untouched.
+            sle = av.peek(keylet::mptoken(mptID, bob.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECTS(
+                sle->getFieldU64(sfMPTAmount) == (rejected ? max - 1 : std::uint64_t{0}),
+                "MPTAmount not modified");
         }
 
         {
@@ -7756,6 +7781,8 @@ public:
         testMultiSendMaximumAmount(all);
         testDirectSendNoFeeMPTOverflow(all);
         testDirectSendNoFeeMPTOverflow(all - featureMPTokensV2);
+        testDirectSendNoFeeMPTOverflow(all - fixCleanup3_4_0);
+        testDirectSendNoFeeMPTOverflow(all - featureMPTokensV2 - fixCleanup3_4_0);
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);

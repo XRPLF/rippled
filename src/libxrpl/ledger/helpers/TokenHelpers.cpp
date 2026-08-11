@@ -1185,6 +1185,7 @@ directSendNoFeeMPT(
     auto const available = availableMPTAmount(*sleIssuance);
     auto const amt = saAmount.mpt().value();
     bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const v2Enabled = view.rules().enabled(featureMPTokensV2);
 
     auto const hasAdditionOverflow = [](std::uint64_t current, std::int64_t amount) {
         return amount > 0 &&
@@ -1197,7 +1198,7 @@ directSendNoFeeMPT(
 
     if (uSenderID == issuer)
     {
-        if (view.rules().enabled(featureMPTokensV2))
+        if (v2Enabled)
         {
             if (isMPTOverflow(amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
                 return tecPATH_DRY;
@@ -1237,7 +1238,10 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            if (fix340Enabled && hasAdditionOverflow(sle->getFieldU64(sfMPTAmount), amt))
+            // featureMPTokensV2 has always guarded this addition; fixCleanup3_4_0
+            // extends the same guard to ledgers without featureMPTokensV2.
+            if ((fix340Enabled || v2Enabled) &&
+                hasAdditionOverflow(sle->getFieldU64(sfMPTAmount), amt))
                 return tecINTERNAL;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
