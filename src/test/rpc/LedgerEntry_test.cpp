@@ -1561,8 +1561,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
         std::uint32_t const offerSeq = env.seq(issuer);
-        uint256 const offerID =
-            keylet::nftokenOffer(issuer, SeqProxy::rawSequence(offerSeq)).key;
+        uint256 const offerID = keylet::nftokenOffer(issuer, SeqProxy::rawSequence(offerSeq)).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
