@@ -14,6 +14,8 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 void
@@ -134,8 +136,7 @@ ValidLoan::finalize(
     // A loan may only be deleted by a LoanDelete transaction, and only once it
     // is fully paid off (no payments remaining). Deleting a loan with
     // outstanding obligations is a violation.
-    for (auto const& loan : deletedLoans_)
-    {
+    return std::ranges::all_of(deletedLoans_, [&](auto const& loan) {
         if (loan->at(sfPaymentRemaining) != 0 ||
             loan->at(sfTotalValueOutstanding) != beast::kZero ||
             loan->at(sfPrincipalOutstanding) != beast::kZero ||
@@ -145,9 +146,8 @@ ValidLoan::finalize(
                                "paid off";
             return false;
         }
-    }
-
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl
