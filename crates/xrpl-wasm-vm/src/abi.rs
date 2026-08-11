@@ -384,6 +384,9 @@ mod tests {
         fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn update_data(&self, _data: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
     }
 
     fn state(budget: u64) -> VmState<'static> {

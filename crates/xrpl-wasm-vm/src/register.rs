@@ -781,6 +781,20 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
+            HostFunctionSpec::UpdateData => linker.func_wrap(
+                HOST_MODULE,
+                op.wasm_name(),
+                |mut caller: Caller<'_, VmState<'_>>,
+                 ptr: i32,
+                 len: i32|
+                 -> Result<i32, wasmi::Error> {
+                    charged(&mut caller, HostFunctionSpec::UpdateData, |c| {
+                        let host = c.data().host;
+                        let data = read_borrowed(c, Region::new(ptr, len))?;
+                        host.update_data(data)
+                    })
+                },
+            ),
         }?;
     }
     Ok(())

@@ -391,6 +391,10 @@ mod ffi {
         #[namespace = "xrpl"]
         #[cxx_name = "traceNum"]
         fn trace_num(self: &HostContext, msg: &str, number: i64) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "updateData"]
+        fn update_data(self: &HostContext, data: &[u8]) -> i32;
     }
 }
 
@@ -656,6 +660,10 @@ impl HostFunctions for CxxHost<'_> {
 
     fn trace_num(&self, msg: &str, number: i64) -> HostResult<()> {
         reported(self.ctx.trace_num(msg, number))
+    }
+
+    fn update_data(&self, data: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.update_data(data))
     }
 }
 

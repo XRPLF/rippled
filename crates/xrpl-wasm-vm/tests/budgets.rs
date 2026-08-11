@@ -254,6 +254,11 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $trace_num (i32.const 0) (i32.const 0) (i64.const 0))",
             3,
         ),
+        HostFunctionSpec::UpdateData => (
+            import::SET_DATA,
+            "(call $set_data (i32.const 0) (i32.const 8))",
+            2,
+        ),
     };
     Call {
         import,

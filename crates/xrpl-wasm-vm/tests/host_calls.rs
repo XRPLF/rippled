@@ -748,6 +748,25 @@ fn vault_id_reads_the_account_and_seq() {
     assert_eq!(*host.vault_keylets_asked.borrow(), vec![(account, 5)]);
 }
 
+/// A call that reads an input region and returns a scalar rather than writing bytes:
+/// the data blob reaches the host, and the byte count it reports comes back as the
+/// call's status.
+#[test]
+fn set_data_passes_the_data_through_and_returns_the_count() {
+    let host = FakeHost::new().answering_update_data(Ok(8));
+
+    let wat = module(
+        &[import::SET_DATA, ONE_PAGE],
+        "(call $set_data (i32.const 64) (i32.const 8))",
+    );
+    assert_eq!(status(&wat, &host), 8, "the byte count the host reported");
+    assert_eq!(
+        *host.update_data_asked.borrow(),
+        [vec![0u8; 8]],
+        "the 8-byte region reached the host"
+    );
+}
+
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {

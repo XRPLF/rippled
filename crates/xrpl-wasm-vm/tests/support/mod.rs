@@ -282,6 +282,10 @@ pub struct FakeHost {
     pub digested: RefCell<Vec<Vec<u8>>>,
     /// Every `trace`/`trace_num` call, in order.
     pub traces: RefCell<Vec<Trace>>,
+    /// What `update_data` answers, whatever data it is given.
+    pub update_data_answer: HostResult<i32>,
+    /// Every data blob `update_data` was given.
+    pub update_data_asked: RefCell<Vec<Vec<u8>>>,
 }
 
 impl Default for FakeHost {
@@ -370,6 +374,8 @@ impl Default for FakeHost {
             fields_asked: RefCell::new(Vec::new()),
             digested: RefCell::new(Vec::new()),
             traces: RefCell::new(Vec::new()),
+            update_data_answer: Ok(0),
+            update_data_asked: RefCell::new(Vec::new()),
         }
     }
 }
@@ -668,6 +674,11 @@ impl FakeHost {
 
     pub fn answering_digest(mut self, answer: Answer) -> FakeHost {
         self.digest = answer;
+        self
+    }
+
+    pub fn answering_update_data(mut self, answer: HostResult<i32>) -> FakeHost {
+        self.update_data_answer = answer;
         self
     }
 
@@ -1069,6 +1080,11 @@ impl HostFunctions for FakeHost {
         });
         Ok(())
     }
+
+    fn update_data(&self, data: &[u8]) -> HostResult<i32> {
+        self.update_data_asked.borrow_mut().push(data.to_vec());
+        self.update_data_answer
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1132,6 +1148,8 @@ pub mod import {
         r#"(import "host_lib" "trace" (func $trace (param i32 i32 i32 i32 i32) (result i32)))"#;
     pub const TRACE_NUM: &str =
         r#"(import "host_lib" "trace_num" (func $trace_num (param i32 i32 i64) (result i32)))"#;
+    pub const SET_DATA: &str =
+        r#"(import "host_lib" "set_data" (func $set_data (param i32 i32) (result i32)))"#;
 }
 
 /// One page of linear memory, exported under the name the engine looks for.

@@ -862,4 +862,16 @@ HostContext::traceNum(rust::Str msg, std::int64_t number) const noexcept
     });
 }
 
+std::int32_t
+HostContext::updateData(rust::Slice<std::uint8_t const> data) const noexcept
+{
+    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
+        auto const stored = hostFunctions_.updateData(Slice{data.data(), data.size()});
+        if (!stored)
+            return hfErrorToInt(stored.error());
+
+        return *stored;
+    });
+}
+
 }  // namespace xrpl

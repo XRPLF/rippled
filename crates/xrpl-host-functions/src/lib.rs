@@ -420,4 +420,11 @@ host_functions! {
     #[gas = 500]
     #[wasm_name = "trace_num"]
     fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
+
+    /// Stores `data` as the current object's data field, replacing whatever was there,
+    /// and returns the number of bytes stored. Reads the data region; `DataFieldTooLarge`
+    /// if it exceeds the host's limit.
+    #[gas = 1000]
+    #[wasm_name = "set_data"]
+    fn update_data(&self, data: &[u8]) -> HostResult<i32>;
 }

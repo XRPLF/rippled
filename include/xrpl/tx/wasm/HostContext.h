@@ -273,6 +273,11 @@ public:
 
     [[nodiscard]] std::int32_t
     traceNum(rust::Str msg, std::int64_t number) const noexcept;
+
+    // Stores `data` as the current object's data field and returns the number of bytes
+    // stored, or a negative `HostFunctionError` code.
+    [[nodiscard]] std::int32_t
+    updateData(rust::Slice<std::uint8_t const> data) const noexcept;
 };
 
 }  // namespace xrpl

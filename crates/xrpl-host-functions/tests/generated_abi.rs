@@ -401,6 +401,11 @@ impl HostFunctions for FakeHost {
         self.traced.borrow_mut().push(format!("{msg}={number}"));
         Ok(())
     }
+
+    /// Reads a data blob and returns the count of bytes stored.
+    fn update_data(&self, data: &[u8]) -> HostResult<i32> {
+        Ok(data.len() as i32)
+    }
 }
 
 #[test]
@@ -615,6 +620,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 3);
     assert_eq!(host.trace("hello", b"xy", true), Ok(()));
     assert_eq!(host.trace_num("count", -1), Ok(()));
+    assert_eq!(host.update_data(b"abcd"), Ok(4));
 
     assert_eq!(*host.traced.borrow(), ["hello/2/true", "count=-1"]);
 }
@@ -719,6 +725,7 @@ fn the_spec_table_matches_the_declarations() {
             ("sha512_half", 2000),
             ("trace", 500),
             ("trace_num", 500),
+            ("set_data", 1000),
         ]
     );
 }
