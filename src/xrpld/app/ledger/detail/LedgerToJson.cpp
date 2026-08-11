@@ -201,7 +201,9 @@ fillJsonTx(
     {
         uint32_t const lgrSeq = fill.ledger.seq();
         uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
-        uint32_t const netID = fill.context->app.getNetworkIDService().getNetworkID();
+        uint32_t netID = fill.context->app.getNetworkIDService().getNetworkID();
+        if (txn->isFieldPresent(sfNetworkID))
+            netID = txn->getFieldU32(sfNetworkID);
 
         if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
             txJson[jss::ctid] = *ctid;
