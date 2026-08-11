@@ -25,6 +25,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
