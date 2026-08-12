@@ -5,10 +5,10 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
-#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace rpc {
+#include <memory>
+
+namespace xrpl::rpc {
 
 void
 insertAllSyntheticInJson(
@@ -34,5 +34,4 @@ insertAllSyntheticInJson(
     insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
-}  // namespace rpc
-}  // namespace xrpl
+}  // namespace xrpl::rpc

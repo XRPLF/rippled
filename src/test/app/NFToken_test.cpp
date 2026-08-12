@@ -6410,11 +6410,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             };
 
             json::Value const* accountTxPtr = nullptr;
-            for (unsigned i = 0; i < accountTxns.size(); ++i)
+            for (auto const& entry : accountTxns)
             {
-                if (entryHash(accountTxns[i]) == txHash)
+                if (entryHash(entry) == txHash)
                 {
-                    accountTxPtr = &accountTxns[i];
+                    accountTxPtr = &entry;
                     break;
                 }
             }
@@ -6562,11 +6562,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             };
 
             json::Value const* accountTxPtr = nullptr;
-            for (unsigned i = 0; i < accountTxns.size(); ++i)
+            for (auto const& entry : accountTxns)
             {
-                if (entryHash(accountTxns[i]) == txHash)
+                if (entryHash(entry) == txHash)
                 {
-                    accountTxPtr = &accountTxns[i];
+                    accountTxPtr = &entry;
                     break;
                 }
             }
