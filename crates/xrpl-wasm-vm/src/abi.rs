@@ -281,6 +281,12 @@ const EXPONENT_BYTES: usize = 4;
 /// to a scratch buffer, so the input stays borrowed rather than copied. The two output
 /// regions are judged after the input, and the mantissa's region before the exponent's,
 /// so the first fault reported is the leftmost.
+///
+/// The two widths are the ABI's rather than the guest's, so the length the host reports
+/// is checked against their sum for equality rather than as a bound, and ahead of the
+/// output regions: a wrong total means there is no answer to place, whatever the guest
+/// declared. That is a fatal error and not a status, since the guest asked for nothing
+/// wrong.
 pub(crate) fn write_mant_exp(
     caller: &mut Caller<'_, VmState<'_>>,
     mantissa_out: Region,
@@ -298,6 +304,14 @@ pub(crate) fn write_mant_exp(
     let exp_buf = &mut exp_buf[..EXPONENT_BYTES];
 
     let total = call(host, data, mant_buf, exp_buf)?;
+
+    // Both buffers are fixed-width and were offered whole, so the only length the host
+    // can correctly report is their sum. Anything else is the host contradicting the
+    // ABI: with the widths in doubt, part of what would be copied out is whatever the
+    // previous call left in the buffer, so none of it is copied.
+    if total != MANTISSA_BYTES + EXPONENT_BYTES {
+        return Err(HostError::InternalFatal.into());
+    }
 
     // Copy the mantissa, then the exponent, each only if its whole value fits its
     // region — a region too small is `BufferTooSmall`, with nothing written.
@@ -324,7 +338,7 @@ pub(crate) fn write_mant_exp(
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
-        reason = "the total is 12, far inside i32"
+        reason = "a total other than 12 returned above, and 12 is far inside i32"
     )]
     let total = total as i32;
     Ok(total)

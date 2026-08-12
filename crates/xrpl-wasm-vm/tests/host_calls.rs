@@ -935,6 +935,24 @@ fn float_to_mant_exp_writes_both_regions() {
     assert_eq!(status(&wat, &host), 9, "the exponent's first byte");
 }
 
+/// The widths that call writes are the ABI's, so a host reporting any other total has
+/// contradicted it: the regions are wide enough and the guest asked for nothing wrong,
+/// yet the mantissa is short of its eight bytes, so the rest of what would be copied is
+/// whatever the buffer already held. The run stops instead.
+#[test]
+fn float_to_mant_exp_with_a_wrong_total_stops_the_run() {
+    let host = FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4], vec![9, 10, 11, 12]);
+
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 80) (i32.const 4))",
+    );
+    assert!(
+        matches!(failure(&wat, &host).error, RunError::Internal),
+        "a total that is not the two widths must stop the run"
+    );
+}
+
 /// A comparison that reads two float regions and returns a scalar verdict, no output
 /// region involved.
 #[test]
