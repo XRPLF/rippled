@@ -400,7 +400,7 @@ public:
 
 enum class PeerSetBehavior {
     Good,
-    Drop50,
+    DropAlternate,
     DropAll,
     DropSkipListReply,
     DropLedgerDeltaReply,
@@ -449,7 +449,7 @@ struct TestPeerSet : public PeerSet
         // Drop every other message deterministically. Alternating drops
         // still exercise the timeout/retry path while guaranteeing every
         // subtask eventually gets a reply.
-        if (behavior == PeerSetBehavior::Drop50 && sendCount++ % 2 == 0)
+        if (behavior == PeerSetBehavior::DropAlternate && sendCount++ % 2 == 0)
             return;
 
         switch (type)
@@ -1305,7 +1305,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             case PeerSetBehavior::Good:
                 testcase("good network");
                 break;
-            case PeerSetBehavior::Drop50:
+            case PeerSetBehavior::DropAlternate:
                 testcase("network drops 50% messages");
                 break;
             case PeerSetBehavior::Repeat:
@@ -1520,7 +1520,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         testAllInboundLedgers(4);
         testPeerSetBehavior(PeerSetBehavior::Good, 1);
         testPeerSetBehavior(PeerSetBehavior::Good);
-        testPeerSetBehavior(PeerSetBehavior::Drop50);
+        testPeerSetBehavior(PeerSetBehavior::DropAlternate);
         testPeerSetBehavior(PeerSetBehavior::Repeat);
         testStop();
         testSkipListBadReply();
