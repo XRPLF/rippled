@@ -9,9 +9,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format.hpp>
-#include <boost/format/free_funcs.hpp>
-
+#include <format>
 #include <memory>
 
 namespace xrpl::test {
@@ -37,12 +35,13 @@ public:
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
-        boost::format toLoad(R"xrpldConfig(
+        auto const toLoad = std::format(
+            R"xrpldConfig(
 [validator_token]
-%1%
+{}
 
 [validators]
-%2%
+{}
 
 [port_grpc]
 ip = 0.0.0.0
@@ -53,9 +52,11 @@ ip = 0.0.0.0
 port = 50052
 protocol = wss2
 admin = 127.0.0.1
-)xrpldConfig");
+)xrpldConfig",
+            validator_data::kToken,
+            validator_data::kPublicKey);
 
-        p->loadFromString(boost::str(toLoad % validator_data::kToken % validator_data::kPublicKey));
+        p->loadFromString(toLoad);
 
         setupConfigForUnitTests(*p);
 

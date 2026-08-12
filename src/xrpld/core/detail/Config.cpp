@@ -1315,7 +1315,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "truncate") || boost::iequals(journalMode, "persist") ||
                 boost::iequals(journalMode, "wal"))
             {
-                result->emplace_back(std::format(kCommonDbPragmaJournal, journalMode));
+                result->emplace_back(commonDbPragmaJournal(journalMode));
             }
             else
             {
@@ -1336,7 +1336,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(std::format(kCommonDbPragmaSync, synchronous));
+                result->emplace_back(commonDbPragmaSync(synchronous));
             }
             else
             {
@@ -1357,7 +1357,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(std::format(kCommonDbPragmaTemp, tempStore));
+                result->emplace_back(commonDbPragmaTemp(tempStore));
             }
             else
             {

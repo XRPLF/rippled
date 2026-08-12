@@ -9,9 +9,9 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <format>
 #include <iostream>
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -39,7 +39,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
     // regardless of the config settings.
-    session << std::format(kCommonDbPragmaTemp, "file");
+    session << commonDbPragmaTemp("file");
     session << "PRAGMA page_size;", soci::into(pageSize);
 
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;
