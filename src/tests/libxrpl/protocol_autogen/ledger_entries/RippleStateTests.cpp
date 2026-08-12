@@ -33,6 +33,7 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     auto const highQualityOutValue = canonical_UINT32();
     auto const highSponsorValue = canonical_ACCOUNT();
     auto const lowSponsorValue = canonical_ACCOUNT();
+    auto const dustValue = canonical_NUMBER();
 
     RippleStateBuilder builder{
         balanceValue,
@@ -50,6 +51,7 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     builder.setHighQualityOut(highQualityOutValue);
     builder.setHighSponsor(highSponsorValue);
     builder.setLowSponsor(lowSponsorValue);
+    builder.setDust(dustValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -154,6 +156,14 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLowSponsor());
     }
 
+    {
+        auto const& expected = dustValue;
+        auto const actualOpt = entry.getDust();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDust");
+        EXPECT_TRUE(entry.hasDust());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -180,6 +190,7 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     auto const highQualityOutValue = canonical_UINT32();
     auto const highSponsorValue = canonical_ACCOUNT();
     auto const lowSponsorValue = canonical_ACCOUNT();
+    auto const dustValue = canonical_NUMBER();
 
     auto sle = std::make_shared<SLE>(RippleState::entryType, index);
 
@@ -196,6 +207,7 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     sle->at(sfHighQualityOut) = highQualityOutValue;
     sle->at(sfHighSponsor) = highSponsorValue;
     sle->at(sfLowSponsor) = lowSponsorValue;
+    sle->at(sfDust) = dustValue;
 
     RippleStateBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -360,6 +372,19 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLowSponsor");
     }
 
+    {
+        auto const& expected = dustValue;
+
+        auto const fromSleOpt = entryFromSle.getDust();
+        auto const fromBuilderOpt = entryFromBuilder.getDust();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDust");
+        expectEqualField(expected, *fromBuilderOpt, "sfDust");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -438,5 +463,7 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getHighSponsor().has_value());
     EXPECT_FALSE(entry.hasLowSponsor());
     EXPECT_FALSE(entry.getLowSponsor().has_value());
+    EXPECT_FALSE(entry.hasDust());
+    EXPECT_FALSE(entry.getDust().has_value());
 }
 }

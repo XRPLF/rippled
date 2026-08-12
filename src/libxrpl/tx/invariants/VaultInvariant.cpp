@@ -116,6 +116,10 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
                 balanceDelta.scale = amount.exponent();
+                // sfDust follows the same low/high convention as sfBalance.
+                // Pre-amendment sfDust is SoeDefault (0), so this is a no-
+                // op then.
+                balanceDelta.dustDelta = Number{before->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -161,6 +165,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // directly to get the scale.
                 if (amount.exponent() > balanceDelta.scale)
                     balanceDelta.scale = amount.exponent();
+                // Mirror the sfBalance accumulation so dustDelta ends up as
+                // "before - after" (later sign-flipped to "after - before").
+                balanceDelta.dustDelta -= Number{after->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -178,6 +185,10 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
     {
         XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
         balanceDelta.delta *= sign;
+        // dustDelta was accumulated with the same "before - after" idiom;
+        // apply the same sign flip so it represents "after - before" in
+        // the trust line's low/high convention.
+        balanceDelta.dustDelta *= sign;
         deltas_[key] = balanceDelta;
     }
 }
@@ -202,8 +213,12 @@ ValidVault::deltaAssets(AccountID const& id) const
                 auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
+                // dustDelta shares the same convention, so flip it in lockstep.
                 if (result && id > issue.getIssuer())
+                {
                     result->delta = -result->delta;
+                    result->dustDelta = -result->dustDelta;
+                }
                 return result;
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
@@ -878,8 +893,26 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    // Compare EXTENDED balances (sfBalance + sfDust) on
+                    // both sides for the cash-flow parity check. Under
+                    // featureLendingProtocolV1_1 a dust-aware withdrawal
+                    // may reshape the vault custody line's sfBalance /
+                    // sfDust split (Override promotes / defers; Drain
+                    // folds sfDust into the outgoing transfer) — all
+                    // internal recognition moves preserved by the
+                    // extended total. For non-dust callers dustDelta is
+                    // zero, so this reduces to the base sfBalance
+                    // comparison. See VaultRoundingTrustlineDust_test::
+                    // testNonTerminalWithdrawAfterDust for the case this
+                    // addresses.
+                    Number const extendedPseudoDelta =
+                        maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                    Number const extendedDestinationDelta =
+                        destinationDelta.delta + destinationDelta.dustDelta;
                     auto const localPseudoDeltaAssets =
-                        roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
+                        roundToAsset(vaultAsset, extendedPseudoDelta, localMinScale);
+                    auto const localDestinationDelta =
+                        roundToAsset(vaultAsset, extendedDestinationDelta, localMinScale);
                     // For IOU assets near a precision boundary the destination's STAmount
                     // exponent can shift, making part of the sent value unrepresentable at the
                     // receiver's new scale — that portion is irreversibly absorbed by the IOU
@@ -891,11 +924,10 @@ ValidVault::finalize(
                     auto const destroyedIsSubUlp = tolerateZeroDelta &&
                         roundToAsset(
                             vaultAsset,
-                            maybeVaultDeltaAssets->delta * -1 - destinationDelta.delta,
+                            extendedPseudoDelta * -1 - extendedDestinationDelta,
                             destinationScale,
                             Number::RoundingMode::Downward) == kZero;
-                    if (!destroyedIsSubUlp &&
-                        localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    if (!destroyedIsSubUlp && localPseudoDeltaAssets * -1 != localDestinationDelta)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "withdrawal must change vault and destination balance by equal "
