@@ -160,6 +160,17 @@ pub(crate) fn read_borrowed<'a>(
     Ok(input.read(mem.data(caller))?)
 }
 
+/// Decode a guest `u32` argument — a keylet's sequence number or document id — from
+/// its four little-endian bytes, carried on to the host as its `i32` bit pattern.
+///
+/// The ABI transports these as a 4-byte region rather than a wasm scalar (the guest
+/// SDK passes `seq.to_le_bytes()`), so the region must be exactly four bytes;
+/// `InvalidParams` otherwise, matching the C-ABI wrapper's `getDataUInt32`.
+pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<i32> {
+    let arr: [u8; 4] = bytes.try_into().map_err(|_| HostError::InvalidParams)?;
+    Ok(i32::from_le_bytes(arr))
+}
+
 /// Service a call whose answer is bytes, written straight into the guest's output
 /// region.
 ///
@@ -256,6 +267,69 @@ pub(crate) fn write_buffered(
     Ok(n)
 }
 
+/// The mantissa and exponent widths `float_to_mant_exp` writes: an `i64` and an `i32`.
+/// Fixed by the ABI, not the guest, so the split is a constant rather than a reported
+/// length.
+const MANTISSA_BYTES: usize = 8;
+const EXPONENT_BYTES: usize = 4;
+
+/// Service `float_to_mant_exp`, the one call that writes two output regions: the host
+/// fills the run's output buffer with the mantissa followed by the exponent, and each
+/// is copied to its own guest region once every rule has passed.
+///
+/// Like [`write_buffered`], the host reads its input from the guest's memory and writes
+/// to a scratch buffer, so the input stays borrowed rather than copied. The two output
+/// regions are judged after the input, and the mantissa's region before the exponent's,
+/// so the first fault reported is the leftmost.
+pub(crate) fn write_mant_exp(
+    caller: &mut Caller<'_, VmState<'_>>,
+    mantissa_out: Region,
+    exponent_out: Region,
+    call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8], &mut [u8]) -> HostResult<usize>,
+) -> CallResult<i32> {
+    let mem = memory(caller)?;
+    let (data, state) = mem.data_and_store_mut(&mut *caller);
+    let host: &dyn HostFunctions = state.host;
+
+    // The scratch buffer is split at the fixed mantissa width: the host fills the first
+    // eight bytes with the mantissa and the next four with the exponent.
+    let (mant_buf, exp_buf) = state.out_buffer.split_at_mut(MANTISSA_BYTES);
+    let mant_buf = &mut mant_buf[..MANTISSA_BYTES];
+    let exp_buf = &mut exp_buf[..EXPONENT_BYTES];
+
+    let total = call(host, data, mant_buf, exp_buf)?;
+
+    // Copy the mantissa, then the exponent, each only if its whole value fits its
+    // region — a region too small is `BufferTooSmall`, with nothing written.
+    let mant_range = mantissa_out.range()?;
+    let mant_dst = data
+        .get_mut(mant_range)
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if mant_dst.len() < MANTISSA_BYTES {
+        return Err(HostError::BufferTooSmall.into());
+    }
+    mant_dst[..MANTISSA_BYTES].copy_from_slice(&state.out_buffer[..MANTISSA_BYTES]);
+
+    let exp_range = exponent_out.range()?;
+    let exp_dst = data
+        .get_mut(exp_range)
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if exp_dst.len() < EXPONENT_BYTES {
+        return Err(HostError::BufferTooSmall.into());
+    }
+    exp_dst[..EXPONENT_BYTES]
+        .copy_from_slice(&state.out_buffer[MANTISSA_BYTES..MANTISSA_BYTES + EXPONENT_BYTES]);
+
+    charge_transfer(state, MANTISSA_BYTES + EXPONENT_BYTES)?;
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        reason = "the total is 12, far inside i32"
+    )]
+    let total = total as i32;
+    Ok(total)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,13 +345,311 @@ mod tests {
         fn get_ledger_sqn(&self, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
+        fn get_parent_ledger_time(&self, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_parent_ledger_hash(&self, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_base_fee(&self, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn is_amendment_enabled(&self, _amendment: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn cache_ledger_obj(&self, _obj_id: &[u8], _cache_idx: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_tx_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
         fn get_current_ledger_obj_field(&self, _field: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_ledger_obj_field(
+            &self,
+            _cache_idx: i32,
+            _field: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_tx_nested_field(&self, _locator: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_current_ledger_obj_nested_field(
+            &self,
+            _locator: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_ledger_obj_nested_field(
+            &self,
+            _cache_idx: i32,
+            _locator: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_tx_array_len(&self, _field: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_current_ledger_obj_array_len(&self, _field: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_ledger_obj_array_len(&self, _cache_idx: i32, _field: i32) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_tx_nested_array_len(&self, _locator: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_current_ledger_obj_nested_array_len(&self, _locator: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_ledger_obj_nested_array_len(
+            &self,
+            _cache_idx: i32,
+            _locator: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn check_signature(
+            &self,
+            _message: &[u8],
+            _signature: &[u8],
+            _pubkey: &[u8],
+        ) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn account_keylet(&self, _account: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn amm_keylet(&self, _asset1: &[u8], _asset2: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn check_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn credential_keylet(
+            &self,
+            _subject: &[u8],
+            _issuer: &[u8],
+            _credential_type: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn delegate_keylet(
+            &self,
+            _account: &[u8],
+            _authorize: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn deposit_preauth_keylet(
+            &self,
+            _account: &[u8],
+            _authorize: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn did_keylet(&self, _account: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn escrow_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn trust_line_keylet(
+            &self,
+            _account1: &[u8],
+            _account2: &[u8],
+            _currency: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn mptoken_issuance_keylet(
+            &self,
+            _issuer: &[u8],
+            _seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn mptoken_keylet(
+            &self,
+            _mptid: &[u8],
+            _holder: &[u8],
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn nftoken_offer_keylet(
+            &self,
+            _account: &[u8],
+            _seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn offer_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn oracle_keylet(
+            &self,
+            _account: &[u8],
+            _doc_id: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn paychannel_keylet(
+            &self,
+            _account: &[u8],
+            _destination: &[u8],
+            _seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn permissioned_domain_keylet(
+            &self,
+            _account: &[u8],
+            _seq: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn signer_list_keylet(&self, _account: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn ticket_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn vault_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn trace(&self, _msg: &str, _data: &[u8], _data_type: TraceDataType) -> HostResult<()> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn update_data(&self, _data: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft(&self, _account: &[u8], _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_issuer(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_taxon(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_flags(&self, _nft_id: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_transfer_fee(&self, _nft_id: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn get_nft_sequence(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_int(&self, _x: i64, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_uint(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_stamount(
+            &self,
+            _amount: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_stnumber(
+            &self,
+            _number: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_to_int(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_to_mant_exp(
+            &self,
+            _x: &[u8],
+            _mantissa_out: &mut [u8],
+            _exponent_out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_from_mant_exp(
+            &self,
+            _mantissa: i64,
+            _exponent: i32,
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_compare(&self, _x: &[u8], _y: &[u8]) -> HostResult<i32> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_add(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_subtract(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_multiply(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_divide(
+            &self,
+            _x: &[u8],
+            _y: &[u8],
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_root(&self, _x: &[u8], _n: i32, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+            unreachable!("no unit test in this module calls the host")
+        }
+        fn float_power(
+            &self,
+            _x: &[u8],
+            _n: i32,
+            _mode: i32,
+            _out: &mut [u8],
+        ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
     }

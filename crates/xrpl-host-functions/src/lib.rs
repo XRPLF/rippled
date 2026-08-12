@@ -75,10 +75,305 @@ host_functions! {
     #[wasm_name = "ldgr_index"]
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
 
+    /// The close time of the parent (last-closed) ledger, as 4 little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "parent_ldgr_time"]
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The hash of the parent (last-closed) ledger, as 32 bytes.
+    #[gas = 60]
+    #[wasm_name = "parent_ldgr_hash"]
+    fn get_parent_ledger_hash(&self, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The base fee of the ledger being built, in drops, as 4 little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "base_fee"]
+    fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize>;
+
+    /// Whether an amendment is enabled. The input is either its 32-byte id or its
+    /// name; the answer is `1` if enabled and `0` if not. Unlike the getters, this
+    /// reads an input region and returns the flag directly rather than writing bytes.
+    #[gas = 100]
+    #[wasm_name = "amendment_enabled"]
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32>;
+
+    /// Load the ledger object with the given 32-byte id into a cache slot, so later
+    /// calls can read its fields. `cache_idx` selects the slot (1-based); `0` asks the
+    /// host to assign a free one. Returns the slot used, or a negative error.
+    #[gas = 5000]
+    #[wasm_name = "cache_le"]
+    fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32>;
+
+    /// The serialized bytes of one field of the transaction being executed, selected
+    /// by its `SField` code.
+    #[gas = 70]
+    #[wasm_name = "tx_field"]
+    fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize>;
+
     /// The serialized bytes of one field of the current (escrow) ledger object.
     #[gas = 70]
     #[wasm_name = "home_le_field"]
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The serialized bytes of one field of a previously cached ledger object,
+    /// selected by its cache slot and the field's `SField` code.
+    #[gas = 70]
+    #[wasm_name = "le_field"]
+    fn get_ledger_obj_field(&self, cache_idx: i32, field: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The serialized bytes of a nested field of the transaction, reached by a
+    /// `locator`: a path of little-endian `i32` steps (so its byte length is a
+    /// non-zero multiple of 4). Reads the locator region and writes the field bytes.
+    #[gas = 110]
+    #[wasm_name = "tx_inner"]
+    fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The serialized bytes of a nested field of the current (escrow) ledger object,
+    /// reached by a `locator`, as with [`Self::get_tx_nested_field`].
+    #[gas = 110]
+    #[wasm_name = "home_le_inner"]
+    fn get_current_ledger_obj_nested_field(
+        &self,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The serialized bytes of a nested field of a previously cached ledger object,
+    /// selected by its cache slot and reached by a `locator`.
+    #[gas = 110]
+    #[wasm_name = "le_inner"]
+    fn get_ledger_obj_nested_field(
+        &self,
+        cache_idx: i32,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The number of elements in an array field of the transaction, selected by its
+    /// `SField` code. Answers the count directly, or a negative error (`NoArray` if
+    /// the field is not an array). Reads and writes no memory.
+    #[gas = 40]
+    #[wasm_name = "tx_arr_len"]
+    fn get_tx_array_len(&self, field: i32) -> HostResult<i32>;
+
+    /// The number of elements in an array field of the current (escrow) ledger
+    /// object, as with [`Self::get_tx_array_len`].
+    #[gas = 40]
+    #[wasm_name = "home_le_arr_len"]
+    fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32>;
+
+    /// The number of elements in an array field of a previously cached ledger object,
+    /// selected by its cache slot and `SField` code.
+    #[gas = 40]
+    #[wasm_name = "le_arr_len"]
+    fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32>;
+
+    /// The number of elements in a nested array field of the transaction, reached by a
+    /// `locator`. Reads the locator region and answers the count directly.
+    #[gas = 70]
+    #[wasm_name = "tx_inner_arr_len"]
+    fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;
+
+    /// The number of elements in a nested array field of the current (escrow) ledger
+    /// object, reached by a `locator`, as with [`Self::get_tx_nested_array_len`].
+    #[gas = 70]
+    #[wasm_name = "home_le_inner_arr_len"]
+    fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;
+
+    /// The number of elements in a nested array field of a previously cached ledger
+    /// object, selected by its cache slot and reached by a `locator`.
+    #[gas = 70]
+    #[wasm_name = "le_inner_arr_len"]
+    fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32>;
+
+    /// Verify `signature` over `message` under `pubkey`. Reads the three regions and
+    /// answers `1` if the signature is valid, `0` if not, or a negative error.
+    ///
+    /// GAS DISCREPANCY: this 300 is the value the C-ABI fork registered
+    /// (`rippled-wasm-host-functions`, WasmVM.cpp), which this port follows. The
+    /// prior C++ integration in this tree charged 35000 for the same call — 100x
+    /// more, and closer to the real cost of signature verification. The value is
+    /// consensus-critical, so confirm which is intended before this ships.
+    #[gas = 300]
+    #[wasm_name = "check_sig"]
+    fn check_signature(
+        &self,
+        message: &[u8],
+        signature: &[u8],
+        pubkey: &[u8],
+    ) -> HostResult<i32>;
+
+    /// The 32-byte ledger key (keylet) of an account's `AccountRoot`, computed from a
+    /// 20-byte account id. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "accountroot_id"]
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an AMM, computed from its two assets. Each asset is a
+    /// byte slice whose length selects its kind (24 = MPT, 20 = XRP, 40 = issued
+    /// currency + issuer). Reads both asset regions and writes the keylet.
+    #[gas = 450]
+    #[wasm_name = "amm_id"]
+    fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Check`, computed from a 20-byte account id and its
+    /// sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "check_id"]
+    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Credential`, computed from the 20-byte subject and
+    /// issuer account ids and a credential-type byte string. Reads all three regions
+    /// and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "credential_id"]
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Delegate` object, computed from the 20-byte account
+    /// and the account it authorizes. Reads both account regions and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "delegate_id"]
+    fn delegate_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `DepositPreauth`, computed from the 20-byte account and
+    /// the account it authorizes to deposit. Reads both account regions and writes the
+    /// keylet.
+    #[gas = 350]
+    #[wasm_name = "deposit_preauth_id"]
+    fn deposit_preauth_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an account's `DID`, computed from its 20-byte account id.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "did_id"]
+    fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `Escrow`, computed from the 20-byte owner account and
+    /// its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
+    /// pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "escrow_id"]
+    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `RippleState` (trust line), computed from two 20-byte
+    /// account ids and a 20-byte currency. Reads all three regions and writes the
+    /// keylet.
+    #[gas = 400]
+    #[wasm_name = "trustline_id"]
+    fn trust_line_keylet(
+        &self,
+        account1: &[u8],
+        account2: &[u8],
+        currency: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `MPTokenIssuance`, computed from the 20-byte issuer
+    /// account and its sequence number. `seq` is the guest's `u32` carried as its
+    /// `i32` bit pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "mpt_issuance_id"]
+    fn mptoken_issuance_keylet(
+        &self,
+        issuer: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `MPToken`, computed from a 24-byte MPT issuance id and
+    /// the 20-byte holder account. Reads both regions and writes the keylet.
+    #[gas = 500]
+    #[wasm_name = "mptoken_id"]
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `NFTokenOffer`, computed from the 20-byte owner account
+    /// and its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
+    /// pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "nft_offer_id"]
+    fn nftoken_offer_keylet(
+        &self,
+        account: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `Offer`, computed from the 20-byte owner account and
+    /// its sequence number. `seq` is the guest's `u32` carried as its `i32` bit
+    /// pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "offer_id"]
+    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of an `Oracle`, computed from the 20-byte owner account and
+    /// its document id. `doc_id` is the guest's `u32` carried as its `i32` bit pattern.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "oracle_id"]
+    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `PayChannel`, computed from the 20-byte source account,
+    /// the 20-byte destination account, and the channel's sequence number. `seq` is the
+    /// guest's `u32` carried as its `i32` bit pattern. Reads both account regions and
+    /// writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "paychan_id"]
+    fn paychannel_keylet(
+        &self,
+        account: &[u8],
+        destination: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `PermissionedDomain`, computed from the 20-byte owner
+    /// account and its sequence number. `seq` is the guest's `u32` carried as its `i32`
+    /// bit pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "permissioned_domain_id"]
+    fn permissioned_domain_keylet(
+        &self,
+        account: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `SignerList`, computed from its 20-byte owner account.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "signers_id"]
+    fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Ticket`, computed from the 20-byte owner account and its
+    /// ticket sequence number. `seq` is the guest's `u32` carried as its `i32` bit
+    /// pattern. Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "ticket_id"]
+    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 32-byte keylet of a `Vault`, computed from the 20-byte owner account and its
+    /// sequence number. `seq` is the guest's `u32` carried as its `i32` bit pattern.
+    /// Reads the account region and writes the keylet.
+    #[gas = 350]
+    #[wasm_name = "vault_id"]
+    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize>;
 
     /// The XRPL `sha512Half` of `data`: the first [`HASH_LEN`] bytes of its SHA-512.
     #[gas = 2000]
@@ -98,4 +393,147 @@ host_functions! {
     #[gas = 30]
     #[wasm_name = "trace"]
     fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()>;
+
+    /// Stores `data` as the current object's data field, replacing whatever was there,
+    /// and returns the number of bytes stored. Reads the data region; `DataFieldTooLarge`
+    /// if it exceeds the host's limit.
+    #[gas = 1000]
+    #[wasm_name = "set_data"]
+    fn update_data(&self, data: &[u8]) -> HostResult<i32>;
+
+    /// The URI of the `NFToken` with id `nft_id` (32 bytes) held by the 20-byte
+    /// `account`. Reads both regions and writes the URI bytes.
+    #[gas = 5000]
+    #[wasm_name = "nft_uri"]
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The 20-byte issuer account encoded in the `NFToken` id `nft_id` (32 bytes).
+    /// Reads the id region and writes the issuer bytes.
+    #[gas = 70]
+    #[wasm_name = "nft_issuer"]
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The taxon encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id region
+    /// and writes the taxon as its four little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "nft_taxon"]
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    /// The flags encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id region
+    /// and returns the flags as the call's scalar result.
+    #[gas = 60]
+    #[wasm_name = "nft_flags"]
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32>;
+
+    /// The transfer fee encoded in the `NFToken` id `nft_id` (32 bytes). Reads the id
+    /// region and returns the fee as the call's scalar result.
+    #[gas = 60]
+    #[wasm_name = "nft_xfer_fee"]
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32>;
+
+    /// The sequence number encoded in the `NFToken` id `nft_id` (32 bytes). Reads the
+    /// id region and writes the sequence as its four little-endian bytes.
+    #[gas = 60]
+    #[wasm_name = "nft_serial"]
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize>;
+
+    // A "float" here is an XRPL `Number` in its serialized form: a byte blob the guest
+    // holds opaquely and hands back to these functions. Inputs and outputs that are
+    // floats are byte regions; `mode` is the rounding mode, a scalar the guest chooses.
+
+    /// A float built from the signed integer `x` under rounding `mode`. Writes the
+    /// float bytes; no input region.
+    #[gas = 100]
+    #[wasm_name = "float_from_int"]
+    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the unsigned integer in the 8-byte region `x` under rounding
+    /// `mode`. Reads the integer region and writes the float bytes.
+    #[gas = 130]
+    #[wasm_name = "float_from_uint"]
+    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the serialized `STAmount` in `amount` under rounding `mode`.
+    /// Reads the amount region and writes the float bytes.
+    #[gas = 150]
+    #[wasm_name = "float_from_stamount"]
+    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// A float built from the serialized `STNumber` in `number` under rounding `mode`.
+    /// Reads the number region and writes the float bytes.
+    #[gas = 150]
+    #[wasm_name = "float_from_stnumber"]
+    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` rounded to a signed integer under rounding `mode`. Reads the float
+    /// region and writes the integer as its eight little-endian bytes.
+    #[gas = 130]
+    #[wasm_name = "float_to_int"]
+    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` split into its mantissa and exponent. Reads the float region and
+    /// writes the mantissa (eight little-endian bytes) and the exponent (four little-
+    /// endian bytes) to two separate output regions.
+    #[gas = 130]
+    #[wasm_name = "float_to_mant_exp"]
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// A float built from `mantissa` and `exponent` under rounding `mode`. Writes the
+    /// float bytes; no input region.
+    #[gas = 100]
+    #[wasm_name = "float_from_mant_exp"]
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        exponent: i32,
+        mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize>;
+
+    /// Compares floats `x` and `y`, returning a negative, zero, or positive scalar as
+    /// `x` is less than, equal to, or greater than `y`. Reads both float regions.
+    #[gas = 80]
+    #[wasm_name = "float_cmp"]
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32>;
+
+    /// The float sum `x + y` under rounding `mode`. Reads both float regions and writes
+    /// the result bytes.
+    #[gas = 160]
+    #[wasm_name = "float_add"]
+    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float difference `x - y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 160]
+    #[wasm_name = "float_sub"]
+    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float product `x * y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 300]
+    #[wasm_name = "float_mult"]
+    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float quotient `x / y` under rounding `mode`. Reads both float regions and
+    /// writes the result bytes.
+    #[gas = 300]
+    #[wasm_name = "float_div"]
+    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The `n`-th root of the float `x` under rounding `mode`. Reads the float region
+    /// and writes the result bytes.
+    #[gas = 5500]
+    #[wasm_name = "float_root"]
+    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
+
+    /// The float `x` raised to the power `n` under rounding `mode`. Reads the float
+    /// region and writes the result bytes.
+    #[gas = 5500]
+    #[wasm_name = "float_pow"]
+    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
 }

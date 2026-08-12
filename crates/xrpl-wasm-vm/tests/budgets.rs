@@ -94,10 +94,188 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $ldgr_index (i32.const 0) (i32.const 4))",
             2,
         ),
+        HostFunctionSpec::GetParentLedgerTime => (
+            import::PARENT_LDGR_TIME,
+            "(call $parent_ldgr_time (i32.const 0) (i32.const 4))",
+            2,
+        ),
+        HostFunctionSpec::GetParentLedgerHash => (
+            import::PARENT_LDGR_HASH,
+            "(call $parent_ldgr_hash (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::GetBaseFee => (
+            import::BASE_FEE,
+            "(call $base_fee (i32.const 0) (i32.const 4))",
+            2,
+        ),
+        HostFunctionSpec::IsAmendmentEnabled => (
+            import::AMENDMENT_ENABLED,
+            "(call $amendment_enabled (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::CacheLedgerObj => (
+            import::CACHE_LE,
+            "(call $cache_le (i32.const 0) (i32.const 32) (i32.const 0))",
+            3,
+        ),
+        HostFunctionSpec::GetTxField => (
+            import::TX_FIELD,
+            "(call $tx_field (i32.const 1) (i32.const 0) (i32.const 4))",
+            3,
+        ),
         HostFunctionSpec::GetCurrentLedgerObjField => (
             import::HOME_LE_FIELD,
             "(call $home_le_field (i32.const 1) (i32.const 0) (i32.const 4))",
             3,
+        ),
+        HostFunctionSpec::GetLedgerObjField => (
+            import::LE_FIELD,
+            "(call $le_field (i32.const 1) (i32.const 1) (i32.const 0) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::GetTxNestedField => (
+            import::TX_INNER,
+            "(call $tx_inner (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::GetCurrentLedgerObjNestedField => (
+            import::HOME_LE_INNER,
+            "(call $home_le_inner (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::GetLedgerObjNestedField => (
+            import::LE_INNER,
+            "(call $le_inner (i32.const 1) (i32.const 0) (i32.const 4) (i32.const 8) (i32.const 4))",
+            5,
+        ),
+        HostFunctionSpec::GetTxArrayLen => {
+            (import::TX_ARR_LEN, "(call $tx_arr_len (i32.const 1))", 1)
+        }
+        HostFunctionSpec::GetCurrentLedgerObjArrayLen => (
+            import::HOME_LE_ARR_LEN,
+            "(call $home_le_arr_len (i32.const 1))",
+            1,
+        ),
+        HostFunctionSpec::GetLedgerObjArrayLen => (
+            import::LE_ARR_LEN,
+            "(call $le_arr_len (i32.const 1) (i32.const 1))",
+            2,
+        ),
+        HostFunctionSpec::GetTxNestedArrayLen => (
+            import::TX_INNER_ARR_LEN,
+            "(call $tx_inner_arr_len (i32.const 0) (i32.const 4))",
+            2,
+        ),
+        HostFunctionSpec::GetCurrentLedgerObjNestedArrayLen => (
+            import::HOME_LE_INNER_ARR_LEN,
+            "(call $home_le_inner_arr_len (i32.const 0) (i32.const 4))",
+            2,
+        ),
+        HostFunctionSpec::GetLedgerObjNestedArrayLen => (
+            import::LE_INNER_ARR_LEN,
+            "(call $le_inner_arr_len (i32.const 1) (i32.const 0) (i32.const 4))",
+            3,
+        ),
+        HostFunctionSpec::CheckSignature => (
+            import::CHECK_SIG,
+            "(call $check_sig (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0))",
+            6,
+        ),
+        HostFunctionSpec::AccountKeylet => (
+            import::ACCOUNTROOT_ID,
+            "(call $accountroot_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 32))",
+            4,
+        ),
+        HostFunctionSpec::AmmKeylet => (
+            import::AMM_ID,
+            "(call $amm_id (i32.const 0) (i32.const 20) (i32.const 24) (i32.const 40) (i32.const 0) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::CheckKeylet => (
+            import::CHECK_ID,
+            "(call $check_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::CredentialKeylet => (
+            import::CREDENTIAL_ID,
+            "(call $credential_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 4) (i32.const 44) (i32.const 20))",
+            8,
+        ),
+        HostFunctionSpec::DelegateKeylet => (
+            import::DELEGATE_ID,
+            "(call $delegate_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::DepositPreauthKeylet => (
+            import::DEPOSIT_PREAUTH_ID,
+            "(call $deposit_preauth_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::DidKeylet => (
+            import::DID_ID,
+            "(call $did_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 32))",
+            4,
+        ),
+        HostFunctionSpec::EscrowKeylet => (
+            import::ESCROW_ID,
+            "(call $escrow_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::TrustLineKeylet => (
+            import::TRUSTLINE_ID,
+            "(call $trustline_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 40) (i32.const 20) (i32.const 60) (i32.const 32))",
+            8,
+        ),
+        HostFunctionSpec::MptokenIssuanceKeylet => (
+            import::MPT_ISSUANCE_ID,
+            "(call $mpt_issuance_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::MptokenKeylet => (
+            import::MPTOKEN_ID,
+            "(call $mptoken_id (i32.const 0) (i32.const 24) (i32.const 24) (i32.const 20) (i32.const 44) (i32.const 20))",
+            6,
+        ),
+        HostFunctionSpec::NftokenOfferKeylet => (
+            import::NFT_OFFER_ID,
+            "(call $nft_offer_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::OfferKeylet => (
+            import::OFFER_ID,
+            "(call $offer_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::OracleKeylet => (
+            import::ORACLE_ID,
+            "(call $oracle_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::PaychannelKeylet => (
+            import::PAYCHAN_ID,
+            "(call $paychan_id (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 40) (i32.const 20))",
+            8,
+        ),
+        HostFunctionSpec::PermissionedDomainKeylet => (
+            import::PERMISSIONED_DOMAIN_ID,
+            "(call $permissioned_domain_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::SignerListKeylet => (
+            import::SIGNERS_ID,
+            "(call $signers_id (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 32))",
+            4,
+        ),
+        HostFunctionSpec::TicketKeylet => (
+            import::TICKET_ID,
+            "(call $ticket_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
+        ),
+        HostFunctionSpec::VaultKeylet => (
+            import::VAULT_ID,
+            "(call $vault_id (i32.const 0) (i32.const 20) (i32.const 0) (i32.const 4) (i32.const 32) (i32.const 32))",
+            6,
         ),
         HostFunctionSpec::Sha512Half => (
             import::SHA512_HALF,
@@ -108,6 +286,111 @@ fn call_for(op: HostFunctionSpec) -> Call {
             import::TRACE,
             "(call $trace (i32.const 0) (i32.const 0) (i32.const 1) (i32.const 0) (i32.const 0))",
             5,
+        ),
+        HostFunctionSpec::UpdateData => (
+            import::SET_DATA,
+            "(call $set_data (i32.const 0) (i32.const 8))",
+            2,
+        ),
+        HostFunctionSpec::GetNft => (
+            import::NFT_URI,
+            "(call $nft_uri (i32.const 0) (i32.const 20) (i32.const 20) (i32.const 32) (i32.const 52) (i32.const 12))",
+            6,
+        ),
+        HostFunctionSpec::GetNftIssuer => (
+            import::NFT_ISSUER,
+            "(call $nft_issuer (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 20))",
+            4,
+        ),
+        HostFunctionSpec::GetNftTaxon => (
+            import::NFT_TAXON,
+            "(call $nft_taxon (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::GetNftFlags => (
+            import::NFT_FLAGS,
+            "(call $nft_flags (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::GetNftTransferFee => (
+            import::NFT_XFER_FEE,
+            "(call $nft_xfer_fee (i32.const 0) (i32.const 32))",
+            2,
+        ),
+        HostFunctionSpec::GetNftSequence => (
+            import::NFT_SERIAL,
+            "(call $nft_serial (i32.const 0) (i32.const 32) (i32.const 32) (i32.const 4))",
+            4,
+        ),
+        HostFunctionSpec::FloatFromInt => (
+            import::FLOAT_FROM_INT,
+            "(call $float_from_int (i64.const 0) (i32.const 0) (i32.const 8) (i32.const 0))",
+            4,
+        ),
+        HostFunctionSpec::FloatFromUint => (
+            import::FLOAT_FROM_UINT,
+            "(call $float_from_uint (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatFromStamount => (
+            import::FLOAT_FROM_STAMOUNT,
+            "(call $float_from_stamount (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatFromStnumber => (
+            import::FLOAT_FROM_STNUMBER,
+            "(call $float_from_stnumber (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatToInt => (
+            import::FLOAT_TO_INT,
+            "(call $float_to_int (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatToMantExp => (
+            import::FLOAT_TO_MANT_EXP,
+            "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 4))",
+            6,
+        ),
+        HostFunctionSpec::FloatFromMantExp => (
+            import::FLOAT_FROM_MANT_EXP,
+            "(call $float_from_mant_exp (i64.const 0) (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 0))",
+            5,
+        ),
+        HostFunctionSpec::FloatCompare => (
+            import::FLOAT_CMP,
+            "(call $float_cmp (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8))",
+            4,
+        ),
+        HostFunctionSpec::FloatAdd => (
+            import::FLOAT_ADD,
+            "(call $float_add (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatSubtract => (
+            import::FLOAT_SUB,
+            "(call $float_sub (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatMultiply => (
+            import::FLOAT_MULT,
+            "(call $float_mult (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatDivide => (
+            import::FLOAT_DIV,
+            "(call $float_div (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
+            7,
+        ),
+        HostFunctionSpec::FloatRoot => (
+            import::FLOAT_ROOT,
+            "(call $float_root (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
+            6,
+        ),
+        HostFunctionSpec::FloatPower => (
+            import::FLOAT_POW,
+            "(call $float_pow (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
+            6,
         ),
     };
     Call {

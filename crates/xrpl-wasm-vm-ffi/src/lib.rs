@@ -186,8 +186,224 @@ mod ffi {
         fn get_ledger_sqn(self: &HostContext, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
+        #[cxx_name = "getParentLedgerTime"]
+        fn get_parent_ledger_time(self: &HostContext, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getParentLedgerHash"]
+        fn get_parent_ledger_hash(self: &HostContext, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getBaseFee"]
+        fn get_base_fee(self: &HostContext, out: &mut [u8]) -> i32;
+
+        /// Reads the amendment (id or name) and answers `1`/`0`, or a negative
+        /// `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "isAmendmentEnabled"]
+        fn is_amendment_enabled(self: &HostContext, amendment: &[u8]) -> i32;
+
+        /// Caches the object with `obj_id` in slot `cache_idx` (`0` = pick one) and
+        /// answers the slot used, or a negative `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "cacheLedgerObj"]
+        fn cache_ledger_obj(self: &HostContext, obj_id: &[u8], cache_idx: i32) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getTxField"]
+        fn get_tx_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
         #[cxx_name = "getCurrentLedgerObjField"]
         fn get_current_ledger_obj_field(self: &HostContext, field: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjField"]
+        fn get_ledger_obj_field(
+            self: &HostContext,
+            cache_idx: i32,
+            field: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getTxNestedField"]
+        fn get_tx_nested_field(self: &HostContext, locator: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getCurrentLedgerObjNestedField"]
+        fn get_current_ledger_obj_nested_field(
+            self: &HostContext,
+            locator: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjNestedField"]
+        fn get_ledger_obj_nested_field(
+            self: &HostContext,
+            cache_idx: i32,
+            locator: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        /// Answers the array's element count directly, or a negative `HostError` code.
+        #[namespace = "xrpl"]
+        #[cxx_name = "getTxArrayLen"]
+        fn get_tx_array_len(self: &HostContext, field: i32) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getCurrentLedgerObjArrayLen"]
+        fn get_current_ledger_obj_array_len(self: &HostContext, field: i32) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjArrayLen"]
+        fn get_ledger_obj_array_len(self: &HostContext, cache_idx: i32, field: i32) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getTxNestedArrayLen"]
+        fn get_tx_nested_array_len(self: &HostContext, locator: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getCurrentLedgerObjNestedArrayLen"]
+        fn get_current_ledger_obj_nested_array_len(self: &HostContext, locator: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getLedgerObjNestedArrayLen"]
+        fn get_ledger_obj_nested_array_len(
+            self: &HostContext,
+            cache_idx: i32,
+            locator: &[u8],
+        ) -> i32;
+
+        /// Answers `1`/`0` for a valid/invalid signature, or a negative `HostError`.
+        #[namespace = "xrpl"]
+        #[cxx_name = "checkSignature"]
+        fn check_signature(
+            self: &HostContext,
+            message: &[u8],
+            signature: &[u8],
+            pubkey: &[u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "accountKeylet"]
+        fn account_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "ammKeylet"]
+        fn amm_keylet(self: &HostContext, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "checkKeylet"]
+        fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "credentialKeylet"]
+        fn credential_keylet(
+            self: &HostContext,
+            subject: &[u8],
+            issuer: &[u8],
+            credential_type: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "delegateKeylet"]
+        fn delegate_keylet(
+            self: &HostContext,
+            account: &[u8],
+            authorize: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "depositPreauthKeylet"]
+        fn deposit_preauth_keylet(
+            self: &HostContext,
+            account: &[u8],
+            authorize: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "didKeylet"]
+        fn did_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "escrowKeylet"]
+        fn escrow_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "trustLineKeylet"]
+        fn trust_line_keylet(
+            self: &HostContext,
+            account1: &[u8],
+            account2: &[u8],
+            currency: &[u8],
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "mptokenIssuanceKeylet"]
+        fn mptoken_issuance_keylet(
+            self: &HostContext,
+            issuer: &[u8],
+            seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "mptokenKeylet"]
+        fn mptoken_keylet(self: &HostContext, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "nftokenOfferKeylet"]
+        fn nftoken_offer_keylet(
+            self: &HostContext,
+            account: &[u8],
+            seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "offerKeylet"]
+        fn offer_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "oracleKeylet"]
+        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "paychannelKeylet"]
+        fn paychannel_keylet(
+            self: &HostContext,
+            account: &[u8],
+            destination: &[u8],
+            seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "permissionedDomainKeylet"]
+        fn permissioned_domain_keylet(
+            self: &HostContext,
+            account: &[u8],
+            seq: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "signerListKeylet"]
+        fn signer_list_keylet(self: &HostContext, account: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "ticketKeylet"]
+        fn ticket_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "vaultKeylet"]
+        fn vault_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
@@ -202,6 +418,105 @@ mod ffi {
         /// here is always one of the variants.
         #[namespace = "xrpl"]
         fn trace(self: &HostContext, msg: &str, data: &[u8], data_type: TraceDataType);
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "updateData"]
+        fn update_data(self: &HostContext, data: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFT"]
+        fn get_nft(self: &HostContext, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTIssuer"]
+        fn get_nft_issuer(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTTaxon"]
+        fn get_nft_taxon(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTFlags"]
+        fn get_nft_flags(self: &HostContext, nft_id: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTTransferFee"]
+        fn get_nft_transfer_fee(self: &HostContext, nft_id: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "getNFTSequence"]
+        fn get_nft_sequence(self: &HostContext, nft_id: &[u8], out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromInt"]
+        fn float_from_int(self: &HostContext, x: i64, mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromUint"]
+        fn float_from_uint(self: &HostContext, x: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromSTAmount"]
+        fn float_from_stamount(self: &HostContext, amount: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromSTNumber"]
+        fn float_from_stnumber(self: &HostContext, number: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatToInt"]
+        fn float_to_int(self: &HostContext, x: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatToMantExp"]
+        fn float_to_mant_exp(
+            self: &HostContext,
+            x: &[u8],
+            mantissa_out: &mut [u8],
+            exponent_out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatFromMantExp"]
+        fn float_from_mant_exp(
+            self: &HostContext,
+            mantissa: i64,
+            exponent: i32,
+            mode: i32,
+            out: &mut [u8],
+        ) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatCompare"]
+        fn float_compare(self: &HostContext, x: &[u8], y: &[u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatAdd"]
+        fn float_add(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatSubtract"]
+        fn float_subtract(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatMultiply"]
+        fn float_multiply(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8])
+        -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatDivide"]
+        fn float_divide(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatRoot"]
+        fn float_root(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
+
+        #[namespace = "xrpl"]
+        #[cxx_name = "floatPower"]
+        fn float_power(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
     }
 }
 
@@ -242,13 +557,227 @@ fn crossed(data_type: TraceDataType) -> ffi::TraceDataType {
     }
 }
 
+/// A call whose answer is a scalar the guest reads directly (a flag, a slot index):
+/// a non-negative value is that answer, a negative one its error code.
+fn scalar(n: i32) -> HostResult<i32> {
+    if n < 0 {
+        return Err(HostError::from_code(n));
+    }
+    Ok(n)
+}
+
 impl HostFunctions for CxxHost<'_> {
     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_ledger_sqn(out))
     }
 
+    fn get_parent_ledger_time(&self, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_parent_ledger_time(out))
+    }
+
+    fn get_parent_ledger_hash(&self, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_parent_ledger_hash(out))
+    }
+
+    fn get_base_fee(&self, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_base_fee(out))
+    }
+
+    fn is_amendment_enabled(&self, amendment: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.is_amendment_enabled(amendment))
+    }
+
+    fn cache_ledger_obj(&self, obj_id: &[u8], cache_idx: i32) -> HostResult<i32> {
+        scalar(self.ctx.cache_ledger_obj(obj_id, cache_idx))
+    }
+
+    fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_tx_field(field, out))
+    }
+
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.get_current_ledger_obj_field(field, out))
+    }
+
+    fn get_ledger_obj_field(
+        &self,
+        cache_idx: i32,
+        field: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.get_ledger_obj_field(cache_idx, field, out))
+    }
+
+    fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_tx_nested_field(locator, out))
+    }
+
+    fn get_current_ledger_obj_nested_field(
+        &self,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.get_current_ledger_obj_nested_field(locator, out))
+    }
+
+    fn get_ledger_obj_nested_field(
+        &self,
+        cache_idx: i32,
+        locator: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .get_ledger_obj_nested_field(cache_idx, locator, out),
+        )
+    }
+
+    fn get_tx_array_len(&self, field: i32) -> HostResult<i32> {
+        scalar(self.ctx.get_tx_array_len(field))
+    }
+
+    fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32> {
+        scalar(self.ctx.get_current_ledger_obj_array_len(field))
+    }
+
+    fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32> {
+        scalar(self.ctx.get_ledger_obj_array_len(cache_idx, field))
+    }
+
+    fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_tx_nested_array_len(locator))
+    }
+
+    fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_current_ledger_obj_nested_array_len(locator))
+    }
+
+    fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_ledger_obj_nested_array_len(cache_idx, locator))
+    }
+
+    fn check_signature(&self, message: &[u8], signature: &[u8], pubkey: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.check_signature(message, signature, pubkey))
+    }
+
+    fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.account_keylet(account, out))
+    }
+
+    fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.amm_keylet(asset1, asset2, out))
+    }
+
+    fn check_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.check_keylet(account, seq, out))
+    }
+
+    fn credential_keylet(
+        &self,
+        subject: &[u8],
+        issuer: &[u8],
+        credential_type: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .credential_keylet(subject, issuer, credential_type, out),
+        )
+    }
+
+    fn delegate_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.delegate_keylet(account, authorize, out))
+    }
+
+    fn deposit_preauth_keylet(
+        &self,
+        account: &[u8],
+        authorize: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.deposit_preauth_keylet(account, authorize, out))
+    }
+
+    fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.did_keylet(account, out))
+    }
+
+    fn escrow_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.escrow_keylet(account, seq, out))
+    }
+
+    fn trust_line_keylet(
+        &self,
+        account1: &[u8],
+        account2: &[u8],
+        currency: &[u8],
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(
+            self.ctx
+                .trust_line_keylet(account1, account2, currency, out),
+        )
+    }
+
+    fn mptoken_issuance_keylet(
+        &self,
+        issuer: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.mptoken_issuance_keylet(issuer, seq, out))
+    }
+
+    fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.mptoken_keylet(mptid, holder, out))
+    }
+
+    fn nftoken_offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.nftoken_offer_keylet(account, seq, out))
+    }
+
+    fn offer_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.offer_keylet(account, seq, out))
+    }
+
+    fn oracle_keylet(&self, account: &[u8], doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.oracle_keylet(account, doc_id, out))
+    }
+
+    fn paychannel_keylet(
+        &self,
+        account: &[u8],
+        destination: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.paychannel_keylet(account, destination, seq, out))
+    }
+
+    fn permissioned_domain_keylet(
+        &self,
+        account: &[u8],
+        seq: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.permissioned_domain_keylet(account, seq, out))
+    }
+
+    fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.signer_list_keylet(account, out))
+    }
+
+    fn ticket_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.ticket_keylet(account, seq, out))
+    }
+
+    fn vault_keylet(&self, account: &[u8], seq: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.vault_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {
@@ -258,6 +787,101 @@ impl HostFunctions for CxxHost<'_> {
     fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
         self.ctx.trace(msg, data, crossed(data_type));
         Ok(())
+    }
+
+    fn update_data(&self, data: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.update_data(data))
+    }
+
+    fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft(account, nft_id, out))
+    }
+
+    fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_issuer(nft_id, out))
+    }
+
+    fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_taxon(nft_id, out))
+    }
+
+    fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_nft_flags(nft_id))
+    }
+
+    fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.get_nft_transfer_fee(nft_id))
+    }
+
+    fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.get_nft_sequence(nft_id, out))
+    }
+
+    fn float_from_int(&self, x: i64, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_int(x, mode, out))
+    }
+
+    fn float_from_uint(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_uint(x, mode, out))
+    }
+
+    fn float_from_stamount(&self, amount: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_stamount(amount, mode, out))
+    }
+
+    fn float_from_stnumber(&self, number: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_stnumber(number, mode, out))
+    }
+
+    fn float_to_int(&self, x: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_to_int(x, mode, out))
+    }
+
+    fn float_to_mant_exp(
+        &self,
+        x: &[u8],
+        mantissa_out: &mut [u8],
+        exponent_out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.float_to_mant_exp(x, mantissa_out, exponent_out))
+    }
+
+    fn float_from_mant_exp(
+        &self,
+        mantissa: i64,
+        exponent: i32,
+        mode: i32,
+        out: &mut [u8],
+    ) -> HostResult<usize> {
+        bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
+    }
+
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
+        scalar(self.ctx.float_compare(x, y))
+    }
+
+    fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_add(x, y, mode, out))
+    }
+
+    fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_subtract(x, y, mode, out))
+    }
+
+    fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_multiply(x, y, mode, out))
+    }
+
+    fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_divide(x, y, mode, out))
+    }
+
+    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_root(x, n, mode, out))
+    }
+
+    fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
+        bytes_written(self.ctx.float_power(x, n, mode, out))
     }
 }
 
@@ -559,16 +1183,11 @@ mod tests {
         assert_eq!(bytes_written(0), Ok(0));
         assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
         assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
+        assert_eq!(scalar(1), Ok(1));
+        assert_eq!(scalar(0), Ok(0));
+        assert_eq!(scalar(-2), Err(HostError::FieldNotFound));
     }
 
-    /// An exception caught on the C++ side arrives as `InternalFatal`, the code
-    /// `HostContext` answers with when a body throws. The engine stops the run on it and
-    /// the transaction is `tecINTERNAL`, rather than the contract being handed a code to
-    /// interpret.
-    ///
-    /// It arrives through the sign test like any other code, which is the point of
-    /// choosing a negative sentinel: `usize::try_from` rejects it, so this needs no case
-    /// of its own here and a positive length cannot be mistaken for it.
     #[test]
     fn a_caught_cxx_exception_arrives_as_internal_fatal() {
         assert_eq!(bytes_written(i32::MIN), Err(HostError::InternalFatal));
