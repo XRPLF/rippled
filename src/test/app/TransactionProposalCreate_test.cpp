@@ -282,15 +282,15 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         };
 
         std::vector<Place> const places{
-            {payment, [](json::Value& tx) -> json::Value& { return tx; }},
-            {loanSet,
-             [](json::Value& tx) -> json::Value& {
+            {.payload = payment, .at = [](json::Value& tx) -> json::Value& { return tx; }},
+            {.payload = loanSet,
+             .at = [](json::Value& tx) -> json::Value& {
                  auto& o = tx[sfCounterpartySignature.getJsonName()];
                  o = json::Value{json::ValueType::Object};
                  return o;
              }},
-            {sponsoredPayment,
-             [](json::Value& tx) -> json::Value& {
+            {.payload = sponsoredPayment,
+             .at = [](json::Value& tx) -> json::Value& {
                  auto& o = tx[sfSponsorSignature.getJsonName()];
                  o = json::Value{json::ValueType::Object};
                  return o;
@@ -298,8 +298,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             // A BatchSigners entry names the account it speaks for; the other
             // two co-signatures are fixed by the transaction they belong to and
             // do not.
-            {batchTx,
-             [&](json::Value& tx) -> json::Value& {
+            {.payload = batchTx,
+             .at = [&](json::Value& tx) -> json::Value& {
                  auto& o = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
                  o[jss::Account] = bob.human();
                  return o;
