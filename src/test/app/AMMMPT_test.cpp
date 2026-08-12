@@ -7464,7 +7464,7 @@ private:
 
         usd.destroy();
         BEAST_EXPECT(env.le(keylet::mptokenIssuance(usd.issuanceID())) == nullptr);
-
+BEAST_EXPECT(!isFrozen(*env.current(), amm.ammAccount(), *ammToken))
         // A Payment cannot cross this empty AMM because BookStep skips AMMs
         // with zero LPTokenBalance. Probe the same ZeroIfFrozen balance read
         // used by AMM accounting.
