@@ -5,12 +5,10 @@
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <soci/into.h>
 
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <iostream>
 #include <memory>
@@ -20,12 +18,12 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
-    boost::filesystem::path const dbPath = setup.dataDir / kTxDbName;
+    std::filesystem::path const dbPath = setup.dataDir / kTxDbName;
 
-    uintmax_t const dbSize = file_size(dbPath);
+    uintmax_t const dbSize = std::filesystem::file_size(dbPath);
     XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "xrpl::doVacuumDB : file_size succeeded");
 
-    if (auto available = space(dbPath.parent_path()).available; available < dbSize)
+    if (auto available = std::filesystem::space(dbPath.parent_path()).available; available < dbSize)
     {
         std::cerr << "The database filesystem must have at least as "
                      "much free space as the size of "

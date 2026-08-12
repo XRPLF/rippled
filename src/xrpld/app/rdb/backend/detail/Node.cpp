@@ -40,7 +40,6 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
@@ -59,6 +58,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <map>
@@ -67,6 +67,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1394,8 +1395,8 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info const space =
-        boost::filesystem::space(config.legacy(Sections::kDatabasePath));
+    std::filesystem::space_info const space =
+        std::filesystem::space(config.legacy(Sections::kDatabasePath));
 
     if (space.available < megabytes(512))
     {
@@ -1406,9 +1407,9 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     if (config.useTxTables())
     {
         DatabaseCon::Setup const dbSetup = setupDatabaseCon(config);
-        boost::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
-        boost::system::error_code ec;
-        std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
+        std::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
+        std::error_code ec;
+        std::optional<std::uint64_t> dbSize = std::filesystem::file_size(dbPath, ec);
         if (ec)
         {
             JLOG(j.error()) << "Error checking transaction db file size: " << ec.message();

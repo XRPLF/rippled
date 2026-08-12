@@ -124,8 +124,30 @@ struct ParsedUrl
 bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl);
 
+/**
+ * Remove leading and trailing ASCII whitespace.
+ *
+ * Whitespace is the fixed set " \t\n\v\f\r"; the current locale is not
+ * consulted, so the result depends only on the input.
+ *
+ * @param str The string to trim.
+ * @return @p str without leading or trailing whitespace.
+ */
 std::string
 trimWhitespace(std::string str);
+
+/**
+ * Fold ASCII upper case letters to lower case.
+ *
+ * Only 'A' through 'Z' are remapped; every other byte is left alone and the
+ * current locale is not consulted, so the result depends only on the input.
+ *
+ * @param str The string to fold.
+ * @return @p str with each ASCII upper case letter replaced by its lower case
+ *         equivalent.
+ */
+std::string
+toLower(std::string str);
 
 std::optional<std::uint64_t>
 toUInt64(std::string const& s);
