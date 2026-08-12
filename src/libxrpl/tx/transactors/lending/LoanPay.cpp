@@ -467,8 +467,24 @@ LoanPay::doApply()
               SpendableHandling::FullBalance);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+
+    // Cash-basis IOU Vaults route the credit through the dust-aware
+    // addVaultAssets overload (via the xrpl:: dispatcher). We pass the
+    // still-unrounded Number so that the STAmount truncation happens at
+    // the outermost boundary inside vault_dust::addVaultAssets — the
+    // sub-STAmount residual at that boundary is then captured by
+    // sfDust via the receiver-leg Override policy. End-to-end 19-digit
+    // (Number) fidelity is NOT preserved through this path: the value
+    // that lands on the ledger is the STAmount projection plus whatever
+    // survives in sfDust. Legacy and integral-asset Vaults still
+    // pre-round to the Vault's anterior scale here — byte-identical to
+    // the base branch. Delegating to the overlay's own eligibility gate
+    // avoids a manual-sync surface between the two.
+    bool const useDust = vault_dust::useVaultDust(view, vaultSle);
+
+    auto const totalPaidToVaultRounded = useDust
+        ? totalPaidToVaultRaw
+        : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -579,6 +595,22 @@ LoanPay::doApply()
 
     // Update the Vault's assets, and transfer the Vault's share of the
     // payment from the payer to the Vault pseudo-account.
+    //
+    // totalPaidToVaultRounded is either the pre-rounded amount (Legacy /
+    // integral asset path — same as base branch) or the raw pre-rounding
+    // amount (dust path — the dust-aware addVaultAssets overload consumes
+    // the raw digits to compute the sfDust residual).
+    //
+    // This debit and the broker-fee accountSend further below both touch
+    // accountID_'s own trust line with the asset's issuer (when the asset
+    // is an IOU/MPT). Unlike the base branch's single combined
+    // accountSendMulti call, these are now two separate debits of that
+    // line. This is safe because directSendNoFeeIOU only auto-deletes a
+    // line when the DEBITED party's own trust limit on that line is zero;
+    // accountID_ must have set a nonzero limit via TrustSet to hold/pay
+    // this asset in the first place, and nothing here changes that limit,
+    // so neither debit can trigger trustDelete on accountID_'s line
+    // regardless of ordering or how close to zero the balance gets.
     if (auto const ret = addVaultAssets(
             view,
             vaultSle,
@@ -589,11 +621,28 @@ LoanPay::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    // Must run after addVaultAssets mutates the Vault's sfAssetsTotal/
-    // sfAssetsAvailable (above): it rounds every asset-typed field on the
-    // Vault SLE to the asset's canonical precision, which the mutation
-    // above does not do itself.
-    associateAsset(*vaultSle, asset);
+    // associateAsset snaps every asset-typed STNumber present on the Vault
+    // SLE to STAmount's 16-significant-digit precision (via roundToAsset on
+    // each field's current value) — it operates on the whole SLE, with no
+    // way to select individual fields. For non-dust paths that whole-SLE
+    // sweep is the intended canonicalisation and matches base-branch
+    // behaviour verbatim. For the dust path it would silently erase the
+    // sub-quantum recognition adjustment that the dust-aware addVaultAssets
+    // just applied to sfAssetsTotal (Number carries 19 digits; STAmount
+    // only 16), which is what keeps the receivable
+    // (sfAssetsTotal - sfAssetsAvailable) aligned with principalOutstanding
+    // across the repayment. Skipping the sweep also leaves
+    // sfAssetsAvailable un-rounded, but that is consistent rather than
+    // risky: sfAssetsAvailable is incremented by a delta
+    // (split.receiver->balanceDelta) that directSendNoFeeIOU already
+    // rounded to the Vault's own posterior scale, so rounding it again here
+    // to a coarser, independently-derived STAmount scale could reintroduce
+    // the exact sfAssetsTotal/sfAssetsAvailable mismatch this skip exists
+    // to prevent. sfAssetsMaximum and sfLossUnrealized are untouched by
+    // LoanPay either way, so the sweep would be a no-op for them here
+    // regardless of useDust.
+    if (!useDust)
+        associateAsset(*vaultSle, asset);
 
     // Duplicate some checks after rounding. These re-read the Vault's fields
     // rather than reusing assetsAvailableAfterRaw/assetsTotalAfterRaw, since
@@ -608,9 +657,22 @@ LoanPay::doApply()
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // An unchanged assetsAvailable indicates that the amount paid to the
-        // vault was zero, or rounded to zero. That should be impossible, but I
-        // can't rule it out for extreme edge cases, so fail gracefully if it
-        // happens.
+        // vault was zero, or rounded to zero.
+        //
+        // Non-dust path (useDust == false): assetsAvailable is incremented by
+        // the pre-rounded amount, so a non-zero repayment always moves it —
+        // this branch should be unreachable. Fail gracefully if it happens.
+        //
+        // Dust path (useDust == true): assetsAvailable is incremented by
+        // split.balanceDelta, which is the whole-quanta portion of the raw
+        // repayment at the Vault's posterior scale. A repayment strictly
+        // below one quantum lands entirely in sfDust and produces
+        // split.balanceDelta == 0. That is a legitimate (if unusual) outcome
+        // — refuse it here because the invariants downstream and the
+        // subsequent conservation checks all assume assetsAvailable moved.
+        // Callers wanting to permit sub-quantum-only repayments would need to
+        // relax those follow-on checks first; today no such caller exists in
+        // the tree, and the current fixture never reaches this branch.
         //
         // LCOV_EXCL_START
         JLOG(j_.warn()) << "LoanPay: Vault assets available unchanged after rounding: "  //
