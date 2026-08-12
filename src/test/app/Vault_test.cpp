@@ -8175,13 +8175,20 @@ class Vault_test : public beast::unit_test::Suite
                 std::string{"VaultWithdraw private vault with no domain set"} +
                 (withFix ? " (fixCleanup3_4_0)" : " (pre-fix)"));
 
+            // Give the submitter its vault access back first, so that the
+            // vault having no domain is the only reason left to refuse.
+            env(credentials::create(depositor, credIssuer, credType));
+            env(credentials::accept(depositor, credIssuer, credType));
+            env.close();
+
             auto tx = vault.set({.owner = owner, .id = keylet.key});
             tx[sfDomainID] = "0";
             env(tx);
             env.close();
 
             // Clearing the domain leaves the vault with nobody it considers
-            // authorized, so a third-party destination cannot qualify.
+            // authorized, so a third-party destination cannot qualify even
+            // though both ends of the payout hold a credential.
             env(withdrawTo(beneficiary), Ter(withFix ? TER(tecNO_AUTH) : TER(tesSUCCESS)));
             env.close();
 
