@@ -46,6 +46,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <map>
 #include <optional>
 #include <stdexcept>
