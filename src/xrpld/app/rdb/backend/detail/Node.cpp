@@ -312,7 +312,7 @@ saveValidatedLedger(
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 transactionID = acceptedLedgerTx->getTransactionID();
+                uint256 const transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
