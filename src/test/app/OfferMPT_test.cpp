@@ -24,6 +24,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -46,7 +47,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include "xrpl/basics/base_uint.h"
 
 #include <algorithm>
 #include <cstddef>
