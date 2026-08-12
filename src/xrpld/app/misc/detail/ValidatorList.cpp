@@ -29,12 +29,8 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-#include <boost/system/detail/errc.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/system/errc.hpp>
 
 #include <xrpl.pb.h>
 
@@ -43,6 +39,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <iterator>
 #include <limits>
@@ -54,6 +51,7 @@
 #include <shared_mutex>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -288,7 +286,7 @@ ValidatorList::load(
     return true;
 }
 
-boost::filesystem::path
+std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
     return dataPath_ / (kFilePrefix + strHex(pubKey));
@@ -372,9 +370,9 @@ ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, Public
     if (dataPath_.empty())
         return;
 
-    boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+    std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
-    boost::system::error_code ec;
+    std::error_code ec;
 
     json::Value value = buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
     // xrpld should be the only process writing to this file, so
@@ -1295,8 +1293,7 @@ std::vector<std::string>
 ValidatorList::loadLists()
 {
     using namespace std::string_literals;
-    using namespace boost::filesystem;
-    using namespace boost::system::errc;
+    using namespace std::filesystem;
 
     std::scoped_lock const lock{mutex_};
 
@@ -1304,12 +1301,12 @@ ValidatorList::loadLists()
     sites.reserve(publisherLists_.size());
     for (auto const& [pubKey, publisherCollection] : publisherLists_)
     {
-        boost::system::error_code ec;
+        std::error_code ec;
 
         if (publisherCollection.status == PublisherStatus::Available)
             continue;
 
-        boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+        std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
         auto const fullPath{canonical(filename, ec)};
         if (ec)
@@ -1320,7 +1317,7 @@ ValidatorList::loadLists()
         {
             // Treat an empty file as a missing file, because
             // nobody else is going to write it.
-            ec = make_error_code(no_such_file_or_directory);
+            ec = make_error_code(std::errc::no_such_file_or_directory);
         }
         if (ec)
             continue;
