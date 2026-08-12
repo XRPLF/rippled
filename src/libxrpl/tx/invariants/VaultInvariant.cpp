@@ -116,10 +116,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
                 balanceDelta.scale = amount.exponent();
-                // sfDust follows the same low/high convention as sfBalance;
-                // stash the "before" value so the sign-flipped delta reflects
-                // "after - before" (see the sign convention at end of this
-                // function).
+                // sfDust follows the same low/high convention as sfBalance.
+                // Pre-amendment sfDust is SoeDefault (0), so this is a no-
+                // op then.
                 balanceDelta.dustDelta = Number{before->at(sfDust)};
                 sign = -1;
                 break;
@@ -186,11 +185,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
     {
         XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
         balanceDelta.delta *= sign;
-        // dustDelta was accumulated using the same "before - after" idiom as
-        // balanceDelta.delta; apply the same sign flip so both fields
-        // represent "after - before" in the trust line's own low/high
-        // convention. For non-ltRIPPLE_STATE entries dustDelta stays at
-        // zero, so this multiplication is a no-op.
+        // dustDelta was accumulated with the same "before - after" idiom;
+        // apply the same sign flip so it represents "after - before" in
+        // the trust line's low/high convention.
         balanceDelta.dustDelta *= sign;
         deltas_[key] = balanceDelta;
     }
@@ -896,26 +893,18 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    // Use each side's EXTENDED balance (sfBalance + sfDust) for
-                    // the cash-flow comparison. Under featureLendingProtocolV1_1,
-                    // the vault's pseudo-account custody line can carry sfDust,
-                    // and any dust-aware withdrawal reshapes the sfBalance /
-                    // sfDust split inside directSendNoFeeIOU per the caller's
-                    // DustSplit policy — Override may promote sub-quantum
-                    // residual out of sfDust into sfBalance at the vault's
-                    // posterior scale; Drain folds sfDust into sfBalance for
-                    // the outgoing transfer and zeroes it. Both are purely
-                    // internal recognition moves on the pseudo-account leg
-                    // (no external cash flow beyond the requested amount), so
-                    // the sfBalance-only pseudo delta over-reports the vault's
-                    // outflow by the reshaped portion. Adding dustDelta
-                    // recovers the true custody-line change: extended pseudo
-                    // delta == negative destination extended delta, byte-for-
-                    // byte. For non-dust callers dustDelta is zero, so this
-                    // reduces to the base sfBalance comparison. See
-                    // VaultRoundingTrustlineDust_test::testNonTerminalWithdrawAfterDust
-                    // (src/test/app/lending/VaultRoundingTrustlineDust_test.cpp)
-                    // for the case this addresses.
+                    // Compare EXTENDED balances (sfBalance + sfDust) on
+                    // both sides for the cash-flow parity check. Under
+                    // featureLendingProtocolV1_1 a dust-aware withdrawal
+                    // may reshape the vault custody line's sfBalance /
+                    // sfDust split (Override promotes / defers; Drain
+                    // folds sfDust into the outgoing transfer) — all
+                    // internal recognition moves preserved by the
+                    // extended total. For non-dust callers dustDelta is
+                    // zero, so this reduces to the base sfBalance
+                    // comparison. See VaultRoundingTrustlineDust_test::
+                    // testNonTerminalWithdrawAfterDust for the case this
+                    // addresses.
                     Number const extendedPseudoDelta =
                         maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
                     Number const extendedDestinationDelta =

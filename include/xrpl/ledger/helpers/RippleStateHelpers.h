@@ -81,12 +81,8 @@ creditBalance(
  *
  * Returns Number{0} when the trust line does not exist.
  *
- * Gated on featureLendingProtocolV1_1: when the amendment is disabled the
- * sfDust read is skipped entirely and the result is Number{sfBalance}
- * (still in @p account's terms). Since sfDust is SoeDefault(0) the values
- * would coincide either way, but the explicit early return documents the
- * invariant and keeps this path symmetric with the write-side gate in
- * directSendNoFeeIOU.
+ * Gated on featureLendingProtocolV1_1; see directSendNoFeeIOU for the
+ * canonical amendment-gate rationale.
  *
  * @param view the ledger to check against.
  * @param account the account whose perspective determines the sign.

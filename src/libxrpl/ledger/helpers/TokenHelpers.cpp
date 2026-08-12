@@ -682,11 +682,19 @@ directSendNoFeeIOU(
         !isXRP(uReceiverID) && uReceiverID != noAccount(),
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
-    // Defense in depth: the dust mechanism is only introduced by
-    // featureLendingProtocolV1_1. If any caller (including a future one)
-    // requests a policy before the amendment is enabled, refuse to
-    // touch sfDust — assert in debug, and in release fall back to the
-    // pre-dust code path so no sfDust write occurs.
+    // Canonical amendment gate for the sfDust mechanism.
+    //
+    // sfDust is introduced by featureLendingProtocolV1_1. Every code path
+    // that reads or writes sfDust (vault_dust::useVaultDust,
+    // creditBalanceExact, the removeEmptyHolding dust guard, and this
+    // write-side check) enforces the same rules().enabled(...) gate.
+    // In normal operation the gate is redundant — the transactor-level
+    // eligibility predicates already imply the amendment is on — but a
+    // hypothetical replay/testing path that ever presented a dust-aware
+    // request under a pre-amendment rules() must NOT touch sfDust: the
+    // field would then be neither SoeDefault(0) as expected pre-amendment
+    // nor part of the ledger's canonical encoding. Assert in debug, fall
+    // back to the pre-dust code path in release.
     if (legPolicy != nullptr && !view.rules().enabled(featureLendingProtocolV1_1))
     {
         XRPL_ASSERT(
@@ -877,17 +885,12 @@ directSendNoFeeIOU(
         }
 
         // Trust-line-level protocol invariant: never delete a line whose
-        // sfDust is non-zero. A deleted RIPPLE_STATE silently destroys any
-        // value still parked in sfDust. This guard also applies on the
-        // dust-unaware pre-dust code path (legPolicy == nullptr) because
-        // a line may carry sfDust left behind by an earlier dust-aware
-        // credit.
-        //
-        // Pre-amendment sfDust is always zero (SoeDefault, no writer
-        // exists), so skip the field-read entirely when the amendment is
-        // disabled — this keeps the pre-amendment hot path byte-identical
-        // to the base branch (every IOU payment in the ledger traverses
-        // this path).
+        // sfDust is non-zero — a deleted RIPPLE_STATE silently destroys
+        // any value still parked there. The guard applies to the
+        // dust-unaware branch too (legPolicy == nullptr), because the
+        // line may carry sfDust left by an earlier dust-aware credit.
+        // Skip the field-read entirely pre-amendment so the hot path
+        // stays byte-identical to the base branch.
         if (dustLedgerAfter)
         {
             if (*dustLedgerAfter != beast::kZero)

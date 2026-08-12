@@ -309,47 +309,31 @@ moveVaultAssets(
 /**
  * @namespace vault_dust
  *
- * This namespace is the Vault-side adopter of the trust-line dust
- * mechanism (`xrpl::DustSplit`, `xrpl::sfDust`, `xrpl::creditBalanceExact`).
- * It owns the Vault-level orchestration only: an eligibility gate
+ * Vault-side adopter of the trust-line dust mechanism (see
+ * `xrpl::DustSplit` in TokenHelpers.h, and docs/dust-mechanism.md).
+ * Owns the Vault-level orchestration only: an eligibility gate
  * (`useVaultDust`) and dust-aware overloads of the four base Vault
- * helpers, with signatures identical to the base ones so the transactor
- * call sites can stay agnostic.
+ * helpers, with identical signatures so the transactor call sites can
+ * stay agnostic.
  *
- * Other protocol features that want the same trust-line dust primitives
- * should add a sibling namespace (e.g. `xrpl::amm_dust`) with their own
- * gate function and their own helper overloads — do not extend this
- * namespace to serve non-Vault features.
+ * Non-Vault features that want the same primitives should add a sibling
+ * namespace with their own gate and helper overloads — do not extend
+ * this namespace.
  *
  * The four helper overloads here are the ONLY code in the tree that
  * constructs a `xrpl::DustSplit`; every other caller uses the base
  * helpers verbatim.
- *
- * Storage note: `sfDust` is deliberately declared without
- * `kSmdNeedsAsset` in include/xrpl/protocol/detail/sfields.macro; the
- * asset scope is already implied by the enclosing RippleState entry, and
- * omitting the flag keeps the trust-line encoding stable across pre-
- * and post-amendment ledgers. See that macro's comment for the full
- * rationale.
  */
 namespace vault_dust {
 
 /**
  * Whether this Vault's custody trust line participates in the sfDust
- * mechanism. True only when featureLendingProtocolV1_1 is enabled in the
- * ledger's active rules AND the Vault is cash-basis
- * (sfLEVersion == VaultVersion::CashBasis) AND its asset is an IOU. A
- * Vault that pre-dates the amendment (Legacy), a Vault holding an integral
- * asset (XRP/MPT, which never produces sub-quantum remainders), or a
- * hypothetical replay/testing path in which the amendment is not enabled
- * is excluded — every dust-aware code path is skipped for it.
+ * mechanism. True only when featureLendingProtocolV1_1 is enabled AND the
+ * Vault is cash-basis (sfLEVersion == VaultVersion::CashBasis) AND its
+ * asset is an IOU. Every other case (Legacy vault, integral asset,
+ * amendment disabled) skips every dust-aware code path.
  *
- * The amendment gate is redundant in normal operation (a CashBasis Vault
- * cannot be created without the amendment) but is retained as
- * defense-in-depth and kept in strict lockstep with the write-side gate in
- * xrpl::directSendNoFeeIOU (TokenHelpers.cpp), the read-side gate in
- * xrpl::creditBalanceExact (RippleStateHelpers.cpp), and the transactor-
- * level predicate in LoanPay.cpp.
+ * See directSendNoFeeIOU for the canonical amendment-gate rationale.
  *
  * @param view The ledger view (for amendment lookup).
  * @param vault The vault SLE.

@@ -472,16 +472,10 @@ LoanPay::doApply()
     // addVaultAssets overload (via the xrpl:: dispatcher), which needs the
     // raw pre-rounding total so its DustSplit can park the sub-quantum
     // remainder in the custody line's sfDust. Legacy and integral-asset
-    // Vaults still pre-round to the Vault's anterior scale here — that
-    // byte-identical to the base branch. The predicate is inlined
-    // deliberately: the transactor never mentions xrpl::vault_dust::.
-    // Kept in strict lockstep with xrpl::vault_dust::useVaultDust — the
-    // three conjuncts (amendment enabled, CashBasis LEVersion, non-integral
-    // asset) must match exactly, or the pre-rounding branch here and the
-    // dust-aware dispatch inside addVaultAssets will disagree about which
-    // representation of the amount they expect.
-    bool const useDust = view.rules().enabled(featureLendingProtocolV1_1) &&
-        getVaultVersion(vaultSle) == VaultVersion::CashBasis && !asset.integral();
+    // Vaults still pre-round to the Vault's anterior scale here — that is
+    // byte-identical to the base branch. Delegating to the overlay's own
+    // eligibility gate avoids a manual-sync surface between the two.
+    bool const useDust = vault_dust::useVaultDust(view, vaultSle);
 
     auto const totalPaidToVaultRounded = useDust
         ? totalPaidToVaultRaw

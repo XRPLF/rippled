@@ -115,10 +115,8 @@ creditBalanceExact(
     if (account < issuer)
         balance.negate();
 
-    // Defense in depth: pre-amendment sfDust is guaranteed zero
-    // (SoeDefault), but the explicit gate documents the invariant and
-    // keeps the read path symmetric with directSendNoFeeIOU's write-side
-    // gate.
+    // Amendment gate is defense-in-depth; see directSendNoFeeIOU
+    // (TokenHelpers.cpp) for the canonical rationale.
     if (!view.rules().enabled(featureLendingProtocolV1_1))
         return Number{balance};
 
@@ -771,13 +769,11 @@ removeEmptyHolding(
     {
         if (line->at(sfBalance)->iou() != beast::kZero)
             return tecHAS_OBLIGATIONS;
-        // A line can be balance-zero yet still hold non-zero sfDust: a
-        // debit can legally consume all representable balance and leave
-        // only dust. Refuse to delete such a line — dust is invisible to
+        // A line can be balance-zero yet hold non-zero sfDust: a debit
+        // can legally consume all representable balance and leave only
+        // dust. Refuse to delete such a line — dust is invisible to
         // accountHolds, so deletion would silently destroy that value.
-        // Gated on the amendment as defense in depth (pre-amendment
-        // sfDust is always zero by construction, so the check is a no-op
-        // there, but the explicit gate documents the invariant).
+        // Amendment gate is defense-in-depth; see directSendNoFeeIOU.
         if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
             Number{line->at(sfDust)} != beast::kZero)
             return tecHAS_OBLIGATIONS;

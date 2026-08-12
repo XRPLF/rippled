@@ -64,63 +64,33 @@ enum class WaiveMPTCanTransfer : bool { No = false, Yes };
 /**
  * Feature-agnostic trust-line dust primitive.
  *
- * A trust line is a single ledger entry (`ltRIPPLE_STATE`) shared between
- * a non-issuer account and its issuer. An IOU payment `A -> B` for issuer
- * `I` touches at most two trust lines: the sender's line
- * `RIPPLE_STATE{A, I}` and the receiver's line `RIPPLE_STATE{B, I}`.
- * Each non-issuer party can independently opt into dust semantics on
- * their OWN line by providing a per-leg `LegPolicy`.
- *
- * `DustSplit` is that opt-in: one struct with two optional per-leg
- * sub-policies (`sender`, `receiver`). `accountSend` and its callees route
- * each sub-policy to the corresponding `directSendNoFeeIOU` invocation.
- * A leg without a sub-policy runs the classic pre-dust path
- * byte-identically. The struct is intentionally consumer-agnostic — it
- * says nothing about Vaults, AMMs, or any specific consumer.
+ * One struct with two optional per-leg sub-policies (`sender`,
+ * `receiver`); `accountSend` and its callees route each sub-policy to
+ * the corresponding trust-line touch. A leg without a sub-policy runs
+ * the classic pre-dust path byte-identically.
  *
  * Modes:
- * - `Override`: the trust-line layer keeps sfBalance representable at
- *   `overrideScale` and parks any sub-quantum remainder in sfDust. Any
- *   previously-deferred sfDust is automatically promoted when the combined
- *   sfDust + credit crosses a whole-quantum boundary. Callers supply
- *   `overrideScale` from their own accounting; scale-drift up to one
- *   decade may linger until the next operation that refines the scale.
- * - `Drain` (sender-leg only): folds all of sfDust on the sender's line
- *   into the outgoing transfer, then zeroes sfDust post-op. Used for
- *   terminal removals where the sender is winding down; there is no
- *   receiver-side counterpart because a receiver has no "reservoir to
- *   drain".
+ * - `Override`: keep `sfBalance` representable at `overrideScale`; park
+ *   any sub-quantum remainder in `sfDust`. Previously deferred `sfDust`
+ *   is automatically promoted when the combined `sfDust + credit`
+ *   clears a whole-quantum boundary.
+ * - `Drain` (sender-leg only): fold all of the sender-line's `sfDust`
+ *   into the outgoing transfer, then zero `sfDust`. Used for terminal
+ *   removals; there is no receiver-side counterpart.
  *
- * Reporting (out-fields on `LegPolicy`) is FROM THAT LEG'S NON-ISSUER
- * PARTY'S PERSPECTIVE:
- * - `sender`-leg reports SENDER-POSITIVE deltas (positive `balanceDelta`
- *   means the sender's holdings grew, which is unusual — a normal send
- *   makes the sender's `balanceDelta` negative and, if any deferred dust
- *   was promoted into sfBalance, negates it further; the reported
- *   `dustDelta` is `-sfDust_before` under `Drain`).
- * - `receiver`-leg reports RECEIVER-POSITIVE deltas (positive
- *   `balanceDelta` means the receiver's holdings grew — the normal case).
+ * Out-fields (`balanceDelta`, `dustDelta`) report from THAT LEG'S
+ * NON-ISSUER PARTY'S perspective (party-positive): sender-leg is
+ * sender-positive, receiver-leg is receiver-positive.
  *
- * This per-leg-party-positive convention lets a Vault consumer reconcile
- * its own bookkeeping symmetrically: reads from `sender->balanceDelta` on
- * a withdrawal/clawback line up in sign with reads from
- * `receiver->balanceDelta` on a deposit, without a sign flip.
- *
- * Contract asserts (checked in debug):
+ * Contract asserts (debug):
  * - `Drain` on the receiver leg is a caller error.
- * - Attaching a policy to the issuer side of a direct payment (where one
- *   party IS the issuer) is a caller error — the policy must correspond
- *   to the non-issuer party's leg.
- * - Any non-empty `DustSplit` requires `featureLendingProtocolV1_1`
- *   enabled; a policy under an older rules set falls back to nullptr and
- *   asserts in debug.
+ * - The policy must correspond to the non-issuer party's leg (issuer
+ *   side must be null).
+ * - Any non-empty `DustSplit` requires `featureLendingProtocolV1_1`.
  *
- * Scope note: Vault is the sole consumer today. Adding a new consumer
- * (AMM, LoanBroker, etc.) is purely additive: introduce a caller-side
- * eligibility gate (analogous to `xrpl::vault_dust::useVaultDust`),
- * construct a `DustSplit` in that consumer's transactor helpers, and
- * reconcile the consumer's own bookkeeping using the reported deltas.
- * The trust-line layer needs no per-consumer awareness.
+ * See docs/dust-mechanism.md for the full design rationale (motivation,
+ * two-legged trust-line touch model, sign convention, amendment gate
+ * policy, consumer-adopter pattern).
  */
 struct DustSplit
 {

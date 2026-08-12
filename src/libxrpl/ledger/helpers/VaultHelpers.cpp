@@ -392,6 +392,36 @@ posteriorScale(SLE::const_ref vault, Number const& deltaToAssetsTotal)
     return scale(posterior, vault->at(sfAsset));
 }
 
+// Build a sender-leg Override DustSplit targeting the Vault's current
+// (post-mutation) sfAssetsTotal scale. Shared by clawback, non-terminal
+// withdraw, and multi-recipient move — every sender-leg dust-aware call
+// path in vault_dust uses the same shape.
+DustSplit
+makeSenderOverride(SLE::const_ref vault, Asset const& asset)
+{
+    DustSplit split;
+    split.sender = DustSplit::LegPolicy{
+        .mode = DustSplit::LegPolicy::Mode::Override,
+        .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+    return split;
+}
+
+// Reconcile Vault fields against a sender-leg dust report. `dustDelta` is
+// the change in the custody line's sfDust (sender-positive: positive when
+// dust was newly deferred, negative when previously-deferred dust was
+// promoted into sfBalance). Both Vault fields shift by that delta so the
+// receivable (sfAssetsTotal - sfAssetsAvailable) stays aligned with the
+// line's newDust exactly. No-op when no sender-leg policy ran.
+void
+reconcileSenderDust(ApplyView& view, SLE::ref vault, DustSplit const& split)
+{
+    if (!split.sender)
+        return;
+    vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
+    vault->at(sfAssetsTotal) -= split.sender->dustDelta;
+    view.update(vault);
+}
+
 }  // namespace
 
 [[nodiscard]] bool
@@ -399,15 +429,8 @@ useVaultDust(ReadView const& view, SLE::const_ref vault)
 {
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::vault_dust::useVaultDust : valid Vault sle");
-    // Defense in depth: a CashBasis Vault can only be created while
-    // featureLendingProtocolV1_1 is enabled, so in the current lifecycle
-    // the amendment-check is redundant. The explicit gate documents the
-    // invariant and keeps this gate symmetric with the write-side gate in
-    // directSendNoFeeIOU (TokenHelpers.cpp), the read-side gate in
-    // creditBalanceExact (RippleStateHelpers.cpp), and the transactor-
-    // level predicate in LoanPay.cpp — so a hypothetical replay/testing
-    // path that ever presented a CashBasis Vault under a rules() without
-    // the amendment could not accidentally engage sfDust logic.
+    // Amendment gate is defense-in-depth; see directSendNoFeeIOU
+    // (TokenHelpers.cpp) for the canonical rationale.
     if (!view.rules().enabled(featureLendingProtocolV1_1))
         return false;
     Asset const asset = vault->at(sfAsset);
@@ -519,10 +542,7 @@ clawbackVaultAssets(
     // Override policy targeting the Vault's posterior scale; the trust
     // -line layer re-splits (sfBalance, sfDust) at that scale and
     // reports any dust promotion or newly-deferred residual.
-    DustSplit split;
-    split.sender = DustSplit::LegPolicy{
-        .mode = DustSplit::LegPolicy::Mode::Override,
-        .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+    DustSplit split = makeSenderOverride(vault, asset);
 
     if (auto const ter = accountSend(
             view,
@@ -551,17 +571,7 @@ clawbackVaultAssets(
         // LCOV_EXCL_STOP
     }
 
-    // Reconcile any dust promotion/deferral surfaced by the split.
-    // `promoted = -split.sender->dustDelta`; both fields shift by
-    // `promoted` (positive when previously-deferred dust became
-    // recognized cash, negative when whole-quanta balance was newly
-    // deferred to sfDust).
-    if (split.sender)
-    {
-        vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
-        vault->at(sfAssetsTotal) -= split.sender->dustDelta;
-        view.update(vault);
-    }
+    reconcileSenderDust(view, vault, split);
 
     return tesSUCCESS;
 }
@@ -636,26 +646,14 @@ removeVaultAssets(
 
     if (amount != beast::kZero)
     {
-        DustSplit split;
-        split.sender = DustSplit::LegPolicy{
-            .mode = DustSplit::LegPolicy::Mode::Override,
-            .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+        DustSplit split = makeSenderOverride(vault, asset);
 
         if (auto const ter = doWithdraw(
                 ctx, senderAcct, dstAcct, vault->at(sfAccount), priorBalance, amount, j, &split);
             !isTesSuccess(ter))
             return ter;
 
-        // Reconcile promoted / deferred dust reported by the split.
-        // `promoted = -split.sender->dustDelta`; both fields move by
-        // that amount so the receivable (sfAssetsTotal -
-        // sfAssetsAvailable) tracks the line's newDust exactly.
-        if (split.sender)
-        {
-            vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
-            vault->at(sfAssetsTotal) -= split.sender->dustDelta;
-            ctx.view.update(vault);
-        }
+        reconcileSenderDust(ctx.view, vault, split);
     }
 
     return tesSUCCESS;
@@ -708,23 +706,14 @@ moveVaultAssets(
 
     if (amount != beast::kZero)
     {
-        DustSplit split;
-        split.sender = DustSplit::LegPolicy{
-            .mode = DustSplit::LegPolicy::Mode::Override,
-            .overrideScale = scale(Number{vault->at(sfAssetsTotal)}, asset)};
+        DustSplit split = makeSenderOverride(vault, asset);
 
         if (auto const ter = accountSendMulti(
                 view, vault->at(sfAccount), asset, recipients, j, WaiveTransferFee::Yes, &split);
             !isTesSuccess(ter))
             return ter;
 
-        // Reconcile promoted / deferred dust reported by the split.
-        if (split.sender)
-        {
-            vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
-            vault->at(sfAssetsTotal) -= split.sender->dustDelta;
-            view.update(vault);
-        }
+        reconcileSenderDust(view, vault, split);
     }
 
     return tesSUCCESS;
