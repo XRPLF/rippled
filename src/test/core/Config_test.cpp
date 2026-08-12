@@ -3,14 +3,13 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -20,6 +19,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -179,7 +179,7 @@ public:
     [[nodiscard]] bool
     dataDirExists() const
     {
-        return boost::filesystem::is_directory(dataDir_);
+        return std::filesystem::is_directory(dataDir_);
     }
 
     [[nodiscard]] bool
@@ -192,7 +192,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
         }
@@ -273,7 +273,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
 
 public:
     void
@@ -309,7 +309,7 @@ port_wss_admin
     {
         testcase("config_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const cwd = current_path();
 
         // Test both config file names.
@@ -319,7 +319,7 @@ port_wss_admin
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
             path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
@@ -341,13 +341,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -381,7 +381,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -425,7 +425,7 @@ port_wss_admin
     {
         testcase("database_path");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             boost::format cc("[database_path]\n%1%\n");
 
@@ -601,7 +601,7 @@ main
     {
         testcase("validators_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
             boost::format cc("[validators_file]\n%1%\n");
