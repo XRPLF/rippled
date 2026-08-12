@@ -182,8 +182,8 @@ class Invariants_test : public beast::unit_test::Suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
-        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc,
-                         initialResult);
+        doInvariantCheck(
+            std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc, initialResult);
     }
 
     void
@@ -4611,7 +4611,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
             TxAccount::A2);
 
@@ -4626,7 +4626,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
             TxAccount::A2);
 
@@ -4931,6 +4931,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecKILLED, tecKILLED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecKILLED);
             doInvariantCheck(
                 {},
@@ -4940,6 +4941,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINCOMPLETE, tecINCOMPLETE},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecINCOMPLETE);
             doInvariantCheck(
                 {},
@@ -4949,6 +4951,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecKILLED, tecKILLED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecKILLED);
             doInvariantCheck(
                 {},
@@ -4958,6 +4961,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINCOMPLETE, tecINCOMPLETE},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecINCOMPLETE);
             // A non-exempt failure with the same change fires the check and
             // escalates tec -> tef on the second pass.
@@ -4969,6 +4973,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecEXPIRED);
             doInvariantCheck(
                 {{"MPToken balance changed on failure"}},
@@ -4978,6 +4983,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecEXPIRED);
 
             // A one-sided lock (spendable -> locked within one holder) is not a
@@ -5006,6 +5012,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecKILLED, tecKILLED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecKILLED);
             // Non-exempt failure: the one-sided lock is caught.
             doInvariantCheck(
@@ -5016,6 +5023,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 setup,
                 TxAccount::None,
+                std::source_location::current(),
                 tecEXPIRED);
         }
 
