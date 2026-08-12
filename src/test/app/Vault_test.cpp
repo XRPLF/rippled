@@ -8172,6 +8172,29 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase(
+                std::string{"VaultWithdraw private vault with no domain set"} +
+                (withFix ? " (fixCleanup3_4_0)" : " (pre-fix)"));
+
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfDomainID] = "0";
+            env(tx);
+            env.close();
+
+            // Clearing the domain leaves the vault with nobody it considers
+            // authorized, so a third-party destination cannot qualify.
+            env(withdrawTo(beneficiary), Ter(withFix ? TER(tecNO_AUTH) : TER(tesSUCCESS)));
+            env.close();
+
+            // The two exempt paths survive the domain going away.
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(1)}));
+            env.close();
+
+            env(withdrawTo(issuer));
+            env.close();
+        }
+
+        {
+            testcase(
                 std::string{"VaultWithdraw public vault destination unaffected"} +
                 (withFix ? " (fixCleanup3_4_0)" : " (pre-fix)"));
 

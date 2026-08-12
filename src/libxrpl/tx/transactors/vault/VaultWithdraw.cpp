@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -187,20 +186,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        // The domain is read from the share issuance rather than the vault, to
-        // stay consistent with VaultDeposit. A private vault with no domain
-        // set has no authorized participants to withdraw to.
-        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-        if (!maybeDomainID)
-            return tecNO_AUTH;
-
         // Unlike VaultDeposit we do not suppress tecEXPIRED: there is no
         // doApply step here that would clean up the expired credential.
-        if (auto const ter = credentials::validDomain(ctx.view, *maybeDomainID, account);
+        if (auto const ter = checkVaultDomain(ctx.view, sleIssuance, account, SuppressExpired::No);
             !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = credentials::validDomain(ctx.view, *maybeDomainID, dstAcct);
+        if (auto const ter = checkVaultDomain(ctx.view, sleIssuance, dstAcct, SuppressExpired::No);
             !isTesSuccess(ter))
             return ter;
     }

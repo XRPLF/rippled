@@ -4,7 +4,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -127,26 +126,13 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             return tecLOCKED;
     }
 
+    // The vault owner is authorized to deposit unconditionally. An expired
+    // credential is tolerated here because doApply deletes it.
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-        // Since this is a private vault and the account is not its owner, we
-        // perform authorization check based on DomainID read from sleIssuance.
-        // Had the vault shares been a regular MPToken, we would allow
-        // authorization granted by the Issuer explicitly, but Vault uses Issuer
-        // pseudo-account, which cannot grant an authorization.
-        if (maybeDomainID)
-        {
-            // As per validDomain documentation, we suppress tecEXPIRED error
-            // here, so we can delete any expired credentials inside doApply.
-            if (auto const err = credentials::validDomain(ctx.view, *maybeDomainID, account);
-                !isTesSuccess(err) && err != tecEXPIRED)
-                return err;
-        }
-        else
-        {
-            return tecNO_AUTH;
-        }
+        if (auto const err = checkVaultDomain(ctx.view, sleIssuance, account, SuppressExpired::Yes);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Source MPToken must exist (if asset is an MPT)
