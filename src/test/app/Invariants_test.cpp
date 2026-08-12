@@ -66,6 +66,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -136,7 +137,8 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        std::source_location const& loc = std::source_location::current())
     {
         doInvariantCheck(
             makeEnv(defaultAmendments()),
@@ -146,7 +148,8 @@ class Invariants_test : public beast::unit_test::Suite
             tx,
             ters,
             preclose,
-            setTxAccount);
+            setTxAccount,
+            loc);
     }
 
     void
@@ -158,7 +161,8 @@ class Invariants_test : public beast::unit_test::Suite
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
-        TxAccount setTxAccount = TxAccount::None)
+        TxAccount setTxAccount = TxAccount::None,
+        std::source_location const& loc = std::source_location::current())
     {
         using namespace test::jtx;
 
@@ -166,13 +170,13 @@ class Invariants_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         env.fund(XRP(1000), a1, a2);
         if (preclose)
-            BEAST_EXPECT(preclose(a1, a2, env));
+            expect(preclose(a1, a2, env), "preclose(a1, a2, env)", loc.file_name(), loc.line());
         env.close();
 
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
-        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
+        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc);
     }
 
     void
@@ -185,7 +189,8 @@ class Invariants_test : public beast::unit_test::Suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED})
+        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        std::source_location const& loc = std::source_location::current())
     {
         using namespace test::jtx;
 
@@ -198,37 +203,39 @@ class Invariants_test : public beast::unit_test::Suite
         // access global Rules.
         CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-        BEAST_EXPECT(precheck(a1, a2, ac));
+        expect(precheck(a1, a2, ac), loc.file_name(), loc.line());
 
         auto transactor = makeTransactor(ac);
-        if (!BEAST_EXPECT(transactor))
+        if (!expect(transactor, loc.file_name(), loc.line()))
             return;
 
         // invoke check twice to cover tec and tef cases
-        if (!BEAST_EXPECT(ters.size() == 2))
+        if (!expect(ters.size() == 2, loc.file_name(), loc.line()))
             return;
 
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
             terActual = transactor->checkInvariants(terActual, fee);
-            BEAST_EXPECTS(
+            expect(
                 terExpect == terActual,
-                "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
-            auto const messages = sink.messages().str();
+                "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
+                loc.file_name(),
+                loc.line());
 
+            auto const messages = sink.messages().str();
             if (!isTesSuccess(terActual))
             {
-                BEAST_EXPECTS(
+                expect(
                     messages.starts_with("Invariant failed:") ||
                         messages.starts_with("Transaction caused an exception"),
-                    messages);
+                    messages, loc.file_name(), loc.line());
             }
 
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.contains(m), m);
+                expect(messages.contains(m), m, loc.file_name(), loc.line());
             }
         }
     }
@@ -2910,7 +2917,8 @@ class Invariants_test : public beast::unit_test::Suite
                 for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
                      ++seq)
                 {
-                    auto sleLoan = std::make_shared<SLE>(keylet::loan(keylet.key, SeqProxy::rawSequence(seq)));
+                    auto sleLoan =
+                        std::make_shared<SLE>(keylet::loan(keylet.key, SeqProxy::rawSequence(seq)));
                     sleLoan->at(sfPrincipalOutstanding) = Number(lp.principalOutstanding);
                     sleLoan->at(sfTotalValueOutstanding) = Number(lp.totalValueOutstanding);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(lp.managementFeeOutstanding);
@@ -3300,7 +3308,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"set must not change assets outstanding",
              "set must not change assets available",
-             "shares outstanding must only change by deposit, withdraw, or clawback",
+             "set must not change shares outstanding",
              "set must not change vault balance",
              "assets available must not be negative",
              "assets available must not be greater than assets outstanding",
@@ -3480,7 +3488,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"shares outstanding must only change by deposit, withdraw, or clawback",
+            {"set must not change shares outstanding",
              "updated zero sized vault must have no assets outstanding",
              "updated zero sized vault must have no assets available"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4147,14 +4155,16 @@ class Invariants_test : public beast::unit_test::Suite
                     {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
                 env.close();
 
-                auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
                 env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
                 env.close();
                 auto const brokerSle = env.le(brokerKeylet);
                 if (!BEAST_EXPECT(brokerSle))
                     return false;
 
-                loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+                loanKeylet = keylet::loan(
+                    brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
                 env(loan::set(a2, brokerKeylet.key, xrpAsset(50).value()),
                     Sig(sfCounterpartySignature, a1),
                     Fee(env.current()->fees().base * 2));
@@ -4203,7 +4213,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"Loan interest due is negative"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const vaultKeylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 auto sleLoan = std::make_shared<SLE>(loanKeylet);
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -4237,7 +4248,8 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 {field->getName() + " is negative"},
                 [&, field](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                    auto const vaultKeylet =
+                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                     auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(0);
@@ -4258,7 +4270,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"Loan broker does not exist"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const vaultKeylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 auto sleLoan = std::make_shared<SLE>(loanKeylet);
                 sleLoan->at(sfPrincipalOutstanding) = Number(0);
@@ -4705,8 +4718,8 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must increase vault balance",
              "deposit must decrease depositor balance",
              "deposit must change vault and depositor balance by equal amount",
-             "vault balance and assets outstanding must add up",
-             "vault balance and assets available must add up"},
+             "deposit and assets outstanding must add up",
+             "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
@@ -4798,7 +4811,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"vault balance and assets outstanding must add up"},
+            {"deposit and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
@@ -4822,8 +4835,8 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"vault balance and assets outstanding must add up",
-             "vault balance and assets available must add up"},
+            {"deposit and assets outstanding must add up",
+             "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -4888,8 +4901,8 @@ class Invariants_test : public beast::unit_test::Suite
                 "withdrawal must change vault and destination balance by equal amount",
                 "withdrawal must decrease vault balance",
                 "withdrawal must increase destination balance",
-                "vault balance and assets outstanding must add up",
-                "vault balance and assets available must add up",
+                "withdrawal and assets outstanding must add up",
+                "withdrawal and assets available must add up",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -4979,8 +4992,8 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"vault balance and assets outstanding must add up",
-             "vault balance and assets available must add up"},
+            {"withdrawal and assets outstanding must add up",
+             "withdrawal and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -4995,7 +5008,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"vault balance and assets outstanding must add up"},
+            {"withdrawal and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
@@ -5163,8 +5176,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"clawback must change holder and vault shares by equal amount",
-             "vault balance and assets outstanding must add up",
-             "vault balance and assets available must add up"},
+             "clawback and assets outstanding must add up",
+             "clawback and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));

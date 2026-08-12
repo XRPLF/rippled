@@ -1177,6 +1177,31 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
                 break;
+            case ltVAULT:
+                /*
+                 * The base entry-type/index checks match the default case
+                 * and are enforced from featureLendingProtocol onwards.
+                 * The vault-specific immutable fields (asset, pseudo-account
+                 * and share MPT id) were previously enforced inline by
+                 * ValidVault::finalize; they are consolidated here under
+                 * fixCleanup3_4_0.
+                 */
+                
+                // TODO: Refactor after #7921 is merged
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex);
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    bool const vaultFieldsBad =
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfShareMPTID);
+                    bad = bad || vaultFieldsBad;
+                    if (vaultFieldsBad)
+                        enforce = true;
+                }
+                break;
             default:
                 /*
                  * We check this invariant regardless of lending protocol

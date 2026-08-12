@@ -325,7 +325,7 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 bool
 ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal const& j) const
 {
-    if (!view.rules().enabled(featureLendingProtocolV1_1))
+    if (!view.rules().enabled(fixCleanup3_4_0))
         return true;
 
     bool result = true;
@@ -389,7 +389,7 @@ ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal
 bool
 ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Journal const& j) const
 {
-    if (!view.rules().enabled(featureLendingProtocolV1_1))
+    if (!view.rules().enabled(fixCleanup3_4_0))
         return true;
 
     bool result = true;
@@ -479,7 +479,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
 bool
 ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal const& j) const
 {
-    if (!view.rules().enabled(featureLendingProtocolV1_1))
+    if (!view.rules().enabled(fixCleanup3_4_0))
         return true;
 
     bool result = true;
@@ -760,15 +760,21 @@ ValidVault::finalize(
     // Universal transaction checks
     if (!beforeVault_.empty())
     {
-        auto const& beforeVault = beforeVault_[0];
-        if (afterVault.asset != beforeVault.asset || afterVault.pseudoId != beforeVault.pseudoId ||
-            afterVault.shareMPTID != beforeVault.shareMPTID ||
-            afterVault.owner != beforeVault.owner ||
-            afterVault.withdrawalPolicy != beforeVault.withdrawalPolicy ||
-            afterVault.scale != beforeVault.scale)
+        // From fixCleanup3_4_0 onwards, vault immutability of asset,
+        // pseudo-account and share MPT id is enforced by
+        // NoModifiedUnmodifiableFields in InvariantCheck.cpp. We are
+        // retiring immutability checks outside InvariantCheck.cpp so that
+        // all such checks live in a single place.
+        if (!view.rules().enabled(fixCleanup3_4_0))
         {
-            JLOG(j.fatal()) << "Invariant failed: violation of vault immutable data";
-            result = false;
+            auto const& beforeVault = beforeVault_[0];
+            if (afterVault.asset != beforeVault.asset ||
+                afterVault.pseudoId != beforeVault.pseudoId ||
+                afterVault.shareMPTID != beforeVault.shareMPTID)
+            {
+                JLOG(j.fatal()) << "Invariant failed: violation of vault immutable data";
+                result = false;
+            }
         }
     }
 
@@ -1049,6 +1055,15 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: set must not change shares "
+                        "outstanding";
+                    result = false;
+                }
+
                 return result;
             }
             case ttVAULT_DEPOSIT: {
@@ -1056,6 +1071,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
+                auto const& beforeVault = beforeVault_[0];
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1168,6 +1184,23 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                auto const assetTotalDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                if (assetTotalDelta != vaultDeltaAssets)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: deposit and assets outstanding must add up";
+                    result = false;
+                }
+
+                auto const assetAvailableDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+                if (assetAvailableDelta != vaultDeltaAssets)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
+                    result = false;
+                }
+
                 return result;
             }
             case ttVAULT_WITHDRAW: {
@@ -1176,6 +1209,7 @@ ValidVault::finalize(
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
                     "xrpl::ValidVault::finalize : withdrawal updated a vault");
+                auto const& beforeVault = beforeVault_[0];
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1307,6 +1341,26 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                auto const assetTotalDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                // Note, vaultBalance is negative (see check above)
+                if (assetTotalDelta != vaultPseudoDeltaAssets)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: withdrawal and assets outstanding must add up";
+                    result = false;
+                }
+
+                auto const assetAvailableDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+
+                if (assetAvailableDelta != vaultPseudoDeltaAssets)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: withdrawal and assets available must add up";
+                    result = false;
+                }
+
                 return result;
             }
             case ttVAULT_CLAWBACK: {
@@ -1340,6 +1394,26 @@ ValidVault::finalize(
                     if (vaultDeltaAssets >= kZero)
                     {
                         JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
+                        result = false;
+                    }
+
+                    auto const assetsTotalDelta = roundToAsset(
+                        vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                    if (assetsTotalDelta != vaultDeltaAssets)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets outstanding must add up";
+                        result = false;
+                    }
+
+                    auto const assetAvailableDelta = roundToAsset(
+                        vaultAsset,
+                        afterVault.assetsAvailable - beforeVault.assetsAvailable,
+                        minScale);
+                    if (assetAvailableDelta != vaultDeltaAssets)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets available must add up";
                         result = false;
                     }
                 }
@@ -1403,8 +1477,8 @@ ValidVault::finalize(
 
     if (!result)
     {
-        // The comment in InvariantCheckPrivilege.h starting with
-        // "assert(enforce)" explains this assert.
+        // The comment at the top of this file starting with "assert(enforce)"
+        // explains this assert.
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault invariants");
         return !enforce;
     }
