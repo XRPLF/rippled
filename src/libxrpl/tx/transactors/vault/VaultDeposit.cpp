@@ -243,7 +243,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
         catch (std::overflow_error const&)
         {
-            // The exchange rate cannot represent this amount at all; doApply reports that.
+            // A large enough Scale overflows Number easily, so this stays at debug to avoid
+            // spamming the log. Nothing to decide here: the amount is unusable for a different
+            // reason than the one this check is about, and doApply reports it as tecPATH_DRY.
+            JLOG(ctx.j.debug()) << "VaultDeposit: overflow error computing deposited assets"
+                                << " with scale=" << static_cast<int>(vault->at(sfScale))
+                                << ", amount=" << roundedAmount;
         }
     }
 
