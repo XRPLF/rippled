@@ -9,8 +9,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SeqProxy.h>
 
-#include <cstdint>
-
 namespace xrpl {
 
 template <typename ViewT>
