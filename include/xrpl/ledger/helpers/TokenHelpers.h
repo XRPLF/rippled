@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,56 @@ enum class AllowMPTOverflow : bool { No = false, Yes };
  *  effect on the IOU branch of canTransfer.
  */
 enum class WaiveMPTCanTransfer : bool { No = false, Yes };
+
+/**
+ * Feature-agnostic trust-line dust primitive.
+ *
+ * One struct with two optional per-leg sub-policies (`sender`,
+ * `receiver`); `accountSend` and its callees route each sub-policy to
+ * the corresponding trust-line touch. A leg without a sub-policy runs
+ * the classic pre-dust path byte-identically.
+ *
+ * Modes:
+ * - `Override`: keep `sfBalance` representable at `overrideScale`; park
+ *   any sub-quantum remainder in `sfDust`. Previously deferred `sfDust`
+ *   is automatically promoted when the combined `sfDust + credit`
+ *   clears a whole-quantum boundary.
+ * - `Drain` (sender-leg only): fold all of the sender-line's `sfDust`
+ *   into the outgoing transfer, then zero `sfDust`. Used for terminal
+ *   removals; there is no receiver-side counterpart.
+ *
+ * Out-fields (`balanceDelta`, `dustDelta`) report from THAT LEG'S
+ * NON-ISSUER PARTY'S perspective (party-positive): sender-leg is
+ * sender-positive, receiver-leg is receiver-positive.
+ *
+ * Contract asserts (debug):
+ * - `Drain` on the receiver leg is a caller error.
+ * - The policy must correspond to the non-issuer party's leg (issuer
+ *   side must be null).
+ * - Any non-empty `DustSplit` requires `featureLendingProtocolV1_1`.
+ *
+ * See docs/dust-mechanism.md for the full design rationale (motivation,
+ * two-legged trust-line touch model, sign convention, amendment gate
+ * policy, consumer-adopter pattern).
+ */
+struct DustSplit
+{
+    struct LegPolicy
+    {
+        enum class Mode { Override, Drain };
+
+        Mode mode = Mode::Override;
+        int overrideScale = 0;  // used only when mode == Override; exponent
+                                // sfBalance must remain representable at
+
+        // out (from this leg's non-issuer party's perspective):
+        Number balanceDelta{};
+        Number dustDelta{};
+    };
+
+    std::optional<LegPolicy> sender;
+    std::optional<LegPolicy> receiver;
+};
 
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
@@ -386,7 +437,8 @@ accountSend(
     beast::Journal j,
     SLE::ref sponsorSle = {},
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
-    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No,
+    DustSplit* dust = nullptr);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /**
@@ -395,6 +447,10 @@ using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
  *
  * Calls static accountSendMultiIOU if saAmount represents Issue.
  * Calls static accountSendMultiMPT if saAmount represents MPTIssue.
+ *
+ * The optional `dust` split applies only to the sender's leg (the single
+ * shared sender trust line across all destinations). Only `dust->sender`
+ * is consulted; `dust->receiver` must be nullopt.
  */
 [[nodiscard]] TER
 accountSendMulti(
@@ -403,7 +459,8 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    DustSplit* dust = nullptr);
 
 [[nodiscard]] TER
 transferXRP(
