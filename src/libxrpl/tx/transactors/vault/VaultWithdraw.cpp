@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -102,6 +103,17 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A pseudo-account belongs to a ledger object rather than to a person and
+    // must never receive funds from a user-initiated transaction. Deposit
+    // authorization, which every pseudo-account carries, already refuses the
+    // payout, but it reports only that the destination declines deposits and
+    // leaves the real reason unsaid.
+    if (fix340Enabled && isPseudoAccount(ctx.view, dstAcct))
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: cannot withdraw into a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
     }
 
     if (fix313Enabled && amount.asset() == vaultShare)
