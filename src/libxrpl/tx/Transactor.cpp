@@ -1666,9 +1666,9 @@ Transactor::operator()()
     auto const logger = [this](
                             TER result,
                             bool canApply,
-                            std::optional<TxMeta> metadata = std::nullopt) -> ApplyResult {
+                            std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
         JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
-        return {result, canApply, metadata};
+        return {result, canApply, std::move(metadata)};
     };
 
     if (!canApply)
@@ -1721,9 +1721,9 @@ Transactor::operator()()
     metadata = ctx_.apply(result);
 
     if ((ctx_.flags() & TapDryRun) != 0u)
-        return logger(result, false, metadata);
+        return logger(result, false, std::move(metadata));
 
-    return logger(result, canApply, metadata);
+    return logger(result, canApply, std::move(metadata));
 }
 
 }  // namespace xrpl
