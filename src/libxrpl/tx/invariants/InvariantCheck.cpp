@@ -345,7 +345,7 @@ FailedTransaction::finalize(
     bool result = true;
 
     // Log all the failures regardless of amendment status, but only return false / failure if
-    // fixTecInvariant is enabled
+    // featureTecInvariant is enabled
     for (auto const& err : errors_)
     {
         JLOG(j.fatal()) << "Invariant failed: " << err;
@@ -407,7 +407,7 @@ FailedTransaction::finalize(
         result = false;
     }
 
-    bool const enforce = view.rules().enabled(fixTecInvariant);
+    bool const enforce = view.rules().enabled(featureTecInvariant);
     XRPL_ASSERT_IF(!result, enforce, "FailedTransaction::finalize : amendment enabled");
     return result || !enforce;
 }

@@ -431,7 +431,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            Env{*this, FeatureBitset{featureSponsor, fixTecInvariant}},
+            Env{*this, FeatureBitset{featureSponsor, featureTecInvariant}},
             {{"account deletion left behind a sponsorship field"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
@@ -1508,7 +1508,7 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         bool const fix313Enabled = features[fixCleanup3_1_3];
-        bool const fixTecEnabled = features[fixTecInvariant];
+        bool const fixTecEnabled = features[featureTecInvariant];
         bool const fixEnabled = fix313Enabled || fixTecEnabled;
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
@@ -2013,7 +2013,7 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         bool const fix313Enabled = features[fixCleanup3_1_3];
-        bool const fixTecEnabled = features[fixTecInvariant];
+        bool const fixTecEnabled = features[featureTecInvariant];
         bool const fixEnabled = fix313Enabled || fixTecEnabled;
 
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
@@ -6595,13 +6595,15 @@ public:
         testNFTokenPageInvariants();
         testAMMDeleteInvariants(defaultAmendments());
         testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
-        testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3 | fixTecInvariant);
-        testPermissionedDomainInvariants((defaultAmendments() - fixCleanup3_1_3) | fixTecInvariant);
-        // Can't test without fixTecInvariant, because the invariant will assert
+        testPermissionedDomainInvariants(
+            defaultAmendments() | fixCleanup3_1_3 | featureTecInvariant);
+        testPermissionedDomainInvariants(
+            (defaultAmendments() - fixCleanup3_1_3) | featureTecInvariant);
+        // Can't test without featureTecInvariant, because the invariant will assert
         // testPermissionedDomainInvariants((defaultAmendments() | fixCleanup3_1_3) -
-        //  fixTecInvariant );
+        //  featureTecInvariant );
         // testPermissionedDomainInvariants((defaultAmendments() - fixCleanup3_1_3) -
-        //  fixTecInvariant);
+        //  featureTecInvariant);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testBookDirectoryExchangeRate();
