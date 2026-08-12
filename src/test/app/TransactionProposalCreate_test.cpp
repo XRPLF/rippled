@@ -364,6 +364,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         std::uint32_t const firstTicketSeq = proposal::createTicket(env, target, 3);
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
@@ -439,6 +440,78 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // Only the target account itself, or an account on its SignerList, may
+    // create a proposal against it. Otherwise any unrelated account could
+    // spam or squat the target's Tickets with unwanted proposals (On-Chain
+    // Cosigner V1 authorization scope).
+    void
+    testProposerAuthorization(FeatureBitset features)
+    {
+        testcase("reject proposal from an unauthorized proposer");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const signer{"signer"};
+        Account const stranger{"stranger"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, signer, stranger, bob);
+        env.close();
+
+        env(signers(target, 1, {{signer, 1}}));
+        env.close();
+
+        auto payload = [&](std::uint32_t ticketSeq) {
+            return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+        };
+
+        // The target account itself needs no SignerList entry.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(target, payload(ticketSeq), proposal::expiration(env, 100s)));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // An account on the target's SignerList may propose for it.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(signer, payload(ticketSeq), proposal::expiration(env, 100s)));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // An account that is neither the target nor on its SignerList may not.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(stranger, payload(ticketSeq), proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(ownerCount(env, stranger) == 0);
+        }
+
+        // A target with no SignerList at all may only be proposed for by
+        // itself.
+        {
+            Account const bare{"bare"};
+            env.fund(XRP(10000), bare);
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, bare);
+            env(proposal::create(
+                    stranger,
+                    proposal::unsignedPayload(env, pay(bare, bob, XRP(1)), ticketSeq),
+                    proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, bare, ticketSeq));
+        }
+    }
+
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
     // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
@@ -497,6 +570,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        proposal::authorizeProposer(env, target, alice);
 
         // The proposed transaction is stored unsigned: no signature fields and
         // an empty SigningPubKey. It is ticket-based so unrelated target account
@@ -523,9 +597,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(stored.getFieldVL(sfSigningPubKey).empty());
 
         // The proposal reserves several owner increments against the proposer.
-        // The target only owns the Ticket used by the proposed transaction.
+        // The target owns the Ticket used by the proposed transaction, plus
+        // the SignerList that authorizes alice to propose for it.
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-        BEAST_EXPECT(ownerCount(env, target) == 1);
+        BEAST_EXPECT(ownerCount(env, target) == 2);
     }
 
     // A proposal carries a transaction of any type: what the proposal requires
@@ -550,6 +625,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         auto const USD = gw["USD"];
         env.fund(XRP(10000), alice, target, bob, gw);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         // One payload per transaction type, each straight from the generator
         // the ordinary tests for that type use.
@@ -601,6 +677,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         env.fund(XRP(10000), alice, borrower);
         env.close();
+        proposal::authorizeProposer(env, borrower, alice);
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
@@ -648,6 +725,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
@@ -692,6 +770,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
@@ -732,6 +811,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         Account const bob{"bob"};        // a distinct inner participant
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
@@ -775,6 +855,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // Preclaim
         testPreclaim(all);
+        testProposerAuthorization(all);
         testPseudoTarget(all);
 
         // Apply

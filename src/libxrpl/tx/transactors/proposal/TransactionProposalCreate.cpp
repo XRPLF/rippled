@@ -17,10 +17,12 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <memory>
@@ -173,6 +175,31 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     // A pseudo-account cannot authorize a transaction through a SignerList.
     if (isPseudoAccount(sleTarget))
         return tecNO_PERMISSION;
+
+    // Only the target account itself, or an account on its SignerList, may
+    // create a proposal against it. Otherwise any account could spam or
+    // squat the target's Tickets with unwanted proposals (On-Chain Cosigner
+    // V1 scope).
+    if (AccountID const proposer = ctx.tx.getAccountID(sfAccount); proposer != target)
+    {
+        bool isSigner = false;
+        if (auto const sleSigners = ctx.view.read(keylet::signerList(target)))
+        {
+            auto const accountSigners = SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
+            isSigner =
+                accountSigners && std::ranges::any_of(*accountSigners, [&](auto const& entry) {
+                    return entry.account == proposer;
+                });
+        }
+
+        if (!isSigner)
+        {
+            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposer is "
+                                   "not the target account or one of its "
+                                   "signers.";
+            return tecNO_PERMISSION;
+        }
+    }
 
     std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
