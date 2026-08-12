@@ -46,6 +46,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include "xrpl/basics/base_uint.h"
 
 #include <algorithm>
 #include <cstddef>
