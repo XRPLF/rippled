@@ -167,6 +167,7 @@ words:
   - LOCALGOOD
   - logwstream
   - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -220,6 +221,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
   - oxalica
   - pargs
   - partitioner
@@ -254,6 +256,8 @@ words:
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -363,6 +367,7 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - ximinez
   - XMACRO
   - xored

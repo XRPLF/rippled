@@ -1,0 +1,61 @@
+name: Setup Nix environment
+description: "Build the flake's CI environment and put its tools on PATH."
+
+# The same `packages.default` the Linux CI images bake in (see nix/docker).
+# Tools on PATH and nothing else, so the composite actions - always plain
+# `bash` - pick them up.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Build the CI environment
+      id: build
+      shell: bash
+      env:
+        # --out-link doubles as a GC root for the length of the job.
+        OUT_LINK: ${{ runner.temp }}/xrpld-ci-env
+      run: |
+        # --extra-experimental-features: flakes may not be on in the runner's nix.conf.
+        nix --extra-experimental-features "nix-command flakes" \
+            build .#default --out-link "${OUT_LINK}" --print-build-logs
+        echo "path=$(readlink -f "${OUT_LINK}")" >>"${GITHUB_OUTPUT}"
+
+    - name: Export the environment
+      shell: bash
+      env:
+        ENV_PATH: ${{ steps.build.outputs.path }}
+      run: |
+        echo "${ENV_PATH}/bin" >>"${GITHUB_PATH}"
+
+        # Already KEY=VALUE per line. See `darwinEnv` in nix/ci-env.nix.
+        ENV_FILE="${ENV_PATH}/share/xrpld-ci-env/env"
+        if [ -f "${ENV_FILE}" ]; then
+            cat "${ENV_FILE}" >>"${GITHUB_ENV}"
+        fi
+
+        # XrplSanity.cmake otherwise rejects a Nix compiler as one that leaked.
+        echo "XRPL_DEVSHELL=ci-env" >>"${GITHUB_ENV}"
+
+        # Deliberately no SSL_CERT_FILE: it would override the macOS keychain,
+        # breaking TLS to hosts whose CA lives there. Linux images need it.
+
+        # The dev shell's Conan home: separate from this runner's system one.
+        echo "CONAN_HOME=${HOME}/.conan2-nix" >>"${GITHUB_ENV}"
+
+    # `Check tools` runs later but swallows failures; a bad export would just
+    # build with the system toolchain.
+    - name: Verify the toolchain resolves into the Nix store
+      shell: bash
+      run: |
+        for tool in clang clang++ cmake ninja conan; do
+            path="$(command -v "${tool}" || true)"
+            echo "${tool} -> ${path:-<not found>}"
+            case "${path}" in
+                /nix/store/*) ;;
+                *)
+                    echo "::error::${tool} does not resolve into the Nix store"
+                    exit 1
+                    ;;
+            esac
+        done

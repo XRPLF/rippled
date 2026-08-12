@@ -69,6 +69,12 @@ on:
         type: string
         default: ""
 
+      toolchain:
+        description: 'Where the toolchain comes from ("nix" to build the flake CI environment on the runner, empty for the system one). Linux always builds in a Nix image, so this is macOS/Windows only.'
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -123,6 +129,11 @@ jobs:
         uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
+
+      # Before any step that uses a build tool, composite actions included.
+      - name: Setup Nix environment
+        if: ${{ inputs.toolchain == 'nix' }}
+        uses: ./.github/actions/setup-nix-env
 
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
@@ -211,6 +222,24 @@ jobs:
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}" \
               2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
+
+      # macOS: nothing may reference the store, so whole trees are checked. The
+      # Conan cache included - what it holds is what gets uploaded and reused.
+      - name: Check the build output for Nix store references (macOS)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+
+      - name: Check the Conan cache for Nix store references (macOS)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+
+      # Linux: the toolchain always references the store, so only the binaries
+      # PatchNixBinary.cmake retargets are checked. Same condition it uses.
+      - name: Check for Nix store references (Linux)
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        run: |
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}

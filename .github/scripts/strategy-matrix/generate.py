@@ -88,6 +88,9 @@ class PlatformConfig:
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
+    # "" is the runner's system compiler, "nix" the flake's CI environment.
+    # Linux always builds in a Nix image, so this is macOS/Windows only.
+    toolchain: str = ""
 
     def __post_init__(self) -> None:
         if isinstance(self.build_type, str):
@@ -137,6 +140,8 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
+    # "nix" to build in the flake's CI environment; see PlatformConfig.
+    toolchain: str = ""
 
 
 @dataclasses.dataclass
@@ -253,9 +258,12 @@ def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]
         if minimal and not cfg.minimal:
             continue
         for build_type in cfg.build_type:
+            name = f"{platform_name}-{arch}-{build_type.lower()}"
+            if cfg.toolchain:
+                name += f"-{cfg.toolchain}"
             entries.append(
                 MatrixEntry(
-                    config_name=f"{platform_name}-{arch}-{build_type.lower()}",
+                    config_name=name,
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
@@ -263,6 +271,7 @@ def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
+                    toolchain=cfg.toolchain,
                 )
             )
     return entries

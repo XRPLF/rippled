@@ -131,3 +131,40 @@ once it picks up that rebuild, then re-run the `grep libgit2` check above to
 confirm it reports `1.9.4` or newer.
 
 Until then, prefer the workarounds above.
+
+## `wint_t` / `uint32_t` errors from the Nix libc++ headers
+
+A build that mixes the Nix toolchain with the system SDK fails in libc++ itself,
+with errors that look nothing like your code:
+
+```
+/nix/store/...-libcxx-.../include/c++/v1/cwchar:136:9: error: target of using declaration conflicts with declaration already in scope
+  136 | using ::wint_t _LIBCPP_USING_IF_EXISTS;
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_wint_t.h:32:25: note: target of using declaration
+...
+error: use of undeclared identifier 'UINT32_C'
+```
+
+The give-away is the second path: Nix's libc++ headers are being combined with
+the **Xcode Command Line Tools** SDK instead of the Nix one.
+
+### Why it happens
+
+`SDKROOT` and `DEVELOPER_DIR` are what point the toolchain at the Nix SDK, and
+they are not baked into the compiler — a dev shell gets them from the
+`apple-sdk` setup hook. CMake, finding neither, asks `xcrun`, which answers with
+the system SDK. Nix's `libc++` and Apple's headers then declare the same types
+twice.
+
+### Fix
+
+Run the build from inside the dev shell (`nix develop`), or from an environment
+that exports both variables. To confirm which SDK a configured build is using:
+
+```bash
+grep -o '\-isysroot [^ ]*' build/compile_commands.json | sort -u
+```
+
+It should print a `/nix/store/...-apple-sdk-*` path. If it prints
+`/Library/Developer/CommandLineTools/...`, re-configure from within the shell —
+CMake caches the sysroot, so an existing `build/` directory keeps the wrong one.
