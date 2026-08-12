@@ -22,6 +22,11 @@ static_assert(
 static_assert(
     kBoundaries.back() == SHAMapInnerNode::kBranchFactor,
     "Last element of boundaries must be number of children in a dense array");
+static_assert(
+    kBoundaries.front() >= 1,
+    "TaggedPointer.ipp subtracts 1 from a numAllocated value derived from "
+    "kBoundaries, as an unsigned quantity, in several places; the smallest "
+    "boundary must stay non-zero or those subtractions underflow.");
 
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
@@ -298,7 +303,7 @@ inline TaggedPointer::TaggedPointer(
                     // sparse
                     // need to shift all the elements to the left by
                     // one
-                    for (auto c = srcDstIndex; c < srcDstNumAllocated - 1u; ++c)
+                    for (auto c = srcDstIndex; c + 1 < srcDstNumAllocated; ++c)
                     {
                         srcDstHashes[c] = srcDstHashes[c + 1];
                         srcDstChildren[c] = std::move(srcDstChildren[c + 1]);
