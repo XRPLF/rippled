@@ -532,15 +532,12 @@ private:
 
         // The default moves First-Loss Capital off the broker pseudo-account,
         // so that is the line to freeze.
-        auto const brokerPseudo = [&]() -> std::optional<Account> {
-            if (auto const sle = env.le(brokerInfo.brokerKeylet()); BEAST_EXPECT(sle))
-                return Account("brokerPseudo", sle->at(sfAccount));
-            return std::nullopt;
-        }();
-        if (!brokerPseudo)
+        auto const brokerSle = env.le(brokerInfo.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
             return;
+        Account const brokerPseudo{"brokerPseudo", brokerSle->at(sfAccount)};
 
-        env(trust(issuer, (*brokerPseudo)["IOU"](0), tfSetFreeze | tfSetDeepFreeze));
+        env(trust(issuer, brokerPseudo["IOU"](0), tfSetFreeze | tfSetDeepFreeze));
         env.close();
 
         // Pre-fixCleanup3_4_0, the invariant blocks the default.
