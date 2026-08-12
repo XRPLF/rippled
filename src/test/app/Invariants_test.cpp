@@ -4617,7 +4617,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
             TxAccount::A2);
 
@@ -4632,7 +4632,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
             TxAccount::A2);
 
@@ -4651,7 +4651,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
 
         testcase << "Vault loan set - closed-ended final payment past "
@@ -4699,7 +4699,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const&, Env& env) -> bool {
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
