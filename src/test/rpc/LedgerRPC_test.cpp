@@ -736,16 +736,16 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::status] == "success");
             auto const& txns = jrr[jss::ledger][jss::transactions];
             BEAST_EXPECT(txns.isArray() && txns.size() > 0);
-            for (unsigned i = 0; i < txns.size(); ++i)
+            for (auto const& txn : txns)
             {
-                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+                BEAST_EXPECT(txn.isMember(jss::ctid));
                 auto const expectedCtid = rpc::encodeCTID(
                     jrr[jss::ledger][jss::ledger_index].asUInt(),
-                    txns[i][jss::meta]["TransactionIndex"].asUInt(),
+                    txn[jss::meta]["TransactionIndex"].asUInt(),
                     netID);
                 // NOLINTBEGIN(bugprone-unchecked-optional-access)
                 if (BEAST_EXPECT(expectedCtid.has_value()))
-                    BEAST_EXPECT(txns[i][jss::ctid] == expectedCtid.value());
+                    BEAST_EXPECT(txn[jss::ctid] == expectedCtid.value());
                 // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
