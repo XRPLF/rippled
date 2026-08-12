@@ -3680,6 +3680,26 @@ public:
         }
 
         {
+            // Companion to the transfer-rate overflow cases above. In this
+            // scenario the taker would sell TakerPays=MPT(~1.84e18) for
+            // TakerGets=XRP(1) against a same-magnitude poison offer,
+            // forcing BookStep::revImp()'s limitStepOut() to strictly reduce
+            // and overflow. Two layers of defense stop that from happening:
+            //   * OfferCreate::preflight rejects the taker's offer with
+            //     temBAD_OFFER, because getRate(TakerGets, TakerPays) == 0
+            //     (large MPT numerator over small XRP denominator overflows
+            //     the rate mantissa) -- an unrepresentable quality that
+            //     would rest in the quality-0 book directory and never
+            //     cross. This is the check exercised here.
+            //   * BookStep::forEachOffer's catch(std::overflow_error) is
+            //     the deeper safety net for overflows reached through other
+            //     paths (e.g. transfer-rate multiplication on a resting
+            //     offer). It is exercised by the other blocks in this test.
+            //
+            // Because preflight rejects the taker's offer outright, no
+            // crossing occurs: the poison offer remains on the book, the
+            // taker's offer is not placed, and the tem* rejection burns no
+            // fee and does not increment the taker's sequence.
             Env env{*this, features};
             env.fund(XRP(10'000), issuer, taker);
             env.close();
@@ -3687,18 +3707,9 @@ public:
             MPTTester const token{
                 {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMaxMpTokenAmount}};
 
-            // Give the taker exactly one MPT. If the old rounding overflow
-            // collapsed the required input to the minimum positive amount, the
-            // taker could afford the bad fill and the balance checks below
-            // would catch the economic gain.
             env(pay(issuer, taker, token(1)));
             env.close();
 
-            // Covers BookStep::revImp() output reduction. The issuer's offer
-            // is fully funded and has no transfer fee, so offer preparation
-            // succeeds. The taker asks for slightly less output, forcing
-            // limitStepOut() to reduce the offer; that strict reduction used
-            // to overflow and leave the poison offer on the book.
             auto const funded = 1'844'674'407'370'955'162LL;
             auto const offerOut = funded + 1;
 
@@ -3712,21 +3723,21 @@ public:
             auto const issuerXRPBefore = env.balance(issuer, XRP);
             auto const takerXRPBefore = env.balance(taker, XRP);
             auto const takerMPTBefore = env.balance(taker, token);
-            auto const fee = env.current()->fees().base;
+            auto const takerSeqBefore = env.seq(taker);
 
-            auto const takerSeq = env.seq(taker);
-            env(offer(taker, token(funded), XRP(1)));
+            auto const takerSeq = takerSeqBefore;
+            env(offer(taker, token(funded), XRP(1)), Ter(temBAD_OFFER));
             env.close();
 
-            // The former overflow point must not turn into a near-free fill:
-            // the unusable offer is removed, the taker's offer remains, and no
-            // value changes hands beyond the taker's transaction fee.
-            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            // Preflight rejection: poison offer untouched, taker's offer not
+            // placed, no balance/sequence change.
+            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
             BEAST_EXPECT(
-                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
             BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore);
-            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee);
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore);
             BEAST_EXPECT(env.balance(taker, token) == takerMPTBefore);
+            BEAST_EXPECT(env.seq(taker) == takerSeqBefore);
         }
 
         {
