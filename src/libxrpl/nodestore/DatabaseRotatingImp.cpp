@@ -12,7 +12,6 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
-#include <xrpl/protocol/Protocol.h>
 
 #include <atomic>
 #include <cstdint>
@@ -20,7 +19,6 @@
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -56,7 +54,6 @@ DatabaseRotatingImp::rotate(
     // deleted.
     std::shared_ptr<node_store::Backend> oldArchiveBackend;
     std::uint64_t copyForwards = 0;
-    std::uint64_t copyRejects = 0;
     std::uint64_t duplications = 0;
     {
         std::scoped_lock const lock(mutex_);
@@ -70,53 +67,46 @@ DatabaseRotatingImp::rotate(
         writableBackend_ = std::move(newBackend);
 
         copyForwards = copyForwardCount_.exchange(0, std::memory_order_relaxed);
-        copyRejects = copyRejectCount_.exchange(0, std::memory_order_relaxed);
         duplications = duplicationCount_.exchange(0, std::memory_order_relaxed);
     }
 
-    if (copyForwards > 0 || copyRejects > 0)
+    if (copyForwards > 0)
     {
         JLOG(j_.warn()) << "Rotating: copied forward " << copyForwards
                         << " archive-served reads into the writable backend "
-                           "during the rotation window. Rejected "
-                        << copyRejects;
+                           "during the rotation window";
     }
     if (duplications > 0)
     {
         JLOG(j_.warn()) << "Rotating: duplicated " << duplications
-                        << " nodes into the writable backend for the current validated ledger.";
+                        << " nodes into the writable backend for the relevant cache.";
     }
 
     f(newWritableBackendName, newArchiveBackendName);
 }
 
 void
-DatabaseRotatingImp::setRotationInFlight(LedgerIndex inFlight)
+DatabaseRotatingImp::setRotationInFlight(bool inFlight)
 {
     rotationInFlight_.store(inFlight, std::memory_order_release);
-    std::ostringstream msg;
-    msg << "Rotating: copy-forward on archive reads ";
-    if (inFlight == 0)
-    {
-        msg << "disabled";
-    }
-    else
-    {
-        msg << "from " << inFlight << " forward";
-    }
-    JLOG(j_.debug()) << msg.str();
+    JLOG(j_.debug()) << "Rotating: copy-forward on archive reads "
+                     << (inFlight ? "enabled" : "disabled");
 }
 
-LedgerIndex
-DatabaseRotatingImp::getRotationInFlight() const
+bool
+DatabaseRotatingImp::isRotationInFlight() const
 {
     return rotationInFlight_.load(std::memory_order_acquire);
 }
 
+[[nodiscard]]
 std::uint64_t
-DatabaseRotatingImp::getDuplicationCount() const
+DatabaseRotatingImp::getAndResetDuplicationCount()
 {
-    return duplicationCount_.load(std::memory_order_acquire);
+    std::uint64_t duplications = 0;
+    duplications = duplicationCount_.exchange(0, std::memory_order_relaxed);
+
+    return duplications;
 }
 
 std::string
@@ -229,11 +219,11 @@ DatabaseRotatingImp::fetchNodeObject(
             // archive is about to be deleted, and a body canonicalized
             // into the cache after the freshen getKeys() snapshot would
             // otherwise survive only in RAM once the archive is dropped.
-            auto const inFlight = getRotationInFlight();
-            if (duplicate || (inFlight != 0 && (ledgerSeq == 0 || ledgerSeq >= inFlight)))
+            auto const inFlight = isRotationInFlight();
+            if (duplicate || inFlight)
             {
                 {
-                    // Refresh the writable backend pointer
+                    // Refresh the writable backend pointer since we need to use it
                     std::scoped_lock const lock(mutex_);
                     writable = writableBackend_;
                 }
@@ -244,17 +234,9 @@ DatabaseRotatingImp::fetchNodeObject(
                 }
                 else
                 {
-                    JLOG(j_.debug()) << "Rotating: copy node for ledger " << ledgerSeq
-                                     << " from archive to writable backend: " << hash;
                     copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
                 }
                 writable->store(nodeObject);
-            }
-            else if (inFlight != 0)
-            {
-                JLOG(j_.debug()) << "Rotating: DO NOT copy node for ledger " << ledgerSeq
-                                 << " from archive to writable backend: " << hash;
-                copyRejectCount_.fetch_add(1, std::memory_order_relaxed);
             }
         }
     }

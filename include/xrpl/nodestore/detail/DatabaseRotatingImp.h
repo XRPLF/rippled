@@ -8,7 +8,6 @@
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/protocol/Protocol.h>
 
 #include <atomic>
 #include <cstdint>
@@ -72,32 +71,28 @@ public:
     sweep() override;
 
     void
-    setRotationInFlight(LedgerIndex inFlight) override;
-    LedgerIndex
-    getRotationInFlight() const override;
+    setRotationInFlight(bool inFlight) override;
+    bool
+    isRotationInFlight() const override;
 
+    [[nodiscard]]
     std::uint64_t
-    getDuplicationCount() const override;
+    getAndResetDuplicationCount() override;
 
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
 
-    // Set to the index of the last rotated ledger between SHAMapStore
-    // starting the cache-freshen phase and the completion of rotate().
-    // While non-zero, archive hits on ordinary (duplicate == false)
-    // fetches are copied forward into the writable backend if they are
-    // for that ledger or later, since those are the ones we'll keep.
-    // To be safe, copy forward if the provided ledger index is 0.
+    // Set to true during the entire SHAMapStore rotation process.
+    // While true, archive hits on ordinary (duplicate == false)
+    // fetches are copied forward into the writable backend.
     // copyForwardCount_ tallies them per rotation for the
     // summary line logged at swap.
-    // copyRejectCount_ tallies the ones that weren't copied.
-    std::atomic<LedgerIndex> rotationInFlight_{0};
+    std::atomic<bool> rotationInFlight_{false};
     std::atomic<std::uint64_t> copyForwardCount_{0};
-    std::atomic<std::uint64_t> copyRejectCount_{0};
     // Duplication count tracks the number of nodes that are directly duplicated because they're in
-    // the target ledger or cache.
+    // the target ledger or rescued from a cache.
     std::atomic<std::uint64_t> duplicationCount_{0};
 
     std::shared_ptr<NodeObject>

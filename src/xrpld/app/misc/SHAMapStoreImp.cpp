@@ -300,7 +300,7 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
     {
         // LCOV_EXCL_START
         JLOG(journal_.warn())
-            << "copyNode: unable to re-store node with unsupported/unknown type, hash=" << hash
+            << "rescueNode: unable to re-store node with unsupported/unknown type, hash=" << hash
             << " type=" << static_cast<int>(nodeType);
         // We do not expect to see Inner nodes rescued without an expected type. Analysis and
         // experimentation so far indicate that it just doesn't happen, specifically in
@@ -315,7 +315,7 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
     node.serializeWithPrefix(s);
     dbRotating_->store(objectType, std::move(s.modData()), hash, 0);
 
-    JLOG(journal_.info()) << "copyNode: re-stored node missing from both backends, hash=" << hash
+    JLOG(journal_.info()) << "rescueNode: re-stored node missing from both backends, hash=" << hash
                           << " type=" << static_cast<int>(nodeType);
 }
 
@@ -354,8 +354,8 @@ SHAMapStoreImp::run()
     while (true)
     {
         XRPL_ASSERT(
-            dbRotating_->getRotationInFlight() == 0,
-            "SHAMapStoreImp::run : rotationInFlight_ must be zero "
+            !dbRotating_->isRotationInFlight(),
+            "SHAMapStoreImp::run : rotationInFlight_ must be false "
             "outside rotation window");
 
         healthy_ = true;
@@ -404,7 +404,7 @@ SHAMapStoreImp::run()
         if (readyToRotate)
         {
             auto const diff = validatedSeq - lastRotated;
-            JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
+            JLOG(journal_.warn()) << "ROTATING: validatedSeq " << validatedSeq << " lastRotated "
                                   << lastRotated << " diff " << diff << " deleteInterval "
                                   << deleteInterval_ << " canDelete_ " << canDelete_ << " state "
                                   << app_.getOPs().strOperatingMode(false) << " age "
@@ -415,13 +415,11 @@ SHAMapStoreImp::run()
             // rotate() completes, an ordinary read for new ledgers served by the archive is
             // copied forward into the writable backend, so a node fetched
             // from the doomed archive cannot be left RAM-only when the
-            // archive is deleted. RAII so the early returns below (and any
-            // exception) also clear the flag.
-            ScopeExit const clearRotationInFlight{[this] { dbRotating_->setRotationInFlight(0); }};
-            // Anything before lastRotated is going to get deleted soon, so we don't care about
-            // moving it to the writable DB.
-            XRPL_ASSERT(lastRotated != 0, "SHAMapStoreImp::run : valid lastRotated");
-            dbRotating_->setRotationInFlight(lastRotated);
+            // archive is deleted. Use ScopeExit so the early returns and continues below (and any
+            // exceptions) also clear the flag.
+            ScopeExit const clearRotationInFlight{
+                [this] { dbRotating_->setRotationInFlight(false); }};
+            dbRotating_->setRotationInFlight(true);
 
             clearPrior(lastRotated);
             if (healthWait() == HealthResult::Stopping)
@@ -449,7 +447,7 @@ SHAMapStoreImp::run()
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " duplicated "
-                << dbRotating_->getDuplicationCount() << " / " << nodeCount << " nodes";
+                << dbRotating_->getAndResetDuplicationCount() << " / " << nodeCount << " nodes";
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
@@ -483,7 +481,7 @@ SHAMapStoreImp::run()
             auto const currentValidatedSeq = ledgerMaster_->getValidLedgerIndex();
             auto const processingDiff = currentValidatedSeq - validatedSeq;
             JLOG(journal_.warn())
-                << "finished rotation. validatedSeq: " << validatedSeq
+                << "FINISHED ROTATION: validatedSeq: " << validatedSeq
                 << ", lastRotated: " << lastRotated << " diff " << diff
                 << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
                 << " ledgers were validated during the rotation processs. Complete ledgers: "
