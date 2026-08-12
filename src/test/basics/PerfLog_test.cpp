@@ -12,15 +12,11 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/file_status.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/system/detail/error_code.hpp>
-
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iterator>
@@ -31,6 +27,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -43,7 +40,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
 
     // The method names to count. PerfLog treats these as opaque keys, so these
     // are made up rather than taken from the RPC dispatch table: this test then
@@ -81,14 +78,14 @@ class PerfLog_test : public beast::unit_test::Suite
             // The error code is intentionally ignored: if the path doesn't
             // exist (the common case on a clean runner) remove_all returns
             // an error, and that's fine — there's nothing to clean up.
-            using namespace boost::filesystem;
-            boost::system::error_code ec;
+            using namespace std::filesystem;
+            std::error_code ec;
             remove_all(logDir(), ec);
         }
 
         ~Fixture()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
 
             auto const dir{logDir()};
             auto const file{logFile()};
@@ -111,7 +108,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static path
         logDir()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
@@ -144,7 +141,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static void
         wait()
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
 
             auto const path = logFile();
             if (!exists(path))
@@ -216,7 +213,7 @@ public:
     void
     testFileCreation()
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         {
             // Verify a PerfLog creates its file when constructed.
@@ -265,28 +262,30 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
+            using std::filesystem::perms;
+
             Fixture fixture{env_.app(), j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
             // Construct and write protect a file to prevent PerfLog
             // from creating its file.
-            boost::system::error_code ec;
-            boost::filesystem::create_directories(fixture.logDir(), ec);
+            std::error_code ec;
+            std::filesystem::create_directories(fixture.logDir(), ec);
             if (!BEAST_EXPECT(!ec))
                 return;
 
-            auto fileWriteable = [](boost::filesystem::path const& p) -> bool {
-                return std::ofstream{p.c_str(), std::ios::out | std::ios::app}.is_open();
+            auto fileWriteable = [](std::filesystem::path const& p) -> bool {
+                return std::ofstream{p, std::ios::out | std::ios::app}.is_open();
             };
 
             if (!BEAST_EXPECT(fileWriteable(fixture.logFile())))
                 return;
 
-            boost::filesystem::permissions(
+            std::filesystem::permissions(
                 fixture.logFile(),
-                perms::remove_perms | perms::owner_write | perms::others_write |
-                    perms::group_write);
+                perms::owner_write | perms::others_write | perms::group_write,
+                std::filesystem::perm_options::remove);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
@@ -310,9 +309,10 @@ public:
             perfLog->stop();
 
             // Fix file permissions so the file can be cleaned up.
-            boost::filesystem::permissions(
+            std::filesystem::permissions(
                 fixture.logFile(),
-                perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
+                perms::owner_write | perms::others_write | perms::group_write,
+                std::filesystem::perm_options::add);
         }
     }
 
@@ -979,7 +979,7 @@ public:
         // We can't fully test rotate because unit tests must run on Windows,
         // and Windows doesn't (may not?) support rotate.  But at least call
         // the interface and see that it doesn't crash.
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         Fixture fixture{env_.app(), j_};
         BEAST_EXPECT(!exists(fixture.logDir()));

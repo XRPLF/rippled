@@ -4,10 +4,9 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/json/json_value.h>
 
-#include <boost/filesystem.hpp>
-
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <span>
@@ -45,7 +44,7 @@ public:
      */
     struct Setup
     {
-        boost::filesystem::path perfLog;
+        std::filesystem::path perfLog;
         // log_interval is in milliseconds to support faster testing.
         milliseconds logInterval{seconds(1)};
     };
@@ -150,7 +149,7 @@ public:
 };
 
 PerfLog::Setup
-setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
+setupPerfLog(Section const& section, std::filesystem::path const& configDir);
 
 /**
  * @param methodNames The RPC methods to count, one counter per name. Each name
