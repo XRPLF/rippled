@@ -28,7 +28,8 @@ parseVault(json::Value const& params, json::Value& jvResult)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
-            rpc::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(
+                RpcInvalidParams, rpc::expectedFieldMessage(jss::vault_id, "hex string"), jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
@@ -38,14 +39,18 @@ parseVault(json::Value const& params, json::Value& jvResult)
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
-            rpc::injectError(RpcActMalformed, jvResult);
+            rpc::injectError(
+                RpcActMalformed, rpc::expectedFieldMessage(jss::owner, "AccountID"), jvResult);
             return std::nullopt;
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
         {
-            rpc::injectError(RpcInvalidParams, jvResult);
+            rpc::injectError(
+                RpcInvalidParams,
+                rpc::expectedFieldMessage(jss::seq, "a positive 32-bit integer"),
+                jvResult);
             return std::nullopt;
         }
 
@@ -54,8 +59,10 @@ parseVault(json::Value const& params, json::Value& jvResult)
     }
     else
     {
-        // Invalid combination of fields vault_id/owner/seq
-        rpc::injectError(RpcInvalidParams, jvResult);
+        rpc::injectError(
+            RpcInvalidParams,
+            "Must specify either 'vault_id' or both 'owner' and 'seq'.",
+            jvResult);
         return std::nullopt;
     }
 
@@ -71,20 +78,25 @@ doVaultInfo(rpc::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZero);
-    if (uNodeIndex == beast::kZero)
+    // No key means the request could not be turned into one, and parseVault has already said why.
+    auto const uNodeIndex = parseVault(context.params, jvResult);
+    if (!uNodeIndex)
+        return jvResult;
+
+    // A zero key names an entry that cannot exist, and the ledger refuses to be asked for one.
+    if (*uNodeIndex == beast::kZero)
     {
-        jvResult[jss::error] = "malformedRequest";
+        rpc::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
-    auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
+    auto const sleVault = lpLedger->read(keylet::vault(*uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
         : lpLedger->read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
     if (!sleVault || !sleIssuance)
     {
-        jvResult[jss::error] = "entryNotFound";
+        rpc::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
