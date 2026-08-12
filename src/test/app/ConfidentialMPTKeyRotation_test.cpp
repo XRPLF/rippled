@@ -3,12 +3,10 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/mpt.h>
 
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -71,9 +69,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
 
             // Rotating the issuer key bumps the epoch.
             if (rotationEnabled)
+            {
                 BEAST_EXPECT((*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
+            }
             else
+            {
                 BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
+            }
             BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
         }
 
@@ -271,9 +273,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
 
         // Rotating the auditor key bumps its epoch.
         if (rotationEnabled)
+        {
             BEAST_EXPECT((*sleIssuance)[~sfAuditorKeyEpoch] == 1u);
+        }
         else
+        {
             BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
+        }
 
         if (rotationEnabled)
         {
@@ -492,9 +498,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(
             expectedKey && strHex((*sleIssuance)[sfIssuerEncryptionKey]) == strHex(*expectedKey));
         if (rotationEnabled)
+        {
             BEAST_EXPECT((*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
+        }
         else
+        {
             BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
+        }
 
         // The confidential outstanding amount is not affected by the rotation
         BEAST_EXPECT(
