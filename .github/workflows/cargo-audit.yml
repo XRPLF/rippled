@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - "develop"
-      - "release/*"
     paths:
       - "crates/**/Cargo.toml"
       - "crates/Cargo.lock"
