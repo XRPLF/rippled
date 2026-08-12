@@ -389,8 +389,8 @@ VaultClawback::doApply()
     // The shares still move, so ValidVault would fail after the fact with "clawback must
     // decrease vault balance" instead of a clean upfront rejection.
     if (view().rules().enabled(fixCleanup3_4_0) &&
-        (debitRoundsToNoOp(vaultAsset, assetsTotal, assetsRecovered) ||
-         debitRoundsToNoOp(vaultAsset, assetsAvailable, assetsRecovered)))
+        (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
+         debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered)))
     {
         JLOG(j_.debug()) << "VaultClawback: clawback amount too small to change stored vault"
                             " balance";

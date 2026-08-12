@@ -936,7 +936,8 @@ private:
         auto const brokerSle = env.le(broker.brokerKeylet());
         if (!BEAST_EXPECT(brokerSle))
             return;
-        auto const loanKeylet = keylet::loan(broker.brokerID, brokerSle->at(sfLoanSequence));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
 
         env(set(borrower, broker.brokerID, Number{2'000'000}),
             Sig(sfCounterpartySignature, lender),
@@ -1004,8 +1005,8 @@ private:
             auto const iouBrokerSle = env.le(iouBroker.brokerKeylet());
             if (!BEAST_EXPECT(iouBrokerSle))
                 return;
-            auto const iouLoanKeylet =
-                keylet::loan(iouBroker.brokerID, iouBrokerSle->at(sfLoanSequence));
+            auto const iouLoanKeylet = keylet::loan(
+                iouBroker.brokerID, SeqProxy::rawSequence(iouBrokerSle->at(sfLoanSequence)));
 
             // Draw the entire vault out as a single loan.
             env(set(iouBorrower, iouBroker.brokerID, Number{4'000'000}),
@@ -1071,7 +1072,7 @@ private:
     }
 
     // Companion to the Vault_test dust-debit tests, which use a single
-    // depositor so AssetsTotal == AssetsAvailable and both debitRoundsToNoOp
+    // depositor so AssetsTotal == AssetsAvailable and both debitIsNonZeroDust
     // operands in VaultWithdraw::doApply trip together. Here a loan draws
     // almost the entire vault, leaving AssetsTotal (1e7) far above
     // AssetsAvailable (100): redeeming 1 share moves 1e-10 assets, which is

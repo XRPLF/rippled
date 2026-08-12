@@ -817,7 +817,7 @@ ValidVault::finalize(
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
                 bool const zeroDeltaIsLegitimate = view.rules().enabled(fixCleanup3_4_0) &&
-                    !maybeVaultDeltaAssets && beforeVault.assetsTotal <= beforeVault.lossUnrealized;
+                    !maybeVaultDeltaAssets && beforeVault.assetsTotal == beforeVault.lossUnrealized;
 
                 if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
                 {
@@ -877,8 +877,8 @@ ValidVault::finalize(
                         // A one-sided change is cross-checked even for a
                         // legitimate zero vault delta: the destination must
                         // then have moved by (rounded) zero as well.
-                        auto const destinationDelta =  //
-                            maybeAccDelta ? *maybeAccDelta : *maybeOtherAccDelta;
+                        auto const destinationDelta =
+                            *maybeAccDelta.or_else([&] { return maybeOtherAccDelta; });
 
                         // the scale of destinationDelta can be coarser than
                         // minScale, so we take that into account when rounding

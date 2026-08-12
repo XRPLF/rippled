@@ -6969,7 +6969,7 @@ class Vault_test : public beast::unit_test::Suite
     // canonicalize back to the prior stored value.
     //
     // With a single depositor AssetsTotal == AssetsAvailable, so both
-    // debitRoundsToNoOp operands trip together here. LoanRounding_test's
+    // debitIsNonZeroDust operands trip together here. LoanRounding_test's
     // "dust debit vs AssetsTotal only" case isolates the AssetsTotal operand
     // via a heavily-loaned vault.
     void

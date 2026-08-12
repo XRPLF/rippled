@@ -55,17 +55,18 @@ enum class TruncateShares : bool { No = false, Yes = true };
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
 /**
- * Returns the effective total of assets backing outstanding shares, i.e.
- * sfAssetsTotal, discounted by sfLossUnrealized unless waived. This is the
- * numerator used by both withdraw conversion helpers (assetsToSharesWithdraw
- * and sharesToAssetsWithdraw) to compute the share/asset exchange rate.
+ * Returns the effective total of assets backing outstanding shares for the
+ * purposes of a withdrawal, i.e. sfAssetsTotal, discounted by sfLossUnrealized
+ * unless waived. This is the numerator used by both withdraw conversion
+ * helpers (assetsToSharesWithdraw and sharesToAssetsWithdraw) to compute the
+ * share/asset exchange rate.
  *
  * @param vault The vault SLE.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
  *              loss.
  */
 [[nodiscard]] Number
-effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
 
 /**
  * Returns whether debiting `amount` from `total` — the current value of a
@@ -83,7 +84,7 @@ effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive);
  *               that case is rejected separately and unconditionally.
  */
 [[nodiscard]] bool
-debitRoundsToNoOp(Asset const& asset, Number const& total, Number const& amount);
+debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from

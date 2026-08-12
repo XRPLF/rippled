@@ -292,7 +292,7 @@ VaultWithdraw::doApply()
         // share amount can round down to an exact zero even though the vault still holds
         // positive effective value backing outstanding shares.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
-            effectiveAssetsTotalWithdraw(vault, waiveUnrealizedLoss) != beast::kZero)
+            assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
         {
             JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
             return tecPRECISION_LOSS;
@@ -302,8 +302,8 @@ VaultWithdraw::doApply()
         // sfAssetsTotal or sfAssetsAvailable once canonicalized to STAmount's precision. Either
         // way the shares still move, so ValidVault would otherwise fail after the fact instead
         // of a clean upfront rejection.
-        if (debitRoundsToNoOp(vaultAsset, assetsTotal, assetsWithdrawn) ||
-            debitRoundsToNoOp(vaultAsset, assetsAvailable, assetsWithdrawn))
+        if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn) ||
+            debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsWithdrawn))
         {
             JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
                                 " vault balance";

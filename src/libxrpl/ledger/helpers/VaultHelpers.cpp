@@ -66,7 +66,7 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] Number
-effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive)
+assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive)
 {
     Number assetTotal = vault->at(sfAssetsTotal);
     if (waive == WaiveUnrealizedLoss::No)
@@ -75,7 +75,7 @@ effectiveAssetsTotalWithdraw(SLE::const_ref vault, WaiveUnrealizedLoss waive)
 }
 
 [[nodiscard]] bool
-debitRoundsToNoOp(Asset const& asset, Number const& total, Number const& amount)
+debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount)
 {
     if (amount == 0)
         return false;
@@ -97,7 +97,7 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = effectiveAssetsTotalWithdraw(vault, waive);
+    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
@@ -123,7 +123,7 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = effectiveAssetsTotalWithdraw(vault, waive);
+    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
