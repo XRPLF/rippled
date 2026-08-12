@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -134,6 +135,127 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 isPaymentLate(ReadView const& view, SLE::const_ref loanSle)
 {
     return hasExpired(view, loanSle->at(sfNextPaymentDueDate));
+}
+
+namespace accrual {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue)
+{
+    return {.assetsTotalDelta = interestDue, .debtTotalDelta = principalRequested + interestDue};
+}
+
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    return vaultMaximum != 0 && interestDue > vaultMaximum - vaultTotal;
+}
+
+/*
+XLS-66 section 3.2.3.2, defines the default amount as
+
+DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+
+Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
+*/
+Number
+loanVaultExposure(SLE::const_ref loanSle)
+{
+    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {
+        .assetsTotalDelta = parts.valueChange,
+        .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
+}
+
+}  // namespace accrual
+
+namespace cash_basis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested)
+{
+    return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
+}
+
+/*
+ * Under CashBasis accounting, Loan default amount is:
+ *
+ * DefaultAmount = Loan.PrincipalOutstanding
+ */
+Number
+loanVaultExposure(SLE::const_ref loanSle)
+{
+    return loanSle->at(sfPrincipalOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {.assetsTotalDelta = parts.interestPaid, .debtTotalDelta = parts.principalPaid};
+}
+
+}  // namespace cash_basis
+
+namespace {
+
+// Cash-basis accounting applies only when featureLendingProtocolV1_1 is
+// enabled AND the specific Vault was created under it (LEVersion ==
+// VaultVersion::CashBasis). Vaults created before activation keep accrual-basis
+// accounting forever, even after the amendment later turns on.
+bool
+cashBasisEnabled(SLE::const_ref vaultSle)
+{
+    return getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+}
+
+}  // namespace
+
+AccountingDeltas
+loanOriginationDeltas(
+    SLE::const_ref vaultSle,
+    Number const& principalRequested,
+    Number const& interestDue)
+{
+    return cashBasisEnabled(vaultSle)
+        ? cash_basis::loanOriginationDeltas(principalRequested)
+        : accrual::loanOriginationDeltas(principalRequested, interestDue);
+}
+
+bool
+loanOriginationExceedsVaultMaximum(
+    SLE::const_ref vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    // Cash-basis origination doesn't recognize interest into AssetsTotal, so
+    // interest due can never push the vault past AssetsMaximum at origination.
+    if (cashBasisEnabled(vaultSle))
+        return false;
+
+    auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
+    return accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
+}
+
+Number
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle)
+{
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
+                                      : accrual::loanVaultExposure(loanSle);
+}
+
+AccountingDeltas
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts)
+{
+    return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
+                                      : accrual::loanPaymentDeltas(parts);
 }
 
 namespace detail {
@@ -1501,7 +1623,7 @@ makeRegularPayment(
     LoanPaymentType const paymentType,
     beast::Journal j)
 {
-    using namespace Lending;
+    using namespace lending;
 
     XRPL_ASSERT_PARTS(
         paymentType == LoanPaymentType::Regular || paymentType == LoanPaymentType::Overpayment,

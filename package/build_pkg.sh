@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an RPM or Debian package from a pre-built xrpld binary.
+# Build an RPM or Debian package from the pre-built xrpld and validator-keys
+# binaries.
 #
 # Flags override env vars; env vars override defaults.
 
@@ -11,7 +12,9 @@ Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
   --src-dir DIR            repo root                 [SRC_DIR;           default: ${PWD}]
-  --build-dir DIR          directory holding xrpld   [BUILD_DIR;         default: ${PWD}/build]
+  --build-dir DIR          directory holding the
+                           xrpld and validator-keys
+                           binaries                  [BUILD_DIR;         default: ${PWD}/build]
   --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
   --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help               show this help and exit
@@ -69,15 +72,44 @@ SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="${BUILD_DIR:-${PWD}/build}"
 if [[ ! -d "${BUILD_DIR}" ]]; then
     echo "build_pkg.sh: build directory not found: ${BUILD_DIR}" >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+    echo "Build the binaries before packaging, or set BUILD_DIR to the directory containing them." >&2
     exit 1
 fi
 BUILD_DIR="$(cd "${BUILD_DIR}" && pwd)"
 
 xrpld_binary="${BUILD_DIR}/xrpld"
-if [[ ! -x "${xrpld_binary}" ]]; then
-    echo "build_pkg.sh: expected executable xrpld binary at ${xrpld_binary}." >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+validator_keys_binary="${BUILD_DIR}/validator-keys"
+
+# Report both binaries at once: they share a single BUILD_DIR, so telling the
+# reader to point it at one of them in isolation is advice they cannot follow.
+missing=()
+[[ -x "${xrpld_binary}" ]] || missing+=(xrpld)
+[[ -x "${validator_keys_binary}" ]] || missing+=(validator-keys)
+
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "build_pkg.sh: missing or not executable in ${BUILD_DIR}: ${missing[*]}" >&2
+    echo "Both binaries come from a single CMake build directory configured with" >&2
+    echo "-Dxrpld=ON -Dvalidator_keys=ON. Build them, then point BUILD_DIR at that" >&2
+    echo "directory." >&2
+    exit 1
+fi
+
+# Shipping validator-keys means shipping its notice, so treat it as required
+# rather than letting a package go out without the attribution.
+validator_keys_license="${BUILD_DIR}/validator-keys-LICENSE"
+if [[ ! -f "${validator_keys_license}" ]]; then
+    echo "build_pkg.sh: missing ${validator_keys_license}." >&2
+    echo "cmake/XrplValidatorKeys.cmake copies it out of the fetched" >&2
+    echo "validator-keys-tool source, so reconfigure with -Dvalidator_keys=ON." >&2
+    exit 1
+fi
+
+# The binary must also *run* here. Packaging happens in a vanilla distro
+# container, so this is what catches a binary still pointing at the Nix store's
+# ELF loader (see patch_nix_binary in cmake/PatchNixBinary.cmake); xrpld is
+# covered implicitly by the version query below.
+if ! "${validator_keys_binary}" --version >/dev/null; then
+    echo "build_pkg.sh: ${validator_keys_binary} exists but does not run here." >&2
     exit 1
 fi
 
@@ -150,7 +182,9 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${xrpld_binary}" "${dest}/xrpld"
+    cp "${validator_keys_binary}" "${dest}/validator-keys"
+    cp "${validator_keys_license}" "${dest}/validator-keys-LICENSE"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"

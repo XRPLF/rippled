@@ -290,6 +290,77 @@ computeFullPaymentInterest(
 [[nodiscard]] bool
 isPaymentLate(ReadView const& view, SLE::const_ref loanSle);
 
+// Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
+// accounting touch point (origination, payment, impair/unimpair/default).
+struct AccountingDeltas
+{
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+};
+
+// Whole-life (pre-LendingProtocolV1_1) recognition model: interest is
+// recognized into AssetsTotal/DebtTotal up front, at origination.
+namespace accrual {
+
+// LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+
+// LoanSet origination: would recognizing this loan's interest push
+// Vault.AssetsTotal past Vault.AssetsMaximum?
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+// LoanManage impair/unimpair/default: the vault's exposure to this loan
+Number
+loanVaultExposure(SLE::const_ref loanSle);
+
+// LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace accrual
+
+// Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
+// are principal-only, interest is recognized only as it's actually paid.
+namespace cash_basis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested);
+
+Number
+loanVaultExposure(SLE::const_ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace cash_basis
+
+// Public dispatchers: pick cash_basis:: if featureLendingProtocolV1_1 is
+// enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
+// VaultVersion::CashBasis, else accrual::. These are the only entry points
+// transactors call.
+AccountingDeltas
+loanOriginationDeltas(
+    SLE::const_ref vaultSle,
+    Number const& principalRequested,
+    Number const& interestDue);
+
+bool
+loanOriginationExceedsVaultMaximum(
+    SLE::const_ref vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+Number
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
+
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
 // functions and unit tests
