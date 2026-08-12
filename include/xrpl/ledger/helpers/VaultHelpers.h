@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -107,6 +108,21 @@ sharesToAssetsWithdraw(
  */
 [[nodiscard]] bool
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+
+/**
+ * Resolves a Vault's LEVersion, the single point every accounting touch
+ * point should call to determine which recognition model (accrual vs.
+ * cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1
+ * activated never have sfLEVersion set, which resolves here to
+ * VaultVersion::Legacy.
+ *
+ * @param vault The vault SLE.
+ *
+ * @return The Vault's LEVersion, or VaultVersion::Legacy if the field is
+ * absent.
+ */
+[[nodiscard]] VaultVersion
+getVaultVersion(SLE::const_ref vault);
 
 [[nodiscard]] bool
 isVaultDonate(Rules const& rules, STTx const& tx);

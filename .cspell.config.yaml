@@ -132,6 +132,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
@@ -165,6 +166,7 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
   - lseq
   - lsmf
   - ltype
@@ -174,7 +176,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -202,6 +203,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
@@ -363,6 +365,7 @@ words:
   - xchain
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld

@@ -26,13 +26,14 @@
 #include <memory>
 #include <numeric>
 #include <random>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
 
 // Shared helpers for the NodeStore benchmarks.
 //
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 // Fill `bytes` of memory at `buffer` with random bits drawn from `g`.
 template <class Generator>
@@ -40,18 +41,13 @@ inline void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
-    while (bytes >= sizeof(result_type))
+    while (bytes > 0)
     {
         auto const v = g();
-        std::memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
-        bytes -= sizeof(v);
-    }
-
-    if (bytes > 0)
-    {
-        auto const v = g();
-        std::memcpy(buffer, &v, bytes);
+        auto const chunk = std::min(bytes, sizeof(result_type));
+        std::memcpy(buffer, &v, chunk);
+        buffer = reinterpret_cast<std::uint8_t*>(buffer) + chunk;
+        bytes -= chunk;
     }
 }
 
@@ -145,7 +141,7 @@ makePool(std::uint8_t prefix, std::size_t count, std::size_t start = 0)
     Sequence seq(prefix);
     Batch pool;
     pool.reserve(count);
-    for (std::size_t i = 0; i < count; ++i)
+    for (auto i = 0uz; i < count; ++i)
         pool.push_back(seq.obj(start + i));
     return pool;
 }
@@ -158,7 +154,7 @@ makeMissingKeys(std::size_t count)
     Sequence seq(2);
     std::vector<uint256> keys;
     keys.reserve(count);
-    for (std::size_t i = 0; i < count; ++i)
+    for (auto i = 0uz; i < count; ++i)
         keys.push_back(seq.key(i));
     return keys;
 }
@@ -206,16 +202,16 @@ inline std::vector<std::size_t>
 makeShuffle(std::size_t size, std::uint64_t seed)
 {
     std::vector<std::size_t> v(size);
-    std::iota(v.begin(), v.end(), std::size_t{0});
+    std::ranges::iota(v, 0uz);
     beast::xor_shift_engine gen(seed);
-    std::shuffle(v.begin(), v.end(), gen);
+    std::ranges::shuffle(v, gen);
     return v;
 }
 
 // Partition a pool into fixed-size batches. Any trailing remainder shorter than
 // `batchSize` is dropped, so every returned batch has exactly `batchSize`.
 inline std::vector<Batch>
-sliceBatches(Batch const& pool, std::size_t batchSize)
+sliceFixedBatches(Batch const& pool, std::size_t batchSize)
 {
     std::vector<Batch> batches;
     if (batchSize == 0)
@@ -228,13 +224,10 @@ sliceBatches(Batch const& pool, std::size_t batchSize)
 
 /**
  * @brief RAII owner of a NodeStore Backend opened on a private temporary directory.
- *
- * Member declaration order matters: `tempDir` is declared first so it is
- * destroyed last, after the backend has closed and released its files.
  */
 struct BackendHarness
 {
-    beast::TempDir tempDir;
+    beast::TempDir tempDir;  ///< Declared first so it is destroyed last
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Backend> backend;
@@ -304,15 +297,14 @@ struct BackendConfig
 inline std::vector<BackendConfig> const&
 backendConfigs()
 {
+    // Use factory settings for each DB
     static std::vector<BackendConfig> const kConfigs = {
         {.name = "nudb", .config = "type=nudb"},
 #if XRPL_ROCKSDB_AVAILABLE
-        {.name = "rocksdb",
-         .config = "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-                   "file_size_mb=8,file_size_mult=2"},
+        {.name = "rocksdb", .config = "type=rocksdb"},
 #endif
     };
     return kConfigs;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

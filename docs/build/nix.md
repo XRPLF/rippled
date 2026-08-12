@@ -120,13 +120,35 @@ nix develop -c "$SHELL"
 >
 > If it doesn't, either adjust your shell configuration so it doesn't override `$PATH`, or use [direnv](#automatic-activation-with-direnv) (below), which loads the environment _after_ your shell config and so takes precedence regardless of the shell you use.
 
-## Building xrpld with Nix
+## Building xrpld in the Nix shell
 
 Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
 
 Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Linux):
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
+
+## Conan configuration
+
+The shell runs [`conan/init.sh`](../../conan/init.sh) on entry, so
+[Set Up Conan](../../BUILD.md#set-up-conan) is already done for you. It installs
+into the shell's own Conan home: `CONAN_HOME=~/.conan2-nix`.
+
+### Prebuilt packages
+
+On **Linux**, the binaries on the `xrplf` remote are built in this same Nix
+environment — CI runs in Docker images that bundle the dev shell's toolchain (see
+[`nix/docker`](../../nix/docker)) — so `.#gcc` and `.#clang` can reuse them. The
+`-plain` shells do not match that toolchain's glibc, so binaries from the remote
+are not a reliable match there.
+
+On **macOS**, CI builds with Apple Clang, so the remote holds nothing for the Nix
+`clang` toolchain and dependencies are compiled locally. We do not publish
+Nix-built macOS binaries because a Conan package ID records the compiler version
+but not the nixpkgs revision.
+
+To compile everything from source, add `--build '*'` to the `conan install`
+command.
 
 ## Automatic Activation with direnv
 
@@ -141,14 +163,6 @@ The repository already ships an `.envrc` at its root that activates the Nix flak
 
 > [!NOTE]
 > direnv only caches the `.direnv` directory (already listed in `.gitignore`); no other repository files are affected.
-
-## Conan and Prebuilt Packages
-
-Please note that there is no guarantee that binaries from conan cache will work when using nix. If you encounter any errors, please use `--build '*'` to force conan to compile everything from source:
-
-```bash
-conan install .. --output-folder . --build '*' --settings build_type=Release
-```
 
 ## Updating `flake.lock` file
 
