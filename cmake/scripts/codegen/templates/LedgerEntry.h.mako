@@ -2,6 +2,9 @@
 #pragma once
 
 #include <xrpl/protocol/STLedgerEntry.h>
+% if any(field.get('stiSuffix') == 'NUMBER' for field in fields):
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+% endif
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
