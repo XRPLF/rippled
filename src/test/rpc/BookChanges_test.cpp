@@ -193,7 +193,7 @@ public:
             try
             {
                 auto const result =
-                    RPC::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));
+                    xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));
                 BEAST_EXPECT(result[jss::type] == "bookChanges");
                 BEAST_EXPECT(result[jss::changes].size() == 0);
             }
