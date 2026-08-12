@@ -321,7 +321,7 @@ port_wss_admin
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            path const f = td.file(configFile);
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -353,9 +353,9 @@ port_wss_admin
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
                 // must be set.
                 char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
+                setenv("HOME", tc.path().string().c_str(), 1);
                 char const* x = getenv("XDG_CONFIG_HOME");
-                setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
+                setenv("XDG_CONFIG_HOME", tc.path().string().c_str(), 1);
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
@@ -385,7 +385,7 @@ port_wss_admin
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
+                setenv("HOME", tc.path().string().c_str(), 1);
                 char const* x = getenv("XDG_CONFIG_HOME");
                 unsetenv("XDG_CONFIG_HOME");
 

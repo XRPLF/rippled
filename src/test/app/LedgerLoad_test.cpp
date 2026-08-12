@@ -64,9 +64,9 @@ class LedgerLoad_test : public beast::unit_test::Suite
     setupLedger(TempDir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {.dbPath = td.path()};
+        SetupData retval = {.dbPath = td.path().string()};
 
-        retval.ledgerFile = td.file("ledgerdata.json");
+        retval.ledgerFile = td.file("ledgerdata.json").string();
 
         Env env{*this};
         std::optional<Account> prev;

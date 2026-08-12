@@ -124,16 +124,16 @@ TempDir::~TempDir()
     }
 }
 
-std::string
+std::filesystem::path
 TempDir::path() const
 {
-    return path_.string();
+    return path_;
 }
 
-std::string
-TempDir::file(std::string const& name) const
+std::filesystem::path
+TempDir::file(std::filesystem::path const& name) const
 {
-    return (path_ / name).string();
+    return (path_ / name);
 }
 
 }  // namespace xrpl

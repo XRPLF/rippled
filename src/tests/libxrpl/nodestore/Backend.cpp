@@ -69,7 +69,7 @@ protected:
     SetUp() override
     {
         params_.set("type", GetParam());
-        params_.set("path", tempDir_.path());
+        params_.set("path", tempDir_.path().string());
 
         beast::xor_shift_engine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
