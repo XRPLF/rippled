@@ -13,6 +13,7 @@
 #include <array>
 #include <cstddef>
 #include <exception>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <utility>
@@ -23,11 +24,11 @@ namespace xrpl::node_store {
 namespace {
 
 Section
-makeSection(std::string const& path, std::string const& blockSize = "")
+makeSection(std::filesystem::path const& path, std::string const& blockSize = "")
 {
     Section params;
     params.set("type", "nudb");
-    params.set("path", path);
+    params.set("path", path.string());
     if (!blockSize.empty())
         params.set("nudb_block_size", blockSize);
     return params;
