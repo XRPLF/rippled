@@ -22,6 +22,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -95,6 +96,37 @@ creditBalance(
         "xrpl::creditBalance : result currency "
         "match");
     return result;
+}
+
+Number
+creditBalanceExact(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& issuer,
+    Currency const& currency)
+{
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    if (!sleRippleState)
+        return Number{0};
+
+    STAmount balance = sleRippleState->getFieldAmount(sfBalance);
+    // Put balance in @p account's terms (sfBalance is stored in the line's
+    // own low/high convention).
+    if (account < issuer)
+        balance.negate();
+
+    // Amendment gate is defense-in-depth; see directSendNoFeeIOU
+    // (TokenHelpers.cpp) for the canonical rationale.
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return Number{balance};
+
+    // sfDust follows sfBalance's sign convention, so the same negation
+    // applies.
+    Number dust = sleRippleState->at(sfDust);
+    if (account < issuer)
+        dust = -dust;
+
+    return Number{balance} + dust;
 }
 
 //------------------------------------------------------------------------------
@@ -729,8 +761,23 @@ removeEmptyHolding(
     auto const line = ctx.view.peek(keylet::trustLine(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
-        return tecHAS_OBLIGATIONS;
+
+    // Obligation checks apply only to non-issuer holdings: the issuer's
+    // own trust-line is bookkeeping for the counterparty, not a holding
+    // that carries an obligation to the issuer.
+    if (!accountIsIssuer)
+    {
+        if (line->at(sfBalance)->iou() != beast::kZero)
+            return tecHAS_OBLIGATIONS;
+        // A line can be balance-zero yet hold non-zero sfDust: a debit
+        // can legally consume all representable balance and leave only
+        // dust. Refuse to delete such a line — dust is invisible to
+        // accountHolds, so deletion would silently destroy that value.
+        // Amendment gate is defense-in-depth; see directSendNoFeeIOU.
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+            Number{line->at(sfDust)} != beast::kZero)
+            return tecHAS_OBLIGATIONS;
+    }
 
     // Adjust the owner count(s)
     if (line->isFlag(lsfLowReserve))
