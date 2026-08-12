@@ -982,7 +982,7 @@ fn float_add_reads_both_operands_and_the_mode() {
     );
     assert_eq!(status(&wat, &host), 8, "the result length");
     assert_eq!(
-        *host.float_binops_asked.borrow(),
+        *host.float_binary_ops_asked.borrow(),
         vec![("add", vec![0u8; 8], vec![0u8; 8], 2)]
     );
 }
@@ -999,7 +999,7 @@ fn float_root_reads_the_float_the_degree_and_the_mode() {
     );
     assert_eq!(status(&wat, &host), 8, "the result length");
     assert_eq!(
-        *host.float_unops_asked.borrow(),
+        *host.float_unary_ops_asked.borrow(),
         vec![("root", vec![0u8; 8], 3, 1)]
     );
 }

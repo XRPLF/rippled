@@ -129,7 +129,7 @@ host_functions! {
     fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize>;
 
     /// The serialized bytes of a nested field of the current (escrow) ledger object,
-    /// reached by a `locator`, as with [`Self::get_tx_nested_field`].
+    /// reached by a `locator`, as with [`HostFunctions::get_tx_nested_field`].
     #[gas = 110]
     #[wasm_name = "home_le_inner"]
     fn get_current_ledger_obj_nested_field(
@@ -157,7 +157,7 @@ host_functions! {
     fn get_tx_array_len(&self, field: i32) -> HostResult<i32>;
 
     /// The number of elements in an array field of the current (escrow) ledger
-    /// object, as with [`Self::get_tx_array_len`].
+    /// object, as with [`HostFunctions::get_tx_array_len`].
     #[gas = 40]
     #[wasm_name = "home_le_arr_len"]
     fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32>;
@@ -175,7 +175,7 @@ host_functions! {
     fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;
 
     /// The number of elements in a nested array field of the current (escrow) ledger
-    /// object, reached by a `locator`, as with [`Self::get_tx_nested_array_len`].
+    /// object, reached by a `locator`, as with [`HostFunctions::get_tx_nested_array_len`].
     #[gas = 70]
     #[wasm_name = "home_le_inner_arr_len"]
     fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32>;

@@ -91,6 +91,26 @@ pub struct Trace {
     pub data: Vec<u8>,
 }
 
+/// The `(message, signature, pubkey)` `check_signature` takes.
+pub type SigCheck = (Vec<u8>, Vec<u8>, Vec<u8>);
+
+/// The `(subject, issuer, type)` `credential_keylet` takes.
+pub type CredentialKey = (Vec<u8>, Vec<u8>, Vec<u8>);
+
+/// The `(account1, account2, currency)` `trust_line_keylet` takes.
+pub type TrustLineKey = (Vec<u8>, Vec<u8>, Vec<u8>);
+
+/// The `(account, destination, seq)` `paychannel_keylet` takes.
+pub type PaychannelKey = (Vec<u8>, Vec<u8>, i32);
+
+/// One call to a float operator over two floats — `float_add`, `float_subtract`,
+/// `float_multiply`, `float_divide` — as `(operator, x, y, mode)`.
+pub type FloatBinaryCall = (&'static str, Vec<u8>, Vec<u8>, i32);
+
+/// One call to a float operator over a float and an integer — `float_root`,
+/// `float_power` — as `(operator, x, n, mode)`.
+pub type FloatUnaryCall = (&'static str, Vec<u8>, i32, i32);
+
 /// A `HostFunctions` implementation that answers from what the test put in it and
 /// records what it was asked. The ABI's receiver is `&self`, so the recording goes
 /// behind `RefCell`, as a real mutating host's would.
@@ -172,7 +192,7 @@ pub struct FakeHost {
     /// What `check_signature` answers, whatever it is given.
     pub sig_valid: HostResult<i32>,
     /// Every (message, signature, pubkey) `check_signature` was asked to verify.
-    pub sigs_checked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
+    pub sigs_checked: RefCell<Vec<SigCheck>>,
     /// What `account_keylet` answers, by account bytes. An unlisted account answers
     /// `InvalidAccount`.
     pub account_keylets: HashMap<Vec<u8>, Answer>,
@@ -190,9 +210,9 @@ pub struct FakeHost {
     pub check_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `credential_keylet` answers, by (subject, issuer, type) bytes. An unlisted
     /// key answers `InvalidAccount`.
-    pub credential_keylets: HashMap<(Vec<u8>, Vec<u8>, Vec<u8>), Answer>,
+    pub credential_keylets: HashMap<CredentialKey, Answer>,
     /// Every (subject, issuer, type) `credential_keylet` was asked for.
-    pub credential_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
+    pub credential_keylets_asked: RefCell<Vec<CredentialKey>>,
     /// What `delegate_keylet` answers, by (account, authorize) bytes. An unlisted key
     /// answers `InvalidAccount`.
     pub delegate_keylets: HashMap<(Vec<u8>, Vec<u8>), Answer>,
@@ -215,9 +235,9 @@ pub struct FakeHost {
     pub escrow_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `trust_line_keylet` answers, by (account1, account2, currency) bytes. An
     /// unlisted key answers `InvalidAccount`.
-    pub trust_line_keylets: HashMap<(Vec<u8>, Vec<u8>, Vec<u8>), Answer>,
+    pub trust_line_keylets: HashMap<TrustLineKey, Answer>,
     /// Every (account1, account2, currency) `trust_line_keylet` was asked for.
-    pub trust_line_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>,
+    pub trust_line_keylets_asked: RefCell<Vec<TrustLineKey>>,
     /// What `mptoken_issuance_keylet` answers, by (issuer bytes, seq). An unlisted key
     /// answers `InvalidAccount`.
     pub mpt_issuance_keylets: HashMap<(Vec<u8>, i32), Answer>,
@@ -245,9 +265,9 @@ pub struct FakeHost {
     pub oracle_keylets_asked: RefCell<Vec<(Vec<u8>, i32)>>,
     /// What `paychannel_keylet` answers, by (account, destination, seq). An unlisted
     /// key answers `InvalidAccount`.
-    pub paychannel_keylets: HashMap<(Vec<u8>, Vec<u8>, i32), Answer>,
+    pub paychannel_keylets: HashMap<PaychannelKey, Answer>,
     /// Every (account, destination, seq) `paychannel_keylet` was asked for.
-    pub paychannel_keylets_asked: RefCell<Vec<(Vec<u8>, Vec<u8>, i32)>>,
+    pub paychannel_keylets_asked: RefCell<Vec<PaychannelKey>>,
     /// What `permissioned_domain_keylet` answers, by (account bytes, seq). An unlisted
     /// key answers `InvalidAccount`.
     pub domain_keylets: HashMap<(Vec<u8>, i32), Answer>,
@@ -335,10 +355,10 @@ pub struct FakeHost {
     pub float_compare_asked: RefCell<Vec<(Vec<u8>, Vec<u8>)>>,
     /// Every `(x, y, mode)` the four binary float operators were asked for, tagged by
     /// operator name.
-    pub float_binops_asked: RefCell<Vec<(&'static str, Vec<u8>, Vec<u8>, i32)>>,
+    pub float_binary_ops_asked: RefCell<Vec<FloatBinaryCall>>,
     /// Every `(x, n, mode)` `float_root` and `float_power` were asked for, tagged by
     /// operator name.
-    pub float_unops_asked: RefCell<Vec<(&'static str, Vec<u8>, i32, i32)>>,
+    pub float_unary_ops_asked: RefCell<Vec<FloatUnaryCall>>,
 }
 
 impl Default for FakeHost {
@@ -453,8 +473,8 @@ impl Default for FakeHost {
             float_from_mant_exp_asked: RefCell::new(Vec::new()),
             float_compare_answer: Ok(0),
             float_compare_asked: RefCell::new(Vec::new()),
-            float_binops_asked: RefCell::new(Vec::new()),
-            float_unops_asked: RefCell::new(Vec::new()),
+            float_binary_ops_asked: RefCell::new(Vec::new()),
+            float_unary_ops_asked: RefCell::new(Vec::new()),
         }
     }
 }
@@ -1327,42 +1347,42 @@ impl HostFunctions for FakeHost {
     }
 
     fn float_add(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_binops_asked
+        self.float_binary_ops_asked
             .borrow_mut()
             .push(("add", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
     fn float_subtract(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_binops_asked
+        self.float_binary_ops_asked
             .borrow_mut()
             .push(("sub", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
     fn float_multiply(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_binops_asked
+        self.float_binary_ops_asked
             .borrow_mut()
             .push(("mult", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
     fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_binops_asked
+        self.float_binary_ops_asked
             .borrow_mut()
             .push(("div", x.to_vec(), y.to_vec(), mode));
         self.float_answer.fill(out)
     }
 
     fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_unops_asked
+        self.float_unary_ops_asked
             .borrow_mut()
             .push(("root", x.to_vec(), n, mode));
         self.float_answer.fill(out)
     }
 
     fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_unops_asked
+        self.float_unary_ops_asked
             .borrow_mut()
             .push(("pow", x.to_vec(), n, mode));
         self.float_answer.fill(out)
