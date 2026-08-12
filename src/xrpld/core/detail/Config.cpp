@@ -20,7 +20,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/format/free_funcs.hpp>
@@ -185,7 +184,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
     for (auto& strValue : vLines)
     {
         if (bTrim)
-            boost::algorithm::trim(strValue);
+            strValue = trimWhitespace(strValue);
 
         if (strValue.empty() || strValue[0] == '#')
         {
@@ -677,6 +676,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
         networkQuorum = beast::lexicalCastThrow<std::size_t>(strTemp);
 
+    if (getSingleSection(secConfig, Sections::kMaxSubscriptionsPerConnection, strTemp, j_))
+        maxSubscriptionsPerConnection = beast::lexicalCastThrow<std::size_t>(strTemp);
+
     fees = setupFeeVote(section(Sections::kVoting));
     /* [fee_default] is documented in the example config files as useful for
      * things like offline transaction signing. Until that's completely
@@ -920,6 +922,38 @@ Config::loadFromString(std::string const& fileContents)
                 std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
                 ": the time must be between 60 and 900 seconds, inclusive.");
         }
+
+        // Both manifest counts parse and validate identically, so read them
+        // the same way. Returns nullopt when the key is absent, leaving the
+        // built-in default in effect at the use site.
+        auto manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
+            std::optional<std::size_t> count;
+
+            try
+            {
+                if (auto val = sec.get(key))
+                    count = beast::lexicalCastThrow<std::size_t>(*val);
+            }
+            catch (...)
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
+                    ": must be of the form '<number>' representing a count of manifests.");
+            }
+
+            if (count && (*count < kMinManifestCount || *count > kMaxManifestCount))
+            {
+                Throw<std::runtime_error>(
+                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
+                    ": the count must be between " + std::to_string(kMinManifestCount) + " and " +
+                    std::to_string(kMaxManifestCount) + ", inclusive.");
+            }
+
+            return count;
+        };
+
+        maxUntrustedCount = manifestCount(Keys::kMaxUntrustedCount);
+        maxTrustedCount = manifestCount(Keys::kMaxTrustedCount);
     }
 
     if (getSingleSection(secConfig, Sections::kAmendmentMajorityTime, strTemp, j_))

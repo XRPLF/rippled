@@ -200,22 +200,16 @@ STTx::getSeqProxy() const
 {
     std::uint32_t const seq{getFieldU32(sfSequence)};
     if (seq != 0)
-        return SeqProxy::sequence(seq);
+        return SeqProxy::rawSequence(seq);
 
-    std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
+    std::optional<std::uint32_t> const ticketSeq{at(~sfTicketSequence)};
     if (!ticketSeq)
     {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
-        return SeqProxy::sequence(seq);
+        return SeqProxy::rawSequence(seq);
     }
 
-    return SeqProxy{SeqProxy::Type::Ticket, *ticketSeq};
-}
-
-std::uint32_t
-STTx::getSeqValue() const
-{
-    return getSeqProxy().value();
+    return SeqProxy::rawTicket(*ticketSeq);
 }
 
 void
@@ -459,7 +453,7 @@ STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> con
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
-    serializeBatch(msg, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
+    serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -553,7 +547,7 @@ STTx::checkBatchMultiSign(
     // with the stuff that stays constant from signature to signature.
     auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
+    serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
@@ -812,16 +806,19 @@ invalidMPTAmountInTx(STObject const& tx)
 static bool
 isBatchRawTransactionOkay(STTx const& tx, std::string& reason)
 {
-    if (!tx.isFieldPresent(sfRawTransactions))
+    XRPL_ASSERT(
+        tx.getTxnType() == ttBATCH || !tx.isFieldPresent(sfRawTransactions),
+        "xrpl::isBatchRawTransactionOkay : raw transactions only on batch");
+
+    if (tx.getTxnType() != ttBATCH)
         return true;
 
-    // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
-    // unverified user and peer input, so reject (rather than assert) a non-batch
-    // transaction that carries it.
-    if (tx.getTxnType() != ttBATCH)
+    if (!tx.isFieldPresent(sfRawTransactions))
     {
-        reason = "Only Batch transactions may contain raw transactions.";
+        // LCOV_EXCL_START
+        reason = "Batch transactions must contain raw transactions.";
         return false;
+        // LCOV_EXCL_STOP
     }
 
     if (tx.isFieldPresent(sfBatchSigners) &&
