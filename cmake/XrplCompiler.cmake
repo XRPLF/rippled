@@ -188,6 +188,32 @@ else()
     endif()
 endif()
 
+# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
+# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
+if(is_macos OR is_linux)
+    if(is_ci OR is_nix_compiler)
+        if(is_macos)
+            set(fatal_warnings_flag "-Wl,-fatal_warnings")
+        else()
+            set(fatal_warnings_flag "-Wl,--fatal-warnings")
+        endif()
+        message(
+            STATUS
+            "Treating all linker warnings as errors (${fatal_warnings_flag})"
+        )
+        target_link_options(common INTERFACE "${fatal_warnings_flag}")
+        unset(fatal_warnings_flag)
+    elseif(is_macos)
+        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
+        message(
+            STATUS
+            "Silencing macOS deployment target mismatch warnings (${silence_flag})"
+        )
+        target_link_options(common INTERFACE "${silence_flag}")
+        unset(silence_flag)
+    endif()
+endif()
+
 # Antithesis instrumentation will only be built and deployed using machines running Linux.
 if(voidstar)
     if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
