@@ -1,6 +1,8 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/noop.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -40,19 +42,25 @@
 #include <xrpl/ledger/helpers/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 
 #include <type_traits>
 
 namespace xrpl {
 
-// The wrappers have no consumers yet, and an un-instantiated class template is
-// barely type-checked. Instantiate every one explicitly so the compiler
-// actually checks them. Delete this block once real call sites exist.
+// The entry classes have no consumers yet, and an un-instantiated class
+// template is barely type-checked. Instantiate every one explicitly so the
+// compiler actually checks them. Delete this block once real call sites exist.
 //
 // Driving this off ledger_entries.macro keeps it exhaustive by construction:
-// adding a ledger entry type without adding its wrapper stops compiling here,
-// and the static_assert pins each wrapper to the right LedgerEntryType.
+// adding a ledger entry type without adding its entry class stops compiling
+// here, and the static_assert pins each one to the right LedgerEntryType.
+//
+// Keep this loop in one file rather than splitting it across the per-entry
+// *Entry_test.cpp suites. Those are hand-written, so a new ledger entry type
+// would simply have no file there and nothing would complain; this is the only
+// thing making the coverage exhaustive rather than merely extensive.
 
 template class SLEBase<ReadView>;
 template class SLEBase<ApplyView>;
@@ -75,11 +83,11 @@ template class SLEBase<ApplyView>;
 // --- Entry-type safety, checked at compile time. ---
 //
 // The writable -> read-only converting constructor is inherited into every
-// per-type wrapper, so without the entry-type constraint it will bind any
-// writable wrapper that slices to SLEBase. These assertions pin down which
+// per-type entry, so without the entry-type constraint it will bind any
+// writable entry that slices to SLEBase. These assertions pin down which
 // conversions are legal.
 
-// A wrapper for one entry type must never be constructible from another.
+// An entry class for one entry type must never be constructible from another.
 static_assert(
     !std::is_convertible_v<WOfferEntry, RAccountRootEntry>,
     "cross-entry-type conversion must not compile");
@@ -90,7 +98,7 @@ static_assert(
     !std::is_convertible_v<ROfferEntry, RAccountRootEntry>,
     "read-only cross-entry-type conversion must not compile");
 
-// Nor from a type-erased writable handle, which carries no static type.
+// Nor from a type-erased writable entry, which carries no static type.
 static_assert(
     !std::is_convertible_v<WritableSLE, RAccountRootEntry>,
     "generic -> typed conversion must not compile");
@@ -104,14 +112,24 @@ static_assert(
     std::is_convertible_v<WAccountRootEntry, ReadOnlySLE>,
     "typed -> generic widening must keep working");
 
+// Detection idioms for the writable interface. These have to go through a
+// template parameter: a requires-expression over a concrete type is checked
+// eagerly, so spelling the calls out inline would be a hard error rather than
+// the `false` the assertions below want.
+template <typename T>
+concept HasMutableSle = requires(T& t) { t.mutableSle(); };
+
+template <typename T>
+concept HasApplyView = requires(T& t) { t.applyView(); };
+
 namespace test {
 
-class SLEWrapper_test : public beast::unit_test::Suite
+class SLEBase_test : public beast::unit_test::Suite
 {
     void
     testReadOnly()
     {
-        testcase("read-only wrapper");
+        testcase("read-only entry");
 
         using namespace jtx;
         Env env(*this);
@@ -123,7 +141,7 @@ class SLEWrapper_test : public beast::unit_test::Suite
         RAccountRootEntry const absent(bob.id(), *env.current());
         BEAST_EXPECT(!absent.exists());
         BEAST_EXPECT(!static_cast<bool>(absent));
-        // A typed wrapper knows its entry type even with nothing to read.
+        // A typed entry knows its entry type even with nothing to read.
         BEAST_EXPECT(absent.type() == ltACCOUNT_ROOT);
 
         RAccountRootEntry const present(alice.id(), *env.current());
@@ -133,12 +151,128 @@ class SLEWrapper_test : public beast::unit_test::Suite
         BEAST_EXPECT(present.type() == ltACCOUNT_ROOT);
         BEAST_EXPECT(present.keylet().type == ltACCOUNT_ROOT);
         BEAST_EXPECT(present->getType() == ltACCOUNT_ROOT);
+        BEAST_EXPECT((*present).getType() == ltACCOUNT_ROOT);
+        BEAST_EXPECT(&present.readView() == &*env.current());
+    }
+
+    void
+    testAdoptSLE()
+    {
+        testcase("read-only entry adopting an SLE");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const sle = env.current()->read(keylet::account(alice.id()));
+        BEAST_EXPECT(sle != nullptr);
+
+        RAccountRootEntry const adopted(sle, *env.current(), env.journal);
+        BEAST_EXPECT(adopted.exists());
+        BEAST_EXPECT(adopted.sle() == sle);
+        BEAST_EXPECT(adopted.key() == keylet::account(alice.id()).key);
+        BEAST_EXPECT(adopted.type() == ltACCOUNT_ROOT);
+        // keylet() reports the SLE's own type, not the entry's static binding, so
+        // it stays truthful in a Release build where the constructor's
+        // entry-type assert is compiled out.
+        BEAST_EXPECT(adopted.keylet().type == ltACCOUNT_ROOT);
+
+        // Adopting a null SLE is allowed: the assert only fires on a
+        // type mismatch, and a null pointer has no type to mismatch.
+        RAccountRootEntry const empty(SLE::const_pointer{}, *env.current());
+        BEAST_EXPECT(!empty.exists());
+        BEAST_EXPECT(empty.type() == ltACCOUNT_ROOT);
+
+        // A generic entry adopting the same SLE has to read the type back.
+        ReadOnlySLE const generic(sle, *env.current());
+        BEAST_EXPECT(generic.exists());
+        BEAST_EXPECT(generic.type() == ltACCOUNT_ROOT);
+        BEAST_EXPECT(generic.keylet().type == ltACCOUNT_ROOT);
+
+        // There is deliberately no writable equivalent.
+        static_assert(
+            !std::is_constructible_v<WAccountRootEntry, SLE::pointer, ApplyView&>,
+            "writable entries must not be constructible from a bare SLE");
+    }
+
+    void
+    testWritableAccessors()
+    {
+        testcase("writable entry accessors");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        ApplyViewImpl av(&*env.current(), TapNone);
+
+        WAccountRootEntry account(alice.id(), av, env.journal);
+        BEAST_EXPECT(account.canModify());
+        BEAST_EXPECT(account.mutableSle() == account.sle());
+        BEAST_EXPECT(&account.applyView() == &av);
+        BEAST_EXPECT(&account.readView() == static_cast<ReadView const*>(&av));
+        BEAST_EXPECT(&account.journal().sink() == &env.journal.sink());
+
+        // The mutable dereference operators reach the same entry.
+        BEAST_EXPECT(account.operator->() == account.sle().get());
+        BEAST_EXPECT(&*account == account.sle().get());
+
+        // Everything handing out mutable access is non-const, so a const
+        // writable entry is as inert as a read-only one.
+        static_assert(HasMutableSle<WAccountRootEntry>);
+        static_assert(HasApplyView<WAccountRootEntry>);
+        static_assert(
+            !HasMutableSle<WAccountRootEntry const>,
+            "mutableSle() must not be callable on a const writable entry");
+        static_assert(
+            !HasApplyView<WAccountRootEntry const>,
+            "applyView() must not be callable on a const writable entry");
+
+        // Read-only entries do not have the writable interface at all.
+        static_assert(
+            !HasMutableSle<RAccountRootEntry>, "mutableSle() must not exist on a read-only entry");
+        static_assert(
+            !HasApplyView<RAccountRootEntry>, "applyView() must not exist on a read-only entry");
+    }
+
+    void
+    testApplyViewContextCtor()
+    {
+        testcase("writable entry from ApplyViewContext");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        ApplyViewImpl av(&*env.current(), TapNone);
+
+        auto const jt = env.jt(noop(alice));
+        BEAST_EXPECT(jt.stx != nullptr);
+        ApplyViewContext const ctx{av, *jt.stx};
+
+        // Delegates to the (Keylet, ApplyView&) constructor; ctx.tx is not
+        // retained, so this must be indistinguishable from building from
+        // ctx.view directly.
+        WAccountRootEntry fromCtx(keylet::account(alice.id()), ctx, env.journal);
+        BEAST_EXPECT(fromCtx.exists());
+        BEAST_EXPECT(fromCtx.canModify());
+        BEAST_EXPECT(&fromCtx.applyView() == &av);
+        BEAST_EXPECT(fromCtx.key() == keylet::account(alice.id()).key);
+
+        WAccountRootEntry fromView(keylet::account(alice.id()), av, env.journal);
+        BEAST_EXPECT(fromCtx.sle() == fromView.sle());
     }
 
     void
     testWritableLifecycle()
     {
-        testcase("writable wrapper lifecycle");
+        testcase("writable entry lifecycle");
 
         using namespace jtx;
         Env env(*this);
@@ -172,7 +306,7 @@ class SLEWrapper_test : public beast::unit_test::Suite
 
         // Entry that already exists. ApplyStateTable::erase() keeps holding
         // this exact SLE and builds the DeletedNode's FinalFields from it, so
-        // the wrapper must drop its pointer or a later write would silently
+        // the entry must drop its pointer or a later write would silently
         // land in transaction metadata.
         {
             WAccountRootEntry account(alice.id(), av);
@@ -208,7 +342,7 @@ class SLEWrapper_test : public beast::unit_test::Suite
         ReadOnlySLE const generic = writable;
         BEAST_EXPECT(generic.exists());
         BEAST_EXPECT(generic.sle() == writable.sle());
-        // A generic wrapper has to read the type back out of the entry.
+        // A generic entry has to read the type back out of the SLE.
         BEAST_EXPECT(generic.type() == ltACCOUNT_ROOT);
     }
 
@@ -217,12 +351,15 @@ public:
     run() override
     {
         testReadOnly();
+        testAdoptSLE();
+        testWritableAccessors();
+        testApplyViewContextCtor();
         testWritableLifecycle();
         testConversion();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SLEWrapper, ledger, xrpl);
+BEAST_DEFINE_TESTSUITE(SLEBase, ledger, xrpl);
 
 }  // namespace test
 }  // namespace xrpl
