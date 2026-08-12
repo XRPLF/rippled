@@ -13,9 +13,12 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -728,10 +731,94 @@ private:
         }
     }
 
+    // A vault holding an IOU whose issuer requires authorization ends up with
+    // its own trust line unauthorized: VaultCreate opens the line without the
+    // auth flag, and the pseudo-account has no key to sign a TrustSet for
+    // itself. Neither deposits nor loan origination look at that line, so the
+    // vault appears to work right up to the first repayment, which is the only
+    // step that has to credit the vault back.
+    void
+    testRepayIntoUnauthorizedVault()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        auto runTestCases = [&](FeatureBitset features) {
+            bool const pseudoExempt = features[fixCleanup3_4_0];
+
+            testcase << "LoanPay into a vault whose own trust line is unauthorized: pseudo-account "
+                     << (pseudoExempt ? "exempt" : "not exempt");
+
+            Env env{*this, features};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env.close();
+
+            env(fset(issuer, asfRequireAuth));
+            env.close();
+
+            PrettyAsset const asset = issuer[iouCurrency_];
+            env(trust(lender, asset(100'000'000)));
+            env(trust(borrower, asset(100'000'000)));
+            env.close();
+
+            // Authorize the two participants. Nothing asks the issuer to also
+            // authorize the vault, which is the whole point of this test.
+            env(trust(issuer, asset(0), lender, tfSetfAuth));
+            env(trust(issuer, asset(0), borrower, tfSetfAuth));
+            env.close();
+
+            env(pay(issuer, lender, asset(10'000'000)));
+            env(pay(issuer, borrower, asset(10'000)));
+            env.close();
+
+            // Creating the vault and funding it with deposits succeeds even
+            // though the vault cannot be authorized to hold the asset.
+            BrokerInfo const broker{createVaultAndBroker(env, asset, lender)};
+
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+
+            AccountID const vaultPseudo = vaultSle->at(sfAccount);
+            auto const vaultLine = env.le(keylet::trustLine(vaultPseudo, asset.raw().get<Issue>()));
+            if (!BEAST_EXPECT(vaultLine))
+                return;
+            BEAST_EXPECT(!vaultLine->isFlag(vaultPseudo > issuer.id() ? lsfLowAuth : lsfHighAuth));
+
+            using namespace loan;
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            // Paying the principal out of the vault never needed authorization.
+            BEAST_EXPECT(env.le(loanKeylet));
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                broker.asset,
+                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+
+            env(pay(borrower, loanKeylet.key, payment),
+                Ter(pseudoExempt ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
+            env.close();
+        };
+
+        runTestCases(all_);
+        runTestCases(all_ - fixCleanup3_4_0);
+    }
+
     void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
+        testRepayIntoUnauthorizedVault();
     }
 
     // Tests run under each entry in amendmentCombinations().

@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <set>
 
 namespace xrpl {
 
@@ -584,9 +585,19 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     {
         if (trustLine)
         {
-            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
-                ? tesSUCCESS
-                : TER{tecNO_AUTH};
+            if (trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                return tesSUCCESS;
+
+            // A Vault or LoanBroker holds the asset on behalf of its
+            // participants, and its pseudo-account has no signing key, so it
+            // can never authorize its own line and no transaction offers the
+            // issuer a chance to do it either. Treat a line it already owns as
+            // authorized, the same way MPT does.
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+                return tesSUCCESS;
+
+            return TER{tecNO_AUTH};
         }
         return TER{tecNO_LINE};
     }
