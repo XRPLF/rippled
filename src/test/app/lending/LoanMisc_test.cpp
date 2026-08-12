@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -363,8 +364,7 @@ private:
             {.env = env,
              .issuer = issuer,
              .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanEnableCanTrade});
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -387,7 +387,7 @@ private:
             Sig(sfCounterpartySignature, lender),
             loanSetFee);
         env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
         BEAST_EXPECT(env.le(loanKeylet));
 
         // Repayment still works.
@@ -399,7 +399,7 @@ private:
         env.close();
 
         // Enable CanTrade and verify the DEX path is restored.
-        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        mpt.set({.flags = tfMPTSetCanTrade});
         env.close();
 
         env(offer(lender, XRP(1), asset(10)));

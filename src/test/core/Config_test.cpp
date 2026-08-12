@@ -1575,6 +1575,87 @@ r.ripple.com:51235
 
         // Above upper bound
         BEAST_EXPECT(!testDiverged("901"));
+
+        testcase("overlay: manifest counts");
+
+        // Both keys share one range and one parse path, so exercise each
+        // through the same helper.
+        auto testCount = [](std::string const& key,
+                            std::string const& value) -> std::optional<std::size_t> {
+            try
+            {
+                Config c;
+                c.loadFromString("[overlay]\n" + key + "=" + value);
+                return key == "max_trusted_count" ? c.maxTrustedCount : c.maxUntrustedCount;
+            }
+            catch (std::runtime_error const&)
+            {
+                return {};
+            }
+        };
+
+        for (auto const* key : {"max_untrusted_count", "max_trusted_count"})
+        {
+            // Failures. A bad value must surface as std::runtime_error, not
+            // the std::bad_cast that the underlying parse throws.
+            BEAST_EXPECT(!testCount(key, "none"));
+            BEAST_EXPECT(!testCount(key, "0.5"));
+            BEAST_EXPECT(!testCount(key, "400 manifests"));
+            BEAST_EXPECT(!testCount(key, "-1"));
+
+            // Below lower bound
+            BEAST_EXPECT(!testCount(key, "0"));
+            BEAST_EXPECT(!testCount(key, "49"));
+
+            // In bounds
+            BEAST_EXPECT(testCount(key, "50") == 50);
+            BEAST_EXPECT(testCount(key, "51") == 51);
+            BEAST_EXPECT(testCount(key, "300") == 300);
+            BEAST_EXPECT(testCount(key, "400") == 400);
+            BEAST_EXPECT(testCount(key, "999") == 999);
+            BEAST_EXPECT(testCount(key, "1000") == 1000);
+
+            // Above upper bound
+            BEAST_EXPECT(!testCount(key, "1001"));
+        }
+
+        // Each key is independent: setting one leaves the other unset.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=500");
+            BEAST_EXPECT(c.maxUntrustedCount == 500);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_trusted_count=500");
+            BEAST_EXPECT(c.maxTrustedCount == 500);
+            BEAST_EXPECT(!c.maxUntrustedCount);
+        }
+
+        // Both can be set together.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=250\nmax_trusted_count=750");
+            BEAST_EXPECT(c.maxUntrustedCount == 250);
+            BEAST_EXPECT(c.maxTrustedCount == 750);
+        }
+
+        // Unset leaves no override, so the use sites fall back to the defaults.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nip_limit=64");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+
+        // No [overlay] section at all leaves both unset too.
+        {
+            Config c;
+            c.loadFromString("");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
     }
 
     void

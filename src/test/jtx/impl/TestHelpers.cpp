@@ -43,6 +43,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -571,7 +572,8 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChannel(account, dst, seqProxyValue);
+    auto const seqProxy = SeqProxy::rawSequence(seqProxyValue);
+    auto const k = keylet::payChannel(account, dst, seqProxy);
     return k.key;
 }
 
