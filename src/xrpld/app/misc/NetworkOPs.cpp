@@ -3471,8 +3471,20 @@ NetworkOPsImp::reportFeeChange()
         registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
         registry_.get().getFeeTrack()};
 
-    // only schedule the job if something has changed
-    if (f != lastFeeSummary_)
+    // Record the summary here rather than relying on pubServer(), which does
+    // not update it when there are no server stream subscribers. Doing the
+    // check and update under the lock means each change queues one job.
+    bool changed = false;
+    {
+        std::scoped_lock const sl(streamLock_);
+        if (f != lastFeeSummary_)
+        {
+            lastFeeSummary_ = f;
+            changed = true;
+        }
+    }
+
+    if (changed)
     {
         jobQueue_.addJob(JtClientFeeChange, "PubFee", [this] { pubServer(); });
     }
