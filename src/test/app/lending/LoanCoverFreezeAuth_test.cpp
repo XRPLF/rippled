@@ -479,7 +479,77 @@ private:
             env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
+        // Pre-fixCleanup3_4_0 the ValidMPTTransfer invariant blocks the
+        // default, mirroring the IOU path above.
+        env.disableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecINVARIANT_FAILED));
+        env.close();
+
         // The default itself must succeed despite the lock.
+        env.enableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+    }
+
+    // The exemption must hold for an individually deep-frozen trust line, not
+    // just a global freeze: deep freeze is what the original report ran into,
+    // and it takes a different path through validateFrozenState (the frozen
+    // flag comes off the line rather than off the issuer).
+    void
+    testLoanDefaultBypassesDeepFreeze()
+    {
+        testcase("LoanManage: default bypasses asset deep freeze");
+        using namespace jtx;
+        using namespace loan;
+        Account const lender{"lender"};
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+        auto const iou = issuer["IOU"];
+
+        Env env(*this);
+        env.fund(XRP(1'000), lender, issuer, borrower);
+        env(trust(lender, iou(10'000'000)));
+        env(pay(issuer, lender, iou(5'000'000)));
+        BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
+
+        env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
+
+        using tp = NetClock::time_point;
+        using d = NetClock::duration;
+
+        // Get past the grace period so the loan is defaultable.
+        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        {
+            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+        }
+
+        // The default moves First-Loss Capital off the broker pseudo-account,
+        // so that is the line to freeze.
+        auto const brokerPseudo = [&]() -> std::optional<Account> {
+            if (auto const sle = env.le(brokerInfo.brokerKeylet()); BEAST_EXPECT(sle))
+                return Account("brokerPseudo", sle->at(sfAccount));
+            return std::nullopt;
+        }();
+        if (!brokerPseudo)
+            return;
+
+        env(trust(issuer, (*brokerPseudo)["IOU"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        // Pre-fixCleanup3_4_0, the invariant blocks the default.
+        env.disableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecINVARIANT_FAILED));
+        env.close();
+
+        // Per XLS-0066, a default must succeed despite the deep freeze.
+        env.enableFeature(fixCleanup3_4_0);
         env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
     }
 
@@ -810,6 +880,7 @@ private:
     {
         testServiceFeeOnBrokerDeepFreeze();
         testLoanDefaultBypassesFreeze();
+        testLoanDefaultBypassesDeepFreeze();
         testLoanDefaultBypassesMptLockAfterImpair();
     }
 
