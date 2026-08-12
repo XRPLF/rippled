@@ -6044,6 +6044,41 @@ public:
     }
 
     void
+    testBookBaseDomainMptDistinct(FeatureBitset /*features*/)
+    {
+        testcase("getBookBase: domain does not reopen MPT preimage collisions");
+
+        // The type tag is a front prefix and the domain is a 32-byte suffix, so a
+        // domain'd book must (a) stay distinct from its public counterpart and
+        // (b) preserve the mixed-branch tag distinction that the public case has.
+        AccountID issuerX, issuerY, iouIssuer;
+        Currency currency;
+        BEAST_EXPECT(issuerX.parseHex("1111111111111111111111111111111111111111"));
+        BEAST_EXPECT(issuerY.parseHex("2222222222222222222222222222222222222222"));
+        BEAST_EXPECT(currency.parseHex("3333333333333333333333333333333333333333"));
+        BEAST_EXPECT(iouIssuer.parseHex("4444444444444444444444444444444444444444"));
+
+        uint256 const domainA = uint256::fromVoid(
+            "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+            "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD");
+
+        Asset const mptX{MPTIssue{1u, issuerX}};
+        Asset const iou{Issue{currency, iouIssuer}};
+
+        // (a) same pair, public vs domain'd -> distinct directories.
+        Book const publicBook{mptX, iou, std::nullopt};
+        Book const domainBook{mptX, iou, domainA};
+        BEAST_EXPECT(getBookBase(publicBook) != getBookBase(domainBook));
+
+        // (b) mixed-branch tag distinction still holds *with* a domain set:
+        //     (MPT,Issue) vs (Issue,MPT), both domain'd, must not collide.
+        Book const mi{mptX, iou, domainA};
+        Book const im{iou, mptX, domainA};
+        BEAST_EXPECT(mi != im);
+        BEAST_EXPECT(getBookBase(mi) != getBookBase(im));
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -6109,6 +6144,7 @@ public:
         testAutoCreateReserve(features);
         testBookBaseMixedAssetCollision(features);
         testBookBaseMptMptDistinct(features);
+        testBookBaseDomainMptDistinct(features);
     }
 
     void
