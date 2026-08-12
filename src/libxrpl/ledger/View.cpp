@@ -446,7 +446,8 @@ doWithdraw(
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
     STAmount const& amount,
-    beast::Journal j)
+    beast::Journal j,
+    DustSplit* dust)
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
@@ -487,9 +488,18 @@ doWithdraw(
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
     // Move the funds directly from the broker's pseudo-account to the
-    // dstAcct
+    // dstAcct. Forward any dust policy through accountSend so per-leg
+    // renormalisation / drain semantics apply on the sourceAcct's line.
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
+        ctx.view,
+        sourceAcct,
+        dstAcct,
+        amount,
+        j,
+        *sponsorSle,
+        WaiveTransferFee::Yes,
+        AllowMPTOverflow::No,
+        dust);
 }
 
 TER
