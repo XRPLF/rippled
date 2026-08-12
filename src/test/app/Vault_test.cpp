@@ -3018,6 +3018,192 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testDomainLossAfterAcquisition()
+    {
+        using namespace test::jtx;
+
+        testcase("private vault share transfer after depositor loses domain");
+
+        // The "Private Vault - Access Control Rules" spec requires that a holder who
+        // loses Layer 2 (Permissioned Domain membership) after acquiring shares be
+        // blocked from sending them onward, by P2P transfer or DEX offer, the same
+        // way a brand-new never-authorized holder is blocked. Only withdrawal to
+        // self is meant to stay open.
+        //
+        // For a domain-gated share MPToken, requireAuth()'s escape hatch for
+        // holders who already have an MPToken (MPTokenHelpers.cpp) only applies to
+        // the classic explicit-issuer-authorization flag, which
+        // enforceMPTokenAuthorization documents as "meaningless" for
+        // domain-authorized holders and never sets. So a stale MPToken does not
+        // carry authorization forward once the account's domain credential is
+        // gone, and both actions below are correctly blocked.
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const bob{"bob"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "credential";
+        Vault const vault{env};
+        env.fund(XRP(1000), issuer, owner, depositor, bob, pdOwner, credIssuer);
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(500)));
+        env.trust(asset(1000), depositor);
+        env(pay(issuer, depositor, asset(500)));
+        env.trust(asset(1000), bob);
+        env(pay(issuer, bob, asset(500)));
+        env.close();
+
+        // Transferable shares (no tfVaultShareNonTransferable): sections 3.3/3.4 of
+        // the spec (DEX trading / P2P transfer) only apply to transferable shares.
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(pdOwner, credentials));
+        auto const domainId = [&]() {
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            return pdomain::getNewDomain(env.meta());
+        }();
+        {
+            auto domainTx = vault.set({.owner = owner, .id = keylet.key});
+            domainTx[sfDomainID] = to_string(domainId);
+            env(domainTx);
+            env.close();
+        }
+
+        // Both depositor and bob acquire domain membership and deposit, so each
+        // ends up with an authorized share MPToken.
+        env(credentials::create(depositor, credIssuer, credType));
+        env(credentials::accept(depositor, credIssuer, credType));
+        env(credentials::create(bob, credIssuer, credType));
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle != nullptr);
+            return MPTIssue(sle->at(sfShareMPTID));
+        }();
+
+        // Depositor loses Layer 2: their Permissioned Domain credential is revoked.
+        auto const credKeylet = credentials::keylet(depositor, credIssuer, credType);
+        env(credentials::deleteCred(credIssuer, depositor, credIssuer, credType));
+        env.close();
+        BEAST_EXPECT(env.le(credKeylet) == nullptr);
+
+        // Sanity check, mirrors testWithDomainCheck's "not authorized yet" case: a
+        // brand-new depositor with no MPToken yet is still correctly blocked. The
+        // gap below is specific to holders who already hold shares.
+        {
+            Account const charlie{"charlie"};
+            env.fund(XRP(1000), charlie);
+            env.close();
+            auto depTx =
+                vault.deposit({.depositor = charlie, .id = keylet.key, .amount = asset(1)});
+            env(depTx, Ter{tecNO_AUTH});
+        }
+
+        // P2P transfer: spec section 3.4 requires this blocked once Layer 2 is
+        // lost, and it is.
+        env(pay(depositor, bob, shares(1)), Ter{tecNO_AUTH});
+        env.close();
+
+        // DEX/CLOB: spec section 3.3 requires the seller leg blocked the same way.
+        // The offer can't even be created: preclaim treats the seller as
+        // unfunded once their share balance reads as zero for auth purposes.
+        env(offer(depositor, XRP(1), shares(1)), Ter{tecUNFUNDED_OFFER});
+        env.close();
+        BEAST_EXPECT(expectOffers(env, depositor, 0));
+    }
+
+    void
+    testDomainCheckBuyerSideOffer()
+    {
+        using namespace test::jtx;
+
+        testcase("private vault share purchase via DEX requires buyer domain membership");
+
+        // The "Private Vault - Access Control Rules" spec requires the buyer leg
+        // of a DEX trade in private-vault shares to hold Layer 1 and Layer 2 as
+        // well, not just the seller.
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const bob{"bob"};
+        Account const charlie{"charlie"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "credential";
+        Vault const vault{env};
+        env.fund(XRP(1000), issuer, owner, bob, charlie, pdOwner, credIssuer);
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(500)));
+        env.trust(asset(1000), bob);
+        env(pay(issuer, bob, asset(500)));
+        env.close();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(pdOwner, credentials));
+        auto const domainId = [&]() {
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            return pdomain::getNewDomain(env.meta());
+        }();
+        {
+            auto domainTx = vault.set({.owner = owner, .id = keylet.key});
+            domainTx[sfDomainID] = to_string(domainId);
+            env(domainTx);
+            env.close();
+        }
+
+        // Only bob joins the domain and deposits; charlie never does.
+        env(credentials::create(bob, credIssuer, credType));
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle != nullptr);
+            return MPTIssue(sle->at(sfShareMPTID));
+        }();
+
+        // Bob (domain member, holds shares) rests a sell offer.
+        env(offer(bob, XRP(1), shares(1)));
+        env.close();
+        BEAST_EXPECT(expectOffers(env, bob, 1));
+
+        // Charlie never held the domain credential. Buying shares via a
+        // crossing offer must be blocked the same way a direct MPTokenAuthorize
+        // + pay attempt already is (see testWithDomainChecXRP's "cannot pay
+        // shares to 3rd party"): checkAcceptAsset() rejects the offer outright
+        // in preclaim, before any funding check is even reached.
+        env(offer(charlie, shares(1), XRP(1)), Ter{tecNO_AUTH});
+        env.close();
+        BEAST_EXPECT(expectOffers(env, bob, 1));
+        BEAST_EXPECT(expectOffers(env, charlie, 0));
+    }
+
+    void
     testWithDomainChecXRP()
     {
         using namespace test::jtx;
@@ -8396,6 +8582,8 @@ public:
         testWithMPT();
         testWithIOU();
         testWithDomainCheck();
+        testDomainLossAfterAcquisition();
+        testDomainCheckBuyerSideOffer();
         testWithDomainChecXRP();
         testNonTransferableShares();
         testFailedPseudoAccount();
