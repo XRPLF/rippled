@@ -8,6 +8,7 @@
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
@@ -44,7 +45,6 @@
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -113,7 +113,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
     if ((it == h.end()) || (!it->second.starts_with("Basic ")))
         return false;
     std::string strUserPass64 = it->second.substr(6);
-    boost::trim(strUserPass64);
+    strUserPass64 = trimWhitespace(strUserPass64);
     std::string const strUserPass = base64Decode(strUserPass64);
     std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)

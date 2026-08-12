@@ -13,6 +13,7 @@ extern Charge const kFeeRequestNoReply;    // A request that we cannot satisfy.
 extern Charge const kFeeInvalidSignature;  // An object whose signature we had to check that failed.
 extern Charge const kFeeUselessData;       // Data we have no use for.
 extern Charge const kFeeInvalidData;       // Data we have to verify before rejecting.
+extern Charge const kFeeMalformedData;     // Data that no honest peer would send.
 
 // RPC loads
 extern Charge const kFeeMalformedRpc;     // An RPC request that we can immediately tell is invalid.
