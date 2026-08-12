@@ -16,10 +16,11 @@ namespace xrpl::test {
 
 // A mock of the host the wasm engine calls back into.
 //
-// Only the methods the ABI currently declares are mocked, and that is deliberate: the ~60
-// others keep `HostFunctions`' own `std::unexpected(Unimplemented)`, so a contract reaching
-// for something the ABI has not declared yet fails the way production would. Add a
-// `MOCK_METHOD` here when the matching entry is added to `host_functions!`.
+// Only a few of `HostFunctions`' methods are mocked here. That is the mock lagging the ABI,
+// not the ABI lacking coverage: `crates/xrpl-host-functions/src/lib.rs` already declares all
+// 61 entries. Each one not yet mocked keeps `HostFunctions`' own
+// `std::unexpected(Unimplemented)`, so a contract reaching for it fails the way production
+// would. Add a `MOCK_METHOD` here as tests for that method are written.
 struct MockHostFunctions : HostFunctions
 {
     explicit MockHostFunctions(beast::Journal journal) : HostFunctions(journal)
@@ -44,6 +45,12 @@ struct MockHostFunctions : HostFunctions
         (std::expected<Hash, HostFunctionError>),
         computeSha512HalfHash,
         (Slice const& data),
+        (const, override));
+
+    MOCK_METHOD(
+        (std::expected<Bytes, HostFunctionError>),
+        getTxField,
+        (SField const& fname),
         (const, override));
 
     // Takes the rendered text, not the guest's buffer: rendering is `HostContext`'s, so what
