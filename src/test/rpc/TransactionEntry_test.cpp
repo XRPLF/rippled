@@ -175,7 +175,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             {
                 json::Value expected;
                 json::Reader().parse(expectedJson, expected);
-                if (RPC::containsError(expected))
+                if (rpc::containsError(expected))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)

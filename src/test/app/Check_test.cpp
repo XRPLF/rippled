@@ -35,6 +35,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -53,7 +54,7 @@ class Check_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, uSequence).key;
+        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
     }
 
     // Helper function that returns the Checks on an account.
@@ -1257,6 +1258,13 @@ class Check_test : public beast::unit_test::Suite
             env.close();
         }
 
+        // Can't run pre-amendment behavior due to assertion failure.
+        if (features[fixCleanup3_3_0])
+        {
+            env(check::cash(bob, uint256{}, usd(20)), Ter(temMALFORMED));
+            env.close();
+        }
+
         // alice creates her checks ahead of time.
         uint256 const chkIdU{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(20)));
@@ -1704,6 +1712,13 @@ class Check_test : public beast::unit_test::Suite
         // Non-existent check.
         env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))), Ter(tecNO_ENTRY));
         env.close();
+
+        // Can't run pre-amendment behavior due to assertion failure.
+        if (features[fixCleanup3_3_0])
+        {
+            env(check::cancel(bob, uint256{}), Ter(temMALFORMED));
+            env.close();
+        }
     }
 
     void

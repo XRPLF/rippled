@@ -133,6 +133,12 @@ target_link_libraries(
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
+add_module(xrpl peerfinder)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
+
 # Level 08
 add_module(xrpl net)
 target_link_libraries(
@@ -201,6 +207,16 @@ target_link_libraries(
 add_module(xrpl tx)
 target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+)
+
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 
@@ -220,6 +236,7 @@ target_link_modules(
     beast
     conditions
     config
+    consensus
     core
     crypto
     git
@@ -227,6 +244,7 @@ target_link_modules(
     ledger
     net
     nodestore
+    peerfinder
     protocol
     protocol_autogen
     rdb

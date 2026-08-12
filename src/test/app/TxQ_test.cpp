@@ -2570,7 +2570,7 @@ public:
         auto fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2599,7 +2599,7 @@ public:
         fee = env.rpc("fee");
 
         if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+            BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
             BEAST_EXPECT(
@@ -2887,7 +2887,7 @@ public:
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id());
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             BEAST_EXPECT(aliceStat.size() == 5);
             for (auto const& tx : aliceStat)
             {
@@ -3223,7 +3223,7 @@ public:
 
         {
             auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(info.isMember(jss::result) && RPC::containsError(info[jss::result]));
+            BEAST_EXPECT(info.isMember(jss::result) && rpc::containsError(info[jss::result]));
         }
 
         env.close();
@@ -3752,7 +3752,7 @@ public:
             checkMetrics(*this, env, 2, 24, 16, 12);
             auto const aliceQueue = env.app().getTxQ().getAccountTxs(alice.id());
             BEAST_EXPECT(aliceQueue.size() == 2);
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             for (auto const& tx : aliceQueue)
             {
                 BEAST_EXPECT(tx.seqProxy == seq);
@@ -4628,7 +4628,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
@@ -4686,7 +4686,7 @@ public:
             auto const fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::containsError(fee[jss::result])))
+                BEAST_EXPECT(!rpc::containsError(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 

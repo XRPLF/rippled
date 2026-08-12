@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 class LedgerRequest_test : public beast::unit_test::Suite
 {
@@ -45,28 +45,28 @@ public:
             // arbitrary text is converted to 0.
             auto const result = env.rpc("ledger_request", "arbitrary_text");
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "-1");
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "0");
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "1");
             BEAST_EXPECT(
-                !RPC::containsError(result[jss::result]) &&
+                !rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 1 &&
                 result[jss::result].isMember(jss::ledger));
             BEAST_EXPECT(
@@ -77,7 +77,7 @@ public:
         {
             auto const result = env.rpc("ledger_request", "2");
             BEAST_EXPECT(
-                !RPC::containsError(result[jss::result]) &&
+                !rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 2 &&
                 result[jss::result].isMember(jss::ledger));
             BEAST_EXPECT(
@@ -88,7 +88,7 @@ public:
         {
             auto const result = env.rpc("ledger_request", "3");
             BEAST_EXPECT(
-                !RPC::containsError(result[jss::result]) &&
+                !rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 3 &&
                 result[jss::result].isMember(jss::ledger));
             BEAST_EXPECT(
@@ -100,7 +100,7 @@ public:
             {
                 auto const r = env.rpc("ledger_request", ledgerHash);
                 BEAST_EXPECT(
-                    !RPC::containsError(r[jss::result]) && r[jss::result][jss::ledger_index] == 3 &&
+                    !rpc::containsError(r[jss::result]) && r[jss::result][jss::ledger_index] == 3 &&
                     r[jss::result].isMember(jss::ledger));
                 BEAST_EXPECT(
                     r[jss::result][jss::ledger].isMember(jss::ledger_hash) &&
@@ -114,7 +114,7 @@ public:
             auto const result = env.rpc("ledger_request", ledgerHash);
 
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                     "Invalid field 'ledger_hash', not hex string.");
         }
@@ -125,21 +125,21 @@ public:
             auto const result = env.rpc("ledger_request", ledgerHash);
 
             BEAST_EXPECT(
-                !RPC::containsError(result[jss::result]) &&
+                !rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::have_header] == false);
         }
 
         {
             auto const result = env.rpc("ledger_request", "4");
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] == "Ledger index too large");
         }
 
         {
             auto const result = env.rpc("ledger_request", "5");
             BEAST_EXPECT(
-                RPC::containsError(result[jss::result]) &&
+                rpc::containsError(result[jss::result]) &&
                 result[jss::result][jss::error_message] == "Ledger index too large");
         }
     }
@@ -359,4 +359,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, xrpl);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc
