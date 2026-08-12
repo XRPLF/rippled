@@ -1,8 +1,8 @@
 #include <xrpl/nodestore/Database.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -68,7 +68,7 @@ protected:
     SetUp() override
     {
         nodeParams_.set("type", GetParam());
-        nodeParams_.set("path", nodeDb_.path());
+        nodeParams_.set("path", nodeDb_.path().string());
 
         beast::xor_shift_engine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
@@ -81,7 +81,7 @@ protected:
     }
 
     DummyScheduler scheduler_;
-    beast::TempDir const nodeDb_;
+    TempDir const nodeDb_;
     beast::Journal const journal_{TestSink::instance()};
     Section nodeParams_;
     Batch batch_;
@@ -157,10 +157,10 @@ INSTANTIATE_TEST_SUITE_P(
 TEST(NodeStoreDatabase, memory_earliest_seq)
 {
     DummyScheduler scheduler;
-    beast::TempDir const nodeDb;
+    TempDir const nodeDb;
     Section nodeParams;
     nodeParams.set("type", "memory");
-    nodeParams.set("path", nodeDb.path());
+    nodeParams.set("path", nodeDb.path().string());
 
     beast::Journal const journal(TestSink::instance());
 
@@ -204,10 +204,10 @@ TEST_P(DatabaseImportTest, same_backend)
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
 
-    beast::TempDir const srcDir;
+    TempDir const srcDir;
     Section srcParams;
     srcParams.set("type", type);
-    srcParams.set("path", srcDir.path());
+    srcParams.set("path", srcDir.path().string());
 
     auto batch = createPredictableBatch(kNumObjects, kSeedValue);
 
@@ -222,10 +222,10 @@ TEST_P(DatabaseImportTest, same_backend)
         // re-open source and import into a fresh destination
         auto src = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal);
 
-        beast::TempDir const destDir;
+        TempDir const destDir;
         Section destParams;
         destParams.set("type", type);
-        destParams.set("path", destDir.path());
+        destParams.set("path", destDir.path().string());
 
         auto dest =
             Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal);

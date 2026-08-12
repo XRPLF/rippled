@@ -1,8 +1,8 @@
 #include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -69,7 +69,7 @@ protected:
     SetUp() override
     {
         params_.set("type", GetParam());
-        params_.set("path", tempDir_.path());
+        params_.set("path", tempDir_.path().string());
 
         beast::xor_shift_engine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
@@ -84,7 +84,7 @@ protected:
     }
 
     DummyScheduler scheduler_;
-    beast::TempDir const tempDir_;
+    TempDir const tempDir_;
     beast::Journal const journal_{TestSink::instance()};
     Section params_;
     Batch batch_;

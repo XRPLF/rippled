@@ -49,6 +49,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -615,7 +616,7 @@ GRPCServerImpl::createServerCredentials()
 
     try
     {
-        boost::system::error_code ec;
+        std::error_code ec;
         grpc::SslServerCredentialsOptions sslOpts;
         grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 
