@@ -4,7 +4,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
@@ -1638,27 +1637,30 @@ Transactor::operator()()
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
-    bool canApply = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
+    bool const canApply = std::invoke([&] {
+        bool canApply = isTesSuccess(result);
 
-    if (ctx_.size() > kOversizeMetaDataCap)
-        result = tecOVERSIZE;
+        if (ctx_.size() > kOversizeMetaDataCap)
+            result = tecOVERSIZE;
 
-    if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
-    {
-        // If the TapFailHard flag is set, a tec result
-        // must not do anything
-        ctx_.discard();
-        canApply = false;
-    }
-    else if (
-        (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
-    {
-        // This is and must remain the only place where `canApply` can change from false to true.
-        // Changing from true to false is no problem.
-        std::tie(result, fee, canApply) = processPersistentChanges(result, fee);
-    }
+        if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
+        {
+            // If the TapFailHard flag is set, a tec result
+            // must not do anything
+            ctx_.discard();
+            canApply = false;
+        }
+        else if (
+            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+            (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        {
+            // This is and must remain the only place where `canApply` can change from false to
+            // true. Changing from true to false is no problem.
+            std::tie(result, fee, canApply) = processPersistentChanges(result, fee);
+        }
+        return canApply;
+    });
 
     auto const logger = [this](
                             TER result,
