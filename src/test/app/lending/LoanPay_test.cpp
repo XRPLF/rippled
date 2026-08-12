@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
