@@ -72,6 +72,7 @@ private:
         STTx const& tx,
         beast::Journal const& j,
         bool enforce,
+        bool fixOverrideFreeze,
         std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 
     static bool
@@ -82,6 +83,7 @@ private:
         beast::Journal const& j,
         bool enforce,
         bool globalFreeze,
+        bool fixOverrideFreeze,
         std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 };
 

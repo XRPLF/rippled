@@ -76,6 +76,7 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
 
     /*
      * XLS-0066: a broker must be able to default an already-late loan
@@ -107,7 +108,8 @@ TransfersNotFrozen::finalize(
             return !enforce;
         }
 
-        return validateIssuerChanges(issuerSle, changes, tx, j, enforce, loanDefaultAccounts);
+        return validateIssuerChanges(
+            issuerSle, changes, tx, j, enforce, fixOverrideFreeze, loanDefaultAccounts);
     });
 }
 
@@ -217,6 +219,7 @@ TransfersNotFrozen::validateIssuerChanges(
     STTx const& tx,
     beast::Journal const& j,
     bool enforce,
+    bool fixOverrideFreeze,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     if (!issuer)
@@ -244,7 +247,14 @@ TransfersNotFrozen::validateIssuerChanges(
             bool const high = change.line->at(sfLowLimit).getIssuer() == issuer->at(sfAccount);
 
             if (!validateFrozenState(
-                    change, high, tx, j, enforce, globalFreeze, loanDefaultAccounts))
+                    change,
+                    high,
+                    tx,
+                    j,
+                    enforce,
+                    globalFreeze,
+                    fixOverrideFreeze,
+                    loanDefaultAccounts))
             {
                 return false;
             }
@@ -261,6 +271,7 @@ TransfersNotFrozen::validateFrozenState(
     beast::Journal const& j,
     bool enforce,
     bool globalFreeze,
+    bool fixOverrideFreeze,
     std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts)
 {
     bool const freeze =
@@ -268,19 +279,21 @@ TransfersNotFrozen::validateFrozenState(
     bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
-    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
-
     if (!frozen)
     {
         return true;
     }
 
-    // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
+    // Pre-fixCleanup3_4_0: the isAMMLine check incorrectly blocked clawback on
+    // individually-frozen or deep-frozen AMM trust lines.
+    // Post-fixCleanup3_4_0: AMMClawbacks are allowed to override all freeze types.
+    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
+    if ((fixOverrideFreeze || !isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
-                        << " a frozen trustline for AMMClawback " << tx.getTransactionID();
+                        << " a frozen trustline for a freeze privileged transaction "
+                        << tx.getTransactionID();
         return true;
     }
 
