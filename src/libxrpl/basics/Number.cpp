@@ -223,6 +223,11 @@ class Number::Guard
     std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
+    // Decimal digits held in digits_, four bits each. After this many zero
+    // pushes digits_ holds only zeros and xbit_ has absorbed everything shifted
+    // off, so further pushes of zeros leave the Guard unchanged.
+    static constexpr int kGuardDigits = 8 * sizeof(digits_) / 4;
+
     internalrep const minMantissa;
     internalrep const maxMantissa;
     MantissaRange::CuspRoundingFix const cuspRoundingFix;
@@ -276,6 +281,18 @@ public:
     template <class T>
     void
     doDropDigit(T& mantissa, int& exponent) noexcept;
+
+    /**
+     * Drop digits from mantissa until the exponent increases to target. No-op if exponent is
+     * greater or equal to target already.
+     *
+     * Once the mantissa reaches zero every further drop pushes a zero digit, and this Guard stops
+     * changing after kGuardDigits of those. The rest of the drops would only advance the exponent,
+     * so jump it instead, to save at most 32768 * 2 - 35 loops.
+     */
+    template <class T>
+    void
+    dropDigitsTo(T& mantissa, int& exponent, int target) noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -399,6 +416,23 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
     // mantissa /= 10;
     push(divu10(mantissa));
     ++exponent;
+}
+
+template <class T>
+void
+Number::Guard::dropDigitsTo(T& mantissa, int& exponent, int target) noexcept
+{
+    while (exponent < target)
+    {
+        if (mantissa == 0)
+        {
+            for (int i = 0; i < kGuardDigits && exponent < target; ++i)
+                doDropDigit(mantissa, exponent);
+            exponent = target;
+            return;
+        }
+        doDropDigit(mantissa, exponent);
+    }
 }
 
 template <UnsignedMantissa T>
@@ -933,6 +967,8 @@ Number::operator+=(Number const& y)
         {
             // For Enabled330, there are three steps.
             // 1. First, shrink the mantissa of shrinkM/shrinkE while shrinkM ends in 0.
+            // Bounded by the mantissa, not the exponent: shrinkM is non-zero and normalized,
+            // so its leading digit is non-zero and stops the loop within 18 iterations.
             while (shrinkE < expandE && shrinkM % 10 == 0)
             {
                 g.doDropDigit(shrinkM, shrinkE);
@@ -950,10 +986,7 @@ Number::operator+=(Number const& y)
 
         // 3. Finally, shrink the mantissa of shrinkM/shrinkE until the exponents match. Any removed
         // digits will be put into the Guard. This is the only step for non-Enabled330 modes.
-        while (shrinkE < expandE)
-        {
-            g.doDropDigit(shrinkM, shrinkE);
-        }
+        g.dropDigitsTo(shrinkM, shrinkE, expandE);
     };
 
     // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
@@ -1330,10 +1363,7 @@ operator rep() const
             g.setNegative();
             drops = -drops;
         }
-        while (offset < 0)
-        {
-            g.doDropDigit(drops, offset);
-        }
+        g.dropDigitsTo(drops, offset, 0);
         for (; offset > 0; --offset)
         {
             if (drops > kMaxRep / 10)
