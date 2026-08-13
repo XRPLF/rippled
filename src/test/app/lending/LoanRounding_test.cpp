@@ -38,6 +38,7 @@
 #include <ostream>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -182,6 +183,225 @@ private:
             // after a default the assets total and available should be equal
             BEAST_EXPECT(assetsAvail2 == assetsTotal2);
         }
+    }
+
+    // Regression sensor: multi-loan vault with payment history +
+    // impairment exercises the accrual-based accounting on both amendment
+    // branches, then defaults one of the loans. The point is to run the
+    // same drift-inducing scenario under `!fixCleanup3_4_0` and
+    // `fixCleanup3_4_0` and confirm that both branches leave the vault in
+    // the same, invariant-holding state.
+    //
+    // Semantically the two paths do different things:
+    //   * `!fixCleanup3_4_0` in `LoanManage::defaultLoan` computes
+    //     `roundToAsset(totalDefaultAmount - defaultCovered, vaultScale,
+    //     Downward)` and subtracts that from `sfAssetsTotal`, while adding
+    //     the (unrounded) `defaultCovered` to `sfAssetsAvailable`. A
+    //     downstream dust-reconciliation branch pins Total up to Available
+    //     if the arithmetic drifted them apart. Similarly `LoanPay` on
+    //     this branch pre-rounds `totalPaidToVault` down to vaultScale.
+    //   * `fixCleanup3_4_0` reformulates both call sites to feed each
+    //     ledger field through the same asset-typed STAmount, so both
+    //     sides absorb identical IOU/Number-round-trip normalization
+    //     and the two fields cannot diverge from arithmetic alone -- no
+    //     dust snap is needed.
+    //
+    // The scenario intentionally combines: large vault-vs-loan scale gap,
+    // multiple loans with different interest schedules, multiple partial
+    // payments, and impairment of the loan to be defaulted.
+    //
+    // Note: in practice the two branches produce bit-identical output for
+    // legitimate transaction inputs, because `computeLoanProperties`
+    // enforces `loanScale >= vaultScale` (see the `std::max(minimumScale,
+    // amount.exponent())` clamp on the loan-value STAmount exponent).
+    // That constraint makes `roundToAsset(vaultDefaultAmount, vaultScale,
+    // Down)` a no-op for well-formed loans, so `sfAssetsAvailable` cannot
+    // overshoot `sfAssetsTotal` from arithmetic alone. The dust-snap
+    // branch this test guards against is therefore doubly-defensive code
+    // — reachable only from a corrupted ledger state, not a valid
+    // transaction sequence. If either path ever leaves the invariant
+    // violated (or the paths diverge on the stored ledger state) this
+    // test will surface it.
+    void
+    testMultiLoanDefaultDriftFixVsLegacy(FeatureBitset features)
+    {
+        testcase("Multi-loan drift: default is invariant-safe on both branches");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        struct RunResult
+        {
+            Number totalBefore;
+            Number availableBefore;
+            Number totalAfter;
+            Number availableAfter;
+            TER defaultTer;
+        };
+
+        auto runScenario = [this](FeatureBitset scenarioFeatures) -> std::optional<RunResult> {
+            using namespace loan;
+            Env env{*this, scenarioFeatures};
+
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000'00), issuer, lender, borrower);
+            env.close();
+
+            PrettyAsset const asset = issuer["USD"];
+            env(trust(lender, asset(10'000'000'000)));
+            env(trust(borrower, asset(10'000'000'000)));
+            env(pay(issuer, lender, asset(5'000'000'000)));
+            env(pay(issuer, borrower, asset(5'000'000'000)));
+            env.close();
+
+            // Vault magnitude ~1e7 so vaultScale ~ -9; the loans below sit at
+            // loan scale ~ -13. That 4-order gap is where storage precision
+            // can differ from loan-tracked Number precision.
+            BrokerParameters const brokerParams{
+                .vaultDeposit = Number{10'000'000},
+                .debtMax = Number{0},
+                .coverRateMin = TenthBips32{1000},
+                .coverRateLiquidation = TenthBips32{2500}};
+
+            auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
+            auto const& vaultKeylet = broker.vaultKeylet();
+
+            auto nextLoanKey = [&]() -> std::optional<Keylet> {
+                auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+                if (!BEAST_EXPECT(brokerSle))
+                    return std::nullopt;
+                auto const seq = brokerSle->at(sfLoanSequence);
+                return keylet::loan(broker.brokerID, SeqProxy::rawSequence(seq));
+            };
+
+            // Three loans with different principals and interest schedules,
+            // so each contributes drift-shaped rounding to the vault.
+            struct LoanSpec
+            {
+                Number principal;
+                std::uint32_t rateBps{};
+                std::uint32_t payTotal{};
+                std::uint32_t payInterval{};
+            };
+            std::array const specs{
+                LoanSpec{
+                    .principal = Number{100},
+                    .rateBps = 1922,
+                    .payTotal = 5816,
+                    .payInterval = 86400 * 6},
+                LoanSpec{
+                    .principal = Number{237},
+                    .rateBps = 1234,
+                    .payTotal = 4321,
+                    .payInterval = 86400 * 5},
+                LoanSpec{
+                    .principal = Number{389},
+                    .rateBps = 977,
+                    .payTotal = 3333,
+                    .payInterval = 86400 * 4},
+            };
+
+            std::vector<Keylet> loans;
+            for (auto const& spec : specs)
+            {
+                auto const keyOpt = nextLoanKey();
+                if (!keyOpt)
+                    return std::nullopt;
+                env(set(borrower, broker.brokerID, spec.principal),
+                    Sig(sfCounterpartySignature, lender),
+                    kInterestRate(TenthBips32{spec.rateBps}),
+                    kPaymentTotal(spec.payTotal),
+                    kPaymentInterval(spec.payInterval),
+                    kGracePeriod(spec.payInterval),
+                    Fee(env.current()->fees().base * 100));
+                env.close();
+                if (env.ter() != tesSUCCESS)
+                    return std::nullopt;
+                loans.push_back(*keyOpt);
+            }
+
+            // Accrue interest for a while, then make one small partial
+            // payment on each loan to force `LoanPay::doApply` to touch
+            // Total/Available with loan-scale-precision deltas.
+            STAmount const smallPay{asset.raw(), Number{1}};
+            auto const payFee = Fee(env.current()->fees().base * 10);
+            env.close(std::chrono::seconds(86400 * 3));
+            for (auto const& loanKey : loans)
+                env(pay(borrower, loanKey.key, smallPay, 0u), payFee);
+            env.close();
+
+            // Accrue more interest, another small payment round.
+            env.close(std::chrono::seconds(86400 * 3));
+            for (auto const& loanKey : loans)
+                env(pay(borrower, loanKey.key, smallPay, 0u), payFee);
+            env.close();
+
+            // Impair the first loan (charges `sfLossUnrealized`), then let
+            // it become defaultable.
+            env(jtx::loan::manage(lender, loans.front().key, tfLoanImpair), payFee);
+            env.close();
+            env.close(std::chrono::seconds(86400 * 40));
+
+            auto const vaultSleBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleBefore))
+                return std::nullopt;
+            Number const totalBefore = vaultSleBefore->at(sfAssetsTotal);
+            Number const availableBefore = vaultSleBefore->at(sfAssetsAvailable);
+
+            env(jtx::loan::manage(lender, loans.front().key, tfLoanDefault));
+            auto const defaultTer = env.ter();
+            env.close();
+
+            auto const vaultSleAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return std::nullopt;
+            Number const totalAfter = vaultSleAfter->at(sfAssetsTotal);
+            Number const availableAfter = vaultSleAfter->at(sfAssetsAvailable);
+
+            log << (env.current()->rules().enabled(fixCleanup3_4_0) ? "[fix=YES] " : "[fix=NO ] ")
+                << "before: T=" << totalBefore << " A=" << availableBefore
+                << " (T-A)=" << (totalBefore - availableBefore)
+                << " | default ter=" << transToken(defaultTer) << " | after: T=" << totalAfter
+                << " A=" << availableAfter << " (T-A)=" << (totalAfter - availableAfter)
+                << std::endl;
+
+            return RunResult{
+                .totalBefore = totalBefore,
+                .availableBefore = availableBefore,
+                .totalAfter = totalAfter,
+                .availableAfter = availableAfter,
+                .defaultTer = defaultTer};
+        };
+
+        auto const legacyOpt = runScenario(features - fixCleanup3_4_0);
+        auto const fixedOpt = runScenario(features | fixCleanup3_4_0);
+        if (!legacyOpt || !fixedOpt)
+        {
+            BEAST_EXPECT(legacyOpt && fixedOpt);
+            return;
+        }
+        auto const& legacy = *legacyOpt;
+        auto const& fixed = *fixedOpt;
+
+        // Invariant must hold on both branches.
+        BEAST_EXPECT(legacy.availableAfter <= legacy.totalAfter);
+        BEAST_EXPECT(fixed.availableAfter <= fixed.totalAfter);
+        // Default must succeed on both branches (the fix removes the
+        // possibility of `tecINTERNAL` from arithmetic drift, and the
+        // legacy path handles this scenario without needing the dust snap).
+        BEAST_EXPECT(legacy.defaultTer == tesSUCCESS);
+        BEAST_EXPECT(fixed.defaultTer == tesSUCCESS);
+        // For legitimate transaction inputs the two branches must land
+        // on the identical post-default vault state (see the note on
+        // `loanScale >= vaultScale` above). If a future change makes the
+        // paths diverge on well-formed loans -- e.g. by altering how
+        // sfAssetsTotal is rounded on one side but not the other -- this
+        // is the assertion that will fire.
+        BEAST_EXPECT(legacy.totalAfter == fixed.totalAfter);
+        BEAST_EXPECT(legacy.availableAfter == fixed.availableAfter);
     }
 
     void
@@ -967,6 +1187,7 @@ private:
         testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
         testBugInterestDueDeltaCrash();
+        testMultiLoanDefaultDriftFixVsLegacy(all_);
     }
 
     // Tests run under each entry in amendmentCombinations().
@@ -987,7 +1208,7 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, fixCleanup3_4_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
     }
 };

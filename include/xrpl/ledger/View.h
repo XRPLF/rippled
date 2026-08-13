@@ -37,6 +37,11 @@ enum class SkipEntry : bool { No = false, Yes };
 //------------------------------------------------------------------------------
 
 /**
+ * Whether an expiration check should be inclusive or exclusive.
+ */
+enum class ExpiryComparison { Inclusive, Exclusive };
+
+/**
  * Determines whether the given expiration time has passed.
  *
  * In the XRP Ledger, expiration times are defined as the number of whole
@@ -55,11 +60,16 @@ enum class SkipEntry : bool { No = false, Yes };
  *
  * @param view The ledger whose parent time is used as the clock.
  * @param exp The optional expiration time we want to check.
+ * @param comparison Whether the boundary is inclusive (`now >= exp`, the
+ *                   default) or exclusive (`now > exp`).
  *
  * @return `true` if `exp` is in the past; `false` otherwise.
  */
 [[nodiscard]] bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison = ExpiryComparison::Inclusive);
 
 // Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool

@@ -468,25 +468,45 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
 
-    // Cash-basis IOU Vaults route the credit through the dust-aware
-    // addVaultAssets overload (via the xrpl:: dispatcher). We pass the
-    // still-unrounded Number so that the STAmount truncation happens at
-    // the outermost boundary inside vault_dust::addVaultAssets — the
-    // sub-STAmount residual at that boundary is then captured by
-    // sfDust via the receiver-leg Override policy. End-to-end 19-digit
-    // (Number) fidelity is NOT preserved through this path: the value
-    // that lands on the ledger is the STAmount projection plus whatever
-    // survives in sfDust. Legacy and integral-asset Vaults still
-    // pre-round to the Vault's anterior scale here — byte-identical to
-    // the base branch. Delegating to the overlay's own eligibility gate
-    // avoids a manual-sync surface between the two.
+    // Two independent gates drive the raw-value feed to addVaultAssets:
+    //
+    // 1. Cash-basis IOU Vaults route the credit through the dust-aware
+    //    addVaultAssets overload (via the xrpl:: dispatcher). We pass the
+    //    still-unrounded Number so that the STAmount truncation happens at
+    //    the outermost boundary inside vault_dust::addVaultAssets — the
+    //    sub-STAmount residual at that boundary is then captured by sfDust
+    //    via the receiver-leg Override policy. End-to-end 19-digit (Number)
+    //    fidelity is NOT preserved through this path: the value that lands
+    //    on the ledger is the STAmount projection plus whatever survives in
+    //    sfDust. Delegating to the overlay's own eligibility gate avoids a
+    //    manual-sync surface between the two.
+    //
+    // 2. Under fixCleanup3_4_0 (independent of the dust overlay), feed the
+    //    same raw payment Number into both sfAssetsAvailable and the
+    //    accountSendMulti transfer to the vault pseudo-account. Both sinks
+    //    store the value as an asset-typed STAmount (the ledger field is
+    //    normalized through STNumber via associateAsset(*vaultSle, asset)
+    //    further below, and the pseudo account trust line stores an
+    //    STAmount directly), so the IOU normalization is applied
+    //    symmetrically and the two balances land on the same STAmount value
+    //    -- which is what makes the debug invariant sfAssetsAvailable ==
+    //    pseudo-account balance hold. Pre-amendment, sfAssetsAvailable was
+    //    fed the vaultScale-rounded value while the pseudo-account received
+    //    the raw Number, creating the same cross-side asymmetry with
+    //    `assetsTotalDelta` that `LoanManage::defaultLoan` addresses on the
+    //    default path.
+    //
+    // Legacy / integral-asset Vaults with neither gate active still
+    // pre-round to the Vault's anterior scale here — byte-identical to the
+    // base branch.
     bool const useDust = vault_dust::useVaultDust(view, vaultSle);
+    bool const useUnifiedAssetArithmetic = view.rules().enabled(fixCleanup3_4_0);
 
-    auto const totalPaidToVaultRounded = useDust
+    auto const totalPaidToVault = (useDust || useUnifiedAssetArithmetic)
         ? totalPaidToVaultRaw
         : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
-        !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
+        !asset.integral() || totalPaidToVaultRaw == totalPaidToVault,
         "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
     auto const totalPaidToBroker = paymentParts->feePaid;
@@ -532,9 +552,11 @@ LoanPay::doApply()
     // Raw (pre-rounding) projection, used only for this internal consistency
     // check; the real post-rounding values are read back from the Vault SLE
     // further below, once addVaultAssets/associateAsset have actually
-    // mutated and rounded it.
+    // mutated and rounded it. When either useDust or fixCleanup3_4_0 is
+    // active, totalPaidToVault is the raw payment Number; otherwise it is
+    // the vaultScale-rounded value.
     [[maybe_unused]] Number const assetsAvailableAfterRaw =
-        assetsAvailableBefore + totalPaidToVaultRounded;
+        assetsAvailableBefore + totalPaidToVault;
     [[maybe_unused]] Number const assetsTotalAfterRaw = assetsTotalBefore + assetsTotalDelta;
 
     XRPL_ASSERT_PARTS(
@@ -543,13 +565,13 @@ LoanPay::doApply()
         "assets available must not be greater than assets outstanding");
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
-                     << ", total paid to vault rounded: " << totalPaidToVaultRounded
+                     << ", total paid to vault: " << totalPaidToVault
                      << ", total paid to broker: " << totalPaidToBroker
                      << ", amount from transaction: " << amount;
 
     // Move funds
     XRPL_ASSERT_PARTS(
-        totalPaidToVaultRounded + totalPaidToBroker <= amount,
+        totalPaidToVault + totalPaidToBroker <= amount,
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
@@ -565,7 +587,7 @@ LoanPay::doApply()
     associateAsset(*loanSle, asset);
     associateAsset(*brokerSle, asset);
 
-    if (totalPaidToVaultRounded != beast::kZero)
+    if (totalPaidToVault != beast::kZero)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
@@ -596,10 +618,12 @@ LoanPay::doApply()
     // Update the Vault's assets, and transfer the Vault's share of the
     // payment from the payer to the Vault pseudo-account.
     //
-    // totalPaidToVaultRounded is either the pre-rounded amount (Legacy /
-    // integral asset path — same as base branch) or the raw pre-rounding
-    // amount (dust path — the dust-aware addVaultAssets overload consumes
-    // the raw digits to compute the sfDust residual).
+    // totalPaidToVault is either the pre-rounded amount (Legacy /
+    // integral asset path with neither gate active — same as base branch)
+    // or the raw pre-rounding amount (dust path or fixCleanup3_4_0 path —
+    // the dust-aware addVaultAssets overload consumes the raw digits to
+    // compute the sfDust residual; fixCleanup3_4_0 relies on symmetric
+    // STAmount normalization via associateAsset below).
     //
     // This debit and the broker-fee accountSend further below both touch
     // accountID_'s own trust line with the asset's issuer (when the asset
@@ -615,7 +639,7 @@ LoanPay::doApply()
             view,
             vaultSle,
             accountID_,
-            STAmount{asset, totalPaidToVaultRounded},
+            STAmount{asset, totalPaidToVault},
             STAmount{asset, assetsTotalDelta},
             j_);
         !isTesSuccess(ret))

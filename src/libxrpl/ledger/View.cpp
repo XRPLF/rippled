@@ -45,12 +45,20 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison)
 {
     using d = NetClock::duration;
     using tp = NetClock::time_point;
 
-    return exp && (view.parentCloseTime() >= tp{d{*exp}});
+    if (!exp)
+        return false;
+    auto const boundary = tp{d{*exp}};
+    return comparison == ExpiryComparison::Inclusive  //
+        ? view.parentCloseTime() >= boundary
+        : view.parentCloseTime() > boundary;
 }
 
 bool

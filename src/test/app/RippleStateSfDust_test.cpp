@@ -36,7 +36,7 @@
 
 namespace xrpl::test {
 
-class RippleStateSfDust_test : public beast::unit_test::suite
+class RippleStateSfDust_test : public beast::unit_test::Suite
 {
     FeatureBitset const all_{jtx::testableAmendments()};
 

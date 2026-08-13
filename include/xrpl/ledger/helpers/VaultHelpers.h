@@ -11,9 +11,12 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <optional>
 
 namespace xrpl {
+
+class STTx;
 
 /**
  * From the perspective of a vault, return the number of shares to give
@@ -305,6 +308,84 @@ moveVaultAssets(
     MultiplePaymentDestinations const& recipients,
     STAmount const& valueDelta,
     beast::Journal j);
+
+/**
+ * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
+ * sfVaultKind is present and equal to that value; anything else (including an
+ * absent field or an unrecognised value) is treated as VaultKind::OpenEnded.
+ *
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] VaultKind
+getVaultKind(SLE::const_ref vault);
+
+/**
+ * Reads sfVaultKind from a transaction. An absent field resolves to
+ * VaultKind::OpenEnded (matching the on-ledger default); any unrecognised
+ * value is also treated as VaultKind::OpenEnded, mirroring the SLE overload.
+ * Callers that need to reject out-of-range values (e.g. preflight) should
+ * gate on isValidVaultKind() first.
+ *
+ * @param tx The transaction.
+ */
+[[nodiscard]] VaultKind
+getVaultKind(STTx const& tx);
+
+/**
+ * Returns true iff sfVaultKind is either absent from @p tx or is present and
+ * equal to a recognised VaultKind enumerator. Intended for use in preflight
+ * to reject malformed transactions before decoding with getVaultKind().
+ *
+ * @param tx The transaction.
+ */
+[[nodiscard]] bool
+isValidVaultKind(STTx const& tx);
+
+/**
+ * Returns true iff the (SubscriptionDate, RedemptionDate) gap of a
+ * closed-ended vault satisfies
+ * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. The arithmetic
+ * is performed in std::int64_t so that @p sub near UINT32_MAX does not
+ * overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
+ *
+ * @param sub The value of sfSubscriptionDate.
+ * @param red The value of sfRedemptionDate.
+ */
+[[nodiscard]] bool
+isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
+
+/**
+ * Returns the current lifecycle phase of a vault. Open-ended
+ * vaults are always NoPhase. For closed-ended vaults the phase is derived
+ * from the parent ledger close time and the vault's immutable
+ * SubscriptionDate and RedemptionDate.
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] VaultPhase
+getVaultPhase(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * Raw-fields overload of getVaultPhase. Derives the phase from an already
+ * decomposed vault snapshot: an absent or non-ClosedEnded @p vaultKind
+ * resolves to VaultPhase::NoPhase; otherwise the phase is computed from
+ * @p subscriptionDate and @p redemptionDate against the view's parent
+ * close time using the same boundary semantics as the SLE overload
+ * (Subscription is inclusive of now == SubscriptionDate; Investment starts
+ * strictly after).
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vaultKind The value of sfVaultKind, or nullopt if absent.
+ * @param subscriptionDate The value of sfSubscriptionDate, or nullopt if absent.
+ * @param redemptionDate The value of sfRedemptionDate, or nullopt if absent.
+ */
+[[nodiscard]] VaultPhase
+getVaultPhase(
+    ReadView const& view,
+    std::optional<std::uint8_t> vaultKind,
+    std::optional<std::uint32_t> subscriptionDate,
+    std::optional<std::uint32_t> redemptionDate);
 
 /**
  * @namespace vault_dust

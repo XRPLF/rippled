@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -110,9 +111,10 @@ creditBalanceExact(
         return Number{0};
 
     STAmount balance = sleRippleState->getFieldAmount(sfBalance);
-    // Put balance in @p account's terms (sfBalance is stored in the line's
-    // own low/high convention).
-    if (account < issuer)
+    // Put balance in @p account's terms. sfBalance is stored in the
+    // low-account-positive convention, so when @p account is the HIGH
+    // party we negate. Matches the sign flip in getTrustLineBalance.
+    if (account > issuer)
         balance.negate();
 
     // Amendment gate is defense-in-depth; see directSendNoFeeIOU
@@ -123,7 +125,7 @@ creditBalanceExact(
     // sfDust follows sfBalance's sign convention, so the same negation
     // applies.
     Number dust = sleRippleState->at(sfDust);
-    if (account < issuer)
+    if (account > issuer)
         dust = -dust;
 
     return Number{balance} + dust;
