@@ -43,6 +43,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -315,19 +316,11 @@ auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
-// TODO We only need this long "requires" clause as polyfill, for C++20
-// implementations which are missing <ranges> header. Replace with
-// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
-// when we have moved to better compilers.
-template <typename Input>
+template <std::ranges::range Input>
 auto
 makeVector(Input const& input)
-    requires requires(Input& v) {
-        std::begin(v);
-        std::end(v);
-    }
 {
-    return std::vector(std::begin(input), std::end(input));
+    return std::vector(std::ranges::begin(input), std::ranges::end(input));
 }
 
 // Functions used in debugging

@@ -862,6 +862,9 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfWithdrawalPolicy, SoeOptional},
     {sfData, SoeOptional},
     {sfScale, SoeOptional},
+    {sfVaultKind, SoeOptional},
+    {sfSubscriptionDate, SoeOptional},
+    {sfRedemptionDate, SoeOptional},
 }))
 
 /** This transaction updates a single asset vault. */
