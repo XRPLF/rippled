@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
@@ -189,6 +190,11 @@ LoanManage::defaultLoan(
     // required to paper over the resulting cross-side mismatch -- a snap
     // that itself minted phantom assets on sfAssetsTotal. See the
     // sibling change in LoanPay for the same fix on the payment path.
+    //
+    // The Number-precision guard `T - A >= totalDefaultAmount` below is
+    // exactly sufficient: loanVaultExposure returns a difference of vault-
+    // associated STNumber fields (IOU-normalized via associateAsset), so
+    // its STAmount promotion round-trips losslessly with no writeOff slack.
     bool const useUnifiedAssetArithmetic = view.rules().enabled(fixCleanup3_4_0);
 
     if (useUnifiedAssetArithmetic)
