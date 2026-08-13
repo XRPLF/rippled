@@ -57,6 +57,13 @@ public:
     getLedgerByHash(LedgerHash const& ledgerHash);
 
     /**
+     * Return a ledger already resident in the hash cache. Does not load
+     * from disk or acquire from the network.
+     */
+    std::shared_ptr<Ledger const>
+    getCachedLedgerByHash(LedgerHash const& ledgerHash);
+
+    /**
      * Get a ledger's hash given its sequence number
      * @param ledgerIndex The sequence number of the desired ledger
      * @return The hash of the specified ledger

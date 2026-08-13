@@ -846,9 +846,9 @@ LedgerMaster::setFullLedger(
 
     // Pin a sliding window of recently validated current ledgers so their
     // SHAMap state trees stay resident via shared_ptr. Only needed when the
-    // node store cannot re-fetch dropped objects. The window is independent
-    // of ledger_history so ledger_history=full cannot pin every ledger.
-    constexpr std::uint32_t kNullBackendRetainWindow = 256;
+    // node store cannot re-fetch dropped objects. Size the window from
+    // ledger_history so advertised history stays readable. RWDB rejects
+    // ledger_history=full, so this cannot pin unbounded history.
     if (isCurrent && isNullBackend() && ledgerHistorySize_ > 0)
     {
         // Pin only. Do not walk the state tree here: that walk is too
@@ -857,7 +857,7 @@ LedgerMaster::setFullLedger(
         // already fully wired.
         std::scoped_lock const ml(mutex_);
         retainedLedgers_.push_back(ledger);
-        while (retainedLedgers_.size() > kNullBackendRetainWindow)
+        while (retainedLedgers_.size() > ledgerHistorySize_)
             retainedLedgers_.pop_front();
     }
 
@@ -1626,10 +1626,13 @@ LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
-    // Prefer an in-memory Ledger (retained / history cache) over the node
-    // store so this works in RWDB-only configs where headers may not be
-    // persisted long-term.
-    if (auto ledger = getLedgerByHash(ledgerHash))
+    // Resident ledgers only. getLedgerByHash() falls back to
+    // loadByHash(acquire=true), which loads the full ledger from disk
+    // and can schedule a network fetch.
+    if (auto ledger = ledgerHistory_.getCachedLedgerByHash(ledgerHash))
+        return ledger->header().closeTime;
+
+    if (auto ledger = closedLedger_.get(); ledger && ledger->header().hash == ledgerHash)
         return ledger->header().closeTime;
 
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
@@ -1644,6 +1647,11 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t ind
             return NetClock::time_point{NetClock::duration{it.get32()}};
         }
     }
+
+    // Null node store (RWDB) still has the header in the relational
+    // database. Read that instead of reconstructing a full Ledger.
+    if (auto info = app_.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
+        return info->closeTime;
 
     return std::nullopt;
 }

@@ -7,9 +7,14 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -120,10 +125,144 @@ public:
         testWithFeats(all);
     }
 
+    static std::unique_ptr<Config>
+    enableRWDB(std::unique_ptr<Config> cfg)
+    {
+        cfg->section(Sections::kNodeDatabase).set("type", "rwdb");
+        cfg->section(Sections::kRelationalDb).set("backend", "rwdb");
+        return cfg;
+    }
+
+    void
+    testCloseTimeDoesNotLoadLedger()
+    {
+        testcase("close time uses resident or header data only");
+
+        using namespace test::jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->fees.referenceFee = 10;
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+        env(noop(alice));
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        auto const closed = env.closed();
+        auto const seq = closed->header().seq;
+        auto const hash = closed->header().hash;
+        auto const expected = closed->header().closeTime;
+
+        auto const bySeq = lm.getCloseTimeBySeq(seq);
+        BEAST_EXPECT(bySeq && *bySeq == expected);
+
+        auto const byHash = lm.getCloseTimeByHash(hash, seq);
+        BEAST_EXPECT(byHash && *byHash == expected);
+
+        // Unknown hash must not start a load/acquire; it returns nothing.
+        BEAST_EXPECT(!lm.getCloseTimeByHash(uint256(1), seq));
+    }
+
+    void
+    testRWDBCloseTimeFromRelationalHeader()
+    {
+        testcase("RWDB close time from relational header");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            if (cfg->ledgerHistory == 0)
+                cfg->ledgerHistory = 256;
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+        auto const older = env.closed();
+        auto const olderSeq = older->header().seq;
+        auto const olderHash = older->header().hash;
+        auto const olderClose = older->header().closeTime;
+
+        env(noop(alice));
+        env.close();
+        env(noop(alice));
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        // Older than closedLedger_: node store is null, so this must come
+        // from the relational header rather than a full ledger load.
+        auto const bySeq = lm.getCloseTimeBySeq(olderSeq);
+        BEAST_EXPECT(bySeq && *bySeq == olderClose);
+        auto const byHash = lm.getCloseTimeByHash(olderHash, olderSeq);
+        BEAST_EXPECT(byHash && *byHash == olderClose);
+    }
+
+    void
+    testRWDBRetainWindowFollowsHistory()
+    {
+        testcase("RWDB retain window follows ledger_history");
+
+        using namespace test::jtx;
+        constexpr std::uint32_t kHistory = 8;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            cfg->ledgerHistory = kHistory;
+            return cfg;
+        }));
+
+        BEAST_EXPECT(isNullBackend());
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        // standalone switchLCL passes isCurrent=false, so pin explicitly
+        // to exercise the retain window used on a validating node.
+        auto pinCurrent = [&]() {
+            auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
+            if (ledger)
+                lm.setFullLedger(ledger, true, true);
+        };
+        pinCurrent();
+
+        for (std::uint32_t i = 0; i < kHistory + 4; ++i)
+        {
+            env(noop(alice));
+            env.close();
+            pinCurrent();
+        }
+
+        auto const last = env.closed()->header().seq;
+        // Within the configured history window: still resident and readable.
+        auto const kept = lm.getLedgerBySeq(last - (kHistory - 1));
+        BEAST_EXPECT(kept);
+        if (kept)
+        {
+            BEAST_EXPECT(kept->exists(keylet::account(alice.id())));
+            BEAST_EXPECT(lm.getCloseTimeBySeq(kept->header().seq));
+        }
+
+        // Just outside the window: must not crash; may be absent after
+        // the retain pop. The configured window is kHistory, not 256.
+        auto const dropped = lm.getLedgerBySeq(last - kHistory);
+        if (dropped)
+            BEAST_EXPECT(dropped->header().seq == last - kHistory);
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
         testTxnIdFromIndex(features);
+        testCloseTimeDoesNotLoadLedger();
+        testRWDBCloseTimeFromRelationalHeader();
+        testRWDBRetainWindowFollowsHistory();
     }
 };
 
