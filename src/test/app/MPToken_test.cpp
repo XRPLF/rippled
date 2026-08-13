@@ -7824,6 +7824,7 @@ public:
         testFixDoubleOwnerCount(all);
         testLockedMPTokenDestroyedIssuance(all);
         testLockedMPTokenDestroyedIssuance(all - fixCleanup3_4_0);
+        testLockedMPTokenDestroyedIssuance(all - featureSingleAssetVault);
         testLockedMPTokenDestroyedIssuance(all - featureSingleAssetVault - fixCleanup3_4_0);
     }
 };
