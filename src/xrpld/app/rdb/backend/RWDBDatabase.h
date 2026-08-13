@@ -95,6 +95,50 @@ private:
         }
     }
 
+    // SQLite deletes AccountTransactions by TransID (all sequences) and
+    // INSERT OR REPLACEs the transaction row. If this id is already stored
+    // under a different ledger, drop those stale index rows first.
+    void
+    eraseStaleTransactionUnlocked(uint256 const& id)
+    {
+        auto it = transactionMap_.find(id);
+        if (it == transactionMap_.end())
+            return;
+
+        auto const& oldTx = it->second;
+        auto const oldSeq = oldTx.first ? oldTx.first->getLedger() : LedgerIndex{0};
+
+        if (oldSeq != 0)
+        {
+            if (auto ledIt = ledgers_.find(oldSeq); ledIt != ledgers_.end())
+                ledIt->second.transactions.erase(id);
+
+            if (oldTx.second)
+            {
+                for (auto const& account : oldTx.second->getAffectedAccounts())
+                {
+                    auto accountIt = accountTxMap_.find(account);
+                    if (accountIt == accountTxMap_.end())
+                        continue;
+
+                    auto seqIt = accountIt->second.ledgerTxMap.find(oldSeq);
+                    if (seqIt == accountIt->second.ledgerTxMap.end())
+                        continue;
+
+                    std::erase_if(seqIt->second, [&](AccountTx const& tx) {
+                        return tx.first && tx.first->getID() == id;
+                    });
+                    if (seqIt->second.empty())
+                        accountIt->second.ledgerTxMap.erase(seqIt);
+                    if (accountIt->second.ledgerTxMap.empty())
+                        accountTxMap_.erase(accountIt);
+                }
+            }
+        }
+
+        transactionMap_.erase(it);
+    }
+
     // A min/max of 0 is unbounded, matching AccountTxOptions.
     static auto
     ledgerTxBounds(
@@ -427,8 +471,9 @@ public:
                 replaceLedgerSeqUnlocked(seq);
                 for (auto const& insert : txInserts)
                 {
+                    eraseStaleTransactionUnlocked(insert.id);
                     ledgerData.transactions.emplace(insert.id, insert.accTx);
-                    transactionMap_.emplace(insert.id, insert.accTx);
+                    transactionMap_.insert_or_assign(insert.id, insert.accTx);
 
                     for (auto const& account : insert.affected)
                     {
@@ -588,7 +633,7 @@ public:
         return TxSearched::Unknown;
     }
 
-    static constexpr size_t mapNodeOverhead = 40;
+    static constexpr size_t kMapNodeOverhead = 40;
 
 private:
     std::uint64_t
@@ -596,15 +641,16 @@ private:
     {
         std::uint64_t size = 0;
 
-        size += ledgers_.size() * (sizeof(LedgerIndex) + sizeof(LedgerData) + mapNodeOverhead);
+        size += ledgers_.size() * (sizeof(LedgerIndex) + sizeof(LedgerData) + kMapNodeOverhead);
 
         for (auto const& [_, ledgerData] : ledgers_)
         {
             size += ledgerData.transactions.size() *
-                (sizeof(uint256) + sizeof(AccountTx) + mapNodeOverhead);
+                (sizeof(uint256) + sizeof(AccountTx) + kMapNodeOverhead);
         }
 
-        size += ledgerHashToSeq_.size() * (sizeof(uint256) + sizeof(LedgerIndex) + mapNodeOverhead);
+        size +=
+            ledgerHashToSeq_.size() * (sizeof(uint256) + sizeof(LedgerIndex) + kMapNodeOverhead);
 
         return size;
     }
@@ -617,7 +663,7 @@ private:
 
         std::uint64_t size = 0;
 
-        size += transactionMap_.size() * (sizeof(uint256) + sizeof(AccountTx) + mapNodeOverhead);
+        size += transactionMap_.size() * (sizeof(uint256) + sizeof(AccountTx) + kMapNodeOverhead);
 
         for (auto const& [_, accountTx] : transactionMap_)
         {
@@ -629,10 +675,10 @@ private:
 
         for (auto const& [accountId, accountData] : accountTxMap_)
         {
-            size += sizeof(accountId) + sizeof(AccountTxData) + mapNodeOverhead;
+            size += sizeof(accountId) + sizeof(AccountTxData) + kMapNodeOverhead;
             for (auto const& [ledgerSeq, txVector] : accountData.ledgerTxMap)
             {
-                size += sizeof(ledgerSeq) + mapNodeOverhead;
+                size += sizeof(ledgerSeq) + kMapNodeOverhead;
                 size += txVector.capacity() * sizeof(AccountTx);
             }
         }
@@ -958,6 +1004,7 @@ public:
                 return stx && passesDelegateFilter(*stx, *options.delegate, options.account);
             };
 
+            bool pageComplete = false;
             if (forward)
             {
                 auto const& accountData = it->second;
@@ -965,7 +1012,7 @@ public:
                     accountData.ledgerTxMap,
                     findLedger == 0 ? options.ledgerRange.min : findLedger,
                     options.ledgerRange.max);
-                for (; txIt != txEnd; ++txIt)
+                for (; txIt != txEnd && !pageComplete; ++txIt)
                 {
                     std::uint32_t const ledgerSeq = txIt->first;
                     // txnSeq is the index within this account's per-ledger
@@ -1012,7 +1059,8 @@ public:
                                 : RelationalDatabase::AccountTxMarker{
                                       .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
                                       .txnSeq = txnSeq};
-                            goto emit;
+                            pageComplete = true;
+                            break;
                         }
 
                         emitted.push_back(
@@ -1040,7 +1088,7 @@ public:
                     findLedger == 0 ? options.ledgerRange.max : findLedger);
                 auto rtxIt = std::make_reverse_iterator(txEnd);
                 auto rtxEnd = std::make_reverse_iterator(txIt);
-                for (; rtxIt != rtxEnd; ++rtxIt)
+                for (; rtxIt != rtxEnd && !pageComplete; ++rtxIt)
                 {
                     std::uint32_t const ledgerSeq = rtxIt->first;
                     if (rtxIt->second.empty())
@@ -1085,7 +1133,8 @@ public:
                                 : RelationalDatabase::AccountTxMarker{
                                       .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
                                       .txnSeq = txnSeq};
-                            goto emit;
+                            pageComplete = true;
+                            break;
                         }
 
                         emitted.push_back(
@@ -1107,7 +1156,6 @@ public:
             }
         }
 
-    emit:
         // Callbacks run without mutex_ so a JobQueue fallback into
         // saveValidatedLedger cannot unique_lock the same shared_mutex.
         for (auto& row : emitted)

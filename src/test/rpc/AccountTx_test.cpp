@@ -21,6 +21,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -55,6 +56,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl::test {
@@ -1744,6 +1746,83 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
     }
 
+    void
+    testRWDBTransactionMovesLedger()
+    {
+        testcase("RWDB tx lookup follows ledger relocation");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        auto const txHash = env.tx()->getTransactionID();
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto& db = env.app().getRelationalDatabase();
+        ErrorCodeI ec = RpcSuccess;
+        auto found = db.getTransaction(txHash, std::nullopt, ec);
+        auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
+        BEAST_EXPECT(original && original->first);
+        if (!original || !original->first)
+            return;
+        auto const oldSeq = original->first->getLedger();
+        BEAST_EXPECT(oldSeq == src->header().seq);
+
+        // Re-record the same transaction under a different ledger sequence,
+        // matching a history-fetch / later validation of the same TransID.
+        LedgerHeader info = src->header();
+        info.seq += 10;
+        bool loaded = false;
+        auto moved = std::make_shared<Ledger>(
+            info,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(moved->txExists(txHash));
+        BEAST_EXPECT(db.saveValidatedLedger(moved, false));
+
+        ErrorCodeI ec2 = RpcSuccess;
+        auto relocated = db.getTransaction(txHash, std::nullopt, ec2);
+        auto const* updated = std::get_if<RelationalDatabase::AccountTx>(&relocated);
+        BEAST_EXPECT(updated && updated->first);
+        if (updated && updated->first)
+            BEAST_EXPECT(updated->first->getLedger() == info.seq);
+
+        // Unbounded page (not the validated RPC range, which would exclude
+        // the relocated sequence). The TransID must appear once.
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 200,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const page = db.oldestAccountTxPage(pageOptions);
+        std::size_t matches = 0;
+        for (auto const& accountTx : page.first)
+        {
+            if (accountTx.first && accountTx.first->getID() == txHash)
+                ++matches;
+        }
+        BEAST_EXPECT(matches == 1);
+    }
+
 public:
     void
     run() override
@@ -1755,6 +1834,7 @@ public:
         testRWDBDelegationFilter();
         testRWDBUnboundedLedgerRange();
         testRWDBAdminHugeLimit();
+        testRWDBTransactionMovesLedger();
         testContents();
         testAccountDelete();
         testMPT();
