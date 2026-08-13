@@ -67,10 +67,18 @@ in
     SDKROOT = "${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk";
   };
 
-  # The salted name is what the bintools wrapper reads; plain NIX_LDFLAGS only
-  # reaches it via role variables a Nix stdenv would set. The salt comes from the
-  # target platform, so this fits the gcc wrapper too.
-  linkerEnv = {
+  # libresolv is absent from the SDK entirely, so grpc finds neither
+  # <arpa/nameser.h> nor the library. The headers can come straight from
+  # nixpkgs; the library cannot, hence the stub.
+  #
+  # The salted names are what the wrappers read - plain NIX_CFLAGS_COMPILE and
+  # NIX_LDFLAGS only reach them via role variables a Nix stdenv would set. The
+  # salt comes from the target platform, so this fits the gcc wrapper too.
+  # No space after -isystem: these values are written one per line as KEY=VALUE,
+  # and a shell sourcing that reads a space as the end of the assignment.
+  libresolvEnv = {
+    "NIX_CFLAGS_COMPILE_${llvmPackages.clang.suffixSalt}" =
+      "-isystem${pkgs.darwin.libresolv.dev}/include";
     "NIX_LDFLAGS_${llvmPackages.clang.bintools.suffixSalt}" = "-L${libresolvSystemStub}/lib";
   };
 }

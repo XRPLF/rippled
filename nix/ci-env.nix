@@ -17,7 +17,7 @@ let
   # `set -a; . env; set +a` loads it in a shell.
   darwinEnv = pkgs.writeTextDir "share/xrpld-ci-env/env" (
     pkgs.lib.concatStrings (
-      pkgs.lib.mapAttrsToList (name: value: "${name}=${value}\n") (darwin.sdkEnv // darwin.linkerEnv)
+      pkgs.lib.mapAttrsToList (name: value: "${name}=${value}\n") (darwin.sdkEnv // darwin.libresolvEnv)
     )
   );
 

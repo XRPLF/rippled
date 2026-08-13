@@ -49,11 +49,13 @@ let
     unset _xrpl_conan_stamp
   '';
 
-  # Only the linker half: a shell's stdenv already sets the SDK up. Prepended so
-  # the stub beats the nixpkgs libresolv this shell's tooling drags in.
+  # Not sdkEnv: a shell's stdenv already sets that up. Prepended so the stub
+  # beats the nixpkgs libresolv this shell's tooling drags in.
   darwinLinkerHook = pkgs.lib.optionalString pkgs.stdenv.isDarwin (
-    pkgs.lib.concatStrings (
-      pkgs.lib.mapAttrsToList (name: value: ''export ${name}="${value} ''${${name}:-}"'') darwin.linkerEnv
+    pkgs.lib.concatLines (
+      pkgs.lib.mapAttrsToList (
+        name: value: ''export ${name}="${value} ''${${name}:-}"''
+      ) darwin.libresolvEnv
     )
   );
 
