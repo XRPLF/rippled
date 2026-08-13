@@ -12,6 +12,8 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <algorithm>
@@ -23,6 +25,34 @@
 #include <vector>
 
 namespace xrpl {
+
+inline bool
+passesDelegateFilter(STTx const& tx, DelegateFilter const& filter, AccountID const& contextAccount)
+{
+    if (!tx.isFieldPresent(sfDelegate))
+        return false;
+
+    AccountID const txOwner = tx.getAccountID(sfAccount);
+    AccountID const txSigner = tx.getAccountID(sfDelegate);
+
+    switch (filter.type)
+    {
+        case DelegateType::Actor: {
+            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+            if (!isDelegated)
+                return false;
+            return !filter.counterparty || (txSigner == *filter.counterparty);
+        }
+        case DelegateType::Authorizer: {
+            bool const isActingAsDelegate =
+                (txSigner == contextAccount) && (txOwner != contextAccount);
+            if (!isActingAsDelegate)
+                return false;
+            return !filter.counterparty || (txOwner == *filter.counterparty);
+        }
+    }
+    return false;
+}
 
 class RWDBDatabase : public RelationalDatabase
 {
@@ -903,6 +933,15 @@ public:
 
             emitted.reserve(numberOfResults);
 
+            bool const hasDelegateFilter = options.delegate.has_value();
+            auto const txPasses = [&](AccountTx const& accountTx) {
+                if (!hasDelegateFilter)
+                    return true;
+                auto const& stx = accountTx.first->getSTransaction();
+                return stx &&
+                    passesDelegateFilter(*stx, *options.delegate, options.account);
+            };
+
             if (forward)
             {
                 auto const& accountData = it->second;
@@ -931,8 +970,22 @@ public:
                                 continue;
                             }
                             lookingForMarker = false;
+                            // Delegate markers are last-emitted cursors; skip
+                            // that row and resume at the next matching one.
+                            if (hasDelegateFilter && ledgerSeq == findLedger && txnSeq == findSeq)
+                            {
+                                ++txnSeq;
+                                continue;
+                            }
                         }
-                        else if (numberOfResults == 0)
+
+                        if (!txPasses(accountTx))
+                        {
+                            ++txnSeq;
+                            continue;
+                        }
+
+                        if (numberOfResults == 0)
                         {
                             newmarker = {
                                 .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
@@ -983,8 +1036,23 @@ public:
                                 continue;
                             }
                             lookingForMarker = false;
+                            if (hasDelegateFilter && ledgerSeq == findLedger && txnSeq == findSeq)
+                            {
+                                if (txnSeq > 0)
+                                    --txnSeq;
+                                continue;
+                            }
                         }
-                        else if (numberOfResults == 0)
+
+                        auto const& accountTx = *innerRIt;
+                        if (!txPasses(accountTx))
+                        {
+                            if (txnSeq > 0)
+                                --txnSeq;
+                            continue;
+                        }
+
+                        if (numberOfResults == 0)
                         {
                             newmarker = {
                                 .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
@@ -992,7 +1060,6 @@ public:
                             goto emit;
                         }
 
-                        auto const& accountTx = *innerRIt;
                         emitted.push_back(
                             EmittedTx{
                                 .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),

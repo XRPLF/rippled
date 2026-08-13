@@ -24,14 +24,13 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/ledger/Ledger.h>
-#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -42,6 +41,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -1577,6 +1577,54 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(unique.size() == after.size());
     }
 
+    void
+    testRWDBDelegationFilter()
+    {
+        testcase("RWDB delegation filter");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+        env(pay(alice, carol, XRP(10)));
+        env.close();
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+        env(pay(alice, bob, XRP(20)), delegate::As(bob));
+        env.close();
+
+        auto countTxs = [&](Account const& account, json::Value const& delegateParams) {
+            json::Value params;
+            params[jss::account] = account.human();
+            params[jss::ledger_index_min] = -1;
+            params[jss::ledger_index_max] = -1;
+            params[jss::delegate] = delegateParams;
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+            if (!res.isMember(jss::result) || res[jss::result][jss::status] != "success")
+                return -1;
+            return static_cast<int>(res[jss::result][jss::transactions].size());
+        };
+
+        json::Value actor;
+        actor[jss::delegate_filter] = "actor";
+        BEAST_EXPECT(countTxs(alice, actor) == 1);
+
+        actor[jss::counter_party] = bob.human();
+        BEAST_EXPECT(countTxs(alice, actor) == 1);
+
+        json::Value authorizer;
+        authorizer[jss::delegate_filter] = "authorizer";
+        BEAST_EXPECT(countTxs(bob, authorizer) == 1);
+    }
+
 public:
     void
     run() override
@@ -1585,6 +1633,7 @@ public:
         forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxSmoke(apiVersion); });
         forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxBinary(apiVersion); });
         testRWDBAccountTxIdempotentSave();
+        testRWDBDelegationFilter();
         testContents();
         testAccountDelete();
         testMPT();
