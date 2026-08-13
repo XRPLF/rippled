@@ -27,6 +27,45 @@
 #include <utility>
 
 namespace xrpl {
+namespace {
+
+// Applies a full-removal mutation to the Vault's ledger fields: both
+// callers (clawbackVaultAssets and removeVaultAssets) apply `amount` to
+// sfAssetsTotal and sfAssetsAvailable equally (unlike
+// addVaultAssets/moveVaultAssets, a full removal always shrinks both fields
+// by the same amount). On a final removal, both fields are hard-reset to
+// exactly zero rather than computed via subtraction: see FinalRemoval's
+// doc comment for why an arithmetic subtraction cannot be trusted to land
+// on exactly zero here.
+void
+applyRemoveVaultAssets(
+    ApplyView& view,
+    SLE::ref vault,
+    STAmount const& amount,
+    FinalRemoval finalRemoval)
+{
+    if (finalRemoval == FinalRemoval::Yes)
+    {
+        vault->at(sfAssetsTotal) = 0;
+        vault->at(sfAssetsAvailable) = 0;
+    }
+    else
+    {
+        vault->at(sfAssetsTotal) -= amount;
+        vault->at(sfAssetsAvailable) -= amount;
+    }
+    view.update(vault);
+}
+
+[[nodiscard]] VaultKind
+decodeVaultKind(std::optional<std::uint8_t> vaultKind)
+{
+    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
+        return VaultKind::ClosedEnded;
+    return VaultKind::OpenEnded;
+}
+
+}  // namespace
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
@@ -205,45 +244,8 @@ addVaultAssets(
     vault->at(sfAssetsAvailable) += amount;
     view.update(vault);
 
-    if (auto const ter =
-            accountSend(view, sender, vault->at(sfAccount), amount, j, {}, WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
-
-    return tesSUCCESS;
+    return accountSend(view, sender, vault->at(sfAccount), amount, j, {}, WaiveTransferFee::Yes);
 }
-
-namespace {
-
-// Applies a full-removal mutation to the Vault's ledger fields: both
-// callers (clawbackVaultAssets and removeVaultAssets) apply `amount` to
-// sfAssetsTotal and sfAssetsAvailable equally (unlike
-// addVaultAssets/moveVaultAssets, a full removal always shrinks both fields
-// by the same amount). On a final removal, both fields are hard-reset to
-// exactly zero rather than computed via subtraction: see FinalRemoval's
-// doc comment for why an arithmetic subtraction cannot be trusted to land
-// on exactly zero here.
-void
-applyRemoveVaultAssets(
-    ApplyView& view,
-    SLE::ref vault,
-    STAmount const& amount,
-    FinalRemoval finalRemoval)
-{
-    if (finalRemoval == FinalRemoval::Yes)
-    {
-        vault->at(sfAssetsTotal) = 0;
-        vault->at(sfAssetsAvailable) = 0;
-    }
-    else
-    {
-        vault->at(sfAssetsTotal) -= amount;
-        vault->at(sfAssetsAvailable) -= amount;
-    }
-    view.update(vault);
-}
-
-}  // namespace
 
 [[nodiscard]] TER
 clawbackVaultAssets(
@@ -355,18 +357,6 @@ moveVaultAssets(
     return accountSendMulti(
         view, vault->at(sfAccount), asset, recipients, j, WaiveTransferFee::Yes);
 }
-
-namespace {
-
-[[nodiscard]] VaultKind
-decodeVaultKind(std::optional<std::uint8_t> vaultKind)
-{
-    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
-        return VaultKind::ClosedEnded;
-    return VaultKind::OpenEnded;
-}
-
-}  // namespace
 
 [[nodiscard]] VaultKind
 getVaultKind(SLE::const_ref vault)
