@@ -1116,7 +1116,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             // holder == account
             env(jtx, Ter(temINVALID));
 
-            // holder == beast::zero
+            // holder == beast::kZero
             STAmount const bad(Issue{usd.currency, beast::kZero}, 100);
             jtx.jv[sfAmount] = bad.getJson();
             jtx.stx = env.ust(jtx);

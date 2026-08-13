@@ -24,6 +24,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <limits>
@@ -54,6 +55,9 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
     for (auto const& h : arr)
     {
         // Credentials already checked in preclaim. Look only for expired here.
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
@@ -156,7 +160,7 @@ deletePseudoAccountCredentials(
 }
 
 NotTEC
-checkFields(STTx const& tx, beast::Journal j)
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
 {
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
@@ -166,6 +170,13 @@ checkFields(STTx const& tx, beast::Journal j)
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
+        return temMALFORMED;
+    }
+
+    if (rules.enabled(fixCleanup3_4_0) &&
+        std::ranges::any_of(credentials, [](uint256 const& id) { return id.isZero(); }))
+    {
+        JLOG(j.trace()) << "Malformed transaction: zero credential ID.";
         return temMALFORMED;
     }
 
@@ -192,6 +203,14 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
     auto const& credIDs(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : credIDs)
     {
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+        {
+            // LCOV_EXCL_START
+            JLOG(j.trace()) << "Zero credential ID.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
         auto const sleCred = view.read(keylet::credential(h));
         if (!sleCred)
         {
@@ -266,6 +285,9 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
+        if (view.rules().enabled(fixCleanup3_4_0) && h.isZero())
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
         auto sleCred = view.read(keylet::credential(h));
         if (!sleCred)            // already checked in preclaim
             return tefINTERNAL;  // LCOV_EXCL_LINE

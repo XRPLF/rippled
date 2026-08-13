@@ -229,12 +229,6 @@ public:
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
     }
 
-    bool
-    operator!=(ListIterator const& other) const
-    {
-        return !(*this == other);
-    }
-
     reference
     operator*() const
     {

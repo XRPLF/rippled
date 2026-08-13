@@ -14,7 +14,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -212,8 +211,6 @@ LoanBrokerDelete::doApply()
     }
 
     view().erase(broker);
-
-    associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
 }
