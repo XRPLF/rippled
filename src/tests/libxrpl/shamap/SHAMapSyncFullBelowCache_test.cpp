@@ -3,37 +3,36 @@
  * @brief Tests for SHAMapSync FullBelowCache disable in null mode.
  */
 
-#include <xrpl/basics/NullBackendFlag.h>
-
 #include <gtest/gtest.h>
+#include <shamap/common.h>
 
 namespace xrpl::tests {
 
 /**
  * Shared FullBelowCache is unsafe in null-backend mode: a cache hit in
  * one SHAMap skips subtrees that were never pinned into another. The
- * production gate lives in useSharedFullBelowCache().
+ * production gate lives on Family::isNullBackend() so it is per-instance.
  */
 TEST(SHAMapSyncFullBelowCache, nullModeDisablesSharedCache)
 {
-    NullBackendScope const on(true);
-
-    EXPECT_TRUE(isNullBackend());
-    EXPECT_FALSE(useSharedFullBelowCache());
+    TestNodeFamily family{beast::Journal{beast::Journal::getNullSink()}};
+    family.setNullBackend(true);
+    EXPECT_TRUE(family.isNullBackend());
 }
 
 TEST(SHAMapSyncFullBelowCache, normalModeEnablesSharedCache)
 {
-    // Do not store an absolute false: that would drop another live
-    // RWDB SHAMapStoreImp in this process. If the count is already
-    // non-zero, shared cache is correctly disabled.
-    if (isNullBackend())
-    {
-        EXPECT_FALSE(useSharedFullBelowCache());
-        return;
-    }
+    TestNodeFamily family{beast::Journal{beast::Journal::getNullSink()}};
+    EXPECT_FALSE(family.isNullBackend());
+}
 
-    EXPECT_TRUE(useSharedFullBelowCache());
+TEST(SHAMapSyncFullBelowCache, familiesAreIndependent)
+{
+    TestNodeFamily disk{beast::Journal{beast::Journal::getNullSink()}};
+    TestNodeFamily rwdb{beast::Journal{beast::Journal::getNullSink()}};
+    rwdb.setNullBackend(true);
+    EXPECT_FALSE(disk.isNullBackend());
+    EXPECT_TRUE(rwdb.isNullBackend());
 }
 
 }  // namespace xrpl::tests

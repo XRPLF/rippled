@@ -1,7 +1,6 @@
 #include <xrpl/ledger/Ledger.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -337,7 +336,7 @@ Ledger::setImmutable(bool rehash)
 bool
 Ledger::fullWireForUse(beast::Journal journal, char const* context) const
 {
-    if (!isNullBackend() || isFullyWired())
+    if (!stateMap_.family().isNullBackend() || isFullyWired())
         return true;
 
     // Do not walk the full state tree. Iterating every leaf was a prototype

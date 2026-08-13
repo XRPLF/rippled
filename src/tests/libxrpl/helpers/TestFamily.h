@@ -35,6 +35,7 @@ private:
     std::shared_ptr<TreeNodeCache> tnCache_;
     node_store::DummyScheduler scheduler_;
     beast::Journal j_;
+    bool isNullBackend_{false};
 
 public:
     explicit TestFamily(beast::Journal j)
@@ -117,6 +118,18 @@ public:
     clock()
     {
         return clock_;
+    }
+
+    void
+    setNullBackend(bool enable)
+    {
+        isNullBackend_ = enable;
+    }
+
+    bool
+    isNullBackend() const override
+    {
+        return isNullBackend_;
     }
 };
 

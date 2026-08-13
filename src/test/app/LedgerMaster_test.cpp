@@ -5,9 +5,9 @@
 #include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
@@ -216,7 +216,7 @@ public:
             return cfg;
         }));
 
-        BEAST_EXPECT(isNullBackend());
+        BEAST_EXPECT(env.app().getSHAMapStore().isNullBackend());
 
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);

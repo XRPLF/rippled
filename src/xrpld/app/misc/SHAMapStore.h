@@ -96,6 +96,13 @@ public:
      */
     [[nodiscard]] virtual std::optional<LedgerIndex>
     minimumOnline() const = 0;
+
+    /**
+     * True when this store's node backend cannot re-fetch dropped
+     * objects (RWDB null mode). Per-instance, not process-wide.
+     */
+    [[nodiscard]] virtual bool
+    isNullBackend() const = 0;
 };
 
 //------------------------------------------------------------------------------

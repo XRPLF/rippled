@@ -8,7 +8,6 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -200,12 +199,6 @@ SHAMapStoreImp::SHAMapStoreImp(
         if (!isNullBackend_)
             dbPaths();
     }
-
-    // Acquire only after every constructor Throw so a failed startup
-    // cannot leak a process-wide null-backend refcount (C++ does not
-    // run the destructor of an object whose constructor threw).
-    if (isNullBackend_)
-        acquireNullBackend();
 }
 
 std::unique_ptr<node_store::Database>
@@ -385,8 +378,7 @@ SHAMapStoreImp::run()
 
         // Use 64-bit addition so deleteInterval_ == UINT32_MAX cannot wrap
         // to lastRotated-1 and rotate on every ledger.
-        bool const readyToRotate =
-            static_cast<std::uint64_t>(validatedSeq) >=
+        bool const readyToRotate = static_cast<std::uint64_t>(validatedSeq) >=
                 static_cast<std::uint64_t>(lastRotated) + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 

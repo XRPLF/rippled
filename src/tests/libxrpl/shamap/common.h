@@ -33,6 +33,7 @@ private:
     node_store::DummyScheduler scheduler_;
 
     beast::Journal const j_;
+    bool isNullBackend_{false};
 
 public:
     TestNodeFamily(beast::Journal j)
@@ -117,6 +118,18 @@ public:
     clock()
     {
         return clock_;
+    }
+
+    void
+    setNullBackend(bool enable)
+    {
+        isNullBackend_ = enable;
+    }
+
+    bool
+    isNullBackend() const override
+    {
+        return isNullBackend_;
     }
 };
 

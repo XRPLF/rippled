@@ -1,7 +1,6 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
@@ -41,10 +40,13 @@ namespace {
 // canonicalizeChild.  Per-inner-node isFullBelowGen (LOCAL state) is
 // still allowed — it only affects the same SHAMap that set it, whose
 // children were pinned during the pass that resolved them.
+//
+// Gated on this SHAMap's Family so a disk-backed Application in the
+// same process is not affected by an RWDB instance.
 bool
-useFullBelowCache()
+useFullBelowCache(Family const& family)
 {
-    return useSharedFullBelowCache();
+    return !family.isNullBackend();
 }
 
 }  // namespace
@@ -212,7 +214,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             fullBelow = false;
         }
         else if (
-            !backed_ || !useFullBelowCache() ||
+            !backed_ || !useFullBelowCache(f_) ||
             !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
@@ -264,7 +266,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
     if (fullBelow)
     {  // No partial node encountered below this node
         node->setFullBelowGen(mn.generation);
-        if (backed_ && useFullBelowCache())
+        if (backed_ && useFullBelowCache(f_))
         {
             f_.getFullBelowCache()->insert(node->getHash().asUInt256());
         }
@@ -606,7 +608,7 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (useFullBelowCache() && f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+        if (useFullBelowCache(f_) && f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();
         }

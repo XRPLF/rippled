@@ -4,7 +4,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/ledger/Ledger.h>
@@ -123,13 +122,12 @@ private:
 public:
     SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 
-    ~SHAMapStoreImp()
+    ~SHAMapStoreImp() = default;
+
+    bool
+    isNullBackend() const override
     {
-        // Drop this instance's claim on the process-wide flag so later
-        // unit tests in the same process are not left in null-backend mode
-        // after the last RWDB SHAMapStoreImp is destroyed.
-        if (isNullBackend_)
-            releaseNullBackend();
+        return isNullBackend_;
     }
 
     std::uint32_t

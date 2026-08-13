@@ -20,7 +20,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -849,7 +848,7 @@ LedgerMaster::setFullLedger(
     // node store cannot re-fetch dropped objects. Size the window from
     // ledger_history so advertised history stays readable. RWDB rejects
     // ledger_history=full, so this cannot pin unbounded history.
-    if (isCurrent && isNullBackend() && ledgerHistorySize_ > 0)
+    if (isCurrent && app_.getSHAMapStore().isNullBackend() && ledgerHistorySize_ > 0)
     {
         // Pin only. Do not walk the state tree here: that walk is too
         // expensive to hold mutex_ (or to run at all on mainnet). Inbound

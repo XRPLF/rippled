@@ -1,9 +1,8 @@
 /**
  * @file
- * @brief Tests for RWDB null-backend flag and the RWDB factory.
+ * @brief Tests for the RWDB factory's fetch/store no-op contract.
  */
 
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -13,8 +12,7 @@
 namespace xrpl::test {
 
 /**
- * Test null-backend flag used by RWDBBackend / SHAMap / Config, and the
- * RWDB factory's fetch/store no-op contract.
+ * Test the RWDB factory's fetch/store no-op contract.
  */
 class RWDBBackend_test : public beast::unit_test::Suite
 {
@@ -22,31 +20,7 @@ public:
     void
     run() override
     {
-        testNullBackendFlag();
-        testNullBackendCleanupRegression();
         testFactoryIsNullBackend();
-    }
-
-    void
-    testNullBackendFlag()
-    {
-        testcase("nullBackend flag");
-
-        {
-            NullBackendScope const on(true);
-            BEAST_EXPECT(isNullBackend());
-            BEAST_EXPECT(!useSharedFullBelowCache());
-        }
-    }
-
-    void
-    testNullBackendCleanupRegression()
-    {
-        testcase("nullBackend cleanup regression");
-
-        acquireNullBackend();
-        BEAST_EXPECT(isNullBackend());
-        releaseNullBackend();
     }
 
     void

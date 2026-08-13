@@ -7,6 +7,7 @@
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
@@ -14,7 +15,6 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -71,7 +71,7 @@ findBestFullyWiredBase(
     std::shared_ptr<Ledger> const& targetLedger,
     beast::Journal journal)
 {
-    if (!isNullBackend())
+    if (!app.getSHAMapStore().isNullBackend())
         return {};
 
     std::array<std::shared_ptr<Ledger const>, 2> candidates{
@@ -87,7 +87,7 @@ primeInboundLedgerForUse(
     beast::Journal journal,
     char const* context)
 {
-    if (!isNullBackend())
+    if (!ledger->stateMap().family().isNullBackend())
         return true;
     if (ledger->isFullyWired())
         return true;

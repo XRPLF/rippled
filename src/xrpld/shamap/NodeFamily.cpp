@@ -6,6 +6,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/Tuning.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
@@ -25,6 +26,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
     , db_(app.getNodeStore())
     , j_(app.getJournal("NodeFamily"))
+    , isNullBackend_(app.getSHAMapStore().isNullBackend())
     , fbCache_(
           std::make_shared<FullBelowCache>(
               "Node family full below cache",

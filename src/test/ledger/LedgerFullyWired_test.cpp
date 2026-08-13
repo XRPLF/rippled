@@ -9,7 +9,8 @@
 #include <test/jtx/pay.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/NullBackendFlag.h>
+#include <xrpld/app/misc/SHAMapStore.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
@@ -35,6 +36,7 @@ public:
         testFullWireForUseSuccess();
         testThreadSafeAccess();
         testNullBackendEnv();
+        testNullBackendIsPerApplication();
     }
 
     void
@@ -141,7 +143,8 @@ public:
             return cfg;
         }));
 
-        BEAST_EXPECT(isNullBackend());
+        BEAST_EXPECT(env.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(env.app().getNodeFamily().isNullBackend());
 
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
@@ -161,6 +164,40 @@ public:
 
         auto const info = env.rpc("account_info", alice.human());
         BEAST_EXPECT(info[jss::result][jss::status] == jss::success);
+    }
+
+    void
+    testNullBackendIsPerApplication()
+    {
+        testcase("null-backend mode is per Application");
+
+        using namespace jtx;
+        Env disk(*this);
+        Env rwdb(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section(Sections::kNodeDatabase).set("type", "rwdb");
+            cfg->section(Sections::kRelationalDb).set("backend", "rwdb");
+            if (cfg->ledgerHistory == 0)
+                cfg->ledgerHistory = 256;
+            return cfg;
+        }));
+
+        BEAST_EXPECT(!disk.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(!disk.app().getNodeFamily().isNullBackend());
+        BEAST_EXPECT(rwdb.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(rwdb.app().getNodeFamily().isNullBackend());
+
+        test::SuiteJournal journal{"LedgerFullyWired", *this};
+
+        // A header-only disk ledger must stay usable while an RWDB Env
+        // is alive in the same process.
+        Ledger diskHeaderOnly(
+            disk.closed()->header(), disk.closed()->rules(), disk.app().getNodeFamily());
+        BEAST_EXPECT(diskHeaderOnly.fullWireForUse(journal, "disk header-only"));
+
+        Ledger rwdbHeaderOnly(
+            rwdb.closed()->header(), rwdb.closed()->rules(), rwdb.app().getNodeFamily());
+        BEAST_EXPECT(!rwdbHeaderOnly.isFullyWired());
+        BEAST_EXPECT(!rwdbHeaderOnly.fullWireForUse(journal, "rwdb header-only"));
     }
 };
 
