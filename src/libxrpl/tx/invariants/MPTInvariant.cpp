@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -283,12 +282,13 @@ ValidMPTIssuance::finalize(
                                        "but created bad number of mptokens";
                     return false;
                 }
-                //  At most one MPToken may be created on withdraw/clawback since:
+                //  At most two MPToken may be created on withdraw/clawback since:
                 //  - Liquidity Provider must have at least one token in order
-                //    participate in AMM pool liquidity.
+                //    participate in AMM pool liquidity or have LPTokens only.
                 //  - At most two MPTokens may be deleted if AMM pool, which has exactly
                 //    two tokens, is empty after withdraw/clawback.
-                if (mptokensCreated_ > 1 || mptokensDeleted_ > 2)
+                SOMETIMES(mptokensCreated_ == 2, "AMM withdraw/clawback recreated two MPTokens");
+                if (mptokensCreated_ > 2 || mptokensDeleted_ > 2)
                 {
                     JLOG(j.fatal()) << "Invariant failed: MPT authorize  succeeded "
                                        "but created/deleted bad number of mptokens";
@@ -404,7 +404,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTPayment::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (overflow_)
         return;
@@ -466,7 +466,7 @@ ValidMPTPayment::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 }
 
 bool
-ValidMPTPayment::finalize(
+ValidMPTBalanceChanges::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,
@@ -837,8 +837,6 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    auto const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
-
     if (hasPrivilege(tx, OverrideFreeze))
         return true;
 
@@ -901,27 +899,9 @@ ValidMPTTransfer::finalize(
 
                 // Check once: if any involved account is frozen, the whole issuance transfer is
                 // considered frozen. Only need to check for frozen if there is a transfer of funds.
-                //
-                // Post-fix330: full isFrozen() applies — vault-share transitive freeze is part of
-                // the freeze semantics for all changed holders.
-                //
-                // Pre-fix330: legacy AMM withdraw only checked individual freeze on the
-                // destination, not the transitive vault freeze.  All other paths (and the AMM
-                // account itself as sender) did apply the full check.
-                MPTIssue const issue{mptID};
-                auto const legacyAccountFrozen = [&] {
-                    if (isGlobalFrozen(view, issue) || isIndividualFrozen(view, account, issue))
-                        return true;
-                    bool const isReceiver =
-                        !value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore;
-                    if (txnType == ttAMM_WITHDRAW && isReceiver)
-                        return false;
-                    return isVaultPseudoAccountFrozen(view, account, issue, 0);
-                };
-                bool const accountFrozen =
-                    fix330Enabled ? isFrozen(view, account, issue) : legacyAccountFrozen();
                 if (!invalidTransfer &&
-                    (accountFrozen || !isAuthorized(view, mptID, account, reqAuth)))
+                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                     !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
                 }

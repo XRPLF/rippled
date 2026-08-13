@@ -8,6 +8,7 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
@@ -36,10 +37,10 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
 #include <initializer_list>
 #include <optional>
 #include <stdexcept>
@@ -111,7 +112,7 @@ class ElementComboIter
         };
 
     std::uint16_t state_ = 0;
-    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8, "");
+    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8);
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies
     // some tests)
@@ -126,12 +127,7 @@ class ElementComboIter
     [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
-        for (auto const s : sb)
-        {
-            if (has(s))
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(sb, [this](auto const s) { return has(s); });
     }
 
     [[nodiscard]] size_t
@@ -308,31 +304,26 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        static constexpr size_t kBufSize = 32;
-        char buf[kBufSize];
-
         for (size_t id = 0; id < numAct; ++id)
-        {
-            snprintf(buf, kBufSize, "A%zu", id);
-            accounts.emplace_back(buf);
-        }
+            accounts.emplace_back("A" + std::to_string(id));
 
         for (size_t id = 0; id < numCur; ++id)
         {
+            std::string name;
             if (id < 10)
             {
-                snprintf(buf, kBufSize, "CC%zu", id);
+                name = "CC" + std::to_string(id);
             }
             else if (id < 100)
             {
-                snprintf(buf, kBufSize, "C%zu", id);
+                name = "C" + std::to_string(id);
             }
             else
             {
-                snprintf(buf, kBufSize, "%zu", id);
+                name = std::to_string(id);
             }
-            currencies.emplace_back(toCurrency(buf));
-            currencyNames.emplace_back(buf);
+            currencies.emplace_back(toCurrency(name));
+            currencyNames.emplace_back(name);
         }
 
         for (auto const& a : accounts)

@@ -29,12 +29,8 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-#include <boost/system/detail/errc.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/system/errc.hpp>
 
 #include <xrpl.pb.h>
 
@@ -43,6 +39,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <iterator>
 #include <limits>
@@ -54,6 +51,7 @@
 #include <shared_mutex>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -288,7 +286,7 @@ ValidatorList::load(
     return true;
 }
 
-boost::filesystem::path
+std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
     return dataPath_ / (kFilePrefix + strHex(pubKey));
@@ -372,9 +370,9 @@ ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, Public
     if (dataPath_.empty())
         return;
 
-    boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+    std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
-    boost::system::error_code ec;
+    std::error_code ec;
 
     json::Value value = buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
     // xrpld should be the only process writing to this file, so
@@ -1065,6 +1063,8 @@ ValidatorList::updatePublisherList(
         {
             // Increment list count for added keys
             ++keyListings_[*iNew];
+            // Key is now listed: free its untrusted slot if it had one.
+            validatorManifests_.promoteToTrusted(*iNew);
             ++iNew;
         }
         else if (iNew == publisherList.end() || (iOld != oldList.end() && *iOld < *iNew))
@@ -1103,7 +1103,8 @@ ValidatorList::updatePublisherList(
             continue;
         }
 
-        if (auto const r = validatorManifests_.applyManifest(std::move(*m));
+        if (auto const r = validatorManifests_.applyManifest(
+                std::move(*m), ManifestRateLimitCapPolicy::Uncapped);
             r == ManifestDisposition::Invalid)
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
@@ -1127,6 +1128,15 @@ ValidatorList::applyList(
 
     json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
+    // Reject an oversized manifest before decoding it, so we do not allocate
+    // memory for an input that cannot be a valid manifest. deserializeManifest
+    // also enforces the decoded-byte limit, but checking here avoids the
+    // base64 decode entirely.
+    if (manifest.size() > kMaxManifestBase64)
+    {
+        JLOG(j_.warn()) << "UNL manifest exceeds maximum size";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
     auto m = deserializeManifest(base64Decode(manifest));
     if (!m)
     {
@@ -1283,8 +1293,7 @@ std::vector<std::string>
 ValidatorList::loadLists()
 {
     using namespace std::string_literals;
-    using namespace boost::filesystem;
-    using namespace boost::system::errc;
+    using namespace std::filesystem;
 
     std::scoped_lock const lock{mutex_};
 
@@ -1292,12 +1301,12 @@ ValidatorList::loadLists()
     sites.reserve(publisherLists_.size());
     for (auto const& [pubKey, publisherCollection] : publisherLists_)
     {
-        boost::system::error_code ec;
+        std::error_code ec;
 
         if (publisherCollection.status == PublisherStatus::Available)
             continue;
 
-        boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
+        std::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
         auto const fullPath{canonical(filename, ec)};
         if (ec)
@@ -1308,7 +1317,7 @@ ValidatorList::loadLists()
         {
             // Treat an empty file as a missing file, because
             // nobody else is going to write it.
-            ec = make_error_code(no_such_file_or_directory);
+            ec = make_error_code(std::errc::no_such_file_or_directory);
         }
         if (ec)
             continue;
@@ -1348,7 +1357,10 @@ ValidatorList::verify(
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(manifest));
+    // Publisher keys are configured/trusted (checked above), so bypass the
+    // untrusted cap.
+    auto const result = publisherManifests_.applyManifest(
+        std::move(manifest), ManifestRateLimitCapPolicy::Uncapped);
 
     if (revoked && result == ManifestDisposition::Accepted)
     {

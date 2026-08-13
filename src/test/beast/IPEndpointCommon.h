@@ -1,9 +1,13 @@
 #pragma once
 
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
-namespace beast::IP {
+#include <cstdint>
+
+namespace beast::ip {
 
 inline Endpoint
 randomEP(bool v4 = true)
@@ -40,4 +44,4 @@ randomEP(bool v4 = true)
         randInt<std::uint16_t>(1, UINT16_MAX)};
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

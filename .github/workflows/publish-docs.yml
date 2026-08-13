@@ -41,13 +41,13 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-e29b523
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fecfc0c
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@9355d190fd7d4de80fadfd161e6edddc9702cd9f
+        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
         with:
           enable_ccache: false
 

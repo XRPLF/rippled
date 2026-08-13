@@ -6,9 +6,13 @@
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -17,9 +21,10 @@ using IniFileSections = std::unordered_map<std::string, std::vector<std::string>
 
 //------------------------------------------------------------------------------
 
-/** Holds a collection of configuration values.
-    A configuration file contains zero or more sections.
-*/
+/**
+ * Holds a collection of configuration values.
+ * A configuration file contains zero or more sections.
+ */
 class Section
 {
 private:
@@ -32,28 +37,34 @@ private:
     using const_iterator = decltype(lookup_)::const_iterator;
 
 public:
-    /** Create an empty section. */
+    /**
+     * Create an empty section.
+     */
     explicit Section(std::string name = "");
 
-    /** Returns the name of this section. */
+    /**
+     * Returns the name of this section.
+     */
     [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    /** Returns all the lines in the section.
-        This includes everything.
-    */
+    /**
+     * Returns all the lines in the section.
+     * This includes everything.
+     */
     [[nodiscard]] std::vector<std::string> const&
     lines() const
     {
         return lines_;
     }
 
-    /** Returns all the values in the section.
-        Values are non-empty lines which are not key/value pairs.
-    */
+    /**
+     * Returns all the values in the section.
+     * Values are non-empty lines which are not key/value pairs.
+     */
     [[nodiscard]] std::vector<std::string> const&
     values() const
     {
@@ -80,7 +91,7 @@ public:
      * Get the legacy value for this section.
      *
      * @return The retrieved value. A section with an empty legacy value returns
-               an empty string.
+     *         an empty string.
      */
     [[nodiscard]] std::string
     legacy() const
@@ -95,28 +106,34 @@ public:
         return lines_[0];
     }
 
-    /** Set a key/value pair.
-        The previous value is discarded.
-    */
+    /**
+     * Set a key/value pair.
+     * The previous value is discarded.
+     */
     void
     set(std::string const& key, std::string const& value);
 
-    /** Append a set of lines to this section.
-        Lines containing key/value pairs are added to the map,
-        else they are added to the values list. Everything is
-        added to the lines list.
-    */
+    /**
+     * Append a set of lines to this section.
+     * Lines containing key/value pairs are added to the map,
+     * else they are added to the values list. Everything is
+     * added to the lines list.
+     */
     void
     append(std::vector<std::string> const& lines);
 
-    /** Append a line to this section. */
+    /**
+     * Append a line to this section.
+     */
     void
     append(std::string const& line)
     {
         append(std::vector<std::string>{line});
     }
 
-    /** Returns `true` if a key with the given name exists. */
+    /**
+     * Returns `true` if a key with the given name exists.
+     */
     [[nodiscard]] bool
     exists(std::string const& name) const;
 
@@ -130,7 +147,9 @@ public:
         return boost::lexical_cast<T>(iter->second);
     }
 
-    /// Returns a value if present, else another value.
+    /**
+     * Returns a value if present, else another value.
+     */
     template <class T>
     [[nodiscard]] T
     valueOr(std::string const& name, T const& other) const
@@ -195,23 +214,27 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Holds unparsed configuration information.
-    The raw data sections are processed with intermediate parsers specific
-    to each module instead of being all parsed in a central location.
-*/
+/**
+ * Holds unparsed configuration information.
+ * The raw data sections are processed with intermediate parsers specific
+ * to each module instead of being all parsed in a central location.
+ */
 class BasicConfig
 {
 private:
     std::unordered_map<std::string, Section> map_;
 
 public:
-    /** Returns `true` if a section with the given name exists. */
+    /**
+     * Returns `true` if a section with the given name exists.
+     */
     [[nodiscard]] bool
     exists(std::string const& name) const;
 
-    /** Returns the section with the given name.
-        If the section does not exist, an empty section is returned.
-    */
+    /**
+     * Returns the section with the given name.
+     * If the section does not exist, an empty section is returned.
+     */
     /** @{ */
     Section&
     section(std::string const& name);
@@ -232,37 +255,39 @@ public:
     }
     /** @} */
 
-    /** Overwrite a key/value pair with a command line argument
-        If the section does not exist it is created.
-        The previous value, if any, is overwritten.
-    */
+    /**
+     * Overwrite a key/value pair with a command line argument
+     * If the section does not exist it is created.
+     * The previous value, if any, is overwritten.
+     */
     void
     overwrite(std::string const& section, std::string const& key, std::string const& value);
 
-    /** Remove all the key/value pairs from the section.
+    /**
+     * Remove all the key/value pairs from the section.
      */
     void
     deprecatedClearSection(std::string const& section);
 
     /**
-     *  Set a value that is not a key/value pair.
+     * Set a value that is not a key/value pair.
      *
-     *  The value is stored as the section's first value and may be retrieved
-     *  through section::legacy.
+     * The value is stored as the section's first value and may be retrieved
+     * through section::legacy.
      *
-     *  @param section Name of the section to modify.
-     *  @param value Contents of the legacy value.
+     * @param section Name of the section to modify.
+     * @param value Contents of the legacy value.
      */
     void
     legacy(std::string const& section, std::string value);
 
     /**
-     *  Get the legacy value of a section. A section with a
-     *  single-line value may be retrieved as a legacy value.
+     * Get the legacy value of a section. A section with a
+     * single-line value may be retrieved as a legacy value.
      *
-     *  @param sectionName Retrieve the contents of this section's
-     *         legacy value.
-     *  @return Contents of the legacy value.
+     * @param sectionName Retrieve the contents of this section's
+     *        legacy value.
+     * @return Contents of the legacy value.
      */
     [[nodiscard]] std::string
     legacy(std::string const& sectionName) const;
@@ -285,11 +310,12 @@ protected:
 
 //------------------------------------------------------------------------------
 
-/** Set a value from a configuration Section
-    If the named value is not found or doesn't parse as a T,
-    the variable is unchanged.
-    @return `true` if value was set.
-*/
+/**
+ * Set a value from a configuration Section
+ * If the named value is not found or doesn't parse as a T,
+ * the variable is unchanged.
+ * @return `true` if value was set.
+ */
 template <class T>
 bool
 set(T& target, std::string const& name, Section const& section)
@@ -308,11 +334,12 @@ set(T& target, std::string const& name, Section const& section)
     return foundAndValid;
 }
 
-/** Set a value from a configuration Section
-    If the named value is not found or doesn't cast to T,
-    the variable is assigned the default.
-    @return `true` if the named value was found and is valid.
-*/
+/**
+ * Set a value from a configuration Section
+ * If the named value is not found or doesn't cast to T,
+ * the variable is assigned the default.
+ * @return `true` if the named value was found and is valid.
+ */
 template <class T>
 bool
 set(T& target, T const& defaultValue, std::string const& name, Section const& section)
@@ -323,10 +350,11 @@ set(T& target, T const& defaultValue, std::string const& name, Section const& se
     return foundAndValid;
 }
 
-/** Retrieve a key/value pair from a section.
-    @return The value string converted to T if it exists
-            and can be parsed, or else defaultValue.
-*/
+/**
+ * Retrieve a key/value pair from a section.
+ * @return The value string converted to T if it exists
+ *         and can be parsed, or else defaultValue.
+ */
 // NOTE This routine might be more clumsy than the previous two
 template <class T = std::string>
 T

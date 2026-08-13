@@ -4,9 +4,11 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -123,7 +125,12 @@ std::optional<EcPair>
 makeEcPair(Slice const& buffer)
 {
     if (buffer.length() != 2 * kEcCiphertextComponentLength)
-        return std::nullopt;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::makeEcPair : callers must pre-validate ciphertext length");
+        return std::nullopt;
+        // LCOV_EXCL_STOP
+    }
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
@@ -265,7 +272,13 @@ std::optional<Buffer>
 encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, MPTID const& mptId)
 {
     if (pubKeySlice.size() != kEcPubKeyLength)
-        return std::nullopt;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::encryptCanonicalZeroAmount : callers must pre-validate public key length");
+        return std::nullopt;
+        // LCOV_EXCL_STOP
+    }
 
     EcPair pair{};
     secp256k1_pubkey pubKey;
@@ -273,14 +286,24 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
             secp256k1Context(), &pubKey, pubKeySlice.data(), kEcPubKeyLength);
         res != 1)
     {
-        return std::nullopt;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::encryptCanonicalZeroAmount : public key read from the ledger must already be "
+            "valid");
+        return std::nullopt;
+        // LCOV_EXCL_STOP
     }
 
     if (auto res = generate_canonical_encrypted_zero(
             secp256k1Context(), &pair.c1, &pair.c2, &pubKey, account.data(), mptId.data());
         res != 1)
     {
-        return std::nullopt;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::encryptCanonicalZeroAmount : canonical zero generation cannot fail for a "
+            "valid public key");
+        return std::nullopt;
+        // LCOV_EXCL_STOP
     }
 
     return serializeEcPair(pair);
@@ -300,7 +323,11 @@ verifyRevealedAmount(
         issuer.publicKey.size() != kEcPubKeyLength ||
         issuer.encryptedAmount.size() != kEcGamalEncryptedTotalLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::verifyRevealedAmount : callers must pre-validate holder/issuer field lengths");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     auto const holderP = toParticipant(holder);
@@ -312,7 +339,11 @@ verifyRevealedAmount(
         if (auditor->publicKey.size() != kEcPubKeyLength ||
             auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::verifyRevealedAmount : callers must pre-validate auditor field lengths");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         auditorP = toParticipant(*auditor);
         auditorPtr = &auditorP;
@@ -336,7 +367,12 @@ checkEncryptedAmountFormat(STObject const& object)
     if (!object.isFieldPresent(sfHolderEncryptedAmount) ||
         !object.isFieldPresent(sfIssuerEncryptedAmount))
     {
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::checkEncryptedAmountFormat : callers already enforce that these fields are "
+            "present");
+        return temMALFORMED;
+        // LCOV_EXCL_STOP
     }
 
     if (object[sfHolderEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
@@ -365,7 +401,12 @@ TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
 {
     if (proofSlice.size() != kEcSchnorrProofLength || pubKeySlice.size() != kEcPubKeyLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::verifySchnorrProof : callers must pre-validate proof/public key length");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (mpt_verify_convert_proof(proofSlice.data(), pubKeySlice.data(), contextHash.data()) != 0)
         return tecBAD_PROOF;
@@ -384,7 +425,12 @@ verifyClawbackProof(
     if (ciphertext.size() != kEcGamalEncryptedTotalLength ||
         pubKeySlice.size() != kEcPubKeyLength || proof.size() != kEcClawbackProofLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::verifyClawbackProof : callers must pre-validate ciphertext/public "
+            "key/proof length");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (mpt_verify_clawback_proof(
@@ -419,7 +465,12 @@ verifySendProof(
         amountCommitment.size() != kEcPedersenCommitmentLength ||
         balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::verifySendProof : callers must pre-validate proof/participant/commitment "
+            "lengths");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     std::vector<mpt_confidential_participant> participants;
@@ -432,12 +483,22 @@ verifySendProof(
         if (auditor->publicKey.size() != kEcPubKeyLength ||
             auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::verifySendProof : callers must pre-validate auditor field lengths");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         participants.push_back(toParticipant(*auditor));
     }
     if (participants.size() != recipientCount)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::verifySendProof : participant count must match the requested recipient "
+            "count");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (mpt_verify_send_proof(
             proof.data(),
@@ -467,7 +528,12 @@ verifyConvertBackProof(
         spendingBalance.size() != kEcGamalEncryptedTotalLength ||
         balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::verifyConvertBackProof : callers must pre-validate proof/public "
+            "key/balance/commitment lengths");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (mpt_verify_convert_back_proof(

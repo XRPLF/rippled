@@ -193,6 +193,23 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
             accountId == beast::kZero)
             return terADDRESS_COLLISION;
+
+        auto const isMPTIssuerPseudo = [&](Asset const& asset) {
+            if (asset.native())
+                return false;
+
+            if (asset.holds<Issue>())
+                return false;
+
+            return isPseudoAccount(ctx.view, asset.getIssuer());
+        };
+
+        if (isMPTIssuerPseudo(amount.asset()) || isMPTIssuerPseudo(amount2.asset()))
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: can't create with vault shares " << amount << " "
+                                << amount2;
+            return tecWRONG_ASSET;
+        }
     }
 
     if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount.asset(), accountID, accountID);
@@ -315,17 +332,30 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     return err;
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
+                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
+                    !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
+                    sb,
+                    account,
+                    accountId,
+                    amount,
+                    ctx.journal,
+                    {},  // don't sponsor for AMM Trustline
+                    WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
+                        sb,
+                        account,
+                        accountId,
+                        amount,
+                        ctx.journal,
+                        {},  // don't sponsor for AMM Trustline
+                        WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))

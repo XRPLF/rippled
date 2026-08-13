@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -143,9 +144,10 @@ digest(void const* data, std::size_t size) noexcept
     return static_cast<Hasher::result_type>(h);
 }
 
-template <class Hasher, class T, std::size_t N, class = std::enable_if_t<sizeof(T) == 1>>
+template <class Hasher, class T, std::size_t N>
 static Hasher::result_type
 digest(std::array<T, N> const& v)
+    requires(sizeof(T) == 1)
 {
     return digest<Hasher>(v.data(), v.size());
 }
@@ -158,15 +160,16 @@ digest2(Args const&... args)
     return digest<Hasher>(digest<Hasher>(args...));
 }
 
-/** Calculate a 4-byte checksum of the data
-
-    The checksum is calculated as the first 4 bytes
-    of the SHA256 digest of the message. This is added
-    to the base58 encoding of identifiers to detect
-    user error in data entry.
-
-    @note This checksum algorithm is part of the client API
-*/
+/**
+ * Calculate a 4-byte checksum of the data
+ *
+ * The checksum is calculated as the first 4 bytes
+ * of the SHA256 digest of the message. This is added
+ * to the base58 encoding of identifiers to detect
+ * user error in data entry.
+ *
+ * @note This checksum algorithm is part of the client API
+ */
 static void
 checksum(void* out, void const* message, std::size_t size)
 {
@@ -264,17 +267,17 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
+    std::vector<std::uint8_t> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = kAlphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
-        for (auto iter = b256.rbegin(); iter != b256.rend(); ++iter)
+        for (std::uint8_t& byte : std::views::reverse(b256))
         {
-            carry += 58 * *iter;
-            *iter = carry % 256;
+            carry += 58 * byte;
+            byte = carry % 256;
             carry /= 256;
         }
         XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");
@@ -282,7 +285,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
+    auto iter = std::ranges::find_if(b256, [](std::uint8_t c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);

@@ -107,6 +107,7 @@ transResults()
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
+        MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -130,6 +131,8 @@ transResults()
         MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
         MAKE_ERROR(tefNFTOKEN_IS_NOT_TRANSFERABLE, "The specified NFToken is not transferable."),
         MAKE_ERROR(tefINVALID_LEDGER_FIX_TYPE,     "The LedgerFixType field has an invalid value."),
+        MAKE_ERROR(tefNO_DST_PARTIAL,              "Partial payment to create account not allowed."),
+        MAKE_ERROR(tefBAD_PATH_COUNT,              "Malformed: Too many paths."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -218,6 +221,7 @@ transResults()
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(terLOCKED,                 "Fund is locked."),
+        MAKE_ERROR(terNO_PERMISSION,          "No permission to perform requested operation."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

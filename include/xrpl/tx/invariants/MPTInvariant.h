@@ -1,13 +1,21 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace xrpl {
@@ -23,16 +31,22 @@ class ValidMPTIssuance
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;
 
-    /// sfReferenceHolding is intended to be set exactly once at vault
-    /// creation and immutable thereafter; true when that rule was violated.
+    /**
+     * sfReferenceHolding is intended to be set exactly once at vault
+     * creation and immutable thereafter; true when that rule was violated.
+     */
     bool referenceHoldingSetOnCreate_ = false;
 
-    /// True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+    /**
+     * True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+     */
     bool referenceHoldingMutated_ = false;
 
-    /// MPTokens and RippleStates deleted during apply. finalize() checks each
-    /// holder's AccountRoot to detect vault pseudo-account holdings deleted
-    /// outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+    /**
+     * MPTokens and RippleStates deleted during apply. finalize() checks each
+     * holder's AccountRoot to detect vault pseudo-account holdings deleted
+     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
@@ -73,7 +87,7 @@ public:
  * OutstandingAmount after application equals OutstandingAmount before
  * application plus the net holder balance delta.
  */
-class ValidMPTPayment
+class ValidMPTBalanceChanges
 {
     enum class Order { Before = 0, After = 1 };
     struct MPTData

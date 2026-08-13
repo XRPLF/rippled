@@ -6,9 +6,16 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 namespace xrpl {
 
-/// Body that holds JSON
+/**
+ * Body that holds JSON
+ */
 struct JsonBody
 {
     explicit JsonBody() = default;

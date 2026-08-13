@@ -39,7 +39,7 @@ LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData];
@@ -113,7 +113,8 @@ LoanBrokerSet::getValueFields()
     return kValueFields;
 }
 
-/** Read and validate a vault, checking existence and ownership.
+/**
+ * Read and validate a vault, checking existence and ownership.
  *
  * @param ctx The preclaim context.
  * @param account The expected vault owner.
@@ -137,7 +138,8 @@ readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& i
     return sle;
 }
 
-/** Preclaim validation for updating an existing LoanBroker.
+/**
+ * Preclaim validation for updating an existing LoanBroker.
  *
  * @param ctx The preclaim context.
  * @param account The transaction submitter.
@@ -214,7 +216,8 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
     return sleVault;
 }
 
-/** Preclaim validation for creating a new LoanBroker.
+/**
+ * Preclaim validation for creating a new LoanBroker.
  *
  * @param ctx The preclaim context.
  * @param account The transaction submitter (vault owner).
@@ -323,7 +326,7 @@ LoanBrokerSet::doApply()
         }
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const vaultAsset = sleVault->at(sfAsset);
-        auto const sequence = tx.getSeqValue();
+        auto const sequence = tx.getSeqProxy();
 
         auto owner = view.peek(keylet::account(accountID_));
         if (!owner)
@@ -343,9 +346,8 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
-        auto const ownerCount = owner->at(sfOwnerCount);
-        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
+        increaseOwnerCount(view, owner, {}, 2, j_);
+        if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
@@ -354,11 +356,12 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(
+                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:
-        broker->at(sfSequence) = sequence;
+        broker->at(sfSequence) = sequence.value();
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;

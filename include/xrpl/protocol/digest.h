@@ -6,24 +6,29 @@
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 
 namespace xrpl {
 
-/** Message digest functions used in the codebase
-
-    @note These are modeled to meet the requirements of `Hasher` in the
-          `hash_append` interface, discussed in proposal:
-
-          N3980 "Types Don't Know #"
-          http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html
-*/
+/**
+ * Message digest functions used in the codebase
+ *
+ * @note These are modeled to meet the requirements of `Hasher` in the
+ *       `hash_append` interface, discussed in proposal:
+ *
+ *       N3980 "Types Don't Know #"
+ *       http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html
+ */
 
 //------------------------------------------------------------------------------
 
-/** RIPEMD-160 digest
-
-    @note This uses the OpenSSL implementation
-*/
+/**
+ * RIPEMD-160 digest
+ *
+ * @note This uses the OpenSSL implementation
+ */
 struct OpensslRipemd160Hasher
 {
 public:
@@ -43,10 +48,11 @@ private:
     char ctx_[96]{};
 };
 
-/** SHA-512 digest
-
-    @note This uses the OpenSSL implementation
-*/
+/**
+ * SHA-512 digest
+ *
+ * @note This uses the OpenSSL implementation
+ */
 struct OpensslSha512Hasher
 {
 public:
@@ -66,10 +72,11 @@ private:
     char ctx_[216]{};
 };
 
-/** SHA-256 digest
-
-    @note This uses the OpenSSL implementation
-*/
+/**
+ * SHA-256 digest
+ *
+ * @note This uses the OpenSSL implementation
+ */
 struct OpensslSha256Hasher
 {
 public:
@@ -97,21 +104,22 @@ using sha512_hasher = OpensslSha512Hasher;
 
 //------------------------------------------------------------------------------
 
-/** Returns the RIPEMD-160 digest of the SHA256 hash of the message.
-
-    This operation is used to compute the 160-bit identifier
-    representing an XRPL account, from a message. Typically the
-    message is the public key of the account - which is not
-    stored in the account root.
-
-    The same computation is used regardless of the cryptographic
-    scheme implied by the public key. For example, the public key
-    may be an ed25519 public key or a secp256k1 public key. Support
-    for new cryptographic systems may be added, using the same
-    formula for calculating the account identifier.
-
-    Meets the requirements of Hasher (in hash_append)
-*/
+/**
+ * Returns the RIPEMD-160 digest of the SHA256 hash of the message.
+ *
+ * This operation is used to compute the 160-bit identifier
+ * representing an XRPL account, from a message. Typically the
+ * message is the public key of the account - which is not
+ * stored in the account root.
+ *
+ * The same computation is used regardless of the cryptographic
+ * scheme implied by the public key. For example, the public key
+ * may be an ed25519 public key or a secp256k1 public key. Support
+ * for new cryptographic systems may be added, using the same
+ * formula for calculating the account identifier.
+ *
+ * Meets the requirements of Hasher (in hash_append)
+ */
 struct RipeshaHasher
 {
 private:
@@ -142,11 +150,12 @@ public:
 
 namespace detail {
 
-/** Returns the SHA512-Half digest of a message.
-
-    The SHA512-Half is the first 256 bits of the
-    SHA-512 digest of the message.
-*/
+/**
+ * Returns the SHA512-Half digest of a message.
+ *
+ * The SHA512-Half is the first 256 bits of the
+ * SHA-512 digest of the message.
+ */
 template <bool Secure>
 struct BasicSha512HalfHasher
 {
@@ -198,7 +207,9 @@ using sha512_half_hasher_s = detail::BasicSha512HalfHasher<true>;
 
 //------------------------------------------------------------------------------
 
-/** Returns the SHA512-Half of a series of objects. */
+/**
+ * Returns the SHA512-Half of a series of objects.
+ */
 template <class... Args>
 sha512_half_hasher::result_type
 sha512Half(Args const&... args)
@@ -209,12 +220,13 @@ sha512Half(Args const&... args)
     return static_cast<sha512_half_hasher::result_type>(h);
 }
 
-/** Returns the SHA512-Half of a series of objects.
-
-    Postconditions:
-        Temporary memory storing copies of
-        input messages will be cleared.
-*/
+/**
+ * Returns the SHA512-Half of a series of objects.
+ *
+ * Postconditions:
+ *     Temporary memory storing copies of
+ *     input messages will be cleared.
+ */
 template <class... Args>
 sha512_half_hasher_s::result_type
 sha512HalfS(Args const&... args)

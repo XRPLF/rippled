@@ -1,11 +1,20 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/shamap/SHAMapItem.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -15,7 +24,7 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-namespace LedgerReplayParameters {
+namespace ledger_replay_parameters {
 // timeout value for LedgerReplayTask
 constexpr auto kTaskTimeout = std::chrono::milliseconds{500};
 
@@ -44,7 +53,7 @@ constexpr std::uint32_t kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
 constexpr std::uint32_t kMaxQueuedTasks = 100;
-}  // namespace LedgerReplayParameters
+}  // namespace ledger_replay_parameters
 
 /**
  * Manages the lifetime of ledger replay tasks.
@@ -69,7 +78,9 @@ public:
     void
     replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
-    /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
+    /**
+     * Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task
+     */
     void
     createDeltas(std::shared_ptr<LedgerReplayTask> task);
 
@@ -93,7 +104,9 @@ public:
         LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
-    /** Remove completed tasks */
+    /**
+     * Remove completed tasks
+     */
     void
     sweep();
 

@@ -1,26 +1,26 @@
 #pragma once
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
-#include <expected>
+#include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-namespace Attestations {
+namespace attestations {
 
 struct AttestationBase
 {
@@ -227,7 +227,7 @@ struct CmpByCreateCount
     }
 };
 
-};  // namespace Attestations
+};  // namespace attestations
 
 // Result when checking when two attestation match.
 enum class AttestationMatch {
@@ -241,7 +241,7 @@ enum class AttestationMatch {
 
 struct XChainClaimAttestation
 {
-    using TSignedAttestation = Attestations::AttestationClaim;
+    using TSignedAttestation = attestations::AttestationClaim;
     static SField const& arrayFieldName;
 
     AccountID keyAccount;
@@ -297,7 +297,7 @@ struct XChainClaimAttestation
 
 struct XChainCreateAccountAttestation
 {
-    using TSignedAttestation = Attestations::AttestationCreateAccount;
+    using TSignedAttestation = attestations::AttestationCreateAccount;
     static SField const& arrayFieldName;
 
     AccountID keyAccount;
