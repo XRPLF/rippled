@@ -1623,6 +1623,34 @@ class AccountTx_test : public beast::unit_test::Suite
         json::Value authorizer;
         authorizer[jss::delegate_filter] = "authorizer";
         BEAST_EXPECT(countTxs(bob, authorizer) == 1);
+
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+
+        json::Value page;
+        page[jss::account] = alice.human();
+        page[jss::ledger_index_min] = -1;
+        page[jss::ledger_index_max] = -1;
+        page[jss::delegate] = actor;
+        page[jss::limit] = 1;
+        auto const first = env.rpc("json", "account_tx", to_string(page));
+        BEAST_EXPECT(first[jss::result][jss::transactions].size() == 1);
+        BEAST_EXPECT(first[jss::result].isMember(jss::marker));
+        page[jss::marker] = first[jss::result][jss::marker];
+        auto const second = env.rpc("json", "account_tx", to_string(page));
+        BEAST_EXPECT(second[jss::result][jss::transactions].size() == 1);
+        auto hashOf = [](json::Value const& tx) {
+            if (tx.isMember(jss::tx_json) && tx[jss::tx_json].isMember(jss::hash))
+                return tx[jss::tx_json][jss::hash].asString();
+            if (tx.isMember(jss::tx) && tx[jss::tx].isMember(jss::hash))
+                return tx[jss::tx][jss::hash].asString();
+            if (tx.isMember(jss::hash))
+                return tx[jss::hash].asString();
+            return std::string{};
+        };
+        BEAST_EXPECT(
+            hashOf(first[jss::result][jss::transactions][0u]) !=
+            hashOf(second[jss::result][jss::transactions][0u]));
     }
 
 public:

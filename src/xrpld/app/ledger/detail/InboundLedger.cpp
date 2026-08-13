@@ -71,6 +71,9 @@ findBestFullyWiredBase(
     std::shared_ptr<Ledger> const& targetLedger,
     beast::Journal journal)
 {
+    if (!isNullBackend())
+        return {};
+
     std::array<std::shared_ptr<Ledger const>, 2> candidates{
         app.getInboundLedgers().getClosestFullyWiredLedger(targetLedger),
         app.getLedgerMaster().getClosestFullyWiredLedger(targetLedger)};

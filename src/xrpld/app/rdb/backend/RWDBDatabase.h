@@ -932,6 +932,7 @@ public:
                 newmarker = options.marker;
 
             emitted.reserve(numberOfResults);
+            std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
 
             bool const hasDelegateFilter = options.delegate.has_value();
             auto const txPasses = [&](AccountTx const& accountTx) {
@@ -987,9 +988,14 @@ public:
 
                         if (numberOfResults == 0)
                         {
-                            newmarker = {
-                                .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
-                                .txnSeq = txnSeq};
+                            // Non-delegate: first unprocessed row (included
+                            // on resume). Delegate: last emitted row (skipped
+                            // on resume), matching SQLite lastEmitted.
+                            newmarker = hasDelegateFilter ? lastEmitted
+                                                          : RelationalDatabase::AccountTxMarker{
+                                                                .ledgerSeq = rangeCheckedCast<
+                                                                    std::uint32_t>(ledgerSeq),
+                                                                .txnSeq = txnSeq};
                             goto emit;
                         }
 
@@ -1002,6 +1008,9 @@ public:
                                     accountTx.second->getAsObject().getSerializer().peekData()});
                         --numberOfResults;
                         ++total;
+                        lastEmitted = {
+                            .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                            .txnSeq = txnSeq};
                         ++txnSeq;
                     }
                 }
@@ -1054,9 +1063,11 @@ public:
 
                         if (numberOfResults == 0)
                         {
-                            newmarker = {
-                                .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
-                                .txnSeq = txnSeq};
+                            newmarker = hasDelegateFilter ? lastEmitted
+                                                          : RelationalDatabase::AccountTxMarker{
+                                                                .ledgerSeq = rangeCheckedCast<
+                                                                    std::uint32_t>(ledgerSeq),
+                                                                .txnSeq = txnSeq};
                             goto emit;
                         }
 
@@ -1069,6 +1080,9 @@ public:
                                     accountTx.second->getAsObject().getSerializer().peekData()});
                         --numberOfResults;
                         ++total;
+                        lastEmitted = {
+                            .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                            .txnSeq = txnSeq};
                         if (txnSeq > 0)
                             --txnSeq;
                     }
