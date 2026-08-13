@@ -118,7 +118,7 @@ static_assert(
 // eagerly, so spelling the calls out inline would be a hard error rather than
 // the `false` the assertions below want.
 template <typename T>
-concept HasMutableSle = requires(T& t) { t.mutableSle(); };
+concept HasMutableRawSle = requires(T& t) { t.mutableRawSle(); };
 
 template <typename T>
 concept HasApplyView = requires(T& t) { t.applyView(); };
@@ -172,7 +172,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         RAccountRootEntry const adopted(sle, *env.current(), env.journal);
         BEAST_EXPECT(adopted.exists());
-        BEAST_EXPECT(adopted.sle() == sle);
+        BEAST_EXPECT(adopted.rawSle() == sle);
         BEAST_EXPECT(adopted.key() == keylet::account(alice.id()).key);
         BEAST_EXPECT(adopted.type() == ltACCOUNT_ROOT);
         // keylet() reports the SLE's own type, not the entry's static binding, so
@@ -214,29 +214,30 @@ class SLEBase_test : public beast::unit_test::Suite
 
         WAccountRootEntry account(alice.id(), av, env.journal);
         BEAST_EXPECT(account.canModify());
-        BEAST_EXPECT(account.mutableSle() == account.sle());
+        BEAST_EXPECT(account.mutableRawSle() == account.rawSle());
         BEAST_EXPECT(&account.applyView() == &av);
         BEAST_EXPECT(&account.readView() == static_cast<ReadView const*>(&av));
         BEAST_EXPECT(&account.journal().sink() == &env.journal.sink());
 
         // The mutable dereference operators reach the same entry.
-        BEAST_EXPECT(account.operator->() == account.sle().get());
-        BEAST_EXPECT(&*account == account.sle().get());
+        BEAST_EXPECT(account.operator->() == account.rawSle().get());
+        BEAST_EXPECT(&*account == account.rawSle().get());
 
         // Everything handing out mutable access is non-const, so a const
         // writable entry is as inert as a read-only one.
-        static_assert(HasMutableSle<WAccountRootEntry>);
+        static_assert(HasMutableRawSle<WAccountRootEntry>);
         static_assert(HasApplyView<WAccountRootEntry>);
         static_assert(
-            !HasMutableSle<WAccountRootEntry const>,
-            "mutableSle() must not be callable on a const writable entry");
+            !HasMutableRawSle<WAccountRootEntry const>,
+            "mutableRawSle() must not be callable on a const writable entry");
         static_assert(
             !HasApplyView<WAccountRootEntry const>,
             "applyView() must not be callable on a const writable entry");
 
         // Read-only entries do not have the writable interface at all.
         static_assert(
-            !HasMutableSle<RAccountRootEntry>, "mutableSle() must not exist on a read-only entry");
+            !HasMutableRawSle<RAccountRootEntry>,
+            "mutableRawSle() must not exist on a read-only entry");
         static_assert(
             !HasApplyView<RAccountRootEntry>, "applyView() must not exist on a read-only entry");
     }
@@ -269,7 +270,7 @@ class SLEBase_test : public beast::unit_test::Suite
         BEAST_EXPECT(fromCtx.key() == keylet::account(alice.id()).key);
 
         WAccountRootEntry const fromView(keylet::account(alice.id()), av, env.journal);
-        BEAST_EXPECT(fromCtx.sle() == fromView.sle());
+        BEAST_EXPECT(fromCtx.rawSle() == fromView.rawSle());
     }
 
     void
@@ -344,11 +345,11 @@ class SLEBase_test : public beast::unit_test::Suite
 
         RAccountRootEntry const readOnly = writable;
         BEAST_EXPECT(readOnly.exists());
-        BEAST_EXPECT(readOnly.sle() == writable.sle());
+        BEAST_EXPECT(readOnly.rawSle() == writable.rawSle());
 
         ReadOnlySLE const generic = writable;
         BEAST_EXPECT(generic.exists());
-        BEAST_EXPECT(generic.sle() == writable.sle());
+        BEAST_EXPECT(generic.rawSle() == writable.rawSle());
         // A generic entry has to read the type back out of the SLE.
         BEAST_EXPECT(generic.type() == ltACCOUNT_ROOT);
     }
@@ -384,8 +385,8 @@ class SLEBase_test : public beast::unit_test::Suite
         // The invariant resolveEntry() exists to hold: one SLE per key per
         // view. read() would have handed back the base ledger's entry instead,
         // which is a different object.
-        BEAST_EXPECT(readOnly.sle() == writable.sle());
-        BEAST_EXPECT(readOnly.sle() != overLedger.sle());
+        BEAST_EXPECT(readOnly.rawSle() == writable.rawSle());
+        BEAST_EXPECT(readOnly.rawSle() != overLedger.rawSle());
 
         // Which is what keeps a read-only entry from going stale: a write
         // through any other entry over the same view is visible through it.

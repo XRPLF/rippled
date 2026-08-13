@@ -135,10 +135,13 @@ public:
     }
 
     /**
-     * Returns the underlying SLE for read access
+     * Returns the underlying SLE for read access.
+     *
+     * Prefer operator-> / operator* for field access; this is for the call
+     * sites that need the shared_ptr itself.
      */
     [[nodiscard]] SLE::const_pointer
-    sle() const
+    rawSle() const
     {
         return sle_;
     }
@@ -241,10 +244,13 @@ public:
     // when a const entry only needs to inspect the view.
 
     /**
-     * Returns a mutable SLE for write operations
+     * Returns the underlying SLE for write access.
+     *
+     * Prefer operator-> / operator* for field access; this is for the call
+     * sites that need the shared_ptr itself.
      */
     [[nodiscard]] sle_ptr_type const&
-    mutableSle()
+    mutableRawSle()
         requires kIsWritable
     {
         return sle_;
@@ -395,7 +401,7 @@ public:
     SLEBase(SLEBase<OtherViewT, OtherType> const& other)
         requires(!kIsWritable && WritableView<OtherViewT> &&
                  (OtherType == EntryType || EntryType == ltANY))
-        : view_(other.readView()), sle_(other.sle()), j_(other.journal())
+        : view_(other.readView()), sle_(other.rawSle()), j_(other.journal())
     {
     }
 
