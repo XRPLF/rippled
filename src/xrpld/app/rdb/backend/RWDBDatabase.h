@@ -95,9 +95,21 @@ private:
         }
     }
 
+    // A min/max of 0 is unbounded, matching AccountTxOptions.
+    static auto
+    ledgerTxBounds(
+        std::map<uint32_t, std::vector<AccountTx>> const& ledgerTxMap,
+        std::uint32_t minSeq,
+        std::uint32_t maxSeq)
+    {
+        auto const first = (minSeq == 0) ? ledgerTxMap.begin() : ledgerTxMap.lower_bound(minSeq);
+        auto const last = (maxSeq == 0) ? ledgerTxMap.end() : ledgerTxMap.upper_bound(maxSeq);
+        return std::pair{first, last};
+    }
+
     // Reader-preferring so Linux matches macOS and RPC readers are not
     // starved by saveValidatedLedger / deleteBeforeLedgerSeq writers.
-    mutable reader_preferring_shared_mutex mutex_;
+    mutable ReaderPreferringSharedMutex mutex_;
 
     std::map<LedgerIndex, LedgerData> ledgers_;
     std::map<uint256, LedgerIndex> ledgerHashToSeq_;
@@ -113,7 +125,7 @@ public:
     std::optional<LedgerIndex>
     getMinLedgerSeq() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         if (ledgers_.empty())
             return std::nullopt;
         return ledgers_.begin()->first;
@@ -125,7 +137,7 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         for (auto const& [ledgerSeq, ledgerData] : ledgers_)
         {
             if (!ledgerData.transactions.empty())
@@ -140,7 +152,7 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         if (accountTxMap_.empty())
             return std::nullopt;
         LedgerIndex minSeq = std::numeric_limits<LedgerIndex>::max();
@@ -157,7 +169,7 @@ public:
     std::optional<LedgerIndex>
     getMaxLedgerSeq() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         if (ledgers_.empty())
             return std::nullopt;
         return ledgers_.rbegin()->first;
@@ -169,7 +181,7 @@ public:
         if (!useTxTables_)
             return;
 
-        std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.find(ledgerSeq);
         if (it == ledgers_.end())
             return;
@@ -193,7 +205,7 @@ public:
     void
     deleteBeforeLedgerSeq(LedgerIndex ledgerSeq) override
     {
-        std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.begin();
         while (it != ledgers_.end() && it->first < ledgerSeq)
         {
@@ -235,7 +247,7 @@ public:
         if (!useTxTables_)
             return;
 
-        std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.begin();
         while (it != ledgers_.end() && it->first < ledgerSeq)
         {
@@ -255,7 +267,7 @@ public:
         if (!useTxTables_)
             return;
 
-        std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         for (auto accountIt = accountTxMap_.begin(); accountIt != accountTxMap_.end();)
         {
             auto& accountData = accountIt->second;
@@ -282,7 +294,7 @@ public:
         if (!useTxTables_)
             return 0;
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         return transactionMap_.size();
     }
 
@@ -292,7 +304,7 @@ public:
         if (!useTxTables_)
             return 0;
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         std::size_t count = 0;
         for (auto const& [_, accountData] : accountTxMap_)
         {
@@ -307,7 +319,7 @@ public:
     CountMinMax
     getLedgerCountMinMax() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         if (ledgers_.empty())
             return {.numberOfRows = 0, .minLedgerSequence = 0, .maxLedgerSequence = 0};
         return {
@@ -411,7 +423,7 @@ public:
             }
 
             {
-                std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+                std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
                 replaceLedgerSeqUnlocked(seq);
                 for (auto const& insert : txInserts)
                 {
@@ -441,7 +453,7 @@ public:
         }
 
         {
-            std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+            std::unique_lock<ReaderPreferringSharedMutex> const lock(mutex_);
             replaceLedgerSeqUnlocked(seq);
             ledgers_[seq] = std::move(ledgerData);
             ledgerHashToSeq_[ledger->header().hash] = seq;
@@ -452,7 +464,7 @@ public:
     std::optional<LedgerHeader>
     getLedgerInfoByIndex(LedgerIndex ledgerSeq) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.find(ledgerSeq);
         if (it != ledgers_.end())
             return it->second.info;
@@ -462,7 +474,7 @@ public:
     std::optional<LedgerHeader>
     getNewestLedgerInfo() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         if (ledgers_.empty())
             return std::nullopt;
         return ledgers_.rbegin()->second.info;
@@ -471,7 +483,7 @@ public:
     std::optional<LedgerHeader>
     getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.lower_bound(ledgerFirstIndex);
         if (it != ledgers_.end())
             return it->second.info;
@@ -481,7 +493,7 @@ public:
     std::optional<LedgerHeader>
     getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.lower_bound(ledgerFirstIndex);
         if (it == ledgers_.end())
             return std::nullopt;
@@ -491,7 +503,7 @@ public:
     std::optional<LedgerHeader>
     getLedgerInfoByHash(uint256 const& ledgerHash) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgerHashToSeq_.find(ledgerHash);
         if (it != ledgerHashToSeq_.end())
             return ledgers_.at(it->second).info;
@@ -501,7 +513,7 @@ public:
     uint256
     getHashByIndex(LedgerIndex ledgerIndex) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.find(ledgerIndex);
         if (it != ledgers_.end())
             return it->second.info.hash;
@@ -511,7 +523,7 @@ public:
     std::optional<LedgerHashPair>
     getHashesByIndex(LedgerIndex ledgerIndex) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = ledgers_.find(ledgerIndex);
         if (it != ledgers_.end())
         {
@@ -524,7 +536,7 @@ public:
     std::map<LedgerIndex, LedgerHashPair>
     getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq) override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         std::map<LedgerIndex, LedgerHashPair> result;
         auto it = ledgers_.lower_bound(minSeq);
         auto end = ledgers_.upper_bound(maxSeq);
@@ -545,7 +557,7 @@ public:
         if (!useTxTables_)
             return TxSearched::Unknown;
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = transactionMap_.find(id);
         if (it != transactionMap_.end())
         {
@@ -632,7 +644,7 @@ public:
     std::uint32_t
     getKBUsedAll() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
 
         std::uint64_t const size =
             sizeof(*this) + getBytesUsedLedgerUnlocked() + getBytesUsedTransactionUnlocked();
@@ -650,14 +662,14 @@ public:
     std::uint32_t
     getKBUsedLedger() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         return static_cast<std::uint32_t>(getBytesUsedLedgerUnlocked() / 1024);
     }
 
     std::uint32_t
     getKBUsedTransaction() override
     {
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         return static_cast<std::uint32_t>(getBytesUsedTransactionUnlocked() / 1024);
     }
 
@@ -689,7 +701,7 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         std::vector<std::shared_ptr<Transaction>> result;
 
         LedgerIndex skipped = 0;
@@ -727,15 +739,15 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = accountTxMap_.find(options.account);
         if (it == accountTxMap_.end())
             return {};
 
         AccountTxs result;
         auto const& accountData = it->second;
-        auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
-        auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
+        auto [txIt, txEnd] = ledgerTxBounds(
+            accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
 
         std::size_t skipped = 0;
         for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
@@ -762,15 +774,15 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = accountTxMap_.find(options.account);
         if (it == accountTxMap_.end())
             return {};
 
         AccountTxs result;
         auto const& accountData = it->second;
-        auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
-        auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
+        auto [txIt, txEnd] = ledgerTxBounds(
+            accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
 
         std::size_t skipped = 0;
         for (auto rIt = std::make_reverse_iterator(txEnd);
@@ -801,15 +813,15 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = accountTxMap_.find(options.account);
         if (it == accountTxMap_.end())
             return {};
 
         MetaTxsList result;
         auto const& accountData = it->second;
-        auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
-        auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
+        auto [txIt, txEnd] = ledgerTxBounds(
+            accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
 
         std::size_t skipped = 0;
         for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
@@ -840,15 +852,15 @@ public:
         if (!useTxTables_)
             return {};
 
-        std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+        std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
         auto it = accountTxMap_.find(options.account);
         if (it == accountTxMap_.end())
             return {};
 
         MetaTxsList result;
         auto const& accountData = it->second;
-        auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
-        auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
+        auto [txIt, txEnd] = ledgerTxBounds(
+            accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
 
         std::size_t skipped = 0;
         for (auto rIt = std::make_reverse_iterator(txEnd);
@@ -897,7 +909,7 @@ public:
         int total = 0;
 
         {
-            std::shared_lock<reader_preferring_shared_mutex> const lock(mutex_);
+            std::shared_lock<ReaderPreferringSharedMutex> const lock(mutex_);
             auto it = accountTxMap_.find(options.account);
             if (it == accountTxMap_.end())
                 return {std::nullopt, 0};
@@ -939,16 +951,16 @@ public:
                 if (!hasDelegateFilter)
                     return true;
                 auto const& stx = accountTx.first->getSTransaction();
-                return stx &&
-                    passesDelegateFilter(*stx, *options.delegate, options.account);
+                return stx && passesDelegateFilter(*stx, *options.delegate, options.account);
             };
 
             if (forward)
             {
                 auto const& accountData = it->second;
-                auto txIt = accountData.ledgerTxMap.lower_bound(
-                    findLedger == 0 ? options.ledgerRange.min : findLedger);
-                auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
+                auto [txIt, txEnd] = ledgerTxBounds(
+                    accountData.ledgerTxMap,
+                    findLedger == 0 ? options.ledgerRange.min : findLedger,
+                    options.ledgerRange.max);
                 for (; txIt != txEnd; ++txIt)
                 {
                     std::uint32_t const ledgerSeq = txIt->first;
@@ -991,11 +1003,11 @@ public:
                             // Non-delegate: first unprocessed row (included
                             // on resume). Delegate: last emitted row (skipped
                             // on resume), matching SQLite lastEmitted.
-                            newmarker = hasDelegateFilter ? lastEmitted
-                                                          : RelationalDatabase::AccountTxMarker{
-                                                                .ledgerSeq = rangeCheckedCast<
-                                                                    std::uint32_t>(ledgerSeq),
-                                                                .txnSeq = txnSeq};
+                            newmarker = hasDelegateFilter
+                                ? lastEmitted
+                                : RelationalDatabase::AccountTxMarker{
+                                      .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                                      .txnSeq = txnSeq};
                             goto emit;
                         }
 
@@ -1018,8 +1030,9 @@ public:
             else
             {
                 auto const& accountData = it->second;
-                auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
-                auto txEnd = accountData.ledgerTxMap.upper_bound(
+                auto [txIt, txEnd] = ledgerTxBounds(
+                    accountData.ledgerTxMap,
+                    options.ledgerRange.min,
                     findLedger == 0 ? options.ledgerRange.max : findLedger);
                 auto rtxIt = std::make_reverse_iterator(txEnd);
                 auto rtxEnd = std::make_reverse_iterator(txIt);
@@ -1063,11 +1076,11 @@ public:
 
                         if (numberOfResults == 0)
                         {
-                            newmarker = hasDelegateFilter ? lastEmitted
-                                                          : RelationalDatabase::AccountTxMarker{
-                                                                .ledgerSeq = rangeCheckedCast<
-                                                                    std::uint32_t>(ledgerSeq),
-                                                                .txnSeq = txnSeq};
+                            newmarker = hasDelegateFilter
+                                ? lastEmitted
+                                : RelationalDatabase::AccountTxMarker{
+                                      .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                                      .txnSeq = txnSeq};
                             goto emit;
                         }
 

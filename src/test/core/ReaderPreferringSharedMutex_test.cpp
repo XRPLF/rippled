@@ -35,7 +35,7 @@ public:
     testBasicSharedLock()
     {
         testcase("basic shared lock");
-        xrpl::reader_preferring_shared_mutex mutex;
+        xrpl::ReaderPreferringSharedMutex mutex;
         std::atomic<int> readerCount{0};
         std::atomic<int> maxConcurrentReaders{0};
         std::atomic<bool> go{false};
@@ -76,7 +76,7 @@ public:
     void
     testExclusiveLock()
     {
-        xrpl::reader_preferring_shared_mutex mutex;
+        xrpl::ReaderPreferringSharedMutex mutex;
         std::atomic<bool> writerHoldsLock{false};
         std::atomic<int> readersInside{0};
         std::atomic<bool> go{false};
@@ -121,7 +121,7 @@ public:
     void
     testTryLockShared()
     {
-        xrpl::reader_preferring_shared_mutex mutex;
+        xrpl::ReaderPreferringSharedMutex mutex;
 
         // No lock held - try_lock_shared should succeed
         bool acquired = mutex.try_lock_shared();
@@ -145,7 +145,7 @@ public:
     void
     testTryLockExclusive()
     {
-        xrpl::reader_preferring_shared_mutex mutex;
+        xrpl::ReaderPreferringSharedMutex mutex;
 
         // No lock held - try_lock should succeed
         bool acquired = mutex.try_lock();
@@ -170,7 +170,7 @@ public:
         // This test verifies that both readers and writers make progress under contention.
         // We avoid strict ordering guarantees since the underlying mutex implementation
         // varies by platform (pthread rwlock on Linux, std::shared_mutex on macOS).
-        xrpl::reader_preferring_shared_mutex mutex;
+        xrpl::ReaderPreferringSharedMutex mutex;
         std::atomic<int> readerSuccesses{0};
         std::atomic<int> writerSuccesses{0};
         std::atomic<bool> stop{false};

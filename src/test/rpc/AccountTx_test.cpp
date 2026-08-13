@@ -1653,6 +1653,51 @@ class AccountTx_test : public beast::unit_test::Suite
             hashOf(second[jss::result][jss::transactions][0u]));
     }
 
+    void
+    testRWDBUnboundedLedgerRange()
+    {
+        testcase("RWDB account txs honor unbounded ledger max");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+        RelationalDatabase::AccountTxOptions const options{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .offset = 0,
+            .limit = 20,
+            .bUnlimited = false};
+
+        BEAST_EXPECT(!db.getOldestAccountTxs(options).empty());
+        BEAST_EXPECT(!db.getNewestAccountTxs(options).empty());
+        BEAST_EXPECT(!db.getOldestAccountTxsB(options).empty());
+        BEAST_EXPECT(!db.getNewestAccountTxsB(options).empty());
+
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        BEAST_EXPECT(!db.oldestAccountTxPage(pageOptions).first.empty());
+        BEAST_EXPECT(!db.newestAccountTxPage(pageOptions).first.empty());
+        BEAST_EXPECT(!db.oldestAccountTxPageB(pageOptions).first.empty());
+        BEAST_EXPECT(!db.newestAccountTxPageB(pageOptions).first.empty());
+    }
+
 public:
     void
     run() override
@@ -1662,6 +1707,7 @@ public:
         forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxBinary(apiVersion); });
         testRWDBAccountTxIdempotentSave();
         testRWDBDelegationFilter();
+        testRWDBUnboundedLedgerRange();
         testContents();
         testAccountDelete();
         testMPT();

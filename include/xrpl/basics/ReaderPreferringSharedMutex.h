@@ -10,7 +10,7 @@
 // On macOS / ARM (libc++), std::shared_mutex is already reader-preferring,
 // so the same code behaves differently across platforms.
 //
-// This header provides reader_preferring_shared_mutex:
+// This header provides ReaderPreferringSharedMutex:
 //   - On Linux it wraps pthread_rwlock_t initialised with
 //     PTHREAD_RWLOCK_PREFER_READER_NP, matching macOS semantics.
 //   - On all other platforms it is a type alias for std::shared_mutex.
@@ -28,12 +28,12 @@
 
 namespace xrpl {
 
-class reader_preferring_shared_mutex
+class ReaderPreferringSharedMutex
 {
     pthread_rwlock_t rwlock_;
 
 public:
-    reader_preferring_shared_mutex()
+    ReaderPreferringSharedMutex()
     {
         pthread_rwlockattr_t attr;
         pthread_rwlockattr_init(&attr);
@@ -44,14 +44,14 @@ public:
             throw std::system_error(rc, std::system_category(), "pthread_rwlock_init");
     }
 
-    ~reader_preferring_shared_mutex()
+    ~ReaderPreferringSharedMutex()
     {
         pthread_rwlock_destroy(&rwlock_);
     }
 
-    reader_preferring_shared_mutex(reader_preferring_shared_mutex const&) = delete;
-    reader_preferring_shared_mutex&
-    operator=(reader_preferring_shared_mutex const&) = delete;
+    ReaderPreferringSharedMutex(ReaderPreferringSharedMutex const&) = delete;
+    ReaderPreferringSharedMutex&
+    operator=(ReaderPreferringSharedMutex const&) = delete;
 
     // Exclusive (writer) locking
     void
@@ -103,7 +103,7 @@ public:
 namespace xrpl {
 
 // macOS, Windows, etc. — std::shared_mutex is already reader-preferring.
-using reader_preferring_shared_mutex = std::shared_mutex;
+using ReaderPreferringSharedMutex = std::shared_mutex;
 
 }  // namespace xrpl
 
