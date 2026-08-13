@@ -10,19 +10,17 @@
 namespace xrpl::tests {
 
 /**
- * When null mode is enabled, the shared FullBelowCache should be disabled
- * because nodes are not persisted and cache hits would skip unpinned subtrees.
+ * Shared FullBelowCache is unsafe in null-backend mode: a cache hit in
+ * one SHAMap skips subtrees that were never pinned into another. The
+ * production gate lives in useSharedFullBelowCache().
  */
 TEST(SHAMapSyncFullBelowCache, nullModeDisablesSharedCache)
 {
     bool const original = isNullBackend();
     setNullBackend(true);
 
-    bool const nullMode = isNullBackend();
-    bool const useFullBelowCache = !nullMode;
-
-    EXPECT_TRUE(nullMode);
-    EXPECT_FALSE(useFullBelowCache);
+    EXPECT_TRUE(isNullBackend());
+    EXPECT_FALSE(useSharedFullBelowCache());
 
     setNullBackend(original);
 }
@@ -32,11 +30,8 @@ TEST(SHAMapSyncFullBelowCache, normalModeEnablesSharedCache)
     bool const original = isNullBackend();
     setNullBackend(false);
 
-    bool const nullMode = isNullBackend();
-    bool const useFullBelowCache = !nullMode;
-
-    EXPECT_FALSE(nullMode);
-    EXPECT_TRUE(useFullBelowCache);
+    EXPECT_FALSE(isNullBackend());
+    EXPECT_TRUE(useSharedFullBelowCache());
 
     setNullBackend(original);
 }

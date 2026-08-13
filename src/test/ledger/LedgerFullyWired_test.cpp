@@ -4,11 +4,16 @@
  */
 
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/pay.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/jss.h>
 
 #include <atomic>
 #include <thread>
@@ -29,6 +34,7 @@ public:
         testSetAndGetFullyWired();
         testFullWireForUseSuccess();
         testThreadSafeAccess();
+        testNullBackendEnv();
     }
 
     void
@@ -119,6 +125,43 @@ public:
         // All reads should see the wired state
         BEAST_EXPECT(wiredReads.load() == 200);
         BEAST_EXPECT(unwiredReads.load() == 0);
+    }
+
+    void
+    testNullBackendEnv()
+    {
+        testcase("null-backend env can close ledgers");
+
+        using namespace jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section(Sections::kNodeDatabase).set("type", "rwdb");
+            cfg->section(Sections::kRelationalDb).set("backend", "rwdb");
+            if (cfg->ledgerHistory == 0)
+                cfg->ledgerHistory = 256;
+            return cfg;
+        }));
+
+        BEAST_EXPECT(isNullBackend());
+
+        auto const alice = Account("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+        env(pay(env.master, alice, XRP(1)));
+        env.close();
+
+        auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(ledger);
+        if (ledger)
+        {
+            BEAST_EXPECT(ledger->header().seq >= 3);
+            BEAST_EXPECT(
+                ledger->isFullyWired() ||
+                ledger->fullWireForUse(
+                    beast::Journal{beast::Journal::getNullSink()}, "null-backend env"));
+        }
+
+        auto const info = env.rpc("account_info", alice.human());
+        BEAST_EXPECT(info[jss::result][jss::status] == jss::success);
     }
 };
 

@@ -12,6 +12,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
@@ -48,23 +49,6 @@
 namespace xrpl {
 
 CreateGenesisT const kCreateGenesis{};
-
-namespace {
-
-template <class Map>
-std::size_t
-wireCompleteSHAMap(Map const& map)
-{
-    std::size_t leaves = 0;
-    for (auto const& item : map)
-    {
-        (void)item;
-        ++leaves;
-    }
-    return leaves;
-}
-
-}  // namespace
 
 //------------------------------------------------------------------------------
 
@@ -277,6 +261,10 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
+    // The child starts as a snapshot of the parent's state map, so a
+    // fully-wired parent implies the child's initial state tree is also
+    // resident. Mutations after construction do not clear the flag; callers
+    // that mutate state must not rely on it until the ledger is accepted.
     , fullyWired_(prevLedger.isFullyWired())
 {
     header_.seq = prevLedger.header_.seq + 1;
@@ -356,8 +344,8 @@ Ledger::fullWireForUse(beast::Journal journal, char const* context) const
 
     try
     {
-        auto const stateLeaves = wireCompleteSHAMap(stateMap_);
-        auto const txLeaves = wireCompleteSHAMap(txMap_);
+        auto const stateLeaves = materializeSHAMapLeaves(stateMap_);
+        auto const txLeaves = materializeSHAMapLeaves(txMap_);
         setFullyWired();
         JLOG(journal.info()) << context << ": fully wired ledger " << header_.seq << " ("
                              << stateLeaves << " state leaves, " << txLeaves << " tx leaves)";
@@ -943,6 +931,49 @@ Ledger::invariants() const
 {
     stateMap_.invariants();
     txMap_.invariants();
+}
+
+std::optional<std::uint32_t>
+sameChainDistance(
+    std::shared_ptr<Ledger const> const& target,
+    std::shared_ptr<Ledger const> const& candidate,
+    beast::Journal journal)
+{
+    if (!target || !candidate || !candidate->isFullyWired())
+        return std::nullopt;
+    if (candidate->header().hash == target->header().hash)
+        return std::nullopt;
+
+    bool sameChain = false;
+    try
+    {
+        if (candidate->header().seq < target->header().seq)
+        {
+            if (auto const hash = hashOfSeq(*target, candidate->header().seq, journal);
+                hash && *hash == candidate->header().hash)
+            {
+                sameChain = true;
+            }
+        }
+        else if (candidate->header().seq > target->header().seq)
+        {
+            if (auto const hash = hashOfSeq(*candidate, target->header().seq, journal);
+                hash && *hash == target->header().hash)
+            {
+                sameChain = true;
+            }
+        }
+    }
+    catch (std::exception const&)
+    {
+        sameChain = false;
+    }
+
+    if (!sameChain)
+        return std::nullopt;
+    return candidate->header().seq < target->header().seq
+        ? target->header().seq - candidate->header().seq
+        : candidate->header().seq - target->header().seq;
 }
 
 }  // namespace xrpl

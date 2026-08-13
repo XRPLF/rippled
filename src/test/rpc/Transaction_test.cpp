@@ -57,9 +57,9 @@ class Transaction_test : public beast::unit_test::Suite
     static std::unique_ptr<Config>
     enableRWDB(std::unique_ptr<Config> cfg)
     {
-        // Use RWDB for the relational database backend only.
-        // The node database stays as "memory" (the test default) to avoid
-        // excessive memory usage from dual storage in the in-memory backends.
+        // Relational RWDB only. The node store stays as the test default
+        // ("memory") so tx lookup still has a durable backend. Null-backend
+        // node-store coverage lives in SHAMapStore_test / RWDBBackend_test.
         cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
         return cfg;
     }
@@ -81,10 +81,11 @@ class Transaction_test : public beast::unit_test::Suite
         std::unique_ptr<Env> envHolder;
         if (rwdb)
         {
-            envHolder =
-                std::make_unique<Env>(*this, test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                    return enableRWDB(std::move(cfg));
-                }));
+            envHolder = std::make_unique<Env>(
+                *this,
+                test::jtx::envconfig(
+                    [&](std::unique_ptr<Config> cfg) { return enableRWDB(std::move(cfg)); }),
+                features);
         }
         else
         {
@@ -332,7 +333,7 @@ class Transaction_test : public beast::unit_test::Suite
         auto cfg = makeNetworkConfig(11111);
         if (rwdb)
             cfg = enableRWDB(std::move(cfg));
-        Env env{*this, std::move(cfg)};
+        Env env{*this, std::move(cfg), features};
         uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
 
         auto const alice = Account("alice");

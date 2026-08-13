@@ -10,6 +10,7 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
@@ -1592,7 +1593,9 @@ r.ripple.com:51235
             try
             {
                 c.loadFromString(toLoad);
-                pass();
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "rwdb"));
+                BEAST_EXPECT(!section.exists("online_delete"));
             }
             catch (std::runtime_error const&)
             {
@@ -1612,7 +1615,9 @@ r.ripple.com:51235
             try
             {
                 c.loadFromString(toLoad);
-                pass();
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "rwdb"));
+                BEAST_EXPECT(!section.exists("online_delete"));
             }
             catch (std::runtime_error const&)
             {
@@ -1631,7 +1636,8 @@ r.ripple.com:51235
             try
             {
                 c.loadFromString(toLoad);
-                pass();
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(get(section, "online_delete") == "256");
             }
             catch (std::runtime_error const&)
             {
@@ -1649,7 +1655,8 @@ r.ripple.com:51235
             try
             {
                 c.loadFromString(toLoad);
-                pass();
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "nudb"));
             }
             catch (std::runtime_error const&)
             {

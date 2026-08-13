@@ -125,10 +125,11 @@ public:
 
     ~SHAMapStoreImp()
     {
-        // Clear the process-wide flag so subsequent unit tests in the same
-        // process are not left in null-backend mode.
+        // Drop this instance's claim on the process-wide flag so later
+        // unit tests in the same process are not left in null-backend mode
+        // after the last RWDB SHAMapStoreImp is destroyed.
         if (isNullBackend_)
-            setNullBackend(false);
+            releaseNullBackend();
     }
 
     std::uint32_t

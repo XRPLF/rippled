@@ -59,8 +59,9 @@ class AccountTx_test : public beast::unit_test::Suite
     static std::unique_ptr<Config>
     enableRWDB(std::unique_ptr<Config> cfg)
     {
-        // Use RWDB for the relational database backend only.
-        // The node database stays as "memory" (the test default).
+        // Relational RWDB only. The node store stays as the test default
+        // ("memory") so tx lookup still has a durable backend. Null-backend
+        // node-store coverage lives in SHAMapStore_test / RWDBBackend_test.
         cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
         return cfg;
     }

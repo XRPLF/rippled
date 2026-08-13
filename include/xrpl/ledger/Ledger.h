@@ -23,6 +23,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -279,6 +280,13 @@ public:
         return fullyWired_.load(std::memory_order_acquire);
     }
 
+    /**
+     * Mark the ledger's SHAMaps as fully resident in TreeNodeCache.
+     *
+     * Marked `const` because it is local metadata, not consensus state:
+     * callers often hold `shared_ptr<Ledger const>` after the ledger is
+     * immutable. The flag is a mutable atomic for that reason.
+     */
     void
     setFullyWired() const
     {
@@ -456,5 +464,61 @@ private:
  * A ledger wrapped in a CachedView.
  */
 using CachedLedger = CachedView<Ledger>;
+
+/**
+ * Walk every leaf of a SHAMap so TreeNodeCache retains the nodes.
+ * Used when the node store cannot re-fetch dropped objects.
+ */
+template <class Map>
+std::size_t
+materializeSHAMapLeaves(Map const& map)
+{
+    std::size_t leaves = 0;
+    for (auto const& item : map)
+    {
+        (void)item;  // force materialization of the leaf and its ancestors
+        ++leaves;
+    }
+    return leaves;
+}
+
+/**
+ * Sequence distance if `candidate` is fully wired and on the same hash
+ * chain as `target`. Returns nullopt if either pointer is empty, the
+ * candidate is not fully wired, the two ledgers are the same, or they
+ * are on different chains.
+ */
+std::optional<std::uint32_t>
+sameChainDistance(
+    std::shared_ptr<Ledger const> const& target,
+    std::shared_ptr<Ledger const> const& candidate,
+    beast::Journal journal);
+
+/**
+ * Return the fully-wired candidate with the smallest same-chain
+ * distance to `target`, or empty if none qualify.
+ */
+template <class Range>
+std::shared_ptr<Ledger const>
+closestFullyWiredLedger(
+    std::shared_ptr<Ledger const> const& target,
+    Range const& candidates,
+    beast::Journal journal)
+{
+    std::shared_ptr<Ledger const> best;
+    auto bestDistance = std::numeric_limits<std::uint32_t>::max();
+    for (auto const& candidate : candidates)
+    {
+        auto const distance = sameChainDistance(target, candidate, journal);
+        if (!distance)
+            continue;
+        if (!best || *distance < bestDistance)
+        {
+            best = candidate;
+            bestDistance = *distance;
+        }
+    }
+    return best;
+}
 
 }  // namespace xrpl

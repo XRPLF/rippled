@@ -14,6 +14,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -35,11 +36,13 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -62,87 +65,16 @@ using namespace std::chrono_literals;
 
 namespace {
 
-template <class Map>
-std::size_t
-wireCompleteSHAMap(Map const& map)
-{
-    std::size_t leaves = 0;
-    for (auto const& item : map)
-    {
-        (void)item;
-        ++leaves;
-    }
-    return leaves;
-}
-
-std::optional<std::uint32_t>
-sameChainDistance(
-    std::shared_ptr<Ledger const> const& targetLedger,
-    std::shared_ptr<Ledger const> const& candidate,
-    beast::Journal journal)
-{
-    if (!targetLedger || !candidate || !candidate->isFullyWired())
-        return std::nullopt;
-    if (candidate->header().hash == targetLedger->header().hash)
-        return std::nullopt;
-    bool sameChain = false;
-    try
-    {
-        if (candidate->header().seq < targetLedger->header().seq)
-        {
-            if (auto const hash = hashOfSeq(*targetLedger, candidate->header().seq, journal);
-                hash && *hash == candidate->header().hash)
-            {
-                sameChain = true;
-            }
-        }
-        else if (candidate->header().seq > targetLedger->header().seq)
-        {
-            if (auto const hash = hashOfSeq(*candidate, targetLedger->header().seq, journal);
-                hash && *hash == targetLedger->header().hash)
-            {
-                sameChain = true;
-            }
-        }
-    }
-    catch (std::exception const&)
-    {
-        sameChain = false;
-    }
-    if (!sameChain)
-        return std::nullopt;
-    return candidate->header().seq < targetLedger->header().seq
-        ? targetLedger->header().seq - candidate->header().seq
-        : candidate->header().seq - targetLedger->header().seq;
-}
-
-std::shared_ptr<Ledger const>
-chooseCloserBase(
-    std::shared_ptr<Ledger const> const& targetLedger,
-    std::shared_ptr<Ledger const> const& first,
-    std::shared_ptr<Ledger const> const& second,
-    beast::Journal journal)
-{
-    auto const firstDistance = sameChainDistance(targetLedger, first, journal);
-    auto const secondDistance = sameChainDistance(targetLedger, second, journal);
-    if (firstDistance && secondDistance)
-        return *firstDistance <= *secondDistance ? first : second;
-    if (firstDistance)
-        return first;
-    if (secondDistance)
-        return second;
-    return {};
-}
-
 std::shared_ptr<Ledger const>
 findBestFullyWiredBase(
     Application& app,
     std::shared_ptr<Ledger> const& targetLedger,
     beast::Journal journal)
 {
-    auto const ledgerMasterBase = app.getLedgerMaster().getClosestFullyWiredLedger(targetLedger);
-    auto const inboundBase = app.getInboundLedgers().getClosestFullyWiredLedger(targetLedger);
-    return chooseCloserBase(targetLedger, inboundBase, ledgerMasterBase, journal);
+    std::array<std::shared_ptr<Ledger const>, 2> candidates{
+        app.getInboundLedgers().getClosestFullyWiredLedger(targetLedger),
+        app.getLedgerMaster().getClosestFullyWiredLedger(targetLedger)};
+    return closestFullyWiredLedger(targetLedger, candidates, journal);
 }
 
 bool
@@ -152,21 +84,21 @@ primeInboundLedgerForUse(
     beast::Journal journal,
     char const* context)
 {
-    if (!Config::nullBackend())
+    if (!isNullBackend())
         return true;
     if (ledger->isFullyWired())
         return true;
     if (!baseLedger || !baseLedger->isFullyWired())
     {
         // No base ledger available for a delta walk. The full state tree
-        // walk (wireCompleteSHAMap on 70M+ leaves) is too expensive — on
+        // walk (materializeSHAMapLeaves on 70M+ leaves) is too expensive — on
         // x86 it takes longer than a consensus round, preventing the node
         // from ever catching up. Sync already pinned every child in the
         // tree via canonicalizeChild (in descendAsync/addKnownNode), so
         // the state map is fully wired. Just wire the (tiny) tx map.
         try
         {
-            auto const txLeaves = wireCompleteSHAMap(ledger->txMap());
+            auto const txLeaves = materializeSHAMapLeaves(ledger->txMap());
             ledger->setFullyWired();
             JLOG(journal.info()) << context << ": wired ledger " << ledger->header().seq
                                  << " (sync-pinned state, " << txLeaves << " tx leaves)";
@@ -191,7 +123,7 @@ primeInboundLedgerForUse(
                 ++stateNodes;
                 return true;
             });
-        auto const txLeaves = wireCompleteSHAMap(ledger->txMap());
+        auto const txLeaves = materializeSHAMapLeaves(ledger->txMap());
         ledger->setFullyWired();
         JLOG(journal.info()) << context << ": fully wired ledger " << ledger->header().seq << " ("
                              << stateNodes << " changed state nodes vs base ledger "
@@ -209,8 +141,11 @@ primeInboundLedgerForUse(
 std::uint32_t
 inboundLedgerJobLimit(Application& app)
 {
+    // RWDB acquires more ledgers concurrently because there is no disk
+    // wait, but a 100x bump (500) can starve other JobQueue types. 50 is
+    // enough to keep inbound catch-up moving without flooding JtLedgerData.
     auto const type = get(app.config().section(xrpl::Sections::kNodeDatabase), "type", "");
-    return boost::iequals(type, "rwdb") ? 500u : 5u;
+    return boost::iequals(type, "rwdb") ? 50u : 5u;
 }
 
 }  // namespace

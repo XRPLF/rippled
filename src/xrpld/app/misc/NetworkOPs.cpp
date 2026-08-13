@@ -1068,12 +1068,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
         [this]() {
-            // Run the heartbeat directly on the io_service thread instead
-            // of posting to the JobQueue.  This prevents heavy RPC load
-            // from starving the consensus heartbeat timer — the io_service
-            // thread pool ([io_workers]) is independent of the JobQueue
-            // worker pool ([workers]).
-            processHeartbeatTimer();
+            jobQueue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
         },
         [this]() { setHeartbeatTimer(); });
 }
@@ -1110,79 +1105,66 @@ NetworkOPsImp::processHeartbeatTimer()
 {
     RclConsensusLogger clog("Heartbeat Timer", consensus_.validating(), journal_);
     {
-        // Use try_to_lock so the heartbeat never blocks on masterMutex.
-        // If apply() or another operation is holding it, skip the non-critical
-        // peer/mode checks and proceed directly to timerEntry() — ensuring
-        // consensus timing is never delayed by mutex contention.
-        std::unique_lock lock{registry_.get().getApp().getMasterMutex(), std::try_to_lock};
+        std::unique_lock lock{registry_.get().getApp().getMasterMutex()};
 
-        if (lock.owns_lock())
+        // VFALCO NOTE This is for diagnosing a crash on exit
+        LoadManager& mgr(registry_.get().getLoadManager());
+        mgr.heartbeat();
+
+        std::size_t const numPeers = registry_.get().getOverlay().size();
+
+        // do we have sufficient peers? If not, we are disconnected.
+        if (numPeers < minPeerCount_)
         {
-            // VFALCO NOTE This is for diagnosing a crash on exit
-            LoadManager& mgr(registry_.get().getLoadManager());
-            mgr.heartbeat();
-
-            std::size_t const numPeers = registry_.get().getOverlay().size();
-
-            // do we have sufficient peers? If not, we are disconnected.
-            if (numPeers < minPeerCount_)
+            if (mode_ != OperatingMode::DISCONNECTED)
             {
-                if (mode_ != OperatingMode::DISCONNECTED)
-                {
-                    setMode(OperatingMode::DISCONNECTED);
-                    std::stringstream ss;
-                    ss << "Node count (" << numPeers << ") has fallen "
-                       << "below required minimum (" << minPeerCount_ << ").";
-                    JLOG(journal_.warn()) << ss.str();
-                    CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
-                }
-                else
-                {
-                    CLOG(clog.ss()) << "already DISCONNECTED. too few peers (" << numPeers
-                                    << "), need at least " << minPeerCount_;
-                }
-
-                // MasterMutex lock need not be held to call setHeartbeatTimer()
-                lock.unlock();
-                // We do not call consensus_.timerEntry until there are enough
-                // peers providing meaningful inputs to consensus
-                setHeartbeatTimer();
-
-                return;
+                setMode(OperatingMode::DISCONNECTED);
+                std::stringstream ss;
+                ss << "Node count (" << numPeers << ") has fallen "
+                   << "below required minimum (" << minPeerCount_ << ").";
+                JLOG(journal_.warn()) << ss.str();
+                CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
+            }
+            else
+            {
+                CLOG(clog.ss()) << "already DISCONNECTED. too few peers (" << numPeers
+                                << "), need at least " << minPeerCount_;
             }
 
-            if (mode_ == OperatingMode::DISCONNECTED)
-            {
-                setMode(OperatingMode::CONNECTED);
-                JLOG(journal_.info()) << "Node count (" << numPeers << ") is sufficient.";
-                CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers << " peers. ";
-            }
+            // MasterMutex lock need not be held to call setHeartbeatTimer()
+            lock.unlock();
+            // We do not call consensus_.timerEntry until there are enough
+            // peers providing meaningful inputs to consensus
+            setHeartbeatTimer();
 
-            // Check if the last validated ledger forces a change between these
-            // states.
-            auto origMode = mode_.load();
-            CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
-            if (mode_ == OperatingMode::SYNCING)
-            {
-                setMode(OperatingMode::SYNCING);
-            }
-            else if (mode_ == OperatingMode::CONNECTED)
-            {
-                setMode(OperatingMode::CONNECTED);
-            }
-            auto newMode = mode_.load();
-            if (origMode != newMode)
-            {
-                CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
-            }
-            CLOG(clog.ss()) << ". ";
+            return;
         }
-        else
+
+        if (mode_ == OperatingMode::DISCONNECTED)
         {
-            JLOG(journal_.debug()) << "Heartbeat: masterMutex contended, skipping "
-                                      "peer/mode checks";
-            CLOG(clog.ss()) << "masterMutex contended, skipping peer/mode checks. ";
+            setMode(OperatingMode::CONNECTED);
+            JLOG(journal_.info()) << "Node count (" << numPeers << ") is sufficient.";
+            CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers << " peers. ";
         }
+
+        // Check if the last validated ledger forces a change between these
+        // states.
+        auto origMode = mode_.load();
+        CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
+        if (mode_ == OperatingMode::SYNCING)
+        {
+            setMode(OperatingMode::SYNCING);
+        }
+        else if (mode_ == OperatingMode::CONNECTED)
+        {
+            setMode(OperatingMode::CONNECTED);
+        }
+        auto newMode = mode_.load();
+        if (origMode != newMode)
+        {
+            CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
+        }
+        CLOG(clog.ss()) << ". ";
     }
 
     consensus_.timerEntry(registry_.get().getTimeKeeper().closeTime(), clog.ss());

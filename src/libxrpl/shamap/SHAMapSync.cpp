@@ -44,9 +44,7 @@ namespace {
 bool
 useFullBelowCache()
 {
-    // Shared FullBelowCache is unsafe in null-backend mode: cache hits
-    // skip subtrees that were never pinned into another SHAMap.
-    return !isNullBackend();
+    return useSharedFullBelowCache();
 }
 
 }  // namespace

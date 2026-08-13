@@ -1,12 +1,25 @@
 include(CompilationEnv)
 include(XrplSanitizers)
 
-# Use Conan's Boost targets directly to avoid issues with boost_unit_test_framework
-# which doesn't have a library file in the Conan package on macOS
+find_package(
+    Boost
+    REQUIRED
+    COMPONENTS
+        chrono
+        container
+        context
+        date_time
+        filesystem
+        json
+        program_options
+        regex
+        system
+        thread
+)
+
 add_library(xrpl_boost INTERFACE)
 add_library(Xrpl::boost ALIAS xrpl_boost)
 
-# Link against the Boost components that are actually available
 target_link_libraries(
     xrpl_boost
     INTERFACE

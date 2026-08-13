@@ -20,6 +20,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -838,13 +839,16 @@ LedgerMaster::setFullLedger(
         ledgerHistory_.insert(ledger, true);
 
     // Pin a sliding window of recently validated current ledgers so their
-    // SHAMap state trees stay resident via shared_ptr.
-    if (isCurrent && ledgerHistorySize_ > 0)
+    // SHAMap state trees stay resident via shared_ptr. Only needed when the
+    // node store cannot re-fetch dropped objects. The window is independent
+    // of ledger_history so ledger_history=full cannot pin every ledger.
+    constexpr std::uint32_t kNullBackendRetainWindow = 256;
+    if (isCurrent && isNullBackend() && ledgerHistorySize_ > 0)
     {
         std::scoped_lock const ml(mutex_);
         bool const isFirst = retainedLedgers_.empty();
         retainedLedgers_.push_back(ledger);
-        while (retainedLedgers_.size() > ledgerHistorySize_)
+        while (retainedLedgers_.size() > kNullBackendRetainWindow)
             retainedLedgers_.pop_front();
 
         if (isFirst && !ledger->isFullyWired())
@@ -1794,56 +1798,7 @@ LedgerMaster::getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& ta
             candidates.push_back(pubLedger_);
     }
 
-    auto const targetSeq = targetLedger->header().seq;
-    auto const targetHash = targetLedger->header().hash;
-
-    std::shared_ptr<Ledger const> best;
-    auto bestDistance = std::numeric_limits<std::uint32_t>::max();
-
-    for (auto const& candidate : candidates)
-    {
-        if (!candidate || !candidate->isFullyWired())
-            continue;
-
-        if (candidate->header().hash == targetHash)
-            continue;
-
-        bool sameChain = false;
-        try
-        {
-            if (candidate->header().seq < targetSeq)
-            {
-                if (auto const hash = hashOfSeq(*targetLedger, candidate->header().seq, journal_);
-                    hash && *hash == candidate->header().hash)
-                {
-                    sameChain = true;
-                }
-            }
-            else if (candidate->header().seq > targetSeq)
-            {
-                if (auto const hash = hashOfSeq(*candidate, targetSeq, journal_);
-                    hash && *hash == targetHash)
-                {
-                    sameChain = true;
-                }
-            }
-        }
-        catch (std::exception const&)
-        {
-            sameChain = false;
-        }
-        if (!sameChain)
-            continue;
-        auto const distance = candidate->header().seq < targetSeq
-            ? targetSeq - candidate->header().seq
-            : candidate->header().seq - targetSeq;
-        if (!best || distance < bestDistance)
-        {
-            best = candidate;
-            bestDistance = distance;
-        }
-    }
-    return best;
+    return closestFullyWiredLedger(targetLedger, candidates, journal_);
 }
 
 void

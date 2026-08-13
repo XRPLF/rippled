@@ -130,11 +130,11 @@ SHAMapStoreImp::SHAMapStoreImp(
     isNullBackend_ = boost::iequals(get(section, Keys::kType), "rwdb");
 
     // RWDB is always null-backend: the in-memory node store never
-    // persists or retrieves objects.  Publish via a process-wide atomic
-    // so libxrpl helpers (which cannot access Config) can detect null mode
-    // without setenv/getenv races.
+    // persists or retrieves objects.  Acquire a process-wide refcount
+    // so libxrpl helpers (which cannot access Config) can detect null
+    // mode without setenv/getenv races.
     if (isNullBackend_)
-        setNullBackend(true);
+        acquireNullBackend();
 
     if (isNullBackend_)
     {
@@ -144,6 +144,15 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
         JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
                               << "retaining " << config.ledgerHistory << " ledgers in memory";
+
+        auto const rdbBackend =
+            get(config.section(Sections::kRelationalDb), "backend", std::string{"sqlite"});
+        if (!boost::iequals(rdbBackend, "rwdb"))
+        {
+            JLOG(journal_.warn()) << "node_db type=rwdb but [relational_db] backend is '"
+                                  << rdbBackend << "'; SQLite ledger/tx files will still be "
+                                  << "created. Set backend=rwdb for a fully in-memory node.";
+        }
     }
 
     // For RWDB, default online_delete to ledger_history only if user did not

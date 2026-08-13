@@ -1,41 +1,36 @@
-#include <xrpl/basics/NullBackendFlag.h>
-#include <xrpl/basics/ReaderPreferringSharedMutex.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/detail/DecodedBlob.h>
-#include <xrpl/nodestore/detail/EncodedBlob.h>
-#include <xrpl/nodestore/detail/codec.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <boost/core/ignore_unused.hpp>
 
-#include <cstdint>
-#include <map>
+#include <functional>
 #include <memory>
-#include <shared_mutex>
-#include <vector>
+#include <string>
 
 namespace xrpl {
 namespace node_store {
 
+/**
+ * Explicit null node-store backend used when [node_db] type=rwdb.
+ *
+ * fetch() always returns NotFound and store() is a no-op. Ledger state is
+ * retained through Ledger → SHAMap shared_ptr chains, not this map.
+ */
 class RWDBBackend : public Backend
 {
 private:
-    using DataStore = std::map<uint256 const, std::shared_ptr<NodeObject>>;
-
     std::string name_;
-    beast::Journal const journal_;
     bool isOpen_{false};
-    mutable reader_preferring_shared_mutex mutex_;
-    DataStore table_;
 
 public:
     RWDBBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
-        : name_(get(keyValues, "path")), journal_(journal)
+        : name_(get(keyValues, "path"))
     {
         boost::ignore_unused(keyBytes);
-        boost::ignore_unused(journal_);
+        boost::ignore_unused(journal);
         if (name_.empty())
             name_ = "node_db";
     }
@@ -60,7 +55,6 @@ public:
     void
     open(bool) override
     {
-        std::unique_lock lock(mutex_);
         if (isOpen_)
             Throw<std::runtime_error>("already open");
         isOpen_ = true;
@@ -69,86 +63,29 @@ public:
     bool
     isOpen() override
     {
-        std::shared_lock lock(mutex_);
         return isOpen_;
     }
 
     void
     close() override
     {
-        DataStore old;
-        {
-            std::unique_lock lock(mutex_);
-            isOpen_ = false;
-            old.swap(table_);  // O(1) swap; release lock before destructor runs
-        }
-        // 'old' is now destroyed outside the lock — no fetch() can be
-        // blocked by the (potentially millions-of-entries) map destructor.
-    }
-
-    static bool
-    nullMode()
-    {
-        return isNullBackend();
+        isOpen_ = false;
     }
 
     Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
-        if (nullMode())
-            return Status::NotFound;
-
-        std::shared_lock lock(mutex_);
-        if (!isOpen_)
-            return Status::NotFound;
-
-        auto const iter = table_.find(hash);
-        if (iter == table_.end())
-            return Status::NotFound;
-
-        *pObject = iter->second;
-        return Status::Ok;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes)
-    {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
-        {
-            std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
-            if (status != Status::Ok)
-                results.push_back({});
-            else
-                results.push_back(nObj);
-        }
-
-        return {results, Status::Ok};
+        return Status::NotFound;
     }
 
     void
-    store(std::shared_ptr<NodeObject> const& object) override
+    store(std::shared_ptr<NodeObject> const&) override
     {
-        if (!object)
-            return;
-
-        if (nullMode())
-            return;
-
-        std::unique_lock lock(mutex_);
-        if (!isOpen_)
-            return;
-
-        table_[object->getHash()] = object;
     }
 
     void
-    storeBatch(Batch const& batch) override
+    storeBatch(Batch const&) override
     {
-        for (auto const& e : batch)
-            store(e);
     }
 
     void
@@ -157,14 +94,8 @@ public:
     }
 
     void
-    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)>) override
     {
-        std::shared_lock lock(mutex_);
-        if (!isOpen_)
-            return;
-
-        for (auto const& entry : table_)
-            f(entry.second);
     }
 
     int

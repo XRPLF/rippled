@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/NullBackendFlag.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -344,19 +343,6 @@ public:
     useTxTables() const
     {
         return useTxTables_;
-    }
-
-    /**
-     * Returns true when the RWDB backend is running in null mode.
-     *
-     * In null mode the in-memory node store never persists or retrieves
-     * objects — nodes are retained purely through the Ledger -> SHAMap
-     * shared_ptr retention chain.  Set via setNullBackend() when type=rwdb.
-     */
-    static bool
-    nullBackend()
-    {
-        return isNullBackend();
     }
 
     [[nodiscard]] bool

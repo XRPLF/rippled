@@ -52,8 +52,6 @@ tools.build:compiler_executables={'c':'{{ cc_exe }}','cpp':'{{ cxx_exe }}'}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
 
-# Disable Boost test component to avoid boost_unit_test_framework requirement
-boost*:shared=False
 {% if os == "Macos" %}
 [buildenv]
 {# os.version adds -mmacosx-version-min to compiler command lines, #}

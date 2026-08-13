@@ -323,60 +323,7 @@ public:
 
         ScopedLockType const sl(lock_);
 
-        auto const targetSeq = targetLedger->header().seq;
-        auto const targetHash = targetLedger->header().hash;
-
-        std::shared_ptr<Ledger const> best;
-        auto bestDistance = std::numeric_limits<std::uint32_t>::max();
-
-        for (auto const& candidate : recentHistoryLedgers_)
-        {
-            if (!candidate || !candidate->isFullyWired())
-                continue;
-
-            if (candidate->header().hash == targetHash)
-                continue;
-
-            bool sameChain = false;
-            try
-            {
-                if (candidate->header().seq < targetSeq)
-                {
-                    if (auto const hash = hashOfSeq(*targetLedger, candidate->header().seq, j_);
-                        hash && *hash == candidate->header().hash)
-                    {
-                        sameChain = true;
-                    }
-                }
-                else if (candidate->header().seq > targetSeq)
-                {
-                    if (auto const hash = hashOfSeq(*candidate, targetSeq, j_);
-                        hash && *hash == targetHash)
-                    {
-                        sameChain = true;
-                    }
-                }
-            }
-            catch (std::exception const&)
-            {
-                sameChain = false;
-            }
-
-            if (!sameChain)
-                continue;
-
-            auto const distance = candidate->header().seq < targetSeq
-                ? targetSeq - candidate->header().seq
-                : candidate->header().seq - targetSeq;
-
-            if (!best || distance < bestDistance)
-            {
-                best = candidate;
-                bestDistance = distance;
-            }
-        }
-
-        return best;
+        return closestFullyWiredLedger(targetLedger, recentHistoryLedgers_, j_);
     }
 
     json::Value
