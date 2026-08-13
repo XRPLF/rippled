@@ -3,10 +3,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -165,8 +167,6 @@ LoanManage::defaultLoan(
         return std::min(covered, coverAvailable);
     }();
 
-    auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
-
     // Update the Vault object:
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -174,15 +174,63 @@ LoanManage::defaultLoan(
     // scale.
     auto const vaultScale = getVaultScale(vaultSle);
 
-    Number vaultTotalDelta;
-    {
-        // Decrease the Total Value of the Vault. Compute using local values
-        // (rather than mutating the Vault's proxies directly) so the actual
-        // field update can be applied once, via addVaultAssets below.
-        Number const vaultTotalBefore = vaultSle->at(sfAssetsTotal);
-        Number const vaultAvailableBefore = vaultSle->at(sfAssetsAvailable);
+    // Under fixCleanup3_4_0, both vault-side fields are mutated through a
+    // single asset-typed STAmount pair. `amount = STAmount{vaultAsset,
+    // defaultCovered}` is applied to both sfAssetsTotal and
+    // sfAssetsAvailable, and `writeOff = STAmount{vaultAsset,
+    // totalDefaultAmount}` is applied to sfAssetsTotal only. Because the
+    // shared `amount` is normalized to STAmount precision exactly once and
+    // absorbed by both fields symmetrically, sfAssetsAvailable cannot
+    // overshoot sfAssetsTotal from arithmetic alone -- the residual is
+    // exactly `-writeOff` on Total. Pre-amendment, the two fields were
+    // adjusted via values obtained through different Number->STAmount
+    // paths (vaultDefaultAmount rounded down to vaultScale on one side,
+    // defaultCovered kept at the finer loan scale on the other), so the
+    // normalization was asymmetric and a dust-reconciliation snap was
+    // required to paper over the resulting cross-side mismatch -- a snap
+    // that itself minted phantom assets on sfAssetsTotal. See the
+    // sibling change in LoanPay for the same fix on the payment path.
+    //
+    // The Number-precision guard `T - A >= totalDefaultAmount` below is
+    // exactly sufficient: loanVaultExposure returns a difference of vault-
+    // associated STNumber fields (IOU-normalized via associateAsset), so
+    // its STAmount promotion round-trips losslessly with no writeOff slack.
+    bool const useUnifiedAssetArithmetic = view.rules().enabled(fixCleanup3_4_0);
 
-        if (vaultTotalBefore < vaultDefaultAmount)
+    if (useUnifiedAssetArithmetic)
+    {
+        // Prior to realizing the default, the vault must already carry
+        // at least this loan's exposure. A violation here is a corrupt
+        // ledger, not a transaction-input error.
+        //
+        // This guard is strictly stronger than the pre-amendment
+        // `vaultTotalBefore < vaultDefaultAmount` form, but activation is
+        // safe: the ValidVault invariant continuously enforces Total >=
+        // Available (so Total - Available >= 0 on every ledger), and the
+        // pre-amendment cross-scale rounding could only inflate the
+        // difference Total - Available, never deflate it. Any ledger
+        // reaching this point post-activation will therefore already
+        // satisfy the stronger form.
+        Number const vaultTotalBefore = *vaultSle->at(sfAssetsTotal);
+        Number const vaultAvailableBefore = *vaultSle->at(sfAssetsAvailable);
+        if (vaultTotalBefore - vaultAvailableBefore < totalDefaultAmount)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.warn()) << "Vault exposure is less than the loan default amount";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+    else
+    {
+        // Pre-amendment behavior.
+        auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
+
+        // Decrease the Total Value of the Vault:
+        auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+        auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+
+        if (vaultTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
             JLOG(j.warn()) << "Vault total assets is less than the vault default amount";
@@ -192,52 +240,53 @@ LoanManage::defaultLoan(
 
         auto const vaultDefaultRounded = roundToAsset(
             vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
-        Number vaultTotalAfter = vaultTotalBefore - vaultDefaultRounded;
-        // Increase the Asset Available of the Vault by liquidated First-Loss
-        // Capital and any unclaimed funds amount:
-        Number const vaultAvailableAfter = vaultAvailableBefore + defaultCovered;
-        if (vaultAvailableAfter > vaultTotalAfter && !vaultAsset.integral())
+        vaultTotalProxy -= vaultDefaultRounded;
+        // Increase the Asset Available of the Vault by liquidated
+        // First-Loss Capital and any unclaimed funds amount:
+        vaultAvailableProxy += defaultCovered;
+        if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
         {
-            auto const difference = vaultAvailableAfter - vaultTotalAfter;
-            JLOG(j.debug()) << "Vault assets available: " << vaultAvailableAfter << "("
-                            << vaultAvailableAfter.exponent() << "), Total: " << vaultTotalAfter
-                            << "(" << vaultTotalAfter.exponent() << "), Difference: " << difference
+            auto const difference = vaultAvailableProxy - vaultTotalProxy;
+            JLOG(j.debug()) << "Vault assets available: " << *vaultAvailableProxy << "("
+                            << vaultAvailableProxy.value().exponent()
+                            << "), Total: " << *vaultTotalProxy << "("
+                            << vaultTotalProxy.value().exponent() << "), Difference: " << difference
                             << "(" << difference.exponent() << ")";
-            if (vaultAvailableAfter.exponent() - difference.exponent() > 13)
+            if (vaultAvailableProxy.value().exponent() - difference.exponent() > 13)
             {
-                // If the difference is dust, bring the total up to match
-                // the available
+                // If the difference is dust, bring the total up to
+                // match the available
                 JLOG(j.debug()) << "Difference between vault assets available and total is "
                                    "dust. Set both to the larger value.";
-                vaultTotalAfter = vaultAvailableAfter;
+                vaultTotalProxy = vaultAvailableProxy;
             }
         }
-        if (vaultAvailableAfter > vaultTotalAfter)
+        if (*vaultAvailableProxy > *vaultTotalProxy)
         {
             // LCOV_EXCL_START
             JLOG(j.fatal()) << "Vault assets available must not be greater "
                                "than assets outstanding. Available: "
-                            << vaultAvailableAfter << ", Total: " << vaultTotalAfter;
+                            << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-
-        // The loss has been realized
-        if (loanSle->isFlag(lsfLoanImpaired))
-        {
-            auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-            if (vaultLossUnrealizedProxy < totalDefaultAmount)
-            {
-                // LCOV_EXCL_START
-                JLOG(j.warn()) << "Vault unrealized loss is less than the default amount";
-                return tefBAD_LEDGER;
-                // LCOV_EXCL_STOP
-            }
-            adjustImpreciseNumber(
-                vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
-        }
-        vaultTotalDelta = vaultTotalAfter - vaultTotalBefore;
     }
+
+    // The loss has been realized
+    if (loanSle->isFlag(lsfLoanImpaired))
+    {
+        auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+        if (vaultLossUnrealizedProxy < totalDefaultAmount)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.warn()) << "Vault unrealized loss is less than the default amount";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+        adjustImpreciseNumber(
+            vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
+    }
+    view.update(vaultSle);
 
     // Update the LoanBroker object:
 
@@ -269,15 +318,27 @@ LoanManage::defaultLoan(
     loanSle->at(sfNextPaymentDueDate) = 0;
     view.update(loanSle);
 
-    // Update the Vault's assets, and return funds from the LoanBroker
-    // pseudo-account to the Vault pseudo-account:
-    return addVaultAssets(
+    // Return funds from the LoanBroker pseudo-account to the Vault
+    // pseudo-account. Under fixCleanup3_4_0, the vault field updates are
+    // deferred to a single call through addVaultAssets so that both fields
+    // are mutated via one asset-typed STAmount pair (see the block comment
+    // on useUnifiedAssetArithmetic above); pre-amendment, the vault fields
+    // were already mutated in place above, so a plain accountSend suffices.
+    if (useUnifiedAssetArithmetic)
+    {
+        STAmount const amount{vaultAsset, defaultCovered};
+        STAmount const writeOff{vaultAsset, totalDefaultAmount};
+        return addVaultAssets(
+            view, vaultSle, brokerSle->at(sfAccount), amount, amount - writeOff, j);
+    }
+    return accountSend(
         view,
-        vaultSle,
         brokerSle->at(sfAccount),
+        vaultSle->at(sfAccount),
         STAmount{vaultAsset, defaultCovered},
-        STAmount{vaultAsset, vaultTotalDelta},
-        j);
+        j,
+        {},
+        WaiveTransferFee::Yes);
 }
 
 TER
