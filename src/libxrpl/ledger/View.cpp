@@ -64,7 +64,8 @@ checkVaultPseudoAccountFrozenPreconditions(ReadView const& view, std::uint8_t de
     if (depth >= kMaxAssetCheckDepth)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        UNREACHABLE(
+            "xrpl::View::checkVaultPseudoAccountFrozenPreconditions : reached asset check depth");
         return true;
         // LCOV_EXCL_STOP
     }
