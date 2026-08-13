@@ -43,6 +43,28 @@ private:
     Application& app_;
     bool const useTxTables_;
 
+    // Drop any previous row for this sequence so a second save (validation
+    // plus fetchForHistory, or a HashRouter SAVED miss) is idempotent.
+    void
+    replaceLedgerSeqUnlocked(LedgerIndex seq)
+    {
+        auto existing = ledgers_.find(seq);
+        if (existing == ledgers_.end())
+            return;
+
+        ledgerHashToSeq_.erase(existing->second.info.hash);
+        for (auto const& [txHash, _] : existing->second.transactions)
+            transactionMap_.erase(txHash);
+        for (auto accountIt = accountTxMap_.begin(); accountIt != accountTxMap_.end();)
+        {
+            accountIt->second.ledgerTxMap.erase(seq);
+            if (accountIt->second.ledgerTxMap.empty())
+                accountIt = accountTxMap_.erase(accountIt);
+            else
+                ++accountIt;
+        }
+    }
+
     // Reader-preferring so Linux matches macOS and RPC readers are not
     // starved by saveValidatedLedger / deleteBeforeLedgerSeq writers.
     mutable reader_preferring_shared_mutex mutex_;
@@ -360,6 +382,7 @@ public:
 
             {
                 std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+                replaceLedgerSeqUnlocked(seq);
                 for (auto const& insert : txInserts)
                 {
                     ledgerData.transactions.emplace(insert.id, insert.accTx);
@@ -389,6 +412,7 @@ public:
 
         {
             std::unique_lock<reader_preferring_shared_mutex> const lock(mutex_);
+            replaceLedgerSeqUnlocked(seq);
             ledgers_[seq] = std::move(ledgerData);
             ledgerHashToSeq_[ledger->header().hash] = seq;
         }

@@ -24,6 +24,8 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -50,8 +52,10 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -1518,6 +1522,61 @@ class AccountTx_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testRWDBAccountTxIdempotentSave()
+    {
+        testcase("RWDB saveValidatedLedger is idempotent");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto const closed = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(closed);
+        if (!closed)
+            return;
+
+        auto collectHashes = [&]() {
+            json::Value params;
+            params[jss::account] = a1.human();
+            params[jss::limit] = 200;
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+            std::vector<std::string> hashes;
+            if (!res.isMember(jss::result) || !res[jss::result].isMember(jss::transactions))
+                return hashes;
+            for (auto const& tx : res[jss::result][jss::transactions])
+            {
+                if (tx.isMember(jss::tx_json) && tx[jss::tx_json].isMember(jss::hash))
+                    hashes.push_back(tx[jss::tx_json][jss::hash].asString());
+                else if (tx.isMember(jss::tx) && tx[jss::tx].isMember(jss::hash))
+                    hashes.push_back(tx[jss::tx][jss::hash].asString());
+                else if (tx.isMember(jss::hash))
+                    hashes.push_back(tx[jss::hash].asString());
+            }
+            return hashes;
+        };
+
+        auto const before = collectHashes();
+        BEAST_EXPECT(!before.empty());
+
+        env.app().getRelationalDatabase().saveValidatedLedger(closed, false);
+        env.app().getRelationalDatabase().saveValidatedLedger(closed, false);
+
+        auto const after = collectHashes();
+        BEAST_EXPECT(after.size() == before.size());
+        std::set<std::string> unique(after.begin(), after.end());
+        BEAST_EXPECT(unique.size() == after.size());
+    }
+
 public:
     void
     run() override
@@ -1525,6 +1584,7 @@ public:
         forAllApiVersions([this](unsigned apiVersion) { testParameters(apiVersion); });
         forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxSmoke(apiVersion); });
         forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxBinary(apiVersion); });
+        testRWDBAccountTxIdempotentSave();
         testContents();
         testAccountDelete();
         testMPT();
