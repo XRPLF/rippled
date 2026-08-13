@@ -15,24 +15,16 @@
 #   - Windows: the core build tools only (CMake, Conan, Git, Python).
 #              MSVC is expected to be provided separately and is not checked here.
 #
-# Some tools (clang-format, clang-tidy, doxygen, gcovr, gh, git-cliff, gpg,
-# pre-commit, run-clang-tidy) are present in our Linux CI images and in local
-# development setups, but not in the macOS CI environment. They are checked
-# everywhere except when running in CI on macOS.
-#
-# Tools that Nix also exposes under a version-suffixed name (`clang-tidy-22`,
-# `g++-15`, ...) are probed under both names: a suffixed name can break while
-# the plain one still works (see mkVersionedToolLinks in nix/packages.nix).
+# Some tools (clang-format, doxygen, gcovr, gh, git-cliff, gpg, pre-commit,
+# run-clang-tidy) are present in our Linux CI images and in local development
+# setups, but not in the macOS CI environment. They are checked everywhere
+# except when running in CI on macOS.
 #
 # Environment variables:
 #   CI                      if set, skip the tools above when on macOS.
 #   CHECK_TOOLS_SKIP_CLONE  if set, skip the git-over-HTTPS connectivity check.
 
 set -uo pipefail
-
-# Version suffixes of the Nix tool links, tracking nix/packages.nix.
-gcc_version=15
-llvm_version=22
 
 missing=()
 checked=0
@@ -90,9 +82,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     echo "Development tooling:"
     check ccache
     check clang
-    check "clang-${llvm_version}"
     check clang++
-    check "clang++-${llvm_version}"
     check ClangBuildAnalyzer
     check curl
     check file
@@ -111,14 +101,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     # setups, but not in the macOS CI environment. So check them everywhere
     # except when running in CI on macOS.
     if [ "${os}" = "linux" ] || [ -z "${CI:-}" ]; then
-        check clang-apply-replacements
-        check "clang-apply-replacements-${llvm_version}"
         check clang-format
-        check "clang-format-${llvm_version}"
-        # clang-tidy leads --version with the LLVM banner, not the version.
-        check clang-tidy sh -c 'clang-tidy --version | grep -m1 -oE "LLVM version [0-9.]+"'
-        check "clang-tidy-${llvm_version}" sh -c \
-            "clang-tidy-${llvm_version} --version | grep -m1 -oE 'LLVM version [0-9.]+'"
         check dot
         check doxygen
         check gcovr
@@ -129,7 +112,6 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
         # pre-commit, or its alternative implementation prek
         check pre-commit sh -c 'pre-commit --version || prek --version'
         check run-clang-tidy run-clang-tidy --help
-        check "run-clang-tidy-${llvm_version}" "run-clang-tidy-${llvm_version}" --help
     fi
 fi
 
@@ -156,11 +138,7 @@ if [ "${os}" = "linux" ]; then
     echo
     echo "GCC toolchain:"
     check gcc
-    check "gcc-${gcc_version}"
     check g++
-    check "g++-${gcc_version}"
-    check cpp
-    check "cpp-${gcc_version}"
     check gcov
 
     echo
