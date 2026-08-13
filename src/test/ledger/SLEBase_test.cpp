@@ -257,7 +257,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         auto const jt = env.jt(noop(alice));
         BEAST_EXPECT(jt.stx != nullptr);
-        ApplyViewContext const ctx{av, *jt.stx};
+        ApplyViewContext const ctx{.view = av, .tx = *jt.stx};
 
         // Delegates to the (Keylet, ApplyView&) constructor; ctx.tx is not
         // retained, so this must be indistinguishable from building from
@@ -268,7 +268,7 @@ class SLEBase_test : public beast::unit_test::Suite
         BEAST_EXPECT(&fromCtx.applyView() == &av);
         BEAST_EXPECT(fromCtx.key() == keylet::account(alice.id()).key);
 
-        WAccountRootEntry fromView(keylet::account(alice.id()), av, env.journal);
+        WAccountRootEntry const fromView(keylet::account(alice.id()), av, env.journal);
         BEAST_EXPECT(fromCtx.sle() == fromView.sle());
     }
 

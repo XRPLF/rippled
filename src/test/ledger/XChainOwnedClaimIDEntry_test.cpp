@@ -1,22 +1,15 @@
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 #include <test/ledger/EntryTestHelpers.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/XChainOwnedClaimIDEntry.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STXChainBridge.h>
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class XChainOwnedClaimIDEntry_test : public beast::unit_test::Suite
 {
@@ -49,5 +42,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(XChainOwnedClaimIDEntry, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -11,15 +11,12 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <memory>
-#include <optional>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Scaffolding shared by the per-entry-type suites.
@@ -38,14 +35,9 @@ public:
     jtx::Account const bob{"bob"};
     jtx::Account const carol{"carol"};
 
-    explicit EntryTestEnv(beast::unit_test::Suite& suite) : env(suite)
+    explicit EntryTestEnv(beast::unit_test::Suite& suite)
+        : env(suite), ledger_(fundAndClose()), av_(&*ledger_, TapNone)
     {
-        env.fund(jtx::XRP(10'000), alice, bob, carol);
-        env.close();
-        // Pin the ledger both accessors work against, and keep it alive: av_
-        // holds a raw pointer into it.
-        ledger_ = env.current();
-        av_.emplace(&*ledger_, TapNone);
     }
 
     /**
@@ -53,16 +45,16 @@ public:
      * A suite that closed a ledger or submitted a transaction would make those
      * two diverge, leaving apply() pointing at a ledger read() no longer names.
      */
-    ReadView const&
+    [[nodiscard]] ReadView const&
     read() const
     {
         return *ledger_;
     }
 
-    ApplyView&
+    [[nodiscard]] ApplyView&
     apply()
     {
-        return *av_;
+        return av_;
     }
 
     /**
@@ -70,16 +62,27 @@ public:
      * an object ID directly. Nothing in the ledger has this key, which is the
      * point: those overloads should resolve to a non-existent entry.
      */
-    uint256
+    [[nodiscard]] uint256
     someID() const
     {
         return read().header().parentHash;
     }
 
 private:
-    // Destroyed after av_, which points into it.
+    // Runs from the member initializer list, so it may only touch env and the
+    // accounts -- everything declared above ledger_.
+    std::shared_ptr<OpenView const>
+    fundAndClose()
+    {
+        env.fund(jtx::XRP(10'000), alice, bob, carol);
+        env.close();
+        return env.current();
+    }
+
+    // Declared before av_, which holds a raw pointer into it, so that it is
+    // destroyed after av_.
     std::shared_ptr<OpenView const> ledger_;
-    std::optional<ApplyViewImpl> av_;
+    ApplyViewImpl av_;
 };
 
 /**
@@ -106,7 +109,7 @@ expectKeylet(
 
     // The writable entry retains its keylet, so it can be inspected whether
     // or not the entry exists.
-    Entry<ApplyView> w(args..., e.apply());
+    Entry<ApplyView> const w(args..., e.apply());
     suite.expect(w.keylet().key == expected.key, what + ": writable key");
     suite.expect(w.keylet().type == expected.type, what + ": writable type");
     suite.expect(w.exists() == present, what + ": writable exists");
@@ -125,5 +128,4 @@ expectKeylet(
     suite.expect(Entry<ReadView>::kEntryType == expected.type, what + ": kEntryType");
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
