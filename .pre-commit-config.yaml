@@ -54,7 +54,7 @@ repos:
         language: python
         types_or: [c++, c]
       - id: fix-gtest-names
-        name: fix gtest test-case names to snake_case
+        name: "fix gtest names: CamelCase suite, snake_case test case"
         entry: ./bin/pre-commit/fix_gtest_names.py
         language: python
         additional_dependencies: [inflection==0.5.1]
