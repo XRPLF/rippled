@@ -37,6 +37,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
+    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken
@@ -63,8 +64,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
-                auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -73,23 +72,24 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
-                auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
                 return tecHAS_OBLIGATIONS;
             }
-            if ((ctx.view.rules().enabled(featureSingleAssetVault) ||
-                 ctx.view.rules().enabled(fixCleanup3_4_0)) &&
-                sleMpt->isFlag(lsfMPTLocked))
+            if (ctx.view.rules().enabled(fixCleanup3_4_0))
+            {
+                if (sleMptIssuance && sleMpt->isFlag(lsfMPTLocked))
+                    return tecNO_PERMISSION;
+            }
+            else if (
+                ctx.view.rules().enabled(featureSingleAssetVault) && sleMpt->isFlag(lsfMPTLocked))
+            {
                 return tecNO_PERMISSION;
+            }
 
             if (ctx.view.rules().enabled(featureConfidentialTransfer))
             {
-                auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
-
                 // if there still existing encrypted balances of MPT in
                 // circulation
                 if (sleMptIssuance &&
@@ -108,9 +108,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        auto const sleMptIssuance =
-            ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
-
         if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
 
@@ -128,7 +125,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleHolder)
         return tecNO_DST;
 
-    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
