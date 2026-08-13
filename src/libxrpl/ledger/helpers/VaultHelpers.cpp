@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -12,6 +13,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
@@ -157,6 +159,76 @@ getVaultVersion(SLE::const_ref vault)
         // LCOV_EXCL_STOP
     }
     return static_cast<VaultVersion>(version);
+}
+
+namespace {
+
+[[nodiscard]] VaultKind
+decodeVaultKind(std::optional<std::uint8_t> vaultKind)
+{
+    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
+        return VaultKind::ClosedEnded;
+    return VaultKind::OpenEnded;
+}
+
+}  // namespace
+
+[[nodiscard]] VaultKind
+getVaultKind(SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
+    return decodeVaultKind(vault->at(~sfVaultKind));
+}
+
+[[nodiscard]] VaultKind
+getVaultKind(STTx const& tx)
+{
+    return decodeVaultKind(tx[~sfVaultKind]);
+}
+
+[[nodiscard]] bool
+isValidVaultKind(STTx const& tx)
+{
+    auto const kindField = tx[~sfVaultKind];
+    if (!kindField)
+        return true;
+    return *kindField == std::to_underlying(VaultKind::OpenEnded) ||
+        *kindField == std::to_underlying(VaultKind::ClosedEnded);
+}
+
+[[nodiscard]] bool
+isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
+{
+    auto const s = static_cast<std::int64_t>(sub);
+    auto const r = static_cast<std::int64_t>(red);
+    return r >= s + kMinInvestmentPeriod && r < s + kMaxInvestmentPeriod;
+}
+
+[[nodiscard]] VaultPhase
+getVaultPhase(ReadView const& view, SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultPhase : valid Vault sle");
+    return getVaultPhase(
+        view, (*vault)[~sfVaultKind], (*vault)[~sfSubscriptionDate], (*vault)[~sfRedemptionDate]);
+}
+
+[[nodiscard]] VaultPhase
+getVaultPhase(
+    ReadView const& view,
+    std::optional<std::uint8_t> vaultKind,
+    std::optional<std::uint32_t> subscriptionDate,
+    std::optional<std::uint32_t> redemptionDate)
+{
+    if (!vaultKind || *vaultKind != std::to_underlying(VaultKind::ClosedEnded))
+        return VaultPhase::NoPhase;
+
+    // Subscription includes now == SubscriptionDate; Investment starts
+    // strictly after SubscriptionDate.
+    if (!hasExpired(view, subscriptionDate, ExpiryComparison::Exclusive))
+        return VaultPhase::Subscription;
+    if (!hasExpired(view, redemptionDate))
+        return VaultPhase::Investment;
+    return VaultPhase::Redemption;
 }
 
 [[nodiscard]] TER
