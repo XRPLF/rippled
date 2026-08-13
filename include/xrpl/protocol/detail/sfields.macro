@@ -236,15 +236,10 @@ TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
-// sfDust is a sub-quantum residual on a trust line: the fraction of a credit
-// that could not be represented in sfBalance at the caller-chosen accounting
-// scale, parked here so the extended quantity (sfBalance + sfDust) preserves
-// its exact value across successive rounded credits. Deliberately WITHOUT
-// kSmdNeedsAsset: that flag rounds the field to the asset's representable
-// precision via associateAsset(), which is the opposite of this field's
-// purpose (it exists to hold value finer than that precision). Do not add
-// kSmdNeedsAsset to this entry — see the "Why sfDust" section in
-// docs/dust-mechanism.md.
+// sfDust is the fraction of a credit that could not be represented
+// in sfBalance at the caller-chosen accounting scale. Parked in sfDust
+// so the extended quantity (sfBalance + sfDust) preserves its exact value
+// across successive rounded credits.
 TYPED_SFIELD(sfDust,                     NUMBER,     18, SField::kSmdDefault)
 
 // int32
