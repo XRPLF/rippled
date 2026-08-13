@@ -467,10 +467,24 @@ LoanPay::doApply()
               SpendableHandling::FullBalance);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
-    auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
+    // Under fixCleanup3_4_0, feed the same raw payment Number into both
+    // sfAssetsAvailable and the accountSendMulti transfer to the vault
+    // pseudo-account. Both sinks store the value as an asset-typed
+    // STAmount (the ledger field is normalized through STNumber via
+    // associateAsset(*vaultSle, asset) further below, and the pseudo
+    // account trust line stores an STAmount directly), so the IOU
+    // normalization is applied symmetrically and the two balances land on
+    // the same STAmount value -- which is what makes the debug invariant
+    // sfAssetsAvailable == pseudo-account balance hold. Pre-amendment,
+    // sfAssetsAvailable was fed the vaultScale-rounded value while the
+    // pseudo-account received the raw Number, creating the same
+    // cross-side asymmetry with `assetsTotalDelta` that
+    // `LoanManage::defaultLoan` addresses on the default path.
+    auto const totalPaidToVault = view.rules().enabled(fixCleanup3_4_0)
+        ? totalPaidToVaultRaw
+        : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
-        !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
+        !asset.integral() || totalPaidToVaultRaw == totalPaidToVault,
         "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
     auto const totalPaidToBroker = paymentParts->feePaid;
@@ -516,9 +530,10 @@ LoanPay::doApply()
     // Raw (pre-rounding) projection, used only for this internal consistency
     // check; the real post-rounding values are read back from the Vault SLE
     // further below, once addVaultAssets/associateAsset have actually
-    // mutated and rounded it.
+    // mutated and rounded it. Under fixCleanup3_4_0, totalPaidToVault is the
+    // raw payment Number; pre-amendment it is the vaultScale-rounded value.
     [[maybe_unused]] Number const assetsAvailableAfterRaw =
-        assetsAvailableBefore + totalPaidToVaultRounded;
+        assetsAvailableBefore + totalPaidToVault;
     [[maybe_unused]] Number const assetsTotalAfterRaw = assetsTotalBefore + assetsTotalDelta;
 
     XRPL_ASSERT_PARTS(
@@ -527,13 +542,13 @@ LoanPay::doApply()
         "assets available must not be greater than assets outstanding");
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
-                     << ", total paid to vault rounded: " << totalPaidToVaultRounded
+                     << ", total paid to vault: " << totalPaidToVault
                      << ", total paid to broker: " << totalPaidToBroker
                      << ", amount from transaction: " << amount;
 
     // Move funds
     XRPL_ASSERT_PARTS(
-        totalPaidToVaultRounded + totalPaidToBroker <= amount,
+        totalPaidToVault + totalPaidToBroker <= amount,
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
@@ -549,7 +564,7 @@ LoanPay::doApply()
     associateAsset(*loanSle, asset);
     associateAsset(*brokerSle, asset);
 
-    if (totalPaidToVaultRounded != beast::kZero)
+    if (totalPaidToVault != beast::kZero)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
@@ -583,7 +598,7 @@ LoanPay::doApply()
             view,
             vaultSle,
             accountID_,
-            STAmount{asset, totalPaidToVaultRounded},
+            STAmount{asset, totalPaidToVault},
             STAmount{asset, assetsTotalDelta},
             j_);
         !isTesSuccess(ret))
