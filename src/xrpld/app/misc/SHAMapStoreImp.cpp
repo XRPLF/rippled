@@ -812,6 +812,8 @@ SHAMapStoreImp::healthWait()
 
         lastLedger = index;
         readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        SOMETIMES(
+            index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
