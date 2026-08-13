@@ -38,20 +38,6 @@
 
 namespace xrpl {
 
-namespace {
-
-bool
-isMPTLocked(SLE const& sle)
-{
-    XRPL_ASSERT(
-        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::isMPTLocked : MPToken or MPTokenIssuance SLE");
-
-    return sle.isFlag(lsfMPTLocked);
-}
-
-}  // namespace
-
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
@@ -61,12 +47,12 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 }
 
 bool
-isGlobalFrozen(SLE const& issuance)
+isGlobalFrozen(SLE const& issuanceSle)
 {
     XRPL_ASSERT(
-        issuance.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isGlobalFrozen : MPTokenIssuance SLE");
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isGlobalFrozen : MPTokenIssuance SLE");
 
-    return isMPTLocked(issuance);
+    return issuanceSle.isFlag(lsfMPTLocked);
 }
 
 bool
@@ -82,7 +68,7 @@ isIndividualFrozen(SLE const& mptSle)
 {
     XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isIndividualFrozen : MPToken SLE");
 
-    return isMPTLocked(mptSle);
+    return mptSle.isFlag(lsfMPTLocked);
 }
 
 bool
