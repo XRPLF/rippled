@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -24,7 +25,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -33,6 +33,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <optional>
 #include <string>
 #include <variant>
 
