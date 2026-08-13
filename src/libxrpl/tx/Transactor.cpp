@@ -1639,8 +1639,8 @@ Transactor::operator()()
         stream << "preclaim result: " << transToken(result);
 
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
-    bool const canApply = std::invoke([&] {
-        bool canApply = isTesSuccess(result);
+    bool const canApply = std::invoke([&result, &fee, this] {
+        bool canApplyTmp = isTesSuccess(result);
 
         if (ctx_.size() > kOversizeMetaDataCap)
             result = tecOVERSIZE;
@@ -1650,17 +1650,17 @@ Transactor::operator()()
             // If the TapFailHard flag is set, a tec result
             // must not do anything
             ctx_.discard();
-            canApply = false;
+            canApplyTmp = false;
         }
         else if (
             (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
             (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
         {
-            // This is and must remain the only place where `canApply` can change from false to
+            // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.
-            std::tie(result, fee, canApply) = processPersistentChanges(result, fee);
+            std::tie(result, fee, canApplyTmp) = processPersistentChanges(result, fee);
         }
-        return canApply;
+        return canApplyTmp;
     });
 
     auto const logger = [this](
