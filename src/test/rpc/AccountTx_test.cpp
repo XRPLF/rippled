@@ -1698,6 +1698,52 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(!db.newestAccountTxPageB(pageOptions).first.empty());
     }
 
+    void
+    testRWDBAdminHugeLimit()
+    {
+        testcase("RWDB admin huge account_tx limit does not exhaust memory");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        // Not UINT32_MAX: that value is treated as "use pageLength".
+        // 4e9 is a raw admin limit that previously reserved ~56 GB.
+        constexpr std::uint32_t kHugeLimit = 4'000'000'000u;
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = kHugeLimit,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+
+        auto const oldest = db.oldestAccountTxPage(pageOptions);
+        auto const newest = db.newestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!oldest.first.empty());
+        BEAST_EXPECT(!newest.first.empty());
+
+        json::Value params;
+        params[jss::account] = a1.human();
+        params[jss::limit] = kHugeLimit;
+        auto const res = env.rpc("json", "account_tx", to_string(params));
+        BEAST_EXPECT(res.isMember(jss::result));
+        BEAST_EXPECT(res[jss::result][jss::status] == "success");
+        BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
+    }
+
 public:
     void
     run() override
@@ -1708,6 +1754,7 @@ public:
         testRWDBAccountTxIdempotentSave();
         testRWDBDelegationFilter();
         testRWDBUnboundedLedgerRange();
+        testRWDBAdminHugeLimit();
         testContents();
         testAccountDelete();
         testMPT();

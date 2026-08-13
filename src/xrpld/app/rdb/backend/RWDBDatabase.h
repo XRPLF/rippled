@@ -943,7 +943,11 @@ public:
             if (limitUsed > 0)
                 newmarker = options.marker;
 
-            emitted.reserve(numberOfResults);
+            // Cap the reservation at one page. Admin/unlimited callers
+            // may pass a huge raw limit (anything except 0 / UINT32_MAX
+            // is not clamped), and reserving that many EmittedTx slots
+            // would allocate tens of GB before any row is found.
+            emitted.reserve(std::min(numberOfResults, pageLength));
             std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
 
             bool const hasDelegateFilter = options.delegate.has_value();
