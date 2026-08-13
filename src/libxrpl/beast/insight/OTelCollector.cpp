@@ -5,7 +5,7 @@
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
  * created on the GLOBAL Meter published by the telemetry module. This class
- * is a legacy shim: it no longer owns an export pipeline. The MeterProvider,
+ * is an adapter only: it owns no export pipeline. The MeterProvider,
  * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
  * xrpl::telemetry::Telemetry.
  *
@@ -134,8 +134,8 @@ class OTelCounterImpl : public CounterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelCounterImpl(
@@ -178,8 +178,8 @@ class OTelEventImpl : public EventImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
      */
     OTelEventImpl(
@@ -227,8 +227,8 @@ class OTelGaugeImpl : public GaugeImpl
 public:
     /**
      * @param name       Export-ready metric name, already run through
-     *                   formatName() by the collector: prefix prepended
-     *                   and dots replaced with underscores.
+     *                   formatName() by the collector: lowercase, with `.`
+     *                   and ` ` mapped to `_`.
      * @param meter      OTel Meter used to create the observable gauge.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
@@ -310,8 +310,8 @@ class OTelMeterImpl : public MeterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelMeterImpl(
@@ -340,7 +340,7 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation (legacy shim).
+ * @brief Main OTel Collector implementation (adapter over the global Meter).
  *
  * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
  * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
@@ -380,8 +380,11 @@ private:
  * Caveats:
  *   - Observable gauge callbacks run on the SDK's internal thread. Hook
  *     handlers must be thread-safe.
- *   - Metric names are formed as "prefix_name" with dots replaced by
- *     underscores to match StatsD->Prometheus naming conventions.
+ *   - Metric names carry NO prefix. formatName() only lowercases the raw
+ *     name and turns dots and spaces into underscores, to match
+ *     StatsD->Prometheus naming conventions. The service is identified by
+ *     the OTel resource (service.name), so prefix_ is kept for logging
+ *     only and never affects an exported name.
  *   - The OTel Prometheus exporter appends "_total" to counters. The
  *     metric names we register do NOT include this suffix — Prometheus
  *     adds it automatically.
@@ -402,11 +405,14 @@ public:
     /**
      * @brief Construct the OTel collector over the global MeterProvider.
      *
-     * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
-     *                    the global telemetry pipeline is authoritative for
-     *                    the actual export endpoint. Retained for logging and
-     *                    back-compat with the New() signature.
-     * @param prefix      Prefix for all metric names.
+     * @param endpoint    OTLP/HTTP metrics endpoint URL, recorded in the
+     *                    collector's startup log line. Export uses the
+     *                    endpoint configured on the global telemetry
+     *                    pipeline.
+     * @param prefix      Label for the collector's startup log line
+     *                    (e.g. "xrpld"). Exported metric names come from
+     *                    formatName(); the service is identified by the
+     *                    service.name resource attribute.
      * @param instanceId  Value for the service.instance.id resource attribute.
      *                    When empty, the attribute is omitted.
      * @param serviceName Value for the service.name resource attribute.
@@ -498,10 +504,12 @@ public:
     /** @} */
 
     /**
-     * @brief Format a metric name with the configured prefix.
+     * @brief Format a raw metric name for export.
      *
-     * Replaces dots with underscores to match StatsD->Prometheus naming.
-     * Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
+     * Lowercases the name and replaces dots and spaces with underscores to
+     * match StatsD->Prometheus naming. Adds NO prefix: the service is
+     * identified by the OTel resource (service.name).
+     * Example: name="LedgerMaster.Validated_Ledger_Age"
      *   -> "ledgermaster_validated_ledger_age"
      *
      * @param name  Raw metric name from beast::insight callers.
@@ -517,7 +525,8 @@ private:
     Journal journal_;
 
     /**
-     * Prefix for all metric names (e.g., "xrpld").
+     * Configured metric-name prefix (e.g., "xrpld"). Log-only: it is
+     * echoed in the startup log line and never applied to a metric name.
      */
     std::string prefix_;
 
@@ -708,17 +717,17 @@ OTelCollectorImp::OTelCollectorImp(
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
-    // instanceId/serviceName/networkType are retained on the New() signature
-    // for back-compat but no longer used here: the telemetry module owns the
-    // resource attributes for the shared metrics pipeline.
+    // instanceId/serviceName/networkType are accepted but unused here: the
+    // telemetry module owns the resource attributes for the shared metrics
+    // pipeline, so setting them from this collector would have no effect.
     (void)instanceId;
     (void)serviceName;
     (void)networkType;
 
     if (journal_.info())
     {
-        // endpoint is informational: the global telemetry pipeline owns the
-        // real exporter. It is logged here for back-compat and diagnostics.
+        // endpoint is logged for diagnostics only: the global telemetry
+        // pipeline owns the exporter that actually sends the metrics.
         journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
     }
 
@@ -846,9 +855,9 @@ OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 std::string
 OTelCollectorImp::formatName(std::string const& name)
 {
-    // Produce a clean, lowercase, Prometheus-compatible metric name.
-    // No prefix — the OTel resource (service.name) identifies the service.
-    // Dots and spaces become underscores; everything lowercased.
+    // Produce a lowercase, Prometheus-compatible metric name: dots and
+    // spaces become underscores. Service identity travels in the
+    // service.name resource attribute, not in the metric name.
     std::string result;
     result.reserve(name.size());
     for (char const c : name)

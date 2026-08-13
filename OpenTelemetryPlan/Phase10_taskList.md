@@ -22,10 +22,13 @@
 
 Before Phases 1-9 can be considered production-ready, we need proof that:
 
-1. All required spans fire with correct attributes under real transaction workloads
+1. Every emitted span fires with its required attributes under real transaction
+   workloads — the harness derives the span and attribute totals from
+   `expected_spans.json`, so no fixed "16 spans / 22 attributes" figure applies
 2. All 255+ StatsD metrics + ~50 Phase 9 metrics appear in Prometheus with non-zero values
 3. Log-trace correlation (Phase 8) produces clickable trace_id links in Loki
-4. All 10 Grafana dashboards render meaningful data (no empty panels)
+4. The 14 harness-asserted Grafana dashboards render meaningful data (no empty
+   panels); 15 are on disk
 5. Performance overhead stays within bounds (< 3% CPU, < 5MB memory)
 6. The telemetry stack survives sustained load without data loss or queue backpressure
 
@@ -37,25 +40,42 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
 **What to do**:
 
-- Create `docker/telemetry/docker-compose.workload.yaml`:
-  - 5 xrpld validator nodes with UNL configured for each other
-  - All telemetry enabled: `[telemetry] enabled=1`, `[insight] server=otel`
-  - Full OTel stack: Collector, Tempo, Prometheus, Loki, Grafana
-  - Shared network with service discovery
+- Create `docker/telemetry/docker-compose.workload.yaml` — **as shipped this file
+  holds only the observability backend**: `otel-collector`, `tempo`,
+  `prometheus`, `loki`, `grafana`. It contains **no xrpld services**.
+  - Shared network (`workload-net`) with service discovery
 
-- Each node should:
-  - Generate validator keys at startup
-  - Configure all 5 nodes in its UNL
-  - Enable all trace categories including `trace_peer=1`
-  - Write logs to a file tailed by the OTel Collector filelog receiver
+- The 5 validators are **native `xrpld` processes**, not containers.
+  `docker/telemetry/workload/run-full-validation.sh` (`NUM_NODES=5`) generates
+  keys, writes a per-node `xrpld.cfg`, and launches each node on
+  `127.0.0.1` with sequential RPC / WS / peer ports. Each node:
+  - Gets its validator key from `generate-validator-keys.sh`
+  - Lists the other 4 nodes in `ips_fixed`
+  - Has all telemetry enabled: `[telemetry] enabled=1`, `[insight] server=otel`
+  - Enables all trace categories including `trace_peer=1`
+  - Writes logs to a file tailed by the OTel Collector filelog receiver
 
-- Include a `Makefile` target: `make telemetry-workload-up` / `make telemetry-workload-down`
+- ❌ **`make telemetry-workload-up` / `make telemetry-workload-down` were never
+  implemented.** There is no `Makefile` anywhere in the repository. The entry
+  point is `run-full-validation.sh` (with `--profile`, `--nodes`,
+  `--skip-loki`, `--skip-regression`, `--with-benchmark`). The node-count flag is
+  spelled `--nodes`, **not** `--num-nodes` — `run-full-validation.sh:80` (usage)
+  and `:100` (the `case` arm). `NUM_NODES` is the internal shell variable it
+  assigns to.
 
 **Key files**:
 
-- New: `docker/telemetry/docker-compose.workload.yaml`
+- New: `docker/telemetry/docker-compose.workload.yaml` (backend only)
 - New: `docker/telemetry/workload/generate-validator-keys.sh`
-- New: `docker/telemetry/workload/xrpld-validator.cfg.template`
+- New: `docker/telemetry/workload/run-full-validation.sh` — writes each node's
+  cfg **inline** via a heredoc at `run-full-validation.sh:242`
+  (`cat >"$NODE_DIR/xrpld.cfg" <<EOCFG`)
+- New: `docker/telemetry/workload/xrpld-validator.cfg.template` (96 lines) — it
+  **was** created and is tracked on the Phase 10 branch, but it is **unused**:
+  nothing reads it, and its `{{NODE_INDEX}}` / `{{RPC_PORT}}` / `{{OTEL_ENDPOINT}}`
+  placeholders are never substituted, because the inline heredoc above supersedes
+  it. Either wire the script to the template or delete the template — keeping both
+  guarantees they drift.
 
 ---
 
@@ -122,18 +142,32 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 - Create `docker/telemetry/workload/validate_telemetry.py`:
 
   **Span validation** (queries Tempo API):
-  - Assert all required span names appear in traces (conditional spans — `grpc.*`,
-    `ledger.acquire`, `txq.*`, `consensus.mode_change` — are marked `optional` and
-    skipped when not exercised by the workload)
-  - Assert each span has its required attributes (bare/underscore keys per the
-    2026-05-13 span-attr naming redesign; dotted `xrpl.*` reserved for resource attrs)
-  - Assert parent-child relationships are correct (`rpc.ws_message` → `rpc.process` → `rpc.command.*`)
+  - Assert every required span name in `expected_spans.json` appears in traces.
+    Conditional spans — `grpc.*`, `ledger.acquire`, `txq.*`,
+    `consensus.mode_change`, `rpc.process` — are marked `optional` and skipped
+    when the workload does not exercise them.
+  - Assert each span has its required attributes (bare/underscore keys; dotted
+    `xrpl.*` is reserved for resource attributes)
+  - Assert parent-child relationships are correct. The two live RPC trees are:
+    - HTTP: `rpc.http_request` -> `rpc.process` -> `rpc.command.*`
+    - WebSocket: `rpc.ws_message` -> `rpc.command.*` — **there is no
+      `rpc.process` on the WS path**. `rpc.process` is created only in
+      `ServerHandler::processRequest()` (`ServerHandler.cpp:705`), reached from
+      `processSession(Session, coro)`, i.e. HTTP only. Under WS-only load
+      `rpc.process` never appears, and `rpc.command.*` parents directly to
+      `rpc.ws_message`.
   - Assert span durations are reasonable (> 0, < 60s)
 
   **Metric validation** (queries Prometheus API):
-  - Assert all SpanMetrics-derived metrics are non-zero: `traces_span_metrics_calls_total`, `traces_span_metrics_duration_milliseconds_bucket`
-  - Assert all StatsD metrics are non-zero: `xrpld_LedgerMaster_Validated_Ledger_Age`, `xrpld_Peer_Finder_Active_*`, etc.
-  - Assert all Phase 9 metrics are non-zero: `xrpld_nodestore_*`, `xrpld_cache_*`, `xrpld_txq_*`, `xrpld_rpc_method_*`, `xrpld_object_count`, `xrpld_load_factor*`
+  - Assert all SpanMetrics-derived metrics are non-zero: `span_calls_total`,
+    `span_duration_milliseconds_bucket` (the connector's `namespace` is `span`,
+    not `traces_span_metrics` — `otel-collector-config.yaml:113-114`)
+  - Assert the insight-sourced metrics are non-zero: `ledgermaster_validated_ledger_age`,
+    `peer_finder_active_{inbound,outbound}_peers`, etc. — all lowercase, no
+    `xrpld_` prefix (`77f35c03db` removed the prefix and lowercased names)
+  - Assert all Phase 9 metrics are non-zero: `nodestore_state`, `cache_metrics`,
+    `txq_metrics`, `rpc_method_{started,finished,errored}_total`, `object_count`,
+    `load_factor_metrics`
   - Assert metric label cardinality is within bounds
 
   **Log-trace correlation validation** (queries Loki API):
@@ -142,7 +176,9 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
   - Assert Grafana derived field links are functional
 
   **Dashboard validation**:
-  - For each of the 10 Grafana dashboards, query the dashboard API and assert no panels show "No data"
+  - For each dashboard, query the dashboard API and assert no panels show "No
+    data". There are **15 dashboards on disk**; the harness asserts **14** —
+    `log-derived-insights` is provisioned but unasserted.
 
 - Output: JSON report with pass/fail per check, suitable for CI.
 
@@ -234,17 +270,28 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
 ## Exit Criteria — Delivered in PR #6519
 
-- [x] Multi-node validator cluster starts and reaches consensus
+- [x] 5-node validator cluster starts and reaches consensus — as native `xrpld`
+      processes driven by `run-full-validation.sh` (`NUM_NODES=5`), not from
+      docker-compose
 - [x] RPC load generator fires all traced RPC commands at configurable rates
 - [x] Transaction submitter generates 6+ transaction types at configurable TPS
-- [x] Validation suite confirms all required spans, attributes, and metrics
-- [x] Log-trace correlation validated end-to-end (Loki ↔ Tempo)
-- [x] Grafana dashboards render data (no empty panels)
-- [x] Overhead benchmark (`benchmark.sh`) measures telemetry-off vs telemetry-on deltas
+- [x] Validation suite confirms the full span / attribute / metric inventory
+      (totals computed dynamically from `expected_spans.json` /
+      `expected_metrics.json`)
+- [x] Log-trace correlation validated end-to-end (Loki <-> Tempo) — implemented
+      and passing locally, but CI runs with `--skip-loki`, so it is not gated
+- [x] All 14 harness-asserted Grafana dashboards render data (no empty panels);
+      15 on disk, `log-derived-insights` unasserted
+- [x] Overhead benchmark (`benchmark.sh`) measures telemetry-off vs telemetry-on
+      deltas
+- [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead — needs a
+      measured run
 - [x] CI workflow runs validation on telemetry branch changes
 - [x] Validation report output is CI-parseable (JSON with exit codes)
-- [x] OTel-driven regression gate captures per-span/per-RPC/per-job timings from
-      Prometheus and compares against a committed baseline
+- [x] OTel-driven regression gate captures per-span and per-job timings from
+      Prometheus and compares against a committed baseline. Per-RPC timings are
+      **not** gated: `regression-metrics.json` defines only `spans` and
+      `job_queue` groups (FU-4).
 
 ## Follow-up Work (tracked in separate PRs)
 
@@ -253,6 +300,9 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
       requires a manual baseline-refresh PR.
 - [ ] FU-4: Replace the proxy measurements in `benchmark.sh` (wall-clock curl
       p99, ledger-cadence-as-TPS, ledger-cadence-as-consensus-p95) with
-      PromQL quantile queries from the same pipeline the regression gate uses.
+      PromQL quantile queries from the same pipeline the regression gate uses,
+      and add an `rpc_methods` group to `regression-metrics.json` plus a
+      `defaults.rpc_method` block to `regression-thresholds.json` (without both,
+      any `rpc.*` metric resolves to "no threshold configured" and never gates).
 - [ ] FU-6: Grafana dashboard plotting historical baseline values keyed by
       commit SHA, for triaging noisy regressions.

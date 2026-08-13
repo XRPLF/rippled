@@ -786,7 +786,7 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> rpcErroredCounter_;
     /**
-     * Histogram: rpc_method_duration_us{method="<name>"}
+     * Histogram: rpc_method_us{method="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         rpcDurationHistogram_;
@@ -807,12 +807,12 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
-     * Histogram: job_queued_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobQueuedDurationHistogram_;
     /**
-     * Histogram: job_running_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_running_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;

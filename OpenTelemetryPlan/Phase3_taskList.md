@@ -8,12 +8,12 @@
 
 ### Related Plan Documents
 
-| Document                                                     | Relevance                                                                                        |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| [04-code-samples.md](./04-code-samples.md)                   | TraceContext protobuf (§4.4.1), PeerImp instrumentation (§4.5.1), context serialization (§4.4.2) |
-| [01-architecture-analysis.md](./01-architecture-analysis.md) | Transaction flow (§1.3), key trace points (§1.6)                                                 |
-| [06-implementation-phases.md](./06-implementation-phases.md) | Phase 3 tasks (§6.4), definition of done (§6.11.3)                                               |
-| [02-design-decisions.md](./02-design-decisions.md)           | Context propagation design (§2.5), attribute schema (§2.4.3)                                     |
+| Document                                                                                          | Relevance                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) | Authoritative protocol span-flow reference — replaces the deleted `04-code-samples.md` (TraceContext protobuf §4.4.1, PeerImp instrumentation §4.5.1, context serialization §4.4.2), removed by `d6450631bf` |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)                                      | Transaction flow (§1.3), key trace points (§1.6)                                                                                                                                                             |
+| [06-implementation-phases.md](./06-implementation-phases.md)                                      | Phase 3 tasks (§6.4), definition of done (§6.11.3)                                                                                                                                                           |
+| [02-design-decisions.md](./02-design-decisions.md)                                                | Context propagation design (§2.5), attribute schema (§2.4.3)                                                                                                                                                 |
 
 ---
 
@@ -47,7 +47,9 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.4.1](./04-code-samples.md) — TraceContext message definition
+- `04-code-samples.md` §4.4.1 (TraceContext message definition) was deleted by
+  `d6450631bf`; the live definition is `include/xrpl/proto/xrpl.proto:101`
+  (`message TraceContext`), attached as field `1001` on the relevant messages
 - [02-design-decisions.md §2.5.2](./02-design-decisions.md) — Protocol buffer context propagation design
 
 ---
@@ -75,7 +77,13 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.4.2](./04-code-samples.md) — Full extract/inject implementation
+- `04-code-samples.md` §4.4.2 (full extract/inject implementation) was deleted by
+  `d6450631bf`. As shipped there is **no**
+  `src/libxrpl/telemetry/TraceContextPropagator.cpp`; extract/inject live on
+  `SpanGuard` (`include/xrpl/telemetry/SpanGuard.h:467` extract, `:480-491`
+  `injectCurrentContextToProtobuf`, implemented in
+  `src/libxrpl/telemetry/SpanGuard.cpp`) with the protocol-layer wrappers in
+  `src/xrpld/telemetry/PropagationHelpers.h:52` (`injectSpanContext`)
 
 ---
 
@@ -110,7 +118,9 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.5.1](./04-code-samples.md) — Full PeerImp instrumentation example
+- [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow)
+  — the authoritative `tx.receive` / relay span-flow reference; replaces
+  `04-code-samples.md` §4.5.1, deleted by `d6450631bf`
 - [01-architecture-analysis.md §1.3](./01-architecture-analysis.md) — Transaction flow diagram
 - [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — tx.receive trace point
 
@@ -231,7 +241,10 @@ design.
 **Reference**:
 
 - [02-design-decisions.md §2.5](./02-design-decisions.md) — Context propagation design
-- [04-code-samples.md §4.5.1](./04-code-samples.md) — Relay context injection pattern
+- Relay context injection pattern: `04-code-samples.md` §4.5.1 was deleted by
+  `d6450631bf`; the live pattern is `injectSpanContext()` in
+  `src/xrpld/telemetry/PropagationHelpers.h:52`, with the flow documented in
+  [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow)
 
 ---
 
