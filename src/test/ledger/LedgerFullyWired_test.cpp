@@ -154,10 +154,9 @@ public:
         if (ledger)
         {
             BEAST_EXPECT(ledger->header().seq >= 3);
-            BEAST_EXPECT(
-                ledger->isFullyWired() ||
-                ledger->fullWireForUse(
-                    beast::Journal{beast::Journal::getNullSink()}, "null-backend env"));
+            // switchLCL marks accepted ledgers wired; do not fall back
+            // to a full state-tree walk.
+            BEAST_EXPECT(ledger->isFullyWired());
         }
 
         auto const info = env.rpc("account_info", alice.human());

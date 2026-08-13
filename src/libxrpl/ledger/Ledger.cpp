@@ -340,21 +340,15 @@ Ledger::fullWireForUse(beast::Journal journal, char const* context) const
     if (!isNullBackend() || isFullyWired())
         return true;
 
-    try
-    {
-        auto const stateLeaves = materializeSHAMapLeaves(stateMap_);
-        auto const txLeaves = materializeSHAMapLeaves(txMap_);
-        setFullyWired();
-        JLOG(journal.info()) << context << ": fully wired ledger " << header_.seq << " ("
-                             << stateLeaves << " state leaves, " << txLeaves << " tx leaves)";
-        return true;
-    }
-    catch (SHAMapMissingNode const& e)
-    {
-        JLOG(journal.warn()) << context << ": incomplete ledger " << header_.seq << ": "
-                             << e.what();
-        return false;
-    }
+    // Do not walk the full state tree. Iterating every leaf was a prototype
+    // way to force-link via descend; on mainnet that is 70M+ leaves and
+    // longer than a consensus round. Linkage is kept by merging child
+    // pointers at SHAMap::canonicalize. Inbound ledgers are primed with a
+    // delta walk or sync pinning. A header-only load cannot be rebuilt
+    // from the null store.
+    JLOG(journal.warn()) << context << ": ledger " << header_.seq
+                         << " is not fully wired; refusing a full state walk";
+    return false;
 }
 
 void

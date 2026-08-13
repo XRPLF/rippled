@@ -293,6 +293,11 @@ public:
         fullyWired_.store(true, std::memory_order_release);
     }
 
+    /**
+     * True if this ledger can be used without a NodeStore refetch.
+     * Disk backends always succeed. In null mode, only ledgers already
+     * marked fully wired succeed — this does not walk the state tree.
+     */
     bool
     fullWireForUse(beast::Journal journal, char const* context) const;
 
@@ -467,7 +472,8 @@ using CachedLedger = CachedView<Ledger>;
 
 /**
  * Walk every leaf of a SHAMap so TreeNodeCache retains the nodes.
- * Used when the node store cannot re-fetch dropped objects.
+ * Only used for the small transaction map. Do not use this on the
+ * state tree — that is a full mainnet walk.
  */
 template <class Map>
 std::size_t
