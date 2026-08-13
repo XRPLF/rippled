@@ -1,29 +1,31 @@
 #include <xrpl/basics/FileUtilities.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/system/detail/errc.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/system/errc.hpp>
+#include <xrpl/basics/contract.h>
 
 #include <cerrno>
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <ios>
+#include <iostream>
 #include <iterator>
 #include <optional>
+#include <random>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace xrpl {
 
 std::string
 getFileContents(
-    boost::system::error_code& ec,
-    boost::filesystem::path const& sourcePath,
+    std::error_code& ec,
+    std::filesystem::path const& sourcePath,
     std::optional<std::size_t> maxSize)
 {
-    using namespace boost::filesystem;
-    using namespace boost::system::errc;
+    using namespace std::filesystem;
 
     path const fullPath{canonical(sourcePath, ec)};
     if (ec)
@@ -32,15 +34,15 @@ getFileContents(
     if (maxSize && (file_size(fullPath, ec) > *maxSize || ec))
     {
         if (!ec)
-            ec = make_error_code(file_too_large);
+            ec = make_error_code(std::errc::file_too_large);
         return {};
     }
 
-    std::ifstream fileStream(fullPath.string(), std::ios::in);
+    std::ifstream fileStream(fullPath, std::ios::in);
 
     if (!fileStream)
     {
-        ec = make_error_code(static_cast<errc_t>(errno));
+        ec.assign(errno, std::generic_category());
         return {};
     }
 
@@ -49,7 +51,7 @@ getFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(static_cast<errc_t>(errno));
+        ec.assign(errno, std::generic_category());
         return {};
     }
 
@@ -58,18 +60,15 @@ getFileContents(
 
 void
 writeFileContents(
-    boost::system::error_code& ec,
-    boost::filesystem::path const& destPath,
+    std::error_code& ec,
+    std::filesystem::path const& destPath,
     std::string const& contents)
 {
-    using namespace boost::filesystem;
-    using namespace boost::system::errc;
-
-    std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {
-        ec = make_error_code(static_cast<errc_t>(errno));
+        ec.assign(errno, std::generic_category());
         return;
     }
 
@@ -77,9 +76,64 @@ writeFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(static_cast<errc_t>(errno));
+        ec.assign(errno, std::generic_category());
         return;
     }
+}
+
+std::filesystem::path
+uniqueRandomPath(
+    std::filesystem::path const& base,
+    std::string const& prefix,
+    std::size_t maxAttempts)
+{
+    std::random_device rd;
+    for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
+    {
+        std::ostringstream oss;
+        oss << prefix << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8)
+            << rd();
+        auto candidate = base / oss.str();
+        std::error_code ec;
+        bool const exists = std::filesystem::exists(candidate, ec);
+        if (ec)
+        {
+            Throw<std::runtime_error>(
+                "Unable to check path '" + candidate.string() + "': " + ec.message());
+        }
+        if (!exists)
+            return candidate;
+    }
+    Throw<std::runtime_error>("Unable to generate a unique path under '" + base.string() + "'");
+}
+
+TempDir::TempDir() : path_(uniqueRandomPath(std::filesystem::temp_directory_path()))
+{
+    std::filesystem::create_directory(path_);
+}
+
+TempDir::~TempDir()
+{
+    // use non-throwing calls in the destructor
+    std::error_code ec;
+    std::filesystem::remove_all(path_, ec);
+    if (ec)
+    {
+        std::cerr << "Unable to remove temporary directory '" << path_.string()
+                  << "': " << ec.message() << '\n';
+    }
+}
+
+std::string
+TempDir::path() const
+{
+    return path_.string();
+}
+
+std::string
+TempDir::file(std::string const& name) const
+{
+    return (path_ / name).string();
 }
 
 }  // namespace xrpl
