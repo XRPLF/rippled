@@ -53,6 +53,12 @@ repos:
         entry: ./bin/pre-commit/check_doxygen_style.py
         language: python
         types_or: [c++, c]
+      - id: fix-gtest-names
+        name: fix gtest test-case names to snake_case
+        entry: ./bin/pre-commit/fix_gtest_names.py
+        language: python
+        additional_dependencies: [inflection==0.5.1]
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
