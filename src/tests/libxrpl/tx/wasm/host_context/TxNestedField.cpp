@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/HostContextFixture.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <stdexcept>

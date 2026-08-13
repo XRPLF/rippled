@@ -5,7 +5,6 @@
 #include <tx/wasm/HostContextFixture.h>
 #include <tx/wasm/MockHostFunctions.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
