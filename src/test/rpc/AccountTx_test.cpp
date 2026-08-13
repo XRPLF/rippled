@@ -36,6 +36,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -603,7 +604,8 @@ class AccountTx_test : public beast::unit_test::Suite
             env(payChanCreate, Sig(alie));
             env.close();
 
-            std::string const payChanIndex{strHex(keylet::payChannel(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{
+                strHex(keylet::payChannel(alice, gw, SeqProxy::rawSequence(payChanSeq)).key)};
 
             {
                 json::Value payChanFund;
@@ -628,10 +630,11 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Check
         {
-            auto const aliceCheckId = keylet::check(alice, env.seq(alice)).key;
+            auto const aliceCheckId =
+                keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(check::create(alice, gw, XRP(300)), Sig(alie));
 
-            auto const gwCheckId = keylet::check(gw, env.seq(gw)).key;
+            auto const gwCheckId = keylet::check(gw, SeqProxy::rawSequence(env.seq(gw))).key;
             env(check::create(gw, alice, XRP(200)));
             env.close();
 
@@ -1366,7 +1369,7 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(sponsor, jss::SponsorshipSet);
 
         // create an object with sponsor
-        auto const checkId = keylet::check(alice, env.seq(alice)).key;
+        auto const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
         env(check::create(alice, sponsor, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
         env.close();
         checkTx(alice, jss::CheckCreate);

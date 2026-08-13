@@ -28,6 +28,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -41,16 +42,19 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -62,10 +66,12 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -80,6 +86,75 @@ class Vault_test : public beast::unit_test::Suite
     static constexpr auto kNegativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::Unchecked{}}, ""};
     };
+
+    /**
+     * Get the current ledger's close time resolution.
+     * @param env The test environment.
+     */
+    static NetClock::duration
+    getLedgerTimeResolution(test::jtx::Env& env)
+    {
+        return env.current()->header().closeTimeResolution;
+    }
+
+    void
+    closeToTime(
+        test::jtx::Env& env,
+        NetClock::time_point time,
+        std::source_location const& loc = std::source_location::current())
+    {
+        using namespace std::chrono_literals;
+        env.close(time - env.closed()->header().closeTimeResolution + 1s);
+        expect(
+            env.closed()->header().closeTime == time,
+            std::format(
+                "current ledger time {} is not equal to the target ledger time {}",
+                env.closed()->header().closeTime.time_since_epoch(),
+                time.time_since_epoch()),
+            loc.file_name(),
+            loc.line());
+    }
+
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
+
+    // Vault holds an Env& so no default initializer is possible; the
+    // struct is always aggregate-initialized by makeClosedEndedVault.
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
+    struct ClosedEndedSetup
+    {
+        test::jtx::Vault vault;
+        Keylet keylet;
+        std::uint32_t sub = 0;
+        std::uint32_t red = 0;
+    };
+    // NOLINTEND(cppcoreguidelines-pro-type-member-init)
+
+    // Submit a VaultCreate for a closed-ended vault with SubscriptionDate at
+    // env.now() + subOffset and RedemptionDate at SubscriptionDate + gap, then
+    // close the ledger. Returns the Vault helper, the vault's keylet and the
+    // resolved sub/red timestamps.
+    static ClosedEndedSetup
+    makeClosedEndedVault(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        Asset const& asset,
+        std::uint32_t subOffset,
+        std::uint32_t gap)
+    {
+        auto const sub = env.now().time_since_epoch().count() + subOffset;
+        auto const red = sub + gap;
+        test::jtx::Vault const vault{env};
+        auto [tx, keylet] = vault.create(
+            {.owner = owner,
+             .asset = asset,
+             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+             .subscriptionDate = sub,
+             .redemptionDate = red});
+        env(tx);
+        env.close();
+        return {.vault = vault, .keylet = keylet, .sub = sub, .red = red};
+    }
 
     void
     testSequences()
@@ -1106,6 +1181,949 @@ class Vault_test : public beast::unit_test::Suite
             });
     }
 
+    // VaultCreate malformation and happy paths for closed-ended vaults, plus the
+    // featureLendingProtocolV1_1 gate.
+    void
+    testVaultCreateClosedEnded()
+    {
+        testcase("closed-ended VaultCreate");
+        using namespace test::jtx;
+
+        auto const withEnv = [this](FeatureBitset features, auto&& body) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            env.fund(XRP(1000), owner);
+            env.close();
+            Vault vault{env};
+            body(env, owner, vault);
+        };
+
+        Asset const asset = xrpIssue();
+        auto const minPeriod = kMinInvestmentPeriod;
+        auto const maxPeriod = kMaxInvestmentPeriod;
+        auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
+
+        // Gate: the three new fields require featureLendingProtocolV1_1.
+        withEnv(
+            testableAmendments() - featureLendingProtocolV1_1,
+            [&](Env& env, Account const& owner, Vault& vault) {
+                auto const sub = env.now().time_since_epoch().count() + 60;
+                auto [tx, keylet] = vault.create(
+                    {.owner = owner,
+                     .asset = asset,
+                     .vaultKind = closedEnded,
+                     .subscriptionDate = sub,
+                     .redemptionDate = sub + minPeriod});
+                env(tx, Ter{temDISABLED});
+            });
+
+        /*
+         * Valid closed-ended creation with a comfortably interior gap (well above
+         * MIN_INVESTMENT_PERIOD and well below MAX_INVESTMENT_PERIOD).
+         */
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto const red = sub + 86400;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfVaultKind) == closedEnded);
+                BEAST_EXPECT(sle->at(sfSubscriptionDate) == sub);
+                BEAST_EXPECT(sle->at(sfRedemptionDate) == red);
+            }
+        });
+
+        // ClosedEnded missing one of SubscriptionDate / RedemptionDate => temMALFORMED.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .redemptionDate = sub + minPeriod});
+            env(tx, Ter{temMALFORMED});
+        });
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        /*
+         * SubscriptionDate not strictly after parent close time (preclaim, state-dependent -
+         * returns tecEXPIRED). This is the only reachable path to tecEXPIRED in VaultCreate; see
+         * the note below the next case. Note: there is no separate "expired RedemptionDate" test
+         * case here. preflight enforces red >= sub + kMinInvestmentPeriod, so any past
+         * RedemptionDate implies a strictly-earlier, equally-past SubscriptionDate; the
+         * SubscriptionDate check above short-circuits first. The RedemptionDate arm of the
+         * hasExpired check in VaultCreate::preclaim is defensive and unreachable as the sole cause
+         * of tecEXPIRED.
+         */
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const nowSec = env.now().time_since_epoch().count();
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = nowSec,
+                 .redemptionDate = nowSec + minPeriod});
+            env(tx, Ter{tecEXPIRED});
+        });
+
+        /*
+         * Gap smaller than MIN_INVESTMENT_PERIOD => temMALFORMED. Includes the SubscriptionDate >=
+         * RedemptionDate degenerate cases: the red == sub boundary and the strictly-reversed red <
+         * sub case, the latter yielding a negative signed int64 gap that is caught by the
+         * sub-minimum branch of the gap check.
+         */
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub + minPeriod - 1});
+            env(tx, Ter{temMALFORMED});
+        });
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub});
+            env(tx, Ter{temMALFORMED});
+        });
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub - 1});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        // Gap equal to MAX_INVESTMENT_PERIOD => temMALFORMED (bound is half-open on the right).
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub + maxPeriod});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        // Gap strictly greater than MAX_INVESTMENT_PERIOD => temMALFORMED. Same code path as
+        // gap == MAX_INVESTMENT_PERIOD above, but covers the "gap >= MAX" bullet fully.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = sub + maxPeriod + 1});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        // Happy path: gap exactly equal to MIN_INVESTMENT_PERIOD is accepted (lower bound is
+        // inclusive).
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto const red = sub + minPeriod;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfRedemptionDate) == red);
+            }
+        });
+
+        // Happy path: gap one second less than MAX_INVESTMENT_PERIOD is
+        // accepted (upper bound is exclusive).
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto const red = sub + maxPeriod - 1;
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfRedemptionDate) == red);
+            }
+        });
+
+        // OpenEnded (absent/0) with SubscriptionDate or RedemptionDate present
+        // => temMALFORMED.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = asset, .subscriptionDate = sub});
+            env(tx, Ter{temMALFORMED});
+        });
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto const sub = env.now().time_since_epoch().count() + 60;
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = asset, .redemptionDate = sub + minPeriod});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        // Unrecognised VaultKind => temMALFORMED.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = static_cast<std::uint8_t>(closedEnded + 1)});
+            env(tx, Ter{temMALFORMED});
+        });
+
+        // Happy path: open-ended vault (no new fields present) is unaffected.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(!sle->isFieldPresent(sfVaultKind));
+                BEAST_EXPECT(!sle->isFieldPresent(sfSubscriptionDate));
+                BEAST_EXPECT(!sle->isFieldPresent(sfRedemptionDate));
+            }
+        });
+
+        // Happy path: explicit `VaultKind = 0` (OpenEnded) behaves the same
+        // as absent. Per spec, absent and OpenEnded are equivalent.
+        withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                // OpenEnded is sfVaultKind's default; SoeDefault fields
+                // aren't serialized when they hold the default value.
+                BEAST_EXPECT(!sle->isFieldPresent(sfVaultKind));
+                BEAST_EXPECT(!sle->isFieldPresent(sfSubscriptionDate));
+                BEAST_EXPECT(!sle->isFieldPresent(sfRedemptionDate));
+            }
+        });
+    }
+
+    // Phase derivation across the SubscriptionDate / RedemptionDate boundaries, including the now
+    // == SubscriptionDate case (which must still resolve to Subscription).
+    void
+    testVaultPhaseDerivation()
+    {
+        testcase("closed-ended phase derivation");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1000), owner, depositor);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod);
+
+        // Pre-seed shares during Subscription so the depositor has capital to
+        // withdraw at the Redemption boundary below.
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10).value()}));
+        env.close();
+
+        auto const deposit =
+            [&](TER expected, std::source_location const& loc = std::source_location::current()) {
+                env(
+                    WithSourceLocation{
+                        vault.deposit(
+                            {.depositor = depositor, .id = keylet.key, .amount = XRP(1).value()}),
+                        loc},
+                    Ter{expected});
+            };
+        auto const withdraw =
+            [&](TER expected, std::source_location const& loc = std::source_location::current()) {
+                env(
+                    WithSourceLocation{
+                        vault.withdraw(
+                            {.depositor = depositor, .id = keylet.key, .amount = XRP(1).value()}),
+                        loc},
+                    Ter{expected});
+            };
+
+        auto const runTest = [&](TER expectedDeposit,
+                                 TER expectedWithdraw,
+                                 std::source_location const& loc =
+                                     std::source_location::current()) {
+            deposit(expectedDeposit, loc);
+            withdraw(expectedWithdraw, loc);
+        };
+
+        // Assert both deposit and withdraw return codes at each point so the
+        // active phase is uniquely identified:
+        //   Subscription: deposit tesSUCCESS, withdraw tesSUCCESS
+        //   Investment:   deposit tecEXPIRED, withdraw tecTOO_SOON
+        //   Redemption:   deposit tecEXPIRED, withdraw tesSUCCESS
+
+        // Ledger time comfortably before SubscriptionDate: Subscription.
+        runTest(tesSUCCESS, tesSUCCESS);
+
+        // Boundary: parent close time exactly at SubscriptionDate must still
+        // be Subscription.
+        closeToTime(env, tp{d{sub}});
+        runTest(tesSUCCESS, tesSUCCESS);
+
+        // One second past SubscriptionDate: Investment.
+        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        runTest(tecEXPIRED, tecTOO_SOON);
+
+        // Any point strictly before RedemptionDate remains Investment.
+        closeToTime(env, tp{d{red}} - getLedgerTimeResolution(env));
+        runTest(tecEXPIRED, tecTOO_SOON);
+
+        // Boundary: parent close time == RedemptionDate is Redemption (per
+        // spec table: now >= RedemptionDate). Deposits are rejected but
+        // withdrawals succeed.
+        closeToTime(env, tp{d{red}});
+        runTest(tecEXPIRED, tesSUCCESS);
+        env.close();
+    }
+
+    // Open-ended vaults are always in VaultPhase::NoPhase, regardless of the ledger clock or any
+    // dates present on the vault.
+    void
+    testVaultPhaseDerivationOpenEnded()
+    {
+        testcase("open-ended phase derivation");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        env.fund(XRP(1000), owner);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const checkPhaseAt = [&](NetClock::time_point at) {
+            closeToTime(env, at);
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(getVaultPhase(*env.current(), sle) == VaultPhase::NoPhase);
+        };
+
+        // Advance the clock through a wide range of ledger times: an open-ended vault's phase
+        // must be NoPhase at every one of them, because the derivation short-circuits on
+        // VaultKind::OpenEnded before it looks at any dates.
+        auto const ledgerTime = tp{d{30}} + env.closed()->header().closeTimeResolution;
+        checkPhaseAt(ledgerTime);
+        checkPhaseAt(ledgerTime + std::chrono::seconds{kMinInvestmentPeriod});
+        checkPhaseAt(
+            ledgerTime + std::chrono::seconds{kMaxInvestmentPeriod} -
+            env.closed()->header().closeTimeResolution);
+    }
+
+    // VaultDeposit is allowed only during Subscription (or NoPhase). Rejected during Investment and
+    // Redemption.
+    void
+    testVaultDepositClosedEnded()
+    {
+        testcase("closed-ended VaultDeposit phase gating");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(1000), owner, depositor);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod);
+
+        auto const deposit =
+            [&](TER expected, std::source_location const& loc = std::source_location::current()) {
+                env(
+                    WithSourceLocation{
+                        vault.deposit(
+                            {.depositor = depositor, .id = keylet.key, .amount = XRP(1).value()}),
+                        loc},
+                    Ter{expected});
+                env.close();
+            };
+
+        // Subscription: allowed.
+        deposit(tesSUCCESS);
+
+        // Investment: rejected.
+        env.close(tp{d{sub + 1}});
+        deposit(tecEXPIRED);
+
+        // Redemption: rejected.
+        env.close(tp{d{red}});
+        deposit(tecEXPIRED);
+    }
+
+    // VaultWithdraw is allowed in Subscription and Redemption; rejected in Investment. The
+    // AssetsAvailable cap continues to apply and is exercised in Redemption against a vault with
+    // capital deployed as an outstanding loan.
+    void
+    testVaultWithdrawClosedEnded()
+    {
+        testcase("closed-ended VaultWithdraw phase gating");
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), owner, depositor, borrower);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        // Widen the Investment window so a single-payment loan (min payment
+        // interval kMinPaymentInterval = 60s) fits before RedemptionDate.
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod + 3600u);
+
+        // Deposit XRP(100) in Subscription so the depositor's shares are
+        // worth XRP(100). The vault holds XRP(100) with
+        // AssetsAvailable == AssetsTotal.
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        // Create a loan broker backed by this vault. LoanBrokerSet has no
+        // phase gate, so this is fine to do in Subscription.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, keylet.key));
+        env.close();
+
+        auto const withdraw = [&](STAmount const& amount,
+                                  TER expected,
+                                  std::source_location const& loc =
+                                      std::source_location::current()) {
+            env(
+                WithSourceLocation{
+                    vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = amount}),
+                    loc},
+                Ter{expected});
+            env.close();
+        };
+
+        // Subscription: allowed (LP cancel).
+        withdraw(XRP(1).value(), tesSUCCESS);
+
+        // Investment: rejected.
+        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        withdraw(XRP(1).value(), tecTOO_SOON);
+
+        // Deploy capital: borrower takes a loan of XRP(60) against the
+        // vault, dropping AssetsAvailable to ~XRP(39) while AssetsTotal
+        // remains ~XRP(99).
+        env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+            loan::kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        // Redemption: withdrawals are allowed but subject to the AssetsAvailable cap. A small
+        // withdrawal within AssetsAvailable succeeds. A withdrawal within the depositor's share
+        // value but exceeding the vault's liquid balance fails with tecINSUFFICIENT_FUNDS from the
+        // vault-shortage guard (not the insufficient-shares guard).
+        closeToTime(env, tp{d{red}});
+        withdraw(XRP(10).value(), tesSUCCESS);
+        withdraw(XRP(80).value(), tecINSUFFICIENT_FUNDS);
+    }
+
+    // End-to-end lifecycle of a closed-ended vault (Subscription → Investment → Redemption) with
+    // multiple depositors and a real loan originated through the Investment leg. Exercises every
+    // phase transition and verifies the expected deposit, withdrawal, and lending behaviour in each
+    // phase.
+    void
+    testVaultClosedEndedLifecycle()
+    {
+        testcase("closed-ended vault lifecycle (subscribe → invest → redeem)");
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), owner, alice, bob, borrower);
+        env.close();
+
+        auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
+        Asset const asset = xrpIssue();
+        // Widen the Investment window so a single-payment loan (min payment interval
+        // kMinPaymentInterval = 60s) fits before RedemptionDate with headroom.
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
+
+        auto const sleCreate = env.le(keylet);
+        BEAST_EXPECT(sleCreate);
+        MPTIssue const shares{sleCreate->at(sfShareMPTID)};
+
+        auto const balancesEq = [&](STAmount const& available, STAmount const& total) {
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == total);
+        };
+        auto const availableEq = [&](STAmount const& expected) { balancesEq(expected, expected); };
+
+        // env.balance(account, mptIssue) name-resolves the issuer via Env::lookup, but the share
+        // issuer is the vault's pseudo-account and is never registered with the jtx Env. Read the
+        // MPToken SLE directly to avoid the lookup.
+        auto const sharesEq = [&](Account const& holder, std::uint64_t expected) {
+            auto const sle = env.le(keylet::mptoken(shares.getMptID(), holder.id()));
+            std::uint64_t const actual = sle ? sle->getFieldU64(sfMPTAmount) : 0u;
+            BEAST_EXPECT(actual == expected);
+        };
+
+        // ---- Subscription phase ----
+        // A legitimate VaultSet succeeds (positive control for 3.7).
+        {
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfData] = "AA";
+            env(tx);
+            env.close();
+        }
+
+        // alice deposits 100 XRP.
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+        sharesEq(alice, 100'000'000);
+        availableEq(XRP(100).value());
+
+        // bob deposits 200 XRP.
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}));
+        env.close();
+        sharesEq(bob, 200'000'000);
+        availableEq(XRP(300).value());
+
+        // alice cancels 25 XRP (LP cancel is permitted in Subscription).
+        env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(25).value()}));
+        env.close();
+        sharesEq(alice, 75'000'000);
+        availableEq(XRP(275).value());
+
+        // Create a loan broker backed by this vault. LoanBrokerSet has no phase gate, so it is
+        // fine to do in Subscription.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, keylet.key));
+        env.close();
+
+        // ---- Investment phase (now == sub + 1) ----
+        env.close(tp{d{sub + 1}});
+
+        // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED.
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(10).value()}),
+            Ter{tecEXPIRED});
+        env.close();
+        // Withdrawals from a closed-ended vault during the Investment phase return tecTOO_SOON.
+        env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(10).value()}),
+            Ter{tecTOO_SOON});
+        env.close();
+
+        // A real loan is originated during Investment (permitted only in this phase). Zero-interest
+        // one-payment schedule keeps AssetsTotal unchanged (both accrual and cash-basis
+        // accounting recognise no interest at origination); AssetsAvailable drops by the loan
+        // principal.
+        env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+            loan::kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto const sleBroker = env.le(keylet::loanBroker(brokerKeylet.key));
+        BEAST_EXPECT(sleBroker);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1u));
+        BEAST_EXPECT(env.le(loanKeylet));
+        balancesEq(XRP(215).value(), XRP(275).value());
+
+        // Non-immutable VaultSet still works in Investment (positive control).
+        {
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfData] = "BB";
+            env(tx);
+            env.close();
+        }
+
+        // Depositor share balances unchanged by the loan origination; only AssetsAvailable moved.
+        sharesEq(alice, 75'000'000);
+        sharesEq(bob, 200'000'000);
+
+        // ---- Redemption phase (now == red) ----
+        env.close(tp{d{red}});
+
+        // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED, in both
+        // Investment and Redemption.
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(10).value()}),
+            Ter{tecEXPIRED});
+        env.close();
+
+        // alice redeems her remaining 75 XRP (fits within AssetsAvailable = 215).
+        env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(75).value()}));
+        env.close();
+        sharesEq(alice, 0);
+        balancesEq(XRP(140).value(), XRP(200).value());
+
+        // bob has 200 XRP-worth of shares but only 140 XRP is available (the remaining 60 XRP
+        // sits in the outstanding loan). A full 200 XRP withdrawal fails against the
+        // AssetsAvailable cap; bob redeems 140 XRP instead and is left holding 60M shares backed
+        // by the loan receivable — the realistic outcome when capital is still deployed at
+        // Redemption.
+        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}),
+            Ter{tecINSUFFICIENT_FUNDS});
+        env.close();
+        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(140).value()}));
+        env.close();
+        sharesEq(bob, 60'000'000);
+        balancesEq(XRP(0).value(), XRP(60).value());
+
+        // Defensive spot-check that the three immutable fields have not changed across the entire
+        // lifecycle. Direct immutability coverage lives with the invariant tests.
+        auto const sleFinal = env.le(keylet);
+        if (BEAST_EXPECT(sleFinal))
+        {
+            BEAST_EXPECT(sleFinal->at(sfVaultKind) == closedEnded);
+            BEAST_EXPECT(sleFinal->at(sfSubscriptionDate) == sub);
+            BEAST_EXPECT(sleFinal->at(sfRedemptionDate) == red);
+        }
+    }
+
+    // SubscriptionDate boundary cases at the top of the UINT32 range.
+    // (1) The largest legal sub picks red = UINT32_MAX exactly, which hits
+    // the inclusive lower bound of the kMinInvestmentPeriod gap check.
+    // (2) sub = UINT32_MAX must be rejected: sub + kMinInvestmentPeriod is
+    // unrepresentable as the tx's UINT32 sfRedemptionDate, so no red value
+    // can satisfy the gap check.
+    void
+    testVaultCreateSubscriptionDateBoundary()
+    {
+        testcase("closed-ended VaultCreate SubscriptionDate near UINT32_MAX");
+        using namespace test::jtx;
+
+        auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
+        Asset const asset = xrpIssue();
+
+        {
+            Env env{*this, testableAmendments()};
+            Account const owner{"owner"};
+            env.fund(XRP(1000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const sub = std::numeric_limits<std::uint32_t>::max() - kMinInvestmentPeriod;
+            auto const red = std::numeric_limits<std::uint32_t>::max();
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
+            env(tx);
+            env.close();
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfSubscriptionDate) == sub);
+                BEAST_EXPECT(sle->at(sfRedemptionDate) == red);
+            }
+        }
+
+        // sub = UINT32_MAX: no legal red exists because sub + kMinInvestmentPeriod
+        // wraps in a UINT32. Every candidate red must fall to temMALFORMED via
+        // the gap check in preflight.
+        auto const rejectAtMax = [&, this](std::uint32_t red) {
+            Env env{*this, testableAmendments()};
+            Account const owner{"owner"};
+            env.fund(XRP(1000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = closedEnded,
+                 .subscriptionDate = std::numeric_limits<std::uint32_t>::max(),
+                 .redemptionDate = red});
+            env(tx, Ter{temMALFORMED});
+        };
+        rejectAtMax(std::numeric_limits<std::uint32_t>::max());
+        rejectAtMax(0u);
+        rejectAtMax(kMinInvestmentPeriod - 1u);
+    }
+
+    // A loan whose payment is made after the Investment phase has ended
+    // (well past its next-due-date and grace period, into Redemption) must
+    // still be repayable. The vault phase must not gate LoanPay.
+    void
+    testVaultLoanLatePaymentAfterInvestment()
+    {
+        testcase("closed-ended vault: late loan payment during Redemption succeeds");
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000), owner, alice, borrower);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
+
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, keylet.key));
+        env.close();
+
+        // Investment phase: originate a zero-interest, single-payment loan
+        // with a 300s payment interval and 60s grace. The payment is due
+        // shortly after origination and well before RedemptionDate.
+        env.close(tp{d{sub + 1}});
+        env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+            loan::kInterestRate(TenthBips32(0)),
+            kGracePeriod(60),
+            kPaymentInterval(300),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1u));
+        BEAST_EXPECT(env.le(loanKeylet));
+
+        // Advance to Redemption. The payment is now past its due date and
+        // grace, and the vault is no longer in Investment.
+        closeToTime(env, tp{d{red}});
+
+        env(loan::pay(borrower, loanKeylet.key, XRP(60).value(), tfLoanLatePayment));
+        env.close();
+
+        // Loan principal returned to the vault; assetsAvailable == assetsTotal.
+        auto const sleAfter = env.le(keylet);
+        if (BEAST_EXPECT(sleAfter))
+        {
+            BEAST_EXPECT(sleAfter->at(sfAssetsAvailable) == sleAfter->at(sfAssetsTotal));
+            BEAST_EXPECT(sleAfter->at(sfAssetsAvailable) == XRP(100).value());
+        }
+
+        env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+    }
+
+    // Two concurrent loans against the same closed-ended vault in Investment
+    // must coexist: both loan SLEs are created, AssetsAvailable reflects the
+    // sum of the two outstanding principals, and each can be repaid
+    // independently.
+    void
+    testVaultClosedEndedMultipleLoans()
+    {
+        testcase("closed-ended vault: multiple concurrent loans in Investment");
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower1{"borrower1"};
+        Account const borrower2{"borrower2"};
+        env.fund(XRP(10'000), owner, alice, bob, borrower1, borrower2);
+        env.close();
+
+        Asset const asset = xrpIssue();
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
+
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, keylet.key));
+        env.close();
+
+        env.close(tp{d{sub + 1}});
+
+        auto const originate = [&](Account const& b, STAmount const& principal) {
+            env(loan::set(b, brokerKeylet.key, principal),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(300),
+                kPaymentTotal(1),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+        };
+        originate(borrower1, XRP(50).value());
+        originate(borrower2, XRP(70).value());
+
+        auto const loan1 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1u));
+        auto const loan2 = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2u));
+        BEAST_EXPECT(env.le(loan1));
+        BEAST_EXPECT(env.le(loan2));
+
+        // Zero-interest at origination: AssetsTotal unchanged, AssetsAvailable
+        // drops by the sum of the two loan principals.
+        {
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == XRP(200).value());
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == XRP(80).value());
+            }
+        }
+
+        // Repay the first loan; the second remains outstanding.
+        env(loan::pay(borrower1, loan1.key, XRP(50).value()));
+        env.close();
+        {
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == XRP(200).value());
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == XRP(130).value());
+            }
+        }
+
+        // Repay the second loan; vault is fully liquid again.
+        env(loan::pay(borrower2, loan2.key, XRP(70).value()));
+        env.close();
+        {
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == sle->at(sfAssetsTotal));
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == XRP(200).value());
+            }
+        }
+
+        // Redemption: both depositors withdraw in full.
+        env.close(tp{d{red}});
+        env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+        env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(100).value()}));
+        env.close();
+    }
+
+    // VaultClawback has no phase gate: an issuer must be able to reclaim
+    // asset from a depositor in Subscription, Investment and Redemption
+    // alike. Uses an IOU with asfAllowTrustLineClawback so the issuer path
+    // is exercised (XRP clawback with an explicit amount is temMALFORMED).
+    void
+    testVaultClawbackClosedEndedPhases()
+    {
+        testcase("closed-ended vault: VaultClawback succeeds in each phase");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        env.fund(XRP(10'000), issuer, owner, alice);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const iou = issuer["IOU"];
+        env.trust(iou(10'000), alice);
+        env(pay(issuer, alice, iou(1'000)));
+        env.close();
+
+        auto const [vault, keylet, sub, red] =
+            makeClosedEndedVault(env, owner, iou, 300u, kMinInvestmentPeriod + 3600u);
+
+        env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = iou(300).value()}));
+        env.close();
+
+        auto const totalsEq = [&](STAmount const& expected) {
+            auto const sle = env.le(keylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == expected);
+        };
+
+        // Subscription phase clawback.
+        env(vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
+        env.close();
+        totalsEq(iou(290).value());
+
+        // Investment phase clawback.
+        env.close(tp{d{sub + 1}});
+        env(vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
+        env.close();
+        totalsEq(iou(280).value());
+
+        // Redemption phase clawback.
+        env.close(tp{d{red}});
+        env(vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
+        env.close();
+        totalsEq(iou(270).value());
+    }
+
     // Test for non-asset specific behaviors.
     void
     testCreateFailXRP()
@@ -1602,8 +2620,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2206,9 +3223,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});
@@ -2252,7 +3267,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // Enable CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            mptt.set({.flags = tfMPTSetCanTrade});
             env.close();
 
             env(offer(alice, XRP(1), asset(10)));
@@ -3020,6 +4035,192 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testDomainLossAfterAcquisition()
+    {
+        using namespace test::jtx;
+
+        testcase("private vault share transfer after depositor loses domain");
+
+        // The "Private Vault - Access Control Rules" spec requires that a holder who
+        // loses Layer 2 (Permissioned Domain membership) after acquiring shares be
+        // blocked from sending them onward, by P2P transfer or DEX offer, the same
+        // way a brand-new never-authorized holder is blocked. Only withdrawal to
+        // self is meant to stay open.
+        //
+        // For a domain-gated share MPToken, requireAuth()'s escape hatch for
+        // holders who already have an MPToken (MPTokenHelpers.cpp) only applies to
+        // the classic explicit-issuer-authorization flag, which
+        // enforceMPTokenAuthorization documents as "meaningless" for
+        // domain-authorized holders and never sets. So a stale MPToken does not
+        // carry authorization forward once the account's domain credential is
+        // gone, and both actions below are correctly blocked.
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const bob{"bob"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "credential";
+        Vault const vault{env};
+        env.fund(XRP(1000), issuer, owner, depositor, bob, pdOwner, credIssuer);
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(500)));
+        env.trust(asset(1000), depositor);
+        env(pay(issuer, depositor, asset(500)));
+        env.trust(asset(1000), bob);
+        env(pay(issuer, bob, asset(500)));
+        env.close();
+
+        // Transferable shares (no tfVaultShareNonTransferable): sections 3.3/3.4 of
+        // the spec (DEX trading / P2P transfer) only apply to transferable shares.
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(pdOwner, credentials));
+        auto const domainId = [&]() {
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            return pdomain::getNewDomain(env.meta());
+        }();
+        {
+            auto domainTx = vault.set({.owner = owner, .id = keylet.key});
+            domainTx[sfDomainID] = to_string(domainId);
+            env(domainTx);
+            env.close();
+        }
+
+        // Both depositor and bob acquire domain membership and deposit, so each
+        // ends up with an authorized share MPToken.
+        env(credentials::create(depositor, credIssuer, credType));
+        env(credentials::accept(depositor, credIssuer, credType));
+        env(credentials::create(bob, credIssuer, credType));
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle != nullptr);
+            return MPTIssue(sle->at(sfShareMPTID));
+        }();
+
+        // Depositor loses Layer 2: their Permissioned Domain credential is revoked.
+        auto const credKeylet = credentials::keylet(depositor, credIssuer, credType);
+        env(credentials::deleteCred(credIssuer, depositor, credIssuer, credType));
+        env.close();
+        BEAST_EXPECT(env.le(credKeylet) == nullptr);
+
+        // Sanity check, mirrors testWithDomainCheck's "not authorized yet" case: a
+        // brand-new depositor with no MPToken yet is still correctly blocked. The
+        // gap below is specific to holders who already hold shares.
+        {
+            Account const charlie{"charlie"};
+            env.fund(XRP(1000), charlie);
+            env.close();
+            auto depTx =
+                vault.deposit({.depositor = charlie, .id = keylet.key, .amount = asset(1)});
+            env(depTx, Ter{tecNO_AUTH});
+        }
+
+        // P2P transfer: spec section 3.4 requires this blocked once Layer 2 is
+        // lost, and it is.
+        env(pay(depositor, bob, shares(1)), Ter{tecNO_AUTH});
+        env.close();
+
+        // DEX/CLOB: spec section 3.3 requires the seller leg blocked the same way.
+        // The offer can't even be created: preclaim treats the seller as
+        // unfunded once their share balance reads as zero for auth purposes.
+        env(offer(depositor, XRP(1), shares(1)), Ter{tecUNFUNDED_OFFER});
+        env.close();
+        BEAST_EXPECT(expectOffers(env, depositor, 0));
+    }
+
+    void
+    testDomainCheckBuyerSideOffer()
+    {
+        using namespace test::jtx;
+
+        testcase("private vault share purchase via DEX requires buyer domain membership");
+
+        // The "Private Vault - Access Control Rules" spec requires the buyer leg
+        // of a DEX trade in private-vault shares to hold Layer 1 and Layer 2 as
+        // well, not just the seller.
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const bob{"bob"};
+        Account const charlie{"charlie"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "credential";
+        Vault const vault{env};
+        env.fund(XRP(1000), issuer, owner, bob, charlie, pdOwner, credIssuer);
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(500)));
+        env.trust(asset(1000), bob);
+        env(pay(issuer, bob, asset(500)));
+        env.close();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(pdOwner, credentials));
+        auto const domainId = [&]() {
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            return pdomain::getNewDomain(env.meta());
+        }();
+        {
+            auto domainTx = vault.set({.owner = owner, .id = keylet.key});
+            domainTx[sfDomainID] = to_string(domainId);
+            env(domainTx);
+            env.close();
+        }
+
+        // Only bob joins the domain and deposits; charlie never does.
+        env(credentials::create(bob, credIssuer, credType));
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle != nullptr);
+            return MPTIssue(sle->at(sfShareMPTID));
+        }();
+
+        // Bob (domain member, holds shares) rests a sell offer.
+        env(offer(bob, XRP(1), shares(1)));
+        env.close();
+        BEAST_EXPECT(expectOffers(env, bob, 1));
+
+        // Charlie never held the domain credential. Buying shares via a
+        // crossing offer must be blocked the same way a direct MPTokenAuthorize
+        // + pay attempt already is (see testWithDomainChecXRP's "cannot pay
+        // shares to 3rd party"): checkAcceptAsset() rejects the offer outright
+        // in preclaim, before any funding check is even reached.
+        env(offer(charlie, shares(1), XRP(1)), Ter{tecNO_AUTH});
+        env.close();
+        BEAST_EXPECT(expectOffers(env, bob, 1));
+        BEAST_EXPECT(expectOffers(env, charlie, 0));
+    }
+
+    void
     testWithDomainChecXRP()
     {
         using namespace test::jtx;
@@ -3128,7 +4329,7 @@ class Vault_test : public beast::unit_test::Suite
         Vault const vault{env};
         env.fund(XRP(1000), owner);
 
-        auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
         for (int i = 0; i < 256; ++i)
         {
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
@@ -3950,7 +5151,8 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanBroker(d.owner.id(), env.seq(d.owner));
+            auto const brokerKeylet =
+                keylet::loanBroker(d.owner.id(), SeqProxy::rawSequence(env.seq(d.owner)));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4406,6 +5608,90 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // RPC coverage: closed-ended vaults must return VaultKind, SubscriptionDate and RedemptionDate
+    // in both vault_info and ledger_entry responses. Open-ended vaults must not.
+    void
+    testRPCClosedEnded()
+    {
+        using namespace test::jtx;
+
+        testcase("RPC closed-ended vault fields");
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const owner2{"owner2"};
+        env.fund(XRP(1000), owner, owner2);
+        env.close();
+
+        auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
+        Asset const asset = xrpIssue();
+        auto const sub = env.now().time_since_epoch().count() + 60;
+        auto const red = sub + kMinInvestmentPeriod;
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create(
+            {.owner = owner,
+             .asset = asset,
+             .vaultKind = closedEnded,
+             .subscriptionDate = sub,
+             .redemptionDate = red});
+        env(tx);
+        env.close();
+
+        auto [tx2, keylet2] = vault.create({.owner = owner2, .asset = asset});
+        env(tx2);
+        env.close();
+
+        auto const asUInt = [](json::Value const& jv) -> json::UInt {
+            return jv.isUInt() ? jv.asUInt() : json::UInt(jv.asInt());
+        };
+        auto const checkClosedEnded = [&](json::Value const& v) {
+            BEAST_EXPECT(v.isObject());
+            BEAST_EXPECT(v.isMember(sfVaultKind.fieldName));
+            BEAST_EXPECT(asUInt(v[sfVaultKind.fieldName]) == json::UInt(closedEnded));
+            BEAST_EXPECT(v.isMember(sfSubscriptionDate.fieldName));
+            BEAST_EXPECT(asUInt(v[sfSubscriptionDate.fieldName]) == json::UInt(sub));
+            BEAST_EXPECT(v.isMember(sfRedemptionDate.fieldName));
+            BEAST_EXPECT(asUInt(v[sfRedemptionDate.fieldName]) == json::UInt(red));
+        };
+        auto const checkOpenEnded = [&](json::Value const& v) {
+            BEAST_EXPECT(v.isObject());
+            BEAST_EXPECT(!v.isMember(sfVaultKind.fieldName));
+            BEAST_EXPECT(!v.isMember(sfSubscriptionDate.fieldName));
+            BEAST_EXPECT(!v.isMember(sfRedemptionDate.fieldName));
+        };
+
+        {
+            json::Value jvParams;
+            jvParams[jss::vault_id] = strHex(keylet.key);
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            checkClosedEnded(jv[jss::result][jss::vault]);
+        }
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(keylet.key);
+            auto jv = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            checkClosedEnded(jv[jss::result][jss::node]);
+        }
+        {
+            json::Value jvParams;
+            jvParams[jss::vault_id] = strHex(keylet2.key);
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            checkOpenEnded(jv[jss::result][jss::vault]);
+        }
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(keylet2.key);
+            auto jv = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            checkOpenEnded(jv[jss::result][jss::node]);
+        }
+    }
+
     void
     testVaultClawbackBurnShares()
     {
@@ -4464,12 +5750,13 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
-            auto const& brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+            auto const& brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             env(set(owner, vaultKeylet.key));
             env.close();
 
-            auto const& loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto const& loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
@@ -4857,7 +6144,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4915,7 +6203,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -4970,7 +6259,8 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5024,7 +6314,8 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5072,7 +6363,8 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet =
+                    keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5179,7 +6471,8 @@ class Vault_test : public beast::unit_test::Suite
             PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             env(set(owner, vaultKeylet.key));
             env.close();
 
@@ -5313,7 +6606,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 3;
@@ -5381,7 +6674,7 @@ class Vault_test : public beast::unit_test::Suite
                     "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
             }
 
-            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const newKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
             try
             {
                 auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5453,7 +6746,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // These values will be rounded to 15 significant digits
             {
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 try
                 {
                     auto const insertAt = maxInt64Plus2.size() - 1;
@@ -5477,7 +6771,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e40";  // max int64 * 10^40
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5491,7 +6786,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-40";  // max int64 * 10^-40
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -5505,7 +6801,8 @@ class Vault_test : public beast::unit_test::Suite
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e-100";  // max int64 * 10^-100
-                auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+                auto const newKeylet =
+                    keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
                 env(tx);
                 env.close();
 
@@ -6091,7 +7388,8 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
+        f.brokerID =
+            keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender))).key;
         {
             using namespace loan_broker;
             env(set(f.lender, vaultKeylet.key),
@@ -6103,7 +7401,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
-        f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
+        f.loanKeylet =
+            keylet::loan(f.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         {
             using namespace loan;
@@ -7590,7 +8889,7 @@ class Vault_test : public beast::unit_test::Suite
 
         Vault const vault{env};
 
-        auto const keylet = keylet::vault(owner.id(), 1);
+        auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(1));
         auto delTx = vault.del({.owner = owner, .id = keylet.key});
 
         // Test VaultDelete with featureLendingProtocolV1_1 disabled
@@ -7622,7 +8921,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled no vault");
-            auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+            auto const keylet = keylet::vault(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
 
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
@@ -8381,14 +9680,27 @@ public:
         testCreateFailXRP();
         testCreateFailIOU();
         testCreateFailMPT();
+        testVaultCreateClosedEnded();
+        testVaultCreateSubscriptionDateBoundary();
+        testVaultPhaseDerivation();
+        testVaultPhaseDerivationOpenEnded();
+        testVaultDepositClosedEnded();
+        testVaultWithdrawClosedEnded();
+        testVaultClosedEndedLifecycle();
+        testVaultLoanLatePaymentAfterInvestment();
+        testVaultClosedEndedMultipleLoans();
+        testVaultClawbackClosedEndedPhases();
         testWithMPT();
         testWithIOU();
         testWithDomainCheck();
+        testDomainLossAfterAcquisition();
+        testDomainCheckBuyerSideOffer();
         testWithDomainChecXRP();
         testNonTransferableShares();
         testFailedPseudoAccount();
         testScaleIOU();
         testRPC();
+        testRPCClosedEnded();
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
         testVaultEscrowedMPT();

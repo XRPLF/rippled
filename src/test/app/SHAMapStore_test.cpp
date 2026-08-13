@@ -23,10 +23,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/path.hpp>
-
 #include <atomic>
 #include <cstdint>
+#include <filesystem>
 #include <limits>
 #include <map>
 #include <memory>
@@ -501,7 +500,7 @@ public:
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
         Section section{env.app().config().section(Sections::kNodeDatabase)};
-        boost::filesystem::path newPath;
+        std::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};

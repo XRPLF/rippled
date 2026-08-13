@@ -91,6 +91,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/Wallet.h>
 #include <xrpl/server/detail/ServerImpl.h>
@@ -428,8 +429,14 @@ public:
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
         , peerReservations_(
               std::make_unique<PeerReservationTable>(logs_->journal("PeerReservationTable")))
-        , validatorManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
-        , publisherManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
+        , validatorManifests_(
+              std::make_unique<ManifestCache>(
+                  logs_->journal("ManifestCache"),
+                  untrustedManifestCount(config_->maxUntrustedCount)))
+        , publisherManifests_(
+              std::make_unique<ManifestCache>(
+                  logs_->journal("ManifestCache"),
+                  untrustedManifestCount(config_->maxUntrustedCount)))
         , validators_(
               std::make_unique<ValidatorList>(
                   *validatorManifests_,
@@ -1189,6 +1196,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     JLOG(journal_.info()) << "Process starting: " << build_info::getFullVersionString()
                           << ", Instance Cookie: " << instanceCookie_;
+
+    // Log the resolved manifest counts, whether configured or defaulted, so a
+    // shared log shows what the server is running without needing its config.
+    JLOG(journal_.warn()) << "Manifest counts: max_untrusted_count "
+                          << untrustedManifestCount(config_->maxUntrustedCount)
+                          << (config_->maxUntrustedCount ? " (configured)" : " (default)")
+                          << ", max_trusted_count "
+                          << trustedManifestCount(config_->maxTrustedCount)
+                          << (config_->maxTrustedCount ? " (configured)" : " (default)");
 
     if (numberOfThreads(*config_) < 2)
     {
