@@ -32,18 +32,11 @@ public:
     {
         testcase("nullBackend flag");
 
-        bool const original = isNullBackend();
-
-        setNullBackend(false);
-        BEAST_EXPECT(!isNullBackend());
-
-        setNullBackend(true);
-        BEAST_EXPECT(isNullBackend());
-
-        setNullBackend(false);
-        BEAST_EXPECT(!isNullBackend());
-
-        setNullBackend(original);
+        {
+            NullBackendScope const on(true);
+            BEAST_EXPECT(isNullBackend());
+            BEAST_EXPECT(!useSharedFullBelowCache());
+        }
     }
 
     void
@@ -51,19 +44,9 @@ public:
     {
         testcase("nullBackend cleanup regression");
 
-        bool const original = isNullBackend();
-
-        setNullBackend(true);
+        acquireNullBackend();
         BEAST_EXPECT(isNullBackend());
-
-        // Simulate destructor / test cleanup
-        setNullBackend(false);
-        BEAST_EXPECT(!isNullBackend());
-
-        setNullBackend(true);
-        BEAST_EXPECT(isNullBackend());
-
-        setNullBackend(original);
+        releaseNullBackend();
     }
 
     void

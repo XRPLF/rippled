@@ -11,12 +11,14 @@ Firstly, the interface `RelationalDatabase` is inherited by the classes `SQLiteD
 
 ## Configuration
 
-The config section `[relational_db]` has a property named `backend` whose value designates which database implementation will be used for node databases. Presently the only valid value for this property is `sqlite`:
+The config section `[relational_db]` has a property named `backend` whose value designates which database implementation will be used for ledger, transaction, and account-tx indexes:
 
 ```
 [relational_db]
 backend=sqlite
 ```
+
+`backend=rwdb` selects the in-memory store. It is unbounded unless `online_delete` is set (or `node_db` is also `type=rwdb`, which defaults `online_delete` from `ledger_history`). PeerFinder data is not persisted across restarts with this backend.
 
 ## Source Files
 

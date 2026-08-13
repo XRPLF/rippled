@@ -261,12 +261,10 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
-    // The child starts as a snapshot of the parent's state map, so a
-    // fully-wired parent implies the child's initial state tree is also
-    // resident. Mutations after construction do not clear the flag; callers
-    // that mutate state must not rely on it until the ledger is accepted.
-    , fullyWired_(prevLedger.isFullyWired())
 {
+    // Do not inherit fullyWired_. Mutations after this snapshot are new
+    // nodes; the flag is set when the ledger is accepted (setFullLedger)
+    // or primed after inbound sync.
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
     header_.hash = prevLedger.header().hash + uint256(1);

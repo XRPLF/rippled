@@ -21,6 +21,8 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -662,6 +664,13 @@ setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueu
 
     if (boost::iequals(backend, "rwdb"))
     {
+        auto const nodeType = get(config.section(Sections::kNodeDatabase), "type", "");
+        if (!boost::iequals(nodeType, "rwdb"))
+        {
+            JLOG(registry.getJournal("Application").warn())
+                << "[relational_db] backend=rwdb with a disk node store has "
+                << "no automatic memory bound unless online_delete is set";
+        }
         return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
     }
 

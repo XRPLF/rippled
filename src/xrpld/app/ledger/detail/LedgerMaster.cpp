@@ -427,6 +427,12 @@ LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
     if (lastClosed->open())
         logicError("The new last closed ledger is open!");
 
+    // Locally closed ledgers are fully resident: CoW snapshot of the
+    // previous LCL plus rawInsert/rawReplace. Set the flag here rather
+    // than inheriting it in the child constructor, so a header-only or
+    // inbound-loaded ledger cannot claim to be wired before it is accepted.
+    lastClosed->setFullyWired();
+
     {
         std::scoped_lock const ml(mutex_);
         closedLedger_.set(lastClosed);
@@ -845,32 +851,22 @@ LedgerMaster::setFullLedger(
     constexpr std::uint32_t kNullBackendRetainWindow = 256;
     if (isCurrent && isNullBackend() && ledgerHistorySize_ > 0)
     {
+        // Pin only. Do not walk the state tree here: that walk is too
+        // expensive to hold mutex_ (or to run at all on mainnet). Inbound
+        // ledgers are primed via primeInboundLedgerForUse; genesis is
+        // already fully wired.
         std::scoped_lock const ml(mutex_);
-        bool const isFirst = retainedLedgers_.empty();
         retainedLedgers_.push_back(ledger);
         while (retainedLedgers_.size() > kNullBackendRetainWindow)
             retainedLedgers_.pop_front();
-
-        if (isFirst && !ledger->isFullyWired())
-        {
-            try
-            {
-                std::size_t leafCount = 0;
-                for (auto const& item : ledger->stateMap())
-                {
-                    (void)item;
-                    ++leafCount;
-                }
-                JLOG(journal_.info()) << "Retention: primed state tree for ledger "
-                                      << ledger->header().seq << " (" << leafCount << " leaves)";
-            }
-            catch (SHAMapMissingNode const& e)
-            {
-                JLOG(journal_.warn()) << "Retention: incomplete state tree for ledger "
-                                      << ledger->header().seq << ": " << e.what();
-            }
-        }
     }
+
+    // Trusted-chain accept. Do not inherit this flag in the child
+    // constructor: mutations happen after that snapshot. Local consensus
+    // ledgers are resident; inbound ledgers are primed in
+    // InboundLedger::done before they reach setFullLedger. standalone
+    // switchLCL passes isCurrent=false, so do not gate on isCurrent.
+    ledger->setFullyWired();
 
     {
         // Check the SQL database's entry for the sequence before this

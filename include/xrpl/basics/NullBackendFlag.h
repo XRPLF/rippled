@@ -47,13 +47,31 @@ releaseNullBackend()
 }
 
 /**
- * Test-only: force the process-wide count to 1 (true) or 0 (false).
+ * Test helper: acquire one extra null-backend claim for the scope.
+ * Never stores an absolute 0/1, so it cannot drop another live
+ * SHAMapStoreImp out of null mode.
  */
-inline void
-setNullBackend(bool value)
+class NullBackendScope
 {
-    nullBackendUsers().store(value ? 1 : 0, std::memory_order_release);
-}
+    bool const armed_;
+
+public:
+    explicit NullBackendScope(bool enable) : armed_(enable)
+    {
+        if (armed_)
+            acquireNullBackend();
+    }
+
+    ~NullBackendScope()
+    {
+        if (armed_)
+            releaseNullBackend();
+    }
+
+    NullBackendScope(NullBackendScope const&) = delete;
+    NullBackendScope&
+    operator=(NullBackendScope const&) = delete;
+};
 
 /**
  * Shared FullBelowCache is unsafe in null-backend mode.

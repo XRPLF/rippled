@@ -127,18 +127,17 @@ SHAMapStoreImp::SHAMapStoreImp(
     getIfExists(section, Keys::kOnlineDelete, deleteInterval_);
     isNullBackend_ = boost::iequals(get(section, Keys::kType), "rwdb");
 
-    // RWDB is always null-backend: the in-memory node store never
-    // persists or retrieves objects.  Acquire a process-wide refcount
-    // so libxrpl helpers (which cannot access Config) can detect null
-    // mode without setenv/getenv races.
-    if (isNullBackend_)
-        acquireNullBackend();
-
     if (isNullBackend_)
     {
         if (config.ledgerHistory == 0)
         {
             Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
+        }
+        if (config.ledgerHistory == std::numeric_limits<std::uint32_t>::max())
+        {
+            Throw<std::runtime_error>(
+                "RWDB does not support ledger_history=full; "
+                "set a finite ledger_history");
         }
         JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
                               << "retaining " << config.ledgerHistory << " ledgers in memory";
@@ -201,6 +200,12 @@ SHAMapStoreImp::SHAMapStoreImp(
         if (!isNullBackend_)
             dbPaths();
     }
+
+    // Acquire only after every constructor Throw so a failed startup
+    // cannot leak a process-wide null-backend refcount (C++ does not
+    // run the destructor of an object whose constructor threw).
+    if (isNullBackend_)
+        acquireNullBackend();
 }
 
 std::unique_ptr<node_store::Database>
@@ -378,7 +383,11 @@ SHAMapStoreImp::run()
             stateDb_.setLastRotated(lastRotated);
         }
 
-        bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
+        // Use 64-bit addition so deleteInterval_ == UINT32_MAX cannot wrap
+        // to lastRotated-1 and rotate on every ledger.
+        bool const readyToRotate =
+            static_cast<std::uint64_t>(validatedSeq) >=
+                static_cast<std::uint64_t>(lastRotated) + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         // will delete up to (not including) lastRotated

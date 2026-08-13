@@ -230,7 +230,7 @@ public:
     }
 
     void
-    onLedgerFetched(std::shared_ptr<InboundLedger> const&) override
+    onLedgerFetched(std::shared_ptr<InboundLedger> const&, bool) override
     {
     }
 

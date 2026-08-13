@@ -47,8 +47,8 @@ public:
 
         auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
 
-        // The genesis ledger created by jtx::Env is fully wired by default
-        // (see Ledger.cpp CreateGenesisT constructor calls setFullyWired())
+        // Env's closed ledger is the genesis child accepted via switchLCL,
+        // which marks the ledger fully wired after construction.
         BEAST_EXPECT(ledger->isFullyWired());
     }
 
@@ -62,7 +62,7 @@ public:
 
         auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
 
-        // Genesis ledger starts as fully wired
+        // Closed ledger starts as fully wired after switchLCL
         BEAST_EXPECT(ledger->isFullyWired());
 
         // Calling setFullyWired again should be idempotent (no crash, still wired)
@@ -100,7 +100,7 @@ public:
 
         auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
 
-        // Genesis ledger is already fully wired, so concurrent readers
+        // Closed ledger is already fully wired, so concurrent readers
         // should all observe the wired state consistently
         std::atomic<int> wiredReads{0};
         std::atomic<int> unwiredReads{0};

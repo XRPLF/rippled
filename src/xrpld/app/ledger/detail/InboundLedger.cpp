@@ -93,9 +93,12 @@ primeInboundLedgerForUse(
         // No base ledger available for a delta walk. The full state tree
         // walk (materializeSHAMapLeaves on 70M+ leaves) is too expensive — on
         // x86 it takes longer than a consensus round, preventing the node
-        // from ever catching up. Sync already pinned every child in the
-        // tree via canonicalizeChild (in descendAsync/addKnownNode), so
-        // the state map is fully wired. Just wire the (tiny) tx map.
+        // from ever catching up.
+        //
+        // In null-backend mode the node store never returns objects, so
+        // every state node on this inbound map arrived through
+        // descendAsync/addKnownNode → canonicalizeChild and is already
+        // pinned. Just wire the (tiny) tx map.
         try
         {
             auto const txLeaves = materializeSHAMapLeaves(ledger->txMap());
@@ -221,7 +224,9 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     if (reason_ == Reason::HISTORY)
     {
-        app_.getInboundLedgers().onLedgerFetched(shared_from_this());
+        // Already in the local store — keep it as a delta-walk base, but
+        // do not count it as a network historical fetch.
+        app_.getInboundLedgers().onLedgerFetched(shared_from_this(), false);
         return;
     }
 

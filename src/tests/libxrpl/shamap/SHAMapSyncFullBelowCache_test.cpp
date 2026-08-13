@@ -16,24 +16,24 @@ namespace xrpl::tests {
  */
 TEST(SHAMapSyncFullBelowCache, nullModeDisablesSharedCache)
 {
-    bool const original = isNullBackend();
-    setNullBackend(true);
+    NullBackendScope const on(true);
 
     EXPECT_TRUE(isNullBackend());
     EXPECT_FALSE(useSharedFullBelowCache());
-
-    setNullBackend(original);
 }
 
 TEST(SHAMapSyncFullBelowCache, normalModeEnablesSharedCache)
 {
-    bool const original = isNullBackend();
-    setNullBackend(false);
+    // Do not store an absolute false: that would drop another live
+    // RWDB SHAMapStoreImp in this process. If the count is already
+    // non-zero, shared cache is correctly disabled.
+    if (isNullBackend())
+    {
+        EXPECT_FALSE(useSharedFullBelowCache());
+        return;
+    }
 
-    EXPECT_FALSE(isNullBackend());
     EXPECT_TRUE(useSharedFullBelowCache());
-
-    setNullBackend(original);
 }
 
 }  // namespace xrpl::tests

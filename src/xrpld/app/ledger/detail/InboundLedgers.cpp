@@ -294,8 +294,9 @@ public:
     // Should only be called with an inboundledger that has
     // a reason of history
     void
-    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound) override
+    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch) override
     {
+        if (countFetch)
         {
             std::scoped_lock const lock(fetchRateMutex_);
             fetchRate_.add(1, clock_.now());
@@ -321,9 +322,12 @@ public:
         if (!targetLedger)
             return {};
 
-        ScopedLockType const sl(lock_);
-
-        return closestFullyWiredLedger(targetLedger, recentHistoryLedgers_, j_);
+        std::vector<std::shared_ptr<Ledger const>> candidates;
+        {
+            ScopedLockType const sl(lock_);
+            candidates.assign(recentHistoryLedgers_.begin(), recentHistoryLedgers_.end());
+        }
+        return closestFullyWiredLedger(targetLedger, candidates, j_);
     }
 
     json::Value
