@@ -8,11 +8,13 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -40,15 +42,21 @@ public:
     {
         env.fund(jtx::XRP(10'000), alice, bob, carol);
         env.close();
-        // Built last: it holds a pointer to the ledger the assertions read
-        // from, so it has to be the ledger that funding left behind.
-        av_.emplace(&*env.current(), TapNone);
+        // Pin the ledger both accessors work against, and keep it alive: av_
+        // holds a raw pointer into it.
+        ledger_ = env.current();
+        av_.emplace(&*ledger_, TapNone);
     }
 
+    /**
+     * The ledger apply() was built over -- deliberately not env.current().
+     * A suite that closed a ledger or submitted a transaction would make those
+     * two diverge, leaving apply() pointing at a ledger read() no longer names.
+     */
     ReadView const&
-    read()
+    read() const
     {
-        return *env.current();
+        return *ledger_;
     }
 
     ApplyView&
@@ -63,12 +71,14 @@ public:
      * point: those overloads should resolve to a non-existent entry.
      */
     uint256
-    someID()
+    someID() const
     {
         return read().header().parentHash;
     }
 
 private:
+    // Destroyed after av_, which points into it.
+    std::shared_ptr<OpenView const> ledger_;
     std::optional<ApplyViewImpl> av_;
 };
 
@@ -106,11 +116,11 @@ expectKeylet(
     // of the expected keylet is what shows it resolved the same key.
     Entry<ReadView> const r(args..., e.read());
     suite.expect(r.exists() == present, what + ": read-only exists");
-    suite.expect(r.type() == expected.type, what + ": read-only type");
     if (present)
         suite.expect(r.key() == expected.key, what + ": read-only key");
 
-    // The compile-time binding has to agree with the keylet too.
+    // Not r.type(): for a typed entry that returns kEntryType, so checking it
+    // would just be this same assertion spelled twice.
     static_assert(Entry<ReadView>::kEntryType == Entry<ApplyView>::kEntryType);
     suite.expect(Entry<ReadView>::kEntryType == expected.type, what + ": kEntryType");
 }

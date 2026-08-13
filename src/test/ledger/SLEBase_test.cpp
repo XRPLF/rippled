@@ -42,6 +42,7 @@
 #include <xrpl/ledger/helpers/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 
@@ -346,6 +347,46 @@ class SLEBase_test : public beast::unit_test::Suite
         BEAST_EXPECT(generic.type() == ltACCOUNT_ROOT);
     }
 
+    void
+    testResolveEntryPeeks()
+    {
+        testcase("read-only entry over an ApplyView shares the view's SLE");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // env.current() is an OpenView, which derives from ReadView but not
+        // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
+        // the plain ReadView::read() path.
+        RAccountRootEntry const overLedger(alice.id(), *env.current());
+        BEAST_EXPECT(overLedger.exists());
+
+        ApplyViewImpl av(&*env.current(), TapNone);
+
+        // ReadView const& binds an ApplyViewImpl just as happily, and there the
+        // dynamic_cast succeeds, so this one resolves through ApplyView::peek().
+        RAccountRootEntry const readOnly(alice.id(), av);
+        BEAST_EXPECT(readOnly.exists());
+
+        WAccountRootEntry writable(alice.id(), av);
+        BEAST_EXPECT(writable.exists());
+
+        // The invariant resolveEntry() exists to hold: one SLE per key per
+        // view. read() would have handed back the base ledger's entry instead,
+        // which is a different object.
+        BEAST_EXPECT(readOnly.sle() == writable.sle());
+        BEAST_EXPECT(readOnly.sle() != overLedger.sle());
+
+        // Which is what keeps a read-only entry from going stale: a write
+        // through any other entry over the same view is visible through it.
+        auto const bumped = writable->getFieldU32(sfSequence) + 1;
+        writable->setFieldU32(sfSequence, bumped);
+        BEAST_EXPECT(readOnly->getFieldU32(sfSequence) == bumped);
+    }
+
 public:
     void
     run() override
@@ -356,6 +397,7 @@ public:
         testApplyViewContextCtor();
         testWritableLifecycle();
         testConversion();
+        testResolveEntryPeeks();
     }
 };
 
