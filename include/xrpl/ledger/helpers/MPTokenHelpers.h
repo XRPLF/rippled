@@ -72,8 +72,17 @@ isFrozen(
     MPTIssue const& mptIssue,
     std::uint8_t depth = 0);
 
+/**
+ * SLE overload: pass an already-loaded ltMPTOKEN (holder row) or
+ * ltMPTOKEN_ISSUANCE to reuse it for the freeze checks and avoid re-reading
+ * the same object. For an ltMPTOKEN, @p sle is used directly for the
+ * individual-lock check and the issuance is read once for global-freeze and
+ * vault-pseudo-account. For an ltMPTOKEN_ISSUANCE, @p sle is used directly
+ * for global-freeze and vault-pseudo-account, and the caller's holder row is
+ * read for the individual-lock check.
+ */
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSle, std::uint8_t depth = 0);
+isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(

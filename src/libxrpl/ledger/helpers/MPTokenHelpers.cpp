@@ -83,20 +83,29 @@ isFrozen(
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSle, std::uint8_t depth)
+isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth)
 {
-    XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isFrozen : MPToken SLE");
+    XRPL_ASSERT(
+        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isFrozen : MPToken or MPTokenIssuance SLE");
 
-    MPTID const mptID = mptSle[sfMPTokenIssuanceID];
-    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
+    if (sle.getType() == ltMPTOKEN)
+    {
+        MPTID const mptID = sle[sfMPTokenIssuanceID];
+        auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
 
-    if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || isIndividualFrozen(mptSle))
-        return true;
+        if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || isIndividualFrozen(sle))
+            return true;
 
-    if (issuanceSle)
-        return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
+        if (issuanceSle)
+            return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
 
-    return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
+        return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
+    }
+
+    MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
+    return isGlobalFrozen(sle) || isIndividualFrozen(view, account, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, account, sle, depth);
 }
 
 [[nodiscard]] bool
@@ -106,7 +115,8 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     std::uint8_t depth)
 {
-    if (isGlobalFrozen(view, mptIssue))
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+    if (issuanceSle && isGlobalFrozen(*issuanceSle))
         return true;
 
     for (auto const& account : accounts)
@@ -115,8 +125,11 @@ isAnyFrozen(
             return true;
     }
 
+    if (!issuanceSle)
+        return false;
+
     return std::ranges::any_of(accounts, [&](auto const& account) {
-        return isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
+        return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
     });
 }
 
