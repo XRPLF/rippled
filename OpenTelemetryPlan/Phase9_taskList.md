@@ -1,6 +1,11 @@
+<!-- cspell:ignore ISTOGRAM -->
+<!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+     compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
+
 # Phase 9: Internal Metric Instrumentation Gap Fill — Task List
 
-> **Status**: Future Enhancement
+> **Status**: Complete for Tasks 9.1-9.13. Tasks 9.14-9.17 remain open by design
+> (see each task for the blocker).
 >
 > **Goal**: Instrument xrpld to emit ~50+ metrics that exist in `get_counts`/`server_info`/TxQ/PerfLog but currently lack time-series export via the OTel or beast::insight pipelines.
 >
@@ -9,6 +14,36 @@
 > **Branch**: `pratik/otel-phase9-metric-gap-fill` (from `pratik/otel-phase8-log-correlation`)
 >
 > **Depends on**: Phase 7 (native OTel metrics pipeline) and Phase 8 (log-trace correlation)
+
+> **Note on metric names**: there is **no `xrpld_` prefix** on any emitted
+> metric. `77f35c03db` removed it and lowercased names, and
+> `OTelCollectorImp::formatName()`
+> (`src/libxrpl/beast/insight/OTelCollector.cpp:855-874`) adds no prefix at all —
+> it only lowercases the raw name and turns `.` and spaces into `_`. Earlier
+> revisions of this task list spelled every metric `xrpld_<name>`; those spellings
+> have been corrected in place to the emitted names, so the names below can be
+> pasted into Prometheus as written. Instruments created in
+> `src/xrpld/telemetry/MetricsRegistry.cpp` (35 of them) are the single source of
+> truth. `MetricsRegistry.h`'s Doxygen used to disagree on three histogram names;
+> those header comments were repaired in this change set (see Tasks 9.4 and 9.5),
+> so header and `.cpp` now agree.
+>
+> **Two shapes do not simply lose the prefix**, so `xrpld_<name>` → `<name>` is
+> not a blanket rule:
+>
+> - **Multiplexed observable gauges.** Most of the value names in these task
+>   descriptions are a **`metric` label value** on a shared instrument, not a
+>   standalone metric name — queue depth is `txq_metrics{metric="txq_count"}`, not
+>   `txq_count`. The same applies to `nodestore_state`, `cache_metrics`,
+>   `load_factor_metrics`, `server_info`, `db_metrics`, `validator_health`,
+>   `peer_quality`, `state_tracking` and `ledger_economy`. Each task below names
+>   its owning instrument.
+> - **Unit-suffixed histograms** coming through `beast::insight`.
+>   `OTelCollectorImp` appends the unit to the name, so the `ios_latency`
+>   histogram is `ios_latency_milliseconds_bucket` in Prometheus — not
+>   `ios_latency_bucket`. Instruments created directly on `MetricsRegistry` keep
+>   their literal name (`job_queued_us_bucket`, `rpc_method_us_bucket`) because
+>   the unit is already in the instrument name.
 
 ### Related Plan Documents
 
@@ -40,7 +75,16 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- In `src/libxrpl/nodestore/Database.cpp`, extend existing `beast::insight` registrations to add:
+> **As shipped, this did _not_ go through `beast::insight`.** `Database.cpp` has
+> no insight members. The metrics are a single `nodestore_state`
+> `Int64ObservableGauge` on `MetricsRegistry`
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:957-965`) whose callback reads
+> `Database`'s public accessors (`getFetchTotalCount()`, `getFetchHitCount()`,
+> `getStoreCount()`, `getFetchDurationUs()`, `getStoreDurationUs()`, …) and
+> multiplexes every value onto the `metric` label. Write-queue depth comes from
+> the new `include/xrpl/nodestore/WriteStats.h`.
+
+- Export the following as `nodestore_state{metric="…"}` label values:
   - Gauge: `node_reads_total` (cumulative read operations)
   - Gauge: `node_reads_hit` (fetches that found an object — not a cache hit; `fetchHitCount_` increments whatever served the fetch)
   - Gauge: `node_writes` (cumulative write operations)
@@ -50,14 +94,18 @@ These metrics serve multiple external consumer categories identified during rese
   - Gauge: `write_load` (current write load score)
   - Gauge: `read_queue` (items in read queue)
 
-- These values are already computed in `Database::getCountsJson()` (line ~236). Wire the same counters to `beast::insight` hooks.
+- These values are already computed in `Database::getCountsJson()`. The gauge
+  callback reads the same counters through `Database`'s public accessors.
 
 **Key modified files**:
 
-- `src/libxrpl/nodestore/Database.cpp`
-- `src/libxrpl/nodestore/Database.h` (add insight members)
+- `src/xrpld/telemetry/MetricsRegistry.cpp` (the `nodestore_state` gauge)
+- `include/xrpl/nodestore/Database.h` (accessors; **not** `src/libxrpl/nodestore/Database.h`, which does not exist)
+- `include/xrpl/nodestore/WriteStats.h` (new — write-queue depth snapshot)
 
-**Derived Prometheus metrics**: `xrpld_nodestore_reads_total`, `xrpld_nodestore_reads_hit`, `xrpld_nodestore_write_load`, etc.
+**Derived Prometheus metrics**: `nodestore_state{metric="node_reads_total"}`,
+`nodestore_state{metric="node_reads_hit"}`, `nodestore_state{metric="write_load"}`,
+etc. There is **no** `xrpld_` prefix — `OTelCollectorImp::formatName()` adds none.
 
 **Grafana dashboard**: Add "NodeStore I/O" panel group to _Node Health_ dashboard.
 
@@ -77,17 +125,22 @@ These metrics serve multiple external consumer categories identified during rese
   - `treenode_track_size` — Tracked tree nodes
   - `fullbelow_size` — FullBelow cache size
 
-- The callback should read from the same sources as `GetCounts.cpp` handler (line ~43).
+- The callback reads from the same sources as the `GetCounts` handler
+  (`src/xrpld/rpc/handlers/admin/status/GetCounts.cpp` — **not**
+  `src/xrpld/rpc/handlers/GetCounts.cpp`).
 
 - Create a centralized `MetricsRegistry` class that holds all OTel async gauge registrations, polled at 10-second intervals by the `PeriodicMetricReader`.
 
 **Key modified files**:
 
 - New: `src/xrpld/telemetry/MetricsRegistry.h` / `.cpp`
-- `src/xrpld/rpc/handlers/GetCounts.cpp` (extract shared access methods)
+- New: `src/xrpld/telemetry/MetricMacros.h` (the `XRPL_METRIC_*` call-site macros)
+- `src/xrpld/rpc/handlers/admin/status/GetCounts.cpp` (extract shared access methods)
 - `src/xrpld/app/main/Application.cpp` (register MetricsRegistry at startup)
 
-**Derived Prometheus metrics**: `xrpld_cache_SLE_hit_rate`, `xrpld_cache_ledger_hit_rate`, `xrpld_cache_treenode_size`, etc.
+**Derived Prometheus metrics**: `cache_metrics{metric="SLE_hit_rate"}`,
+`cache_metrics{metric="ledger_hit_rate"}`, `cache_metrics{metric="treenode_cache_size"}`,
+etc. Label values are **case-sensitive** (`SLE_hit_rate`, `AL_size`, `AL_hit_rate`).
 
 ---
 
@@ -97,7 +150,8 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- Register OTel `ObservableGauge` callbacks for TxQ state (from `TxQ.h` line ~143):
+- Register OTel `ObservableGauge` callbacks for TxQ state (from
+  `src/xrpld/app/misc/TxQ.h` — **not** `src/xrpld/app/tx/detail/TxQ.h`):
   - `txq_count` — Current transactions in queue
   - `txq_max_size` — Maximum queue capacity
   - `txq_in_ledger` — Transactions in current open ledger
@@ -112,9 +166,12 @@ These metrics serve multiple external consumer categories identified during rese
 **Key modified files**:
 
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (add TxQ callbacks)
-- `src/xrpld/app/tx/detail/TxQ.h` (expose metrics accessor if needed)
+- `src/xrpld/app/misc/TxQ.h` (expose metrics accessor if needed)
 
-**Derived Prometheus metrics**: `xrpld_txq_count`, `xrpld_txq_max_size`, `xrpld_txq_open_ledger_fee_level`, etc.
+**Derived Prometheus metrics**: `txq_metrics{metric="txq_count"}`,
+`txq_metrics{metric="txq_max_size"}`, `txq_metrics{metric="txq_open_ledger_fee_level"}`, etc.
+There is one instrument, `txq_metrics` (`MetricsRegistry.cpp:705`); each value above
+is a `metric` label value, not a metric name of its own.
 
 **Grafana dashboard**: New _Fee Market & TxQ_ dashboard (`fee-market`).
 
@@ -126,13 +183,25 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- Register OTel instruments for PerfLog RPC counters (from `PerfLogImp.cpp` line ~63):
-  - Counter: `xrpld_rpc_method_started_total{method="<name>"}` — calls started
-  - Counter: `xrpld_rpc_method_finished_total{method="<name>"}` — calls completed
-  - Counter: `xrpld_rpc_method_errored_total{method="<name>"}` — calls errored
-  - Histogram: `xrpld_rpc_method_duration_us{method="<name>"}` — execution time distribution
+- Register OTel instruments for PerfLog RPC counters (from `PerfLogImp.cpp`):
+  - Counter: `rpc_method_started_total{method="<name>"}` — calls started
+  - Counter: `rpc_method_finished_total{method="<name>"}` — calls completed
+  - Counter: `rpc_method_errored_total{method="<name>"}` — calls errored
+  - Histogram: `rpc_method_us{method="<name>"}` — execution time distribution
 
-- Use OTel `Counter<int64_t>` and `Histogram<double>` instruments with `method` attribute label.
+- Use OTel `Counter<uint64_t>` and `Histogram<double>` instruments with the
+  `method` attribute label. The RPC instruments carry **only** `method`
+  (`MetricsRegistry.cpp:436-475`) — the `handler` label belongs to the job
+  instruments (Task 9.5), not these.
+
+> **Naming**: the instrument is `rpc_method_us` — declared as
+> `kRpcMethodDurationUs` at `MetricsRegistry.cpp:96` and used both to register the
+> explicit-bucket view and to create the instrument. `MetricsRegistry.h`'s Doxygen
+> comment used to read `rpc_method_duration_us`; **that was fixed in this change**
+> (`MetricsRegistry.h:789`), so header and `.cpp` now agree and there is no
+> caveat left. The prefix `xrpld_` in the original spec is not emitted by anything.
+>
+> Same for the job histograms in Task 9.5: `job_queued_us` / `job_running_us`.
 
 - Hook into the existing PerfLog callback mechanism rather than adding new instrumentation points.
 
@@ -141,7 +210,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/perflog/detail/PerfLogImp.cpp` (add OTel instrument updates alongside existing JSON counters)
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (register instruments)
 
-**Derived Prometheus metrics**: `xrpld_rpc_method_started_total{method="server_info"}`, `xrpld_rpc_method_duration_us_bucket{method="ledger"}`, etc.
+**Derived Prometheus metrics**: `rpc_method_started_total{method="server_info"}`, `rpc_method_us_bucket{method="ledger"}`, etc.
 
 **Grafana dashboard**: Add "Per-Method RPC Breakdown" panel group to _RPC Performance_ dashboard.
 
@@ -153,12 +222,24 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- Register OTel instruments for PerfLog job counters:
-  - Counter: `xrpld_job_queued_total{job_type="<name>"}` — jobs queued
-  - Counter: `xrpld_job_started_total{job_type="<name>"}` — jobs started
-  - Counter: `xrpld_job_finished_total{job_type="<name>"}` — jobs completed
-  - Histogram: `xrpld_job_queued_duration_us{job_type="<name>"}` — time spent waiting in queue
-  - Histogram: `xrpld_job_running_duration_us{job_type="<name>"}` — execution time distribution
+- Register OTel instruments for PerfLog job counters. All five carry **two**
+  labels — `job_type` and `handler` — so producers sharing a job type stay
+  distinguishable (`MetricsRegistry.h:794-818`, recorded at
+  `MetricsRegistry.cpp:498,518,527,548,553`). `handler` is the sanitised
+  `addJob` name; `sanitiseHandler()` folds dynamic names into a bounded domain
+  of exactly 44 values, so cardinality stays fixed.
+  - Counter: `job_queued_total{job_type="<name>",handler="<name>"}` — jobs queued
+  - Counter: `job_started_total{job_type="<name>",handler="<name>"}` — jobs started
+  - Counter: `job_finished_total{job_type="<name>",handler="<name>"}` — jobs completed
+  - Histogram: `job_queued_us{job_type="<name>",handler="<name>"}` — time spent waiting in queue
+  - Histogram: `job_running_us{job_type="<name>",handler="<name>"}` — execution time distribution
+
+> **Naming**: the instruments are `job_queued_us` / `job_running_us`
+> (`kJobQueuedDurationUs` / `kJobRunningDurationUs`, `MetricsRegistry.cpp:94-95`).
+> `MetricsRegistry.h`'s Doxygen comments used to read
+> `job_queued_duration_us` / `job_running_duration_us`; **both were fixed in this
+> change** (`MetricsRegistry.h:810,815`), so there is no header/`.cpp` divergence
+> left to work around.
 
 - Hook into PerfLog's existing job tracking alongside Task 9.4.
 
@@ -167,7 +248,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/perflog/detail/PerfLogImp.cpp`
 - `src/xrpld/telemetry/MetricsRegistry.cpp`
 
-**Derived Prometheus metrics**: `xrpld_job_queued_total{job_type="ledgerData"}`, `xrpld_job_running_duration_us_bucket{job_type="transaction"}`, etc.
+**Derived Prometheus metrics**: `job_queued_total{job_type="ledgerData",handler="ProcessLData"}`, `job_running_us_bucket{job_type="transaction",handler="…"}`, etc.
 
 **Grafana dashboard**: New _Job Queue Analysis_ dashboard (`job-queue`).
 
@@ -180,15 +261,16 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel `ObservableGauge` callbacks for `CountedObject<T>` instance counts:
-  - `xrpld_object_count{type="Transaction"}` — live Transaction objects
-  - `xrpld_object_count{type="Ledger"}` — live Ledger objects
-  - `xrpld_object_count{type="NodeObject"}` — live NodeObject instances
-  - `xrpld_object_count{type="STTx"}` — serialized transaction objects
-  - `xrpld_object_count{type="STLedgerEntry"}` — serialized ledger entries
-  - `xrpld_object_count{type="InboundLedger"}` — ledgers being fetched
-  - `xrpld_object_count{type="Pathfinder"}` — active pathfinding computations
-  - `xrpld_object_count{type="PathRequest"}` — active path requests
-  - `xrpld_object_count{type="HashRouterEntry"}` — hash router entries
+  - `object_count{type="xrpl::Transaction"}` — live Transaction objects
+  - `object_count{type="xrpl::Ledger"}` — live Ledger objects
+  - `object_count{type="xrpl::NodeObject"}` — live NodeObject instances
+  - `object_count{type="xrpl::STTx"}` — serialized transaction objects
+  - `object_count{type="xrpl::STLedgerEntry"}` — serialized ledger entries
+  - `object_count{type="xrpl::InboundLedger"}` — ledgers being fetched
+  - `object_count{type="xrpl::Pathfinder"}` — active pathfinding computations
+  - `object_count{type="xrpl::PathRequest"}` — active path requests
+  - `object_count{type="xrpl::HashRouter::Entry"}` — hash router entries (the type is
+    `HashRouter::Entry`; there is no `HashRouterEntry` type)
 
 - The `CountedObject` template already tracks these via atomic counters. The callback just reads the current counts.
 
@@ -197,7 +279,9 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (add counted object callbacks)
 - `include/xrpl/basics/CountedObject.h` (may need static accessor for iteration)
 
-**Derived Prometheus metrics**: `xrpld_object_count{type="Transaction"}`, `xrpld_object_count{type="NodeObject"}`, etc.
+**Derived Prometheus metrics**: `object_count{type="xrpl::Transaction"}`, `object_count{type="xrpl::NodeObject"}`, etc.
+The `type` label value is `beast::typeName<Object>()` — the fully-qualified
+demangled C++ type name (`CountedObject.h:109`), not a short word.
 
 **Grafana dashboard**: Add "Object Instance Counts" panel to _Node Health_ dashboard.
 
@@ -225,7 +309,10 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.cpp`
 - `src/xrpld/app/misc/NetworkOPs.cpp` (expose load factor accessors if needed)
 
-**Derived Prometheus metrics**: `xrpld_load_factor`, `xrpld_load_factor_fee_escalation`, etc.
+**Derived Prometheus metrics**: `load_factor_metrics{metric="load_factor"}`,
+`load_factor_metrics{metric="load_factor_fee_escalation"}`, etc. There is one
+instrument, `load_factor_metrics` (`MetricsRegistry.cpp:785`); every value listed
+above is a `metric` label value, not a metric name of its own.
 
 **Grafana dashboard**: Add "Load Factor Breakdown" panel to _Fee Market & TxQ_ dashboard.
 
@@ -243,7 +330,7 @@ These metrics serve multiple external consumer categories identified during rese
   - `read_request_bundle` (native JSON int)
   - `read_threads_running` (native JSON int)
   - `read_threads_total` (native JSON int)
-- Added new `xrpld_server_info` Int64ObservableGauge with 8 metrics:
+- Added new `server_info` Int64ObservableGauge with 8 metrics:
   - `server_state` — operating mode as int (0=DISCONNECTED .. 4=FULL)
   - `uptime` — seconds since server start
   - `peers` — total peer count
@@ -252,9 +339,9 @@ These metrics serve multiple external consumer categories identified during rese
   - `peer_disconnects_resources` — cumulative resource-related disconnects
   - `last_close_proposers` — from `getConsensusInfo()["previous_proposers"]`
   - `last_close_converge_time_ms` — from `getConsensusInfo()["previous_mseconds"]`
-- Added new `xrpld_build_info` Int64ObservableGauge (info-style, value=1 with `version` label)
-- Added new `xrpld_complete_ledgers` Int64ObservableGauge parsing comma-separated ranges into `{bound, index}` pairs
-- Added new `xrpld_db_metrics` Int64ObservableGauge with 4 metrics:
+- Added new `build_info` Int64ObservableGauge (info-style, value=1 with `version` label)
+- Added new `complete_ledgers` Int64ObservableGauge parsing comma-separated ranges into `{bound, index}` pairs
+- Added new `db_metrics` Int64ObservableGauge with 4 metrics:
   - `db_kb_total`, `db_kb_ledger`, `db_kb_transaction` (SQLite stat queries)
   - `historical_perminute` (historical ledger fetch rate)
 
@@ -267,7 +354,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 - `connection_count_51233/51234` — OS-level port connection counts from external shell script (`get_connection.sh`)
 
-**Derived Prometheus metrics**: `xrpld_server_info{metric="server_state"}`, `xrpld_build_info{version="2.4.0"}`, `xrpld_complete_ledgers{bound="start",index="0"}`, `xrpld_db_metrics{metric="db_kb_total"}`, etc.
+**Derived Prometheus metrics**: `server_info{metric="server_state"}`, `build_info{version="2.4.0"}`, `complete_ledgers{bound="start",index="0"}`, `db_metrics{metric="db_kb_total"}`, etc.
 
 **Grafana dashboard**: New panels added to _Node Health_ dashboard (`node-health.json`).
 
@@ -284,15 +371,19 @@ These metrics serve multiple external consumer categories identified during rese
   2. **Job Queue Analysis** (`job-queue`) — Per-job-type rates, queue wait times, execution times, job queue depth
 
 - Update 2 existing dashboards:
-  1. **Node Health** (`xrpld-statsd-node-health`) — Add NodeStore I/O panels, cache hit rate panels, object instance counts
+  1. **Node Health** (`node-health`) — Add NodeStore I/O panels, cache hit rate panels, object instance counts
   2. **RPC Performance** (`rpc-performance`) — Add per-method RPC breakdown panels
 
-**Key modified files**:
+> Tasks 9.11-9.13 add two more new dashboards (`validator-health`,
+> `peer-quality`), so Phase 9's total is **4 new + 2 updated**.
 
-- New: `docker/telemetry/grafana/dashboards/rippled-fee-market.json`
-- New: `docker/telemetry/grafana/dashboards/rippled-job-queue.json`
-- `docker/telemetry/grafana/dashboards/rippled-statsd-node-health.json`
-- `docker/telemetry/grafana/dashboards/rippled-rpc-perf.json`
+**Key modified files** (filenames and uids after the `rippled-*` → bare rename
+in `145b1469d6` and `25868f2740` — the `rippled-*.json` paths no longer exist):
+
+- New: `docker/telemetry/grafana/dashboards/fee-market.json` (uid `fee-market`)
+- New: `docker/telemetry/grafana/dashboards/job-queue.json` (uid `job-queue`)
+- `docker/telemetry/grafana/dashboards/node-health.json` (uid `node-health`)
+- `docker/telemetry/grafana/dashboards/rpc-performance.json` (uid `rpc-performance`)
 
 ---
 
@@ -302,18 +393,37 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- Update `OpenTelemetryPlan/09-data-collection-reference.md`:
-  - Add new section for OTel SDK-exported metrics (NodeStore, cache, TxQ, PerfLog, CountedObjects, load factors)
-  - Update Grafana dashboard reference table (add 2 new dashboards)
+- Update `OpenTelemetryPlan/09-data-collection-reference.md`: ✅ done
+  - Add new section for OTel SDK-exported metrics (NodeStore, cache, TxQ, PerfLog, CountedObjects, load factors) — §5b + "Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)"
+  - Update Grafana dashboard reference table (add 4 new dashboards) — "New Grafana Dashboards (Phase 9)" / "Updated Grafana Dashboards (Phase 9)"
   - Add Prometheus query examples for new metrics
 
 - Update `docs/telemetry-runbook.md`:
-  - Add an Alerting section covering the provisioned rules and how to wire a receiver
-  - Add troubleshooting entries for new metric categories
+  - ✅ Alerting section covering the provisioned rules and how to wire a receiver
+  - ✅ Troubleshooting entries for new metric categories
+  - ❌ **Still open**: dashboard guides for **six** dashboards — `fee-market`,
+    `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality` and
+    `validator-health`. The runbook's dashboard reference records the gap
+    verbatim: "Nine dashboards have a reference section below. `fee-market`,
+    `job-queue`, `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`, and
+    `validator-health` are provisioned but not yet documented here — their panel
+    descriptions carry the same six-heading reference format, so open the panel
+    info icon in Grafana until a section is written." (15 provisioned − 6
+    undocumented = 9 documented.) Also still open: the Validation Agreement
+    explainer (8s grace / 5m late repair)
 
-- Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`):
-  - 6 rules in 3 groups — consensus/ledger (`LedgerHistoryMismatch`, `LedgerCloseStalled`), validator (`ValidationsMissed`, `ValidationsNotChecked`), job queue (`JobQueueTxOverflow`, `JobQueueLatencyHigh`)
-  - `xrpld-default` webhook contact point + flat notification policy; auto-loaded via the existing `provisioning/` mount (no docker-compose change)
+- Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`) — **as shipped**:
+  - **13 rules in 5 groups**: `xrpld-consensus` (`LedgerHistoryMismatch`,
+    `LedgerCloseStalled`, `ValidatedLedgerStale`), `xrpld-validator`
+    (`ValidationsMissed`, `ValidationsNotChecked`), `xrpld-jobqueue`
+    (`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`),
+    `xrpld-node-state` (`NodeStateFlapping`, `NodeNotFull`), `xrpld-overlay`
+    (`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`)
+  - **2 contact points** — `xrpld-default` (Slack) and `xrpld-critical`
+    (Slack + email) — and a **nested** notification policy: root →
+    `xrpld-default`, child route `severity = critical` → `xrpld-critical`.
+    Auto-loaded via the existing `provisioning/` mount (no docker-compose change)
+  - 3 rules are `severity: critical`, 10 are `severity: warning`
   - Alerting operator docs (per-alert meaning, tuning, receiver wiring) now live in the Alerting section of `docs/telemetry-runbook.md`
 
 **Key modified files**:
@@ -331,21 +441,35 @@ These metrics serve multiple external consumer categories identified during rese
 
 **What to do**:
 
-- Extend the existing telemetry integration test:
-  - Start xrpld with `[telemetry] enabled=1` and `[insight] server=otel`
-  - Submit a batch of RPC calls and transactions
-  - Query Prometheus for each new metric family
-  - Assert non-zero values for: NodeStore reads, cache hit rates, TxQ count, PerfLog RPC counters, object counts, load factors
+- ❌ **Not done on this branch**: extend the telemetry integration test to
+  start xrpld with `[telemetry] enabled=1` / `[insight] server=otel`, drive RPC
+  and transaction load, query Prometheus for each new metric family and assert
+  non-zero values. The end-to-end metric assertions live in the **Phase 10**
+  harness (`docker/telemetry/workload/expected_metrics.json`), not here.
 
-- Add unit tests for the `MetricsRegistry` class:
-  - Verify callback registration and deregistration
-  - Verify metric values match `get_counts` JSON output
-  - Verify graceful behavior when telemetry is disabled
+- ✅ **Done**: unit tests for the `MetricsRegistry` class —
+  `src/tests/libxrpl/telemetry/MetricsRegistry.cpp` (**18** GTest cases —
+  `grep -cE '\bTEST(_F|_P)?\s*\(' src/tests/libxrpl/telemetry/MetricsRegistry.cpp`
+  = 18, and the four bullets below sum to 4 + 3 + 5 + 6 = 18):
+  - Callback registration / deregistration and shutdown ordering —
+    `async_gauges_start_after_start_is_safe`,
+    `async_gauges_before_start_does_not_break_start`,
+    `async_gauges_respect_the_compile_time_guard`, `destructor_calls_stop`
+  - Graceful behaviour when telemetry is disabled — `disabled_construction`,
+    `disabled_start_stop`, `disabled_recording_methods`
+  - Label sanitisation and mean scaling — `MetricsRegistrySanitiseHandler` (5
+    cases, incl. `output_domain_is_exactly_44_values`) and
+    `MetricsRegistryScaledMean` (6 cases)
+  - ❌ Not covered: asserting metric values match `get_counts` JSON output —
+    that needs a live `Application`, so it is left to the Phase 10 harness
 
-**Key modified files**:
+**Key files**:
 
-- `src/test/telemetry/MetricsRegistry_test.cpp` (new)
-- Existing integration test script (extend assertions)
+- `src/tests/libxrpl/telemetry/MetricsRegistry.cpp` (new). The originally
+  planned `src/test/telemetry/MetricsRegistry_test.cpp` was **never created** —
+  Phase 9 tests are GTest under `src/tests/libxrpl/`, per project convention.
+- `src/tests/libxrpl/telemetry/MetricMacros.cpp`, `GetMeter.cpp` (new — cover
+  the `XRPL_METRIC_*` macros and meter lookup)
 
 ---
 
@@ -360,31 +484,43 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Dashboard**: `validator-health.json`
 
-| Panel                      | Type       | PromQL                                                         |
-| -------------------------- | ---------- | -------------------------------------------------------------- |
-| Agreement % (1h)           | stat       | `xrpld_validation_agreement{metric="agreement_pct_1h"}`        |
-| Agreement % (24h)          | stat       | `xrpld_validation_agreement{metric="agreement_pct_24h"}`       |
-| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side                   |
-| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side                 |
-| Validation Rate            | stat       | `rate(xrpld_validations_sent_total[5m]) * 60`                  |
-| Validations Checked Rate   | stat       | `rate(xrpld_validations_checked_total[5m]) * 60`               |
-| Amendment Blocked          | stat       | `xrpld_validator_health{metric="amendment_blocked"}`           |
-| UNL Expiry (days)          | stat       | `xrpld_validator_health{metric="unl_expiry_days"}`             |
-| Validation Quorum          | stat       | `xrpld_validator_health{metric="validation_quorum"}`           |
-| State Value Timeline       | timeseries | `xrpld_state_tracking{metric="state_value"}`                   |
-| Time in Current State      | stat       | `xrpld_state_tracking{metric="time_in_current_state_seconds"}` |
-| State Changes Rate         | stat       | `rate(xrpld_state_changes_total[1h])`                          |
-| Ledgers Closed Rate        | stat       | `rate(xrpld_ledgers_closed_total[5m]) * 60`                    |
+| Panel                      | Type       | PromQL                                                   |
+| -------------------------- | ---------- | -------------------------------------------------------- |
+| Agreement % (1h)           | stat       | `validation_agreement{metric="agreement_pct_1h"}`        |
+| Agreement % (24h)          | stat       | `validation_agreement{metric="agreement_pct_24h"}`       |
+| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side             |
+| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side           |
+| Validation Rate            | stat       | `rate(validations_sent_total[5m]) * 60`                  |
+| Validations Checked Rate   | stat       | `rate(validations_checked_total[5m]) * 60`               |
+| Amendment Blocked          | stat       | `validator_health{metric="amendment_blocked"}`           |
+| UNL Expiry (days)          | stat       | `validator_health{metric="unl_expiry_days"}`             |
+| Validation Quorum          | stat       | `validator_health{metric="validation_quorum"}`           |
+| State Value Timeline       | timeseries | `state_tracking{metric="state_value"}`                   |
+| Time in Current State      | stat       | `state_tracking{metric="time_in_current_state_seconds"}` |
+| State Changes Rate         | stat       | `rate(state_changes_total[1h])`                          |
+| Ledgers Closed Rate        | stat       | `rate(ledgers_closed_total[5m]) * 60`                    |
 
 **Dashboard conventions**: `$node` template variable for `service_instance_id` filtering, dark theme, matching existing panel sizes and color schemes.
 
-**Key new files**: `docker/telemetry/grafana/dashboards/rippled-validator-health.json`
+**Key new files**: `docker/telemetry/grafana/dashboards/validator-health.json`
+(uid `validator-health`). The name reached its current form in **two** renames:
+`rippled-validator-health.json` → `xrpld-validator-health.json` (`145b1469d6`,
+the `rippled-` → `xrpld-` pass), then `xrpld-validator-health.json` →
+`validator-health.json` (`25868f2740`, which dropped the `xrpld-` prefix).
 
 **Exit Criteria**:
 
-- [ ] All 13 panels render with non-zero data during normal operation
-- [ ] `$node` filter works correctly for multi-node deployments
-- [ ] Amendment blocked and UNL expiry panels use color thresholds (red=blocked/expiring)
+- [x] Dashboard ships **17** panels (4 more than the 13 planned above) across 3
+      rows — Validation Agreement, Validation Rates, Server State & Consensus
+- [ ] All panels render with non-zero data during normal operation — needs a live
+      stack; the Phase 10 harness asserts the dashboard _loads_, not that panels
+      are non-empty
+- [x] `$node` filter works correctly for multi-node deployments — `node`
+      template variable present (filters on `service_instance_id`), alongside
+      `service_name`, `deployment_environment`, `xrpl_network_type`,
+      `xrpl_work_item`, `xrpl_branch`, `xrpl_node_role`
+- [x] Amendment blocked and UNL expiry panels use color thresholds
+      (red=blocked/expiring) — 11 `thresholds` blocks in the dashboard JSON
 
 ---
 
@@ -396,22 +532,35 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Dashboard**: `peer-quality.json`
 
-| Panel                  | Type       | PromQL                                                         |
-| ---------------------- | ---------- | -------------------------------------------------------------- |
-| P90 Peer Latency       | timeseries | `xrpld_peer_quality{metric="peer_latency_p90_ms"}`             |
-| Insane/Diverged Peers  | stat       | `xrpld_peer_quality{metric="peers_insane_count"}`              |
-| Higher Version Peers % | stat       | `xrpld_peer_quality{metric="peers_higher_version_pct"}`        |
-| Upgrade Recommended    | stat       | `xrpld_peer_quality{metric="upgrade_recommended"}`             |
-| Resource Disconnects   | timeseries | `xrpld_Overlay_Peer_Disconnects_Charges`                       |
-| Inbound vs Outbound    | bargauge   | `xrpld_Peer_Finder_Active_Inbound_Peers`, `..._Outbound_Peers` |
+| Panel                  | Type       | PromQL                                                                  |
+| ---------------------- | ---------- | ----------------------------------------------------------------------- |
+| P90 Peer Latency       | timeseries | `peer_quality{metric="peer_latency_p90_ms"}`                            |
+| Insane/Diverged Peers  | stat       | `peer_quality{metric="peers_insane_count"}`                             |
+| Higher Version Peers % | stat       | `peer_quality{metric="peers_higher_version_pct"}`                       |
+| Upgrade Recommended    | stat       | `peer_quality{metric="upgrade_recommended"}`                            |
+| Resource Disconnects   | timeseries | `server_info{metric="peer_disconnects_resources"}`                      |
+| Inbound vs Outbound    | bargauge   | `peer_finder_active_inbound_peers`, `peer_finder_active_outbound_peers` |
 
-**Key new files**: `docker/telemetry/grafana/dashboards/rippled-peer-quality.json`
+> `overlay_peer_disconnects_charges` (the name in the original spec) is **not a
+> real instrument** — nothing registers it. The shipped panel reads
+> `server_info{metric="peer_disconnects_resources"}` instead. Peer-finder gauge
+> names are lowercase: `GroupImp::makeName()` + `OTelCollectorImp::formatName()`
+> turn the `"Peer_Finder"` group into `peer_finder_<name>` with no prefix.
+
+**Key new files**: `docker/telemetry/grafana/dashboards/peer-quality.json`
+(uid `peer-quality`). Two renames, same as Task 9.11:
+`rippled-peer-quality.json` → `xrpld-peer-quality.json` (`145b1469d6`), then
+`xrpld-peer-quality.json` → `peer-quality.json` (`25868f2740`).
 
 **Exit Criteria**:
 
-- [ ] All 6 panels render correctly
-- [ ] P90 latency panel shows trend over time
-- [ ] Upgrade recommended panel uses color threshold (red=1, green=0)
+- [x] All 6 panels present — P90 Peer Latency, Insane/Diverged Peers, Higher
+      Version Peers %, Upgrade Recommended, Inbound vs Outbound Peers, Resource
+      Disconnects — across 3 rows, with the `$node` template variable
+- [ ] All 6 panels render with data — needs a live stack
+- [x] P90 latency panel is a `timeseries` (shows trend over time)
+- [x] Upgrade recommended panel uses color threshold (red=1, green=0) — 5
+      `thresholds` blocks in the dashboard JSON
 
 ---
 
@@ -421,21 +570,22 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Add "Ledger Economy" row to the existing `node-health.json` dashboard.
 
-| Panel                | Type       | PromQL                                              |
-| -------------------- | ---------- | --------------------------------------------------- |
-| Base Fee (drops)     | stat       | `xrpld_ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `xrpld_ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `xrpld_ledger_economy{metric="reserve_inc_xrp"}`    |
-| Ledger Age           | stat       | `xrpld_ledger_economy{metric="ledger_age_seconds"}` |
-| Transaction Rate     | timeseries | `xrpld_ledger_economy{metric="transaction_rate"}`   |
+| Panel                | Type       | PromQL                                        |
+| -------------------- | ---------- | --------------------------------------------- |
+| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_xrp"}`       |
+| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_xrp"}`   |
+| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_xrp"}`    |
+| Ledger Age           | stat       | `ledger_economy{metric="ledger_age_seconds"}` |
+| Transaction Rate     | timeseries | `ledger_economy{metric="transaction_rate"}`   |
 
 **Key modified files**: `docker/telemetry/grafana/dashboards/node-health.json`
 
 **Exit Criteria**:
 
-- [ ] 5 new panels render correctly in existing dashboard
-- [ ] Fee values match `server_info` RPC output
-- [ ] Transaction rate shows smooth trend (not spiky)
+- [x] 5 new panels present in the existing dashboard — a "Ledger Economy" row
+      with 5 `ledger_economy` queries is on `node-health.json`
+- [ ] Fee values match `server_info` RPC output — needs a live comparison
+- [ ] Transaction rate shows smooth trend (not spiky) — needs a live run
 
 ---
 
@@ -456,9 +606,22 @@ files, so **no code fix lands on this branch**.
 
 **Why deferred**: Defect 3 requires widening the two
 `OverlayImpl::updateSlotAndSquelch` overloads — a public signature change on
-shared overlay code. Defects 1, 2 and 4 sit in `TrafficCount.{h,cpp}`, likewise
-not telemetry-owned. Routing them through the telemetry chain would hide overlay
-changes from overlay reviewers and couple them to a 12-PR merge timeline.
+shared overlay code. Defects 1 and 4 need `TrafficCount.cpp` and `PeerImp.cpp`
+edits that are not telemetry-owned. Routing them through the telemetry chain
+would hide overlay changes from overlay reviewers and couple them to a 12-PR
+merge timeline.
+
+> **Constraint narrowed.** The blanket "no telemetry change may touch
+> `TrafficCount.{h,cpp}`" no longer holds for the header: the telemetry chain
+> already edits `TrafficCount.h` — Phase 6's `77f35c03db` fixed the
+> `Category::GetFetchPack` label from `"getobject_Fetch Pack_get"` to
+> `"getobject_Fetch_Pack_get"` at `TrafficCount.h:285`, the sole difference from
+> `develop`. Defect 2 (the stale `Total` header comment, `TrafficCount.h:28-31`)
+> is therefore **unblocked** and can land here. Defects **1, 3 and 4** stay
+> blocked: defect 1 needs `TrafficCount.cpp`'s `kTypeLookup`, defect 3 needs the
+> `OverlayImpl` signature change, and defect 4 needs `PeerImp.cpp:1079` vs `:313`
+> to agree on a byte basis (compressed vs uncompressed) — a change to overlay
+> accounting semantics, not telemetry.
 
 **Key modified files**: `OpenTelemetryPlan/09-data-collection-reference.md` only.
 
@@ -466,16 +629,31 @@ changes from overlay reviewers and couple them to a 12-PR merge timeline.
 
 - [x] Each defect documented with file:line evidence in `09` §6
 - [x] `overhead_cluster_*` documented as "no data", not "no cluster traffic"
-- [ ] Follow-up overlay-owned branch raised for the four code fixes
+- [ ] Defect 2 (stale `Total` header comment, `TrafficCount.h:28-31`) fixed on
+      this branch — it is **unblocked** (the chain already edits
+      `TrafficCount.h`) but the comment is still uncorrected
+- [ ] Follow-up overlay-owned branch raised for the three still-blocked code
+      fixes (defects 1, 3, 4)
 - [ ] Re-baseline any threshold keyed on `unknown_bytes_in` when defect 1 lands
 
 ---
 
 ## Task 9.15: Peer Keepalive and Discovery Instrumentation
 
-> **Status**: NOT IMPLEMENTED — awaiting a decision on whether `XRPL_METRIC_*`
-> call sites may be added to `src/xrpld/overlay/detail/PeerImp.cpp` from this
-> branch. Reference: [09 §6.3](./09-data-collection-reference.md#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)
+> **Status**: NOT IMPLEMENTED. The instruments themselves are still to be
+> written; the _permission_ question is settled. Reference:
+> [09 §6.3](./09-data-collection-reference.md#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)
+>
+> **Blocker cleared.** This task used to be held "awaiting a decision on whether
+> `XRPL_METRIC_*` call sites may be added to
+> `src/xrpld/overlay/detail/PeerImp.cpp` from this branch". That decision is
+> de facto **yes** — `PeerImp.cpp` already carries **7** such call sites on this
+> branch (`:2723`, `:2741`, `:2925`, `:2928`, `:2931`, `:2947`, `:2954`, of which
+> three are `XRPL_METRIC_HISTOGRAM_RECORD` — `:2925`, `:2928`, `:2931` — and four
+> are labelled counters — `:2723`, `:2741`, `:2947`, `:2954`). Note that
+> `grep -c XRPL_METRIC src/xrpld/overlay/detail/PeerImp.cpp` returns 8: the eighth
+> hit is the `cspell:ignore` explanation comment at `PeerImp.cpp:2`, not a call
+> site. What remains is the implementation work below, not an approval.
 
 **Objective**: Make peer keepalive and peer-discovery health observable. Today
 `mtPING`, `mtSTATUS_CHANGE` and `mtENDPOINTS` are byte counters only.
@@ -494,7 +672,8 @@ changes from overlay reviewers and couple them to a 12-PR merge timeline.
 - `peer_id` as a label is unbounded cardinality — rejected. A bounded
   `peer_role`-style label is the alternative if per-peer attribution is needed.
 - Splitting `mtPING` out of `Category::Base` is a `TrafficCount.cpp` change and
-  therefore blocked with Task 9.14.
+  therefore still blocked with Task 9.14 defect 1. (The `.h` half of that
+  constraint no longer applies — see Task 9.14.)
 - Per the runbook's "Adding a New Metric" contract, `_total` is reserved for
   monotonic counters; a histogram takes no suffix.
 
@@ -505,7 +684,8 @@ changes from overlay reviewers and couple them to a 12-PR merge timeline.
 
 **Exit Criteria**:
 
-- [ ] Decision recorded on editing `PeerImp.cpp` from the telemetry chain
+- [x] Decision recorded on editing `PeerImp.cpp` from the telemetry chain — yes;
+      7 `XRPL_METRIC_*` call sites already ship in `PeerImp.cpp`
 - [ ] Three instruments emitting, with an explicit histogram bucket view
 - [ ] Rows added to `09` §5b, runbook § Metric Reference, and `expected_metrics.json`
 - [ ] Peer Quality dashboard panels follow the Task 9.12 conventions (`$node`, Title Case, legend dimensions)
@@ -557,10 +737,11 @@ actually emits. `peer.connect`, `peer.disconnect`, `peer.message.send` and
 protocol message families have no spans.
 
 **Scope warning**: This is larger than Tasks 9.14-9.16 combined and changes the
-"~37 spans" figure asserted in `09` §1.1 and in
-`docker/telemetry/workload/expected_spans.json`. `trace_peer` is also **on by
-default** and already flagged as high-volume, so adding per-message spans has a
-volume cost that needs measuring before commitment.
+span-family inventory asserted in `09` §1.1 (**41** emitted families) and in
+`docker/telemetry/workload/expected_spans.json` (**40** catalogued — `rpc.ws_upgrade`
+has no entry). `trace_peer` is also **on by default** and already flagged as
+high-volume, so adding per-message spans has a volume cost that needs measuring
+before commitment.
 
 **Exit Criteria**:
 
@@ -572,17 +753,41 @@ volume cost that needs measuring before commitment.
 
 ## Exit Criteria
 
-- [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline
-- [ ] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK
-- [ ] Async gauge callbacks execute at 10s intervals without performance impact
-- [ ] 2 new Grafana dashboards operational (Fee Market, Job Queue)
-- [ ] 2 existing dashboards updated with new panel groups
-- [ ] Integration test validates all new metric families are non-zero
-- [ ] No performance regression (< 0.5% CPU overhead from new callbacks)
-- [ ] Documentation updated with full new metric inventory
-- [ ] Validator Health dashboard renders all 13 panels
-- [ ] Peer Quality dashboard renders all 6 panels
-- [ ] Ledger Economy panels added to node-health dashboard
+- [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline — every
+      instrument is registered in `MetricsRegistry.cpp`, but end-to-end
+      visibility is asserted only by the Phase 10 harness
+- [x] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK —
+      `src/tests/libxrpl/telemetry/MetricsRegistry.cpp`
+      (`async_gauges_start_after_start_is_safe`,
+      `async_gauges_before_start_does_not_break_start`,
+      `async_gauges_respect_the_compile_time_guard`, `destructor_calls_stop`)
+- [x] Async gauge callbacks execute at 10s intervals —
+      `MetricsRegistry.cpp:289`, `readerOpts.export_interval_millis = 10000`.
+      (The "without performance impact" half is unmeasured — see below.)
+- [x] 4 new Grafana dashboards operational (Fee Market, Job Queue, Validator
+      Health, Peer Quality) — all four JSONs are under
+      `docker/telemetry/grafana/dashboards/`
+- [x] 2 existing dashboards updated with new panel groups — `node-health`
+      (NodeStore I/O, Caches, Server Info, Complete Ledgers & DB, Ledger
+      Economy, Job Queue Concurrency Limits rows) and `rpc-performance`
+      (per-method section)
+- [ ] Integration test validates all new metric families are non-zero — not on
+      this branch; lives in the Phase 10 harness (`expected_metrics.json`)
+- [ ] No performance regression (< 0.5% CPU overhead from new callbacks) — not
+      measured; needs the Phase 10 benchmark suite
+- [x] Documentation updated with full new metric inventory —
+      `09-data-collection-reference.md` §5b + "Phase 9: OTel SDK-Exported
+      Metrics (MetricsRegistry)" + "Phase 7+: External Dashboard Parity Metrics"
+- [x] Validator Health dashboard ships (17 panels, 4 more than the 13 planned)
+- [x] Peer Quality dashboard ships (6 panels)
+- [x] Ledger Economy panels added to node-health dashboard (5 panels in a
+      "Ledger Economy" row)
+- [x] Provisioned Grafana alerting: 13 rules / 5 groups, 2 contact points,
+      nested notification policy
+- [ ] Tasks 9.14-9.17 closed — **open by design**: 9.14 documented-not-fixed
+      (defects 1, 3 and 4 still blocked; defect 2 unblocked but not yet fixed),
+      9.15 and 9.16 not implemented, 9.17 deferred pending approval and volume
+      measurement
 
 ---
 
@@ -591,7 +796,7 @@ volume cost that needs measuring before commitment.
 > Design for the provisioned Grafana alert rules (Task 9.9a). Previously a standalone spec; merged here so the phase plan is self-contained.
 
 **Date:** 2026-07-06
-**Branch:** `pratik/otel-phase9-metric-gap-fill` (PR #6513, Jira RIPD-5187)
+**Branch:** `pratik/otel-phase9-metric-gap-fill` (PR #6513)
 **Status:** Approved
 
 ### Purpose
@@ -599,8 +804,8 @@ volume cost that needs measuring before commitment.
 Phase 9 exports ~68 internal xrpld metrics and ships Grafana dashboards for
 them. This adds the missing operator-facing piece: **provisioned Grafana alert
 rules** that fire on the health-critical metrics phase 9 introduces. The
-phase-9 task list (line 311) and Jira story RIPD-5187 both already list
-"alerting rules" as a phase-9 deliverable, so this closes that gap.
+phase-9 task list already lists "alerting rules" as a phase-9 deliverable
+(Task 9.9), so this closes that gap.
 
 Scope is deliberately narrow — the three subsystems whose failure is
 node-fatal: **consensus/ledger health, validator health, job queue**. RPC/API
@@ -609,9 +814,11 @@ health is explicitly out of scope.
 ### Why phase 9 (not phase 11)
 
 Every metric these alerts fire on is _born_ in phase 9
-(`xrpld_ledger_history_mismatch_total`, `xrpld_ledgers_closed_total`,
-`xrpld_validation_missed_total`, `xrpld_validations_checked_total`,
-`xrpld_jq_trans_overflow_total`, `xrpld_job_queued_duration_us_bucket`). Alerts
+(`ledger_history_mismatch_total`, `ledgers_closed_total`,
+`validation_missed_total`, `validations_checked_total`,
+`jq_trans_overflow_total`, `job_queued_us_bucket` — the histogram instrument is
+`job_queued_us` (`MetricsRegistry.cpp:94`), so the Prometheus bucket series is
+`job_queued_us_bucket`, not `job_queued_duration_us_bucket`). Alerts
 belong with the metrics they watch, and this is where the dependency lives.
 
 ### Delivery
@@ -623,11 +830,11 @@ Grafana auto-loads `provisioning/alerting/*.yaml`.
 
 New files under `docker/telemetry/grafana/provisioning/alerting/`:
 
-| File                 | Purpose                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `contactpoints.yaml` | One contact point `xrpld-default` (webhook to a documented placeholder; comments show how to swap for Slack/email). |
-| `policies.yaml`      | Default notification policy: route all alerts → `xrpld-default`, grouped by `alertname` + `service_instance_id`.    |
-| `rules.yaml`         | 6 alert rules across 3 groups (below).                                                                              |
+| File                 | Purpose                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contactpoints.yaml` | **Two** contact points: `xrpld-default` (Slack) and `xrpld-critical` (Slack + email).                                                                                                                                        |
+| `policies.yaml`      | **Nested** notification policy: root route → `xrpld-default`; child route matching `severity = critical` → `xrpld-critical` (`repeat_interval: 1h` vs the root's `4h`). Both grouped by `alertname` + `service_instance_id`. |
+| `rules.yaml`         | **13** alert rules across **5** groups (below).                                                                                                                                                                              |
 
 Plus the Alerting section of `docs/telemetry-runbook.md` — operator runbook:
 what each alert means, likely causes, and how to point the contact point at a
@@ -642,16 +849,44 @@ Grafana rule shape: query (A) → reduce (B, last value) → threshold (C). All
 Alert rules run headless, so they cannot use the dashboards' `$node` template
 variables — they match all series and group by `service_instance_id` instead.
 
-| Group     | Alert                 | Expression (5m window)                                                                                      | Fires                 | `for` | severity |
-| --------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------- | ----- | -------- |
-| Consensus | LedgerHistoryMismatch | `sum by (service_instance_id)(rate(xrpld_ledger_history_mismatch_total[5m]))`                               | `> 0`                 | 5m    | critical |
-| Consensus | LedgerCloseStalled    | `sum by (service_instance_id)(rate(xrpld_ledgers_closed_total[5m]))`                                        | `< 0.001` (≈0)        | 3m    | critical |
-| Validator | ValidationsMissed     | `sum by (service_instance_id)(rate(xrpld_validation_missed_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
-| Validator | ValidationsNotChecked | `sum by (service_instance_id)(rate(xrpld_validations_checked_total[5m]))`                                   | `< 0.001` (≈0)        | 5m    | warning  |
-| Job queue | JobQueueTxOverflow    | `sum by (service_instance_id)(rate(xrpld_jq_trans_overflow_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
-| Job queue | JobQueueLatencyHigh   | `histogram_quantile(0.99, sum by (le, service_instance_id)(rate(xrpld_job_queued_duration_us_bucket[5m])))` | `> 1000000` (µs = 1s) | 5m    | warning  |
+All 5 groups evaluate at `interval: 1m`. Metric names carry **no** `xrpld_`
+prefix — `OTelCollectorImp::formatName()` adds none.
 
-Each rule carries labels `severity` and `category` (consensus/validator/jobqueue)
+The **Threshold** column is the rule's refId `C` evaluator, read straight from
+`rules.yaml` — it is the firing condition, so it is load-bearing, not decoration.
+
+| Group              | Alert                   | Expression (refId A)                                                                                      | Threshold (refId C)                               | `for` | severity |
+| ------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----- | -------- |
+| `xrpld-consensus`  | LedgerHistoryMismatch   | `sum by (service_instance_id) (increase(ledger_history_mismatch_total[15m]))`                             | `gt [0]`                                          | 2m    | critical |
+| `xrpld-consensus`  | LedgerCloseStalled      | `rate(ledgers_closed_total)` decayed to ≈0                                                                | `lt [0.001]`                                      | 3m    | critical |
+| `xrpld-consensus`  | ValidatedLedgerStale    | `max by (service_instance_id) (ledgermaster_validated_ledger_age < 1209600)`                              | `gt [60]` (seconds)                               | 5m    | critical |
+| `xrpld-validator`  | ValidationsMissed       | miss **ratio**, gated on send activity — see the expression below the table                               | `gt [0.1]`                                        | 15m   | warning  |
+| `xrpld-validator`  | ValidationsNotChecked   | `rate(validations_checked_total)` ≈0                                                                      | `lt [0.001]`                                      | 5m    | warning  |
+| `xrpld-jobqueue`   | JobQueueTxOverflow      | `sum by (service_instance_id) (increase(jq_trans_overflow_total[15m]))`                                   | `gt [0]`                                          | 2m    | warning  |
+| `xrpld-jobqueue`   | JobQueueLatencyHigh     | `histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))`             | `gt [1000000]` (µs = 1s)                          | 5m    | warning  |
+| `xrpld-jobqueue`   | NodeStoreIOLatencyHigh  | `histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket[10m])))` | `gt [1000]` (ms)                                  | 10m   | warning  |
+| `xrpld-node-state` | NodeStateFlapping       | state-transition rate over the node-state series                                                          | `gt [3]` (transitions)                            | 15m   | warning  |
+| `xrpld-node-state` | NodeNotFull             | operating mode below FULL                                                                                 | `lt [4]` (FULL = 4)                               | 15m   | warning  |
+| `xrpld-overlay`    | ManifestJobQueueConvoy  | `sum by (service_instance_id) (jobq_manifest_waiting)`                                                    | `gt [3]` (waiting jobs)                           | 10m   | warning  |
+| `xrpld-overlay`    | ManifestFloodInbound    | inbound manifest byte rate                                                                                | `gt [524288]` (B/s = 512 **KiB**/s, not 512 kB/s) | 10m   | warning  |
+| `xrpld-overlay`    | PeerResourceDisconnects | `sum by (service_instance_id) (increase(server_info{metric="peer_disconnects_resources"}[30m]))`          | `gt [5]`                                          | 5m    | warning  |
+
+**`ValidationsMissed` is a gated ratio, not `rate(...) > 0`.** The raw-rate shape
+is the pre-fix version and it fires on **every non-validating node**:
+`ValidationTracker` counts a miss whenever `weValidated && networkValidated` is
+not both true, and a non-validator never sets `weValidated`, so its measured
+ratio is exactly **1.0**. No threshold can separate "not a validator" from
+"validator disagreeing", hence the `and on (...)` activity gate. The shipped
+expression is:
+
+- numerator: `sum by (service_instance_id) (rate(validation_missed_total[15m]))`
+- denominator: `clamp_min(` that same numerator `+ sum by (service_instance_id) (rate(validation_agreements_total[15m])), 1e-9)`
+- gate: `and on (service_instance_id) (sum by (service_instance_id) (rate(validations_sent_total[15m])) > 0)`
+- evaluator: `gt [0.1]` — i.e. >10% disagreement among nodes that do validate
+
+3 rules are `severity: critical`, 10 are `severity: warning`.
+
+Each rule carries labels `severity` and `category`
 and annotations `summary` + `description` (with `{{ $labels.service_instance_id }}`
 and `{{ $values.B.Value }}` interpolation).
 
@@ -660,21 +895,31 @@ and `{{ $values.B.Value }}` interpolation).
 - **LedgerCloseStalled `< 0.001` for 3m**: healthy nodes close a ledger every
   ~3-5s; a 5m rate decaying to ~0 means the node is stuck. The epsilon (not
   exact `0`) avoids float rate-noise suppressing the alert.
-- **JobQueueLatencyHigh 1s p99**: a default starting point, easy to tune — jobs
-  queued >1s at p99 indicate the node is saturated.
-- Others are `> 0` on error/miss counters: any sustained nonzero rate is
-  actionable.
+- **JobQueueLatencyHigh 1s p99**: `gt [1000000]` µs = 1s. A default starting
+  point, easy to tune — jobs queued >1s at p99 indicate the node is saturated.
+- **ValidationsMissed `> 0.1` on a gated ratio**, not `> 0` on a raw rate: the
+  raw rate is permanently nonzero (ratio 1.0) on non-validators, so a `> 0` rule
+  pages on every non-validating node in the fleet. See the note above the
+  rationale list.
+- **ManifestFloodInbound 524288 B/s**: an earlier 50 kB/s threshold produced ~41
+  sustained 5-minute samples on healthy nodes; 512 KiB/s clears normal
+  manifest-exchange peaks.
+- Remaining `gt [0]` rules (`LedgerHistoryMismatch`, `JobQueueTxOverflow`) sit on
+  true error counters where any sustained nonzero rate is actionable.
 
 ### Non-goals / YAGNI
 
 - No per-alert silencing schedules, no mute timings.
-- No RPC/API, overlay, or fee-market alerts (dashboards cover those visually).
-- Single contact point — multi-receiver routing is left to the operator.
+- No RPC/API or fee-market alerts (dashboards cover those visually). Overlay
+  alerts _were_ added during implementation — the `xrpld-overlay` group carries
+  three (manifest convoy, manifest flood, peer resource disconnects).
+- Two contact points and a two-level policy tree shipped; deeper routing
+  (Discord, PagerDuty, per-team splits) is left to the operator.
 
 ### Verification
 
 1. `yamllint` (or `python -c yaml.safe_load`) on all three YAML files.
 2. `docker compose -f docker/telemetry/docker-compose.yml config -q` still parses.
 3. Optional live check: start stack, `GET /api/v1/provisioning/alert-rules`
-   returns the 6 rules; Grafana logs show no provisioning errors.
+   returns the 13 rules; Grafana logs show no provisioning errors.
 4. Code-review pass (subagent) against phase conventions before commit.

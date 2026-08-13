@@ -39,6 +39,7 @@ NODESTORE_CUMULATIVE = (
     "node_read_bytes",
     "node_written_bytes",
     "node_reads_duration_us",
+    "node_writes_duration_us",
 )
 # state_accounting_*_duration are cumulative µs.
 STATE_DURATION = re.compile(r"state_accounting_\w+_duration")

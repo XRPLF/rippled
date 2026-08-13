@@ -2,7 +2,7 @@
 #
 # Phase 9: Internal metric gap fill — alerting on health-critical metrics.
 #
-# Twelve rules across five subsystems: consensus/ledger health, validator
+# Thirteen rules across five subsystems: consensus/ledger health, validator
 # health, the job queue, node operating state, and the overlay (manifests).
 #
 # Rule shape (Grafana server-side evaluation):
@@ -845,10 +845,10 @@ groups:
       # 24h window that an earlier revision used:
       #   healthy p95 0.2-0.5 kB/s, p99 1.0-1.8 kB/s
       #   observed peaks up to 2.7 MB/s during real manifest storms
-      # 512 kB/s sits ~280x above healthy p99 and ~5x below the peaks. An
-      # earlier 50 kB/s threshold produced ~41 sustained 5-min samples across
-      # six healthy nodes over six days (i.e. routine paging); 512 kB/s reduces
-      # that to 2 while still catching every genuine storm.
+      # 512 KiB/s (524288 B/s) sits ~280x above healthy p99 and ~5x below the
+      # peaks. An earlier 50 kB/s threshold produced ~41 sustained 5-min samples
+      # across six healthy nodes over six days (i.e. routine paging);
+      # 512 KiB/s reduces that to 2 while still catching every genuine storm.
       #
       # The uptime gate exists because the startup manifest burst is MEASURED
       # NORMAL behaviour. It does not hide real floods — the same 7-day sample
@@ -869,7 +869,8 @@ groups:
           summary: "Inbound manifest flood on {{ $labels.service_instance_id }}"
           description: >-
             Node {{ $labels.service_instance_id }} is receiving
-            {{ $values.B.Value }} B/s of manifest traffic (>512 kB/s) over 10m.
+            {{ $values.B.Value }} B/s of manifest traffic over 10m, above the
+            512 KiB/s (524288 B/s) threshold.
             A peer is flooding oversized TMManifests dumps.
         data:
           - refId: A

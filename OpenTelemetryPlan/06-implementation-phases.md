@@ -62,7 +62,7 @@ gantt
     section Phase 8
     Log-Trace Correlation     :p8, after p7, 1w
 
-    section Phase 9 (Future)
+    section Phase 9
     Internal Metric Gap Fill  :p9, after p8, 2.5w
 
     section Phase 10 (Future)
@@ -93,11 +93,18 @@ gantt
 
 ### Exit Criteria
 
-- [ ] OpenTelemetry SDK compiles and links
-- [ ] Telemetry can be enabled/disabled via config
-- [ ] Basic span creation works
-- [ ] No performance regression when disabled
-- [ ] Unit tests passing
+- [x] OpenTelemetry SDK compiles and links — `conanfile.py:153` requires
+      `opentelemetry-cpp/1.28.0` when the `telemetry` option is on (`:152`);
+      `cmake/XrplCore.cmake:91,245` links the umbrella target
+      `opentelemetry-cpp::opentelemetry-cpp`
+- [x] Telemetry can be enabled/disabled via config — `TelemetryConfig.cpp:103`
+      parses `[telemetry] enabled` (default 0)
+- [x] Basic span creation works — `libxrpl/telemetry/SpanGuard.cpp`, covered by
+      `src/tests/libxrpl/telemetry/SpanGuardScope.cpp` and `SpanGuardFactory.cpp`
+- [ ] No performance regression when disabled — `NullTelemetry.cpp` provides the
+      no-op path, but the <0.1% claim needs the Phase 10 benchmark suite
+      (`--with-benchmark`), which is not run in CI
+- [x] Unit tests passing — 10 GTest files under `src/tests/libxrpl/telemetry/`
 
 ---
 
@@ -124,11 +131,20 @@ gantt
 
 ### Exit Criteria
 
-- [ ] All RPC commands traced
-- [ ] Trace context propagates from HTTP headers
-- [ ] WebSocket and HTTP both instrumented
-- [ ] <1ms overhead per RPC call
-- [ ] Integration tests passing
+- [x] All RPC commands traced — `rpc.command.{name}` built from
+      `rpc_span::prefix::command` (`RpcSpanNames.h:127`), emitted from
+      `RPCHandler.cpp`
+- [ ] Trace context propagates from HTTP headers — **not implemented**.
+      `TraceContextPropagator.h` only offers `extractFromProtobuf()` /
+      `injectToProtobuf()`; there is no `traceparent` header reader anywhere in
+      the tree (`grep -ri traceparent src/ include/` → 0 hits). Cross-node
+      correlation is carried by the protobuf `TraceContext` field and by
+      deterministic trace IDs instead.
+- [x] WebSocket and HTTP both instrumented — `rpc.http_request` and
+      `rpc.ws_message` (`RpcSpanNames.h:133-136`)
+- [ ] <1ms overhead per RPC call — needs the Phase 10 benchmark suite
+- [ ] Integration tests passing — the end-to-end RPC span assertions live in the
+      Phase 10 harness (`validate_telemetry.py`), not on this branch
 
 ---
 
@@ -162,13 +178,19 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 
 ### Exit Criteria
 
-- [ ] Transaction traces span across nodes
-- [ ] Trace context in Protocol Buffer messages
-- [ ] HashRouter deduplication visible in traces
-- [ ] Multi-node integration tests passing
-- [ ] <5% overhead on transaction throughput
-- [ ] Deterministic trace_id: all nodes produce same trace_id for same transaction
-- [ ] Protobuf span_id propagation preserves parent-child ordering when available
+- [ ] Transaction traces span across nodes — needs a live multi-node run (Phase 10 harness)
+- [x] Trace context in Protocol Buffer messages — `message TraceContext`
+      (`include/xrpl/proto/xrpl.proto:101`), carried as optional field `1001` on
+      three message types (`:130`, `:181`, `:229`)
+- [x] HashRouter deduplication visible in traces — `suppressed` attribute
+      (`TxSpanNames.h:71`)
+- [ ] Multi-node integration tests passing — Phase 10 harness
+- [ ] <5% overhead on transaction throughput — needs the Phase 10 benchmark suite
+- [x] Deterministic trace_id: all nodes produce same trace_id for same transaction
+      — `libxrpl/telemetry/DeterministicIdGenerator.cpp`
+- [x] Protobuf span_id propagation preserves parent-child ordering when available
+      — `TraceContextPropagator.h` `injectToProtobuf()` / `extractFromProtobuf()`
+      (`trace_state`, field 4, is reserved and deliberately unwired)
 
 ---
 
@@ -187,7 +209,7 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 | 4.5  | Add consensus-specific attributes              | ✅ Done            |
 | 4.6  | Correlate with transaction traces              | ✅ Done            |
 | 4.7  | Build verification and testing                 | ✅ Done            |
-| 4.8  | Validation span enrichment (ext. dashboard)    | ❌ Not done        |
+| 4.8  | Validation span enrichment (ext. dashboard)    | ✅ Done (partial)  |
 
 **Note**: The original plan doc listed tasks 4.7-4.11 as "Validator list tracing",
 "Amendment voting tracing", "SHAMap sync tracing", "Multi-validator integration tests",
@@ -212,10 +234,18 @@ SHAMap tracing are not implemented.
 - [x] Phase transitions visible (open, establish, close, accept)
 - [x] Proposals and validations traced — send and receive; relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
-- [x] No impact on consensus timing
-- [ ] Multi-validator test network validated
+- [ ] No impact on consensus timing — **not measured**. No consensus-timing
+      benchmark has been run on any branch in the chain; the benchmark suite
+      lives on the Phase 10 branch and does not isolate consensus round time
+- [ ] Multi-validator test network validated — needs a live multi-node run; the
+      5-node harness lives on the Phase 10 branch, not here
 - [x] Transaction-consensus correlation (Task 4.6) — `tx.included` events in doAccept
-- [ ] Validation span enrichment (Task 4.8) — not implemented
+- [x] Validation span enrichment (Task 4.8) — send span sets `ledger_seq`,
+      `ledger_hash`, `proposing`, `full_validation` (`RCLConsensus.cpp:975-981`);
+      receive span sets `ledger_hash`, `full_validation` (`PeerImp.cpp:2573-2574`);
+      `consensus.accept` sets `quorum` from `app_.getValidators().quorum()`
+      (`RCLConsensus.cpp:516`). Still open: `proposers_validated` — never
+      implemented, no attribute of that name exists in the tree.
 
 ### Implementation Status — Phase 4a Complete
 
@@ -285,7 +315,7 @@ with `TraceCategory::Consensus` gating. No macros used — all tracing via direc
 - [x] Strategy switchable via config (`deterministic` / `attribute`)
 - [x] Consecutive rounds linked via follows-from spans
 - [x] Build passes with telemetry ON and OFF
-- [x] No impact on consensus timing
+- [ ] No impact on consensus timing — **not measured** (see §6.5 Exit Criteria)
 
 See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 
@@ -376,23 +406,35 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp` sends metrics with `|m` suffix, w
 
 ### New Grafana Dashboards
 
-**Node Health** (`statsd-node-health.json`, uid: `xrpld-statsd-node-health`):
+**Node Health** (`node-health.json`, uid: `node-health`):
 
 - Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches, Key Jobs Execution/Dequeue Time, FullBelowCache Size/Hit Rate, Ledger Publish Gap, State Duration Rate, All Jobs Detail
 
-**Network Traffic** (`statsd-network-traffic.json`, uid: `xrpld-statsd-network`):
+**Network Traffic** (`network-traffic.json`, uid: `network-traffic`):
 
 - Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories, Duplicate Traffic, All Traffic Categories Detail
 
-**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `xrpld-statsd-rpc`):
+**RPC & Pathfinding** (`rpc-pathfinding.json`, uid: `rpc-pathfinding`):
 
 - RPC Request Rate, Response Time p95/p50, Response Size p95/p50, Pathfinding Fast/Full Duration, Resource Warnings/Drops, Response Time Heatmap
 
 ### Exit Criteria
 
-- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=ledgermaster_validated_ledger_age`)
-- [ ] All 3 new Grafana dashboards load without errors
+- [x] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=ledgermaster_validated_ledger_age`)
+      — superseded by Phase 7: the same metric names now arrive over OTLP
+      (`server=otel`) and the StatsD receiver has been removed from the collector
+- [x] All 3 new Grafana dashboards load without errors — shipped as
+      `node-health.json`, `network-traffic.json`, `rpc-pathfinding.json`,
+      uids `node-health` / `network-traffic` / `rpc-pathfinding`. These three
+      were renamed in **two** steps: `statsd-*.json` → `system-*.json`
+      (`2f7064ace6`), then `system-*.json` → bare (`2c590a47c5`). An
+      `xrpld-statsd-*` form **never existed** in any commit, and `25868f2740`
+      did not touch these three — it de-prefixed a different set
+      (`xrpld-fee-market`, `xrpld-job-queue`, `xrpld-peer-quality`,
+      `xrpld-validator-health` → bare). §6.7 above now carries the shipped names.
 - [ ] Integration test verifies at least core StatsD metrics (ledger age, peer counts, RPC requests)
+      — the metric assertions live in the Phase 10 harness
+      (`expected_metrics.json`), not on this branch
 - [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately; resolved by Phase 7's OTel Counter mapping)
 
 ---
@@ -568,12 +610,20 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 ### Exit Criteria
 
 - [ ] All 255+ metrics visible in Prometheus via OTLP pipeline (no StatsD receiver)
-- [ ] `server=otel` is the default in development docker-compose
-- [ ] `server=statsd` still works as a fallback
-- [ ] Existing Grafana dashboards display data correctly
-- [ ] Integration test passes with OTLP-only metrics pipeline
-- [ ] No performance regression vs StatsD baseline (< 1% CPU overhead)
-- [ ] Deferred Task 6.1 (`|m` wire format) no longer relevant
+      — the receiver is gone and `OTelCollector` is wired, but the 255+ figure
+      needs a live scrape to confirm
+- [x] `server=otel` is the default in development docker-compose —
+      `docker/telemetry/xrpld-telemetry.cfg:112`,
+      `xrpld-telemetry-mainnet.cfg:121`, `integration-test.sh:380`
+- [x] `server=statsd` still works as a fallback — `CollectorManager.cpp:37`
+      still branches on `server == "statsd"` alongside `"otel"` (`:46`)
+- [ ] Existing Grafana dashboards display data correctly — needs a live stack
+- [ ] Integration test passes with OTLP-only metrics pipeline — Phase 10 harness
+- [ ] No performance regression vs StatsD baseline (< 1% CPU overhead) — needs
+      the Phase 10 benchmark suite
+- [x] Deferred Task 6.1 (`|m` wire format) no longer relevant — `OTelMeterImpl`
+      (`OTelCollector.cpp:308`) maps meters onto an OTel counter, so the
+      non-standard `|m` wire type is never emitted on the `server=otel` path
 
 ---
 
@@ -675,19 +725,37 @@ flowchart LR
 
 ### Exit Criteria
 
-- [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
-- [ ] Log lines outside spans have no trace context (no empty fields)
-- [ ] Loki ingests xrpld logs via OTel Collector filelog receiver
-- [ ] Grafana Tempo → Loki one-click correlation works
-- [ ] Grafana Loki → Tempo reverse lookup works via derived field
-- [ ] Integration test verifies trace_id presence in logs
-- [ ] No performance regression from trace_id injection (< 0.1% overhead)
+- [x] Log lines within active spans contain `trace_id=<hex> span_id=<hex>` —
+      `Log.cpp:304-338`, guarded by `#ifdef XRPL_ENABLE_TELEMETRY`
+- [x] Log lines outside spans have no trace context (no empty fields) — the
+      block reads the thread-local span key and appends nothing when it is
+      absent or the context is invalid (`Log.cpp:310-318`)
+- [x] Loki ingests xrpld logs via OTel Collector filelog receiver —
+      `otel-collector-config.yaml:38` (`filelog`); `loki` service in
+      `docker-compose.yml:71`
+- [x] Grafana Tempo → Loki one-click correlation works —
+      `provisioning/datasources/tempo.yaml:32` (`tracesToLogs`)
+- [x] Grafana Loki → Tempo reverse lookup works via derived field —
+      `provisioning/datasources/loki.yaml:16` (`derivedFields`)
+- [ ] Integration test verifies trace_id presence in logs — implemented in the
+      Phase 10 harness, but CI runs it with `--skip-loki`, so it is not gated
+- [ ] No performance regression from trace_id injection (< 0.1% overhead) —
+      needs the Phase 10 benchmark suite
 
 ---
 
-## 6.8.2 Phase 9: Internal Metric Instrumentation Gap Fill (Weeks 14-15) — Future Enhancement
+## 6.8.2 Phase 9: Internal Metric Instrumentation Gap Fill (Weeks 14-15)
 
-> **Status**: Planned, not yet implemented.
+> **Status**: Complete. Merged on `pratik/otel-phase9-metric-gap-fill`. Shipped
+> artefacts: `src/xrpld/telemetry/MetricsRegistry.{h,cpp}` (~41 KB + ~71 KB),
+> `src/xrpld/telemetry/MetricMacros.h`, `include/xrpl/nodestore/WriteStats.h`,
+> `src/xrpld/app/ledger/AcquireStats.h`,
+> `include/xrpl/telemetry/GetObjectMetricNames.h`, 10 GTest files under
+> `src/tests/libxrpl/telemetry/`, 4 new Grafana dashboards, provisioned Grafana
+> alerting (13 rules), and the Phase 9 sections of
+> `09-data-collection-reference.md` and `docs/telemetry-runbook.md`.
+> Tasks 9.14-9.17 remain open by design — see
+> [Phase9_taskList.md](./Phase9_taskList.md).
 
 ### Motivation
 
@@ -700,50 +768,64 @@ Hybrid approach — two instrumentation strategies based on proximity to existin
 ```mermaid
 flowchart TB
     subgraph xrpld["xrpld process"]
-        subgraph existing["Existing beast::insight registrations"]
-            NS["NodeStore I/O<br/>(Database.cpp)"]
+        subgraph newreg["New OTel MetricsRegistry (all Phase 9 metrics)"]
+            NS["NodeStore I/O<br/>async gauge<br/>nodestore_state"]
+            CR["Cache Hit Rates<br/>async gauge"]
+            TQ["TxQ Metrics<br/>async gauge"]
+            PL["PerfLog RPC / Job<br/>counters + histograms"]
+            CO["CountedObjects<br/>async gauge"]
+            LF["Load Factors<br/>async gauge"]
         end
-        subgraph newreg["New OTel MetricsRegistry"]
-            CR["Cache Hit Rates<br/>(async gauge callbacks)"]
-            TQ["TxQ Metrics<br/>(async gauge callbacks)"]
-            PL["PerfLog RPC/Job<br/>(counters + histograms)"]
-            CO["CountedObjects<br/>(async gauge callbacks)"]
-            LF["Load Factors<br/>(async gauge callbacks)"]
+        subgraph existing["Pre-existing beast::insight<br/>(unchanged by Phase 9)"]
+            IN["Node state, PeerFinder,<br/>overlay traffic, caches"]
         end
     end
 
     subgraph export["Export Pipelines"]
+        OS["OTel Metrics SDK<br/>PeriodicMetricReader<br/>10s interval"]
         BI["beast::insight<br/>OTelCollector (Phase 7)"]
-        OS["OTel Metrics SDK<br/>PeriodicMetricReader"]
     end
 
-    NS --> BI
+    NS --> OS
     CR --> OS
     TQ --> OS
     PL --> OS
     CO --> OS
     LF --> OS
+    IN --> BI
 
-    BI --> OTLP["OTLP/HTTP :4318<br/>/v1/metrics"]
-    OS --> OTLP
+    OS --> OTLP["OTLP/HTTP :4318<br/>/v1/metrics"]
+    BI --> OTLP
 
-    style xrpld fill:#1a2633,color:#ccc,stroke:#4a90d9
-    style existing fill:#2a4a6b,color:#fff,stroke:#4a90d9
-    style newreg fill:#2a4a6b,color:#fff,stroke:#4a90d9
-    style export fill:#1a3320,color:#ccc,stroke:#5cb85c
-    style NS fill:#4a90d9,color:#fff,stroke:#2a6db5
-    style CR fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style TQ fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style PL fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style CO fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style LF fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style BI fill:#449d44,color:#fff,stroke:#2d6e2d
-    style OS fill:#449d44,color:#fff,stroke:#2d6e2d
-    style OTLP fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style xrpld fill:#1a2633,color:#e8e8e8,stroke:#4a90d9
+    style newreg fill:#22405c,color:#ffffff,stroke:#5cb85c
+    style existing fill:#22405c,color:#ffffff,stroke:#4a90d9
+    style export fill:#1a3320,color:#e8e8e8,stroke:#5cb85c
+    style NS fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style CR fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style TQ fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style PL fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style CO fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style LF fill:#5cb85c,color:#000000,stroke:#3d8b3d
+    style IN fill:#4a90d9,color:#000000,stroke:#2a6db5
+    style OS fill:#449d44,color:#ffffff,stroke:#2d6e2d
+    style BI fill:#449d44,color:#ffffff,stroke:#2d6e2d
+    style OTLP fill:#f0ad4e,color:#000000,stroke:#c78c2e
 ```
 
-- **beast::insight extensions** (blue): NodeStore I/O metrics added near existing `Database.cpp` registrations — exported via Phase 7's `OTelCollector`.
-- **OTel MetricsRegistry** (green): New centralized class using `ObservableGauge` async callbacks for cache, TxQ, PerfLog, CountedObjects, and load factors — polled at 10s intervals by `PeriodicMetricReader`.
+- **OTel MetricsRegistry** (green): the single home for every Phase 9 metric —
+  `ObservableGauge` async callbacks for NodeStore I/O, cache, TxQ, CountedObjects
+  and load factors, plus synchronous counters/histograms for PerfLog RPC and job
+  data. Polled at 10s intervals by `PeriodicMetricReader`
+  (`MetricsRegistry.cpp:289`, `export_interval_millis = 10000`).
+- **NodeStore I/O is _not_ a beast::insight extension.** The original plan
+  routed it through `Database.cpp` insight registrations; the shipped code
+  registers a `nodestore_state` observable gauge instead
+  (`MetricsRegistry.cpp:957-965`) that reads `Database`'s public accessors
+  (`getFetchTotalCount()`, `getStoreDurationUs()`, …). `Database.cpp` has no
+  `beast::insight` members at all.
+- **beast::insight** (blue) still carries the pre-Phase-9 metric surface via
+  Phase 7's `OTelCollector`; Phase 9 added nothing to it.
 
 ### Third-Party Consumer Context
 
@@ -758,39 +840,99 @@ flowchart TB
 
 ### Tasks
 
-| Task | Description                               |
-| ---- | ----------------------------------------- |
-| 9.1  | NodeStore I/O metrics                     |
-| 9.2  | Cache hit rate metrics + MetricsRegistry  |
-| 9.3  | TxQ metrics                               |
-| 9.4  | PerfLog per-RPC metrics                   |
-| 9.5  | PerfLog per-job metrics                   |
-| 9.6  | Counted object instance metrics           |
-| 9.7  | Fee escalation & load factor metrics      |
-| 9.7a | push_metrics.py parity gauges             |
-| 9.8  | New Grafana dashboards (2 new, 2 updated) |
-| 9.9  | Update documentation                      |
-| 9.10 | Integration tests                         |
+| Task | Description                                             | Status                        |
+| ---- | ------------------------------------------------------- | ----------------------------- |
+| 9.1  | NodeStore I/O metrics (`nodestore_state` gauge)         | ✅ Done                       |
+| 9.2  | Cache hit rate metrics + `MetricsRegistry`              | ✅ Done                       |
+| 9.3  | TxQ metrics                                             | ✅ Done                       |
+| 9.4  | PerfLog per-RPC metrics                                 | ✅ Done                       |
+| 9.5  | PerfLog per-job metrics (`job_type` + `handler` labels) | ✅ Done                       |
+| 9.6  | Counted object instance metrics                         | ✅ Done                       |
+| 9.7  | Fee escalation & load factor metrics                    | ✅ Done                       |
+| 9.7a | push_metrics.py parity gauges                           | ✅ Done                       |
+| 9.8  | New Grafana dashboards (4 new, 2 updated)               | ✅ Done                       |
+| 9.9  | Update documentation                                    | ✅ Done                       |
+| 9.9a | Provisioned Grafana alerting (13 rules / 5 groups)      | ✅ Done                       |
+| 9.10 | Integration tests / `MetricsRegistry` unit tests        | ✅ Done (unit tests)          |
+| 9.11 | Validator Health dashboard                              | ✅ Done                       |
+| 9.12 | Peer Quality dashboard                                  | ✅ Done                       |
+| 9.13 | Ledger Economy row on `node-health`                     | ✅ Done                       |
+| 9.14 | Overlay traffic accounting defects (documentation only) | 📄 Documented, not fixed      |
+| 9.15 | Peer keepalive / discovery instrumentation              | ❌ Not implemented            |
+| 9.16 | PeerFinder slot and cache metrics                       | ❌ Not implemented            |
+| 9.17 | Peer span coverage (`peer.connect` / `peer.message.*`)  | ❌ Not implemented (deferred) |
 
-See [Phase9_taskList.md](./Phase9_taskList.md) for detailed per-task breakdown.
+See [Phase9_taskList.md](./Phase9_taskList.md) for detailed per-task breakdown,
+including the four open items (9.14-9.17) and why each is blocked.
+
+### Provisioned Grafana Alerting (Task 9.9a)
+
+Phase 9 also ships the first provisioned Grafana alerting for the OTel stack —
+**13 rules in 5 groups**, 2 contact points, and a two-level notification policy
+tree, auto-loaded from the existing `provisioning/` mount (no docker-compose
+change):
+
+| File                                                                | Contents                                                                                                                            |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `docker/telemetry/grafana/provisioning/alerting/rules.yaml`         | 13 rules across `xrpld-consensus` (3), `xrpld-validator` (2), `xrpld-jobqueue` (3), `xrpld-node-state` (2), `xrpld-overlay` (3)     |
+| `docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml` | `xrpld-default` (Slack) and `xrpld-critical` (Slack + email)                                                                        |
+| `docker/telemetry/grafana/provisioning/alerting/policies.yaml`      | Root route → `xrpld-default`; child route `severity = critical` → `xrpld-critical`. Grouped by `alertname` + `service_instance_id`. |
+
+Shipped rules: `LedgerHistoryMismatch`, `LedgerCloseStalled`,
+`ValidatedLedgerStale`, `ValidationsMissed`, `ValidationsNotChecked`,
+`JobQueueTxOverflow`, `JobQueueLatencyHigh`, `NodeStoreIOLatencyHigh`,
+`NodeStateFlapping`, `NodeNotFull`, `ManifestJobQueueConvoy`,
+`ManifestFloodInbound`, `PeerResourceDisconnects`. Three carry
+`severity: critical`, ten `severity: warning`.
+
+Operator documentation for each alert lives in the **Alerting** section of
+`docs/telemetry-runbook.md`. The remaining, genuinely-unshipped rules from the
+external-dashboard set are scoped in the appendix under **Task 11.9: Remaining
+Alert Rules from External Dashboard**.
 
 ### Exit Criteria
 
-- [ ] All ~68 new metrics visible in Prometheus via OTLP pipeline
-- [ ] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK
-- [ ] 2 new Grafana dashboards operational (Fee Market, Job Queue)
-- [ ] No performance regression (< 0.5% CPU overhead from new callbacks)
-- [ ] Documentation updated with full new metric inventory
+- [ ] All ~68 new metrics visible in Prometheus via OTLP pipeline — every
+      instrument is registered (`MetricsRegistry.cpp`), but end-to-end
+      visibility is asserted by the Phase 10 harness, not on this branch
+- [x] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK —
+      covered by `src/tests/libxrpl/telemetry/MetricsRegistry.cpp`
+      (`async_gauges_start_after_start_is_safe`,
+      `async_gauges_before_start_does_not_break_start`,
+      `async_gauges_respect_the_compile_time_guard`, `destructor_calls_stop`,
+      `disabled_construction`, `disabled_start_stop`, `disabled_recording_methods`)
+- [x] 4 new Grafana dashboards operational (Fee Market, Job Queue, Validator
+      Health, Peer Quality) + 2 updated (Node Health, RPC Performance) — all
+      present under `docker/telemetry/grafana/dashboards/`
+- [ ] No performance regression (< 0.5% CPU overhead from new callbacks) — needs
+      the Phase 10 benchmark suite; not measured
+- [x] Documentation updated with full new metric inventory —
+      `09-data-collection-reference.md` §5b "Internal Metric Gap Fill (Phase 9)"
+      and "Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)";
+      `docs/telemetry-runbook.md` § Alerting
+- [x] Provisioned Grafana alerting shipped (13 rules / 5 groups, 2 contact
+      points, nested notification policy)
 
 ---
 
-## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17) — Future Enhancement
+## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17)
 
-> **Status**: Planned, not yet implemented.
+> **Status**: Implemented on `pratik/otel-phase10-workload-validation`; **not
+> merged into this branch**, so none of its files
+> (`docker/telemetry/workload/`, `.github/workflows/telemetry-validation.yml`)
+> are present here. The exit criteria below are tracked on that branch.
 
 ### Motivation
 
-Before the telemetry stack (Phases 1-9) can be considered production-ready, we need automated proof that all 16 spans, 22 attributes, 300+ metrics, 10 Grafana dashboards, and log-trace correlation work correctly under realistic load. This phase establishes a reusable CI-integrated validation suite and performance benchmark baseline.
+Before the telemetry stack (Phases 1-9) can be considered production-ready, we need automated proof that all spans, attributes, metrics, Grafana dashboards, and log-trace correlation work correctly under realistic load. This phase establishes a reusable CI-integrated validation suite and performance benchmark baseline.
+
+> **Inventory note**: the "16 spans / 22 attributes / 10 dashboards" figures this
+> section used to quote are stale. As of this branch there are **15 dashboards on
+> disk** (`ls docker/telemetry/grafana/dashboards/*.json`), of which **14** are
+> asserted by the Phase 10 harness — `log-derived-insights` is provisioned but
+> unasserted. The span and attribute totals are computed dynamically by
+> `validate_telemetry.py` from `expected_spans.json`; see
+> [Phase10_taskList.md](./Phase10_taskList.md) for the live figures.
 
 ### Architecture
 
@@ -849,13 +991,61 @@ flowchart LR
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown.
 
+### CI Deliverable (Task 10.6)
+
+The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
+(348 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+`build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
+plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
+`feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
+workflow on a timer.
+
+> **Caveat — the `push` trigger's `paths` filter excludes the C++ telemetry
+> sources.** The branch filter is only half the trigger; `push` also carries:
+>
+> ```yaml
+> paths:
+>   - ".github/workflows/telemetry-validation.yml"
+>   - "docker/telemetry/**"
+>   - "include/xrpl/basics/Telemetry*.h"
+>   - "src/xrpld/app/misc/Telemetry*"
+> ```
+>
+> The last two globs match **nothing** on the Phase 10 branch — neither
+> `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists
+> (0 tracked paths). The telemetry code actually lives in
+> `src/xrpld/telemetry/**` (9 files, including `MetricsRegistry.cpp`) and
+> `src/libxrpl/telemetry/**` (7 files), and **neither is listed**. Consequence: a
+> pure C++ telemetry change — new instrument, renamed metric, changed span
+> attribute — never triggers this workflow on push. Only edits under
+> `docker/telemetry/**` or to the workflow file itself do. Fix: replace the two
+> dead globs with `src/xrpld/telemetry/**`, `src/libxrpl/telemetry/**` and
+> `include/xrpl/telemetry/**`.
+
+> **Caveat — four inert inputs.** The workflow declares five
+> `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
+> `rpc_rate`, `rpc_duration`, `tx_tps` and `tx_duration` are forwarded as
+> `--rpc-rate` / `--rpc-duration` / `--tx-tps` / `--tx-duration` to
+> `run-full-validation.sh`, which parses them into shell variables and then
+> never reads them again: load shape comes entirely from
+> `--profile` / `workload-profiles.json` (the orchestrator is invoked with
+> `--profile` only). Changing those four inputs has no effect on the generated
+> workload.
+
 ### Exit Criteria
 
-- [ ] 5-node validator cluster starts and reaches consensus in docker-compose
-- [ ] Validation suite confirms all 16 spans, 22 attributes, 300+ metrics
-- [ ] All 10 Grafana dashboards render data (no empty panels)
+- [ ] 5-node validator cluster starts and reaches consensus — note that
+      `docker-compose.workload.yaml` contains only the observability backend
+      (collector, Tempo, Prometheus, Loki, Grafana); the 5 validators are native
+      `xrpld` processes started by `run-full-validation.sh` (`NUM_NODES=5`)
+- [ ] Validation suite confirms the full span / attribute / metric inventory
+      (counts computed dynamically from `expected_spans.json` and
+      `expected_metrics.json`)
+- [ ] All 14 harness-asserted Grafana dashboards render data (15 on disk;
+      `log-derived-insights` is provisioned but unasserted)
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
 - [ ] CI workflow runs validation on telemetry branch changes
+      (`.github/workflows/telemetry-validation.yml`)
 
 ---
 
@@ -1110,7 +1300,8 @@ flowchart TB
 - ~~Validator list and manifest tracing~~ — descoped
 - ~~Amendment voting tracing~~ — descoped
 - ~~SHAMap sync tracing~~ — descoped
-- Full end-to-end traces (client → RPC → TX → consensus → ledger) — partial (tx-consensus correlation not yet done)
+- Full end-to-end traces (client → RPC → TX → consensus → ledger) — tx-consensus
+  correlation shipped as `tx.included` events in `doAccept` (Task 4.6)
 
 **Code Changes**: ~100 lines across 3 consensus files
 
@@ -1151,13 +1342,13 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.1 Phase 1: Core Infrastructure
 
-| Criterion       | Measurement                                                | Target                       |
-| --------------- | ---------------------------------------------------------- | ---------------------------- |
-| SDK Integration | `cmake --build` succeeds with `-DXRPL_ENABLE_TELEMETRY=ON` | ✅ Compiles                  |
-| Runtime Toggle  | `enabled=0` produces zero overhead                         | <0.1% CPU difference         |
-| Span Creation   | Unit test creates and exports span                         | Span appears in Tempo        |
-| Configuration   | All config options parsed correctly                        | Config validation tests pass |
-| Documentation   | Developer guide exists                                     | PR approved                  |
+| Criterion       | Measurement                                    | Target                       |
+| --------------- | ---------------------------------------------- | ---------------------------- |
+| SDK Integration | `cmake --build` succeeds with `-Dtelemetry=ON` | ✅ Compiles                  |
+| Runtime Toggle  | `enabled=0` produces zero overhead             | <0.1% CPU difference         |
+| Span Creation   | Unit test creates and exports span             | Span appears in Tempo        |
+| Configuration   | All config options parsed correctly            | Config validation tests pass |
+| Documentation   | Developer guide exists                         | PR approved                  |
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
@@ -1215,19 +1406,19 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.6 Success Metrics Summary
 
-| Phase    | Primary Metric                                                     | Secondary Metric            | Deadline       | Status             |
-| -------- | ------------------------------------------------------------------ | --------------------------- | -------------- | ------------------ |
-| Phase 1  | SDK compiles and runs                                              | Zero overhead when disabled | End of Week 2  | Active             |
-| Phase 2  | 100% RPC coverage                                                  | <1ms latency overhead       | End of Week 4  | Active             |
-| Phase 3  | Cross-node traces work                                             | <5% throughput impact       | End of Week 6  | Active             |
-| Phase 4  | Consensus fully traced                                             | No consensus timing impact  | End of Week 8  | Active             |
-| Phase 5  | Production deployment                                              | Operators trained           | End of Week 9  | Active             |
-| Phase 6  | StatsD metrics in Prometheus                                       | 3 dashboards operational    | End of Week 10 | Active             |
-| Phase 7  | All metrics via OTLP                                               | No StatsD dependency        | End of Week 12 | Active             |
-| Phase 8  | trace_id in logs + Loki                                            | Tempo↔Loki correlation      | End of Week 13 | Active             |
-| Phase 9  | 68+ new internal metrics in Prom                                   | 2 new dashboards            | End of Week 15 | Future Enhancement |
-| Phase 10 | Full telemetry stack validated; OTel-sourced regression gate in CI | < 3% CPU overhead proven    | End of Week 17 | Future Enhancement |
-| Phase 11 | Third-party metrics via receiver                                   | 4 new dashboards + alerting | End of Week 20 | Future Enhancement |
+| Phase    | Primary Metric                                                     | Secondary Metric                              | Deadline       | Status             |
+| -------- | ------------------------------------------------------------------ | --------------------------------------------- | -------------- | ------------------ |
+| Phase 1  | SDK compiles and runs                                              | Zero overhead when disabled                   | End of Week 2  | Active             |
+| Phase 2  | 100% RPC coverage                                                  | <1ms latency overhead                         | End of Week 4  | Active             |
+| Phase 3  | Cross-node traces work                                             | <5% throughput impact                         | End of Week 6  | Active             |
+| Phase 4  | Consensus fully traced                                             | No consensus timing impact                    | End of Week 8  | Active             |
+| Phase 5  | Production deployment                                              | Operators trained                             | End of Week 9  | Active             |
+| Phase 6  | StatsD metrics in Prometheus                                       | 3 dashboards operational                      | End of Week 10 | Active             |
+| Phase 7  | All metrics via OTLP                                               | No StatsD dependency                          | End of Week 12 | Active             |
+| Phase 8  | trace_id in logs + Loki                                            | Tempo↔Loki correlation                        | End of Week 13 | Active             |
+| Phase 9  | 68+ new internal metrics in Prom                                   | 4 new dashboards + 13 provisioned alert rules | End of Week 15 | Complete           |
+| Phase 10 | Full telemetry stack validated; OTel-sourced regression gate in CI | < 3% CPU overhead proven                      | End of Week 17 | On Phase 10 branch |
+| Phase 11 | Third-party metrics via receiver                                   | 4 new dashboards + 14 remaining alert rules   | End of Week 20 | Not started        |
 
 ---
 
@@ -1322,7 +1513,6 @@ flowchart TB
 > **Date**: 2026-03-30
 > **Status**: Draft
 > **Source**: [realgrapedrop/xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard)
-> **Jira Epic**: RIPD-5060
 
 ### Summary
 
@@ -1351,13 +1541,19 @@ Integrate 29 missing metrics, 18 alert rules, and enriched span attributes from 
 | Upgrade Awareness    | `peers_higher_version_pct`, `upgrade_recommended`                                                                                                                                                                                  | 2     |
 | Storage / Other      | `ledger_nudb_bytes`, `jq_trans_overflow_total`, `initial_sync_duration_seconds`                                                                                                                                                    | 3     |
 
-#### Alert Rules (18 total, from external dashboard)
+#### Alert Rules (18 in the external dashboard; 4 addressed by Phase 9 — 2 fully, 2 partially)
 
 | Group       | Count | Rules                                                                                                                   |
 | ----------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
 | Critical    | 8     | Agreement <90%, not proposing, unhealthy state, amendment blocked, UNL expiring, IO latency, load factor, peer count <5 |
 | Network     | 3     | Peer drop >10%/30%, P90 latency + disconnect correlation                                                                |
 | Performance | 7     | CPU >80%, memory >90%, disk >85%, job queue overflow, upgrade recommended, tx rate drop, stale ledger                   |
+
+> Phase 9 ships **13 provisioned rules in 5 groups** against xrpld's own metric
+> surface; 4 of them address external rules — **fully** for unhealthy state and
+> job queue overflow, only **partially** for IO latency and stale ledger (looser
+> thresholds and longer windows; see the coverage table under Task 11.9). The 14
+> genuinely-remaining rules are scoped under Task 11.9 below.
 
 ---
 
@@ -1371,20 +1567,37 @@ Integrate 29 missing metrics, 18 alert rules, and enriched span attributes from 
 
 Add node-level health context to every `rpc.command.*` span so operators can correlate RPC behavior with node state.
 
-New span attributes on `rpc.command.*`:
+> **Status: NOT IMPLEMENTED as span attributes.** Neither key was ever added to
+> a span. The dotted `xrpl.*` **span-attribute** namespace was dropped in favour
+> of bare/underscore keys (`9e27120a15`), and these two were never re-added under
+> any name. Falsifiable check: `grep -rn 'seg::xrpl' src/ include/` → exactly **2**
+> hits, both in `include/xrpl/telemetry/SpanNames.h:117-118`
+> (`attr::networkId` / `attr::networkType`, i.e. `xrpl.network.id` and
+> `xrpl.network.type`), and both are **resource** attributes set on the OTel
+> resource at startup, not span attributes. (Do not use
+> `grep 'makeStr("xrpl\.'` as evidence — the keys were always composed with
+> `join(seg::…)`, never that literal, so it has returned 0 hits since day one and
+> proves nothing.)
+> The **values** are exported instead as `MetricsRegistry` metric label values:
+> `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1014`) and
+> `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1216`).
+> Correlating an RPC with node state therefore requires a metric join, not a
+> span filter. Kept here as an open item.
 
-| Attribute                     | Type   | Source                               | Value Example         |
-| ----------------------------- | ------ | ------------------------------------ | --------------------- |
-| `xrpl.node.amendment_blocked` | bool   | `app_.getOPs().isAmendmentBlocked()` | `true`                |
-| `xrpl.node.server_state`      | string | `app_.getOPs().strOperatingMode()`   | `"full"`, `"syncing"` |
+Proposed (never built) span attributes on `rpc.command.*`:
+
+| Attribute (proposed) | Type   | Source                               | Value Example         | Status                                         |
+| -------------------- | ------ | ------------------------------------ | --------------------- | ---------------------------------------------- |
+| `amendment_blocked`  | bool   | `app_.getOPs().isAmendmentBlocked()` | `true`                | ❌ Never implemented — metric label value only |
+| `server_state`       | string | `app_.getOPs().strOperatingMode()`   | `"full"`, `"syncing"` | ❌ Never implemented — metric label value only |
 
 **File**: `src/xrpld/rpc/detail/RPCHandler.cpp` (in the `rpc.command.*` span creation block, after existing setAttribute calls)
 
-**Rationale**: RPC is the operator's primary interaction point. When a node is amendment-blocked or degraded, every RPC response is suspect. Tagging spans with this state enables Jaeger queries like `{name=~"rpc.command.*"} | xrpl.node.amendment_blocked = true` to find all RPCs served during a blocked period.
+**Rationale**: RPC is the operator's primary interaction point. When a node is amendment-blocked or degraded, every RPC response is suspect. Tagging spans with this state would enable TraceQL queries like `{name=~"rpc.command.*" && span.amendment_blocked = true}` to find all RPCs served during a blocked period.
 
 **Exit Criteria**:
 
-- [ ] `rpc.command.server_info` spans carry `xrpl.node.amendment_blocked` and `xrpl.node.server_state` attributes
+- [ ] `rpc.command.server_info` spans carry `amendment_blocked` and `server_state` attributes — **open**, never implemented
 - [ ] No measurable latency impact (attribute values are cached atomics, not computed per-call)
 
 ---
@@ -1399,18 +1612,27 @@ Add the relaying peer's xrpld version to transaction receive spans to enable ver
 
 New span attribute on `tx.receive`:
 
-| Attribute           | Type   | Source               | Value Example   |
-| ------------------- | ------ | -------------------- | --------------- |
-| `xrpl.peer.version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` |
+| Attribute      | Type   | Source               | Value Example   | Defined at         |
+| -------------- | ------ | -------------------- | --------------- | ------------------ |
+| `peer_version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` | `TxSpanNames.h:79` |
 
-**File**: `src/xrpld/overlay/detail/PeerImp.cpp` (in the `tx.receive` span block, after existing `xrpl.peer.id` setAttribute)
+> The dotted `xrpl.peer.version` form in the original spec was never emitted; the
+> live key is the bare `peer_version` (`9e27120a15` dropped the `xrpl.*`
+> namespace repo-wide).
+
+**File**: `src/xrpld/overlay/detail/PeerImp.cpp` (in the `tx.receive` span block, after the existing `peer_id` setAttribute)
 
 **Rationale**: Transaction relay is where version mismatches cause subtle serialization or validation bugs. Tracing "this tx came from a v2.3.0 peer" helps diagnose compatibility issues during network upgrades.
 
 **Exit Criteria**:
 
-- [ ] `tx.receive` spans carry `xrpl.peer.version` attribute with a non-empty version string
-- [ ] Attribute is omitted (not empty-string) when `getVersion()` returns empty
+- [x] `tx.receive` spans carry `peer_version` attribute with a non-empty version
+      string — `PeerImp.cpp:1341-1342` sets `tx_span::attr::peerVersion` on the
+      `txReceiveSpan` created at `:1330`
+- [x] Attribute is omitted (not empty-string) when `getVersion()` returns empty —
+      the call site is guarded:
+      `if (auto const version = getVersion(); !version.empty())`
+      (`PeerImp.cpp:1341`), so no attribute is set at all on the empty path
 
 ---
 
@@ -1422,26 +1644,37 @@ New span attribute on `tx.receive`:
 
 Add ledger hash and validation type to validation spans on both send and receive paths. This enables trace-level agreement analysis — filter by ledger hash to see which validators agreed.
 
-New span attributes on `consensus.validation.send`:
+> **Status: SHIPPED**, with one exception noted below. All keys are bare /
+> underscore — the dotted `xrpl.*` forms in the original spec were never emitted
+> as **span** attributes. Check: `grep -rn 'seg::xrpl' src/ include/` → 2 hits,
+> both `SpanNames.h:117-118` resource attributes (`xrpl.network.{id,type}`).
 
-| Attribute                     | Type   | Source                                  | Value Example               |
-| ----------------------------- | ------ | --------------------------------------- | --------------------------- |
-| `xrpl.validation.ledger_hash` | string | Ledger hash from `validate()` call args | `"A1B2C3..."` (64-char hex) |
-| `xrpl.validation.full`        | bool   | Whether this is a full validation       | `true`                      |
+Span attributes on `consensus.validation.send` (`RCLConsensus.cpp:975-981`):
 
-New span attributes on `peer.validation.receive`:
+| Attribute         | Type   | Source                                  | Value Example               | Defined at        |
+| ----------------- | ------ | --------------------------------------- | --------------------------- | ----------------- |
+| `ledger_hash`     | string | Ledger hash from `validate()` call args | `"A1B2C3..."` (64-char hex) | `SpanNames.h:147` |
+| `full_validation` | bool   | Whether this is a full validation       | `true`                      | `SpanNames.h:148` |
+| `ledger_seq`      | int64  | `ledger.seq()`                          | `93110248`                  | shared consensus  |
+| `proposing`       | bool   | `proposing` argument                    | `true`                      | shared consensus  |
 
-| Attribute                          | Type   | Source                                | Value Example               |
-| ---------------------------------- | ------ | ------------------------------------- | --------------------------- |
-| `xrpl.peer.validation.ledger_hash` | string | From deserialized STValidation object | `"A1B2C3..."` (64-char hex) |
-| `xrpl.peer.validation.full`        | bool   | From STValidation flags               | `true`                      |
+Span attributes on `peer.validation.receive` (`PeerImp.cpp:2573-2574`):
 
-New span attributes on `consensus.accept`:
+| Attribute         | Type   | Source                                | Value Example               | Defined at           |
+| ----------------- | ------ | ------------------------------------- | --------------------------- | -------------------- |
+| `ledger_hash`     | string | From deserialized STValidation object | `"A1B2C3..."` (64-char hex) | `PeerSpanNames.h:35` |
+| `full_validation` | bool   | `val->isFull()`                       | `true`                      | `PeerSpanNames.h:34` |
 
-| Attribute                            | Type  | Source                                   | Value Example |
-| ------------------------------------ | ----- | ---------------------------------------- | ------------- |
-| `xrpl.consensus.validation_quorum`   | int64 | `app_.validators().quorum()`             | `28`          |
-| `xrpl.consensus.proposers_validated` | int64 | `result.proposers` from consensus result | `35`          |
+Span attributes on `consensus.accept`:
+
+| Attribute             | Type  | Source                                   | Value Example | Status                                                              |
+| --------------------- | ----- | ---------------------------------------- | ------------- | ------------------------------------------------------------------- |
+| `quorum`              | int64 | `app_.getValidators().quorum()`          | `28`          | ✅ `RCLConsensus.cpp:516`, `ConsensusSpanNames.h:219`               |
+| `proposers_validated` | int64 | `result.proposers` from consensus result | `35`          | ❌ **Never implemented** — no attribute of this name exists in code |
+
+> `proposers` is already set on `consensus.accept` (`RCLConsensus.cpp:513`), so a
+> separate `proposers_validated` key would be a duplicate under a different
+> name; that is why it was never added. It stays open only as a naming decision.
 
 **Files**:
 
@@ -1452,10 +1685,11 @@ New span attributes on `consensus.accept`:
 
 **Exit Criteria**:
 
-- [ ] `consensus.validation.send` spans carry `xrpl.validation.ledger_hash` and `xrpl.validation.full`
-- [ ] `peer.validation.receive` spans carry `xrpl.peer.validation.ledger_hash` and `xrpl.peer.validation.full`
-- [ ] `consensus.accept` spans carry `xrpl.consensus.validation_quorum` and `xrpl.consensus.proposers_validated`
-- [ ] Ledger hash attributes match between send and receive for the same ledger
+- [x] `consensus.validation.send` spans carry `ledger_hash` and `full_validation` — `RCLConsensus.cpp:975-981`
+- [x] `peer.validation.receive` spans carry `ledger_hash` and `full_validation` — `PeerImp.cpp:2573-2574`
+- [x] `consensus.accept` spans carry `quorum` — `RCLConsensus.cpp:516`
+- [ ] `consensus.accept` spans carry `proposers_validated` — **open**, never implemented (see note above)
+- [ ] Ledger hash attributes match between send and receive for the same ledger — needs a live multi-node run
 
 ---
 
@@ -1650,7 +1884,7 @@ New MetricsRegistry observable gauge for node state duration.
 
 | Gauge Name       | Label `metric=`                 | Type   | Source                                           |
 | ---------------- | ------------------------------- | ------ | ------------------------------------------------ |
-| `state_tracking` | `state_value`                   | int64  | 0-7 numeric encoding matching external dashboard |
+| `state_tracking` | `state_value`                   | double | 0-6 numeric encoding matching external dashboard |
 |                  | `time_in_current_state_seconds` | double | `now - lastModeChangeTime`                       |
 
 **State value encoding**:
@@ -1761,9 +1995,12 @@ Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 
 > **Ref**: Adds to existing Phase 9 task list. Depends on Phase 7 gauges/counters. Consumed by Phase 10 (dashboard load checks).
 
-**Task 9.11: Validator Health Dashboard**
+**Task 9.11: Validator Health Dashboard** — ✅ shipped
 
-New Grafana dashboard: `validator-health.json`
+New Grafana dashboard: `validator-health.json` (uid `validator-health`). The
+shipped dashboard has **17 panels** across 3 rows — Validation Agreement,
+Validation Rates, Server State & Consensus — i.e. 4 more than the 13 planned
+below.
 
 | Panel                      | Type       | PromQL                                                   |
 | -------------------------- | ---------- | -------------------------------------------------------- |
@@ -1785,7 +2022,7 @@ New Grafana dashboard: `validator-health.json`
 
 ---
 
-**Task 9.12: Peer Quality Dashboard**
+**Task 9.12: Peer Quality Dashboard** — ✅ shipped (6 panels, uid `peer-quality`)
 
 New Grafana dashboard: `peer-quality.json`
 
@@ -1800,9 +2037,10 @@ New Grafana dashboard: `peer-quality.json`
 
 ---
 
-**Task 9.13: Ledger Economy Dashboard Panels**
+**Task 9.13: Ledger Economy Dashboard Panels** — ✅ shipped
 
-Add a "Ledger Economy" row to the existing `node-health.json` dashboard:
+The "Ledger Economy" row is present on `node-health.json` with all 5
+`ledger_economy` panels:
 
 | Panel                | Type       | PromQL                                        |
 | -------------------- | ---------- | --------------------------------------------- |
@@ -1822,18 +2060,23 @@ Add a "Ledger Economy" row to the existing `node-health.json` dashboard:
 
 Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 
-**New span attribute checks (~8)**:
+**New span attribute checks** — bare/underscore keys; the dotted `xrpl.*` forms
+were never emitted:
 
-| Span Name                   | New Attribute                        |
-| --------------------------- | ------------------------------------ |
-| `rpc.command.server_info`   | `xrpl.node.amendment_blocked`        |
-| `rpc.command.server_info`   | `xrpl.node.server_state`             |
-| `tx.receive`                | `xrpl.peer.version`                  |
-| `consensus.validation.send` | `xrpl.validation.ledger_hash`        |
-| `consensus.validation.send` | `xrpl.validation.full`               |
-| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash`   |
-| `consensus.accept`          | `xrpl.consensus.validation_quorum`   |
-| `consensus.accept`          | `xrpl.consensus.proposers_validated` |
+| Span Name                   | New Attribute         | Emitted?                                       |
+| --------------------------- | --------------------- | ---------------------------------------------- |
+| `rpc.command.server_info`   | `amendment_blocked`   | ❌ never implemented — metric label value only |
+| `rpc.command.server_info`   | `server_state`        | ❌ never implemented — metric label value only |
+| `tx.receive`                | `peer_version`        | ✅ `TxSpanNames.h:79`                          |
+| `consensus.validation.send` | `ledger_hash`         | ✅ `RCLConsensus.cpp:975-981`                  |
+| `consensus.validation.send` | `full_validation`     | ✅ `RCLConsensus.cpp:975-981`                  |
+| `peer.validation.receive`   | `ledger_hash`         | ✅ `PeerImp.cpp:2573`                          |
+| `peer.validation.receive`   | `full_validation`     | ✅ `PeerImp.cpp:2574`                          |
+| `consensus.accept`          | `quorum`              | ✅ `RCLConsensus.cpp:516`                      |
+| `consensus.accept`          | `proposers_validated` | ❌ never implemented                           |
+
+Only the ✅ rows are checkable; the ❌ rows must not be added to
+`expected_spans.json` as required attributes.
 
 **New metric existence checks (~13)**:
 
@@ -1868,9 +2111,10 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 | `validation_agreement_pct_1h` | in [0, 100]       |
 | `unl_expiry_days`             | > 0 (not expired) |
 | `peer_latency_p90_ms`         | > 0 (peers exist) |
-| `state_value`                 | in [0, 7]         |
+| `state_value`                 | in [0, 6]         |
 
-**Total new checks: ~28** (bringing total from 73 to ~101)
+**Total new checks: ~28** — the harness computes its check total dynamically, so
+no fixed "N of N" figure is asserted here.
 
 ---
 
@@ -1878,50 +2122,89 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 
 > **Ref**: Adds to existing Phase 11 task list. Depends on Phase 7 metrics and Phase 9 dashboards.
 
-**Task 11.9: Alert Rules from External Dashboard**
+**Task 11.9: Remaining Alert Rules from External Dashboard**
 
-Port 18 alert rules from the external `xrpl-validator-dashboard` to Grafana alerting provisioning.
+> **Ownership correction.** Provisioned Grafana alerting is **not** a Phase 11
+> deliverable and does **not** live at
+> `docker/telemetry/grafana/alerting/{alert-rules,contact-points,notification-policies}.yaml`
+> — that directory has never existed. It shipped on **Phase 9** (`7cabf91a0d`)
+> at `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml`
+> with **13 rules in 5 groups**, 2 contact points and a nested notification
+> policy. See §6.8.2 → "Provisioned Grafana Alerting (Task 9.9a)".
 
-**Critical Group** (8 rules, eval interval 10s):
+Of the 18 external-dashboard rules originally listed here, **4 are addressed** by
+the Phase 9 set (under different names and against xrpld's own metric surface) —
+but only 2 of those 4 are a like-for-like match. The other 2 are **partially
+covered**: the Phase 9 rule watches the same failure mode at a materially looser
+threshold and a longer `for` window, so the external rule's sensitivity is _not_
+reproduced.
 
-| Rule                | Condition                                               | For |
-| ------------------- | ------------------------------------------------------- | --- |
-| Agreement Below 90% | `validation_agreement{metric="agreement_pct_24h"} < 90` | 30s |
-| Not Proposing       | `state_tracking{metric="state_value"} < 6`              | 10s |
-| Unhealthy State     | `state_tracking{metric="state_value"} < 4`              | 10s |
-| Amendment Blocked   | `validator_health{metric="amendment_blocked"} == 1`     | 1m  |
-| UNL Expiring        | `validator_health{metric="unl_expiry_days"} < 14`       | 1h  |
-| High IO Latency     | `histogram_quantile(0.95, ios_latency_bucket) > 50`     | 1m  |
-| High Load Factor    | `load_factor_metrics{metric="load_factor"} > 1000`      | 1m  |
-| Peer Count Critical | `server_info{metric="peers"} < 5`                       | 1m  |
+| External rule      | Addressed by (Phase 9 rule)                                      | Group              | Coverage                                                                                                                                                                            |
+| ------------------ | ---------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unhealthy State    | `NodeNotFull`                                                    | `xrpld-node-state` | Full                                                                                                                                                                                |
+| High IO Latency    | `NodeStoreIOLatencyHigh` (`ios_latency_milliseconds_bucket` p95) | `xrpld-jobqueue`   | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the external rule fires at **> 50 for 1m**. A 20× looser threshold and a 10× longer window                                |
+| Job Queue Overflow | `JobQueueTxOverflow` (`jq_trans_overflow_total`)                 | `xrpld-jobqueue`   | Full                                                                                                                                                                                |
+| Stale Ledger       | `ValidatedLedgerStale` (`ledgermaster_validated_ledger_age`)     | `xrpld-consensus`  | **Partial** — different metric and threshold: Phase 9 uses `ledgermaster_validated_ledger_age > 60` for 5m; the external rule uses `ledger_economy{ledger_age_seconds} > 30` for 1m |
 
-**Network Group** (3 rules, eval interval 10s):
+> The two partial rows are **not** closed by Phase 9. Either re-baseline the
+> Phase 9 thresholds against the measured evidence, or add the tighter external
+> variants alongside them under Task 11.12 — do not treat them as done.
 
-| Rule                      | Condition                                                   | For |
-| ------------------------- | ----------------------------------------------------------- | --- |
-| Peer Drop >10%            | `delta(server_info{metric="peers"}[30s]) / ... * 100 < -10` | 30s |
-| Peer Drop >30%            | Same formula, threshold -30                                 | 30s |
-| P90 Latency + Disconnects | `peer_latency_p90_ms > 500 AND rate(disconnects) > 0`       | 2m  |
+Phase 9 additionally ships 9 rules with no external counterpart:
+`LedgerHistoryMismatch`, `LedgerCloseStalled`, `ValidationsMissed`,
+`ValidationsNotChecked`, `JobQueueLatencyHigh`, `NodeStateFlapping`,
+`ManifestJobQueueConvoy`, `ManifestFloodInbound`, `PeerResourceDisconnects`.
 
-**Performance Group** (7 rules, eval interval 10s):
+**Remaining open work for Phase 11 — 14 rules that genuinely do not exist yet:**
 
-| Rule                | Condition                                              | For |
-| ------------------- | ------------------------------------------------------ | --- |
-| CPU High            | Per-core CPU > 80%                                     | 2m  |
-| Memory Critical     | Memory usage > 90%                                     | 1m  |
-| Disk Warning        | Disk usage > 85%                                       | 2m  |
-| Job Queue Overflow  | `rate(jq_trans_overflow_total[5m]) > 0`                | 1m  |
-| Upgrade Recommended | `peer_quality{metric="peers_higher_version_pct"} > 60` | 1m  |
-| TX Rate Drop        | Transaction rate dropped > 50% in 5m window            | 5m  |
-| Stale Ledger        | `ledger_economy{metric="ledger_age_seconds"} > 30`     | 1m  |
+**Critical** (6 remaining):
 
-**Notification channels**: Template configs for Email/SMTP, Discord, Slack, PagerDuty.
+| Rule                | Condition                                               | Blocked on |
+| ------------------- | ------------------------------------------------------- | ---------- |
+| Agreement Below 90% | `validation_agreement{metric="agreement_pct_24h"} < 90` | —          |
+| Not Proposing       | `state_tracking{metric="state_value"} < 6`              | —          |
+| Amendment Blocked   | `validator_health{metric="amendment_blocked"} == 1`     | —          |
+| UNL Expiring        | `validator_health{metric="unl_expiry_days"} < 14`       | —          |
+| High Load Factor    | `load_factor_metrics{metric="load_factor"} > 1000`      | —          |
+| Peer Count Critical | `server_info{metric="peers"} < 5`                       | —          |
 
-**Files**:
+> **"Not Proposing" is unblocked.** The `state_tracking` gauge **is**
+> implemented: `MetricsRegistry::registerStateTrackingGauge()`
+> (`MetricsRegistry.cpp:1461-1510`) creates
+> `CreateDoubleObservableGauge("state_tracking", …)` at `:1466` and observes
+> `state_value` (`:1497`) and `time_in_current_state_seconds` (`:1502`). It is
+> already consumed by `validator-health.json:765,971` and
+> `ledger-data-sync.json:869`, and documented in
+> [09-data-collection-reference.md](./09-data-collection-reference.md) §
+> "State Tracking". Only **3** of the 14 remaining rules are blocked on anything —
+> CPU High, Memory Critical and Disk Warning, all needing `node_exporter`.
 
-- `docker/telemetry/grafana/alerting/alert-rules.yaml` (new or extend existing)
-- `docker/telemetry/grafana/alerting/contact-points.yaml`
-- `docker/telemetry/grafana/alerting/notification-policies.yaml`
+**Network** (3 remaining):
+
+| Rule                      | Condition                                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Peer Drop >10%            | `delta(server_info{metric="peers"}[30s]) / ... * 100 < -10`                                                                       |
+| Peer Drop >30%            | Same formula, threshold -30                                                                                                       |
+| P90 Latency + Disconnects | `peer_latency_p90_ms > 500 AND rate(disconnects) > 0` — partially covered by `PeerResourceDisconnects`, which has no latency term |
+
+**Performance** (5 remaining):
+
+| Rule                | Condition                                              | Blocked on                               |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------- |
+| CPU High            | Per-core CPU > 80%                                     | needs `node_exporter` — not in the stack |
+| Memory Critical     | Memory usage > 90%                                     | needs `node_exporter`                    |
+| Disk Warning        | Disk usage > 85%                                       | needs `node_exporter`                    |
+| Upgrade Recommended | `peer_quality{metric="peers_higher_version_pct"} > 60` | —                                        |
+| TX Rate Drop        | Transaction rate dropped > 50% in 5m window            | —                                        |
+
+**Notification channels**: the shipped `contactpoints.yaml` provides Slack and
+email. Templates for Discord and PagerDuty remain open.
+
+**Files** (extend the Phase 9 location; do **not** create a second `alerting/` tree):
+
+- `docker/telemetry/grafana/provisioning/alerting/rules.yaml` (add groups)
+- `docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml` (add receivers)
+- `docker/telemetry/grafana/provisioning/alerting/policies.yaml` (add routes)
 
 ---
 
@@ -1939,18 +2222,44 @@ Document the external dashboard's "fast path" pattern as a future optimization f
 
 ### Documentation Updates
 
-#### `docs/telemetry-runbook.md` (on Phase 9 branch)
+#### `docs/telemetry-runbook.md` (on Phase 9 branch) — partially done
 
-Add new sections after "Phase 9: OTel Metrics Alerting Rules":
+- [x] **Alerting** section — shipped; documents all 13 provisioned rules,
+      thresholds, likely causes, and how to point a contact point at a real
+      receiver.
+      Six dashboard reference sections remain unwritten (`fee-market`, `job-queue`,
+      `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`,
+      `validator-health`), plus one operator explainer:
 
-1. **Validator Health Monitoring** — explains agreement tracking, amendment blocked, UNL expiry, with example PromQL queries
-2. **Peer Quality Monitoring** — explains P90 latency, insane peers, version awareness
-3. **Ledger Economy Monitoring** — explains fee/reserve gauges, transaction rate, ledger age
-4. **Validation Agreement Explained** — operator-facing explanation of the reconciliation algorithm (8s grace, 5m late repair), what "missed" means, and when to worry
+- [ ] **`validator-health` guide** — explains agreement tracking, amendment blocked, UNL expiry, with example PromQL queries
+- [ ] **`peer-quality` guide** — explains P90 latency, insane peers, version awareness
+- [ ] **`fee-market` guide** — explains TxQ depth vs capacity, fee escalation levels, load factor breakdown
+- [ ] **`job-queue` guide** — explains per-job-type rates, queue wait vs execution time, concurrency limits
+- [ ] **`ledger-data-sync` guide** — explains sync state, ledger acquisition, I/O latency
+- [ ] **`overlay-traffic-detail` guide** — explains per-category traffic accounting (note the §6 defects that flatline some panels)
+- [ ] **Validation Agreement Explained** — operator-facing explanation of the reconciliation algorithm (8s grace, 5m late repair), what "missed" means, and when to worry
 
-#### `OpenTelemetryPlan/09-data-collection-reference.md` (on Phase 9 branch)
+> Ledger economy is a **row on `node-health`**, not a dashboard of its own, so it
+> falls under that already-documented section rather than the six above.
 
-Add new metric tables in a "Phase 7+: External Dashboard Parity" section covering all 29 new metrics with their gauge names, label values, types, and sources.
+> Still open. The runbook itself records the gap at its dashboard reference
+> section, and it names **six** dashboards, not four: "Nine dashboards have a
+> reference section below. `fee-market`, `job-queue`, `ledger-data-sync`,
+> `overlay-traffic-detail`, `peer-quality`, and `validator-health` are
+> provisioned but not yet documented here — their panel descriptions carry the
+> same six-heading reference format, so open the panel info icon in Grafana until
+> a section is written." (15 dashboards on disk − 6 undocumented = 9 documented.)
+> So the remaining runbook work is **six** dashboard guides, plus the Validation
+> Agreement explainer listed above.
+
+#### `OpenTelemetryPlan/09-data-collection-reference.md` (on Phase 9 branch) — done
+
+- [x] "Phase 7+: External Dashboard Parity Metrics" section with gauge names,
+      label values, types and sources.
+- [x] §5b "Internal Metric Gap Fill (Phase 9)" and "Phase 9: OTel SDK-Exported
+      Metrics (MetricsRegistry)".
+- [x] "New Grafana Dashboards (Phase 9)" and "Updated Grafana Dashboards
+      (Phase 9)" reference tables.
 
 ---
 
@@ -1966,11 +2275,13 @@ Phase 6 (StatsD bridge: peerDisconnectsCharges)
     │
 Phase 7 (ValidationTracker + 7 gauges + 7 counters + agreement gauge)
     │
-Phase 9 (3 dashboards + ledger economy panels + runbook + data-collection-ref)
+Phase 9 (4 new dashboards + ledger economy panels + 13 provisioned
+         alert rules + data-collection-ref; runbook Alerting only)
     │
-Phase 10 (28 new validation checks in validate_telemetry.py)
+Phase 10 (new validation checks in validate_telemetry.py
+          + .github/workflows/telemetry-validation.yml)
     │
-Phase 11 (18 alert rules + dual-datasource docs)
+Phase 11 (14 remaining alert rules + dual-datasource docs)
 ```
 
 ### Rebase Strategy

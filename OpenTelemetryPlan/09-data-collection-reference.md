@@ -2,7 +2,7 @@
 
 > **Audience**: Developers and operators. This is the single source of truth for all telemetry data collected by xrpld's observability stack.
 >
-> **Related docs**: [docs/telemetry-runbook.md](../docs/telemetry-runbook.md) (operator runbook with alerting and troubleshooting) | [03-implementation-strategy.md](./03-implementation-strategy.md) (code structure and performance optimization) | [04-code-samples.md](./04-code-samples.md) (C++ instrumentation examples)
+> **Related docs**: [docs/telemetry-runbook.md](../docs/telemetry-runbook.md) (operator runbook with alerting and troubleshooting) | [03-implementation-strategy.md](./03-implementation-strategy.md) (code structure and performance optimization) | [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) (authoritative span-flow reference; replaces the deleted `04-code-samples.md`)
 
 ## Data Flow Overview
 
@@ -33,7 +33,7 @@ graph LR
     end
 
     subgraph viz["Visualization"]
-        F["Grafana  :3000<br/>13 dashboards"]
+        F["Grafana  :3000<br/>15 dashboards"]
     end
 
     A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
@@ -72,9 +72,13 @@ There are three independent telemetry pipelines entering a single **OTel Collect
 
 A third, narrower metrics path exists for instruments created at their call site through the
 `XRPL_METRIC_*` macros. These use the OTel Metrics SDK directly and reach the collector's OTLP
-receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. See
-[§2a](#2a-call-site-otel-metrics-metricsregistry). Code in `libxrpl` cannot use these macros and
-always goes through `beast::insight` instead.
+receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. The seven
+call-site instruments are documented with the families they belong to:
+`rpc_in_flight_requests` in
+[§Per-RPC Method Metrics](#per-rpc-method-metrics-synchronous-countershistogram), the five
+`getobject_*` in [§GetObject Request Path](#getobject-request-path-synchronous-countershistograms),
+and `ledgers_closed_total` in [§Synchronous Counters (Phase 7+)](#synchronous-counters-phase-7).
+Code in `libxrpl` cannot use these macros and always goes through `beast::insight` instead.
 
 **Trace backend** — The collector exports traces via OTLP/gRPC to:
 
@@ -86,13 +90,22 @@ always goes through `beast::insight` instead.
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (~37 spans)
+### 1.1 Complete Span Inventory (41 spans)
 
-> **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
+> **41 emitted span-name families.** The count is derived from the `*SpanNames.h`
+> headers and their call sites, one family per distinct span name
+> (`rpc.command.<name>` and `grpc.<MethodName>` each count once, since the
+> command / method name is a parameter of a single family). The tables below list
+> all 41: RPC 5, gRPC 1, transaction 6, TxQ 6, consensus 13, ledger 4, peer 2,
+> pathfind 4. The Phase-10 validation harness
+> (`docker/telemetry/workload/expected_spans.json`) catalogues **40** of them —
+> `rpc.ws_upgrade` has no entry.
+
+> **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) for the span flow diagrams (the former `04-code-samples.md` §4.6 was deleted).
 
 > **Span names vs. attribute keys**: span names use dotted `subsystem.operation`
 > form (e.g. `rpc.http_request`). Span _attribute_ keys use the bare/underscore
-> form from the 2026-05-13 naming redesign (e.g. `tx_hash`, not `xrpl.tx.hash`).
+> form from the 2026-05-13 naming redesign (e.g. `tx_hash`, not `xrpl.tx.hash`). <!-- otel-naming:allow-dotted: xrpl.tx.hash -->
 > The dotted `xrpl.*` form is reserved for OTel **resource** attributes set once
 > at startup. See §1.2 for the full attribute inventory.
 
@@ -190,25 +203,34 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 
 Controlled by `trace_consensus=1` in `[telemetry]` config.
 
-| Span Name                      | Parent             | Source File      | Description                                                         |
-| ------------------------------ | ------------------ | ---------------- | ------------------------------------------------------------------- |
-| `consensus.round`              | — (root)           | RCLConsensus.cpp | Root span for one consensus round (deterministic trace per round)   |
-| `consensus.phase.open`         | `consensus.round`  | Consensus.h      | Open phase — collecting transactions before close                   |
-| `consensus.proposal.send`      | `consensus.round`  | RCLConsensus.cpp | Node broadcasts its transaction set proposal                        |
-| `consensus.ledger_close`       | `consensus.round`  | RCLConsensus.cpp | Ledger close event triggered by consensus                           |
-| `consensus.establish`          | `consensus.round`  | Consensus.h      | Establish phase — converging on the transaction set                 |
-| `consensus.update_positions`   | `consensus.round`  | Consensus.h      | Position update with per-dispute vote details                       |
-| `consensus.check`              | `consensus.round`  | Consensus.h      | Consensus threshold check (agree/disagree tally)                    |
-| `consensus.accept`             | `consensus.round`  | RCLConsensus.cpp | Consensus accepts a ledger (round complete)                         |
-| `consensus.accept.apply`       | `consensus.accept` | RCLConsensus.cpp | Ledger application with close-time details (jtACCEPT thread)        |
-| `consensus.validation.send`    | `consensus.round`  | RCLConsensus.cpp | Validation message sent after ledger accepted (follows-from link)   |
-| `consensus.mode_change`        | `consensus.round`  | RCLConsensus.cpp | Operating-mode transition during the round                          |
-| `consensus.proposal.receive`   | (context)          | PeerImp.cpp      | Proposal received from a peer (context-propagated into the round)   |
-| `consensus.validation.receive` | (context)          | PeerImp.cpp      | Validation received from a peer (context-propagated into the round) |
+| Span Name                      | Parent                | Source File      | Description                                                         |
+| ------------------------------ | --------------------- | ---------------- | ------------------------------------------------------------------- |
+| `consensus.round`              | — (root)              | RCLConsensus.cpp | Root span for one consensus round (deterministic trace per round)   |
+| `consensus.phase.open`         | `consensus.round`     | Consensus.h      | Open phase — collecting transactions before close                   |
+| `consensus.proposal.send`      | `consensus.round`     | RCLConsensus.cpp | Node broadcasts its transaction set proposal                        |
+| `consensus.ledger_close`       | `consensus.round`     | RCLConsensus.cpp | Ledger close event triggered by consensus                           |
+| `consensus.establish`          | `consensus.round`     | Consensus.h      | Establish phase — converging on the transaction set                 |
+| `consensus.update_positions`   | `consensus.establish` | Consensus.h      | Position update with per-dispute vote details                       |
+| `consensus.check`              | `consensus.establish` | Consensus.h      | Consensus threshold check (agree/disagree tally)                    |
+| `consensus.accept`             | `consensus.round`     | RCLConsensus.cpp | Consensus accepts a ledger (round complete)                         |
+| `consensus.accept.apply`       | `consensus.accept`    | RCLConsensus.cpp | Ledger application with close-time details (jtACCEPT thread)        |
+| `consensus.validation.send`    | `consensus.round`     | RCLConsensus.cpp | Validation message sent after ledger accepted (follows-from link)   |
+| `consensus.mode_change`        | `consensus.round`     | RCLConsensus.cpp | Operating-mode transition during the round                          |
+| `consensus.proposal.receive`   | (context)             | PeerImp.cpp      | Proposal received from a peer (context-propagated into the round)   |
+| `consensus.validation.receive` | (context)             | PeerImp.cpp      | Validation received from a peer (context-propagated into the round) |
 
 The `.receive` spans are created per-message in the overlay and joined to the
 round trace via context propagation rather than direct parenting. The
 `consensus.validation.send` span uses a follows-from link off the round.
+
+> **`update_positions` and `check` sit one level below `establish`, not below
+> the round.** Both are created with
+> `SpanGuard::childSpan(..., establishSpanContext_)`
+> (`include/xrpl/consensus/Consensus.h:1628` and `:1837`), and
+> `consensus.establish` is itself parented to `roundSpanContext_`
+> (`Consensus.h:2099-2101`). An earlier revision of this table showed them as
+> direct children of `consensus.round`; queries or trace-shape assertions built
+> on that tree are wrong by one level.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"consensus.*"}`
 
@@ -251,12 +273,12 @@ under an unrelated transaction's trace.
 
 Controlled by `trace_rpc=1` in `[telemetry]` config.
 
-| Span Name             | Parent               | Source File     | Description                                                |
-| --------------------- | -------------------- | --------------- | ---------------------------------------------------------- |
-| `pathfind.request`    | `rpc.command.<name>` | PathFind.cpp    | `path_find` RPC entry (`doPathFind`)                       |
-| `pathfind.compute`    | `pathfind.request`   | PathRequest.cpp | Path computation for one request (`PathRequest::doUpdate`) |
-| `pathfind.discover`   | `pathfind.compute`   | Pathfinder.cpp  | Graph exploration (one per RPC call)                       |
-| `pathfind.update_all` | —                    | PathRequest.cpp | Async recomputation of all active requests at ledger close |
+| Span Name             | Parent               | Source File                            | Description                                                |
+| --------------------- | -------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| `pathfind.request`    | `rpc.command.<name>` | PathFind.cpp:27, RipplePathFind.cpp:36 | `path_find` / `ripple_path_find` RPC entry                 |
+| `pathfind.compute`    | `pathfind.request`   | PathRequest.cpp:750                    | Path computation for one request (`PathRequest::doUpdate`) |
+| `pathfind.discover`   | `pathfind.compute`   | PathRequest.cpp:599-600                | Graph exploration (one per RPC call)                       |
+| `pathfind.update_all` | —                    | PathRequestManager.cpp:88-92           | Async recomputation of all active requests at ledger close |
 
 > **Note**: `pathfind.request` nests under the active `rpc.command.<name>` span.
 > Because OTel context storage is coroutine-aware (backed by `LocalValue`), the
@@ -367,50 +389,78 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
 #### Consensus Attributes
 
-| Attribute                  | Type    | Set On                                                                                             | Description                                              |
-| -------------------------- | ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `consensus_ledger_id`      | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                   |
-| `ledger_seq`               | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                   |
-| `consensus_mode`           | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc. |
-| `consensus_round_id`       | int64   | `consensus.round`                                                                                  | Round identifier                                         |
-| `consensus_phase`          | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)          |
-| `trace_strategy`           | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `random`)           |
-| `previous_ledger_seq`      | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                          |
-| `previous_proposers`       | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                     |
-| `previous_round_time_ms`   | int64   | `consensus.round`                                                                                  | Duration of the previous round                           |
-| `consensus_round`          | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal      |
-| `is_bow_out`               | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)  |
-| `tx_count_open`            | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                 |
-| `close_time_resolution_ms` | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                          |
-| `converge_percent`         | int64   | `consensus.establish`, `consensus.update_positions`                                                | Convergence percentage                                   |
-| `establish_count`          | int64   | `consensus.establish`                                                                              | Establish-phase iteration count                          |
-| `proposers`                | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                      |
-| `disputes_count`           | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                          |
-| `tx_id`                    | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)              |
-| `dispute_our_vote`         | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                              |
-| `dispute_yays`             | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                             |
-| `dispute_nays`             | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                              |
-| `agree_count`              | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                  |
-| `disagree_count`           | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                               |
-| `threshold_percent`        | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                           |
-| `consensus_result`         | string  | `consensus.check`                                                                                  | Check outcome                                            |
-| `quorum`                   | int64   | `consensus.check`, `consensus.accept`                                                              | Quorum required                                          |
-| `round_time_ms`            | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds           |
-| `consensus_state`          | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`          |
-| `close_time`               | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)            |
-| `close_time_correct`       | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                  |
-| `close_resolution_ms`      | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds          |
-| `proposing`                | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                         |
-| `parent_close_time`        | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                 |
-| `close_time_self`          | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                              |
-| `close_time_vote_bins`     | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
-| `resolution_direction`     | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
-| `tx_count`                 | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
-| `ledger_hash`              | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
-| `full_validation`          | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
-| `validation_sign_time`     | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
-| `mode_old`                 | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
-| `mode_new`                 | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                      |
+| Attribute                   | Type    | Set On                                                                                             | Description                                              |
+| --------------------------- | ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `consensus_ledger_id`       | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                   |
+| `ledger_seq`                | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                   |
+| `consensus_mode`            | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc. |
+| `consensus_round_id`        | int64   | `consensus.round`                                                                                  | Round identifier                                         |
+| `consensus_phase`           | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)          |
+| `trace_strategy`            | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `attribute`)        |
+| `previous_ledger_seq`       | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                          |
+| `previous_proposers`        | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                     |
+| `previous_round_time_ms`    | int64   | `consensus.round`                                                                                  | Duration of the previous round                           |
+| `consensus_round`           | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal      |
+| `is_bow_out`                | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)  |
+| `tx_count_open`             | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                 |
+| `close_time_resolution_ms`  | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                          |
+| `converge_percent`          | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.check`                             | Convergence percentage                                   |
+| `establish_count`           | int64   | `consensus.establish`, `consensus.check`                                                           | Establish-phase iteration count                          |
+| `proposers`                 | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                      |
+| `disputes_count`            | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                          |
+| `tx_id`                     | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)              |
+| `dispute_our_vote`          | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                              |
+| `dispute_yays`              | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                             |
+| `dispute_nays`              | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                              |
+| `avalanche_threshold`       | int64   | `consensus.update_positions`                                                                       | Escalated weight needed to change our vote               |
+| `close_time_threshold`      | int64   | `consensus.update_positions`                                                                       | Close-time agreement threshold percentage                |
+| `agree_count`               | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                  |
+| `disagree_count`            | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                               |
+| `threshold_percent`         | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                           |
+| `have_close_time_consensus` | boolean | `consensus.update_positions`, `consensus.check`                                                    | Whether the close time reached consensus                 |
+| `proposers_finished`        | int64   | `consensus.check`                                                                                  | Proposers that have already validated the next ledger    |
+| `consensus_stalled`         | boolean | `consensus.check`                                                                                  | Whether `checkConsensus` reported a stall                |
+| `consensus_result`          | string  | `consensus.check`                                                                                  | Check outcome                                            |
+| `quorum`                    | int64   | `consensus.accept`                                                                                 | Quorum required                                          |
+| `round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds           |
+| `consensus_state`           | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`          |
+| `close_time`                | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)            |
+| `close_time_correct`        | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                  |
+| `close_resolution_ms`       | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds          |
+| `proposing`                 | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                         |
+| `parent_close_time`         | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                 |
+| `close_time_self`           | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                              |
+| `close_time_vote_bins`      | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
+| `resolution_direction`      | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
+| `tx_count`                  | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
+| `ledger_hash`               | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
+| `full_validation`           | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
+| `validation_sign_time`      | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
+| `mode_old`                  | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
+| `mode_new`                  | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                      |
+
+> **`quorum` is on `consensus.accept` only.** Its single set site is
+> `RCLConsensus::Adaptor::makeAcceptSpan()`
+> (`src/xrpld/app/consensus/RCLConsensus.cpp:516`). `consensus.check`
+> (`include/xrpl/consensus/Consensus.h:1899-1926`) never sets it, so
+> `{name="consensus.check" && span.quorum>0}` matches nothing.
+
+> **`consensus.check` carries nine attributes, all set before the early
+> returns.** `Consensus<Adaptor>::haveConsensus()` sets them at
+> `include/xrpl/consensus/Consensus.h:1899-1912` and `consensus_result` at
+> `:1925`, deliberately ahead of the `No` / `Expired` branches, so the span is
+> fully populated even on rounds that never reach consensus. In set order:
+> `agree_count`, `disagree_count`, `converge_percent`,
+> `have_close_time_consensus`, `threshold_percent`, `proposers_finished`,
+> `consensus_stalled`, `establish_count`, `consensus_result`.
+>
+> Three of these are shared with sibling spans and were previously scoped too
+> narrowly in the table above: `converge_percent` and `establish_count` are set on
+> `consensus.check` as well as `consensus.establish` /
+> `consensus.update_positions`, and `have_close_time_consensus` is set on both
+> `consensus.update_positions` (`Consensus.h:1779`) and `consensus.check`
+> (`:1903`). `close_time_threshold` (`:1781`) and `avalanche_threshold` (`:1730`)
+> stay `consensus.update_positions`-only.
 
 **Tempo query**: `{span.consensus_mode="Proposing"}` to find rounds where the node was proposing.
 
@@ -551,25 +601,44 @@ prefix=xrpld
 
 ### 2.1 Gauges
 
-| Prometheus Metric                           | Source File           | Description                               | Typical Range                   |
-| ------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
+| Prometheus Metric                           | Source File           | Description                                       | Typical Range                   |
+| ------------------------------------------- | --------------------- | ------------------------------------------------- | ------------------------------- |
+| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger               | 0–10 (healthy), >30 (stale)     |
+| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger               | 0–10 (healthy)                  |
+| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative **microseconds** in Disconnected state | Monotonic                       |
+| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative **microseconds** in Connected state    | Monotonic                       |
+| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative **microseconds** in Syncing state      | Monotonic                       |
+| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative **microseconds** in Tracking state     | Monotonic                       |
+| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative **microseconds** in Full state         | Monotonic (should dominate)     |
+| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected              | Low                             |
+| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected                 | Low                             |
+| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing                   | Low                             |
+| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking                  | Low                             |
+| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full                      | Low (should be 1 after startup) |
+| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections                   | 0–85                            |
+| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections                  | 10–21                           |
+| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count               | Low growth                      |
+| `jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)            | 0–100 (healthy)                 |
+
+> **`state_accounting_*_duration` is microseconds, not seconds.**
+> `NetworkOPsImp::collectMetrics()` does
+> `duration_cast<std::chrono::microseconds>(...)` and publishes `.count()`
+> (`src/xrpld/app/misc/NetworkOPs.cpp:4884-4897`). Divide by `1e6` for seconds.
+> The `node-health` "State Duration Rate (All States)" panel already does
+> (`/ 1000000` on each `rate(...)`), and
+> `docker/telemetry/grafana/dashboards/validate_dashboards.py:43` lints the
+> family as "cumulative µs". Reading the raw value as seconds overstates time
+> in state by a factor of one million.
+
+> **`overlay_peer_disconnects_charges` was never implemented: NOT IMPLEMENTED.**
+> No instrument of that name exists anywhere in `src/`, `include/` or `docker/`.
+> The resource-charge disconnect count is exported from the OTel
+> `MetricsRegistry` instead, as
+> `server_info{metric="peer_disconnects_resources"}` — see
+> [§Server Info](#server-info-via-otel-metricsregistry). Use that selector;
+> the previously documented `overlay_peer_disconnects_charges` matches nothing.
+> `06-implementation-phases.md` still names the old metric in its Phase 6/7
+> task text and panel table.
 
 **Grafana dashboard**: _Node Health_ (`node-health`)
 
@@ -758,13 +827,14 @@ for how the tier attributes are set and reach metrics.
 
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder
-3. All 10 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
+3. All 15 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
+   (the Phase-10 harness asserts 14 of them — `log-derived-insights` is unasserted)
 
 ---
 
 ## 4. Tempo Trace Search Guide
 
-> **See also**: [08-appendix.md](./08-appendix.md) §8.2 for span hierarchy visualizations. [05-configuration-reference.md](./05-configuration-reference.md) §5.8.5 for TraceQL query examples.
+> **See also**: [08-appendix.md](./08-appendix.md) §8.2 for span hierarchy visualizations. [05-configuration-reference.md](./05-configuration-reference.md) §5.8.4 for TraceQL query examples.
 
 ### Finding Traces by Type
 
@@ -796,16 +866,16 @@ A consensus round groups its lifecycle spans under a single root
 (`consensus.round`); the build/ledger spans run as their own trees:
 
 ```
-consensus.round                    (root — one per round)
-  ├── consensus.phase.open         (open phase)
-  ├── consensus.proposal.send      (broadcast proposal)
-  ├── consensus.ledger_close       (close event)
-  ├── consensus.establish          (establish phase)
-  ├── consensus.update_positions   (position updates)
-  ├── consensus.check              (threshold check)
-  ├── consensus.accept             (accept result)
-  │     └── consensus.accept.apply (apply, jtACCEPT thread)
-  └── consensus.validation.send    (send validation, follows-from link)
+consensus.round                        (root — one per round)
+  ├── consensus.phase.open             (open phase)
+  ├── consensus.proposal.send          (broadcast proposal)
+  ├── consensus.ledger_close           (close event)
+  ├── consensus.establish              (establish phase)
+  │     ├── consensus.update_positions (position updates)
+  │     └── consensus.check            (threshold check)
+  ├── consensus.accept                 (accept result)
+  │     └── consensus.accept.apply     (apply, jtACCEPT thread)
+  └── consensus.validation.send        (send validation, follows-from link)
 
 ledger.build                       (build new ledger)
   └── tx.apply                     (apply transaction set)
@@ -817,7 +887,7 @@ ledger.store                       (persist to DB)
 
 ## 5. Prometheus Query Examples
 
-> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8.7 for correlating Prometheus system metrics with trace-derived metrics.
+> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8.6 for correlating Prometheus system metrics with trace-derived metrics.
 
 ### Span-Derived Metrics
 
@@ -916,18 +986,26 @@ Grafana Loki (v3.7.6) serves as the log storage backend. It receives log entries
 
 ### LogQL Query Examples
 
+The stream selector is `{service_name="xrpld"}`, **not** `{job="xrpld"}`. Loki's
+OTLP ingestion promotes only a small set of resource attributes to stream labels
+(`service_name`, `service_instance_id`, `deployment_environment`); everything else
+— including the `job` attribute the collector sets — lands in structured
+metadata and must be filtered with `|` after the selector. A `{job="xrpld"}`
+selector returns zero rows and no error. All shipped queries and the
+`log-derived-insights` dashboard use the `service_name` form.
+
 ```logql
 # Find all logs for a specific trace
-{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
+{service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context
-{job="xrpld"} |= "ERR" |= "trace_id="
+{service_name="xrpld"} |= "ERR" |= "trace_id="
 
 # Logs from a specific partition with trace context
-{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{service_name="xrpld"} | partition = `LedgerMaster` | trace_id != ""
 
 # Count traced log lines over time
-count_over_time({job="xrpld"} |= "trace_id=" [5m])
+count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 ```
 
 ---
@@ -944,10 +1022,17 @@ async callbacks for new categories.
 
 > **Authoritative metric names live in [§ Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) below.**
 > Most internal metrics are emitted as **labeled** gauges — one instrument carrying many logical
-> values via a `metric` label (e.g. `cache_metrics{metric="sle_hit_rate"}`,
+> values via a `metric` label (e.g. `cache_metrics{metric="SLE_hit_rate"}`,
 > `txq_metrics{metric="txq_count"}`, `load_factor_metrics{metric="load_factor"}`,
 > `nodestore_state{metric="node_reads_total"}`) — not the flat per-name form. Query the
-> labeled names; the flat names (`cache_sle_hit_rate`, `txq_count`, …) are **not** emitted.
+> labeled names; the flat names (`cache_SLE_hit_rate`, `txq_count`, …) are **not** emitted.
+>
+> **Label values are case-sensitive and three cache values are not lowercase.**
+> The `metric` label carries the string literal passed to `Observe()`, verbatim:
+> `SLE_hit_rate`, `AL_hit_rate` and `AL_size` are upper-case
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:649`, `:665`, `:691`), while
+> `ledger_hit_rate` genuinely is lowercase (`:658`). A selector written as
+> `cache_metrics{metric="sle_hit_rate"}` matches nothing.
 
 #### Server Info (via OTel MetricsRegistry)
 
@@ -989,16 +1074,33 @@ async callbacks for new categories.
 
 | Prometheus Metric                 | Type  | Labels   | Description               |
 | --------------------------------- | ----- | -------- | ------------------------- |
-| `cache_metrics{metric="al_size"}` | Gauge | `metric` | AcceptedLedger cache size |
+| `cache_metrics{metric="AL_size"}` | Gauge | `metric` | AcceptedLedger cache size |
 
 #### Extended NodeStore Metrics (additions to existing nodestore_state)
 
-| Prometheus Metric                                  | Type  | Labels   | Description                         |
-| -------------------------------------------------- | ----- | -------- | ----------------------------------- |
-| `nodestore_state{metric="node_reads_duration_us"}` | Gauge | `metric` | Cumulative read time (microseconds) |
-| `nodestore_state{metric="read_request_bundle"}`    | Gauge | `metric` | Read request bundle count           |
-| `nodestore_state{metric="read_threads_running"}`   | Gauge | `metric` | Active read threads                 |
-| `nodestore_state{metric="read_threads_total"}`     | Gauge | `metric` | Total read threads configured       |
+| Prometheus Metric                                   | Type  | Labels   | Description                          |
+| --------------------------------------------------- | ----- | -------- | ------------------------------------ |
+| `nodestore_state{metric="node_reads_duration_us"}`  | Gauge | `metric` | Cumulative read time (microseconds)  |
+| `nodestore_state{metric="node_writes_duration_us"}` | Gauge | `metric` | Cumulative write time (microseconds) |
+| `nodestore_state{metric="read_request_bundle"}`     | Gauge | `metric` | Read request bundle count            |
+| `nodestore_state{metric="read_threads_running"}`    | Gauge | `metric` | Active read threads                  |
+| `nodestore_state{metric="read_threads_total"}`      | Gauge | `metric` | Total read threads configured        |
+
+> **The cumulative duration pair truncates to whole microseconds.** Both values
+> are accumulated in nanoseconds internally and divided on read —
+> `getFetchDurationUs()` returns `fetchDurationNs_ / 1000` and
+> `getStoreDurationUs()` returns `storeDurationNs_ / 1000`
+> (`include/xrpl/nodestore/Database.h:232-254`). The exported unit is
+> microseconds and every doc, metric and dashboard agrees on that — this is
+> **not** a unit mismatch. The consequence is only at the low end: a handful of
+> sub-microsecond reads on a warm store can leave the gauge reading `0` until
+> their nanosecond total passes 1000. Read a flat `0` on a low-traffic node as
+> "not yet a microsecond of I/O", not as "no I/O".
+>
+> `node_writes_duration_us` is covered by
+> `validate_dashboards.py`'s `NODESTORE_CUMULATIVE` tuple, so the raw-counter
+> lint would catch a misuse, but it has **no dashboard panel** yet — an open
+> follow-up, unlike its `node_reads_duration_us` sibling.
 
 #### Job Queue and GetObject Additions
 
@@ -1019,7 +1121,12 @@ repeated here:
   write-serialized stall from a cold-read stall. See
   [Sync Diagnosis Signals](#sync-diagnosis-signals-observable-gauge--nodestore_state).
 
-### New Grafana Dashboards (Phase 9)
+### New Grafana Dashboards for the Phase 9 Gap-Fill Metrics
+
+These two boards were created specifically to surface the gap-fill metrics above.
+For the full Phase-9 dashboard delivery record, including the boards added to the
+Phase-7 parity set, see
+[New Grafana Dashboards (Phase 9)](#new-grafana-dashboards-phase-9).
 
 | Dashboard          | UID          | Data Source | Key Panels                                                        |
 | ------------------ | ------------ | ----------- | ----------------------------------------------------------------- |
@@ -1048,15 +1155,34 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 
 | Category                  | Expected Count      | Validation Method                |
 | ------------------------- | ------------------- | -------------------------------- |
-| Trace spans               | 16                  | Jaeger/Tempo API query           |
-| Span attributes           | 22                  | Per-span attribute assertion     |
+| Trace spans               | 40 of 41 emitted    | Jaeger/Tempo API query           |
+| Span attributes           | 67 required         | Per-span attribute assertion     |
 | Legacy `*` families       | ~270 (≈224 traffic) | Prometheus `__name__` query      |
 | Native MetricsRegistry    | 35 instruments      | Prometheus query                 |
 | Call-site `XRPL_METRIC_*` | 7 instruments       | Prometheus query                 |
 | Per-job-type gauges       | 105 (35 types × 3)  | Prometheus `__name__` query      |
 | SpanMetrics RED           | 4 per span          | Prometheus query                 |
-| Grafana dashboards        | 10                  | Dashboard API "no data" check    |
+| Grafana dashboards        | 14 of 15 on disk    | Dashboard API "no data" check    |
 | Log-trace links           | Present             | Loki query + Tempo reverse check |
+
+> **These are the harness's numbers, not the code's, and three of them differ.**
+> `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
+> the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
+> `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
+> manifest's own `total_unique_attributes: 58` field is stale).
+> `expected_metrics.json` asserts 36 metric entries and 14 dashboard uids against
+> the **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
+> `log-derived-insights` is the unasserted one. The 35 native instruments match
+> the tables in
+> [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry)
+> and the Phase 7+ section exactly, counting each labeled gauge family
+> (`nodestore_state`, `cache_metrics`, …) once.
+>
+> Note that `ledgers_closed_total` appears in **both** instrument rows: it is
+> created as a `MetricsRegistry` member (`MetricsRegistry.cpp:369-370`, whose
+> `incrementLedgersClosed()` has no callers) and separately incremented at its
+> call site via `XRPL_METRIC_COUNTER_INC` (`RCLConsensus.cpp:749`). The distinct
+> name count across the two rows is therefore 41, not 42.
 
 The two added rows are the families that do not originate as `MetricsRegistry`
 members. **Call-site** instruments are declared by the `XRPL_METRIC_*` macros
@@ -1185,7 +1311,7 @@ Further label values on the same instrument, added to separate the two
 bottlenecks that both present as the `ledgerData` job lane pinned at its
 concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
-(`src/xrpld/telemetry/MetricsRegistry.cpp:805-877`).
+(`src/xrpld/telemetry/MetricsRegistry.cpp:854-925`).
 
 | Prometheus Metric                                    | Type  | Labels   | Description                                             |
 | ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
@@ -1254,9 +1380,9 @@ data as uninformative unless the build is known to include the fix.
 
 | Prometheus Metric                             | Type  | Labels   | Description                   |
 | --------------------------------------------- | ----- | -------- | ----------------------------- |
-| `cache_metrics{metric="sle_hit_rate"}`        | Gauge | `metric` | SLE cache hit rate (0.0-1.0)  |
+| `cache_metrics{metric="SLE_hit_rate"}`        | Gauge | `metric` | SLE cache hit rate (0.0-1.0)  |
 | `cache_metrics{metric="ledger_hit_rate"}`     | Gauge | `metric` | Ledger cache hit rate         |
-| `cache_metrics{metric="al_hit_rate"}`         | Gauge | `metric` | AcceptedLedger cache hit rate |
+| `cache_metrics{metric="AL_hit_rate"}`         | Gauge | `metric` | AcceptedLedger cache hit rate |
 | `cache_metrics{metric="treenode_cache_size"}` | Gauge | `metric` | SHAMap TreeNode cache entries |
 | `cache_metrics{metric="treenode_track_size"}` | Gauge | `metric` | Tracked tree nodes            |
 | `cache_metrics{metric="fullbelow_size"}`      | Gauge | `metric` | FullBelow cache entries       |
@@ -1273,6 +1399,73 @@ data as uninformative unless the build is known to include the fix.
 | `txq_metrics{metric="txq_min_processing_fee_level"}` | Gauge | `metric` | Minimum fee to get processed     |
 | `txq_metrics{metric="txq_med_fee_level"}`            | Gauge | `metric` | Median fee level in queue        |
 | `txq_metrics{metric="txq_open_ledger_fee_level"}`    | Gauge | `metric` | Open ledger fee escalation level |
+
+#### TxQ Admission and Ledger Mismatch (Synchronous Counters)
+
+Three monotonic counters created alongside the Phase 7+ parity counters
+(`src/xrpld/telemetry/MetricsRegistry.cpp:377-382`). The gauges above answer
+"how deep is the queue"; these answer "what did the queue refuse, and did the
+ledger we built match the one the network validated".
+
+| Prometheus Metric               | Type    | Labels            | Description                                        | Increment Site        |
+| ------------------------------- | ------- | ----------------- | -------------------------------------------------- | --------------------- |
+| `txq_dropped_total`             | Counter | `reason="<name>"` | Transactions refused admission to the queue        | TxQ.cpp:1302,1347     |
+| `txq_expired_total`             | Counter | (none)            | Transactions abandoned out of the queue on expiry  | TxQ.cpp:1428          |
+| `ledger_history_mismatch_total` | Counter | `reason="<name>"` | Built-vs-validated ledger hash mismatches, by kind | LedgerHistory.cpp:332 |
+
+Label domains, as emitted:
+
+| Label                                   | Values                                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `txq_dropped_total{reason}`             | `queue_full`                                                                                            |
+| `ledger_history_mismatch_total{reason}` | `prior_ledger`, `close_time`, `consensus_txset`, `different_txset`, `same_txset_diff_result`, `unknown` |
+
+**Grafana dashboards**: _Fee Market & TxQ_ (`fee-market`) — "Queue Admission
+Rejections (Dropped)", "Queue Abandonment Rate (Expired)"; _Consensus Health_
+(`consensus-health`) — "Ledger History Mismatch Rate by Reason"; _Node Health_
+(`node-health`) — "Ledger History Mismatches".
+
+> **Known issue — `ledger_history_mismatch_total` has two producers, so a bare
+> `sum()` double-counts.** `LedgerHistory::handleMismatch()` increments **both**
+> a `beast::insight` counter registered as `ledger.history` / `mismatch`
+> (`src/xrpld/app/ledger/LedgerHistory.cpp:323`, created at `:41`) **and** the
+> OTel counter above (`:331-332`). The insight counter carries **no** `reason`
+> label, and the Prometheus exporter appends `_total` to both, so the two land in
+> one metric family: per-node series carrying a `reason` label, plus per-node
+> series with `reason` absent that already total all of them. The dual-producer
+> mechanism is verifiable from the code above; the exact series count in any given
+> stack depends on how many nodes report and how many distinct reasons they have
+> hit, so do not treat a fixed number as an invariant.
+>
+> Consequence: `sum(rate(ledger_history_mismatch_total[5m]))` counts every
+> mismatch twice. Always group or filter by `reason`:
+> `sum by (reason) (rate(ledger_history_mismatch_total{reason!=""}[5m]))` for the
+> per-reason breakdown, or `reason=""` for the untyped total alone. This is a
+> **code** defect, not a documentation one — the fix is to retire one producer;
+> until then the shipped panels avoid the trap (`consensus-health` groups
+> `by (reason)`, `node-health` plots the series unaggregated), and any new panel
+> or alert must do the same.
+
+#### Reduce-Relay Efficiency (Observable Gauge — `reduce_relay_metrics`)
+
+Transaction reduce-relay effectiveness, read from `Overlay::txMetrics()` each
+collection cycle (`src/xrpld/telemetry/MetricsRegistry.cpp:1353-1385`). A high
+`suppressed_peers` : `selected_peers` ratio proves the feature is saving
+bandwidth; a high `not_enabled_peers` means stale peers are forcing full relay.
+
+| Prometheus Metric                                  | Type  | Labels   | Description                                             |
+| -------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
+| `reduce_relay_metrics{metric="selected_peers"}`    | Gauge | `metric` | Peers selected to receive a relayed transaction         |
+| `reduce_relay_metrics{metric="suppressed_peers"}`  | Gauge | `metric` | Peer sends suppressed by reduce-relay                   |
+| `reduce_relay_metrics{metric="not_enabled_peers"}` | Gauge | `metric` | Peers without reduce-relay support, so relayed in full  |
+| `reduce_relay_metrics{metric="missing_tx_freq"}`   | Gauge | `metric` | Frequency of transactions this node had to request back |
+
+Each source field is a decimal **string** in the `txMetrics()` JSON, parsed with
+`std::stoll`; a field that is absent or unparseable is skipped rather than
+reported as zero, so absent is not zero here either.
+
+**Grafana dashboard**: _Peer Network_ (`peer-network`) — "Reduce-Relay Peer
+Selection", "Reduce-Relay Missing-Tx Frequency".
 
 #### Per-RPC Method Metrics (Synchronous Counters/Histogram)
 
@@ -1412,17 +1605,43 @@ spelling would silently drop the override.
 
 #### Counted Object Instances (Observable Gauge — `object_count`)
 
-| Prometheus Metric                      | Type  | Labels          | Description                    |
-| -------------------------------------- | ----- | --------------- | ------------------------------ |
-| `object_count{type="transaction"}`     | Gauge | `type="<name>"` | Live Transaction objects       |
-| `object_count{type="ledger"}`          | Gauge | `type="<name>"` | Live Ledger objects            |
-| `object_count{type="nodeobject"}`      | Gauge | `type="<name>"` | Live NodeObject instances      |
-| `object_count{type="sttx"}`            | Gauge | `type="<name>"` | Serialized transaction objects |
-| `object_count{type="stledgerentry"}`   | Gauge | `type="<name>"` | Serialized ledger entries      |
-| `object_count{type="inboundledger"}`   | Gauge | `type="<name>"` | Ledgers being fetched          |
-| `object_count{type="pathfinder"}`      | Gauge | `type="<name>"` | Active pathfinding operations  |
-| `object_count{type="pathrequest"}`     | Gauge | `type="<name>"` | Active path requests           |
-| `object_count{type="hashrouterentry"}` | Gauge | `type="<name>"` | Hash router entries            |
+**The `type` label value is the demangled, fully-qualified C++ type name.** It is
+not a lowercase word and not a friendly alias. The value is
+`beast::typeName<Object>()` (`include/xrpl/basics/CountedObject.h:115`), which
+demangles `typeid(T).name()` with `abi::__cxa_demangle`
+(`include/xrpl/beast/type_name.h:16-45`) and applies no stripping; the observer
+copies it through verbatim (`src/xrpld/telemetry/MetricsRegistry.cpp:764-770`).
+Values therefore keep their `xrpl::` namespace, nested `::`, and template
+arguments.
+
+| Prometheus Metric                              | Type  | Labels          | Description                    |
+| ---------------------------------------------- | ----- | --------------- | ------------------------------ |
+| `object_count{type="xrpl::Transaction"}`       | Gauge | `type="<name>"` | Live Transaction objects       |
+| `object_count{type="xrpl::Ledger"}`            | Gauge | `type="<name>"` | Live Ledger objects            |
+| `object_count{type="xrpl::NodeObject"}`        | Gauge | `type="<name>"` | Live NodeObject instances      |
+| `object_count{type="xrpl::STTx"}`              | Gauge | `type="<name>"` | Serialized transaction objects |
+| `object_count{type="xrpl::STLedgerEntry"}`     | Gauge | `type="<name>"` | Serialized ledger entries      |
+| `object_count{type="xrpl::InboundLedger"}`     | Gauge | `type="<name>"` | Ledgers being fetched          |
+| `object_count{type="xrpl::Pathfinder"}`        | Gauge | `type="<name>"` | Active pathfinding operations  |
+| `object_count{type="xrpl::PathRequest"}`       | Gauge | `type="<name>"` | Active path requests           |
+| `object_count{type="xrpl::HashRouter::Entry"}` | Gauge | `type="<name>"` | Hash router entries            |
+
+The list above is the subset most often queried, not the whole label domain. The
+series set is whatever `CountedObject<T>` subclasses have been instantiated, so
+it also includes `xrpl::SHAMapItem`, `xrpl::SHAMapInnerNode`,
+`xrpl::AcceptedLedger`, `xrpl::Job`, template instantiations such as
+`xrpl::STBitString<256>` and `xrpl::STInteger<unsigned int>`, and a few types
+outside the `xrpl` namespace such as `CachedView::hit`. Enumerate it rather than
+guess:
+
+```promql
+# Every type currently reporting on one node
+count by (type) (object_count{service_instance_id=~"$node"})
+```
+
+Grafana's `$type` template variable on _Node Health_ is populated the same way
+(`label_values(object_count, type)`), which is why that dashboard needs no
+hardcoded list.
 
 #### Load Factor Breakdown (Observable Gauge — `load_factor_metrics`)
 
@@ -1515,30 +1734,51 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 | -------------------------------------------------- | ------ | -------- | --------------------------------------- |
 | `validation_agreement{metric="agreement_pct_1h"}`  | Double | `metric` | Rolling 1h agreement percentage (0-100) |
 | `validation_agreement{metric="agreement_pct_24h"}` | Double | `metric` | Rolling 24h agreement percentage        |
-| `validation_agreement{metric="agreements_1h"}`     | Int64  | `metric` | Agreed validations in 1h window         |
-| `validation_agreement{metric="missed_1h"}`         | Int64  | `metric` | Missed validations in 1h window         |
-| `validation_agreement{metric="agreements_24h"}`    | Int64  | `metric` | Agreed validations in 24h window        |
-| `validation_agreement{metric="missed_24h"}`        | Int64  | `metric` | Missed validations in 24h window        |
+| `validation_agreement{metric="agreement_pct_7d"}`  | Double | `metric` | Rolling 7-day agreement percentage      |
+| `validation_agreement{metric="agreements_1h"}`     | Double | `metric` | Agreed validations in 1h window         |
+| `validation_agreement{metric="missed_1h"}`         | Double | `metric` | Missed validations in 1h window         |
+| `validation_agreement{metric="agreements_24h"}`    | Double | `metric` | Agreed validations in 24h window        |
+| `validation_agreement{metric="missed_24h"}`        | Double | `metric` | Missed validations in 24h window        |
+| `validation_agreement{metric="agreements_7d"}`     | Double | `metric` | Agreed validations in the 7-day window  |
+| `validation_agreement{metric="missed_7d"}`         | Double | `metric` | Missed validations in the 7-day window  |
 
 Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
+
+> **Every value on this instrument is a double.** The family is one
+> `CreateDoubleObservableGauge` (`src/xrpld/telemetry/MetricsRegistry.cpp:1576`),
+> so the integral counts are cast to `double` before `Observe()` — there is no
+> Int64 sub-series to filter on. The same holds for `validator_health`,
+> `peer_quality` and `state_tracking` below; an earlier revision of these four
+> tables split the Type column between Int64 and Double, which the code does not
+> do.
+>
+> The 7-day window is `ValidationTracker::kWindow7d` = 168 hours
+> (`src/xrpld/telemetry/ValidationTracker.h:311`) and is observed alongside the 1h
+> and 24h windows at `MetricsRegistry.cpp:1606-1609`. Panels exist on _Validator
+> Health_ (`validator-health`): "Agreement % (7d)" and "Agreements vs Missed
+> (7d)".
 
 #### Validator Health (Observable Gauge — `validator_health`)
 
 | Prometheus Metric                              | Type   | Labels   | Description                    |
 | ---------------------------------------------- | ------ | -------- | ------------------------------ |
-| `validator_health{metric="amendment_blocked"}` | Int64  | `metric` | 1 if amendment-blocked, else 0 |
-| `validator_health{metric="unl_blocked"}`       | Int64  | `metric` | 1 if UNL-blocked, else 0       |
+| `validator_health{metric="amendment_blocked"}` | Double | `metric` | 1 if amendment-blocked, else 0 |
+| `validator_health{metric="unl_blocked"}`       | Double | `metric` | 1 if UNL-blocked, else 0       |
 | `validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
-| `validator_health{metric="validation_quorum"}` | Int64  | `metric` | Validation quorum threshold    |
+| `validator_health{metric="validation_quorum"}` | Double | `metric` | Validation quorum threshold    |
+
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1200`.
 
 #### Peer Quality (Observable Gauge — `peer_quality`)
 
 | Prometheus Metric                                 | Type   | Labels   | Description                          |
 | ------------------------------------------------- | ------ | -------- | ------------------------------------ |
 | `peer_quality{metric="peer_latency_p90_ms"}`      | Double | `metric` | P90 peer latency in milliseconds     |
-| `peer_quality{metric="peers_insane_count"}`       | Int64  | `metric` | Peers with diverged tracking status  |
+| `peer_quality{metric="peers_insane_count"}`       | Double | `metric` | Peers with diverged tracking status  |
 | `peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
-| `peer_quality{metric="upgrade_recommended"}`      | Int64  | `metric` | 1 if >60% of peers are newer version |
+| `peer_quality{metric="upgrade_recommended"}`      | Double | `metric` | 1 if >60% of peers are newer version |
+
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1249`.
 
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
@@ -1554,10 +1794,12 @@ Data source: `ValidationTracker` class with 8s grace period and 5m late repair w
 
 | Prometheus Metric                                        | Type   | Labels   | Description                            |
 | -------------------------------------------------------- | ------ | -------- | -------------------------------------- |
-| `state_tracking{metric="state_value"}`                   | Int64  | `metric` | Numeric state 0-6 (see encoding below) |
+| `state_tracking{metric="state_value"}`                   | Double | `metric` | Numeric state 0-6 (see encoding below) |
 | `state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
 
-State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing).
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1466`.
+
+State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements at `MetricsRegistry.cpp:1483-1498`. **The range is 0-6, not 0-7** — there is no seventh state.
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
@@ -1566,11 +1808,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
 > **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:1511`), which sums the object payloads
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:1557`), which sums the object payloads
 > this process has written. It therefore excludes NuDB's keys, bucket padding and
 > log, and it resets when the process restarts while the files on disk do not.
 > `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
-> (`MetricsRegistry.cpp:836`), so the two series are equal by construction and any
+> (`MetricsRegistry.cpp:860`), so the two series are equal by construction and any
 > write-amplification ratio built from the pair is a constant 1.0. To size the store
 > on disk, stat the backend's files; no metric reports it today.
 >
@@ -1588,6 +1830,24 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `validations_checked_total` | Counter | Network validations observed | LedgerMaster.cpp |
 | `state_changes_total`       | Counter | Operating mode transitions   | NetworkOPs.cpp   |
 
+> **Known issue — `ledgers_closed_total` has a dead second producer.** The
+> instrument is created twice. `MetricsRegistry::registerCounters()` eagerly
+> creates it as the member `ledgersClosedCounter_`
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:369-370`), and its only mutator,
+> `MetricsRegistry::incrementLedgersClosed()`
+> (declared `MetricsRegistry.h:591`, defined `MetricsRegistry.cpp:1686`), has
+> **zero callers** — the header says so itself at `MetricsRegistry.h:584-588`.
+> The value operators actually see comes from the single live increment,
+> the `XRPL_METRIC_COUNTER_INC` call site in
+> `RCLConsensus::Adaptor::doAccept()` (`src/xrpld/app/consensus/RCLConsensus.cpp:749`).
+>
+> No metric is wrong and nothing double-counts: the dead member never adds to the
+> series. The cost is a redundant eagerly-created instrument plus a misleading API
+> that looks like the increment path. **Code follow-up**: delete
+> `incrementLedgersClosed()` and `ledgersClosedCounter_` once the macro path is
+> considered proven, per the header note. Tracked here rather than fixed in a doc
+> pass — the doc is not reworded to imply the member is used.
+
 Lifetime tallies exported as monotonic **ObservableCounters** (not synchronous
 counters), observed from an existing cumulative source each collection cycle:
 
@@ -1603,19 +1863,40 @@ counters), observed from an existing cumulative source each collection cycle:
 > decrease) and additive (`agreements_total + missed_total` = ledgers reconciled). The
 > repair-aware, windowed view remains on `validation_agreement{metric="…"}`.
 
-#### Span Attribute Enrichments (Phases 2-4)
+#### Span Attribute Enrichments (Phases 2-4): REMOVED
 
-| Span Name                   | New Attribute                        | Type   | Source                   |
-| --------------------------- | ------------------------------------ | ------ | ------------------------ |
-| `rpc.command.*`             | `xrpl.node.amendment_blocked`        | bool   | Phase 2 — RPCHandler.cpp |
-| `rpc.command.*`             | `xrpl.node.server_state`             | string | Phase 2 — RPCHandler.cpp |
-| `tx.receive`                | `xrpl.peer.version`                  | string | Phase 3 — PeerImp.cpp    |
-| `consensus.validation.send` | `xrpl.validation.ledger_hash`        | string | Phase 4 — RCLConsensus   |
-| `consensus.validation.send` | `xrpl.validation.full`               | bool   | Phase 4 — RCLConsensus   |
-| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash`   | string | Phase 4 — PeerImp.cpp    |
-| `peer.validation.receive`   | `xrpl.peer.validation.full`          | bool   | Phase 4 — PeerImp.cpp    |
-| `consensus.accept`          | `xrpl.consensus.validation_quorum`   | int64  | Phase 4 — RCLConsensus   |
-| `consensus.accept`          | `xrpl.consensus.proposers_validated` | int64  | Phase 4 — RCLConsensus   |
+This section used to list nine dotted `xrpl.node.*` / `xrpl.peer.*` /
+`xrpl.validation.*` / `xrpl.consensus.*` **span** attributes. **None of them
+exists.** A grep for `xrpl.node.`, `xrpl.peer.`, `xrpl.validation.` and <!-- otel-naming:allow-dotted: xrpl.node., xrpl.peer., xrpl.validation. -->
+`xrpl.consensus.` across non-test `src/` and `include/` returns nothing, and the <!-- otel-naming:allow-dotted: xrpl.consensus. -->
+table also contradicted this document's own rule in
+[§1.2](#12-complete-attribute-inventory-bareunderscore-keys): dotted keys are
+OTel **resource** attributes, never span attributes.
+
+The dotted form was dropped by the 2026-05-13 naming redesign, in three commits:
+
+| Commit       | Scope                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------- |
+| `e339ba1f6b` | tx / txq — dropped the `xrpl.<domain>.` prefix (phase-3)                                                      |
+| `46d1012ad4` | consensus — dropped the `xrpl.consensus.` prefix (phase-4) <!-- otel-naming:allow-dotted: xrpl.consensus. --> |
+| `9e27120a15` | ledger / peer — simplified the keys, updated dashboards (phase-6)                                             |
+
+What the code emits today, and where it is documented:
+
+| Old dotted key (never emitted)                                    | Live equivalent                                                                                                                                                                              |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `xrpl.peer.version`                                               | `peer_version` — see [§Transaction Attributes](#transaction-attributes) <!-- otel-naming:allow-dotted: xrpl.peer.version -->                                                                 |
+| `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->    |
+| `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                         |
+| `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                     |
+| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1216`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
+| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1014`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                |
+| `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                      |
+
+The identical nine-row list was deleted from
+`docker/telemetry/workload/expected_spans.json` by commit `cb9fce6890` for the
+same reason. Anything still asserting these keys — a dashboard filter, a TraceQL
+query, an alert — matches nothing and should be pointed at the live keys above.
 
 ### New Grafana Dashboards (Phase 9)
 
@@ -1663,20 +1944,24 @@ counters), observed from an existing cumulative source each collection cycle:
 
 ## 6. Known Issues
 
-| Issue                                                                 | Impact                                                                                              | Status                                                                                                                |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                  |
-| `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                    |
-| `rpc_requests` depends on `[insight]` config                          | Zero series if StatsD not configured                                                                | Requires `[insight] server=statsd` in xrpld.cfg                                                                       |
-| Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                     |
-| `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)   |
-| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                 |
-| `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                     |
-| `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                            |
-| `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented) |
-| No metrics for ping RTT distribution, ping timeouts, or `mtENDPOINTS` | Peer keepalive and discovery health are not observable                                              | **NOT IMPLEMENTED** — see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                       |
-| 11 of 13 peer message families have no spans                          | `02` §2.3.2 catalogs `peer.message.*`, `peer.connect`, `peer.disconnect` that were never built      | **NOT IMPLEMENTED** — see [§6.4](#64-peer-span-coverage-gap-not-implemented)                                          |
-| PeerFinder exports 2 of ~17 available slot/cache readings             | Slot pressure, connection churn and discovery-cache health are not observable                       | **NOT IMPLEMENTED** — see [§6.5](#65-peerfinder-slot-and-cache-metrics-not-implemented)                               |
+| Issue                                                                 | Impact                                                                                              | Status                                                                                                                                                             |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                                                               |
+| `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                                                                 |
+| `rpc_requests` depends on `[insight]` config                          | Zero series if StatsD not configured                                                                | Requires `[insight] server=statsd` in xrpld.cfg                                                                                                                    |
+| Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                                                                  |
+| `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)                                                |
+| `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                                                              |
+| `squelch_ignored_bytes_in/out` always read zero                       | Only the `_messages_*` pair carries signal for this category                                        | **NOT IMPLEMENTED** — see [§6.1](#61-squelch_ignored-byte-counts-not-implemented)                                                                                  |
+| `total_bytes_in` and `total_bytes_out` use different size bases       | In/out byte totals are not directly comparable when compression is on                               | **NOT IMPLEMENTED** — see [§6.2](#62-inboundoutbound-byte-basis-asymmetry-not-implemented)                                                                         |
+| `overhead` conflates `mtPING` with `mtSTATUS_CHANGE`                  | Keepalive traffic cannot be isolated from status-change traffic                                     | **NOT IMPLEMENTED** — needs a new category; see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                                              |
+| No metrics for ping RTT distribution, ping timeouts, or `mtENDPOINTS` | Peer keepalive and discovery health are not observable                                              | **NOT IMPLEMENTED** — see [§6.3](#63-peer-keepalive-and-discovery-traffic-gaps-not-implemented)                                                                    |
+| 11 of 13 peer message families have no spans                          | `02` §2.3.2 catalogs `peer.message.*`, `peer.connect`, `peer.disconnect` that were never built      | **NOT IMPLEMENTED** — see [§6.4](#64-peer-span-coverage-gap-not-implemented)                                                                                       |
+| PeerFinder exports 2 of ~17 available slot/cache readings             | Slot pressure, connection churn and discovery-cache health are not observable                       | **NOT IMPLEMENTED** — see [§6.5](#65-peerfinder-slot-and-cache-metrics-not-implemented)                                                                            |
+| `ledger_history_mismatch_total` has two producers in one family       | A bare `sum()` double-counts every mismatch; one series carries no `reason` label                   | **CODE BUG** — retire one producer; group by `reason` meanwhile. See [§TxQ Admission and Ledger Mismatch](#txq-admission-and-ledger-mismatch-synchronous-counters) |
+| `overlay_peer_disconnects_charges` never existed                      | The documented selector matches nothing; use `server_info{metric="peer_disconnects_resources"}`     | **NOT IMPLEMENTED** — see [§2.1](#21-gauges)                                                                                                                       |
+| Nine dotted `xrpl.<domain>.*` span attributes never shipped           | TraceQL filters and harness assertions on the dotted keys match nothing                             | **NOT IMPLEMENTED** — renamed to bare keys; see [§Span Attribute Enrichments](#span-attribute-enrichments-phases-2-4-removed)                                      |
+| `node_writes_duration_us` has no dashboard panel                      | Cumulative write latency is exported and linted, but never charted                                  | Open follow-up — see [§Extended NodeStore Metrics](#extended-nodestore-metrics-additions-to-existing-nodestore_state)                                              |
 
 ### 6.0 `mtCLUSTER` is counted as `unknown`: NOT IMPLEMENTED
 
@@ -1778,9 +2063,9 @@ messages are traced.
 
 **Status**: NOT IMPLEMENTED. The span catalog in `02` §2.3.2 is a design
 inventory, not a statement of what emits; §2.3.2 now marks which entries are
-live. Instrumenting the remaining families would change the "~37 spans" count
-asserted in [§1.1](#11-complete-span-inventory-37-spans) and in
-`docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
+live. Instrumenting the remaining families would change the **41 span families**
+counted in [§1.1](#11-complete-span-inventory-41-spans) and the **40** catalogued
+in `docker/telemetry/workload/expected_spans.json`, so it is scoped as its own
 change rather than folded into a metric task.
 
 ### 6.5 PeerFinder slot and cache metrics: NOT IMPLEMENTED

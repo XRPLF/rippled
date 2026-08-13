@@ -120,25 +120,32 @@ curl -s http://localhost:5005 -d '{"method":"server_info"}' |
 
 ## Configuration Reference
 
-| Option                     | Default                           | Description                                               |
-| -------------------------- | --------------------------------- | --------------------------------------------------------- |
-| `enabled`                  | `0`                               | Master switch for telemetry                               |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
-| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
-| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
-| `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
-| `trace_transactions`       | `1`                               | Enable transaction tracing                                |
-| `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
-| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                 |
-| `trace_ledger`             | `1`                               | Enable ledger tracing                                     |
-| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `random`) |
-| `batch_size`               | `512`                             | Max spans per batch export                                |
-| `batch_delay_ms`           | `5000`                            | Delay between batch exports                               |
-| `max_queue_size`           | `2048`                            | Max spans queued before dropping                          |
-| `use_tls`                  | `0`                               | Use TLS for exporter connection                           |
-| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
-| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS     |
-| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                   |
+| Option                     | Default                           | Description                                                  |
+| -------------------------- | --------------------------------- | ------------------------------------------------------------ |
+| `enabled`                  | `0`                               | Master switch for telemetry                                  |
+| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
+| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                |
+| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute         |
+| `trace_rpc`                | `1`                               | Enable RPC request tracing                                   |
+| `trace_transactions`       | `1`                               | Enable transaction tracing                                   |
+| `trace_consensus`          | `1`                               | Enable consensus tracing                                     |
+| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                    |
+| `trace_ledger`             | `1`                               | Enable ledger tracing                                        |
+| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `attribute`) |
+| `batch_size`               | `512`                             | Max spans per batch export                                   |
+| `batch_delay_ms`           | `5000`                            | Delay between batch exports                                  |
+| `max_queue_size`           | `2048`                            | Max spans queued before dropping                             |
+| `use_tls`                  | `0`                               | Use TLS for exporter connection                              |
+| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS        |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                      |
+
+> **`consensus_trace_strategy` is not validated.** The parser copies the raw
+> string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
+> the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`). Any other
+> value — including a typo such as `determinstic` — silently selects the
+> deterministic branch. There is no warning in the log. The two accepted values
+> are documented at `include/xrpl/telemetry/Telemetry.h:287-292`.
 
 ## Exporting to Grafana Cloud
 
@@ -240,9 +247,20 @@ All spans instrumented in xrpld, grouped by subsystem:
 | -------------------- | ----------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
 | `rpc.http_request`   | ServerHandler.cpp | `request_payload_size`                                      | Top-level HTTP RPC request                            |
 | `rpc.ws_upgrade`     | ServerHandler.cpp | —                                                           | WebSocket upgrade handshake                           |
-| `rpc.ws_message`     | ServerHandler.cpp | `command`                                                   | WebSocket RPC message                                 |
+| `rpc.ws_message`     | ServerHandler.cpp | `command`, `rpc_status`                                     | WebSocket RPC message                                 |
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
+
+On `rpc.ws_message`, `rpc_status` is set **on four of the five error paths**
+(resource threshold exceeded, bad API version / missing command, caught
+exception, and an error in the command result — `ServerHandler.cpp:489`, `:522`,
+`:571`, `:608`). The exception is the **invalid-JSON / oversized-request** path,
+which opens its own `rpc.ws_message` span and calls only `setError()`, writing no
+`rpc_status` at all (`ServerHandler.cpp:392-395`) — those rejections are visible
+solely through `status_code="ERROR"`. The success path calls `setOk()` and writes
+no `rpc_status` either, so there is never an `rpc_status="success"` series for
+this span: count successes as total minus error, or filter on `status_code`.
+`rpc.command.*` is unaffected — it sets `rpc_status` on both outcomes.
 
 ### Transaction Spans
 
@@ -250,7 +268,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
 | `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
-| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                   | Transaction set applied per ledger    |
+| `tx.apply`      | BuildLedger.cpp | `tx_count`, `tx_failed`                                                                                 | Transaction set applied per ledger    |
 | `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                |
 | `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage             |
 | `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)         |
@@ -268,6 +286,11 @@ txID-keyed spans can be joined to the ledger trace it targeted
 `tx.transactor`) also carry `current_ledger_hash` (the current ledger's parent
 hash); `tx.preflight` is stateless and omits both.
 
+`tx.apply` carries **no** `ledger_seq` of its own — the sequence is set on its
+parent `ledger.build`
+([BuildLedger.cpp:90](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L90)), so
+read it from the parent rather than filtering `tx.apply` on it.
+
 ### Transaction Queue Spans
 
 | Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                                                  |
@@ -281,37 +304,56 @@ hash); `tx.preflight` is stateless and omits both.
 
 ### PathFinding Spans
 
-| Span Name             | Source File                       | Attributes                                         | Description                                             |
-| --------------------- | --------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account` | Path-find RPC entry (accounts hashed; set when present) |
-| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`          | Path computation for one request (`doUpdate`)           |
-| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`      | Graph exploration (one per RPC call in `findPaths`)     |
-| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`   | Async recomputation of active requests on ledger close  |
+| Span Name             | Source File                       | Attributes                                                                  | Description                                             |
+| --------------------- | --------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account`                          | Path-find RPC entry (accounts hashed; set when present) |
+| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`                                   | Path computation for one request (`doUpdate`)           |
+| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`, `pathfind_num_source_assets` | Graph exploration (one per RPC call in `findPaths`)     |
+| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`                            | Async recomputation of active requests on ledger close  |
 
 ### Consensus Spans
 
-| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
-| ------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`              | RCLConsensus.cpp | `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`, `consensus_round_id`                                                                                                                                | Root span for a consensus round (deterministic or random trace ID)                                                                    |
-| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                           | Open phase duration (child of round)                                                                                                  |
-| `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
-| `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
-| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
-| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
-| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                      | Consensus threshold check                                                                                                             |
-| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
-| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
-| `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
-| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                       | Consensus mode transition                                                                                                             |
-| `consensus.proposal.receive`   | PeerImp.cpp      | `proposal_trusted`, `consensus_round`                                                                                                                                                                                        | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
-| `consensus.validation.receive` | PeerImp.cpp      | `validation_trusted`, `ledger_seq`                                                                                                                                                                                           | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
+| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                                              | Description                                                                                                                           |
+| ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`              | RCLConsensus.cpp | `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`, `consensus_round_id`                                                                                                                                                           | Root span for a consensus round (deterministic or random trace ID)                                                                    |
+| `consensus.phase.open`         | Consensus.h      | `open_duration_ms`, `peer_positions_at_close` (both only if the span is still live at `closeLedger()`)                                                                                                                                                  | Open phase duration (child of round)                                                                                                  |
+| `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                                                         | Consensus proposal broadcast                                                                                                          |
+| `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                                                          | Ledger close event                                                                                                                    |
+| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                                                      | Establish phase duration (child of round)                                                                                             |
+| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`, `avalanche_threshold` (only when peer positions exist), `have_close_time_consensus`, `close_time_threshold`                                                                                          | Position update and dispute resolution (see Events below)                                                                             |
+| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                                                 | Consensus threshold check                                                                                                             |
+| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                                             | Ledger accepted by consensus                                                                                                          |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count`, `disputes_resolved_count` | Ledger application with close time details (see Events below)                                                                         |
+| `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                                                     | Validation sent after accept (follows-from link)                                                                                      |
+| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                                                  | Consensus mode transition                                                                                                             |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `proposal_trusted`, `consensus_round`, `prev_ledger_prefix`, `position_hash_prefix`                                                                                                                                                                     | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
+| `consensus.validation.receive` | PeerImp.cpp      | `validation_trusted`, `ledger_seq` (only when the validation carries `sfLedgerSequence`), `full_validation`, `validation_sign_time`                                                                                                                     | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
 
 #### Consensus Span Events
 
-| Parent Span                  | Event Name        | Event Attributes                                            | Description                                             |
-| ---------------------------- | ----------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
-| `consensus.update_positions` | `dispute.resolve` | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied              |
-| `consensus.accept.apply`     | `tx.included`     | `tx_id`                                                     | Emitted per transaction included in the accepted ledger |
+| Parent Span                  | Event Name         | Event Attributes                                            | Description                                              |
+| ---------------------------- | ------------------ | ----------------------------------------------------------- | -------------------------------------------------------- |
+| `consensus.update_positions` | `dispute.resolve`  | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied               |
+| `consensus.accept.apply`     | `tx.included`      | `tx_id`                                                     | Emitted per transaction included in the accepted ledger  |
+| `consensus.round`            | `phase.open`       | --                                                          | Round entered the open phase (also re-fired on recovery) |
+| `consensus.round`            | `phase.recovery`   | --                                                          | Round started with `StartRoundReason::Recovered`         |
+| `consensus.round`            | `phase.establish`  | --                                                          | Round entered the establish phase on close               |
+| `consensus.round`            | `phase.accepted`   | --                                                          | Round reached the accepted phase                         |
+| `consensus.round`            | `outcome.yes`      | --                                                          | Round settled with consensus reached                     |
+| `consensus.round`            | `outcome.moved_on` | --                                                          | Round abandoned; the network moved on without us         |
+| `consensus.round`            | `outcome.expired`  | --                                                          | Round expired without settling                           |
+
+The nine events above are the complete set. The seven on `consensus.round`
+carry **no event attributes** — they are timestamps marking phase entry and the
+terminal outcome, so a round's whole life reads off one span's event list.
+Phase entry additionally rewrites the round's span-level `consensus_phase`
+attribute, which is why `phase.recovery` is the one phase event that leaves
+`consensus_phase` unchanged (it fires with an empty label). Evidence:
+[RCLConsensus.cpp:1344](../src/xrpld/app/consensus/RCLConsensus.cpp#L1344),
+[1386](../src/xrpld/app/consensus/RCLConsensus.cpp#L1386),
+[1400](../src/xrpld/app/consensus/RCLConsensus.cpp#L1400); outcomes are chosen
+from `result_->state` at
+[Consensus.h:1517-1525](../include/xrpl/consensus/Consensus.h#L1517).
 
 #### Close Time Queries (Tempo TraceQL)
 
@@ -339,18 +381,39 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 
 ### Ledger Spans
 
-| Span Name         | Source File          | Attributes                            | Description                   |
-| ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
-| `ledger.build`    | BuildLedger.cpp:31   | `ledger_seq`, `tx_count`, `tx_failed` | Ledger build during consensus |
-| `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
-| `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
+| Span Name         | Source File       | Attributes                                                              | Description                                                                                                                   |
+| ----------------- | ----------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                                                                                 |
+| `ledger.validate` | LedgerMaster.cpp  | `ledger_seq`, `validations`                                             | Ledger promoted to validated                                                                                                  |
+| `ledger.store`    | LedgerMaster.cpp  | `ledger_seq`                                                            | Ledger stored in history                                                                                                      |
+| `ledger.acquire`  | InboundLedger.cpp | `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
+
+`ledger.acquire` sets only `ledger_seq` and `acquire_reason` when the span opens
+in `init()`; `outcome`, `timeouts` and `peer_count` are written on the `done()`
+path. All three are therefore **absent** when `init()` satisfies the ledger
+straight from the local store and the acquire never runs — treat a missing
+`outcome` as "never went to the network", not as a lost span.
+
+`ledger.build` does **not** carry `tx_count` / `tx_failed`. Those two live on its
+child `tx.apply` span, which is where the set is actually applied
+([BuildLedger.cpp:191](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L191)) —
+join on the trace, not on one span.
+
+> **Gap: no `ledger.*` span carries a ledger hash.** The attribute constant
+> `ledger_span::attr::ledgerHash` is declared
+> ([LedgerSpanNames.h:41](../src/xrpld/app/ledger/detail/LedgerSpanNames.h#L41))
+> but is never set by any call site, so `ledger.build` / `ledger.store` /
+> `ledger.validate` / `ledger.acquire` are identifiable by `ledger_seq` only. A
+> query filtering on `span.ledger_hash` over a `ledger.*` span returns nothing.
+> `ledger_hash` **is** set on `consensus.validation.send` and on the peer spans,
+> so use those when a hash is required.
 
 ### Peer Spans
 
-| Span Name                 | Source File      | Attributes                      | Description                   |
-| ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
-| `peer.proposal.receive`   | PeerImp.cpp:1667 | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
-| `peer.validation.receive` | PeerImp.cpp:2264 | `peer_id`, `validation_trusted` | Validation received from peer |
+| Span Name                 | Source File | Attributes                      | Description                   |
+| ------------------------- | ----------- | ------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp | `peer_id`, `validation_trusted` | Validation received from peer |
 
 Both peer receive spans are `kConsumer` inbound entry points started as fresh
 trace roots. They never inherit an ambient span left active on the peer thread,
@@ -692,11 +755,11 @@ in `Establish` across many heartbeats until the outcome is decided.
 > 1. **Avalanche rounds inside one Establish phase** — each `timerEntry` runs
 >    `phaseEstablish` again (`establishCounter_++`) and raises the inclusion
 >    threshold **50% → 65% → 70% → 95%** as the round ages
->    ([ConsensusParms.h:145](../src/xrpld/consensus/ConsensusParms.h#L145)).
+>    ([ConsensusParms.h:145](../include/xrpl/consensus/ConsensusParms.h#L145)).
 >    `checkConsensus` returning `No` keeps the node in `Establish` and loops; a
 >    round cannot even `Expire` before a minimum of
 >    `avalancheCutoffs.size() × avMinRounds = 4 × 2 = 8` passes
->    ([Consensus.h:1938](../src/xrpld/consensus/Consensus.h#L1938)).
+>    ([Consensus.h:1937](../include/xrpl/consensus/Consensus.h#L1937)).
 > 2. **Retry across consensus rounds** — a round can end `MovedOn` / `Expired`,
 >    meaning the network settled a _different_ ledger. The node still builds a
 >    ledger, but the **next** round's `checkLedger` detects the wrong prior,
@@ -758,44 +821,44 @@ Consensus loops and branches (evidence):
 - **`consensus.establish` is the parent of `update_positions` and `check`**:
   `phaseEstablish` creates the establish span (`startEstablishTracing`), and both
   child spans parent to its captured context
-  ([Consensus.h:2100](../src/xrpld/consensus/Consensus.h#L2100),
-  [1629](../src/xrpld/consensus/Consensus.h#L1629),
-  [1838](../src/xrpld/consensus/Consensus.h#L1838)).
+  ([Consensus.h:2099](../include/xrpl/consensus/Consensus.h#L2099),
+  [1628](../include/xrpl/consensus/Consensus.h#L1628),
+  [1837](../include/xrpl/consensus/Consensus.h#L1837)).
 - **Avalanche-convergence loop (rounds within one ledger)**: repeated
   `heartbeat → timerEntry → phaseEstablish` bumps `establishCounter_` and raises
   the inclusion threshold each pass; `checkConsensus` = `No` stays in `Establish`
   ([NetworkOPs.cpp:1214](../src/xrpld/app/misc/NetworkOPs.cpp#L1214);
-  [Consensus.h:1468](../src/xrpld/consensus/Consensus.h#L1468);
-  thresholds [ConsensusParms.h:145](../src/xrpld/consensus/ConsensusParms.h#L145)).
+  [Consensus.h:1467](../include/xrpl/consensus/Consensus.h#L1467);
+  thresholds [ConsensusParms.h:145](../include/xrpl/consensus/ConsensusParms.h#L145)).
 - **Retry-across-rounds loop (many rounds per settled ledger)**: `MovedOn` /
   `Expired` accepts a non-preferred ledger; the next round's `checkLedger` finds
   the wrong prior and recovers before re-deliberating
-  ([Consensus.h:1194](../src/xrpld/consensus/Consensus.h#L1194)); round-to-round
+  ([Consensus.h:1193](../include/xrpl/consensus/Consensus.h#L1193)); round-to-round
   via `endConsensus → beginConsensus`
   ([NetworkOPs.cpp:2315](../src/xrpld/app/misc/NetworkOPs.cpp#L2315)).
 - **Two extra establish loop-backs before accept**: `shouldPause` (laggard
   backpressure) and `!haveCloseTimeConsensus_` (TX consensus but not close-time)
   each `return` and re-loop, distinct from `checkConsensus == No`
-  ([Consensus.h:1497](../src/xrpld/consensus/Consensus.h#L1497),
-  [1500](../src/xrpld/consensus/Consensus.h#L1500)); close time can
+  ([Consensus.h:1496](../include/xrpl/consensus/Consensus.h#L1496),
+  [1499](../include/xrpl/consensus/Consensus.h#L1499)); close time can
   "agree to disagree" at prior close + 1s ([docs/consensus.md:163](consensus.md)).
 - **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
   `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
-  establish phase ([Consensus.h:932](../src/xrpld/consensus/Consensus.h#L932)).
+  establish phase ([Consensus.h:931](../include/xrpl/consensus/Consensus.h#L931)).
 - **Bow-out / mode change**: `handleWrongLedger → leaveConsensus` sends a bow-out
   proposal and demotes Proposing → Observing for the rest of the round
-  ([Consensus.h:1977](../src/xrpld/consensus/Consensus.h#L1977)); `startRound`
+  ([Consensus.h:1976](../include/xrpl/consensus/Consensus.h#L1976)); `startRound`
   begins in Proposing **or** Observing ([docs/consensus.md:176](consensus.md)).
 - **Buffered Open-phase inputs**: `peerProposal` / `gotTxSet` arriving during Open
   are stored, then seeded as disputes at `closeLedger` (`createDisputes`);
   `playbackProposals` replays them at `startRound` / `handleWrongLedger`
   ([docs/consensus.md:244](consensus.md);
-  [Consensus.h:817](../src/xrpld/consensus/Consensus.h#L817)).
+  [Consensus.h:816](../include/xrpl/consensus/Consensus.h#L816)).
 - **Outcome fork** after `checkConsensus`: `No` (loop) / `Yes` (onAccept) /
-  `MovedOn` / `Expired` ([Consensus.h:1516](../src/xrpld/consensus/Consensus.h#L1516)).
+  `MovedOn` / `Expired` ([Consensus.h:1515](../include/xrpl/consensus/Consensus.h#L1515)).
 - **Expired guard**: a round cannot leave on `Expired` before
   `avalancheCutoffs.size() × avMinRounds` (= 8) passes — below that, `Expired`
-  loops like `No` ([Consensus.h:1938](../src/xrpld/consensus/Consensus.h#L1938)).
+  loops like `No` ([Consensus.h:1937](../include/xrpl/consensus/Consensus.h#L1937)).
 - The **deterministic-vs-random trace-strategy** branch at round start
   ([RCLConsensus.cpp:1291](../src/xrpld/app/consensus/RCLConsensus.cpp#L1291)) sets
   only the trace ID — it has **zero protocol effect**.
@@ -918,10 +981,11 @@ flowchart TB
     UALL -.->|dead / aborted| DEAD
 ```
 
-**Ledger acquire** — a **separate trace root** (not part of the close flow) that
-fetches a missing or correct-prior ledger from peers, retries per peer/timer, and
-finishes with a reason-dependent store; `checkAccept` + `tryAdvance` run on **any**
-completed acquire:
+**Ledger acquire** — a flow **outside the close flow** that fetches a missing or
+correct-prior ledger from peers, retries per peer/timer, and finishes with a
+reason-dependent store; `checkAccept` + `tryAdvance` run on **any** completed
+acquire. `ledger.acquire` is usually a trace root, but not reliably so — see the
+[parenting known issues](#where-telemetry-parenting-differs-from-protocol-flow):
 
 ```mermaid
 flowchart TB
@@ -963,13 +1027,13 @@ Side-flow evidence:
   [181](../src/xrpld/rpc/detail/PathRequestManager.cpp#L181)).
 - **Acquire outcome fork**: `timeouts_ > kLedgerTimeoutRetriesMax` (= 6) sets
   `failed_` → terminal `logFailure`, no store/checkAccept
-  ([InboundLedger.cpp:387](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L387)).
+  ([InboundLedger.cpp:402](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L402)).
 - **done() reason branch (store side only)**: `HISTORY` → `onLedgerFetched`, **no**
   `storeLedger`; else → `storeLedger`. But `checkAccept` + `tryAdvance` run for
   **any** `complete_ && !failed_` acquire regardless of reason
-  ([InboundLedger.cpp:495](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L495)
-  store switch; [507](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L507)
-  reason-independent checkAccept/tryAdvance).
+  ([InboundLedger.cpp:537](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L537)
+  store switch; [552](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L552)
+  reason-independent checkAccept/tryAdvance on the `AcqDone` job).
 - **tryAdvance multi-ledger loop**: `doAdvance` runs `do { … } while (advanceWork_)`,
   publishing a range of ledgers and recursively triggering further HISTORY acquire
   ([LedgerMaster.cpp:1905](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1905)).
@@ -980,22 +1044,88 @@ The graph above is protocol control flow. The OpenTelemetry span **parent links*
 are built differently and, in several places, do **not** represent a real
 call edge. Read a trace with these in mind:
 
-| Telemetry does this                                                                                                                   | Real protocol flow                                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                 |
-| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`.                                       |
-| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                  |
-| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)).                                                                                                             |
-| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                            |
-| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance; `ledger.acquire` is its own root.                                                                                                                                                              |
-| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                     |
-| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`. |
+| Telemetry does this                                                                                                                   | Real protocol flow                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                                                                                                                                                      |
+| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`. Because nothing else nests under it either, `tx.apply` is **always a leaf** — the stage spans for the transactions it applied sit in the txID-keyed trace, not beneath it. |
+| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                                                                                                                                                       |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)).                                                                                                                                                                                                                                                  |
+| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                                                                                                                                                                 |
+| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance. All three are non-scoped `SpanGuard::span` spans, so none of them parents the others; each takes whatever ambient span its own caller happens to have active. See the `ledger.*` known issue below.                                                                                                                                 |
+| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                                                                                                                                                          |
+| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`.                                                                                                                                      |
 
 > **Known telemetry artifacts** (from live audits, memory `otel-span-hierarchy-audit`):
 > an RPC entry span's scope can leak across a reused coroutine worker, and the
-> `hashSpan` roots (`tx.*`) — along with plain roots like `ledger.acquire` — can
-> surface in Tempo as dangling "root span not yet received". These are
-> exporter/parenting artifacts, not real control-flow parents.
+> `hashSpan` roots (`tx.*`) — along with `ledger.acquire` / `ledger.store` /
+> `ledger.validate` whenever they do come out parentless — can surface in Tempo
+> as dangling "root span not yet received". These are exporter/parenting
+> artifacts, not real control-flow parents.
+
+Three further divergences are **known issues in the code**, not deliberate design.
+Unlike the rows above, these produce a parent that is simply wrong, and all three
+are pending a code fix:
+
+- **`grpc.*` and `pathfind.update_all` do not open a fresh root.** All four RPC
+  entry points create their span with `freshRoot`, so a reused coroutine worker
+  cannot leak a stale ambient parent into them
+  ([ServerHandler.cpp:473](../src/xrpld/rpc/detail/ServerHandler.cpp#L473),
+  [640](../src/xrpld/rpc/detail/ServerHandler.cpp#L640)). `grpc.<MethodName>`
+  ([GRPCServer.cpp:173](../src/xrpld/app/main/GRPCServer.cpp#L173)) and
+  `pathfind.update_all`
+  ([PathRequestManager.cpp:91](../src/xrpld/rpc/detail/PathRequestManager.cpp#L91))
+  use the plain constructor instead, so either can be adopted by whatever span
+  happened to be active on the worker that picked the job up. A gRPC call
+  appearing beneath an unrelated transaction's trace is this bug, not a real
+  call edge.
+- **`ledger.acquire` / `ledger.store` / `ledger.validate` are not reliably roots
+  either.** All three use `SpanGuard::span`
+  ([InboundLedger.cpp:113](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L113),
+  [LedgerMaster.cpp:463](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463),
+  [987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)), which inherits the
+  ambient span ([SpanGuard.cpp:233](../src/libxrpl/telemetry/SpanGuard.cpp#L233))
+  rather than `freshRoot`
+  ([245](../src/libxrpl/telemetry/SpanGuard.cpp#L245)) — the same defect as
+  `grpc.*` above. Whether they come out as roots depends purely on the caller:
+  - **Root, as documented.** On the `JtAdvance` / `AcqDone` job path
+    (`LedgerMaster::doAdvance`, `RCLConsensus::Adaptor::acquireLedger` →
+    [RCLConsensus.cpp:171](../src/xrpld/app/consensus/RCLConsensus.cpp#L171)) no
+    span is active on the worker, so nothing is inherited. `acquireSpan_` itself is
+    a non-scoped `SpanGuard`, so it never becomes the ambient parent of the
+    `ledger.store` / `ledger.validate` that follow it.
+  - **Mis-parented.** `InboundLedgers::acquire` is also called **synchronously from
+    an RPC handler** — `ledger_request` → `rpc::getOrAcquireLedger`
+    ([RPCLedgerHelpers.cpp:483](../src/xrpld/rpc/detail/RPCLedgerHelpers.cpp#L483))
+    — which runs inside the scoped `rpc.command.<name>` span
+    ([RPCHandler.cpp:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168)). There
+    `ledger.acquire` becomes a child of that RPC command, and when `init()` is
+    satisfied from the local store the `ledger.store` / `ledger.validate` it calls
+    ([InboundLedger.cpp:164](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L164),
+    [168](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L168)) land there as
+    siblings. A ledger acquisition nested under an `rpc.command.*` trace is this
+    bug, not a real call edge.
+
+  **`ledger.build` and `tx.apply` use the same ambient-parent construct but are
+  safe.** `ledger.build` is a plain `ScopedSpanGuard`
+  ([BuildLedger.cpp:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55)): its
+  only callers are `RCLConsensus::doAccept`
+  ([RCLConsensus.cpp:935-937](../src/xrpld/app/consensus/RCLConsensus.cpp#L935))
+  on the `JtAccept` worker and the replay path
+  ([LedgerDeltaAcquire.cpp:208](../src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp#L208)),
+  and every consensus accept span is a non-scoped `SpanGuard`
+  ([RCLConsensus.cpp:598-599](../src/xrpld/app/consensus/RCLConsensus.cpp#L598)),
+  so no ambient span exists to be inherited there. `tx.apply`
+  ([BuildLedger.cpp:123](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L123)) is
+  reached only synchronously from `buildLedgerImpl` while `ledger.build`'s scope is
+  live, so its ambient parent is always `ledger.build` — which is exactly the
+  intended edge.
+
+- **`consensus.round` is not always a root.** The `consensus_trace_strategy=attribute`
+  path has two creation branches; the fallback branch — taken on the first traced
+  round of a run, and whenever consensus tracing is off — sets no parent at all
+  ([RCLConsensus.cpp:1310](../src/xrpld/app/consensus/RCLConsensus.cpp#L1310)),
+  so that round inherits the ambient context instead of starting a trace. Rounds
+  under the default `deterministic` strategy are unaffected.
 
 ---
 
@@ -1120,10 +1250,20 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > a rising `tx.transactor` failure rate points to apply-time problems. Alert per
 > stage rather than on a single aggregate so the failing stage is obvious.
 
-> **Sampling caveat**: these stage metrics are span-derived and inherit the
-> **tracer head-sampling** ratio (`sampling_ratio`). At `sampling_ratio < 1.0`
-> they undercount proportionally — treat them as relative trends, not absolute
-> transaction counts. Native StatsD metrics are unsampled.
+> **Sampling caveat**: these stage metrics are span-derived, but head sampling
+> is **fixed at 100% and is not configurable** — the ratio is a compile-time
+> constant ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
+> `static constexpr double samplingRatio = 1.0;`) and there is no
+> `sampling_ratio` config key to set
+> ([TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
+> — "nothing to parse"). So locally these counts are **exact**, not a sample.
+> Volume reduction is a collector-side **tail** sampling decision instead, and
+> the only policy shipped is a single 0.5% probabilistic one that lives **only**
+> in `otel-collector-config.grafanacloud.yaml` — the base
+> `otel-collector-config.yaml` has no tail sampling at all, so a stock local
+> stack retains every trace. Where that Cloud policy is in force it applies to
+> the trace-storage branch only; spanmetrics run on a separate branch and still
+> see 100% of spans, so the derived RED metrics stay exact either way.
 
 ### Transaction Queue Health
 
@@ -1448,7 +1588,7 @@ Note that `job_count` is exported as `jobq_job_count`: the JobQueue is
 constructed with `collectorManager_->group("jobq")` (Application.cpp:386),
 `GroupImp::makeName()` joins prefix and name with a `.` (Groups.cpp:42), and
 `OTelCollectorImp::formatName()` then turns the `.` into `_` and lowercases the
-whole string (OTelCollector.cpp:860). The same mechanism produces the
+whole string (OTelCollector.cpp:855-874). The same mechanism produces the
 `jobq_{jobtype}_*` names above and the pre-existing
 `jobq_{jobtype}_milliseconds` timing family.
 
@@ -1595,9 +1735,9 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 These five come from the `PerfLog` job hooks, not from beast::insight, so they
 are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
 have explicit microsecond bucket views registered
-(`addMicrosecondHistogramView()`, MetricsRegistry.cpp:253-254) spanning 100 µs to
-60 s; without those the SDK default buckets stop at 10 ms and every quantile
-saturates.
+(`addMicrosecondHistogramView()` calls at MetricsRegistry.cpp:310-311; the helper
+itself is at `:197`) spanning 100 µs to 60 s; without those the SDK default
+buckets stop at 10 ms and every quantile saturates.
 
 | Prometheus Metric    | Kind      | Labels                | Description                          |
 | -------------------- | --------- | --------------------- | ------------------------------------ |
@@ -1854,11 +1994,16 @@ Fifteen dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`
 Fourteen are Prometheus-backed; `log-derived-insights` is the only Loki/LogQL
 board and is documented last, together with the LogQL-specific traps it exposed.
 
-> Nine dashboards have a reference section below. `fee-market`, `job-queue`,
-> `ledger-data-sync`, `overlay-traffic-detail`, `peer-quality`, and
-> `validator-health` are provisioned but not yet documented here — their panel
-> descriptions carry the same six-heading reference format, so open the panel
-> info icon in Grafana until a section is written.
+> **Nine of the fifteen have a reference section.** Eight are in this chapter
+> (`rpc-performance`, `transaction-overview`, `consensus-health`,
+> `ledger-operations`, `peer-network`, `node-health`, `network-traffic`,
+> `rpc-pathfinding`); the ninth, `log-derived-insights`, is documented under
+> [Log-Trace Correlation](#log-derived-insights-log-derived-insights). The
+> remaining **six** — `fee-market`, `job-queue`, `ledger-data-sync`,
+> `overlay-traffic-detail`, `peer-quality`, and `validator-health` — are
+> provisioned but not yet documented here. Their panel descriptions carry the same
+> six-heading reference format, so open the panel info icon in Grafana until a
+> section is written.
 
 ### RPC Performance (`rpc-performance`)
 
@@ -1868,7 +2013,7 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                      | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
-| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                         | —                        |
+| Overall RPC Throughput      | timeseries | `rpc.http_request` + `rpc.process` rate                                                                                    | —                        |
 | RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                          | `status_code`            |
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                               | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                      | —                        |
@@ -1935,18 +2080,18 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Published Ledger Age                                         | stat       | `ledgermaster_published_ledger_age`                                                                                                                        | —                |
 | Operating Mode (Time Share)                                  | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                                                                                                 | —                |
 | Operating Mode Transitions                                   | timeseries | `state_accounting_*_transitions`                                                                                                                           | —                |
-| I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                                                                                             | —                |
+| I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
 | Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches[5m])`                                                                                                                                 | —                |
-| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch[5m])`                                                                                                                        | —                |
-| Key Jobs Execution Time                                      | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                                                                                                  | `quantile`       |
-| Key Jobs Dequeue Wait Time                                   | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)                                                                                                         | `quantile`       |
+| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch_total[5m])`                                                                                                                  | —                |
+| Key Jobs Execution Time                                      | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_running_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more key jobs)                 | `job_type`       |
+| Key Jobs Dequeue Wait Time                                   | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_queued_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more)                           | `job_type`       |
 | FullBelowCache Size                                          | timeseries | `node_family_full_below_cache_size`                                                                                                                        | —                |
 | FullBelowCache Hit Rate                                      | gauge      | `node_family_full_below_cache_hit_rate`                                                                                                                    | —                |
 | Ledger Publish Gap                                           | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                                                                                              | —                |
 | State Duration Rate (Full vs Tracking)                       | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                                                                                                       | —                |
-| All Jobs Execution Time (Detail)                             | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`                                                                                                           | `quantile`       |
-| All Jobs Dequeue Wait (Detail)                               | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`                                                                                                         | `quantile`       |
+| All Jobs Execution Time (Detail)                             | timeseries | `histogram_quantile($quantile, sum by (le, job_type) (rate(job_running_us_bucket[$__rate_interval])))`                                                     | `job_type`       |
+| All Jobs Dequeue Wait (Detail)                               | timeseries | `histogram_quantile($quantile, sum by (le, job_type) (rate(job_queued_us_bucket[$__rate_interval])))`                                                      | `job_type`       |
 | Server State                                                 | stat       | `server_info{metric="server_state"}`                                                                                                                       | `metric`         |
 | Uptime                                                       | stat       | `server_info{metric="uptime"}`                                                                                                                             | `metric`         |
 | Peer Count                                                   | stat       | `server_info{metric="peers"}`                                                                                                                              | `metric`         |
@@ -1956,6 +2101,24 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Complete Ledger Ranges                                       | table      | `complete_ledgers`                                                                                                                                         | `bound`, `index` |
 | Database Sizes                                               | timeseries | `db_metrics{metric=~"db_kb_.*"}`                                                                                                                           | `metric`         |
 | Historical Fetch Rate                                        | stat       | `db_metrics{metric="historical_perminute"}`                                                                                                                | `metric`         |
+
+> **The four job panels read the `MetricsRegistry` histograms fed by the PerfLog
+> job hooks, not the `jobq_*` ones.**
+> `$quantile` is a dashboard template variable holding a fraction (`0.95`), fed
+> straight into `histogram_quantile()`. There is **no `quantile` label** on any
+> xrpld series — that was a StatsD-era summary convention, and a selector like
+> `{quantile="$quantile"}` matches nothing and reports no error. The job queue
+> exposes two parallel families: `job_running_us` / `job_queued_us`
+> (`MetricsRegistry` instruments, labelled by `job_type` and `handler`,
+> microseconds — what these panels use;
+> [MetricsRegistry.cpp:94-95](../src/xrpld/telemetry/MetricsRegistry.cpp#L94),
+> [363-366](../src/xrpld/telemetry/MetricsRegistry.cpp#L363), recorded from the
+> `PerfLog` job hooks at
+> [PerfLogImp.cpp:432](../src/xrpld/perflog/detail/PerfLogImp.cpp#L432)) and
+> `jobq_<jobtype>[_q]_milliseconds`
+> (beast::insight, one instrument per job type, milliseconds —
+> [JobTypeData.h:97](../include/xrpl/core/JobTypeData.h#L97)). Both are live;
+> prefer the labelled `job_*_us` pair so one query covers every job type.
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
@@ -1984,16 +2147,26 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
-| Panel                     | Type       | PromQL                                           | Labels Used |
-| ------------------------- | ---------- | ------------------------------------------------ | ----------- |
-| RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                         | —           |
-| RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bucket)`      | —           |
-| RPC Response Time Heatmap | heatmap    | `rpc_time_bucket`                                | —           |
-| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_bucket)` | —           |
-| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`             | —           |
-| Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`             | —           |
+| Panel                     | Type       | PromQL                                                        | Labels Used |
+| ------------------------- | ---------- | ------------------------------------------------------------- | ----------- |
+| RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                                      | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_milliseconds_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_milliseconds_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `rpc_time_milliseconds_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_milliseconds_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_milliseconds_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`                          | —           |
+| Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`                          | —           |
+
+> **The `_milliseconds` suffix comes from the exporter, not from xrpld.** These
+> histograms are created with unit `"ms"`
+> ([OTelCollector.cpp:615](../src/libxrpl/beast/insight/OTelCollector.cpp#L615)),
+> so the Prometheus exporter appends the unit to the family name — `rpc_time`
+> becomes `rpc_time_milliseconds_bucket`. Querying the bare `rpc_time_bucket`,
+> `ios_latency_bucket` or `pathfind_fast_bucket` returns no data and no error.
+> **Known issue**: `rpc_size` counts bytes but shares the same `"ms"` histogram
+> constructor, so it is exported as `rpc_size_milliseconds_bucket` — the suffix
+> is wrong, the name is nonetheless the one to query.
 
 ### Span → Metric → Dashboard Summary
 
@@ -2029,6 +2202,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | `ledger.build`                 | `{span_name="ledger.build"}`                 | Ledger Ops (Build Rate, Duration, Heatmap)    |
 | `ledger.validate`              | `{span_name="ledger.validate"}`              | Ledger Ops (Validation Rate)                  |
 | `ledger.store`                 | `{span_name="ledger.store"}`                 | Ledger Ops (Store Rate)                       |
+| `ledger.acquire`               | `{span_name="ledger.acquire"}`               | -- (available but not paneled)                |
 | `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
 | `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
 
@@ -2069,7 +2243,7 @@ Alerts fire only after the condition holds for the `for` dwell time.
 | `NodeStateFlapping`       | warning  | > 3 re-entries into FULL per hour                  | 15m |
 | `NodeNotFull`             | warning  | `server_state` < 4 (FULL)                          | 15m |
 | `ManifestJobQueueConvoy`  | warning  | `jobq_manifest_waiting` > 3                        | 10m |
-| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 512 kB/s      | 10m |
+| `ManifestFloodInbound`    | warning  | `rate(overhead_manifest_bytes_in)` > 512 KiB/s     | 10m |
 | `PeerResourceDisconnects` | warning  | > 5 resource-driven peer disconnects per 30m       | 5m  |
 
 Two expression idioms recur and are load-bearing — do not "simplify" them away:
@@ -2089,6 +2263,19 @@ Two expression idioms recur and are load-bearing — do not "simplify" them away
 from the validated network chain. Likely causes: corrupted local state, a bug,
 or a node that fell out of sync and rebuilt incorrectly. Investigate the node's
 ledger acquisition logs; a healthy node never mismatches.
+
+> **Query trap — `sum(ledger_history_mismatch_total)` double-counts.** One
+> mismatch increments **two** instruments inside the same `handleMismatch()`
+> call: the legacy beast::insight counter, which carries no `reason` label
+> ([LedgerHistory.cpp:323](../src/xrpld/app/ledger/LedgerHistory.cpp#L323)), and
+> the `MetricsRegistry` counter, which does
+> ([LedgerHistory.cpp:331](../src/xrpld/app/ledger/LedgerHistory.cpp#L331)).
+> Both normalise to the same Prometheus family, so an unfiltered `sum()` or
+> `increase()` reports exactly **twice** the real mismatch count. Aggregate over
+> the labelled series only — `sum by (reason) (...)`, or
+> `sum(ledger_history_mismatch_total{reason!=""})` — and halve any historical
+> figure taken from the unfiltered form. The alert rule is unaffected: it only
+> tests `> 0`. This is a known issue; the duplicate producer awaits a code fix.
 
 **LedgerCloseStalled** — No ledgers closed for 3 minutes. A healthy node closes
 one every ~3-5s. Likely causes: lost peer connectivity, consensus stall, or the
@@ -2189,7 +2376,8 @@ This is the most reliable manifest-flood signal because `jobq_manifest_waiting`
 is `0` at the 99.9th percentile on every node over 24h — any sustained backlog is
 a genuine outlier rather than normal variance.
 
-**ManifestFloodInbound** — Inbound manifest byte-rate exceeds 512 kB/s. Catches the
+**ManifestFloodInbound** — Inbound manifest byte-rate exceeds 512 KiB/s (524288
+B/s — the rule's literal `params: [524288]`). Catches the
 wire-level cause (a peer shipping oversized dumps) even when the job pool absorbs
 it without a visible backlog. Measured over 7 days: healthy p95 0.2-0.5 kB/s and
 p99 1.0-1.8 kB/s, against peaks up to 2.7 MB/s during real storms — so the
@@ -2491,8 +2679,8 @@ Filters: `$service_name`, `$deployment_environment`, `$node`,
 
 #### LogQL traps this dashboard exposed
 
-Ten mistakes that fail **silently** — each cost a debugging cycle, so check them
-before adding any LogQL panel.
+Eleven mistakes that fail **silently** — each cost a debugging cycle, so check
+them before adding any LogQL panel.
 
 1. **`partition` is structured metadata, not a stream label.**
    `{service_name="xrpld", partition="ManifestCache"}` returns **zero rows with
@@ -3124,10 +3312,20 @@ not a sign the cache is working.
 
 ## Disabling Telemetry
 
-Set `enabled=0` in config (runtime disable) or build without the flag:
+Set `enabled=0` in the `[telemetry]` config section (runtime disable, no rebuild), or
+compile telemetry out:
 
 ```bash
+conan install . --build=missing -o telemetry=False
 cmake --preset default -Dtelemetry=OFF
 ```
+
+Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
+the build's current default is. That default is `ON` on the telemetry branches so CI
+compiles the instrumented paths, and `OFF` once the feature is merged; `-Dtelemetry=OFF`
+is correct either way. `-DXRPL_ENABLE_TELEMETRY=OFF` does **not** work: that name is only
+a compile definition added when `telemetry` is ON, not a CMake option, so telemetry stays
+compiled in and CMake only lists it under `Manually-specified variables were not used by
+the project`.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
