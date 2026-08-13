@@ -31,6 +31,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -116,33 +117,35 @@ doAccountInfo(rpc::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 10>
-        kAccountRootFlags{
-            {{"defaultRipple", lsfDefaultRipple},
+    // Flags that are always reported.
+    static constexpr auto kAccountRootFlags =
+        std::to_array<std::pair<std::string_view, LedgerSpecificFlags>>(
+            {{"allowTrustLineClawback", lsfAllowTrustLineClawback},
+             {"defaultRipple", lsfDefaultRipple},
              {"depositAuth", lsfDepositAuth},
              {"disableMasterKey", lsfDisableMaster},
+             {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+             {"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
+             {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
              {"disallowIncomingXRP", lsfDisallowXRP},
              {"globalFreeze", lsfGlobalFreeze},
              {"noFreeze", lsfNoFreeze},
              {"passwordSpent", lsfPasswordSpent},
              {"requireAuthorization", lsfRequireAuth},
-             {"requireDestinationTag", lsfRequireDestTag},
-             {"allowTrustLineClawback", lsfAllowTrustLineClawback}}};
+             {"requireDestinationTag", lsfRequireDestTag}});
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        kDisallowIncomingFlags{
-            {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
-             {"disallowIncomingCheck", lsfDisallowIncomingCheck},
-             {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+    // Flags that are only reported when their amendment is enabled. This can't be `constexpr`,
+    // since the amendment IDs are computed at runtime.
+    static auto const kAmendmentGatedFlags =
+        std::to_array<std::tuple<std::string_view, LedgerSpecificFlags, uint256 const&>>(
+            {{"allowTrustLineLocking", lsfAllowTrustLineLocking, featureTokenEscrow}});
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
-        "allowTrustLineLocking", lsfAllowTrustLineLocking};
-
-    // TODO: consider replacing this with a static_assert in C++26 (via reflection)
+    // Every `AccountRoot` flag must be reported by `account_info`, so if a new flag is added, it
+    // needs to be added to one of the arrays above. This can't be a `static_assert` because
+    // `getAccountRootFlags()` builds its map at runtime.
     XRPL_ASSERT_PARTS(
-        kAccountRootFlags.size() + kDisallowIncomingFlags.size() + 1 ==
-            getAccountRootFlags().size(),
+        kAccountRootFlags.size() + kAmendmentGatedFlags.size() == getAccountRootFlags().size(),
         "xrpl::doAccountInfo",
         "number of account flags");
 
@@ -164,16 +167,13 @@ doAccountInfo(rpc::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         json::Value acctFlags{json::ValueType::Object};
-        for (auto const& lsf : kAccountRootFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+        for (auto const& [name, flag] : kAccountRootFlags)
+            acctFlags[name.data()] = sleAccepted->isFlag(flag);
 
-        for (auto const& lsf : kDisallowIncomingFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-
-        if (ledger->rules().enabled(featureTokenEscrow))
+        for (auto const& [name, flag, amendment] : kAmendmentGatedFlags)
         {
-            acctFlags[kAllowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineLockingFlag.second);
+            if (ledger->rules().enabled(amendment))
+                acctFlags[name.data()] = sleAccepted->isFlag(flag);
         }
 
         result[jss::account_flags] = std::move(acctFlags);
