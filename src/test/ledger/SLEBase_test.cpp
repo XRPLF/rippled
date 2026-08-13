@@ -209,7 +209,8 @@ class SLEBase_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        auto const ledger = env.current();
+        ApplyViewImpl av(&*ledger, TapNone);
 
         WAccountRootEntry account(alice.id(), av, env.journal);
         BEAST_EXPECT(account.canModify());
@@ -251,7 +252,8 @@ class SLEBase_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        auto const ledger = env.current();
+        ApplyViewImpl av(&*ledger, TapNone);
 
         auto const jt = env.jt(noop(alice));
         BEAST_EXPECT(jt.stx != nullptr);
@@ -281,8 +283,11 @@ class SLEBase_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        // A view we never apply, so nothing here reaches the ledger.
-        ApplyViewImpl av(&*env.current(), TapNone);
+        // A view we never apply, so nothing here reaches the ledger. Hold the
+        // ledger it points into: OpenLedger::current() hands out a copy of its
+        // own shared_ptr, so a later close would otherwise free it.
+        auto const ledger = env.current();
+        ApplyViewImpl av(&*ledger, TapNone);
 
         // Entry that does not exist yet: newSLE() -> insert().
         {
@@ -331,7 +336,8 @@ class SLEBase_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        auto const ledger = env.current();
+        ApplyViewImpl av(&*ledger, TapNone);
 
         WAccountRootEntry const writable(alice.id(), av);
         BEAST_EXPECT(writable.exists());
@@ -361,10 +367,11 @@ class SLEBase_test : public beast::unit_test::Suite
         // env.current() is an OpenView, which derives from ReadView but not
         // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
         // the plain ReadView::read() path.
-        RAccountRootEntry const overLedger(alice.id(), *env.current());
+        auto const ledger = env.current();
+        RAccountRootEntry const overLedger(alice.id(), *ledger);
         BEAST_EXPECT(overLedger.exists());
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        ApplyViewImpl av(&*ledger, TapNone);
 
         // ReadView const& binds an ApplyViewImpl just as happily, and there the
         // dynamic_cast succeeds, so this one resolves through ApplyView::peek().
