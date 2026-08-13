@@ -73,6 +73,16 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultWithdraw: vault withdrawal is not allowed in the investment phase.";
+            return tecTOO_SOON;
+        }
+    }
+
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
