@@ -682,12 +682,8 @@ directSendNoFeeIOU(
         !isXRP(uReceiverID) && uReceiverID != noAccount(),
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
-    // Canonical amendment gate for the sfDust mechanism.
-    //
     // sfDust is introduced by featureLendingProtocolV1_1. Every code path
-    // that reads or writes sfDust (vault_dust::useVaultDust,
-    // creditBalanceExact, the removeEmptyHolding dust guard, and this
-    // write-side check) enforces the same rules().enabled(...) gate.
+    // that reads or writes sfDust enforces the same rules().enabled(...) gate.
     // In normal operation the gate is redundant — the transactor-level
     // eligibility predicates already imply the amendment is on — but a
     // hypothetical replay/testing path that ever presented a dust-aware
@@ -704,8 +700,7 @@ directSendNoFeeIOU(
         legPolicy = nullptr;
     }
 
-    // Drain mode is defined only for the sender's leg. There is no
-    // receiver-side reservoir to drain.
+    // Drain mode is defined only for the sender's leg. There is no receiver-side dust to drain.
     XRPL_ASSERT(
         legPolicy == nullptr || legPolicy->mode != DustSplit::LegPolicy::Mode::Drain || legIsSender,
         "xrpl::directSendNoFeeIOU : Drain mode is sender-leg only");
@@ -722,30 +717,22 @@ directSendNoFeeIOU(
 
         STAmount const saBefore = saBalance;
 
-        // dustLedgerAfter holds the value that must be written to sfDust once
-        // the branch below decides bDelete, in the LINE'S OWN sign
-        // convention (i.e. not yet negated back to sender terms). Left
-        // unset (nullopt) when this call must not touch sfDust at all —
-        // which is every existing caller (legPolicy == nullptr) — so a
-        // line that never carries dust is byte-identical to before.
+        // dustLedgerAfter holds the value that must be written to sfDust once the branch below
+        // decides bDelete, in the LINE'S OWN sign convention. Left unset when this call must not
+        // touch sfDust at all so a line that never carries dust is byte-identical to before.
         std::optional<Number> dustLedgerAfter;
 
         if (legPolicy != nullptr)
         {
-            // sfBalance and sfDust together are one signed extended
-            // quantity, expressed in the trust line's own low/high sign
-            // convention. Convert sfDust to sender terms so it lines up
-            // with saBefore (which was negated above when the sender is
-            // the high account).
+            // sfBalance and sfDust together are one signed extended quantity, expressed in the
+            // trust line's own low/high sign convention.
+            // Convert sfDust to sender terms to line up with saBefore.
             Number const lineDustLedger = Number{sleRippleState->at(sfDust)};
             Number const lineDustSender = bSenderHigh ? -lineDustLedger : lineDustLedger;
 
-            // The Vault-side write sites only ever park non-negative
-            // dust on the pseudo-account's custody line. The rest of the
-            // math below tolerates negative dust, but under Drain we
-            // assert non-negativity because folding a negative reservoir
-            // into the outgoing transfer would silently INCREASE the
-            // amount sent — this must never happen in practice.
+            // The rest of the math below tolerates negative dust, but under Drain we assert
+            // non-negativity because folding a negative reservoir into the outgoing transfer would
+            // silently INCREASE the amount sent — this must never happen in practice.
             XRPL_ASSERT(
                 lineDustSender >= beast::kZero || !legIsSender ||
                     legPolicy->mode != DustSplit::LegPolicy::Mode::Drain,
@@ -756,19 +743,16 @@ directSendNoFeeIOU(
 
             if (legPolicy->mode == DustSplit::LegPolicy::Mode::Drain)
             {
-                // Drain: fold all of sfDust into sfBalance in place,
-                // then debit `saAmount` — which the caller
-                // (directSendNoLimitIOU) has already inflated by
-                // `lineDustSender` so the outgoing transfer reaches the
-                // receiver as `amount + D_sender`. The end state on the
-                // sender's line is:
+                // Drain: fold all of sfDust into sfBalance in place, then debit `saAmount` — which
+                // the caller   already inflated by `lineDustSender` so the outgoing transfer
+                // reaches the receiver as `amount + D_sender`.
+                // The end state on the sender's line is:
                 //     sfBalance_new = (saBefore + lineDustSender) - saAmount
                 //                   = saBefore - (saAmount - lineDustSender)
                 //                   = saBefore - amount_originally_requested
                 //     sfDust_new    = 0
-                // i.e. the sender's line loses exactly the caller's
-                // originally-requested `amount` in whole-quanta terms,
-                // and the sub-quantum reservoir has been forwarded.
+                // i.e. the sender's line loses exactly the caller's originally-requested `amount`
+                // in whole-quanta terms, and the sub-quantum reservoir has been forwarded.
                 newBalance = (Number{saBefore} + lineDustSender) - Number{saAmount};
                 newDust = Number{0};
             }
