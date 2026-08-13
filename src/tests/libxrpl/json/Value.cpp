@@ -29,7 +29,7 @@ TEST(json_value, limits)
     static_assert(Value::kMaxUInt == UInt(-1));
 }
 
-TEST(json_value, construct_and_compare_Json_StaticString)
+TEST(json_value, construct_and_compare_json_static_string)
 {
     static constexpr char kSample[]{"Contents of a json::StaticString"};
 

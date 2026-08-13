@@ -12,7 +12,7 @@ using namespace xrpl;
 // by subscribing the real cap through a WebSocket, which would exceed the frame
 // limit and drop the connection before the check runs) lets the boundary be
 // asserted exactly.
-TEST(InfoSubSubscriptionCap, Boundary)
+TEST(InfoSubSubscriptionCap, boundary)
 {
     constexpr std::size_t cap = kMaxSubscriptionsPerConnection;
 
@@ -30,7 +30,7 @@ TEST(InfoSubSubscriptionCap, Boundary)
     EXPECT_TRUE(exceedsSubscriptionCap(cap - 1, 2));
 }
 
-TEST(InfoSubSubscriptionCap, NoOverflow)
+TEST(InfoSubSubscriptionCap, no_overflow)
 {
     constexpr std::size_t cap = kMaxSubscriptionsPerConnection;
     constexpr std::size_t max = std::numeric_limits<std::size_t>::max();
@@ -41,7 +41,7 @@ TEST(InfoSubSubscriptionCap, NoOverflow)
     EXPECT_TRUE(exceedsSubscriptionCap(cap, max));
 }
 
-TEST(InfoSubSubscriptionCap, ExplicitCap)
+TEST(InfoSubSubscriptionCap, explicit_cap)
 {
     // A configured override is honored: the boundary tracks the passed cap, not
     // the built-in default. This is the seam doSubscribe uses to enforce a
