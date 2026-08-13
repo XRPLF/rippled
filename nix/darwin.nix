@@ -30,6 +30,25 @@ in
   # For an environment that only puts binaries on PATH.
   toolchain = [
     llvmPackages.clang
+    # The wrappers re-export only some of cctools, and a dev shell gets the rest
+    # from its stdenv: without `dsymutil`, `clang -g` cannot link at all. Named
+    # one by one because buildEnv refuses any name a wrapper already carries,
+    # and the wrapped `ld` has to keep winning.
+    (pkgs.linkFarm "cctools-extra" (
+      map
+        (tool: {
+          name = "bin/${tool}";
+          path = "${llvmPackages.clang.bintools.bintools}/bin/${tool}";
+        })
+        [
+          "codesign_allocate"
+          "dsymutil"
+          "dwarfdump"
+          "install_name_tool"
+          "lipo"
+          "otool"
+        ]
+    ))
     (mkVersionedToolLinks {
       name = "clang";
       package = llvmPackages.clang;
