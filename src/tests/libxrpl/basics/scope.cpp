@@ -6,7 +6,7 @@
 
 using namespace xrpl;
 
-TEST(scope, scope_exit)
+TEST(Scope, scope_exit)
 {
     // ScopeExit always executes the functor on destruction,
     // unless release() is called
@@ -56,7 +56,7 @@ TEST(scope, scope_exit)
     EXPECT_EQ(i, 5);
 }
 
-TEST(scope, scope_fail)
+TEST(Scope, scope_fail)
 {
     // ScopeFail executes the functor on destruction only
     // if an exception is unwinding, unless release() is called
@@ -106,7 +106,7 @@ TEST(scope, scope_fail)
     EXPECT_EQ(i, 5);
 }
 
-TEST(scope, scope_success)
+TEST(Scope, scope_success)
 {
     // ScopeSuccess executes the functor on destruction only
     // if an exception is not unwinding, unless release() is called

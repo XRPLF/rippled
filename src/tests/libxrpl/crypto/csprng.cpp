@@ -6,7 +6,7 @@
 
 using namespace xrpl;
 
-TEST(csprng, get_values)
+TEST(Csprng, get_values)
 {
     auto& engine = cryptoPrng();
     auto randVal = engine();

@@ -21,7 +21,7 @@
 
 namespace xrpl {
 
-TEST(json_value, limits)
+TEST(JsonValue, limits)
 {
     using namespace json;
     static_assert(Value::kMinInt == Int(~(UInt(-1) / 2)));
@@ -29,7 +29,7 @@ TEST(json_value, limits)
     static_assert(Value::kMaxUInt == UInt(-1));
 }
 
-TEST(json_value, construct_and_compare_json_static_string)
+TEST(JsonValue, construct_and_compare_json_static_string)
 {
     static constexpr char kSample[]{"Contents of a json::StaticString"};
 
@@ -52,7 +52,7 @@ TEST(json_value, construct_and_compare_json_static_string)
     EXPECT_NE(kTest3, str);
 }
 
-TEST(json_value, different_types)
+TEST(JsonValue, different_types)
 {
     // Exercise ValueType constructor
     static constexpr json::StaticString kStaticStr{"staticStr"};
@@ -206,7 +206,7 @@ TEST(json_value, different_types)
     }
 }
 
-TEST(json_value, compare_strings)
+TEST(JsonValue, compare_strings)
 {
     auto doCompare = [&](json::Value const& lhs,
                          json::Value const& rhs,
@@ -560,7 +560,7 @@ TEST(json_value, compare_strings)
 #pragma pop_macro("DO_COMPARE")
 }
 
-TEST(json_value, bool)
+TEST(JsonValue, bool)
 {
     EXPECT_FALSE(json::Value());
 
@@ -583,7 +583,7 @@ TEST(json_value, bool)
     EXPECT_TRUE(bool(object));
 }
 
-TEST(json_value, bad_json)
+TEST(JsonValue, bad_json)
 {
     char const* s(R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
 
@@ -607,7 +607,7 @@ parseValue(std::string const& doc)
 
 }  // namespace
 
-TEST(json_value, parse_double_valid)
+TEST(JsonValue, parse_double_valid)
 {
     // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
     for (auto const& [text, expected] :
@@ -627,14 +627,14 @@ TEST(json_value, parse_double_valid)
     }
 }
 
-TEST(json_value, parse_double_out_of_range)
+TEST(JsonValue, parse_double_out_of_range)
 {
     // Magnitudes with no finite double representation are rejected.
     for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
         EXPECT_FALSE(parseValue(oor).has_value()) << oor;
 }
 
-TEST(json_value, parse_double_malformed)
+TEST(JsonValue, parse_double_malformed)
 {
     // readNumber() collects any run of digits and '.eE+-' into a single Double
     // token, so these malformed tokens reach decodeDouble. Each has a valid
@@ -644,7 +644,7 @@ TEST(json_value, parse_double_malformed)
         EXPECT_FALSE(parseValue(bad).has_value()) << bad;
 }
 
-TEST(json_value, edge_cases)
+TEST(JsonValue, edge_cases)
 {
     std::uint32_t const maxUInt = std::numeric_limits<std::uint32_t>::max();
     std::int32_t const maxInt = std::numeric_limits<std::int32_t>::max();
@@ -791,7 +791,7 @@ TEST(json_value, edge_cases)
     }
 }
 
-TEST(json_value, copy)
+TEST(JsonValue, copy)
 {
     json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
@@ -812,7 +812,7 @@ TEST(json_value, copy)
     EXPECT_EQ(v1, v2);
 }
 
-TEST(json_value, move)
+TEST(JsonValue, move)
 {
     json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
@@ -831,7 +831,7 @@ TEST(json_value, move)
     EXPECT_NE(v1, v2);  // NOLINT(bugprone-use-after-move)
 }
 
-TEST(json_value, comparisons)
+TEST(JsonValue, comparisons)
 {
     json::Value a, b;
     auto testEquals = [&](std::string const& name) {
@@ -886,7 +886,7 @@ TEST(json_value, comparisons)
     testGreaterThan("big");
 }
 
-TEST(json_value, compact)
+TEST(JsonValue, compact)
 {
     json::Value j;
     json::Reader r;
@@ -909,7 +909,7 @@ TEST(json_value, compact)
     }
 }
 
-TEST(json_value, conversions)
+TEST(JsonValue, conversions)
 {
     // We have json::ValueType::Real but json::Value::asDouble.
     // TODO: What's the thinking here?
@@ -1125,7 +1125,7 @@ TEST(json_value, conversions)
     }
 }
 
-TEST(json_value, access_members)
+TEST(JsonValue, access_members)
 {
     json::Value val;
     EXPECT_EQ(val.type(), json::ValueType::Null);
@@ -1218,7 +1218,7 @@ TEST(json_value, access_members)
     }
 }
 
-TEST(json_value, remove_members)
+TEST(JsonValue, remove_members)
 {
     json::Value val;
     EXPECT_EQ(val.removeMember(std::string("member")).type(), json::ValueType::Null);
@@ -1245,7 +1245,7 @@ TEST(json_value, remove_members)
     EXPECT_EQ(val.size(), 0);
 }
 
-TEST(json_value, iterator)
+TEST(JsonValue, iterator)
 {
     {
         // Iterating an array.
@@ -1331,7 +1331,7 @@ TEST(json_value, iterator)
     }
 }
 
-TEST(json_value, nest_limits)
+TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
@@ -1377,7 +1377,7 @@ TEST(json_value, nest_limits)
     }
 }
 
-TEST(json_value, memory_leak)
+TEST(JsonValue, memory_leak)
 {
     // When run with the address sanitizer, this test confirms there is no
     // memory leak with the scenarios below.
