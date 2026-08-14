@@ -667,9 +667,21 @@ setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueu
         auto const nodeType = get(config.section(Sections::kNodeDatabase), "type", "");
         if (!boost::iequals(nodeType, "rwdb"))
         {
-            JLOG(registry.getJournal("Application").warn())
-                << "[relational_db] backend=rwdb with a disk node store has "
-                << "no automatic memory bound unless online_delete is set";
+            std::uint32_t onlineDelete = 0;
+            getIfExists(config.section(Sections::kNodeDatabase), Keys::kOnlineDelete, onlineDelete);
+            if (onlineDelete == 0 && !config.standalone())
+            {
+                Throw<std::runtime_error>(
+                    "[relational_db] backend=rwdb with a disk node store "
+                    "requires [node_db] online_delete to bound memory");
+            }
+            if (onlineDelete == 0)
+            {
+                JLOG(registry.getJournal("Application").warn())
+                    << "[relational_db] backend=rwdb with a disk node store "
+                    << "has no automatic memory bound unless online_delete "
+                    << "is set";
+            }
         }
         return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
     }

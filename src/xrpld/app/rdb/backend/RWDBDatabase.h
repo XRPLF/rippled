@@ -32,7 +32,10 @@ private:
     struct LedgerData
     {
         LedgerHeader info;
+        // Hash lookup for erase/delete. Iteration order is txOrder.
         std::map<uint256, AccountTx> transactions;
+        // Transaction IDs in AcceptedLedger txnSeq order (ascending).
+        std::vector<uint256> txOrder;
         bool transactionsPurged{false};
     };
 
@@ -121,7 +124,10 @@ private:
         if (oldSeq != 0)
         {
             if (auto ledIt = ledgers_.find(oldSeq); ledIt != ledgers_.end())
+            {
                 ledIt->second.transactions.erase(id);
+                std::erase(ledIt->second.txOrder, id);
+            }
 
             if (oldTx.second)
             {
@@ -272,6 +278,7 @@ public:
         for (auto const& [txHash, _] : it->second.transactions)
             transactionMap_.erase(txHash);
         it->second.transactions.clear();
+        it->second.txOrder.clear();
         it->second.transactionsPurged = true;
 
         // Keep account_tx indexes in agreement with getTransactionCount().
@@ -339,6 +346,7 @@ public:
                 transactionMap_.erase(txHash);
             }
             it->second.transactions.clear();
+            it->second.txOrder.clear();
             it->second.transactionsPurged = true;
             ++it;
         }
@@ -444,6 +452,8 @@ public:
             Serializer s(128);
             s.add32(HashPrefix::LedgerMaster);
             addRaw(ledger->header(), s);
+            // Persist the header only when the node store is durable.
+            // A type=rwdb node store is a NullBackend and discards this.
             app_.getNodeStore().store(
                 NodeObjectType::Ledger, std::move(s.modData()), ledger->header().hash, seq);
         }
@@ -512,6 +522,7 @@ public:
                 {
                     eraseStaleTransactionUnlocked(insert.id);
                     ledgerData.transactions.emplace(insert.id, insert.accTx);
+                    ledgerData.txOrder.push_back(insert.id);
                     transactionMap_.insert_or_assign(insert.id, insert.accTx);
 
                     for (auto const& account : insert.affected)
@@ -672,6 +683,7 @@ public:
         return TxSearched::Unknown;
     }
 
+    // Approximate rb-tree node overhead for server_info-grade reporting.
     static constexpr size_t kMapNodeOverhead = 40;
 
 private:
@@ -686,6 +698,7 @@ private:
         {
             size += ledgerData.transactions.size() *
                 (sizeof(uint256) + sizeof(AccountTx) + kMapNodeOverhead);
+            size += ledgerData.txOrder.capacity() * sizeof(uint256);
         }
 
         size +=
@@ -795,8 +808,12 @@ public:
         for (auto it = ledgers_.rbegin(); it != ledgers_.rend(); ++it)
         {
             auto const& transactions = it->second.transactions;
-            for (auto const& [txHash, accountTx] : transactions)
+            for (auto const& txHash : it->second.txOrder)
             {
+                auto const txIt = transactions.find(txHash);
+                if (txIt == transactions.end())
+                    continue;
+
                 if (skipped < startIndex)
                 {
                     ++skipped;
@@ -804,11 +821,9 @@ public:
                 }
 
                 if (collected >= 20)
-                {
                     break;
-                }
 
-                result.push_back(detachAccountTx(accountTx).first);
+                result.push_back(detachAccountTx(txIt->second).first);
                 ++collected;
             }
 
@@ -818,6 +833,8 @@ public:
         return result;
     }
 
+    // Legacy/test-only. RPC uses accountTxPage; these ignore delegate
+    // filters (AccountTxOptions has no delegate field).
     AccountTxs
     getOldestAccountTxs(AccountTxOptions const& options) override
     {

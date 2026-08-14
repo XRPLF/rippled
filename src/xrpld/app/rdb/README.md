@@ -18,7 +18,7 @@ The config section `[relational_db]` has a property named `backend` whose value 
 backend=sqlite
 ```
 
-`backend=rwdb` selects the in-memory store. It is unbounded unless `online_delete` is set (or `node_db` is also `type=rwdb`, which defaults `online_delete` from `ledger_history`). PeerFinder data is not persisted across restarts with this backend.
+`backend=rwdb` selects the in-memory store. It is unbounded unless `online_delete` is set (or `node_db` is also `type=rwdb`, which defaults `online_delete` from `ledger_history`). In non-standalone mode, `backend=rwdb` with a disk node store and no `online_delete` is rejected so the process cannot grow until OOM. PeerFinder data is not persisted across restarts with this backend.
 
 ## Source Files
 
