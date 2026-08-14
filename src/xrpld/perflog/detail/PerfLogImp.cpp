@@ -331,10 +331,15 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
         std::scoped_lock const lock(counter->second.mutex);
         ++counter->second.value.started;
     }
-    std::scoped_lock const lock(counters_.methodsMutex);
-    counters_.methods[requestId] = {counter->first.c_str(), steady_clock::now()};
+    {
+        std::scoped_lock const lock(counters_.methodsMutex);
+        counters_.methods[requestId] = {counter->first.c_str(), steady_clock::now()};
+    }
 
-    // Task 9.4: Record RPC start in OTel metrics pipeline.
+    // Task 9.4: Record RPC start in OTel metrics pipeline. Recorded after the
+    // locks above are released: the OTel call path allocates and takes locks
+    // inside the SDK, so holding methodsMutex across it would widen a
+    // process-wide critical section for no reason. Mirrors rpcEnd().
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordRpcStarted(method);
 
@@ -424,10 +429,13 @@ PerfLogImp::jobQueue(JobType const type, std::string const& name)
         return;
         // LCOV_EXCL_STOP
     }
-    std::scoped_lock const lock(counter->second.mutex);
-    ++counter->second.value.queued;
+    {
+        std::scoped_lock const lock(counter->second.mutex);
+        ++counter->second.value.queued;
+    }
 
-    // Task 9.5: Record job enqueue in OTel metrics pipeline.
+    // Task 9.5: Record job enqueue in OTel metrics pipeline, after the lock
+    // above is released so the SDK's work stays outside the critical section.
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobQueued(JobTypes::name(type), name);
 }
@@ -454,11 +462,16 @@ PerfLogImp::jobStart(
         ++counter->second.value.started;
         counter->second.value.queuedDuration += dur;
     }
-    std::scoped_lock const lock(counters_.jobsMutex);
-    if (instance >= 0 && instance < counters_.jobs.size())
-        counters_.jobs[instance] = {type, startTime};
+    {
+        std::scoped_lock const lock(counters_.jobsMutex);
+        if (instance >= 0 && instance < counters_.jobs.size())
+            counters_.jobs[instance] = {type, startTime};
+    }
 
-    // Task 9.5: Record job start in OTel metrics pipeline.
+    // Task 9.5: Record job start in OTel metrics pipeline, after the locks
+    // above are released. jobsMutex is process-wide and taken by every worker
+    // thread on every job, so the SDK's allocation and internal locking must
+    // not run inside it.
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobStarted(JobTypes::name(type), name, dur.count());
 }
@@ -480,11 +493,14 @@ PerfLogImp::jobFinish(JobType const type, std::string const& name, microseconds 
         ++counter->second.value.finished;
         counter->second.value.runningDuration += dur;
     }
-    std::scoped_lock const lock(counters_.jobsMutex);
-    if (instance >= 0 && instance < counters_.jobs.size())
-        counters_.jobs[instance] = {JtInvalid, steady_time_point()};
+    {
+        std::scoped_lock const lock(counters_.jobsMutex);
+        if (instance >= 0 && instance < counters_.jobs.size())
+            counters_.jobs[instance] = {JtInvalid, steady_time_point()};
+    }
 
-    // Task 9.5: Record job finish in OTel metrics pipeline.
+    // Task 9.5: Record job finish in OTel metrics pipeline, after the locks
+    // above are released, for the same reason as jobStart().
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobFinished(JobTypes::name(type), name, dur.count());
 }
