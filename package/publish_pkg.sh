@@ -7,8 +7,9 @@ set -euo pipefail
 #
 # Usage: publish_pkg.sh <channel> [package-dir]
 #
-#   channel      selects the repository pair; release_channel.sh derives it from
-#                an xrpld version, except 'private'
+#   channel      'stable', 'unstable', 'experimental', 'develop' or 'private';
+#                selects the repository pair. CI passes the release-info action's
+#                channel output.
 #   package-dir  searched recursively for *.deb, *.ddeb and *.rpm ('build' by
 #                default)
 #
