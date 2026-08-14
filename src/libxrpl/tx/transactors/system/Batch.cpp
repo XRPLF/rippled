@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
@@ -334,8 +335,11 @@ Batch::preflight(PreflightContext const& ctx)
             return temBAD_FEE;
         }
 
-        // Disallow fee sponsorship on Batch inner txs
-        if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))
+        // Sponsorship on inner txs only needed blocking before BatchV1_1: the
+        // outer Batch is signed by the account that assembled the inner set, so
+        // that signature already authorizes every inner transaction it carries.
+        if (!ctx.rules.enabled(featureBatchV1_1) && stx.isFieldPresent(sfSponsor) &&
+            isFeeSponsored(stx))
             return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
