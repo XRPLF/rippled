@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR diff mapped onto graph nodes",
+  "type": "object",
+  "required": [
+    "schema",
+    "base",
+    "head",
+    "summary",
+    "touched",
+    "off_span_changes",
+    "unmapped_files",
+    "structural_changes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "base": {
+      "type": "string"
+    },
+    "head": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "changed_files",
+        "unmapped_files",
+        "touched_nodes",
+        "off_span_files",
+        "by_kind",
+        "by_match",
+        "structural_files"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "changed_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unmapped_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "touched_nodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "off_span_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_kind": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "propertyNames": {
+            "enum": [
+              "transactor",
+              "amendment",
+              "fork",
+              "invariant",
+              "shared_sfield"
+            ]
+          }
+        },
+        "by_match": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "propertyNames": {
+            "enum": ["span", "file"]
+          }
+        },
+        "structural_files": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "touched": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "match",
+          "evidence",
+          "known_levers",
+          "new_levers",
+          "signal"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "transactor",
+              "amendment",
+              "fork",
+              "invariant",
+              "shared_sfield"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "match": {
+            "enum": ["span", "file"]
+          },
+          "signal": {
+            "enum": ["high", "medium", "low", null]
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["file", "role", "span", "lines"],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^[^/].*"
+                },
+                "role": {
+                  "enum": ["macro", "definition", "impl", "state_enum", "reference"]
+                },
+                "span": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "lines": {
+                  "description": "Changed line ranges overlapping the span; never empty, since a node is touched only when something in it changed.",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "known_levers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "new_levers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "off_span_changes": {
+      "description": "Changes in a file that hosts nodes but landing outside every span in it. Context for a reviewer, deliberately not attributed to any node.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "lines", "hosts"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[^/].*"
+          },
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "unmapped_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "structural_changes": {
+      "description": "Files hosting nodes that changed with no new-side line content: deleted, renamed at 100% similarity, or mode-only. Nothing can match a span, so the nodes are surfaced here rather than vanishing from the report.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "kind", "hosted"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[^/].*"
+          },
+          "hosted": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "enum": ["deleted", "no_line_changes"]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judged.json — selected.json plus a per-interaction verdict",
+  "description": "A judged report is a selected report with two keys added, so anything that reads selected.json reads this unchanged. The inherited keys are not re-described here: select_interactions.py already validated them against selected.schema.json, and duplicating that shape would let the two drift. This schema covers only what judging adds.",
+  "type": "object",
+  "required": ["schema", "base", "head", "summary", "groups", "caveats", "judge", "judgements"],
+  "properties": {
+    "judge": {
+      "description": "How the judgements were produced, so a surprising verdict can be reproduced or discounted.",
+      "type": "object",
+      "required": ["model", "effort", "tiers", "max_items", "items", "errors"],
+      "properties": {
+        "model": { "type": "string" },
+        "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+        "tiers": {
+          "description": "Selection tiers that were eligible for judging; everything else was left advisory.",
+          "type": "array",
+          "items": { "enum": ["review", "consider", "context"] }
+        },
+        "max_items": { "type": "integer", "minimum": 0 },
+        "items": {
+          "description": "Interactions actually judged, after the tier filter and the cap.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "description": "Judgements that failed outright. Recorded as unclear, never dropped silently.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "cache_read_tokens": { "type": "integer", "minimum": 0 },
+        "cache_write_tokens": { "type": "integer", "minimum": 0 },
+        "cost_line": { "type": "string" }
+      }
+    },
+    "judgements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "resource",
+          "kind",
+          "features",
+          "tier",
+          "verdict",
+          "confidence",
+          "summary",
+          "detail",
+          "states_reached",
+          "states_unreached",
+          "citations",
+          "dropped_citations",
+          "iterations",
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "description": "Identity shared with render_comment.judgement_key, which is how a verdict finds its row.",
+            "type": "string"
+          },
+          "resource": { "type": "string" },
+          "kind": { "enum": ["interaction", "invariant"] },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "tier": { "enum": ["review", "consider", "context"] },
+          "verdict": {
+            "description": "handled: the boundary is covered here. gap: a reachable state is mishandled or untested. unclear: undetermined, and the default.",
+            "enum": ["handled", "gap", "unclear"]
+          },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "summary": { "type": "string" },
+          "detail": { "type": "string" },
+          "states_reached": { "type": "array", "items": { "type": "string" } },
+          "states_unreached": { "type": "array", "items": { "type": "string" } },
+          "citations": {
+            "description": "Citations that resolved against the working tree. A handled or gap verdict cannot reach here with an empty list; verify_citations downgrades it to unclear first.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["file", "line", "what"],
+              "additionalProperties": false,
+              "properties": {
+                "file": { "type": "string" },
+                "line": { "type": "integer", "minimum": 1 },
+                "what": { "type": "string" }
+              }
+            }
+          },
+          "dropped_citations": {
+            "description": "Citations that did not resolve. Kept rather than discarded: a verdict that cites lines which do not exist is a signal about the judge, not noise.",
+            "type": "array",
+            "items": { "type": "object" }
+          },
+          "iterations": { "type": "integer", "minimum": 0 },
+          "trail": {
+            "description": "Tool calls the judgement made, for debugging it without re-running it.",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "error": {
+            "description": "Why this judgement failed, or null. Non-null always pairs with an unclear verdict.",
+            "type": ["string", "null"]
+          }
+        }
+      }
+    }
+  }
+}

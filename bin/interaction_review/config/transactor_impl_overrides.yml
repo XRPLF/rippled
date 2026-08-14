@@ -1,0 +1,13 @@
+# Transactor name -> repo-relative implementation files.
+#
+# Escape hatch for transactors whose implementation impl_locator.py cannot
+# derive. Its three rules — file stem, `Name::` / `class Name` symbol, and
+# `using Name = Other` alias — currently resolve all 82 transactors, so this
+# file is empty. An unresolved transactor fails the build rather than silently
+# losing its implementation; add it here only when the layout genuinely cannot
+# be derived, and delete the entry once it can.
+#
+# Example:
+#   SomeTransactor:
+#     - src/libxrpl/tx/transactors/area/SomeFile.cpp
+{}

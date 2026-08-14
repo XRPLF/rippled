@@ -1,0 +1,329 @@
+# Builds the feature-interaction graph for a PR's head revision, maps the diff
+# onto it, and renders an advisory comment body.
+#
+# The job that checks out PR code (`analyze`) deliberately has NO write
+# permissions and posts nothing: on a fork PR the token is read-only, so the
+# comment is uploaded as an artifact and posted by
+# `interaction-review-comment.yml`, which runs on `workflow_run` with the base
+# repository's permissions. That split is the standard pattern for commenting on
+# fork PRs without granting write access to a job that has checked out untrusted
+# code. `resolve` holds `issues: write` only to leave a reaction on the
+# triggering comment, and never checks anything out.
+#
+# The graph must be extracted from the *head* revision: node locations are
+# head-side line spans, so a graph built from develop would not line up with the
+# diff (see bin/interaction_review/diffparse.py). That is why this pays for a
+# configure step rather than reusing a nightly artifact.
+#
+# Nothing here is a required check. Failures are left visible rather than
+# swallowed: this tool is about recall, and a silently broken extractor is worse
+# than a red advisory job.
+
+name: Feature-interaction review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # Only diffs that can touch a graph node are worth a configure for.
+    paths:
+      - "include/xrpl/protocol/detail/*.macro"
+      - "include/xrpl/protocol/InvariantCheckPrivilege.h"
+      - "src/libxrpl/tx/**"
+      - "src/libxrpl/protocol/TxFormats.cpp"
+      - "bin/interaction_review/**"
+      - ".github/workflows/interaction-review*.yml"
+  # `/interaction-review` on a PR forces a run, including on a diff the path
+  # filter above skipped. GitHub only fires `issue_comment` from the default
+  # branch's copy of this file, so a change to the trigger has to be merged
+  # before it takes effect.
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+  BUILD_TYPE: Debug
+  COMPILER: clang
+  OUT_DIR: bin/interaction_review/out
+  ARTIFACT_DIR: /tmp/interaction-review
+  # Highest-ranked rows only. Each judgement is a long, thinking-heavy request,
+  # and the cap is what bounds the cost of a run.
+  JUDGE_MAX_ITEMS: 6
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Normalises the three triggers down to one (pr, head_sha, base_ref) tuple, so
+  # `analyze` does not care how it was started. `issue_comment` is the reason
+  # this job exists: that payload describes a comment, not a revision, so the
+  # head SHA has to come from the API.
+  resolve:
+    name: Resolve the target revision
+    runs-on: ubuntu-latest
+    # A comment only counts when it is on a PR, starts with the command, and
+    # comes from someone who could push anyway. Without the last check any
+    # passer-by could spend a dependency build.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request != null &&
+       startsWith(github.event.comment.body, '/interaction-review') &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    permissions:
+      contents: read
+      pull-requests: read
+      # Only to acknowledge the command with a reaction; nothing is posted here.
+      issues: write
+    outputs:
+      pr: ${{ steps.target.outputs.pr }}
+      head_sha: ${{ steps.target.outputs.head_sha }}
+      base_ref: ${{ steps.target.outputs.base_ref }}
+    steps:
+      - name: Acknowledge the command
+        if: ${{ github.event_name == 'issue_comment' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          # A dependency build takes tens of minutes; without this the thread
+          # shows no sign the command was picked up.
+          gh api -X POST "repos/${GH_REPO}/issues/comments/${COMMENT_ID}/reactions" \
+              -f content=eyes --silent
+
+      - name: Resolve the target revision
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_EVENT_NUMBER: ${{ github.event.pull_request.number }}
+          PR_EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_EVENT_BASE: ${{ github.event.pull_request.base.ref }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          DISPATCH_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          case "${EVENT}" in
+              pull_request)
+                  pr="${PR_EVENT_NUMBER}"
+                  head="${PR_EVENT_HEAD}"
+                  base="${PR_EVENT_BASE}"
+                  ;;
+              issue_comment)
+                  pr="${ISSUE_NUMBER}"
+                  read -r head base < <(gh api "repos/${GH_REPO}/pulls/${pr}" \
+                      --jq '"\(.head.sha) \(.base.ref)"')
+                  ;;
+              *)
+                  # workflow_dispatch: no PR, so nothing is posted downstream.
+                  pr=""
+                  head="${DISPATCH_SHA}"
+                  base="${DEFAULT_BRANCH}"
+                  ;;
+          esac
+          if [ -z "${head}" ] || [ -z "${base}" ]; then
+              echo "could not resolve a revision for ${EVENT}" >&2
+              exit 1
+          fi
+          echo "event=${EVENT} pr=${pr:-none} head=${head} base=${base}"
+          {
+              echo "pr=${pr}"
+              echo "head_sha=${head}"
+              echo "base_ref=${base}"
+          } >>"${GITHUB_OUTPUT}"
+
+  analyze:
+    name: Map the diff onto the interaction graph
+    needs: resolve
+    runs-on: ubuntu-latest
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
+    permissions:
+      contents: read
+      # Only to mint the OIDC token the Bedrock role is assumed with. GitHub
+      # does not grant this to a `pull_request` run from a fork, so the judging
+      # steps below fail closed there and the comment falls back to the static
+      # report -- which is the intended behaviour, not a gap to work around.
+      id-token: write
+    steps:
+      - name: Checkout the PR head
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # The head commit itself, not the merge commit: the graph's line spans
+          # must match the revision the diff is computed against.
+          ref: ${{ needs.resolve.outputs.head_sha }}
+          # Full history so the merge base with the base branch is reachable.
+          fetch-depth: 0
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c
+        with:
+          enable_ccache: false
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+
+      - name: Set compiler environment
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: ${{ env.COMPILER }}
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: ${{ env.BUILD_TYPE }}
+          log_verbosity: verbose
+
+      # Produces compile_commands.json (CMAKE_EXPORT_COMPILE_COMMANDS is ON in
+      # the top-level CMakeLists), which the fork extractor parses against.
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+              -G 'Ninja' \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+              -Dtests=ON \
+              -Dxrpld=ON \
+              ..
+
+      # Transactor.cpp's translation unit includes protobuf-generated headers.
+      # Without them the parse degrades and amendment-gate references vanish
+      # silently, which is exactly the recall loss the extractor guards against.
+      - name: Build generated headers
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
+
+      - name: Locate libclang
+        id: libclang
+        run: |
+          # The extractor needs the dylib whose resource dir matches the clang
+          # that produced compile_commands.json; a mismatch degrades the AST
+          # instead of erroring.
+          libdir="$(llvm-config --libdir 2>/dev/null || true)"
+          lib=""
+          for candidate in "${libdir}/libclang.so" "${libdir}/libclang.so."*; do
+              if [ -f "${candidate}" ]; then
+                  lib="${candidate}"
+                  break
+              fi
+          done
+          if [ -z "${lib}" ]; then
+              lib="$(find /usr /nix /opt -name 'libclang.so*' -type f 2>/dev/null | head -1)"
+          fi
+          if [ -z "${lib}" ]; then
+              echo "no libclang found; cannot extract the fork graph" >&2
+              exit 1
+          fi
+          echo "Using ${lib}"
+          echo "path=${lib}" >>"${GITHUB_OUTPUT}"
+
+      - name: Install Python dependencies
+        working-directory: bin/interaction_review
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r requirements.txt
+
+      - name: Build the interaction graph
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python build_graph.py \
+              --build-dir "../../${BUILD_DIR}" \
+              --libclang "${{ steps.libclang.outputs.path }}" \
+              --out out/
+
+      - name: Map the diff onto the graph
+        working-directory: bin/interaction_review
+        env:
+          BASE_REF: ${{ needs.resolve.outputs.base_ref }}
+          HEAD_SHA: ${{ needs.resolve.outputs.head_sha }}
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+          .venv/bin/python pr_map.py \
+              --base "origin/${BASE_REF}" \
+              --head "${HEAD_SHA}"
+
+      - name: Select the in-scope interactions
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python select_interactions.py
+
+      # Everything from here to the render step is the optional second opinion:
+      # a model reads the top-ranked interactions and returns a verdict per row.
+      # It is skipped entirely unless the repository defines the two variables,
+      # and any failure inside it leaves the static report to be rendered alone.
+      #
+      # The role behind INTERACTION_REVIEW_AWS_ROLE must be scoped to the judging
+      # model and nothing else. This job has already configured and built
+      # PR-authored code by the time the credentials exist, so it should be
+      # assumed that anything the role can do, a pull request can do. The client
+      # signs SigV4 as `bedrock-mantle`, not `bedrock` -- see the README.
+      - name: Assume the Bedrock role
+        id: aws
+        if: ${{ vars.INTERACTION_REVIEW_AWS_ROLE != '' }}
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ vars.INTERACTION_REVIEW_AWS_ROLE }}
+          aws-region: ${{ vars.INTERACTION_REVIEW_AWS_REGION }}
+          role-session-name: interaction-review-${{ github.run_id }}
+
+      - name: Judge the selected interactions
+        id: judge
+        if: ${{ steps.aws.outcome == 'success' }}
+        continue-on-error: true
+        working-directory: bin/interaction_review
+        env:
+          AWS_REGION: ${{ vars.INTERACTION_REVIEW_AWS_REGION }}
+        run: |
+          # Installed here rather than alongside the extractor's dependencies:
+          # the graph build must not be able to fail on a cloud SDK it does not
+          # use. See requirements-judge.in.
+          .venv/bin/pip install --quiet -r requirements-judge.txt
+          .venv/bin/python judge_interactions.py \
+              --max-items "${JUDGE_MAX_ITEMS}" \
+              ${{ vars.INTERACTION_REVIEW_MODEL && format('--model {0}', vars.INTERACTION_REVIEW_MODEL) || '' }}
+
+      # Picks up out/judged.json when the step above wrote one, and falls back
+      # to out/selected.json when it did not.
+      - name: Render the comment
+        working-directory: bin/interaction_review
+        run: |
+          .venv/bin/python render_comment.py --out "${{ env.ARTIFACT_DIR }}/comment.md"
+
+      - name: Collect the artifact
+        env:
+          PR_NUMBER: ${{ needs.resolve.outputs.pr }}
+        run: |
+          mkdir -p "${ARTIFACT_DIR}"
+          # The posting workflow only sees this artifact, so the PR number has to
+          # travel with it. Empty on workflow_dispatch, where nothing is posted.
+          echo "${PR_NUMBER}" >"${ARTIFACT_DIR}/pr-number.txt"
+          cp "${OUT_DIR}/graph.json" "${OUT_DIR}/interactions.json" \
+              "${OUT_DIR}/touched.json" "${OUT_DIR}/selected.json" "${ARTIFACT_DIR}/"
+          # Absent whenever judging was skipped or failed, which is not an error.
+          # It carries each verdict's tool trail, so a verdict that reads wrong
+          # can be diagnosed from the artifact without re-running the judge.
+          cp "${OUT_DIR}/judged.json" "${ARTIFACT_DIR}/" 2>/dev/null || true
+          echo "### Feature-interaction review" >>"${GITHUB_STEP_SUMMARY}"
+          cat "${ARTIFACT_DIR}/comment.md" >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload the report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: interaction-review
+          path: ${{ env.ARTIFACT_DIR }}
+          retention-days: 14

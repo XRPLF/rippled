@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "selected.json — feature interactions a PR puts in scope",
+  "type": "object",
+  "required": ["schema", "base", "head", "summary", "groups", "caveats"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "description": "Artifact shape version; must match graph.SCHEMA_VERSION.",
+      "type": "integer"
+    },
+    "base": {
+      "description": "Merge-base commit the diff was taken against.",
+      "type": "string"
+    },
+    "head": {
+      "description": "Head commit, or 'worktree'.",
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "changed_files",
+        "touched_nodes",
+        "candidates",
+        "selected",
+        "cohort_pairs",
+        "dropped_low_signal",
+        "truncated",
+        "omitted_resources",
+        "by_tier",
+        "new_levers"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "changed_files": { "type": "integer", "minimum": 0 },
+        "touched_nodes": { "type": "integer", "minimum": 0 },
+        "candidates": {
+          "description": "Interactions connected to the diff before capping.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected": { "type": "integer", "minimum": 0 },
+        "cohort_pairs": {
+          "description": "Uniform mediator-by-transaction combinations summarized as cohorts instead of repeated as rows.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_low_signal": {
+          "description": "consumer×consumer pairs on low-signal resources with weak evidence.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "description": "Candidates omitted by the caps. Never silently zero.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "omitted_resources": {
+          "description": "Shared resources omitted entirely by the resource cap.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_tier": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "new_levers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "groups": {
+      "description": "Selected interactions bucketed by the resource they share, best first.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "resource",
+          "resource_kind",
+          "signal",
+          "resource_match",
+          "new_levers",
+          "boundary_states",
+          "score",
+          "omitted",
+          "consumer_cohort",
+          "authorized_features",
+          "interactions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resource": { "type": "string" },
+          "resource_kind": {
+            "enum": ["fork", "invariant", "shared_sfield"]
+          },
+          "signal": { "enum": ["high", "medium", "low"] },
+          "resource_match": {
+            "description": "How the diff hit the resource node, or null if it did not.",
+            "enum": ["span", "file", null]
+          },
+          "new_levers": { "type": "array", "items": { "type": "string" } },
+          "boundary_states": { "type": "array", "items": { "type": "string" } },
+          "score": { "type": "integer" },
+          "omitted": {
+            "description": "Pairs on this resource dropped by the per-resource cap.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "consumer_cohort": {
+            "description": "Uniform pass-through relationships summarized for a directly edited fork.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["mediators", "wrappers", "consumers", "pair_count"],
+                "additionalProperties": false,
+                "properties": {
+                  "mediators": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "wrappers": {
+                    "description": "Members of the mediator side whose provenance is transaction wrapping.",
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "consumers": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "pair_count": { "type": "integer", "minimum": 1 }
+                }
+              }
+            ]
+          },
+          "authorized_features": {
+            "description": "Transaction types declaring an invariant privilege; empty for non-invariant resources.",
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "interactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "features",
+                "roles",
+                "kind",
+                "vias",
+                "score",
+                "tier",
+                "why",
+                "evidence"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "features": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "roles": {
+                  "type": "array",
+                  "items": { "enum": ["mediator", "consumer"] },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "kind": {
+                  "enum": [
+                    "mediator×mediator",
+                    "mediator×consumer",
+                    "consumer×consumer"
+                  ]
+                },
+                "vias": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "string" } },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "score": { "type": "integer" },
+                "tier": { "enum": ["review", "consider", "context"] },
+                "why": {
+                  "description": "Human-readable reasons this pair is in scope.",
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 1
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["file", "lines"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "file": { "type": "string" },
+                      "lines": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": { "type": "integer", "minimum": 1 },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "caveats": {
+      "description": "What this report does not cover. Always non-empty.",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  }
+}

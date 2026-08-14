@@ -1,0 +1,9 @@
+# Transaction flag (tf*) lever -> governing feature.
+#
+# A fork branch on one of these flags yields a mediator edge from the amendment
+# to the fork. The build fails if the scan discovers a flag lever with no entry
+# here; map non-feature-specific flags (aggregate masks) to the `core` sentinel.
+# Amendment names must match features.macro exactly.
+
+tfInnerBatchTxn: BatchV1_1
+tfUniversalMask: core # aggregate mask, not a feature lever
