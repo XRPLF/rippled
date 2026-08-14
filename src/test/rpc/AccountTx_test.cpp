@@ -1868,6 +1868,49 @@ class AccountTx_test : public beast::unit_test::Suite
     }
 
     void
+    testRWDBGetTransactionReturnsDetachedCopy()
+    {
+        testcase("RWDB getTransaction does not share store objects");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        auto const txHash = env.tx()->getTransactionID();
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        ErrorCodeI ec = RpcSuccess;
+        auto found = db.getTransaction(txHash, std::nullopt, ec);
+        auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
+        BEAST_EXPECT(original && original->first);
+        if (!original || !original->first)
+            return;
+
+        auto const storedSeq = original->first->getLedger();
+        original->first->setLedger(storedSeq + 99);
+        original->first->setStatus(TransStatus::HELD);
+
+        ErrorCodeI ec2 = RpcSuccess;
+        auto again = db.getTransaction(txHash, std::nullopt, ec2);
+        auto const* second = std::get_if<RelationalDatabase::AccountTx>(&again);
+        BEAST_EXPECT(second && second->first);
+        if (second && second->first)
+        {
+            BEAST_EXPECT(second->first.get() != original->first.get());
+            BEAST_EXPECT(second->first->getLedger() == storedSeq);
+            BEAST_EXPECT(second->first->getStatus() == TransStatus::COMMITTED);
+        }
+    }
+
+    void
     testRWDBHashLookupSurvivesOldSeqPrune()
     {
         testcase("RWDB hash lookup survives pruning the older sequence");
@@ -2111,6 +2154,7 @@ public:
         testRWDBAccountTxsHonorLimit();
         testRWDBAdminHugeLimit();
         testRWDBTransactionMovesLedger();
+        testRWDBGetTransactionReturnsDetachedCopy();
         testRWDBHashLookupSurvivesOldSeqPrune();
         testRWDBHashLookupRepointsAfterOverwrite();
         testRWDBAccountTxPageStatusValidated();

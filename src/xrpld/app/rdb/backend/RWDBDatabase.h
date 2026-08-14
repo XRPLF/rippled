@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/core/Config.h>
 
@@ -43,6 +44,22 @@ private:
 
     Application& app_;
     bool const useTxTables_;
+
+    // SQLite's transactionFromSQL builds a new Transaction per query.
+    // Hand out the same copies so TransactionMaster::setStatus cannot
+    // rewrite ledgerIndex_ on the store-owned object (or leave
+    // eraseStaleTransactionUnlocked pointing at the wrong sequence).
+    AccountTx
+    detachAccountTx(AccountTx const& src) const
+    {
+        if (!src.first)
+            return src;
+        std::string reason;
+        auto txn = std::make_shared<Transaction>(src.first->getSTransaction(), reason, app_);
+        txn->setStatus(src.first->getStatus());
+        txn->setLedger(src.first->getLedger());
+        return {std::move(txn), src.second};
+    }
 
     // Drop the hash->seq mapping only when it still names this sequence.
     // The same header can be stored under two sequences (history-fetch /
@@ -628,7 +645,7 @@ public:
         auto it = transactionMap_.find(id);
         if (it != transactionMap_.end())
         {
-            return it->second;
+            return detachAccountTx(it->second);
         }
 
         if (range)
@@ -791,7 +808,7 @@ public:
                     break;
                 }
 
-                result.push_back(accountTx.first);
+                result.push_back(detachAccountTx(accountTx).first);
                 ++collected;
             }
 
@@ -828,7 +845,7 @@ public:
                     ++skipped;
                     continue;
                 }
-                result.push_back(accountTx);
+                result.push_back(detachAccountTx(accountTx));
                 if (result.size() >= maxResults)
                     break;
             }
@@ -866,8 +883,7 @@ public:
                     ++skipped;
                     continue;
                 }
-                AccountTx const accountTx = *innerRIt;
-                result.push_back(accountTx);
+                result.push_back(detachAccountTx(*innerRIt));
                 if (result.size() >= maxResults)
                     break;
             }
