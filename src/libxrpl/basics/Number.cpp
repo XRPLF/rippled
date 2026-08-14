@@ -428,15 +428,18 @@ void
 Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept
 {
     XRPL_ASSERT(
-        targetExponent > exponent, "Number::Guard::doDropDigitWithTarget : something to do");
-    if (mantissa == 0 && unrecoverable() && targetExponent > exponent)
+        exponent < targetExponent, "Number::Guard::doDropDigitWithTarget : something to do");
+    while (exponent < targetExponent)
     {
-        // No number of dropped digits is going to change any of the operative parameters at this
-        // point.
-        exponent = targetExponent;
-        return;
+        if (mantissa == 0 && unrecoverable())
+        {
+            // No number of dropped digits is going to change any of the operative parameters at
+            // this point.
+            exponent = targetExponent;
+            return;
+        }
+        doDropDigit(mantissa, exponent);
     }
-    doDropDigit(mantissa, exponent);
 }
 
 template <UnsignedMantissa T>
@@ -990,10 +993,11 @@ Number::operator+=(Number const& y)
 
         // 3. Finally, shrink the mantissa of shrinkM/shrinkE until the exponents match. Any removed
         // digits will be put into the Guard. This is the only step for non-Enabled330 modes.
-        while (shrinkE < expandE)
+        if (shrinkE < expandE)
         {
             g.doDropDigitWithTarget(shrinkM, shrinkE, expandE);
         }
+        XRPL_ASSERT(shrinkE == expandE, "xrpl::Number::operator+ : exponents match");
     };
 
     // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
@@ -1372,7 +1376,7 @@ operator rep() const
         }
         while (offset < 0)
         {
-            g.doDropDigit(drops, offset);
+            g.doDropDigitWithTarget(drops, offset, 0);
         }
         for (; offset > 0; --offset)
         {
