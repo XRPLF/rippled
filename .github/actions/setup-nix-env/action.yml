@@ -43,6 +43,11 @@ runs:
         # The dev shell's Conan home: separate from this runner's system one.
         echo "CONAN_HOME=${HOME}/.conan2-nix" >>"${GITHUB_ENV}"
 
+    # What the dev shell runs on entry, so the two cannot drift.
+    - name: Setup Conan
+      shell: bash
+      run: ./conan/init.sh
+
     # `Check tools` runs later but swallows failures; a bad export would just
     # build with the system toolchain.
     - name: Verify the toolchain resolves into the Nix store

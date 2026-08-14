@@ -92,7 +92,9 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
+      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
+        if: ${{ matrix.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ matrix.sanitizers }}
         uses: ./.github/actions/setup-conan

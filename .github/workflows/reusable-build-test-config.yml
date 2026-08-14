@@ -159,7 +159,9 @@ jobs:
         with:
           compiler: ${{ inputs.compiler }}
 
+      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
+        if: ${{ inputs.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ inputs.sanitizers }}
         uses: ./.github/actions/setup-conan

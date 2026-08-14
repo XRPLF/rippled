@@ -15,14 +15,6 @@ runs:
   using: composite
 
   steps:
-    # conan/init.sh makes the files it manages read-only, so a Conan home it
-    # already populated would reject the writes below.
-    - name: Make the managed configuration writable
-      shell: bash
-      run: |
-        CONAN_DIR="$(conan config home)"
-        chmod -R u+w "${CONAN_DIR}/global.conf" "${CONAN_DIR}/profiles" 2>/dev/null || true
-
     - name: Apply custom configuration to global.conf
       shell: bash
       run: |
