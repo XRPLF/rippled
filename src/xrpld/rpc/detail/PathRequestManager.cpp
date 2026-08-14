@@ -138,6 +138,17 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
     JLOG(journal_.debug()) << "getAssetCache has cache for " << lineSeq << ", considering "
                            << lgrSeq << " authoritative=" << authoritative;
 
+    auto makeCache = [&](std::shared_ptr<ReadView const> const& view) {
+        auto const& cfg = app_.config();
+        return std::make_shared<AssetCache>(
+            view,
+            app_.getJournal("AssetCache"),
+            cfg.pathFindMaxTotalLines,
+            cfg.pathFindMaxLinesPerAccount,
+            cfg.pathCacheReuseLedgers,
+            cfg.pathFindLineChunkSize);
+    };
+
     if (!assetCache_)
     {
         // Never construct the shared cache on an OpenView. Open headers copy
@@ -152,14 +163,7 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         }
         JLOG(journal_.debug()) << "getAssetCache creating new cache for " << view->seq()
                                << (view->open() ? " (open fallback)" : "");
-        auto const& cfg = app_.config();
-        assetCache_ = std::make_shared<AssetCache>(
-            view,
-            app_.getJournal("AssetCache"),
-            cfg.pathFindMaxTotalLines,
-            cfg.pathFindMaxLinesPerAccount,
-            cfg.pathCacheReuseLedgers,
-            cfg.pathFindLineChunkSize);
+        assetCache_ = makeCache(view);
         return assetCache_;
     }
 
@@ -186,13 +190,33 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
     // and leaves cache->getLedger() open so streamed updates lose a matching
     // ledger_hash / ledger_index pair.
     // largeJumpBack stays authoritative-only (historical getLineCache).
+    //
+    // Non-authoritative create must not advanceLedger(forceClear) in place:
+    // updateAll already captured the previous shared_ptr and may be mid
+    // Pathfinder. Mutating that instance mixes ledgers and drops every
+    // live session's pins. Swap in a new AssetCache instead; the in-flight
+    // wave keeps the old object until it finishes.
     bool const largeJumpForward = lgrSeq > (lineSeq + 8) && !ledger->open();
     bool const largeJumpBack = (lgrSeq + 8) < lineSeq;
     if (largeJumpForward || (authoritative && largeJumpBack))
     {
-        JLOG(journal_.info()) << "getAssetCache large ledger jump " << lineSeq << " -> " << lgrSeq
-                              << "; force rebuild";
-        assetCache_->advanceLedger(ledger, /*forceClear=*/true);
+        if (authoritative)
+        {
+            JLOG(journal_.info()) << "getAssetCache large ledger jump " << lineSeq << " -> "
+                                  << lgrSeq << "; force rebuild";
+            assetCache_->advanceLedger(ledger, /*forceClear=*/true);
+        }
+        else
+        {
+            JLOG(journal_.info()) << "getAssetCache large ledger jump " << lineSeq << " -> "
+                                  << lgrSeq << "; replace cache instance";
+            publishCacheStats(*assetCache_);
+            assetCache_ = makeCache(ledger);
+            lastCacheHits_ = 0;
+            lastCacheMisses_ = 0;
+            lastLinesLoaded_ = 0;
+            lastLedgerAdvances_ = 0;
+        }
         return assetCache_;
     }
 

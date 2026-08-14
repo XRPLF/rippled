@@ -1197,6 +1197,54 @@ class PathFindSub_test : public beast::unit_test::Suite
         (void)wsc->invoke("path_find", closeReq);
     }
 
+    /**
+     * A create more than 8 ledgers ahead must not forceClear the AssetCache
+     * instance an in-flight updateAll already captured. Replace the manager
+     * pointer with a new cache; the held instance keeps its ledger and lines.
+     */
+    void
+    testCreateLargeJumpDoesNotMutateInFlightCache()
+    {
+        testcase("create: large jump replaces cache; in-flight instance unchanged");
+        using namespace jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->forceMultiThread = true;
+            cfg->workers = 4;
+            cfg->pathMidCloseDelay = std::chrono::hours{1};
+            return cfg;
+        }));
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        setupUsdCorridor(env, gw, alice, bob);
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const firstClosed = env.closed();
+        auto held = prm.getAssetCache(firstClosed, /*authoritative=*/true);
+        {
+            AssetCache::SessionPin pin{1};
+            BEAST_EXPECT(held->getRippleLines(alice.id()));
+        }
+        auto const heldSeq = held->getLedger()->seq();
+        auto const heldLines = held->totalLineCount();
+        auto* const heldPtr = held.get();
+        BEAST_EXPECT(heldLines >= 1);
+
+        for (int i = 0; i < 10; ++i)
+            env.close();
+        auto const nowClosed = env.closed();
+        BEAST_EXPECT(nowClosed->seq() > heldSeq + 8);
+
+        // Same arguments as makePathRequest (authoritative=false).
+        auto created = prm.getAssetCache(nowClosed, /*authoritative=*/false);
+        BEAST_EXPECT(created.get() != heldPtr);
+        BEAST_EXPECT(created->getLedger()->seq() == nowClosed->seq());
+        BEAST_EXPECT(held->getLedger()->seq() == heldSeq);
+        BEAST_EXPECT(held->totalLineCount() == heldLines);
+        held->releaseSession(1);
+    }
+
 public:
     void
     run() override
@@ -1215,6 +1263,7 @@ public:
         testMidCloseDoesNotForceClearOpenCache();
         testCloseDuringUpdateReclaimsPins();
         testCreateWakeOnOpenReportsClosedIdentity();
+        testCreateLargeJumpDoesNotMutateInFlightCache();
     }
 };
 
