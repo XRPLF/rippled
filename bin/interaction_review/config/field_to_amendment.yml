@@ -1,0 +1,33 @@
+# Cross-cutting (common) SField -> governing feature.
+#
+# Every common field (TxFormats::getCommonFields) has an entry. A fork branch
+# on a field mapped to an amendment yields a mediator edge (that amendment
+# mediates the fork); `core` means the field is base protocol behavior with no
+# governing amendment and yields no mediator edge. The fork extractor fails if
+# it discovers a common-field lever with no entry here, so a newly-added common
+# field turns into a loud error rather than a silent recall gap.
+#
+# Amendment names must match features.macro exactly.
+
+sfSponsor: Sponsor
+sfSponsorFlags: Sponsor
+sfSponsorSignature: Sponsor
+sfDelegate: PermissionDelegationV1_1
+
+# Core / pre-amendment / retired-amendment fields (no active governing amendment).
+sfTransactionType: core
+sfFlags: core
+sfSourceTag: core
+sfAccount: core
+sfSequence: core
+sfPreviousTxnID: core
+sfLastLedgerSequence: core
+sfAccountTxnID: core
+sfFee: core
+sfOperationLimit: core
+sfMemos: core
+sfSigningPubKey: core
+sfTicketSequence: core # Tickets (TicketBatch retired)
+sfTxnSignature: core
+sfSigners: core # MultiSign retired
+sfNetworkID: core

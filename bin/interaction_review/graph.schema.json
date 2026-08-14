@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature-interaction graph",
+  "type": "object",
+  "required": ["schema", "vocabulary", "features", "resources", "edges"],
+  "additionalProperties": false,
+  "$defs": {
+    "locations": {
+      "description": "Repo-relative 1-based inclusive line spans the node was derived from.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "start_line", "end_line", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[^/].*"
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "role": {
+            "enum": ["macro", "definition", "impl", "state_enum", "reference"]
+          }
+        }
+      },
+      "minItems": 1
+    }
+  },
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "vocabulary": {
+      "description": "Lever names the graph was derived from, so a consumer can tell a real lever from an identifier that only looks like one.",
+      "type": "object",
+      "required": ["common_fields", "sfields", "flags", "amendment_globals"],
+      "additionalProperties": false,
+      "properties": {
+        "common_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "amendment_globals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sfields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "locations"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": ["transactor", "amendment"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "delegable": {
+            "type": ["boolean", "null"]
+          },
+          "amendment": {
+            "type": ["string", "null"]
+          },
+          "privileges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "wrapper": {
+            "type": "boolean"
+          },
+          "locations": {
+            "$ref": "#/$defs/locations"
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "signal", "locations"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": ["fork", "invariant", "shared_sfield"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "signal": {
+            "enum": ["high", "medium", "low"]
+          },
+          "lever_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lever_flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amendment_gates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "state_space": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "locations": {
+            "$ref": "#/$defs/locations"
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "src", "dst", "via"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["consumer", "mediator", "wrapper"]
+          },
+          "src": {
+            "type": "string"
+          },
+          "dst": {
+            "type": "string"
+          },
+          "via": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

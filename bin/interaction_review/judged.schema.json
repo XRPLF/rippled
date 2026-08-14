@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judged.json — selected.json plus feature-cluster verdicts",
+  "description": "A judged report is a selected report with two keys added, so anything that reads selected.json reads this unchanged. The inherited keys are not re-described here: select_interactions.py already validated them against selected.schema.json, and duplicating that shape would let the two drift. This schema covers only what judging adds.",
+  "type": "object",
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "observed_span": {
+      "type": "object",
+      "required": ["file", "start_line", "end_line", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 },
+        "revision": { "enum": ["working", "new", "old"] }
+      }
+    },
+    "evidence_trace": {
+      "type": "object",
+      "required": [
+        "version",
+        "hash_algorithm",
+        "calls",
+        "observed_spans",
+        "trace_sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "hash_algorithm": { "const": "sha256" },
+        "calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sequence",
+              "tool",
+              "args",
+              "args_sha256",
+              "normalized_path",
+              "result_sha256",
+              "result_chars",
+              "is_error",
+              "truncated",
+              "spans",
+              "record_sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "sequence": { "type": "integer", "minimum": 1 },
+              "tool": { "type": "string" },
+              "args": { "type": "object" },
+              "args_sha256": { "$ref": "#/$defs/sha256" },
+              "normalized_path": { "type": ["string", "null"] },
+              "result_sha256": { "$ref": "#/$defs/sha256" },
+              "result_chars": { "type": "integer", "minimum": 0 },
+              "is_error": { "type": "boolean" },
+              "truncated": { "type": "boolean" },
+              "spans": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/observed_span" }
+              },
+              "record_sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "observed_spans": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/observed_span" }
+        },
+        "trace_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "base",
+    "head",
+    "summary",
+    "groups",
+    "caveats",
+    "judge",
+    "judgements"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": ["judge"],
+        "properties": {
+          "judge": {
+            "required": ["unit"],
+            "properties": { "unit": { "const": "feature_pair_cluster" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "judge": {
+            "required": [
+              "unit",
+              "locations",
+              "max_iterations",
+              "jobs",
+              "prompt_sha256",
+              "selected_sha256",
+              "verdict_schema_sha256",
+              "source_fingerprint"
+            ]
+          },
+          "judgements": {
+            "items": {
+              "required": [
+                "feature_identities",
+                "rank",
+                "best_location_key",
+                "locations",
+                "trail",
+                "evidence_trace"
+              ],
+              "properties": {
+                "evidence_trace": { "$ref": "#/$defs/evidence_trace" }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "error": { "type": "null" } } },
+                  "then": {
+                    "required": ["primary_location", "location_assessments"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "judge": {
+      "description": "How the judgements were produced, so a surprising verdict can be reproduced or discounted.",
+      "type": "object",
+      "required": ["model", "effort", "tiers", "max_items", "items", "errors"],
+      "properties": {
+        "unit": { "enum": ["feature_pair_cluster", "resource_qualified_row"] },
+        "model": { "type": "string" },
+        "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+        "tiers": {
+          "description": "Selection tiers that were eligible for judging; everything else was left advisory.",
+          "type": "array",
+          "items": { "enum": ["review", "consider", "context"] }
+        },
+        "max_items": { "type": "integer", "minimum": 0 },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "jobs": { "type": "integer", "minimum": 1 },
+        "prompt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "selected_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verdict_schema_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_fingerprint": {
+          "description": "Content fingerprint of the immutable source snapshot exposed to the model.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "items": {
+          "description": "Investigation units actually judged, after the tier filter and the cap.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "locations": {
+          "description": "Resource-qualified rows carried inside the judged clusters.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "description": "Judgements that failed outright. Recorded as unclear, never dropped silently.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 },
+        "cache_read_tokens": { "type": "integer", "minimum": 0 },
+        "cache_write_tokens": { "type": "integer", "minimum": 0 },
+        "cost_line": { "type": "string" }
+      }
+    },
+    "judgements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "resource",
+          "resource_kind",
+          "kind",
+          "features",
+          "tier",
+          "score",
+          "verdict",
+          "behavior",
+          "coverage",
+          "confidence",
+          "summary",
+          "detail",
+          "states_reached",
+          "states_unreached",
+          "citations",
+          "dropped_citations",
+          "iterations",
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "description": "Stable identity for a legacy resource-qualified verdict or a feature cluster.",
+            "type": "string"
+          },
+          "resource": { "type": "string" },
+          "resource_kind": { "enum": ["fork", "invariant", "shared_sfield"] },
+          "kind": { "enum": ["interaction", "invariant"] },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "feature_identities": {
+            "description": "Canonical graph endpoint ids for a clustered interaction.",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "tier": { "enum": ["review", "consider", "context"] },
+          "score": { "type": "integer" },
+          "rank": { "type": "integer", "minimum": 1 },
+          "best_location_key": { "type": "string" },
+          "locations": {
+            "description": "All selected shared locations investigated in this one conversation.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "resource",
+                "resource_kind",
+                "features",
+                "feature_identities",
+                "kind",
+                "roles",
+                "vias",
+                "tier",
+                "score",
+                "why",
+                "evidence",
+                "signal",
+                "resource_match",
+                "new_levers",
+                "boundary_states",
+                "selection_rank",
+                "budget_rank",
+                "cluster_location_rank"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": { "type": "string" },
+                "resource": { "type": "string" },
+                "resource_kind": {
+                  "enum": ["fork", "invariant", "shared_sfield"]
+                },
+                "features": { "type": "array", "items": { "type": "string" } },
+                "feature_identities": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "kind": { "type": "string" },
+                "roles": { "type": "array", "items": { "type": "string" } },
+                "vias": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "string" } }
+                },
+                "tier": { "enum": ["review", "consider", "context"] },
+                "score": { "type": "integer" },
+                "why": { "type": "array", "items": { "type": "string" } },
+                "evidence": { "type": "array", "items": { "type": "object" } },
+                "signal": { "type": ["string", "null"] },
+                "resource_match": { "enum": ["span", "file", null] },
+                "new_levers": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "boundary_states": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "selection_rank": { "type": "integer", "minimum": 1 },
+                "budget_rank": { "type": ["integer", "null"], "minimum": 1 },
+                "cluster_location_rank": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "verdict": {
+            "description": "UI summary derived deterministically from behavior and coverage.",
+            "enum": ["handled", "gap", "coverage_gap", "unclear"]
+          },
+          "behavior": { "enum": ["broken", "correct", "unclear"] },
+          "coverage": { "enum": ["covered", "missing", "unclear"] },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "summary": { "type": "string" },
+          "detail": { "type": "string" },
+          "primary_location": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["resource_kind", "resource"],
+                "additionalProperties": false,
+                "properties": {
+                  "resource_kind": {
+                    "enum": ["fork", "invariant", "shared_sfield"]
+                  },
+                  "resource": { "type": "string" }
+                }
+              }
+            ]
+          },
+          "location_assessments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["resource_kind", "resource", "role", "what"],
+              "additionalProperties": false,
+              "properties": {
+                "resource_kind": {
+                  "enum": ["fork", "invariant", "shared_sfield"]
+                },
+                "resource": { "type": "string" },
+                "role": {
+                  "enum": [
+                    "decisive",
+                    "supporting",
+                    "not_relevant",
+                    "unresolved"
+                  ]
+                },
+                "what": { "type": "string" }
+              }
+            }
+          },
+          "states_reached": { "type": "array", "items": { "type": "string" } },
+          "states_unreached": {
+            "description": "States proven unreachable by an explicit production guard in the scoped configuration. Reachable-but-untested or unresolved states belong in detail instead.",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "citations": {
+            "description": "Citations that resolved against the bound source snapshot and occurred in tool output shown to the model. A conclusive behavior or coverage result cannot reach here with an empty list; verify_citations downgrades it to unclear first.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["file", "line", "what"],
+              "additionalProperties": false,
+              "properties": {
+                "file": { "type": "string" },
+                "line": { "type": "integer", "minimum": 1 },
+                "what": { "type": "string" }
+              }
+            }
+          },
+          "dropped_citations": {
+            "description": "Citations that did not resolve or were not present in a tool result shown to the model. Kept rather than hidden because unsupported citations are a signal about the judge.",
+            "type": "array",
+            "items": { "type": "object" }
+          },
+          "iterations": { "type": "integer", "minimum": 0 },
+          "trail": {
+            "description": "Tool calls the judgement made, for debugging it without re-running it.",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "evidence_trace": {
+            "description": "Hash-only tool audit and exact observed spans. Null is accepted only for legacy resource-row artifacts.",
+            "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/evidence_trace" }]
+          },
+          "error": {
+            "description": "Why this judgement failed, or null. Non-null always pairs with an unclear verdict.",
+            "type": ["string", "null"]
+          }
+        }
+      }
+    }
+  }
+}

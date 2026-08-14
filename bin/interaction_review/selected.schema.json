@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "selected.json — feature interactions a PR puts in scope",
+  "type": "object",
+  "required": ["schema", "base", "head", "summary", "groups", "caveats"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "description": "Artifact shape version; must match graph.SCHEMA_VERSION.",
+      "type": "integer"
+    },
+    "base": {
+      "description": "Merge-base commit the diff was taken against.",
+      "type": "string"
+    },
+    "head": {
+      "description": "Head commit, or 'worktree'.",
+      "type": "string"
+    },
+    "source_binding": {
+      "description": "Immutable identity of the source tree exposed to the judge. Pure select() callers may omit it; the CLI always captures it.",
+      "type": "object",
+      "required": [
+        "version",
+        "mode",
+        "base",
+        "head",
+        "checkout_head",
+        "tracked_diff_sha256",
+        "fingerprint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "mode": { "enum": ["commit", "worktree"] },
+        "base": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "head": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            { "const": "worktree" }
+          ]
+        },
+        "checkout_head": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+          ]
+        },
+        "tracked_diff_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "changed_files",
+        "touched_nodes",
+        "candidates",
+        "selected",
+        "cohort_pairs",
+        "dropped_low_signal",
+        "truncated",
+        "omitted_resources",
+        "by_tier",
+        "new_levers"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "changed_files": { "type": "integer", "minimum": 0 },
+        "touched_nodes": { "type": "integer", "minimum": 0 },
+        "candidates": {
+          "description": "Presentation pair rows connected to the diff before capping or cohort compaction.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "investigation_candidates": {
+          "description": "Complete semantic locations available to clustering before the judge budget. Present on artifacts that carry the top-level investigation_candidates plane.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected": { "type": "integer", "minimum": 0 },
+        "cohort_pairs": {
+          "description": "Uniform mediator-by-transaction combinations summarized as cohorts instead of repeated as rows.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_low_signal": {
+          "description": "consumer×consumer pairs on low-signal resources with weak evidence.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "description": "Candidates omitted by the caps. Never silently zero.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "omitted_resources": {
+          "description": "Shared resources omitted entirely by the resource cap.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_tier": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "new_levers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "groups": {
+      "description": "Selected interactions bucketed by the resource they share, best first.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "resource",
+          "resource_kind",
+          "signal",
+          "resource_match",
+          "new_levers",
+          "boundary_states",
+          "score",
+          "omitted",
+          "consumer_cohort",
+          "authorized_features",
+          "interactions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resource": { "type": "string" },
+          "resource_kind": {
+            "enum": ["fork", "invariant", "shared_sfield"]
+          },
+          "signal": { "enum": ["high", "medium", "low"] },
+          "resource_match": {
+            "description": "How the diff hit the resource node, or null if it did not.",
+            "enum": ["span", "file", null]
+          },
+          "new_levers": { "type": "array", "items": { "type": "string" } },
+          "boundary_states": { "type": "array", "items": { "type": "string" } },
+          "score": { "type": "integer" },
+          "omitted": {
+            "description": "Pairs on this resource dropped by the per-resource cap.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "consumer_cohort": {
+            "description": "Uniform pass-through relationships summarized for a directly edited fork.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": [
+                  "mediators",
+                  "wrappers",
+                  "consumers",
+                  "pair_count"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mediators": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "wrappers": {
+                    "description": "Members of the mediator side whose provenance is transaction wrapping.",
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "consumers": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                  },
+                  "pair_count": { "type": "integer", "minimum": 1 }
+                }
+              }
+            ]
+          },
+          "authorized_features": {
+            "description": "Transaction types declaring an invariant privilege; empty for non-invariant resources.",
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "interactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "features",
+                "roles",
+                "kind",
+                "vias",
+                "score",
+                "tier",
+                "why",
+                "evidence"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "feature_ids": {
+                  "description": "Canonical graph endpoint ids. Older saved artifacts may omit this field; new production artifacts always include it.",
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "uniqueItems": true
+                },
+                "features": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "roles": {
+                  "type": "array",
+                  "items": { "enum": ["mediator", "consumer"] },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "kind": {
+                  "enum": [
+                    "mediator×mediator",
+                    "mediator×consumer",
+                    "consumer×consumer"
+                  ]
+                },
+                "vias": {
+                  "type": "array",
+                  "items": { "type": "array", "items": { "type": "string" } },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "score": { "type": "integer" },
+                "tier": { "enum": ["review", "consider", "context"] },
+                "why": {
+                  "description": "Human-readable reasons this pair is in scope.",
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "minItems": 1
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["file", "lines"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "file": { "type": "string" },
+                      "lines": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": { "type": "integer", "minimum": 1 },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "investigation_candidates": {
+      "description": "Uncapped semantic locations used to build feature-pair investigation clusters. Bounded groups remain for audit and legacy evaluation.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "resource",
+          "resource_kind",
+          "signal",
+          "resource_match",
+          "new_levers",
+          "boundary_states",
+          "features",
+          "roles",
+          "kind",
+          "vias",
+          "score",
+          "tier",
+          "why",
+          "evidence",
+          "authorized_features"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resource": { "type": "string" },
+          "resource_kind": { "enum": ["fork", "invariant", "shared_sfield"] },
+          "signal": { "enum": ["high", "medium", "low"] },
+          "resource_match": { "enum": ["span", "file", null] },
+          "new_levers": { "type": "array", "items": { "type": "string" } },
+          "boundary_states": { "type": "array", "items": { "type": "string" } },
+          "feature_ids": {
+            "description": "Canonical graph endpoint IDs. Optional only for legacy interaction inputs; invariant candidates carry their complete authorized ID set.",
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "roles": {
+            "type": "array",
+            "items": { "enum": ["mediator", "consumer"] }
+          },
+          "kind": {
+            "enum": [
+              "invariant",
+              "mediator×mediator",
+              "mediator×consumer",
+              "consumer×consumer"
+            ]
+          },
+          "vias": {
+            "type": "array",
+            "items": { "type": "array", "items": { "type": "string" } }
+          },
+          "score": { "type": "integer" },
+          "tier": { "enum": ["review", "consider", "context"] },
+          "why": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["file", "lines"],
+              "additionalProperties": false,
+              "properties": {
+                "file": { "type": "string" },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 1 },
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              }
+            }
+          },
+          "authorized_features": {
+            "description": "Complete privilege-holder set for an invariant candidate; empty for feature-pair candidates.",
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "kind": { "const": "invariant" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "required": ["feature_ids"],
+              "properties": {
+                "resource_kind": { "const": "invariant" },
+                "roles": { "maxItems": 0 },
+                "vias": { "maxItems": 0 }
+              }
+            },
+            "else": {
+              "properties": {
+                "resource_kind": { "enum": ["fork", "shared_sfield"] },
+                "features": { "minItems": 2, "maxItems": 2 },
+                "feature_ids": { "minItems": 2, "maxItems": 2 },
+                "roles": { "minItems": 2, "maxItems": 2 },
+                "vias": { "minItems": 2, "maxItems": 2 },
+                "authorized_features": { "maxItems": 0 }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "caveats": {
+      "description": "What this report does not cover. Always non-empty.",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["investigation_candidates"] },
+      "then": {
+        "properties": {
+          "summary": { "required": ["investigation_candidates"] }
+        }
+      }
+    }
+  ]
+}
