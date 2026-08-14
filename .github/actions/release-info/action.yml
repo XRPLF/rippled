@@ -72,7 +72,7 @@ runs:
         echo "channel=${channel}" | tee -a "${GITHUB_OUTPUT}"
 
     # A tag is packaged once, so its release number is fixed at 1. Develop builds
-    # repeat the same version, so the run number is what makes each nightly an
+    # repeat the same version, so the run number is what makes each push an
     # upgrade rather than a reinstall.
     - name: Determine package release
       id: pkg_release

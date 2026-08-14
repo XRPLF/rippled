@@ -127,25 +127,23 @@ Packages are published to the XRPLF repositories on Sonatype Nexus at
 `https://deb.xrplf.org`. The `release-info` action decides the channel from
 the event, and `publish_pkg.sh` maps that channel to a repository pair:
 
-| Event                    | Version         | Channel        | DEB repository     | RPM repository     |
-| ------------------------ | --------------- | -------------- | ------------------ | ------------------ |
-| tag                      | `X.Y.Z`         | `stable`       | `deb`              | `rpm`              |
-| tag                      | `X.Y.Z-rcN`     | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
-| tag                      | `X.Y.Z-bN`      | `experimental` | `deb-experimental` | `rpm-experimental` |
-| push to `develop`        | `versionString` | `develop`      | `deb-develop`      | `rpm-develop`      |
-| tag, non-public codebase | _any_           | `private`      | `deb-private`      | `rpm-private`      |
+| Event                    | Version           | Channel        | DEB repository     | RPM repository     |
+| ------------------------ | ----------------- | -------------- | ------------------ | ------------------ |
+| tag                      | `X.Y.Z`           | `stable`       | `deb`              | `rpm`              |
+| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
+| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
+| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop`      |
+| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
 
-Only a tag names a channel — do not extend that to `develop`, whose
-`versionString` moves through `-bN`, `-rcN` and even the final version during a
-release cycle, which would send nightlies into `stable`. Versions sort in row
-order, so moving to a more mature channel never downgrades.
+Only a tag names a channel — do not extend that to `develop`, where
+`BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
+version during a release cycle, which would send develop builds into `stable`.
+Versions sort in row order, so moving to a more mature channel never downgrades.
 
 The action decides the package release number on the same split: a tag's version
 is unique, so its packages are release 1, while develop repeats the same version
-and takes `github.run_number` so each nightly is an upgrade. Both values reach the
-scripts as arguments — `build_pkg.sh` takes `--channel` and `--pkg-release`,
-`publish_pkg.sh` takes the channel first — so neither derives anything, and a local
-build gets the defaults `unstable` and `1`.
+and takes `github.run_number` so each push supersedes the last. Both reach the
+packaging scripts as arguments, so neither script derives anything itself.
 
 Publishing is the last step of each packaging job, uploading from the container
 that built the packages. It runs when the caller passes `publish: true`:
@@ -154,8 +152,8 @@ any `XRPLF` repository, `on-pr.yml` never. Both authenticate with the
 `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
 Conan remote.
 
-Nexus owns the repository metadata; nothing here signs or indexes anything. Three
-things about publishing are worth knowing:
+Nexus owns the repository metadata; nothing here signs or indexes anything. Worth
+knowing:
 
 - Each apt-hosted repository needs a distribution and a PGP signing keypair
   configured in Nexus, which rejects one created without a keypair.
@@ -164,10 +162,8 @@ things about publishing are worth knowing:
 - Each job uploads only what it built, and uploads are not transactional, so a
   failure can leave one format published alone. Re-running is safe: both the apt
   POST and the yum PUT replace an existing asset.
-
-Because nightlies get a rising release number, the `develop` repositories
-accumulate a package per nightly and need a Nexus cleanup policy to stay bounded;
-tagged channels publish each version once.
+- The `develop` repositories gain a package per push, so they need a cleanup
+  policy to stay bounded; tagged channels publish each version once.
 
 ## How `build_pkg.sh` works
 
