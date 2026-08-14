@@ -128,15 +128,25 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     if (isNullBackend_)
     {
-        if (config.ledgerHistory == 0)
-        {
-            Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
-        }
         if (config.ledgerHistory == std::numeric_limits<std::uint32_t>::max())
         {
             Throw<std::runtime_error>(
                 "RWDB does not support ledger_history=full; "
                 "set a finite ledger_history");
+        }
+        if (config.ledgerHistory == 0)
+        {
+            if (!config.standalone())
+            {
+                Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
+            }
+            // Config::setup() forces ledger_history=0 in standalone for disk
+            // backends. If that zero still reaches us (or the operator set
+            // ledger_history=none), use the standalone online_delete floor
+            // so LedgerMaster's retain window is live.
+            config.ledgerHistory = kMinimumDeletionIntervalSa;
+            JLOG(journal_.info()) << "RWDB standalone mode: ledger_history was 0; "
+                                  << "defaulting retain window to " << config.ledgerHistory;
         }
         JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
                               << "retaining " << config.ledgerHistory << " ledgers in memory";

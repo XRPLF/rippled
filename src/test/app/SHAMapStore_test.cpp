@@ -651,6 +651,26 @@ public:
     }
 
     void
+    testStandaloneRWDBZeroHistory()
+    {
+        testcase("standalone rwdb starts when ledger_history is 0");
+        using namespace jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = rwdb(std::move(cfg));
+            // Simulate Config::setup()'s standalone override, or
+            // ledger_history=none, reaching SHAMapStore.
+            cfg->ledgerHistory = 0;
+            return cfg;
+        }));
+
+        BEAST_EXPECT(env.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(env.app().config().ledgerHistory == 8);
+        env.close();
+        BEAST_EXPECT(env.closed());
+    }
+
+    void
     testCanDeleteRWDB()
     {
         testcase("rwdb advisory_delete can_delete controls");
@@ -701,6 +721,7 @@ public:
         testCanDelete();
         testRotate();
         testAutomaticRWDB();
+        testStandaloneRWDBZeroHistory();
         testCanDeleteRWDB();
     }
 };

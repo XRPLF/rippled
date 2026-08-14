@@ -1744,6 +1744,59 @@ r.ripple.com:51235
                 fail("Should not throw for non-RWDB backends");
             }
         }
+
+        // Config::setup() zeros ledger_history in standalone for disk
+        // backends. RWDB must keep a retain window so SHAMapStore can start.
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testRWDBStandaloneHistory",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 256);
+        }
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testRWDBStandaloneHistoryExplicit",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[ledger_history]\n"
+                "512\n"
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 512);
+        }
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testMemoryStandaloneHistory",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[node_db]\n"
+                "type=memory\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 0);
+        }
     }
 
     void
