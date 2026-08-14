@@ -9,12 +9,12 @@ documentation.
 > **Related docs**:
 > [docs/telemetry-runbook.md](./telemetry-runbook.md) (operator runbook).
 
-<!-- This file was originally generated from tasks/telemetry_terms.py. That
-     generator is NOT in the repository (`tasks/` is gitignored) and no copy
-     survives, so this file is now maintained by hand. Follow the existing entry
-     shape: an `<a id="...">` anchor, a `###` term heading, one plain-language
-     paragraph, then `**Scope:**` and optionally `**What is observable:**` and
-     `**See also:**`. Terms are alphabetical within each category. -->
+<!-- This file was originally machine-generated. The generator is not part of
+     the repository and no copy survives, so this file is now maintained by
+     hand. Follow the existing entry shape: an `<a id="...">` anchor, a `###`
+     term heading, one plain-language paragraph, then `**Scope:**` and
+     optionally `**What is observable:**` and `**See also:**`. Terms are
+     alphabetical within each category. -->
 
 ## Contents
 

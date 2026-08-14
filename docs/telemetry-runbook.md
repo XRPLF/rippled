@@ -226,9 +226,8 @@ to a datasource of the matching type — auto-selecting it when only one exists
 (the usual case: one Mimir, one Tempo). This is what makes the same files work
 unchanged on both the local stack and Cloud.
 
-> Dashboards are parameterized by `grafana/parameterize-datasources.py`. If you
-> add a dashboard exported with hardcoded UIDs, re-run that script (idempotent)
-> before committing so it stays portable.
+> If you add a dashboard exported with hardcoded datasource UIDs, replace them
+> with `${DS_PROMETHEUS}` / `${DS_TEMPO}` before committing.
 
 To import:
 
@@ -1946,9 +1945,7 @@ line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
 only case that still touches a central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
-(see the Doxygen header in `MetricMacros.h` and "Use Case 4" in
-`tasks/metric-macro-plan.md` for the full explanation and the `prometheus-cpp`
-contrast rationale).
+(see the Doxygen header in `MetricMacros.h` for the full explanation).
 
 ## Deployment Tiers
 
@@ -2562,25 +2559,33 @@ docker compose -f docker/telemetry/docker-compose.yml exec renderer \
 #### Deploying alerts to Grafana Cloud
 
 Grafana Cloud has **no provisioning filesystem**, so these `apiVersion: 1` files
-cannot be loaded there. Cloud deployment goes through the REST API via
-`docker/telemetry/upload_alerts_to_grafana.py`, which reads the same tracked
-`rules.yaml` as the single source of truth (so local and Cloud cannot drift) and
-applies the Cloud-specific transforms: the local `prometheus` datasource uid is
-swapped for the Cloud one, the `folder:` _name_ becomes an existing `folderUID`,
-and `interval` becomes integer seconds.
+cannot be loaded there. Cloud deployment goes through the Grafana alerting **REST
+API**, driven from the same tracked `rules.yaml` — it stays the single source of
+truth, so local and Cloud cannot drift.
 
-```bash
-cd docker/telemetry
-python3 upload_alerts_to_grafana.py --dry-run # always dry-run first
-python3 upload_alerts_to_grafana.py           # create rules, paused
-python3 upload_alerts_to_grafana.py --verify  # read back what is deployed
-```
+Each rule needs three Cloud-specific transforms on the way out:
+
+| Field in `rules.yaml`             | Cloud form               |
+| --------------------------------- | ------------------------ |
+| local `prometheus` datasource uid | the Cloud datasource uid |
+| `folder:` _name_                  | an existing `folderUID`  |
+| `interval` (duration string)      | integer seconds          |
+
+Then, in order:
+
+1. **Dry-run first** — render what would be sent and review it before writing
+   anything to the Cloud stack.
+2. **Create the rules paused**, so nothing can fire on a threshold that has not
+   been reviewed against this fleet.
+3. **Read back** the deployed rules and verify they are what was sent.
+
+Land the rules with delivery disabled while no recipient has been chosen, and
+activate them only once the thresholds have been checked against the target
+fleet's baseline.
 
 Credentials come from `.env.grafanaserviceapi` (gitignored, a service-account
 token with `alert.rules:write`); the recipient address comes from `ALERT_EMAIL_TO`
-in `.env.alerting`. Neither is ever written to a tracked file. Use
-`--no-delivery` to land the rules before a recipient is chosen, and `--activate`
-only once the thresholds have been checked against the target fleet's baseline.
+in `.env.alerting`. Neither is ever written to a tracked file.
 
 > **The Cloud notification policy tree must not be pushed.** There is exactly one
 > policy tree per org and the PUT endpoint **replaces it wholesale**. On a shared
