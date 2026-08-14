@@ -276,9 +276,9 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     app_.getHashRouter().addSuppression(suppression);
 
-    // Inject the current thread's active span context (e.g. the
-    // consensus round span from Phase 4) so receiving peers can link
-    // their proposal.receive span as a child of this trace.
+    // Inject the current thread's active span context (e.g. the consensus
+    // round span) so receiving peers can link their proposal.receive span
+    // as a child of this trace.
     telemetry::SpanGuard::injectCurrentContextToProtobuf(*prop.mutable_trace_context());
 
     app_.getOverlay().broadcast(prop);

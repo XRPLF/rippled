@@ -3,7 +3,7 @@
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
 #   metrics: OTLP receiver + spanmetrics connector -> Prometheus exporter
-#   logs:   filelog receiver -> batch processor -> otlphttp/Loki (Phase 8)
+#   logs:   filelog receiver -> batch processor -> otlphttp/Loki
 #
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them, forwards to Tempo, and derives RED metrics via the spanmetrics
