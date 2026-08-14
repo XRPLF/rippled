@@ -1192,13 +1192,16 @@ PathRequest::doUpdate(
     // WS only: progressive fills bump lineEpoch(); escalate Pathfinder when this
     // session has not searched against the latest epoch. Stagger so concurrent
     // subscriptions do not all full-search every close while a whale chunks in.
+    // growInterval is at least 2 for any configured interval ≥ 2 (interval/4
+    // collapsed to 1 at the default of 3, wiping the stagger).
     // One-shot already filled above and always full-searches via lastFull==0.
     auto const lineEpoch = cache->lineEpoch();
     bool const linesNewer = isSubscription && (lineEpoch != lastLineEpoch_);
     bool growthSearch = false;
     if (linesNewer && !revalidateOnly && !loaded)
     {
-        auto const growInterval = std::max<LedgerIndex>(1, interval / 4);
+        auto const growInterval =
+            static_cast<LedgerIndex>(rpc::tuning::pathFindLineGrowthInterval(interval));
         auto const stagger = static_cast<LedgerIndex>(iIdentifier_ % growInterval);
         growthSearch =
             lastFullSearchIndex_ == 0 || ledgerSeq >= lastFullSearchIndex_ + growInterval + stagger;

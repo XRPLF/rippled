@@ -2,8 +2,10 @@
 
 #include <xrpl/core/Job.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 
 /**
  * Tuned constants.
@@ -174,6 +176,28 @@ static constexpr std::uint32_t kPathCacheReuseLedgers = 6;
  * Config range: 1–100.
  */
 static constexpr std::uint32_t kPathFullSearchInterval = 3;
+
+/**
+ * Closed-ledger spacing for Pathfinder escalation when AssetCache::lineEpoch
+ * advanced (progressive fills / another session loaded a hub). Must stay ≥2
+ * whenever full_search_interval ≥ 2: interval/4 is 0 at the default of 3, so
+ * (id % growInterval) was always 0 and every session full-searched every close.
+ * Interval 1 (operator asked for a search every close) is honored.
+ */
+[[nodiscard]] constexpr std::uint32_t
+pathFindLineGrowthInterval(std::uint32_t fullSearchInterval) noexcept
+{
+    auto const interval = std::max(1u, fullSearchInterval);
+    if (interval <= 1)
+        return 1;
+    return std::max(2u, interval / 2);
+}
+
+static_assert(pathFindLineGrowthInterval(1) == 1);
+static_assert(pathFindLineGrowthInterval(2) == 2);
+static_assert(pathFindLineGrowthInterval(3) == 2);
+static_assert(pathFindLineGrowthInterval(4) == 2);
+static_assert(pathFindLineGrowthInterval(8) == 4);
 
 /**
  * Requested concurrent revalidates for established path_find sessions (not
