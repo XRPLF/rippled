@@ -277,13 +277,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
     if (txHasIssuerKey && !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) &&
-        !enablesConfidentialAmount)
+        !enablesConfidentialBalance)
     {
         return tecNO_PERMISSION;
     }
 
     if (txHasAuditorKey && !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) &&
-        !enablesConfidentialAmount)
+        !enablesConfidentialBalance)
     {
         return tecNO_PERMISSION;
     }
@@ -298,7 +298,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Enabling confidential balances when COA > 0 is not permitted, regardless of
     // ConfidentialMPTKeyRotation.
-    if (enablesConfidentialAmount && hasConfidentialOA)
+    if (enablesConfidentialBalance && hasConfidentialOA)
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

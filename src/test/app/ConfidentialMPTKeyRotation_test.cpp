@@ -514,7 +514,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         // rejected regardless of the ConfidentialMPTKeyRotation amendment.
         mptAlice.set({
             .account = alice,
-            .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+            .flags = tfMPTSetCanHoldConfidentialBalance,
             .err = tecNO_PERMISSION,
         });
     }
