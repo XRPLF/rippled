@@ -109,8 +109,8 @@ jobs:
     needs: build-test
     uses: ./.github/workflows/reusable-package.yml
     with:
-      # Packages are built on every trigger; only develop pushes publish them,
-      # matching upload-recipe above.
+      # Packages are built on every trigger; only develop pushes in XRPLF/rippled
+      # publish them, matching upload-recipe above.
       publish: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     secrets:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}

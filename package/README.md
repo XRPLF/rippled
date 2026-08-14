@@ -149,9 +149,10 @@ build gets the defaults `unstable` and `1`.
 
 Publishing is the last step of each packaging job, uploading from the container
 that built the packages. It runs when the caller passes `publish: true`:
-`on-trigger.yml` for pushes to develop, `on-tag.yml` always, `on-pr.yml` never.
-Both authenticate with the `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD`
-secrets already used for the Conan remote.
+`on-trigger.yml` for develop pushes in `XRPLF/rippled`, `on-tag.yml` for tags in
+any `XRPLF` repository, `on-pr.yml` never. Both authenticate with the
+`NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
+Conan remote.
 
 Nexus owns the repository metadata; nothing here signs or indexes anything. Three
 things about publishing are worth knowing:
