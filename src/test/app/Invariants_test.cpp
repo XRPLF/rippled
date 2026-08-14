@@ -217,7 +217,12 @@ class Invariants_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(transactor))
             return;
 
-        // invoke check twice to cover tec and tef cases
+        // Invoke the check twice to cover the tec and tef cases. Both passes run
+        // against the same view -- unlike production, nothing is discarded in
+        // between (Transactor::reset would), so the second pass sees the same
+        // violation and escalates tec -> tef. A {tec, tef} pair therefore says
+        // "this invariant is enforced regardless of the incoming result", not
+        // that the transaction ends in tefINVARIANT_FAILED on ledger.
         if (!BEAST_EXPECT(ters.size() == 2))
             return;
 
