@@ -25,7 +25,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -695,8 +695,7 @@ directSendNoFeeIOU(
     // back to the pre-dust code path in release.
     if (legPolicy != nullptr && !view.rules().enabled(featureLendingProtocolV1_1))
     {
-        XRPL_ASSERT(
-            false,
+        UNREACHABLE(
             "xrpl::directSendNoFeeIOU : DustSplit::LegPolicy requires "
             "featureLendingProtocolV1_1");
         legPolicy = nullptr;

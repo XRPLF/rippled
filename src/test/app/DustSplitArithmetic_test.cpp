@@ -1,15 +1,15 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/rate.h>
 #include <test/jtx/trust.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -19,13 +19,15 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
+
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 // Arithmetic tests for the DustSplit primitive. Complements
 // DustSplitCreditPath_test.cpp, which pins the nullptr-policy contract
@@ -217,8 +219,8 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         using namespace jtx;
         for (int i = 0; i < 200; ++i)
         {
-            Account issuer{"iss_" + tag + "_" + std::to_string(i)};
-            Account alice{"alc_" + tag + "_" + std::to_string(i)};
+            Account const issuer{"iss_" + tag + "_" + std::to_string(i)};
+            Account const alice{"alc_" + tag + "_" + std::to_string(i)};
             if (holderIsHigh(issuer, alice))
                 return {issuer, alice};
         }
@@ -267,21 +269,23 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         if (holderHigh)
         {
             auto [issuer, alice] = pickHolderHigh(tag);
-            PrettyAsset asset = issuer["USD"];
+            PrettyAsset const asset = issuer["USD"];
             Issue const iss = asset.raw().get<Issue>();
-            return HolderCtx{std::move(issuer), std::move(alice), std::move(asset), iss};
+            return HolderCtx{
+                .issuer = std::move(issuer), .alice = std::move(alice), .asset = asset, .iss = iss};
         }
         Account issuer{"iss_" + tag};
         Account alice{"alice_" + tag};
-        PrettyAsset asset = issuer["USD"];
+        PrettyAsset const asset = issuer["USD"];
         Issue const iss = asset.raw().get<Issue>();
-        return HolderCtx{std::move(issuer), std::move(alice), std::move(asset), iss};
+        return HolderCtx{
+            .issuer = std::move(issuer), .alice = std::move(alice), .asset = asset, .iss = iss};
     }
 
     // Fund the accounts, open a trust line, and (optionally) seed an
     // initial balance via a real payment. Common preamble for Groups 1–4,
     // 6, 9, 10.
-    HolderCtx
+    static HolderCtx
     setupCtx(
         jtx::Env& env,
         std::string const& tag,
@@ -297,7 +301,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // Set alice's trust line up so that it is eligible for auto-delete
     // when balance zeroes: alice created the line (owns the reserve),
     // limit was zeroed after seeding, no freeze / quality overrides.
-    HolderCtx
+    static HolderCtx
     setupAutoDeleteCtx(jtx::Env& env, std::string const& tag, int seedBal = 100)
     {
         using namespace jtx;
@@ -314,14 +318,14 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         return c;
     }
 
-    TransitCtx
+    static TransitCtx
     setupTransit(jtx::Env& env, std::string const& tag, int aliceInitial, int carolInitial)
     {
         using namespace jtx;
         Account issuer{"iss_" + tag};
         Account alice{"alice_" + tag};
         Account carol{"carol_" + tag};
-        PrettyAsset asset = issuer["USD"];
+        PrettyAsset const asset = issuer["USD"];
         Issue const iss = asset.raw().get<Issue>();
 
         env.fund(XRP(10'000), issuer, alice, carol);
@@ -335,10 +339,14 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
             env(pay(issuer, carol, asset(carolInitial)));
         env.close();
         return TransitCtx{
-            std::move(issuer), std::move(alice), std::move(carol), std::move(asset), iss};
+            .issuer = std::move(issuer),
+            .alice = std::move(alice),
+            .carol = std::move(carol),
+            .asset = asset,
+            .iss = iss};
     }
 
-    MultiSendCtx
+    static MultiSendCtx
     setupMultiSend(jtx::Env& env, std::string const& tag, int aliceInitial = 1'000)
     {
         using namespace jtx;
@@ -346,7 +354,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         Account alice{"alice_" + tag};
         Account bob{"bob_" + tag};
         Account carol{"carol_" + tag};
-        PrettyAsset asset = issuer["USD"];
+        PrettyAsset const asset = issuer["USD"];
         Issue const iss = asset.raw().get<Issue>();
 
         env.fund(XRP(10'000), issuer, alice, bob, carol);
@@ -358,12 +366,12 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         env(pay(issuer, alice, asset(aliceInitial)));
         env.close();
         return MultiSendCtx{
-            std::move(issuer),
-            std::move(alice),
-            std::move(bob),
-            std::move(carol),
-            std::move(asset),
-            iss};
+            .issuer = std::move(issuer),
+            .alice = std::move(alice),
+            .bob = std::move(bob),
+            .carol = std::move(carol),
+            .asset = asset,
+            .iss = iss};
     }
 
     // ------------------------------------------------------------------
@@ -402,11 +410,16 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     {
         LineObservation obs{};
         outDust = DustSplit{};
-        auto legPolicy = DustSplit::LegPolicy{.mode = cfg.mode, .overrideScale = cfg.overrideScale};
+        auto const legPolicy =
+            DustSplit::LegPolicy{.mode = cfg.mode, .overrideScale = cfg.overrideScale};
         if (holderIsSender)
+        {
             outDust.sender = legPolicy;
+        }
         else
+        {
             outDust.receiver = legPolicy;
+        }
 
         withSandbox(env, [&](Sandbox& sb, beast::Journal j) {
             seedLine(sb, c.alice.id(), c.iss, seedBal, seedDust);
@@ -441,7 +454,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG1_creditExactAtScale()
+    testG1CreditExactAtScale()
     {
         testcase("G1.1 receiver-Override: credit exactly at scale leaves no dust");
         using namespace jtx;
@@ -471,7 +484,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG1_creditSubQuantumOnly()
+    testG1CreditSubQuantumOnly()
     {
         testcase(
             "G1.2 receiver-Override: sub-quantum credit lands entirely in "
@@ -502,7 +515,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG1_creditPromotesDust()
+    testG1CreditPromotesDust()
     {
         testcase(
             "G1.3 receiver-Override: credit crossing quantum promotes dust "
@@ -536,7 +549,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG1_creditRepeatedPromotion()
+    testG1CreditRepeatedPromotion()
     {
         testcase(
             "G1.4 receiver-Override: repeated sub-quantum credits sum "
@@ -573,7 +586,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG1_creditNoDustAtCoarseScale()
+    testG1CreditNoDustAtCoarseScale()
     {
         testcase("G1.5 receiver-Override: at a coarse scale, no dust remainder");
         using namespace jtx;
@@ -606,7 +619,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG2_debitConsumesExactly()
+    testG2DebitConsumesExactly()
     {
         testcase("G2.1 sender-Override: debit consumes balance and dust exactly");
         using namespace jtx;
@@ -638,7 +651,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG2_debitDrivesExtendedNegative()
+    testG2DebitDrivesExtendedNegative()
     {
         testcase("G2.2 sender-Override: debit drives extended balance below zero");
         using namespace jtx;
@@ -672,7 +685,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG2_debitLeavesPositiveDust()
+    testG2DebitLeavesPositiveDust()
     {
         testcase(
             "G2.3 sender-Override: debit smaller than a quantum leaves "
@@ -705,7 +718,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG2_debitClearsPositiveDust()
+    testG2DebitClearsPositiveDust()
     {
         testcase(
             "G2.4 sender-Override: debit exactly equal to seeded dust zeroes "
@@ -742,7 +755,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG3_receiverCreditHolderHigh()
+    testG3ReceiverCreditHolderHigh()
     {
         testcase(
             "G3.1 receiver-Override: holder is HIGH account; ledger sfDust "
@@ -780,7 +793,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG3_senderDebitHolderHigh()
+    testG3SenderDebitHolderHigh()
     {
         testcase(
             "G3.2 sender-Override: holder is HIGH; out-fields still in holder "
@@ -815,7 +828,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG3_promotionFromPositiveDustHolderHigh()
+    testG3PromotionFromPositiveDustHolderHigh()
     {
         testcase(
             "G3.3 receiver-Override: holder is HIGH; promotion crosses "
@@ -853,7 +866,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG4_drainWithNonZeroDust()
+    testG4DrainWithNonZeroDust()
     {
         testcase(
             "G4.1 sender-Drain: with non-zero seeded dust, dust folds into "
@@ -885,7 +898,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG4_drainWithZeroDust()
+    testG4DrainWithZeroDust()
     {
         testcase(
             "G4.2 sender-Drain: with zero seeded dust, behaves like plain "
@@ -916,7 +929,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG4_drainZeroAmount()
+    testG4DrainZeroAmount()
     {
         testcase(
             "G4.3 sender-Drain: zero-amount call still drains dust into "
@@ -947,7 +960,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG4_drainHolderHigh()
+    testG4DrainHolderHigh()
     {
         testcase("G4.4 sender-Drain: holder is HIGH; sign flow correct end-to-end");
         using namespace jtx;
@@ -982,7 +995,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG5_transitReceiverOverride()
+    testG5TransitReceiverOverride()
     {
         testcase("G5.1 transit: receiver-only Override; sender line runs classic");
         using namespace jtx;
@@ -1015,7 +1028,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG5_transitSenderOverride()
+    testG5TransitSenderOverride()
     {
         testcase("G5.2 transit: sender-only Override; receiver line runs classic");
         using namespace jtx;
@@ -1056,7 +1069,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG5_transitBothLegs()
+    testG5TransitBothLegs()
     {
         testcase(
             "G5.3 transit: both legs Override; independent bookkeeping on "
@@ -1085,7 +1098,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG5_transitDrainSenderInflates()
+    testG5TransitDrainSenderInflates()
     {
         testcase(
             "G5.4 transit: sender-Drain inflates the amount seen by "
@@ -1136,7 +1149,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG6_noLineReturnsZero()
+    testG6NoLineReturnsZero()
     {
         testcase("G6.1 creditBalanceExact: absent trust line returns zero");
         using namespace jtx;
@@ -1149,7 +1162,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG6_zeroDustReturnsBalance()
+    testG6ZeroDustReturnsBalance()
     {
         testcase(
             "G6.2 creditBalanceExact: dust==0 returns sfBalance in party "
@@ -1162,7 +1175,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG6_sumsDust()
+    testG6SumsDust()
     {
         testcase(
             "G6.3 creditBalanceExact: returns sfBalance + sfDust in party "
@@ -1179,7 +1192,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG6_signAliceHigh()
+    testG6SignAliceHigh()
     {
         testcase(
             "G6.4 creditBalanceExact: holder-high sign flip correctly "
@@ -1204,7 +1217,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG6_amendmentGateOff()
+    testG6AmendmentGateOff()
     {
         testcase("G6.5 creditBalanceExact: amendment OFF ignores sfDust");
         using namespace jtx;
@@ -1240,7 +1253,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // current call is dust-aware).
 
     void
-    testG7_autoDeleteBlockedByFreshDust()
+    testG7AutoDeleteBlockedByFreshDust()
     {
         testcase("G7.1 auto-delete blocked by fresh Override dust");
         using namespace jtx;
@@ -1272,7 +1285,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG7_autoDeleteBlockedByPreexistingDust()
+    testG7AutoDeleteBlockedByPreexistingDust()
     {
         testcase("G7.2 auto-delete blocked by pre-existing dust (nullptr policy)");
         using namespace jtx;
@@ -1289,20 +1302,15 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
             line->at(sfDust) = toLedgerTerms(Number{5, -9}, c.alice.id(), c.iss.account);
             sb.update(line);
 
-            auto const ter = sendVia(
-                sb,
-                j,
-                c.alice.id(),
-                c.issuer.id(),
-                c.asset(100).value(),
-                /*dust=*/nullptr);
+            auto const ter =
+                sendVia(sb, j, c.alice.id(), c.issuer.id(), c.asset(100).value(), /*d=*/nullptr);
             BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(sb.peek(keylet::trustLine(c.alice.id(), c.iss)) != nullptr);
         });
     }
 
     void
-    testG7_autoDeleteProceedsWhenDustZero()
+    testG7AutoDeleteProceedsWhenDustZero()
     {
         testcase("G7.3 auto-delete proceeds when dust is zero");
         using namespace jtx;
@@ -1312,13 +1320,8 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
         withSandbox(env, [&](Sandbox& sb, beast::Journal j) {
             // No dust anywhere. Plain send draining alice's balance to zero
             // triggers auto-delete.
-            auto const ter = sendVia(
-                sb,
-                j,
-                c.alice.id(),
-                c.issuer.id(),
-                c.asset(100).value(),
-                /*dust=*/nullptr);
+            auto const ter =
+                sendVia(sb, j, c.alice.id(), c.issuer.id(), c.asset(100).value(), /*d=*/nullptr);
             BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(sb.peek(keylet::trustLine(c.alice.id(), c.iss)) == nullptr);
         });
@@ -1329,7 +1332,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG8_multiSendSenderOverrideOnce()
+    testG8MultiSendSenderOverrideOnce()
     {
         testcase(
             "G8.1 accountSendMulti: sender-Override applies exactly once to "
@@ -1342,7 +1345,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
             DustSplit d;
             d.sender = overrideLeg(-6);
 
-            MultiplePaymentDestinations receivers{
+            MultiplePaymentDestinations const receivers{
                 {c.bob.id(), Number{3, -9}}, {c.carol.id(), Number{2, -9}}};
             auto const ter =
                 accountSendMulti(sb, c.alice.id(), c.iss, receivers, j, WaiveTransferFee::Yes, &d);
@@ -1367,7 +1370,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG8_multiSendNoDustOnPerRecipientLines()
+    testG8MultiSendNoDustOnPerRecipientLines()
     {
         testcase("G8.2 accountSendMulti: no sfDust written to receiver lines");
         using namespace jtx;
@@ -1378,7 +1381,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
             DustSplit d;
             d.sender = overrideLeg(-6);
 
-            MultiplePaymentDestinations receivers{
+            MultiplePaymentDestinations const receivers{
                 {c.bob.id(), Number{10}}, {c.carol.id(), Number{20}}};
             auto const ter =
                 accountSendMulti(sb, c.alice.id(), c.iss, receivers, j, WaiveTransferFee::Yes, &d);
@@ -1398,7 +1401,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG9_overrideRoundTrip()
+    testG9OverrideRoundTrip()
     {
         testcase(
             "G9.1 Override: credit followed by equal debit returns line to "
@@ -1433,7 +1436,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG9_conservationOfExtendedBalance()
+    testG9ConservationOfExtendedBalance()
     {
         testcase(
             "G9.2 Override: for any send, extended balance changes by "
@@ -1454,7 +1457,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG9_associativity()
+    testG9Associativity()
     {
         testcase(
             "G9.3 Override: two smaller sends equal one larger send (same "
@@ -1504,7 +1507,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     // ==================================================================
 
     void
-    testG10_overrideScaleIntegral()
+    testG10OverrideScaleIntegral()
     {
         testcase(
             "G10.1 Override scale=0 (integer): fractional inputs land "
@@ -1532,7 +1535,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG10_zeroExtendedBalance()
+    testG10ZeroExtendedBalance()
     {
         testcase(
             "G10.2 Override: credit exactly negating extended balance zeroes "
@@ -1559,7 +1562,7 @@ class DustSplitArithmetic_test : public beast::unit_test::Suite
     }
 
     void
-    testG10_dustBoundedByOneQuantum()
+    testG10DustBoundedByOneQuantum()
     {
         testcase(
             "G10.3 Override: for random-ish sub-quantum inputs, |dust| < one "
@@ -1591,60 +1594,60 @@ public:
     run() override
     {
         // Group 1
-        testG1_creditExactAtScale();
-        testG1_creditSubQuantumOnly();
-        testG1_creditPromotesDust();
-        testG1_creditRepeatedPromotion();
-        testG1_creditNoDustAtCoarseScale();
+        testG1CreditExactAtScale();
+        testG1CreditSubQuantumOnly();
+        testG1CreditPromotesDust();
+        testG1CreditRepeatedPromotion();
+        testG1CreditNoDustAtCoarseScale();
 
         // Group 2
-        testG2_debitConsumesExactly();
-        testG2_debitDrivesExtendedNegative();
-        testG2_debitLeavesPositiveDust();
-        testG2_debitClearsPositiveDust();
+        testG2DebitConsumesExactly();
+        testG2DebitDrivesExtendedNegative();
+        testG2DebitLeavesPositiveDust();
+        testG2DebitClearsPositiveDust();
 
         // Group 3
-        testG3_receiverCreditHolderHigh();
-        testG3_senderDebitHolderHigh();
-        testG3_promotionFromPositiveDustHolderHigh();
+        testG3ReceiverCreditHolderHigh();
+        testG3SenderDebitHolderHigh();
+        testG3PromotionFromPositiveDustHolderHigh();
 
         // Group 4
-        testG4_drainWithNonZeroDust();
-        testG4_drainWithZeroDust();
-        testG4_drainZeroAmount();
-        testG4_drainHolderHigh();
+        testG4DrainWithNonZeroDust();
+        testG4DrainWithZeroDust();
+        testG4DrainZeroAmount();
+        testG4DrainHolderHigh();
 
         // Group 5
-        testG5_transitReceiverOverride();
-        testG5_transitSenderOverride();
-        testG5_transitBothLegs();
-        testG5_transitDrainSenderInflates();
+        testG5TransitReceiverOverride();
+        testG5TransitSenderOverride();
+        testG5TransitBothLegs();
+        testG5TransitDrainSenderInflates();
 
         // Group 6
-        testG6_noLineReturnsZero();
-        testG6_zeroDustReturnsBalance();
-        testG6_sumsDust();
-        testG6_signAliceHigh();
-        testG6_amendmentGateOff();
+        testG6NoLineReturnsZero();
+        testG6ZeroDustReturnsBalance();
+        testG6SumsDust();
+        testG6SignAliceHigh();
+        testG6AmendmentGateOff();
 
         // Group 7
-        testG7_autoDeleteBlockedByFreshDust();
-        testG7_autoDeleteBlockedByPreexistingDust();
-        testG7_autoDeleteProceedsWhenDustZero();
+        testG7AutoDeleteBlockedByFreshDust();
+        testG7AutoDeleteBlockedByPreexistingDust();
+        testG7AutoDeleteProceedsWhenDustZero();
 
         // Group 8
-        testG8_multiSendSenderOverrideOnce();
-        testG8_multiSendNoDustOnPerRecipientLines();
+        testG8MultiSendSenderOverrideOnce();
+        testG8MultiSendNoDustOnPerRecipientLines();
 
         // Group 9
-        testG9_overrideRoundTrip();
-        testG9_conservationOfExtendedBalance();
-        testG9_associativity();
+        testG9OverrideRoundTrip();
+        testG9ConservationOfExtendedBalance();
+        testG9Associativity();
 
         // Group 10
-        testG10_overrideScaleIntegral();
-        testG10_zeroExtendedBalance();
-        testG10_dustBoundedByOneQuantum();
+        testG10OverrideScaleIntegral();
+        testG10ZeroExtendedBalance();
+        testG10DustBoundedByOneQuantum();
     }
 };
 
