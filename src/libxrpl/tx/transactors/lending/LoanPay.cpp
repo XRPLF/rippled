@@ -50,7 +50,7 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
     {
         auto const sle = view.read(keylet::account(id));
         if (!sle)
-            return STAmount{};
+            return STAmount{};  // LCOV_EXCL_LINE
         return view.balanceHookIOU(id, xrpAccount(), sle->getFieldAmount(sfBalance));
     }
     return accountHolds(
