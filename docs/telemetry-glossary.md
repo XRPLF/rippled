@@ -553,7 +553,7 @@ The rate at which the node fetches older ledgers to extend or repair its stored 
 
 ### Ledger acquire (inbound fetch)
 
-Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split into complete and failed; a rising failed rate means the node cannot fetch needed ledgers from its peers.
+Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and aborted (it was abandoned before finishing, either swept away as stale or discarded wholesale at shutdown). A rising failed rate means the node cannot fetch needed ledgers from its peers.
 
 **Scope:** per node — measured on and specific to this individual server.
 
