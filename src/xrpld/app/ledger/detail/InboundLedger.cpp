@@ -552,7 +552,7 @@ InboundLedger::done()
             // replace this object, but do not logFailure (5 minute poison).
             complete_ = false;
             failed_ = true;
-            skipFailureLog_ = true;
+            retryableFailure_ = true;
         }
 
         if (complete_ && !failed_)
@@ -581,7 +581,7 @@ InboundLedger::done()
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
             self->app_.getLedgerMaster().tryAdvance();
         }
-        else if (self->failed_ && !self->skipFailureLog_)
+        else if (self->failed_ && !self->retryableFailure_)
         {
             self->app_.getInboundLedgers().logFailure(self->hash_, self->seq_);
         }
