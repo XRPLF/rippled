@@ -454,6 +454,69 @@ class AssetCache_test : public beast::unit_test::Suite
         cache->releaseSession(1);
     }
 
+    /**
+     * A complete entry that ages out of cacheReuseLedgers must reload at
+     * least the previously stored line count. Reloading only lineChunkSize
+     * (64 for WS) would drop a hub from thousands of lines to one chunk for
+     * that wave — Pathfinder then publishes empty/partial alternatives.
+     */
+    void
+    testReuseWindowExpiryKeepsCompleteLineCount()
+    {
+        testcase("reuse expiry: complete entry reloads prior line count, not one chunk");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        constexpr int kLines = 8;
+        constexpr std::size_t kChunk = 2;
+        fundManyLines(env, alice, kLines, "re");
+
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/100000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/1,
+            /*lineChunkSize=*/kChunk);
+
+        std::size_t completeCount = 0;
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines);
+            BEAST_EXPECT(lines->size() == kChunk);
+            for (int i = 0; i < 20; ++i)
+            {
+                if (!cache->expandIncompleteLines())
+                    break;
+            }
+            lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines);
+            completeCount = lines->size();
+            BEAST_EXPECT(completeCount == static_cast<std::size_t>(kLines));
+            BEAST_EXPECT(!cache->hasIncompleteLinesForSession(1));
+        }
+
+        auto const loadedAt = cache->getLedger()->seq();
+        for (int i = 0; i < 4; ++i)
+        {
+            env.close();
+            cache->advanceLedger(env.closed(), false);
+        }
+        BEAST_EXPECT(cache->getLedger()->seq() > loadedAt + 1);
+
+        // Reload happens inside getRippleLines, before any expand. Must not
+        // collapse to kChunk.
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines);
+            BEAST_EXPECT(lines->size() == completeCount);
+            BEAST_EXPECT(!cache->hasIncompleteLinesForSession(1));
+        }
+        cache->releaseSession(1);
+    }
+
     void
     testMaxLinesPerAccountAndChunk()
     {
@@ -688,6 +751,7 @@ public:
         testSoftAdvanceResetsIncompleteCursor();
         testLoadScopeDrainsIncompleteSharedHit();
         testReuseWindowExpiryReloads();
+        testReuseWindowExpiryKeepsCompleteLineCount();
         testMaxLinesPerAccountAndChunk();
         testGlobalBudgetBlocksNewLines();
         testLineEpochBumpsOnLoadAndExpand();

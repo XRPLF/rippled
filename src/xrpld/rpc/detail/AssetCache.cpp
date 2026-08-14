@@ -352,12 +352,22 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
             ++cacheHits_;
             return it->second.lines;
         }
-        // Stale or progress stub: drop content but preserve pins + progress hint.
+        // Stale or progress stub: drop content but preserve pins + how many
+        // lines we already had. reloadMinLines is only set for incomplete
+        // pinned stubs in advanceLedger; complete entries leave it 0. Using
+        // storedLineCount as the floor keeps a fully loaded hub (thousands of
+        // lines) from collapsing to one WS chunk (64) on reuse-window expiry —
+        // otherwise Pathfinder runs this wave against a tiny snapshot.
+        // Add one chunk so getItemsChunk can walk past the last line and mark
+        // complete (an exact-N want hits the cap and stays incomplete).
         preservedPins = it->second.pinCount;
-        progressHint = it->second.reloadMinLines;
         auto const size = it->second.storedLineCount();
+        progressHint = it->second.reloadMinLines;
         if (size > 0)
+        {
+            progressHint = std::max(progressHint, size + lineChunkSize_);
             totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+        }
         lines_.erase(it);
     }
 
