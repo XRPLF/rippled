@@ -7682,18 +7682,18 @@ class MPToken_test : public beast::unit_test::Suite
 
         if (!features[featureSingleAssetVault] || features[fixCleanup3_4_0])
         {
-            // pre SAV or post Cleanup340 amendment: bob deletes the dangling locked MPToken ...
+            // pre SAV or post Cleanup340 amendment: bob deletes the dangling locked MPToken
             mptAlice.authorize({.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
             BEAST_EXPECT(ownerCount(env, bob) == 0);
         }
         else
         {
             // bob cannot delete his locked MPToken, even though the issuance
-            // no longer exists ...
+            // no longer exists.
             mptAlice.authorize(
                 {.account = bob, .flags = tfMPTUnauthorize, .err = tecNO_PERMISSION});
 
-            // ... and the lock can never be cleared, because unlocking
+            // and the lock can never be cleared, because unlocking
             // requires the (destroyed) issuance
             mptAlice.set(
                 {.account = alice,
@@ -7701,7 +7701,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .flags = tfMPTUnlock,
                  .err = tecOBJECT_NOT_FOUND});
 
-            // the dangling locked MPToken survives ...
+            // the dangling locked MPToken survives
             BEAST_EXPECT(env.current()->exists(keylet::mptoken(mptAlice.issuanceID(), bob.id())));
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
