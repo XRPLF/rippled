@@ -2,8 +2,8 @@
 #
 #   - one job per distro, taken from "package_configs" in linux.json
 #   - each job runs in that distro's container, which is what decides DEB or RPM
-#   - with 'publish: true' a job also uploads what it built, see
-#     package/publish_pkg.sh
+#   - with 'publish: true' a job also uploads what it built
+#     (see package/publish_pkg.sh)
 #
 # Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package

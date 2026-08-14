@@ -16,9 +16,8 @@ Options (each can also be set via the env var shown):
                            xrpld and validator-keys
                            binaries                  [BUILD_DIR;         default: ${PWD}/build]
   --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
-  --channel NAME           channel recorded as the
-                           Debian changelog
-                           distribution              [PKG_CHANNEL;       default: unstable]
+  --channel NAME           release channel, written
+                           to debian/changelog       [PKG_CHANNEL;       default: unstable]
   --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help               show this help and exit
 EOF

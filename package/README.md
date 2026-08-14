@@ -140,13 +140,12 @@ Only a tag names a channel — do not extend that to `develop`, whose
 release cycle, which would send nightlies into `stable`. Versions sort in row
 order, so moving to a more mature channel never downgrades.
 
-The action also decides the package release number, since it follows the same
-split: a tag's version is unique so its packages are release 1, while develop
-repeats one version and gets `github.run_number` to keep nightlies rising. Both
-values reach the packaging scripts as arguments — `build_pkg.sh` takes
-`--channel` and `--pkg-release`, `publish_pkg.sh` takes the channel as its first
-argument — so neither derives anything, and a local build gets the defaults
-`unstable` and `1`.
+The action decides the package release number on the same split: a tag's version
+is unique, so its packages are release 1, while develop repeats the same version
+and takes `github.run_number` so each nightly is an upgrade. Both values reach the
+scripts as arguments — `build_pkg.sh` takes `--channel` and `--pkg-release`,
+`publish_pkg.sh` takes the channel first — so neither derives anything, and a local
+build gets the defaults `unstable` and `1`.
 
 Publishing is the last step of each packaging job, uploading from the container
 that built the packages. It runs when the caller passes `publish: true`:
@@ -155,7 +154,7 @@ Both authenticate with the `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD`
 secrets already used for the Conan remote.
 
 Nexus owns the repository metadata; nothing here signs or indexes anything. Three
-things follow:
+things about publishing are worth knowing:
 
 - Each apt-hosted repository needs a distribution and a PGP signing keypair
   configured in Nexus, which rejects one created without a keypair.

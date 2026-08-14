@@ -9,15 +9,15 @@ outputs:
     description: "The release channel this build belongs to."
     value: ${{ steps.channel.outputs.channel }}
   pkg_release:
-    description: "The package release number for this build."
+    description: "The package release number: 1 for a tag, the run number otherwise."
     value: ${{ steps.pkg_release.outputs.pkg_release }}
 
 runs:
   using: composite
   steps:
     # A tag names its own version. Anything else takes it from BuildInfo.cpp and
-    # appends the commit hash as build metadata, with a plus sign rather than a
-    # hyphen because Conan versions cannot contain two.
+    # appends the commit hash as build metadata, joined with a plus sign because a
+    # Conan version cannot contain two hyphens.
     - name: Determine version
       id: version
       shell: bash
@@ -71,8 +71,9 @@ runs:
 
         echo "channel=${channel}" | tee -a "${GITHUB_OUTPUT}"
 
-    # A tag is packaged once, so its release number is fixed. A develop build
-    # repeats one version, so the run number is what keeps nightlies upgradable.
+    # A tag is packaged once, so its release number is fixed at 1. Develop builds
+    # repeat the same version, so the run number is what makes each nightly an
+    # upgrade rather than a reinstall.
     - name: Determine package release
       id: pkg_release
       shell: bash

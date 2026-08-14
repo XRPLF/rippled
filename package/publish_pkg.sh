@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Publish the DEB and RPM packages built by build_pkg.sh to the XRPLF package
-# repositories on Sonatype Nexus, which owns the repository indexes and signs
-# them; nothing here does.
+# repositories on Sonatype Nexus. Nexus owns the repository indexes and signs
+# them; this script only uploads.
 #
 # Usage: publish_pkg.sh <channel> [package-dir]
 #
