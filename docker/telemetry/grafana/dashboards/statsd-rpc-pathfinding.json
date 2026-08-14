@@ -287,7 +287,7 @@
     },
     {
       "title": "Resource Warnings Rate",
-      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp (Phase 6 Task 6.1).",
+      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -335,7 +335,7 @@
     },
     {
       "title": "Resource Drops Rate",
-      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp (Phase 6 Task 6.1).",
+      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp.",
       "type": "stat",
       "gridPos": {
         "h": 8,
