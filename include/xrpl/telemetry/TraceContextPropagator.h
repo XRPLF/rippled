@@ -101,13 +101,10 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
     // Serialize flags
     proto.set_trace_flags(spanCtx.trace_flags().flags());
 
-    // TODO(observability/secure-OTel): the protobuf TraceContext message
-    // also carries `trace_state` (field 4), which is currently neither
-    // populated here nor read by extractFromProtobuf above. The field is
-    // reserved for the secure tracing pipeline outlined in
-    // OpenTelemetryPlan/secure-OTel.md, where an authenticated token in
-    // tracestate will let receivers reject spoofed/poisoned trace context.
-    // Wire trace_state through inject/extract once the consumer lands.
+    // TODO: the protobuf TraceContext message also carries `trace_state`
+    // (field 4), which is currently neither populated here nor read by
+    // extractFromProtobuf above. The field is reserved for future use;
+    // wire it through inject/extract once a consumer lands.
 }
 
 }  // namespace xrpl::telemetry
