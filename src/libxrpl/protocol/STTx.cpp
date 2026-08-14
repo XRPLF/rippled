@@ -33,13 +33,13 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
-#include <boost/format/free_funcs.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <expected>
+#include <format>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -399,16 +399,21 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
-    static boost::format const kBfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(txType_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
-    return str(
-        boost::format(kBfTrans) % to_string(getTransactionID()) % format->getName() %
-        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
-        safeCast<char>(status) % rTxn % escapedMetaData);
+    return std::format(
+        "('{}', '{}', '{}', '{}', '{}', '{}', {}, {})",
+        to_string(getTransactionID()),
+        format->getName(),
+        toBase58(getAccountID(sfAccount)),
+        getFieldU32(sfSequence),
+        inLedger,
+        safeCast<char>(status),
+        rTxn,
+        escapedMetaData);
 }
 
 static std::expected<void, std::string>

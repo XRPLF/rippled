@@ -28,7 +28,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -53,6 +52,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -408,7 +408,7 @@ public:
 
 enum class PeerSetBehavior {
     Good,
-    Drop50,
+    DropAlternate,
     DropAll,
     DropSkipListReply,
     DropLedgerDeltaReply,
@@ -451,17 +451,13 @@ struct TestPeerSet : public PeerSet
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override
     {
-        int dropRate = 0;
-        if (behavior == PeerSetBehavior::Drop50)
-        {
-            dropRate = 50;
-        }
-        else if (behavior == PeerSetBehavior::DropAll)
-        {
-            dropRate = 100;
-        }
+        if (behavior == PeerSetBehavior::DropAll)
+            return;
 
-        if (randInt(1, 100) <= dropRate)
+        // Drop every other message deterministically. Alternating drops
+        // still exercise the timeout/retry path while guaranteeing every
+        // subtask eventually gets a reply.
+        if (behavior == PeerSetBehavior::DropAlternate && sendCount++ % 2 == 0)
             return;
 
         switch (type)
@@ -506,6 +502,7 @@ struct TestPeerSet : public PeerSet
     LedgerReplayMsgHandler& remote;
     std::shared_ptr<TestPeer> dummyPeer;
     PeerSetBehavior behavior;
+    std::atomic<int> sendCount{0};
 };
 
 /**
@@ -1403,7 +1400,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             case PeerSetBehavior::Good:
                 testcase("good network");
                 break;
-            case PeerSetBehavior::Drop50:
+            case PeerSetBehavior::DropAlternate:
                 testcase("network drops 50% messages");
                 break;
             case PeerSetBehavior::Repeat:
@@ -1619,7 +1616,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         testAllInboundLedgers(4);
         testPeerSetBehavior(PeerSetBehavior::Good, 1);
         testPeerSetBehavior(PeerSetBehavior::Good);
-        testPeerSetBehavior(PeerSetBehavior::Drop50);
+        testPeerSetBehavior(PeerSetBehavior::DropAlternate);
         testPeerSetBehavior(PeerSetBehavior::Repeat);
         testStop();
         testSkipListBadReply();

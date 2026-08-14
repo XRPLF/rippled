@@ -11,8 +11,6 @@
 #include <xrpl/server/Port.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/format.hpp>  // IWYU pragma: keep
-#include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <array>
@@ -21,6 +19,7 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -37,7 +36,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format kConfigContentsTemplate(R"xrpldConfig(
+    static constexpr char const* kConfigContentsTemplate = R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -84,9 +83,9 @@ cache_mb=256
 file_size_mb=8
 file_size_mult=2
 
-%1%
+{}
 
-%2%
+{}
 
 # This needs to be an absolute directory reference, not a relative one.
 # Modify this value as required.
@@ -107,7 +106,7 @@ r.ripple.com 51235
 # Turn down default logging to save disk space in the long run.
 # Valid values here are trace, debug, info, warning, error, and fatal
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+{{ "command": "log_level", "severity": "warning" }}
 
 # Defaults to 1 ("yes") so that certificates will be validated. To allow the use
 # of self-signed certificates for development or internal use, set to 0 ("no").
@@ -116,12 +115,12 @@ r.ripple.com 51235
 
 [sqdb]
 backend=sqlite
-)xrpldConfig");
+)xrpldConfig";
 
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(kConfigContentsTemplate % dbPathSection % valFileSection);
+    return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
 /**
@@ -428,7 +427,7 @@ port_wss_admin
 
         using namespace std::filesystem;
         {
-            boost::format cc("[database_path]\n%1%\n");
+            constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
             path const dataDirRel("test_data_dir");
@@ -436,13 +435,13 @@ port_wss_admin
             {
                 // Dummy test - do we get back what we put in
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirAbs.string()));
+                c.loadFromString(std::format(cc, dataDirAbs.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
                 // Rel paths should convert to abs paths
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirRel.string()));
+                c.loadFromString(std::format(cc, dataDirRel.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
@@ -509,20 +508,20 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format kConfigTemplate(R"xrpldConfig(
+            static constexpr char const* kConfigTemplate = R"xrpldConfig(
 [validation_seed]
-%1%
+{}
 
 [validator_token]
-%2%
-)xrpldConfig");
+{}
+)xrpldConfig";
             std::string error;
             auto const expectedError =
                 "Cannot have both [validation_seed] "
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(kConfigTemplate % validationSeed % token));
+                c.loadFromString(std::format(kConfigTemplate, validationSeed, token));
             }
             catch (std::runtime_error const& e)
             {
@@ -605,7 +604,7 @@ main
         using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             std::string const missingPath = "/no/way/this/path/exists";
             auto const expectedError =
@@ -613,7 +612,7 @@ main
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % missingPath));
+                c.loadFromString(std::format(cc, missingPath));
             }
             catch (std::runtime_error const& e)
             {
@@ -625,14 +624,14 @@ main
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             path const invalidFile = current_path() / vtg.subdir();
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =
                 "Invalid file specified in [validators_file]: " + invalidFile.string();
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % invalidFile.string()));
+                c.loadFromString(std::format(cc, invalidFile.string()));
             }
             catch (std::runtime_error const& e)
             {
@@ -830,8 +829,8 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            boost::format cc("[validators_file]\n%1%\n");
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            constexpr char const* cc = "[validators_file]\n{}\n";
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
@@ -910,9 +909,9 @@ trust-these-validators.gov
 
         {
             // load validators from both config and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
@@ -931,11 +930,11 @@ trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
-)xrpldConfig");
+)xrpldConfig";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 15);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 4);
@@ -946,13 +945,13 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is present both
             // in xrpld.cfg and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validator_list_threshold]
 1
-)xrpldConfig");
+)xrpldConfig";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -962,7 +961,7 @@ trust-these-validators.gov
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c.loadFromString(std::format(cc, vtg.validatorsFile()));
                 fail();
             }
             catch (std::runtime_error const& e)
@@ -976,7 +975,7 @@ trust-these-validators.gov
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
             Config const c;
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -989,7 +988,7 @@ trust-these-validators.gov
             try
             {
                 Config c2;
-                c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c2.loadFromString(std::format(cc, vtg.validatorsFile()));
             }
             catch (std::runtime_error const& e)
             {
