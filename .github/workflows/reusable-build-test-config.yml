@@ -221,8 +221,10 @@ jobs:
               curl ${CCACHE_REMOTE_STORAGE%|*}/status || true
           fi
 
+      # Packaging consumes this and the validator-keys artifact below, so a tag
+      # push uploads them regardless of visibility.
       - name: Upload the binary (Linux)
-        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        if: ${{ (github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/')) && runner.os == 'Linux' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: xrpld-${{ inputs.config_name }}
@@ -236,7 +238,7 @@ jobs:
         run: ./validator-keys --unittest
 
       - name: Upload the validator-keys binary
-        if: ${{ github.event.repository.visibility == 'public' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        if: ${{ (github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/')) && env.VALIDATOR_KEYS_ENABLED == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: validator-keys-${{ inputs.config_name }}

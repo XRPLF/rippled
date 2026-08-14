@@ -148,11 +148,8 @@ if [[ -z "${pre_release}" && "${xrpld_version}" == *+* ]]; then
     exit 1
 fi
 
-if [[ -n "${pre_release}" && ! "${pre_release}" =~ ^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
-    echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
-    echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
-    exit 1
-fi
+# Also validates the pre-release, for both package formats.
+release_channel="$("${SRC_DIR}/package/release_channel.sh" "${xrpld_version}")"
 
 if command -v apt-get >/dev/null 2>&1; then
     pkg_type=deb
@@ -198,7 +195,6 @@ stage_common() {
 
 build_rpm() {
     local topdir="${BUILD_DIR}/rpmbuild"
-    rm -rf "${topdir}"
     mkdir -p "${topdir}"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
     cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
@@ -214,7 +210,6 @@ build_rpm() {
 
 build_deb() {
     local staging="${BUILD_DIR}/debbuild/source"
-    rm -rf "${staging}"
     mkdir -p "${staging}"
 
     stage_common "${staging}"
@@ -225,25 +220,9 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # Choose the Debian repository component for this package.
-    #   3.2.0 -> stable, *-b0[+metadata] -> develop,
-    #   bN/rcN pre-releases -> unstable.
-    local deb_component
-    if [[ -z "${pre_release}" ]]; then
-        deb_component="stable"
-    elif [[ "${pre_release}" =~ ^b0(\+.*)?$ ]]; then
-        deb_component="develop"
-    elif [[ "${pre_release}" =~ ^(b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
-        deb_component="unstable"
-    else
-        echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
-        echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
-        exit 1
-    fi
-
     # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_component}; urgency=medium
+xrpld (${pkg_version}-${PKG_RELEASE}) ${release_channel}; urgency=medium
   * Release ${xrpld_version}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
@@ -254,5 +233,9 @@ EOF
     set -x
     (cd "${staging}" && dpkg-buildpackage -b --no-sign -d)
 }
+
+# Both trees, not just this run's format: a package left from another version
+# would otherwise be published under this version's channel.
+rm -rf "${BUILD_DIR}/debbuild" "${BUILD_DIR}/rpmbuild"
 
 "build_${pkg_type}"

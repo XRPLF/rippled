@@ -108,6 +108,7 @@ words:
   - determ
   - disablerepo
   - distro
+  - dists
   - doxyfile
   - dxrpl
   - elgamal
@@ -249,6 +250,8 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
@@ -289,6 +292,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS

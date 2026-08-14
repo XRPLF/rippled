@@ -1,7 +1,11 @@
-# Build Linux packages (DEB and RPM) from pre-built binary artifacts (xrpld and
-# validator-keys). Discovers which configurations to package from linux.json
-# (configs in "package_configs") and fans out one job per distro. Only
-# linux/amd64 is supported; the runner is hardcoded in the job below.
+# Build Linux packages from the pre-built xrpld and validator-keys artifacts:
+#
+#   - one job per distro, taken from "package_configs" in linux.json
+#   - each job runs in that distro's container, which is what decides DEB or RPM
+#   - with 'publish: true' a job also uploads what it built, see
+#     package/publish_pkg.sh
+#
+# Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package
 
 on:
@@ -12,6 +16,24 @@ on:
         required: false
         type: string
         default: "1"
+      publish:
+        description: "Whether to publish the packages after building them."
+        required: false
+        type: boolean
+        default: false
+      nexus_url:
+        description: "The base URL of the Nexus instance hosting the deb and rpm repositories."
+        required: false
+        type: string
+        default: https://deb.xrplf.org
+
+    secrets:
+      remote_username:
+        description: "The username of a Nexus account with write access to the repositories."
+        required: false
+      remote_password:
+        description: "The password or token for that Nexus account."
+        required: false
 
 defaults:
   run:
@@ -41,7 +63,7 @@ jobs:
 
   package:
     needs: [generate-matrix]
-    if: ${{ github.event.repository.visibility == 'public' }}
+    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -85,3 +107,22 @@ jobs:
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb
             ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
           if-no-files-found: error
+
+      - name: Publish package
+        if: ${{ inputs.publish }}
+        env:
+          VISIBILITY: ${{ github.event.repository.visibility }}
+          NEXUS_URL: ${{ inputs.nexus_url }}
+          NEXUS_USERNAME: ${{ secrets.remote_username }}
+          NEXUS_PASSWORD: ${{ secrets.remote_password }}
+        # Visibility decides the channel for anything not public, since that does
+        # not follow from a version. Otherwise it comes from the binary that was
+        # just packaged, so the channel always matches the version in the package.
+        run: |
+          if [[ "${VISIBILITY}" == "public" ]]; then
+              version="$("${BUILD_DIR}/xrpld" --version | awk 'NR == 1 { print $3 }')"
+              channel="$(./package/release_channel.sh "${version}")"
+          else
+              channel=private
+          fi
+          ./package/publish_pkg.sh "${channel}" "${BUILD_DIR}"

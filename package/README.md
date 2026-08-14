@@ -8,7 +8,9 @@ a build configured with `-Dvalidator_keys=ON`.
 
 ```
 package/
-  build_pkg.sh      Staging and build script (called by the CMake `package` target and CI)
+  build_pkg.sh        Staging and build script (called by the CMake `package` target and CI)
+  publish_pkg.sh      Uploads built packages to the XRPLF Nexus repositories (called by CI)
+  release_channel.sh  Maps an xrpld version to its release channel (used by both of the above)
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
@@ -87,7 +89,7 @@ docker run --rm \
     ./package/build_pkg.sh --pkg-release "${PKG_RELEASE}"
 
 # Output:
-#   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
+#   build/debbuild/*.deb         (DEB + dbgsym; Debian names both .deb)
 #   build/rpmbuild/RPMS/x86_64/*.rpm
 ```
 
@@ -120,6 +122,66 @@ The package version is not a CMake input on this path: `build_pkg.sh` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
 release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
+## Publishing packages
+
+Packages are published to the XRPLF repositories on Sonatype Nexus at
+`https://deb.xrplf.org`. `release_channel.sh` maps a version to its channel, and
+`publish_pkg.sh` maps that channel to a repository pair:
+
+| Version               | Channel    | DEB repository | RPM repository |
+| --------------------- | ---------- | -------------- | -------------- |
+| `3.4.0`               | `stable`   | `deb`          | `rpm`          |
+| `3.4.0-b0[+meta]`     | `develop`  | `deb-develop`  | `rpm-develop`  |
+| `3.4.0-b1`, `-rc1`    | `unstable` | `deb-unstable` | `rpm-unstable` |
+| _(not version-based)_ | `private`  | `deb-private`  | `rpm-private`  |
+
+Both consumers call `release_channel.sh` with the version reported by the same
+`xrpld` binary: `build_pkg.sh` to write the Debian changelog distribution, and the
+packaging job to pick the repository, so a package always goes to the channel its
+own changelog names. `private` is the exception, since visibility does not follow
+from a version: the packaging job selects it for any repository that is not
+public, without consulting the version at all.
+
+Publishing is the last step of each packaging job, uploading from the container
+that built the packages. It runs when the caller passes `publish: true`:
+`on-trigger.yml` does so for pushes to develop, `on-tag.yml` always, `on-pr.yml`
+never. Both authenticate with the `NEXUS_REMOTE_USERNAME` /
+`NEXUS_REMOTE_PASSWORD` secrets already used for the Conan remote.
+
+The DEB repositories are apt-hosted and the RPM ones yum-hosted, so Nexus owns
+the `Packages` and `repodata` indexes; nothing here signs or indexes anything.
+Two consequences of that split of responsibility:
+
+- Each apt-hosted repository needs a distribution and a PGP signing keypair
+  configured in Nexus, which is what `dists/<distribution>/main` and the signed
+  `InRelease` come from. Nexus rejects an apt-hosted repository created without a
+  keypair. The changelog distribution `build_pkg.sh` writes only records the
+  channel; it does not route the upload.
+- yum metadata is rebuilt asynchronously, so `repodata/repomd.xml` lags an upload
+  by roughly a minute. A publish that succeeds is not immediately installable.
+
+Each job publishes only what it built and the matrix is `fail-fast: false`, so a
+failed distro leaves the other format published alone, and uploads are sequential
+rather than transactional. Recovery is a re-run: the package artifacts are
+uploaded before the publish step, and both the apt POST and the yum PUT replace
+an existing asset.
+
+Since the version comes from the binary rather than the commit, every `develop`
+build publishes the same version and replaces the previous one.
+
+To publish by hand, for example after a repackage:
+
+```bash
+# From the repo root, with packages already built under build/.
+CHANNEL=$(./package/release_channel.sh "$(build/xrpld --version | awk 'NR == 1 { print $3 }')")
+
+# Check what would be uploaded and where. No credentials needed for a dry run.
+DRY_RUN=1 ./package/publish_pkg.sh "${CHANNEL}" build
+
+export NEXUS_USERNAME=... NEXUS_PASSWORD=...
+./package/publish_pkg.sh "${CHANNEL}" build
+```
+
 ## How `build_pkg.sh` works
 
 `build_pkg.sh` derives the `xrpld` software version from
@@ -151,10 +213,10 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog entry carries the repository component: final releases use
-`stable`, `b0` builds, including `b0+metadata`, use `develop`, and `bN`/`rcN`
-pre-releases use `unstable`.
-Build metadata on a final release, such as `3.2.0+abc123`, is rejected.
+The Debian changelog entry carries the channel `release_channel.sh` derives from
+the version; that call also rejects an unsupported pre-release, for both package
+formats. Build metadata on a final release, such as `3.2.0+abc123`, is rejected
+separately.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -209,17 +271,20 @@ service restart.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
    where `pkg_version` is derived from the binary-reported `xrpld` version.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
-7. Output: `debbuild/*.deb` and `debbuild/*.ddeb` (dbgsym package)
+7. Output: `debbuild/*.deb`, the binary package and the `-dbgsym` package.
+   Debian gives dbgsym packages a `.deb` extension; only Ubuntu uses `.ddeb`.
 
 ## Post-build verification
 
 ```bash
 # DEB
 dpkg-deb -c debbuild/*.deb | grep -E 'systemd|sysusers|tmpfiles'
-lintian -I debbuild/*.deb
 
 # RPM
 rpm -qlp rpmbuild/RPMS/x86_64/*.rpm
+
+# Optional, and not in the packaging image: apt-get install -y lintian
+lintian -I debbuild/*.deb
 ```
 
 ## Reproducibility
