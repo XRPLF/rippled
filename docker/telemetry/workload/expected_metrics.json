@@ -55,20 +55,20 @@
       "total_messages_out"
     ]
   },
-  "phase9_nodestore": {
-    "description": "Phase 9 NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
+  "nodestore_io": {
+    "description": "NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
     "metrics": ["nodestore_state"]
   },
-  "phase9_cache": {
-    "description": "Phase 9 cache hit rate observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+  "cache_hit_rates": {
+    "description": "Cache hit rate observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
     "metrics": ["cache_metrics"]
   },
-  "phase9_txq": {
-    "description": "Phase 9 transaction queue observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+  "transaction_queue": {
+    "description": "Transaction queue observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
     "metrics": ["txq_metrics"]
   },
-  "phase9_rpc_method": {
-    "description": "Phase 9 per-RPC-method counters and duration histogram (MetricsRegistry.cpp:351-357). rpc_method_errored_total is deliberately absent — see not_asserted below. rpc_method_us is a Histogram, so the Prometheus exporter emits only the _bucket/_count/_sum triple and there is no bare rpc_method_us series to match — same convention as span_duration_milliseconds in the spanmetrics group above.",
+  "rpc_method_detail": {
+    "description": "Per-RPC-method counters and duration histogram (MetricsRegistry.cpp:351-357). rpc_method_errored_total is deliberately absent — see not_asserted below. rpc_method_us is a Histogram, so the Prometheus exporter emits only the _bucket/_count/_sum triple and there is no bare rpc_method_us series to match — same convention as span_duration_milliseconds in the spanmetrics group above.",
     "metrics": [
       "rpc_method_started_total",
       "rpc_method_finished_total",
@@ -77,8 +77,8 @@
       "rpc_method_us_sum"
     ]
   },
-  "phase9_job_queue": {
-    "description": "Phase 9 job-queue counters and latency histograms (MetricsRegistry.cpp:360-366). Every xrpld job passes through these, so they populate under any workload. Both histograms are recorded in the same function bodies as job_started_total / job_finished_total, under the same guard and with the same labels, so their presence is equally guaranteed. They are named with the _bucket/_count/_sum suffixes the Prometheus exporter emits: regression-metrics.json and the job-queue dashboard both query job_queued_us_bucket / job_running_us_bucket, and no bare series exists.",
+  "job_queue": {
+    "description": "Job-queue counters and latency histograms (MetricsRegistry.cpp:360-366). Every xrpld job passes through these, so they populate under any workload. Both histograms are recorded in the same function bodies as job_started_total / job_finished_total, under the same guard and with the same labels, so their presence is equally guaranteed. They are named with the _bucket/_count/_sum suffixes the Prometheus exporter emits: regression-metrics.json and the job-queue dashboard both query job_queued_us_bucket / job_running_us_bucket, and no bare series exists.",
     "metrics": [
       "job_queued_total",
       "job_started_total",
@@ -95,12 +95,12 @@
     "description": "In-flight RPC gauge via the XRPL_METRIC_UPDOWN_ADD call-site macro (PerfLogImp.cpp, +1 rpcStart / -1 rpcEnd). UpDownCounter: no _total suffix.",
     "metrics": ["rpc_in_flight_requests"]
   },
-  "phase9_objects": {
-    "description": "Phase 9 counted object instances observable gauge (MetricsRegistry via OTLP).",
+  "object_counts": {
+    "description": "Counted object instances observable gauge (MetricsRegistry via OTLP).",
     "metrics": ["object_count"]
   },
-  "phase9_load": {
-    "description": "Phase 9 fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
+  "load_factors": {
+    "description": "Fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
     "metrics": ["load_factor_metrics"]
   },
   "parity_validation_agreement": {
@@ -125,7 +125,7 @@
     ]
   },
   "parity_ledger_economy": {
-    "description": "External dashboard parity: ledger economy metrics (MetricsRegistry).",
+    "description": "External dashboard parity: ledger economy metrics (MetricsRegistry.cpp:1401). transaction_rate is observed on every export, in both branches of the ledger-age test (MetricsRegistry.cpp:1444-1451). base_fee_xrp is observed only inside the 'if (ledger)' guard on getValidatedLedger() (MetricsRegistry.cpp:1418-1423), and that returns validLedger_ (LedgerMaster.cpp:1569-1572), which stays null until a ledger validates — the same precondition complete_ledgers has. Both are asserted because run-full-validation.sh waits for a validated ledger before running the workload. base_fee_xrp absent while transaction_rate is present is the signature of a cluster that never validated, not of a missing metric.",
     "metrics": [
       "ledger_economy{metric=\"base_fee_xrp\"}",
       "ledger_economy{metric=\"transaction_rate\"}"
@@ -149,7 +149,7 @@
     "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
   },
   "node_health_gauges": {
-    "description": "Node-health observable gauges (MetricsRegistry.cpp:997, :1081, :1102, :1161). All four are registered with callbacks that fire on every periodic export and Observe unconditionally (build_info observes a literal 1; server_info and db_metrics read live services; complete_ledgers observes the parsed ledger range, which is non-empty once the cluster has closed a ledger), so their series exist regardless of workload shape.",
+    "description": "Node-health observable gauges (MetricsRegistry.cpp:997, :1081, :1102, :1161). server_info, build_info and db_metrics Observe unconditionally on every periodic export (build_info observes a literal 1; server_info and db_metrics read live services), so their series exist regardless of workload shape. complete_ledgers is the exception and is asserted on a narrower guarantee: its callback returns without observing when the range is empty (MetricsRegistry.cpp:1113-1114) and skips any segment that carries no '-' (:1122-1127), and a one-sequence range renders with no '-' (RangeSet.h:70-71), so it needs a complete range spanning at least two sequences. completeLedgers_ is filled by setFullLedger (LedgerMaster.cpp:862-863), which on a peered node is reached only from the publish path in doAdvance (LedgerMaster.cpp:1972) — closing a ledger is not enough, it has to validate. run-full-validation.sh waits for that before the workload starts, so on a healthy cluster the series always exists — a 5-node run yields 10 series, one start and one end per node. If this check ever fails, read the Step 3 output first: a run that logged 'No validated ledger' cannot produce this series and the cluster, not the exporter, is what broke.",
     "metrics": ["server_info", "build_info", "complete_ledgers", "db_metrics"]
   },
   "overlay_reduce_relay": {
@@ -169,7 +169,7 @@
     "metrics_excluded": {
       "rpc_method_errored_total": "MetricsRegistry.cpp:354, push counter — needs an RPC that returns an error. rpc_load_generator.py issues only well-formed server_info / fee / ledger / ripple_path_find calls, so no series may ever be created.",
       "ledger_history_mismatch_total": "MetricsRegistry.cpp:377, incremented only from LedgerHistory.cpp:332 on a built-vs-validated ledger mismatch. On a healthy run it never fires — asserting it would mean asserting a defect.",
-      "txq_expired_total": "MetricsRegistry.cpp:379, incremented only at TxQ.cpp:1428 when a queued tx expires past its LastLedgerSequence. Requires sustained fee escalation plus expiry; the CI job drives rpc_load_generator/tx_submitter directly with --rpc-rate/--tx-tps and never runs the workload-profiles.json txq-burst phase, so this is not reachable in CI.",
+      "txq_expired_total": "MetricsRegistry.cpp:379, incremented only at TxQ.cpp:1428 when a queued tx expires past its LastLedgerSequence. CI does run a txq-burst phase (workload-profiles.json:41, 30 s of single-type Payment at 60 TPS), but that does not guarantee sustained fee escalation followed by expiry: a run in which every other check passed still exposed only txq_metrics and no txq_expired_total.",
       "txq_dropped_total": "MetricsRegistry.cpp:381, incremented only at TxQ.cpp:1302 / :1347 on queue-full admission refusal. Same reason as txq_expired_total.",
       "getobject_rejected_total": "GetObjectMetricNames.h:81, emitted from PeerImp.cpp:2725/:2743 only for a TMGetObjectByHash message refused as oversize or malformed_ledgerhash. A cooperating cluster never sends one.",
       "getobject_request_objects": "GetObjectMetricNames.h:86, emitted from PeerImp.cpp:2926 only while serving an inbound TMGetObjectByHash. The XRPL_METRIC_* macros create their instrument lazily on first use (MetricMacros.h:174-285), so no series exists until a peer actually requests objects by hash — which a 5-node cluster started at genesis and already in sync may never do.",

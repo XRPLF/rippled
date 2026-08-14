@@ -12,6 +12,8 @@ Operating modes (chosen automatically based on the baseline file contents):
 2. **Populated baseline** — per-metric percentage AND absolute deltas are
    computed against thresholds from ``regression-thresholds.json``. A
    regression occurs when BOTH bounds are breached for the same quantile.
+   The one exception is a non-positive baseline, where the percentage is
+   undefined: there the absolute bound decides alone.
    Prints a human-readable table and writes a full JSON report.
    Exits 1 if any regression was detected, else 0.
 
@@ -53,8 +55,10 @@ class MetricDelta:
         unit:               Unit from baseline (preserved as-is).
         threshold_pct:      Resolved per-metric pct threshold.
         threshold_abs:      Resolved per-metric absolute threshold.
-        regressed:          True iff both bounds breached.
-        note:               Human-readable classification when not regressed.
+        regressed:          True iff both bounds breached, or — when the
+                            baseline is not positive and pct_change is
+                            therefore None — iff the absolute bound breached.
+        note:               Human-readable classification of the outcome.
     """
 
     key: str
@@ -175,6 +179,28 @@ def _skip_delta(
     )
 
 
+def _delta_note(regressed: bool, delta: float, pct_change: float | None) -> str:
+    """Classify one comparison outcome for the report and the table."""
+    if regressed:
+        note = "REGRESSION"
+    elif delta < 0:
+        note = "improved"
+    else:
+        note = "within bounds"
+    if pct_change is None:
+        note += " (absolute bound only; baseline not positive)"
+    return note
+
+
+# The regression rule, applied by compute_delta below.
+#
+# A regression normally requires BOTH bounds to be breached simultaneously.
+# That tolerates small-value noise: a 100% increase on a 0.5 ms metric (to
+# 1.0 ms) is not a regression under a 5 ms absolute bound.
+#
+# A non-positive baseline has no defined percentage change, so there the
+# absolute bound decides alone. Requiring both bounds in that case would make
+# the gate unreachable and let a 0 -> 500 ms jump pass as "within bounds".
 def compute_delta(
     key: str,
     baseline_entry: dict | None,
@@ -183,9 +209,8 @@ def compute_delta(
 ) -> MetricDelta:
     """Compute a MetricDelta for one metric key.
 
-    A regression requires BOTH bounds to be breached simultaneously. This
-    tolerates small-value noise: a 100% increase on a 0.5 ms metric
-    (to 1.0 ms) is not a regression under a 5 ms absolute bound.
+    Follows the regression rule set out in the comment above, including the
+    non-positive-baseline exception.
     """
     baseline = baseline_entry.get("value") if baseline_entry else None
     current = current_entry.get("value") if current_entry else None
@@ -224,16 +249,13 @@ def compute_delta(
             note="no threshold configured",
         )
 
-    pct_breach = pct_change is not None and pct_change > pct_threshold
     abs_breach = delta > abs_threshold
-    regressed = pct_breach and abs_breach
-
-    if regressed:
-        note = "REGRESSION"
-    elif delta < 0:
-        note = "improved"
+    if pct_change is None:
+        # Baseline is not positive, so there is no percentage to compare.
+        # The absolute bound is the only usable signal here.
+        regressed = abs_breach
     else:
-        note = "within bounds"
+        regressed = pct_change > pct_threshold and abs_breach
 
     return MetricDelta(
         key=key,
@@ -245,7 +267,7 @@ def compute_delta(
         threshold_pct=pct_threshold,
         threshold_abs=abs_threshold,
         regressed=regressed,
-        note=note,
+        note=_delta_note(regressed, delta, pct_change),
     )
 
 
@@ -265,7 +287,10 @@ def print_summary(deltas: list[MetricDelta]) -> None:
     print("=" * 72)
 
     if regressions:
-        print("\nRegressions (breached BOTH pct AND absolute bounds):")
+        print(
+            "\nRegressions (breached BOTH pct AND absolute bounds, or the "
+            "absolute bound alone where the baseline is not positive):"
+        )
         _print_table(regressions)
 
     if improvements:

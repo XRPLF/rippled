@@ -53,6 +53,28 @@ logger = logging.getLogger("workload_orchestrator")
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROFILES_FILE = SCRIPT_DIR / "workload-profiles.json"
 
+# Wall-clock allowance for a generator on top of its phase's configured
+# duration. It has to cover the work the generators do outside their timed
+# loop: tx_submitter.py creates and funds 8 accounts (~25 WebSocket round
+# trips) and then waits a fixed 10s for those funding transactions to
+# validate, and both generators drain in-flight requests while shutting down.
+# A generator that outruns this is killed and the phase records the timeout as
+# an error, so one wedged process can no longer stall the whole profile.
+SUBPROCESS_GRACE_SEC = 90.0
+
+# How long to keep reading a killed process's output before giving up on it.
+SUBPROCESS_DRAIN_TIMEOUT_SEC = 10.0
+
+# Read size for the pipe readers. Only bounds one read() call, not the total.
+PIPE_READ_CHUNK_BYTES = 65536
+
+# Error-rate ceilings for the exit gate. The TX ceiling is higher because
+# short-lived CI test environments lack pre-funded accounts, causing expected
+# failures for complex transactions (AMMCreate, EscrowFinish, etc.) that
+# require specific ledger state.
+RPC_ERROR_RATE_LIMIT_PCT = 50.0
+TX_ERROR_RATE_LIMIT_PCT = 95.0
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -146,15 +168,45 @@ def load_profile(profile_name: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-async def run_subprocess(cmd: list[str], label: str) -> tuple[int, str, str]:
-    """Run a subprocess and capture its stdout and stderr.
+async def _accumulate(stream: asyncio.StreamReader, chunks: list[bytes]) -> None:
+    """Read a subprocess pipe to EOF, appending as it goes.
+
+    Appending to a caller-owned list, rather than returning at EOF, means
+    everything read so far survives even if this task never reaches EOF.
 
     Args:
-        cmd:   Command and arguments.
-        label: Human-readable label for logging.
+        stream: Pipe to read.
+        chunks: List the caller reads once the process has exited.
+    """
+    while True:
+        chunk = await stream.read(PIPE_READ_CHUNK_BYTES)
+        if not chunk:
+            return
+        chunks.append(chunk)
+
+
+async def run_subprocess(
+    cmd: list[str], label: str, timeout: float
+) -> tuple[int, str, str]:
+    """Run a subprocess to completion, or kill it once ``timeout`` expires.
+
+    A generator that wedges used to block its phase — and so the rest of the
+    profile — until something outside the orchestrator killed the whole run,
+    destroying the report with it. Bounding the wait lets the orchestrator kill
+    the process, keep the output it had already produced, and report the phase
+    as failed.
+
+    Both pipes are drained by separate tasks for the process's whole life, so a
+    chatty generator can never fill a pipe buffer and stall waiting to write.
+
+    Args:
+        cmd:     Command and arguments.
+        label:   Human-readable label for logging.
+        timeout: Wall-clock limit in seconds.
 
     Returns:
-        Tuple of (return_code, stdout_text, stderr_text).
+        Tuple of (return_code, stdout_text, stderr_text). On timeout the return
+        code is non-zero and the timeout is appended to the stderr text.
     """
     logger.debug("Starting %s: %s", label, " ".join(cmd))
     proc = await asyncio.create_subprocess_exec(
@@ -162,15 +214,49 @@ async def run_subprocess(cmd: list[str], label: str) -> tuple[int, str, str]:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout, stderr = await proc.communicate()
-    if proc.returncode != 0:
+
+    out_chunks: list[bytes] = []
+    err_chunks: list[bytes] = []
+    readers = [
+        asyncio.create_task(_accumulate(proc.stdout, out_chunks)),
+        asyncio.create_task(_accumulate(proc.stderr, err_chunks)),
+    ]
+
+    timed_out = False
+    try:
+        # asyncio.wait_for raises the builtin TimeoutError on Python 3.11+.
+        await asyncio.wait_for(proc.wait(), timeout=timeout)
+    except TimeoutError:
+        timed_out = True
+        logger.error("%s exceeded its %.0fs budget — killing it", label, timeout)
+        proc.kill()
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=SUBPROCESS_DRAIN_TIMEOUT_SEC)
+        except TimeoutError:
+            logger.error("%s did not exit after being killed", label)
+
+    # The pipes reach EOF once the process is gone, which ends both readers.
+    _, pending = await asyncio.wait(readers, timeout=SUBPROCESS_DRAIN_TIMEOUT_SEC)
+    for task in pending:
+        logger.error("%s output pipe stayed open — captured output truncated", label)
+        task.cancel()
+
+    stderr_text = b"".join(err_chunks).decode(errors="replace")
+    if timed_out:
+        # Appended, not prepended: callers keep only the tail of stderr.
+        stderr_text += f"\ntimed out after {timeout:.0f}s and was killed"
+
+    # A process whose exit was never collected reports no code; call it SIGKILL
+    # so the status is still non-zero and the phase records an error.
+    returncode = proc.returncode if proc.returncode is not None else -9
+    if returncode != 0:
         logger.warning(
             "%s exited with code %d: %s",
             label,
-            proc.returncode,
-            stderr.decode().strip()[-500:],
+            returncode,
+            stderr_text.strip()[-500:],
         )
-    return proc.returncode, stdout.decode(), stderr.decode()
+    return returncode, b"".join(out_chunks).decode(errors="replace"), stderr_text
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +345,49 @@ def _build_tx_cmd(
     return cmd
 
 
+def _launch_phase_tasks(
+    phase: dict[str, Any],
+    endpoints: list[str],
+    report_dir: Path,
+    prefix: str,
+) -> list[tuple[str, Path, asyncio.Task]]:
+    """Start the generators this phase configures.
+
+    Each generator is given the phase duration plus SUBPROCESS_GRACE_SEC, so a
+    wedged one is killed instead of stalling the phase.
+
+    Args:
+        phase:      Phase dict from the profile.
+        endpoints:  List of WebSocket endpoint URLs.
+        report_dir: Directory for per-phase JSON reports.
+        prefix:     Report filename prefix for this phase.
+
+    Returns:
+        List of (label, report_path, task) for every generator started; empty
+        when the phase configures no workload.
+    """
+    name = phase["name"]
+    duration = phase["duration_sec"]
+    timeout = duration + SUBPROCESS_GRACE_SEC
+    tasks: list[tuple[str, Path, asyncio.Task]] = []
+
+    rpc_cfg = phase.get("rpc")
+    if rpc_cfg:
+        rpc_out = report_dir / f"{prefix}-rpc.json"
+        cmd = _build_rpc_cmd(endpoints, rpc_cfg, duration, rpc_out)
+        task = asyncio.create_task(run_subprocess(cmd, f"RPC [{name}]", timeout))
+        tasks.append(("rpc", rpc_out, task))
+
+    tx_cfg = phase.get("tx")
+    if tx_cfg:
+        tx_out = report_dir / f"{prefix}-tx.json"
+        cmd = _build_tx_cmd(endpoints[0], tx_cfg, duration, tx_out)
+        task = asyncio.create_task(run_subprocess(cmd, f"TX [{name}]", timeout))
+        tasks.append(("tx", tx_out, task))
+
+    return tasks
+
+
 async def run_phase(
     phase: dict[str, Any],
     endpoints: list[str],
@@ -292,24 +421,8 @@ async def run_phase(
         phase.get("description", ""),
     )
 
-    tasks: list[tuple[str, Path, asyncio.Task]] = []
     t0 = time.monotonic()
-
-    rpc_cfg = phase.get("rpc")
-    if rpc_cfg:
-        rpc_out = report_dir / f"{prefix}-rpc.json"
-        cmd = _build_rpc_cmd(endpoints, rpc_cfg, duration, rpc_out)
-        tasks.append(
-            ("rpc", rpc_out, asyncio.create_task(run_subprocess(cmd, f"RPC [{name}]")))
-        )
-
-    tx_cfg = phase.get("tx")
-    if tx_cfg:
-        tx_out = report_dir / f"{prefix}-tx.json"
-        cmd = _build_tx_cmd(endpoints[0], tx_cfg, duration, tx_out)
-        tasks.append(
-            ("tx", tx_out, asyncio.create_task(run_subprocess(cmd, f"TX [{name}]")))
-        )
+    tasks = _launch_phase_tasks(phase, endpoints, report_dir, prefix)
 
     if not tasks:
         logger.warning(
@@ -407,6 +520,58 @@ async def run_profile(
 
 
 # ---------------------------------------------------------------------------
+# Exit gate
+# ---------------------------------------------------------------------------
+
+
+def evaluate_exit_gate(report: dict[str, Any]) -> list[str]:
+    """Decide whether a finished run should fail, and say why.
+
+    Three independent conditions fail a run:
+      * a phase recorded an error — a generator exited non-zero, was killed on
+        timeout, or wrote a report that could not be parsed,
+      * the RPC error rate exceeded RPC_ERROR_RATE_LIMIT_PCT,
+      * the TX error rate exceeded TX_ERROR_RATE_LIMIT_PCT.
+
+    The phase errors have to be judged separately from the two rates. A
+    generator that crashes writes no report, so its totals stay 0, both rates
+    short-circuit to 0, and a rate-only gate passes a run in which no traffic
+    was generated at all.
+
+    Args:
+        report: Combined report produced by run_profile.
+
+    Returns:
+        One human-readable reason per failure; empty when the run passed.
+    """
+    reasons: list[str] = []
+
+    for phase in report.get("phases", []):
+        for error in phase.get("errors", []):
+            reasons.append(f"phase '{phase.get('name', '?')}': {error}")
+
+    totals = report.get("totals", {})
+    rpc_sent = totals.get("rpc_sent", 0)
+    tx_submitted = totals.get("tx_submitted", 0)
+    rpc_err_rate = totals.get("rpc_errors", 0) / rpc_sent * 100 if rpc_sent > 0 else 0.0
+    tx_err_rate = (
+        totals.get("tx_errors", 0) / tx_submitted * 100 if tx_submitted > 0 else 0.0
+    )
+
+    if rpc_err_rate > RPC_ERROR_RATE_LIMIT_PCT:
+        reasons.append(
+            f"RPC error rate {rpc_err_rate:.1f}% exceeds "
+            f"{RPC_ERROR_RATE_LIMIT_PCT}% of {rpc_sent} requests"
+        )
+    if tx_err_rate > TX_ERROR_RATE_LIMIT_PCT:
+        reasons.append(
+            f"TX error rate {tx_err_rate:.1f}% exceeds "
+            f"{TX_ERROR_RATE_LIMIT_PCT}% of {tx_submitted} submissions"
+        )
+    return reasons
+
+
+# ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
 
@@ -482,23 +647,12 @@ def main() -> None:
             json.dump(report, f, indent=2)
         logger.info("Combined report written to %s", args.report)
 
-    # Exit with error if either generator had high error rates.
-    totals = report["totals"]
-    rpc_err_rate = (
-        totals["rpc_errors"] / totals["rpc_sent"] * 100 if totals["rpc_sent"] > 0 else 0
-    )
-    tx_err_rate = (
-        totals["tx_errors"] / totals["tx_submitted"] * 100
-        if totals["tx_submitted"] > 0
-        else 0
-    )
-    # TX threshold is higher because short-lived CI test environments lack
-    # pre-funded accounts, causing expected failures for complex transactions
-    # (AMMCreate, EscrowFinish, etc.) that require specific ledger state.
-    if rpc_err_rate > 50 or tx_err_rate > 95:
-        logger.error(
-            "High error rates: RPC=%.1f%%, TX=%.1f%%", rpc_err_rate, tx_err_rate
-        )
+    # Fail on any phase error as well as on high error rates.
+    failures = evaluate_exit_gate(report)
+    if failures:
+        logger.error("Workload failed %d gate condition(s):", len(failures))
+        for reason in failures:
+            logger.error("  %s", reason)
         sys.exit(1)
 
 

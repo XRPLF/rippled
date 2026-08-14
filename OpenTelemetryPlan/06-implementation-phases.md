@@ -1023,11 +1023,11 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown
 ### Validation Check Inventory
 
 `validate_telemetry.py` derives its check count at run time from
-`expected_spans.json` (40 catalogued span types, 27 of them required, 67 unique
-required attributes) and `expected_metrics.json` (36 metric entries, 14 dashboard
-uids). No fixed total is asserted here, because any manifest edit changes it; the
-historical "71 checks" figure predates the Phase 7-9 metric families. The
-categories are:
+`expected_spans.json` (span types and their required attributes) and
+`expected_metrics.json` (metric names and dashboard uids). Per the inventory note
+above, no counts are quoted here — those two manifests are the only authority and
+any edit to them changes the total. The historical "71 checks" figure predates the
+later metric families. The categories are:
 
 - **Service registration** — `xrpld` exists in Tempo
 - **Span existence** — every required entry in `expected_spans.json`. Note that

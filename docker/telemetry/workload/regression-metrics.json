@@ -1,13 +1,13 @@
 {
   "_description": "Metric surface for the OTel-driven regression gate. Each entry names a metric, the quantiles to capture, and how to query Prometheus. The comparator compares current run against baseline-timings.json under these exact keys.",
   "_key_format": "{category}.{name}.p{quantile}  (e.g. span.tx.process.p99, job.transaction.queued.p95). Only the categories defined below are captured; there is no rpc_methods group, so no rpc.* key is produced or gated (FU-4).",
+  "_excluded_spans": "rpc.process is deliberately absent from spans.names. It is created only in ServerHandler::processRequest() on the HTTP/JSON-RPC path, which the workload load generators, being WebSocket-only, never reach, so its quantiles were captured as null every run and could never gate. (The harness shell scripts do issue a few HTTP JSON-RPC health polls, far too few to produce a meaningful quantile.) See baselines/README.md.",
   "spans": {
     "_query_template": "histogram_quantile({quantile}, sum by (le) (rate(span_duration_milliseconds_bucket{span_name=\"{name}\"}[{window}])))",
     "_unit": "ms",
     "_quantiles": [0.5, 0.95, 0.99],
     "names": [
       "rpc.ws_message",
-      "rpc.process",
       "tx.process",
       "tx.apply",
       "ledger.build",

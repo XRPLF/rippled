@@ -89,5 +89,3 @@ target/
 
 # clangd cache
 /.cache
-docker/telemetry/workload/__pycache__/
-.claude/

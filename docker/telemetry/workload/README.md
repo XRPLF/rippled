@@ -56,6 +56,7 @@ run-full-validation.sh (shell orchestrator)
   |     -> validation-report.json
   |
   |-- benchmark.sh (baseline vs telemetry comparison)
+        |-- collect_system_metrics.sh (per-leg CPU/RSS/latency/TPS sampling)
         -> benchmark-report-*.md
 ```
 
@@ -132,7 +133,7 @@ Orchestrates the complete validation pipeline. Starts the telemetry stack, start
 # Stress test with benchmarks
 ./run-full-validation.sh --xrpld /path/to/xrpld --profile stress --with-benchmark
 
-# Skip Loki checks (if Phase 8 not deployed)
+# Skip Loki checks (if log export is not deployed)
 ./run-full-validation.sh --xrpld /path/to/xrpld --skip-loki
 ```
 
@@ -213,7 +214,7 @@ python3 tx_submitter.py --endpoint ws://localhost:6006 \
 Automated validation that all expected telemetry data exists. Every metric in `expected_metrics.json` is required — if it doesn't fire, the validation fails. Spans are required unless the entry carries `"optional": true`.
 
 - **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
-- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, Phase 9 OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
+- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
 - **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki)
 - **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
 
@@ -285,6 +286,65 @@ Thresholds (configurable via environment):
 | RPC p99 latency   | < 2ms     | BENCH_RPC_LATENCY_IMPACT_MS |
 | Throughput impact | < 5%      | BENCH_TPS_IMPACT_PCT        |
 | Consensus impact  | < 1%      | BENCH_CONSENSUS_IMPACT_PCT  |
+
+Each report row is `PASS`, `FAIL`, or `INCONCLUSIVE`. The throughput and
+consensus rows are ratios of the baseline, so they have nothing to report when
+the baseline run measured zero — that row becomes `INCONCLUSIVE` and **counts
+as a failure**, because an undefined result must never read as a pass.
+
+Exit codes:
+
+| Code | Meaning                                                                                                                     |
+| ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Every metric was measured and is within its threshold                                                                       |
+| 1    | Every metric was measured and at least one exceeded its threshold                                                           |
+| 2    | The overhead could not be measured — missing prerequisite, cluster never reached consensus, or incomplete metric collection |
+
+`run-full-validation.sh` keeps the last two apart: 1 folds into its own
+"checks failed" exit, 2 into its "infrastructure error" exit. A run that
+measured nothing is therefore never reported as a performance regression.
+
+### collect_system_metrics.sh
+
+Samples CPU, peak RSS, RPC p99 latency, TPS and the mean inter-ledger interval
+from the running nodes, and writes them as JSON. `benchmark.sh` calls it once
+per leg; it is rarely run by hand.
+
+```bash
+./collect_system_metrics.sh 5020,5021,5022 300 /tmp/metrics.json
+```
+
+Processes are selected by matching `argv[0]`'s basename against `xrpld` or
+`rippled`. A wrapper that merely names the binary in its arguments, and
+unrelated tools whose command line happens to contain the string, are not
+sampled — including them diluted the CPU average and attributed a foreign
+process's RSS to the node. `ps -C xrpld` is not usable for this: xrpld renames
+itself, so its `comm` is `xrpld-main`.
+
+Selection covers the whole host, so a second xrpld from another checkout is
+sampled as well. Benchmark on a machine running one cluster only.
+
+The output carries a `metrics_complete` flag. It is `false` when any
+measurement source came back empty — no matching process, no successful RPC
+probe, or a ledger sequence that never advanced — and the affected metrics are
+then `0` placeholders. Since `0` clears every threshold, a `false` flag must be
+read as inconclusive, never as a pass.
+
+Exit codes:
+
+| Code | Meaning                                                                                                   |
+| ---- | --------------------------------------------------------------------------------------------------------- |
+| 0    | Every metric was measured; `metrics_complete` is `true`                                                   |
+| 1    | Cannot run: bad arguments, no GNU `date` with `%N`, or a failed process sample. No output file is written |
+| 3    | The output file was written, but `metrics_complete` is `false`                                            |
+
+`benchmark.sh` treats either non-zero code — and an explicit
+`"metrics_complete": false` in an otherwise successful run — as fatal, and
+exits 2 rather than comparing an incomplete run.
+
+A nanosecond clock is required. RPC latency is graded against a 2 ms
+threshold, and GNU `date +%s%N` is the only source cheap enough that the clock
+does not dominate what it measures, so the script refuses to start without it.
 
 ## Reading Validation Reports
 

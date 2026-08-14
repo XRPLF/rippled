@@ -828,7 +828,9 @@ for how the tier attributes are set and reach metrics.
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder
 3. All 15 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
-   (the Phase-10 harness asserts 14 of them — `log-derived-insights` is unasserted)
+   (the workload harness checks that all 15 provision and load; 14 of them also have
+   metric-data assertions — `log-derived-insights` is Loki-backed, so only its
+   provisioning is checked)
 
 ---
 
@@ -1175,17 +1177,18 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 | Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                 | `expected_metrics.json` |
 | Per-job-type gauges            | 105 (35 types × 3)  | Prometheus `__name__` query      | `expected_metrics.json` |
 | SpanMetrics RED                | 4 per span          | Prometheus query                 | `expected_metrics.json` |
-| Grafana dashboards             | 14 of 15 on disk    | Dashboard API "no data" check    | `expected_metrics.json` |
+| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count | `expected_metrics.json` |
 | Log-trace links                | Present             | Loki query + Tempo reverse check | —                       |
 
-> **These are the harness's numbers, not the code's, and three of them differ.**
+> **These are the harness's numbers, not the code's, and two of them differ.**
 > `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
 > the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
 > `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
 > manifest's own `total_unique_attributes: 58` field is stale).
-> `expected_metrics.json` asserts 36 metric entries and 14 dashboard uids against
-> the **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
-> `log-derived-insights` is the unasserted one. The 35 native instruments match
+> `expected_metrics.json` lists all **15** dashboard uids in
+> `docker/telemetry/grafana/dashboards/`, so dashboard coverage does not differ;
+> `log-derived-insights` is listed for the provisioning check only, and its panel
+> data is asserted nowhere. The 35 native instruments match
 > the tables in
 > [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry)
 > and the Phase 7+ section exactly, counting each labeled gauge family
