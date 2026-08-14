@@ -166,8 +166,17 @@ rather than transactional. Recovery is a re-run: the package artifacts are
 uploaded before the publish step, and both the apt POST and the yum PUT replace
 an existing asset.
 
-Since the version comes from the binary rather than the commit, every `develop`
-build publishes the same version and replaces the previous one.
+The `develop` version comes from the binary rather than the commit, so it is the
+same `3.4.0-b0` on every nightly. `on-trigger.yml` therefore passes
+`pkg_release: ${{ github.run_number }}`, making each nightly `3.4.0~b0-<run>`;
+without that they would all be `3.4.0~b0-1` and `apt upgrade` would see nothing to
+do. The run number is also how you map a published nightly back to the workflow
+run, and so to a commit.
+
+That means the `develop` repositories accumulate one package per nightly rather
+than overwriting a single one, so they need a Nexus cleanup policy (both formats
+accept one) to stay bounded. The tagged channels do not: their versions come from
+the tag, so a given release publishes once.
 
 To publish by hand, for example after a repackage:
 
