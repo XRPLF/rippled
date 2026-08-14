@@ -20,6 +20,7 @@ on:
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/reusable-build-test-config.yml"
       - ".github/workflows/reusable-build-test.yml"
+      - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
       - ".github/workflows/reusable-package.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
@@ -67,6 +68,9 @@ defaults:
     shell: bash
 
 jobs:
+  check-autogen:
+    uses: ./.github/workflows/reusable-check-autogen.yml
+
   clang-tidy:
     uses: ./.github/workflows/reusable-clang-tidy.yml
     permissions:

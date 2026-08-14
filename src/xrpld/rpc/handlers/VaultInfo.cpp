@@ -8,6 +8,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -48,7 +49,8 @@ parseVault(json::Value const& params, json::Value& jvResult)
             return std::nullopt;
         }
 
-        uNodeIndex = keylet::vault(*id, params[jss::seq].asUInt()).key;
+        auto const seq = SeqProxy::rawSequence(params[jss::seq].asUInt());
+        uNodeIndex = keylet::vault(*id, seq).key;
     }
     else
     {

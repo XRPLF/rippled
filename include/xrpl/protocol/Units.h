@@ -258,13 +258,6 @@ public:
         return value_ == other;
     }
 
-    template <Compatible<ValueUnit> Other>
-    constexpr bool
-    operator!=(ValueUnit<unit_type, Other> const& other) const
-    {
-        return !operator==(other);
-    }
-
     constexpr bool
     operator<(ValueUnit const& other) const
     {
