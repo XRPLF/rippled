@@ -48,6 +48,37 @@
 #include <vector>
 
 namespace xrpl {
+namespace {
+
+/**
+ * Stamp ledger_hash / ledger_index that describe the same closed ledger.
+ *
+ * OpenView copies the parent header and only bumps seq, so header.hash is the
+ * previous ledger. Pairing that hash with seq+1 is a mismatched identity.
+ * When the reference view is open, report the parent closed ledger instead.
+ */
+void
+setClosedLedgerIdentity(json::Value& dest, std::shared_ptr<ReadView const> const& view)
+{
+    if (!view)
+        return;
+
+    if (!view->open())
+    {
+        dest[jss::ledger_hash] = to_string(view->header().hash);
+        dest[jss::ledger_index] = view->seq();
+        return;
+    }
+
+    auto const& header = view->header();
+    if (header.seq > 0 && header.parentHash != beast::kZero)
+    {
+        dest[jss::ledger_hash] = to_string(header.parentHash);
+        dest[jss::ledger_index] = header.seq - 1;
+    }
+}
+
+}  // namespace
 
 PathRequest::PathRequest(
     Application& app,
@@ -309,8 +340,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
         jvStatus_[jss::destination_tag] = (sleDest->getFlags() & lsfRequireDestTag);
     }
 
-    jvStatus_[jss::ledger_hash] = to_string(lrLedger->header().hash);
-    jvStatus_[jss::ledger_index] = lrLedger->seq();
+    setClosedLedgerIdentity(jvStatus_, lrLedger);
     return true;
 }
 
@@ -1090,17 +1120,12 @@ PathRequest::doUpdate(
     // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
     auto const ledgerForSeq = calcLedger ? calcLedger : cache->getLedger();
     auto const ledgerSeq = ledgerForSeq->seq();
-    // Identity must come from a closed view. An OpenView copies the parent
-    // header and only bumps seq, so header.hash is the previous ledger —
-    // pairing it with seq+1 is a mismatched (hash, index). Mid-close still
-    // prices against calcLedger; report the cache / closed ledger instead.
+    // Identity must describe a closed ledger. Prefer a closed calc/cache view;
+    // if the shared cache is itself an OpenView (create-wake before the first
+    // closed wave), fall back to the parent hash / seq-1 pair.
     auto const identityLedger =
         (ledgerForSeq && !ledgerForSeq->open()) ? ledgerForSeq : cache->getLedger();
-    if (identityLedger && !identityLedger->open())
-    {
-        newStatus[jss::ledger_hash] = to_string(identityLedger->header().hash);
-        newStatus[jss::ledger_index] = identityLedger->seq();
-    }
+    setClosedLedgerIdentity(newStatus, identityLedger);
 
     // Full Pathfinder when: first/fast update, failed-search backoff elapsed, or
     // staggered rediscovery is due. Timed rediscovery is skipped while the

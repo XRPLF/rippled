@@ -1114,6 +1114,65 @@ class PathFindSub_test : public beast::unit_test::Suite
         BEAST_EXPECT(gc["pathfind_cache_lines"].asDouble() == 0);
     }
 
+    /**
+     * updatePaths create-wake calls updateAll(open, midClose=false) when a
+     * brand-new subscription arrives and no new validated ledger exists.
+     * That must not advance the shared cache onto an OpenView, and the
+     * streamed update must still carry a matching closed ledger identity.
+     */
+    void
+    testCreateWakeOnOpenReportsClosedIdentity()
+    {
+        testcase("create-wake: open updateAll reports closed ledger identity");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv();
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        setupUsdCorridor(env, gw, alice, bob);
+
+        auto wsc = makeWSClient(env.app().config());
+        auto jr =
+            wsc->invoke("path_find", pfCreate(alice, bob, bob["USD"](10), "USD"))[jss::result];
+        BEAST_EXPECT(!jr.isMember(jss::error));
+        drainPathFind(*wsc);
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const closed = env.closed();
+        auto const open = env.current();
+        BEAST_EXPECT(open->open());
+        BEAST_EXPECT(closed->seq() + 1 == open->seq());
+
+        // Same arguments as LedgerMaster::updatePaths create-wake.
+        BEAST_EXPECT(runUpdateAll(env, open, /*midClose=*/false));
+        auto upd = waitPathFindUpdate(*wsc, 5s, /*requireAlts=*/false);
+        BEAST_EXPECT(upd);
+        if (upd)
+        {
+            BEAST_EXPECT(upd->isMember(jss::ledger_hash));
+            BEAST_EXPECT(upd->isMember(jss::ledger_index));
+            if (upd->isMember(jss::ledger_hash) && upd->isMember(jss::ledger_index))
+            {
+                auto const hash = (*upd)[jss::ledger_hash].asString();
+                auto const idx = (*upd)[jss::ledger_index].asUInt();
+                BEAST_EXPECT(hash == to_string(closed->header().hash));
+                BEAST_EXPECT(idx == closed->seq());
+                BEAST_EXPECT(!(idx == open->seq() && hash == to_string(open->header().hash)));
+            }
+        }
+
+        // Cache must stay on the closed view even if a caller asks to
+        // advance authoritatively with the open ledger.
+        auto cache = prm.getAssetCache(open, /*authoritative=*/true);
+        BEAST_EXPECT(!cache->getLedger()->open());
+        BEAST_EXPECT(cache->getLedger()->seq() == closed->seq());
+
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wsc->invoke("path_find", closeReq);
+    }
+
 public:
     void
     run() override
@@ -1131,6 +1190,7 @@ public:
         testCreateRebuildsStaleSharedCache();
         testMidCloseDoesNotForceClearOpenCache();
         testCloseDuringUpdateReclaimsPins();
+        testCreateWakeOnOpenReportsClosedIdentity();
     }
 };
 

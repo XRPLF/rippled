@@ -140,10 +140,21 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 
     if (!assetCache_)
     {
-        JLOG(journal_.debug()) << "getAssetCache creating new cache for " << lgrSeq;
+        // Never construct the shared cache on an OpenView. Open headers copy
+        // the parent hash and only bump seq, so doUpdate would omit (or
+        // mismatch) ledger_hash / ledger_index. Create-wake updatePaths
+        // passes the open ledger when no new validated ledger exists.
+        auto view = ledger;
+        if (view && view->open())
+        {
+            if (auto closed = app_.getLedgerMaster().getClosedLedger())
+                view = std::move(closed);
+        }
+        JLOG(journal_.debug()) << "getAssetCache creating new cache for " << view->seq()
+                               << (view->open() ? " (open fallback)" : "");
         auto const& cfg = app_.config();
         assetCache_ = std::make_shared<AssetCache>(
-            ledger,
+            view,
             app_.getJournal("AssetCache"),
             cfg.pathFindMaxTotalLines,
             cfg.pathFindMaxLinesPerAccount,
@@ -170,9 +181,10 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
     }
 
     // Large jump forward rebuilds for any *closed* caller, including creates
-    // (authoritative=false). Mid-close passes the open ledger and must not
-    // force-clear hubs onto an OpenView: that wipes every session's pins and
-    // leaves cache->getLedger() open so doUpdate omits ledger identity.
+    // (authoritative=false). Open callers (mid-close and create-wake) must
+    // not force-clear hubs onto an OpenView: that wipes every session's pins
+    // and leaves cache->getLedger() open so streamed updates lose a matching
+    // ledger_hash / ledger_index pair.
     // largeJumpBack stays authoritative-only (historical getLineCache).
     bool const largeJumpForward = lgrSeq > (lineSeq + 8) && !ledger->open();
     bool const largeJumpBack = (lgrSeq + 8) < lineSeq;
@@ -194,6 +206,10 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 
     if (lgrSeq > lineSeq)
     {
+        // Create-wake used to pass authoritative=true with the open ledger
+        // and point the shared cache at an OpenView. Never do that.
+        if (ledger->open())
+            return assetCache_;
         assetCache_->advanceLedger(ledger, /*forceClear=*/false);
         return assetCache_;
     }
@@ -579,10 +595,11 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
     {
         std::scoped_lock const sl(lock_);
         requests = requests_;
-        // Closed / create: authoritative advance. Mid-close: do not advance the
-        // shared cache ledger_ to open (avoids races with closed waves); calc
-        // ledger is passed separately into doUpdate for PaymentSandbox.
-        bool const authoritative = !(midClose && inLedger->open());
+        // Closed waves: authoritative advance. Open inLedger (mid-close tick
+        // or create-wake from updatePaths) must not move the shared cache
+        // onto an OpenView — that dropped ledger identity from updates.
+        // Mid-close still prices against the open view via calcLedger.
+        bool const authoritative = !inLedger->open();
         cache = getAssetCache(inLedger, authoritative);
     }
 
