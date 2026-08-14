@@ -30,6 +30,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -671,6 +672,61 @@ public:
     }
 
     void
+    testRWDBImplicitDeleteMatchesHistory()
+    {
+        testcase("RWDB implicit online_delete matches ledger_history");
+        using namespace jtx;
+
+        constexpr std::uint32_t kHistory = 4;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = rwdb(std::move(cfg));
+            cfg->ledgerHistory = kHistory;
+            return cfg;
+        }));
+
+        auto& store = env.app().getSHAMapStore();
+        BEAST_EXPECT(store.isNullBackend());
+        // Must not raise to the standalone disk minimum of 8.
+        BEAST_EXPECT(store.clampFetchDepth(1000) == kHistory);
+
+        auto ledgerSeq = waitForReady(env);
+        auto const initialRotated = store.getLastRotated();
+        BEAST_EXPECT(initialRotated > 0);
+
+        for (; ledgerSeq < initialRotated + kHistory + 1; ++ledgerSeq)
+            env.close();
+        store.rendezvous();
+
+        BEAST_EXPECT(store.getLastRotated() > initialRotated);
+        auto const minLedger = env.app().getRelationalDatabase().getMinLedgerSeq();
+        BEAST_EXPECT(minLedger);
+        if (minLedger)
+            BEAST_EXPECT(*minLedger >= initialRotated);
+    }
+
+    void
+    testRWDBRejectsMismatchedOnlineDelete()
+    {
+        testcase("RWDB rejects online_delete that exceeds ledger_history");
+        using namespace jtx;
+
+        try
+        {
+            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+                cfg = rwdb(std::move(cfg));
+                cfg->ledgerHistory = 32;
+                cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, "256");
+                return cfg;
+            }));
+            fail("RWDB must reject online_delete > ledger_history");
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(std::string(e.what()).find("ledger_history") != std::string::npos);
+        }
+    }
+
+    void
     testCanDeleteRWDB()
     {
         testcase("rwdb advisory_delete can_delete controls");
@@ -722,6 +778,8 @@ public:
         testRotate();
         testAutomaticRWDB();
         testStandaloneRWDBZeroHistory();
+        testRWDBImplicitDeleteMatchesHistory();
+        testRWDBRejectsMismatchedOnlineDelete();
         testCanDeleteRWDB();
     }
 };

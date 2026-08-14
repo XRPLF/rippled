@@ -161,15 +161,11 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
     }
 
-    // For RWDB, default online_delete to ledger_history only if user did not
-    // explicitly set online_delete.  Clamp to the minimum so an implicit
-    // value never triggers the "online_delete must be at least ..." throw.
+    // For RWDB, default online_delete to ledger_history. Do not raise it
+    // to the disk-backend minimum: only ledger_history SHAMaps are pinned,
+    // so a larger purge window would advertise ledgers that cannot be served.
     if (isNullBackend_ && deleteInterval_ == 0)
-    {
-        auto const minInterval =
-            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
-        deleteInterval_ = std::max(config.ledgerHistory, minInterval);
-    }
+        deleteInterval_ = config.ledgerHistory;
 
     if (deleteInterval_ != 0u)
     {
@@ -189,20 +185,32 @@ SHAMapStoreImp::SHAMapStoreImp(
 
         getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
-        auto const minInterval =
-            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
-        if (deleteInterval_ < minInterval)
+        if (isNullBackend_)
         {
-            Throw<std::runtime_error>(
-                "online_delete must be at least " + std::to_string(minInterval));
+            if (deleteInterval_ != config.ledgerHistory)
+            {
+                Throw<std::runtime_error>(
+                    "RWDB online_delete must equal ledger_history (currently " +
+                    std::to_string(config.ledgerHistory) + ")");
+            }
         }
-
-        if (config.ledgerHistory > deleteInterval_)
+        else
         {
-            Throw<std::runtime_error>(
-                "online_delete must not be less than ledger_history "
-                "(currently " +
-                std::to_string(config.ledgerHistory) + ")");
+            auto const minInterval =
+                config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
+            if (deleteInterval_ < minInterval)
+            {
+                Throw<std::runtime_error>(
+                    "online_delete must be at least " + std::to_string(minInterval));
+            }
+
+            if (config.ledgerHistory > deleteInterval_)
+            {
+                Throw<std::runtime_error>(
+                    "online_delete must not be less than ledger_history "
+                    "(currently " +
+                    std::to_string(config.ledgerHistory) + ")");
+            }
         }
 
         stateDb_.init(config, dbName_);
