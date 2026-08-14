@@ -50,6 +50,9 @@ env:
   COMPILER: clang
   OUT_DIR: bin/interaction_review/out
   ARTIFACT_DIR: /tmp/interaction-review
+  # Highest-ranked rows only. Each judgement is a long, thinking-heavy request,
+  # and the cap is what bounds the cost of a run.
+  JUDGE_MAX_ITEMS: 6
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
@@ -143,6 +146,11 @@ jobs:
     container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
     permissions:
       contents: read
+      # Only to mint the OIDC token the Bedrock role is assumed with. GitHub
+      # does not grant this to a `pull_request` run from a fork, so the judging
+      # steps below fail closed there and the comment falls back to the static
+      # report -- which is the intended behaviour, not a gap to work around.
+      id-token: write
     steps:
       - name: Checkout the PR head
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -253,6 +261,44 @@ jobs:
         run: |
           .venv/bin/python select_interactions.py
 
+      # Everything from here to the render step is the optional second opinion:
+      # a model reads the top-ranked interactions and returns a verdict per row.
+      # It is skipped entirely unless the repository defines the two variables,
+      # and any failure inside it leaves the static report to be rendered alone.
+      #
+      # The role behind INTERACTION_REVIEW_AWS_ROLE must be scoped to the judging
+      # model and nothing else. This job has already configured and built
+      # PR-authored code by the time the credentials exist, so it should be
+      # assumed that anything the role can do, a pull request can do. The client
+      # signs SigV4 as `bedrock-mantle`, not `bedrock` -- see the README.
+      - name: Assume the Bedrock role
+        id: aws
+        if: ${{ vars.INTERACTION_REVIEW_AWS_ROLE != '' }}
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ vars.INTERACTION_REVIEW_AWS_ROLE }}
+          aws-region: ${{ vars.INTERACTION_REVIEW_AWS_REGION }}
+          role-session-name: interaction-review-${{ github.run_id }}
+
+      - name: Judge the selected interactions
+        id: judge
+        if: ${{ steps.aws.outcome == 'success' }}
+        continue-on-error: true
+        working-directory: bin/interaction_review
+        env:
+          AWS_REGION: ${{ vars.INTERACTION_REVIEW_AWS_REGION }}
+        run: |
+          # Installed here rather than alongside the extractor's dependencies:
+          # the graph build must not be able to fail on a cloud SDK it does not
+          # use. See requirements-judge.in.
+          .venv/bin/pip install --quiet -r requirements-judge.txt
+          .venv/bin/python judge_interactions.py \
+              --max-items "${JUDGE_MAX_ITEMS}" \
+              ${{ vars.INTERACTION_REVIEW_MODEL && format('--model {0}', vars.INTERACTION_REVIEW_MODEL) || '' }}
+
+      # Picks up out/judged.json when the step above wrote one, and falls back
+      # to out/selected.json when it did not.
       - name: Render the comment
         working-directory: bin/interaction_review
         run: |
@@ -268,6 +314,10 @@ jobs:
           echo "${PR_NUMBER}" >"${ARTIFACT_DIR}/pr-number.txt"
           cp "${OUT_DIR}/graph.json" "${OUT_DIR}/interactions.json" \
               "${OUT_DIR}/touched.json" "${OUT_DIR}/selected.json" "${ARTIFACT_DIR}/"
+          # Absent whenever judging was skipped or failed, which is not an error.
+          # It carries each verdict's tool trail, so a verdict that reads wrong
+          # can be diagnosed from the artifact without re-running the judge.
+          cp "${OUT_DIR}/judged.json" "${ARTIFACT_DIR}/" 2>/dev/null || true
           echo "### Feature-interaction review" >>"${GITHUB_STEP_SUMMARY}"
           cat "${ARTIFACT_DIR}/comment.md" >>"${GITHUB_STEP_SUMMARY}"
 

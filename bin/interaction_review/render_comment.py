@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Render selected.json as the advisory PR comment.
+"""Render selected.json -- or judged.json -- as the advisory PR comment.
 
-Pure formatting: every claim in the output comes from `selected.json`, so the
+Pure formatting: every claim in the output comes from the report, so the
 comment can be regenerated from an artifact without re-running the extractors.
 
-The comment is advisory. It never says a boundary is untested -- the test locator
-does not exist yet -- only that a boundary is in scope and what its state space
-is, so a reviewer can check the states themselves.
+Two kinds of claim can appear, and they are not equally strong. The static pass
+only ever says a boundary is *in scope* and what its state space is, so a
+reviewer can check the states themselves. When `judge_interactions.py` has also
+run, a subset of rows additionally carries a verdict from a model that read the
+code and the tests. Those are rendered as what they are -- a second opinion that
+cites its evidence and can be wrong -- never as a result of the static pass.
 
 The reader is any rippled engineer opening their own PR, not someone who has read
 DESIGN.md. So none of this tool's vocabulary reaches the page: `resource`,
@@ -70,6 +73,21 @@ DOCS = "bin/interaction_review/README.md"
 # GitHub rejects comment bodies over 65536 characters.
 MAX_BODY = 60000
 
+# A verdict from the second-opinion pass. Deliberately hedged wording: the
+# static pass either found a shared spot or did not, but this one read code and
+# formed an opinion, and the difference has to survive into the reader's head.
+VERDICT_LABEL = {
+    "gap": "🔴 found a possible gap",
+    "handled": "🟢 looks covered",
+    "unclear": "⚪ could not tell",
+}
+VERDICT_BADGE = {"gap": "🔴 gap?", "handled": "🟢 covered?", "unclear": "⚪ unresolved"}
+CONFIDENCE_GLOSS = {
+    "high": "confident",
+    "medium": "fairly sure",
+    "low": "not sure",
+}
+
 
 def _n(count: int, singular: str, plural: str | None = None) -> str:
     """`1 file` / `3 files`. "(s)" on every noun reads like a form letter."""
@@ -117,10 +135,106 @@ def _role_description(item: dict, index: int) -> str:
     return ROLE_GLOSS.get(role, role)
 
 
-def _interaction_key(item: dict) -> tuple:
-    """Identity of a feature relationship independent of shared location."""
+def interaction_identity(item: dict) -> tuple:
+    """Identity of a feature relationship independent of shared location.
+
+    Public because `judge_interactions.plan` has to pick exactly the rows this
+    renders: a pair reaching several shared spots is deduped down to one row at
+    the first spot, and a verdict judged against any other set of rows would
+    have nowhere to land.
+    """
     endpoints = tuple(sorted(zip(item["features"], item["roles"], strict=True)))
     return (item["kind"], endpoints)
+
+
+def judgement_key(resource: str, item: dict | None) -> str:
+    """Stable identity for a judged row, shared with `judge_interactions`.
+
+    Location-qualified where `interaction_identity` is not: the verdict is about
+    this pair *at this shared spot*, and the same pair elsewhere is a different
+    question. `item` of None keys an invariant group, which is judged whole.
+    """
+    if item is None:
+        return f"{resource}|invariant"
+    kind, endpoints = interaction_identity(item)
+    pair = ",".join(f"{name}:{role}" for name, role in endpoints)
+    return f"{resource}|{kind}|{pair}"
+
+
+def _checked_summary(judgements: dict[str, dict]) -> list[str]:
+    """One paragraph, near the top: what the second opinion looked at and found.
+
+    Says up front that it is experimental and can be wrong. A reader who trusts
+    these rows more than they deserve is a worse outcome than one who ignores
+    them, because the cost of a false lead is a reviewer's afternoon.
+    """
+    counts: dict[str, int] = {}
+    for record in judgements.values():
+        counts[record["verdict"]] = counts.get(record["verdict"], 0) + 1
+    gaps = counts.get("gap", 0)
+    found = (
+        f"**{_n(gaps, 'possible gap')}** flagged below"
+        if gaps
+        else "nothing conclusive"
+    )
+    return [
+        "",
+        f"🧪 _Experimental:_ **{_n(len(judgements), 'of these')}** "
+        f"{'was' if len(judgements) == 1 else 'were'} also read by an automated "
+        f"reviewer, which opened the shared code and looked for a test covering "
+        f"the combination — {found}. It cites what it read so you can check it "
+        f"in a few seconds, and it is wrong often enough that you should.",
+    ]
+
+
+def _quote(text: str) -> list[str]:
+    """Blockquote every line of a model-written string.
+
+    The summary and detail are the only free text in this comment, and they
+    arrive with newlines in them. Prefixing only the first line silently drops
+    the rest out of the quote, so the verdict stops being visually separated
+    from the report's own claims — the one distinction this comment most needs
+    to keep. An empty line becomes a bare `>` so the quote survives it.
+    """
+    return [f"> {line}".rstrip() for line in text.splitlines() or [""]]
+
+
+def _judgement_block(record: dict) -> list[str]:
+    """One verdict, rendered under the row it belongs to.
+
+    Below the table rather than inside it: a finding needs a sentence and its
+    evidence, and a fifth column of prose makes every other column unreadable.
+    """
+    verdict = record["verdict"]
+    who = (
+        " × ".join(f"`{name}`" for name in record["features"])
+        if record["kind"] == "interaction"
+        else "this permission"
+    )
+    lines = [
+        "",
+        *_quote(
+            f"**{VERDICT_LABEL.get(verdict, verdict)}** — {who} "
+            f"({CONFIDENCE_GLOSS.get(record['confidence'], record['confidence'])})"
+        ),
+        ">",
+        *_quote(record["summary"]),
+    ]
+    if record["detail"] and record["detail"] != record["summary"]:
+        lines.append(">")
+        lines += _quote(record["detail"])
+    if record["states_unreached"]:
+        states = ", ".join(f"`{s}`" for s in record["states_unreached"])
+        lines += [
+            ">",
+            *_quote(f"No evidence anything reaches {states} with both active."),
+        ]
+    if record["citations"]:
+        cited = ", ".join(
+            f"`{c['file']}:{c['line']}` ({c['what']})" for c in record["citations"][:4]
+        )
+        lines += [">", *_quote(f"Read: {cited}")]
+    return lines
 
 
 def _recurring_spots(report: dict) -> dict[tuple, list[str]]:
@@ -130,7 +244,7 @@ def _recurring_spots(report: dict) -> dict[tuple, list[str]]:
         if group["resource_kind"] == "invariant":
             continue
         for item in group["interactions"]:
-            key = _interaction_key(item)
+            key = interaction_identity(item)
             names = spots.setdefault(key, [])
             if group["resource"] not in names:
                 names.append(group["resource"])
@@ -164,7 +278,7 @@ def _header(report: dict) -> list[str]:
                 display_items += 1
             continue
         for item in group["interactions"]:
-            key = _interaction_key(item)
+            key = interaction_identity(item)
             if key in seen:
                 continue
             seen.add(key)
@@ -222,13 +336,14 @@ def _group_section(
     show_omitted: bool,
     recurring: dict[tuple, list[str]],
     rendered: set[tuple],
+    judgements: dict[str, dict],
 ) -> list[str]:
     hit = MATCH_GLOSS[group["resource_match"]]
     kind = RESOURCE_GLOSS.get(group["resource_kind"], group["resource_kind"])
     visible: list[dict] = []
     if group["resource_kind"] != "invariant":
         for item in group["interactions"]:
-            key = _interaction_key(item)
+            key = interaction_identity(item)
             if key in rendered:
                 continue
             rendered.add(key)
@@ -243,9 +358,7 @@ def _group_section(
     if group["resource_kind"] == "invariant":
         authorized = group["authorized_features"]
         evidence = [
-            entry
-            for item in group["interactions"]
-            for entry in item["evidence"]
+            entry for item in group["interactions"] for entry in item["evidence"]
         ]
         lines += [
             "",
@@ -260,6 +373,9 @@ def _group_section(
         where = _short_evidence(evidence)
         if where:
             lines += ["", f"Changed here: {where}."]
+        checked = judgements.get(judgement_key(group["resource"], None))
+        if checked:
+            lines += _judgement_block(checked)
         return lines
 
     if group["boundary_states"]:
@@ -312,21 +428,28 @@ def _group_section(
             f"`{a}` ({_role_description(item, 0)}) × "
             f"`{b}` ({_role_description(item, 1)})"
         )
+        checked = judgements.get(judgement_key(group["resource"], item))
         how = f"{TIER_LABEL[item['tier']]}<br>{KIND_GLOSS.get(item['kind'], item['kind'])}"
+        if checked:
+            how += f"<br>{VERDICT_BADGE.get(checked['verdict'], checked['verdict'])}"
         why_parts = list(item["why"])
         other_spots = [
             spot
-            for spot in recurring.get(_interaction_key(item), ())
+            for spot in recurring.get(interaction_identity(item), ())
             if spot != group["resource"]
         ]
         if other_spots:
-            why_parts.append(
-                f"Same pair also reaches {_code_list(other_spots)}"
-            )
+            why_parts.append(f"Same pair also reaches {_code_list(other_spots)}")
         why = "<br>".join(why_parts)
         lines.append(
             f"| {pair} | {how} | {why} | {_short_evidence(item['evidence'])} |"
         )
+    # Findings come after the whole table, so the table stays scannable and a
+    # reader who only wants the list of pairs never has to scroll past prose.
+    for item in visible:
+        checked = judgements.get(judgement_key(group["resource"], item))
+        if checked:
+            lines += _judgement_block(checked)
     if group["omitted"] and show_omitted:
         lines += [
             "",
@@ -343,13 +466,20 @@ def render(report: dict) -> str:
     per_group = len(report["groups"]) > 1
     recurring = _recurring_spots(report)
     rendered: set[tuple] = set()
+    # Absent when only the static pass ran, which is the normal case on a fork
+    # PR or wherever the second opinion is not configured. Everything below
+    # degrades to the unjudged comment rather than branching on a flag.
+    judgements = {record["key"]: record for record in report.get("judgements", ())}
     lines = _header(report)
+    if judgements and report["groups"]:
+        lines += _checked_summary(judgements)
     for group in report["groups"]:
         lines += _group_section(
             group,
             show_omitted=per_group,
             recurring=recurring,
             rendered=rendered,
+            judgements=judgements,
         )
 
     if summary["truncated"]:
@@ -374,7 +504,30 @@ def render(report: dict) -> str:
         ]
 
     lines += ["", "<details>", "<summary>What this misses</summary>", ""]
-    lines += [f"- {caveat}" for caveat in report["caveats"]]
+    caveats = list(report["caveats"])
+    if judgements:
+        judge = report.get("judge", {})
+        unresolved = sum(
+            len(record.get("dropped_citations") or []) for record in judgements.values()
+        )
+        caveats += [
+            f"Only the {_n(judge.get('items', len(judgements)), 'highest-ranked row')} "
+            f"{'was' if judge.get('items', len(judgements)) == 1 else 'were'} read by "
+            f"the automated reviewer; the rest carry no verdict either way, and a row "
+            f"with no verdict is not a row that passed.",
+            "Each row was judged on its own, so nothing here reasons about two "
+            "findings together.",
+            "A verdict is one model's reading of the code under a time limit. It can "
+            "misread control flow, miss a test that covers the case indirectly, and "
+            "claim more certainty than it has.",
+        ]
+        if unresolved:
+            caveats.append(
+                f"{_n(unresolved, 'citation')} pointed at lines that do not exist and "
+                f"{'was' if unresolved == 1 else 'were'} discarded before this was "
+                f"written — a sign to weigh the surviving verdicts more carefully."
+            )
+    lines += [f"- {caveat}" for caveat in caveats]
     lines += [
         "",
         "</details>",
@@ -396,11 +549,22 @@ def render(report: dict) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--selected", default=str(HERE / "out" / "selected.json"))
+    parser.add_argument(
+        "--selected",
+        help=(
+            "Report to render. Defaults to out/judged.json when it exists, so a "
+            "run that judged renders its verdicts without the caller tracking "
+            "which stages ran; otherwise out/selected.json."
+        ),
+    )
     parser.add_argument("--out", help="write markdown here (default: stdout)")
     args = parser.parse_args(argv)
 
-    path = Path(args.selected)
+    if args.selected:
+        path = Path(args.selected)
+    else:
+        judged = HERE / "out" / "judged.json"
+        path = judged if judged.is_file() else HERE / "out" / "selected.json"
     if not path.is_file():
         parser.error(f"--selected not found: {path}. Run select_interactions.py first.")
     body = render(json.loads(path.read_text()))

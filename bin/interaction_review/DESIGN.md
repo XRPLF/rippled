@@ -9,10 +9,17 @@ bypass). The full tool has three components:
 
 - **A. Graph/registry** — a machine-readable model of which features interact, through
   which shared resources (this phase).
-- **B. PR mapping + test locator** — map a PR diff onto graph nodes and find the tests
-  covering each affected interaction (later phase).
-- **C. LLM test-sufficiency grader** — judge whether those tests actually exercise the
-  boundary (later phase).
+- **B. PR mapping + selection** — map a PR diff onto graph nodes and rank the interactions
+  it puts in scope.
+- **C. Per-interaction judge** — for the top-ranked interactions, have a model read the
+  shared code and the tests and say whether the boundary holds.
+
+Component C was originally specified as a standalone test-sufficiency grader sitting on
+top of a test locator. It is built instead as a judge over the selected interactions,
+which subsumes that question rather than dropping it: finding the covering test is one of
+the things a judgement does, and "the tests only ever reach one state" is evidence for a
+verdict rather than the deliverable. The judge also degrades gracefully in a way a grader
+would not — a row it cannot resolve becomes an abstention, not a wrong coverage claim.
 
 **Phase 1 scope:** construct the interaction graph and enumerate the pairwise interaction
 set. No PR diffing, no test location, no LLM. The output is a validated JSON artifact
@@ -162,8 +169,11 @@ bin/interaction_review/
   README.md
   DESIGN.md                     # this document
   requirements.in / .txt        # pcpp, pyparsing, libclang (hash-locked)
+  requirements-judge.in / .txt  # anthropic[bedrock], kept out of the graph build
   build_graph.py                # CLI entrypoint (Component A: build the graph)
   pr_map.py                     # CLI entrypoint (Component B: diff -> touched nodes)
+  judge_interactions.py         # CLI entrypoint (Component C: selection -> verdicts)
+  judge_agent.py                # Bedrock client + the bounded, read-only tool loop
   macro_extractor.py            # .macro files -> feature nodes, macro edges, shared-SField resources
   common_fields.py              # TxFormats::getCommonFields() -> cross-cutting field set
   fork_extractor.py             # libclang AST over Transactor.cpp -> fork resources
@@ -366,10 +376,65 @@ arbitrary pair rows. `render_comment.py` formats the result. Both are documented
 in [README.md](README.md); the scoring weights are ordinal and live at the top
 of `select_interactions.py`.
 
-The comment is advisory and makes no claim about test coverage, because the test
-locator does not exist yet. It states the boundary **state space** so a reviewer
-can check the states themselves — which is the same input Component C will grade
-against once it exists.
+The static half of the comment is advisory and makes no claim about test
+coverage. It states the boundary **state space** so a reviewer can check the
+states themselves — which is also what Component C grades against.
+
+## Judging the selection (Component C)
+
+`judge_interactions.py` takes the rows `render_comment.py` would show and asks a
+model one question about each: with both features in play at this shared spot, is
+every reachable state handled and covered? Three answers are allowed —
+`handled`, `gap`, `unclear` — and `unclear` is the documented default.
+
+The division of labour is the design. The graph decides *what* is examined, which
+keeps recall deterministic and auditable; the model decides only *whether a given
+pair is a problem here*. A general "review this PR with the graph as context"
+prompt was considered and rejected: it produces findings this tool has no claim
+to, competes with every other reviewer on the PR, and dissolves the one property
+that makes the graph worth building.
+
+Judgement is agentic because the question cannot be answered from `selected.json`
+— it needs the fork body, the transactor, and the tests. The model gets three
+read-only tools (`read_file`, `grep`, `git_diff`) and a bounded number of turns.
+The loop is written out rather than delegated to the SDK's tool runner, which
+lives under a beta namespace Bedrock does not guarantee; a manual loop is core
+Messages API everywhere. Verdicts are forced through a `strict: true`
+`submit_verdict` tool, so the payload is guaranteed to validate.
+
+Three properties keep the output honest:
+
+- **Bounded** — `review` and `consider` tiers only, capped per run, with a
+  per-row iteration cap and printed token accounting. No silent cost.
+- **Cited, and verified** — a `handled` or `gap` verdict must cite `file:line`,
+  and `verify_citations` resolves each against the working tree. Citations that
+  do not exist are dropped and disclosed; a verdict left resting on none is
+  downgraded to `unclear`. The model can be wrong about what a line *means* —
+  the reviewer is the check on that — but it cannot invent the line, which is
+  the failure a reviewer has no cheap way to catch.
+- **Fail-open** — no credentials, an outage, a run that never converges, or a
+  fork PR (where GitHub withholds the OIDC token) all degrade to the unjudged
+  comment. `render_comment.py` reads whichever artifact exists.
+
+The tree and the diff under judgement are PR-authored. Two mitigations, one
+structural and one prompted: every model-supplied path is canonicalized and
+rejected if it escapes the repository root, and the judge emits data only —
+rendering and posting stay in the existing no-write/`workflow_run` split, so
+nothing the model produces can act on the repository. The system prompt states
+that repository contents are evidence and never instructions.
+
+`judged.json` is `selected.json` plus `judge` and `judgements`, validated against
+`judged.schema.json` (which describes only the additions, so the two schemas
+cannot drift). Verdicts find their rows through `render_comment.judgement_key`,
+which is why the planner deliberately mirrors the renderer's dedupe.
+
+### Not yet built
+
+The measurement that justifies the graph: run the judge over a corpus of past
+rippled PRs with known interaction bugs, once with the interaction context and
+once with the diff alone. If the graph-fed run does not surface what the bare run
+misses, the graph is not earning its build cost. Prompt tuning should wait for
+that harness.
 
 CI is two workflows (`.github/workflows/interaction-review*.yml`): one computes
 with no write permissions, one posts on `workflow_run`. The graph is rebuilt on
@@ -380,7 +445,8 @@ the PR head because node locations are head-side spans.
 - Resource families for `src/libxrpl/tx/paths/` and `ledger/helpers/`, and
   following one hop of callees out of fork bodies. Both would raise recall
   materially; both change the resource taxonomy rather than the mapping.
-- Test location and test-sufficiency grading (Components B/C).
+- The judging eval harness (see _Not yet built_ above), which is what turns the
+  judge from a plausible feature into a measured one.
 - The GitHub Actions `issue_comment` slash-command workflow.
 - Owner-directory resource family.
 - Multi-TU fork scanning (only needed if a fork migrates out of Transactor.cpp's TU).

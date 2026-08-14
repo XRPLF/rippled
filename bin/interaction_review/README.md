@@ -187,6 +187,66 @@ authorized transaction set versus the protected default path. It cites
 GitHub's comment limit. The body opens with an HTML marker so CI updates one
 comment per PR instead of appending per push.
 
+## Judging the selection (experimental, optional)
+
+Selection ranks pairs by a heuristic that cannot read code, so every row is a
+claim about *relevance* only. `judge_interactions.py` adds the claim the
+heuristic cannot make: for the top-ranked rows, a model opens the shared code
+and the tests and returns one of three verdicts — `handled`, `gap`, or
+`unclear`.
+
+```
+pip install -r requirements-judge.txt
+python judge_interactions.py --aws-region us-east-1        # writes out/judged.json
+python judge_interactions.py --selected out/selected.json --dry-run   # prompts only, no API
+python render_comment.py                                   # prefers judged.json
+```
+
+The split is the point. The graph decides **what** gets examined — deterministic,
+reproducible, and auditable from the JSON artifacts. The model decides only
+**whether a given pair is a problem here**, one narrow question per conversation.
+It is never asked to review the PR, because a general reviewer would drown the
+one thing this tool knows that nothing else does.
+
+Three properties make the output safe to show a reviewer:
+
+- **Bounded.** One conversation per row, `review` and `consider` tiers only,
+  capped at `--max-items` (default 8, 6 in CI), with a per-row cap on tool calls.
+  Cost is printed at the end of every run.
+- **Cited, and the citations are checked.** A `handled` or `gap` verdict must
+  cite `file:line`; `verify_citations` resolves every one against the working
+  tree and drops those that do not exist. A verdict left resting on nothing is
+  downgraded to `unclear`, and the dropped citations are kept in `judged.json`
+  and disclosed in the comment. The model can be wrong about what a line means —
+  a reviewer is the check on that — but it cannot invent the line.
+- **Fail-open.** No credentials, no region, an API outage, a run that never
+  converges: each degrades to the unjudged comment. `render_comment.py` reads
+  `judged.json` when it exists and `selected.json` when it does not, so nothing
+  downstream branches on whether judging happened.
+
+`unclear` is the documented default, and abstention is treated as a good answer.
+On an advisory comment a confident wrong row costs a reviewer more than a silent
+one saves them.
+
+Runs on Amazon Bedrock (`AnthropicBedrockMantle`), so model IDs carry the
+`anthropic.` prefix and Bedrock's feature mask applies — notably no automatic
+prompt caching, hence the explicit `cache_control` breakpoint on the system
+prompt that every row shares. The tool loop is written out rather than delegated
+to the SDK's tool runner, which lives under the beta namespace that Bedrock does
+not guarantee.
+
+The model's three tools are read-only and confined to the repository: every path
+it supplies is canonicalized and rejected if it escapes the root. The tree and
+the diff it reads are PR-authored, so the prompt states that repository contents
+are evidence and never instructions, and the judge is structurally unable to act
+on them anyway — it emits data, `render_comment.py` renders it, and a separate
+workflow posts.
+
+`judged.json` is `selected.json` plus `judge` and `judgements` keys; it validates
+against `judged.schema.json`, which covers only the additions. Each record keeps
+the tool calls its judgement made, so a verdict that reads wrong can be diagnosed
+from the artifact without re-running it.
+
 ## CI wiring
 
 Two workflows, split so a fork PR can be commented on without granting write
@@ -208,6 +268,23 @@ access to a job that checked out untrusted code:
   SHA is read from the API. Because GitHub fires `issue_comment` from the
   **default branch's** copy of a workflow, a change to the command only takes
   effect once merged.
+  Judging runs in this job, between selection and rendering, and only when the
+  repository defines `INTERACTION_REVIEW_AWS_ROLE` and
+  `INTERACTION_REVIEW_AWS_REGION` (optionally `INTERACTION_REVIEW_MODEL`). Both
+  steps are `continue-on-error`, so a Bedrock problem costs the verdicts and
+  nothing else. Credentials come from OIDC rather than a stored secret; GitHub
+  does not grant `id-token: write` to a `pull_request` run from a fork, so fork
+  PRs get the static report and that is the intended behaviour.
+
+  **Scope the role to the judging model and nothing else.** By the time the
+  credentials exist, this job has already configured and built PR-authored code
+  — assume anything the role can do, a pull request can do.
+
+  Note that `AnthropicBedrockMantle` talks to `bedrock-mantle.<region>.api.aws`
+  and signs SigV4 as **`bedrock-mantle`**, not `bedrock`; a policy written for
+  the classic `bedrock:InvokeModel` actions does not authorize it. Start from
+  `bedrock-mantle:*` and tighten using the action named in the first
+  `AccessDenied` — that message is authoritative where this README is not.
 - `interaction-review-comment.yml` — on `workflow_run`, downloads that artifact
   and either rewrites the existing comment (found by its marker) or posts a
   new one. It never checks out PR code.
