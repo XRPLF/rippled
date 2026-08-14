@@ -68,21 +68,27 @@
     "metrics": ["txq_metrics"]
   },
   "phase9_rpc_method": {
-    "description": "Phase 9 per-RPC-method counters and duration histogram (MetricsRegistry.cpp:351-357). rpc_method_errored_total is deliberately absent — see not_asserted below.",
+    "description": "Phase 9 per-RPC-method counters and duration histogram (MetricsRegistry.cpp:351-357). rpc_method_errored_total is deliberately absent — see not_asserted below. rpc_method_us is a Histogram, so the Prometheus exporter emits only the _bucket/_count/_sum triple and there is no bare rpc_method_us series to match — same convention as span_duration_milliseconds in the spanmetrics group above.",
     "metrics": [
       "rpc_method_started_total",
       "rpc_method_finished_total",
-      "rpc_method_us"
+      "rpc_method_us_bucket",
+      "rpc_method_us_count",
+      "rpc_method_us_sum"
     ]
   },
   "phase9_job_queue": {
-    "description": "Phase 9 job-queue counters and latency histograms (MetricsRegistry.cpp:360-366). Every xrpld job passes through these, so they populate under any workload.",
+    "description": "Phase 9 job-queue counters and latency histograms (MetricsRegistry.cpp:360-366). Every xrpld job passes through these, so they populate under any workload. Both histograms are recorded in the same function bodies as job_started_total / job_finished_total, under the same guard and with the same labels, so their presence is equally guaranteed. They are named with the _bucket/_count/_sum suffixes the Prometheus exporter emits: regression-metrics.json and the job-queue dashboard both query job_queued_us_bucket / job_running_us_bucket, and no bare series exists.",
     "metrics": [
       "job_queued_total",
       "job_started_total",
       "job_finished_total",
-      "job_queued_us",
-      "job_running_us"
+      "job_queued_us_bucket",
+      "job_queued_us_count",
+      "job_queued_us_sum",
+      "job_running_us_bucket",
+      "job_running_us_count",
+      "job_running_us_sum"
     ]
   },
   "rpc_in_flight": {
