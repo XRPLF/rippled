@@ -111,7 +111,7 @@ These can be added later if dashboard queries specifically need them. The node h
 **Verification Checklist**:
 
 - [ ] `conan install . --build=missing -o telemetry=True` succeeds
-- [ ] `cmake --preset default -Dtelemetry=ON` configures correctly
+- [ ] `cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dtelemetry=ON ..` configures correctly (there is no `default` preset; Conan writes `conan-release`)
 - [ ] Build succeeds with telemetry ON
 - [ ] Build succeeds with telemetry OFF
 - [ ] Existing tests pass with telemetry ON

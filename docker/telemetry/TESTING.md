@@ -10,11 +10,15 @@ pipeline end-to-end, from span generation through the observability stack
 
 ### Build xrpld with telemetry
 
+Follow [BUILD.md](../../BUILD.md) with `-o telemetry=True` added. From a build directory (`.build/`):
+
 ```bash
-conan install . --build=missing -o telemetry=True
-cmake --preset default -Dtelemetry=ON
-cmake --build --preset default --target xrpld
+conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake --build . --target xrpld
 ```
+
+Conan also writes a `conan-release` preset, so `cmake --preset conan-release -Dtelemetry=ON` works too. There is no preset named `default`.
 
 The binary is at `.build/xrpld`.
 

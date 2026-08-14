@@ -79,11 +79,15 @@ endpoint=http://localhost:4318/v1/traces
 
 ### 3. Build with telemetry support
 
+Follow [BUILD.md](../BUILD.md), adding `-o telemetry=True` so Conan pulls `opentelemetry-cpp`. From a build directory (`.build/`):
+
 ```bash
-conan install . --build=missing -o telemetry=True
-cmake --preset default -Dtelemetry=ON
-cmake --build --preset default
+conan install .. --output-folder . --build missing -o telemetry=True --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtelemetry=ON ..
+cmake --build . --target xrpld
 ```
+
+Conan also writes a `conan-release` CMake preset, so `cmake --preset conan-release -Dtelemetry=ON` works instead of the explicit toolchain line. There is no preset named `default`.
 
 ### 4. Run against a live network
 
@@ -3316,8 +3320,8 @@ Set `enabled=0` in the `[telemetry]` config section (runtime disable, no rebuild
 compile telemetry out:
 
 ```bash
-conan install . --build=missing -o telemetry=False
-cmake --preset default -Dtelemetry=OFF
+conan install .. --output-folder . --build missing -o telemetry=False --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dtelemetry=OFF ..
 ```
 
 Pass the flag explicitly rather than omitting it — an omitted flag resolves to whatever
