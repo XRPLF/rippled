@@ -660,10 +660,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10c: Verify Phase 9 OTel SDK Metrics
+# Step 10c: Verify OTel SDK Metrics
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 9: OTel SDK Metrics (MetricsRegistry) ---"
+log "--- OTel SDK Metrics (MetricsRegistry) ---"
 log "Waiting 15s for OTel metric export + Prometheus scrape..."
 sleep 15
 
@@ -679,34 +679,34 @@ check_otel_metric() {
     fi
 }
 
-# Task 9.1: NodeStore I/O
+# NodeStore I/O
 check_otel_metric 'nodestore_state{metric="node_reads_total"}'
 check_otel_metric 'nodestore_state{metric="write_load"}'
 
-# Task 9.2: Cache hit rates
+# Cache hit rates
 check_otel_metric 'cache_metrics{metric="SLE_hit_rate"}'
 check_otel_metric 'cache_metrics{metric="treenode_cache_size"}'
 
-# Task 9.3: TxQ metrics
+# TxQ metrics
 check_otel_metric 'txq_metrics{metric="txq_count"}'
 check_otel_metric 'txq_metrics{metric="txq_reference_fee_level"}'
 
-# Task 9.4: Per-RPC metrics
+# Per-RPC metrics
 check_otel_metric "rpc_method_started_total"
 check_otel_metric "rpc_method_finished_total"
 
-# Task 9.5: Per-job metrics
+# Per-job metrics
 check_otel_metric "job_queued_total"
 check_otel_metric "job_finished_total"
 
-# Task 9.6: Counted object instances
+# Counted object instances
 check_otel_metric "object_count"
 
-# Task 9.7: Load factor breakdown
+# Load factor breakdown
 check_otel_metric 'load_factor_metrics{metric="load_factor"}'
 check_otel_metric 'load_factor_metrics{metric="load_factor_server"}'
 
-# Task 7.15 / Phase 9: ValidationTracker rolling-window agreement gauge.
+# ValidationTracker rolling-window agreement gauge.
 # MetricsRegistry::registerValidationAgreementGauge() publishes
 # validation_agreement with a `metric` label for each window
 # (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day

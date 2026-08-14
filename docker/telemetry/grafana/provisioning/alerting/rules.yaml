@@ -1,6 +1,6 @@
 # Grafana alert-rule provisioning for rippled OTel metrics.
 #
-# Phase 9: Internal metric gap fill — alerting on health-critical metrics.
+# Alerting on health-critical internal metrics.
 #
 # Thirteen rules across five subsystems: consensus/ledger health, validator
 # health, the job queue, node operating state, and the overlay (manifests).

@@ -1,6 +1,6 @@
 # Grafana contact-point provisioning for rippled OTel alerts.
 #
-# Phase 9: Internal metric gap fill — alerting on health-critical metrics.
+# Alerting on health-critical internal metrics.
 #
 # A contact point is where a firing alert is delivered. Two are defined:
 #   xrpld-default   — Slack only; receives warning-severity alerts.
