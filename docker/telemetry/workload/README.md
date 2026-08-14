@@ -314,12 +314,13 @@ per leg; it is rarely run by hand.
 ./collect_system_metrics.sh 5020,5021,5022 300 /tmp/metrics.json
 ```
 
-Processes are selected by matching `argv[0]`'s basename against `xrpld` or
-`rippled`. A wrapper that merely names the binary in its arguments, and
-unrelated tools whose command line happens to contain the string, are not
-sampled — including them diluted the CPU average and attributed a foreign
-process's RSS to the node. `ps -C xrpld` is not usable for this: xrpld renames
-itself, so its `comm` is `xrpld-main`.
+Processes are selected by matching `argv[0]`'s basename against the daemon
+binary name; the pre-rename spelling is accepted too, so the sampler still
+works against an older deployment. A wrapper that merely names the binary in
+its arguments, and unrelated tools whose command line happens to contain the
+string, are not sampled — including them diluted the CPU average and
+attributed a foreign process's RSS to the node. `ps -C xrpld` is not usable
+for this: xrpld renames itself, so its `comm` is `xrpld-main`.
 
 Selection covers the whole host, so a second xrpld from another checkout is
 sampled as well. Benchmark on a machine running one cluster only.
