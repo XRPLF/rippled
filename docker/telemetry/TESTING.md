@@ -372,28 +372,28 @@ See the "Verification Queries" section below.
 
 ## Expected Span Catalog
 
-All 16 production span names instrumented across Phases 2-5:
+All 16 production span names:
 
-| Span Name                   | Source File       | Phase | Key Attributes                                                                           | How to Trigger            |
-| --------------------------- | ----------------- | ----- | ---------------------------------------------------------------------------------------- | ------------------------- |
-| `rpc.http_request`          | ServerHandler.cpp | 2     | --                                                                                       | Any HTTP RPC call         |
-| `rpc.ws_upgrade`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket upgrade         |
-| `rpc.ws_message`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket RPC message     |
-| `rpc.process`               | ServerHandler.cpp | 2     | --                                                                                       | RPC processing            |
-| `rpc.command.<name>`        | RPCHandler.cpp    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp    | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp       | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
-| `tx.apply`                  | BuildLedger.cpp   | 5     | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
-| `ledger.build`              | BuildLedger.cpp   | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
-| `ledger.validate`           | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
-| `ledger.store`              | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
-| `peer.proposal.receive`     | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
-| `peer.validation.receive`   | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
+| Span Name                   | Source File       | Key Attributes                                                                           | How to Trigger            |
+| --------------------------- | ----------------- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| `rpc.http_request`          | ServerHandler.cpp | --                                                                                       | Any HTTP RPC call         |
+| `rpc.ws_upgrade`            | ServerHandler.cpp | --                                                                                       | WebSocket upgrade         |
+| `rpc.ws_message`            | ServerHandler.cpp | --                                                                                       | WebSocket RPC message     |
+| `rpc.process`               | ServerHandler.cpp | --                                                                                       | RPC processing            |
+| `rpc.command.<name>`        | RPCHandler.cpp    | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp    | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `tx.receive`                | PeerImp.cpp       | `xrpl.peer.id`                                                                           | Peer relays transaction   |
+| `consensus.proposal.send`   | RCLConsensus.cpp  | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
+| `consensus.ledger_close`    | RCLConsensus.cpp  | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
+| `consensus.accept`          | RCLConsensus.cpp  | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
+| `consensus.validation.send` | RCLConsensus.cpp  | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
+| `consensus.accept.apply`    | RCLConsensus.cpp  | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
+| `tx.apply`                  | BuildLedger.cpp   | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
+| `ledger.build`              | BuildLedger.cpp   | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
+| `ledger.validate`           | LedgerMaster.cpp  | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
+| `ledger.store`              | LedgerMaster.cpp  | `xrpl.ledger.seq`                                                                        | Ledger stored             |
+| `peer.proposal.receive`     | PeerImp.cpp       | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp       | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
 
 ---
 
