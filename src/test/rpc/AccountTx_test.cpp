@@ -1823,6 +1823,61 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(matches == 1);
     }
 
+    void
+    testRWDBHashLookupSurvivesOldSeqPrune()
+    {
+        testcase("RWDB hash lookup survives pruning the older sequence");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto const hash = src->header().hash;
+        auto const oldSeq = src->header().seq;
+        auto& db = env.app().getRelationalDatabase();
+        BEAST_EXPECT(db.getLedgerInfoByHash(hash));
+
+        // Same header hash under a later sequence, as in a history-fetch /
+        // later validation of a ledger already stored at oldSeq.
+        LedgerHeader info = src->header();
+        info.seq += 10;
+        bool loaded = false;
+        auto moved = std::make_shared<Ledger>(
+            info,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(db.saveValidatedLedger(moved, false));
+        BEAST_EXPECT(db.getLedgerInfoByIndex(oldSeq));
+        BEAST_EXPECT(db.getLedgerInfoByIndex(info.seq));
+
+        db.deleteBeforeLedgerSeq(oldSeq + 1);
+
+        BEAST_EXPECT(!db.getLedgerInfoByIndex(oldSeq));
+        auto const bySeq = db.getLedgerInfoByIndex(info.seq);
+        BEAST_EXPECT(bySeq && bySeq->hash == hash);
+        auto const byHash = db.getLedgerInfoByHash(hash);
+        BEAST_EXPECT(byHash);
+        if (byHash)
+            BEAST_EXPECT(byHash->seq == info.seq);
+    }
+
 public:
     void
     run() override
@@ -1835,6 +1890,7 @@ public:
         testRWDBUnboundedLedgerRange();
         testRWDBAdminHugeLimit();
         testRWDBTransactionMovesLedger();
+        testRWDBHashLookupSurvivesOldSeqPrune();
         testContents();
         testAccountDelete();
         testMPT();

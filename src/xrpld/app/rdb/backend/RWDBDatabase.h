@@ -12,7 +12,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
@@ -25,34 +24,6 @@
 #include <vector>
 
 namespace xrpl {
-
-inline bool
-passesDelegateFilter(STTx const& tx, DelegateFilter const& filter, AccountID const& contextAccount)
-{
-    if (!tx.isFieldPresent(sfDelegate))
-        return false;
-
-    AccountID const txOwner = tx.getAccountID(sfAccount);
-    AccountID const txSigner = tx.getAccountID(sfDelegate);
-
-    switch (filter.type)
-    {
-        case DelegateType::Actor: {
-            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
-            if (!isDelegated)
-                return false;
-            return !filter.counterparty || (txSigner == *filter.counterparty);
-        }
-        case DelegateType::Authorizer: {
-            bool const isActingAsDelegate =
-                (txSigner == contextAccount) && (txOwner != contextAccount);
-            if (!isActingAsDelegate)
-                return false;
-            return !filter.counterparty || (txOwner == *filter.counterparty);
-        }
-    }
-    return false;
-}
 
 class RWDBDatabase : public RelationalDatabase
 {
@@ -73,6 +44,17 @@ private:
     Application& app_;
     bool const useTxTables_;
 
+    // Drop the hash->seq mapping only when it still names this sequence.
+    // The same header can be stored under two sequences (history-fetch /
+    // later validation). Pruning the older one must not hide the newer.
+    void
+    eraseHashMappingIfOwnedUnlocked(uint256 const& hash, LedgerIndex seq)
+    {
+        auto it = ledgerHashToSeq_.find(hash);
+        if (it != ledgerHashToSeq_.end() && it->second == seq)
+            ledgerHashToSeq_.erase(it);
+    }
+
     // Drop any previous row for this sequence so a second save (validation
     // plus fetchForHistory, or a HashRouter SAVED miss) is idempotent.
     void
@@ -82,7 +64,7 @@ private:
         if (existing == ledgers_.end())
             return;
 
-        ledgerHashToSeq_.erase(existing->second.info.hash);
+        eraseHashMappingIfOwnedUnlocked(existing->second.info.hash, seq);
         for (auto const& [txHash, _] : existing->second.transactions)
             transactionMap_.erase(txHash);
         for (auto accountIt = accountTxMap_.begin(); accountIt != accountTxMap_.end();)
@@ -259,7 +241,7 @@ public:
                 for (auto const& [txHash, _] : it->second.transactions)
                     transactionMap_.erase(txHash);
             }
-            ledgerHashToSeq_.erase(it->second.info.hash);
+            eraseHashMappingIfOwnedUnlocked(it->second.info.hash, it->first);
             it = ledgers_.erase(it);
         }
 

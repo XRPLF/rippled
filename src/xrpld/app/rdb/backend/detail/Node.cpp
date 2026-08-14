@@ -5,6 +5,7 @@
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Blob.h>
@@ -991,57 +992,6 @@ getNewestAccountTxsB(
     beast::Journal j)
 {
     return getAccountTxsB(session, app, options, true, j);
-}
-
-/**
- * @brief Determines whether a transaction should be included in account_tx
- *        results based on a delegation filter.
- * @param rawData Serialized transaction blob.
- * @param filter The delegate filter specifying the role of the queried account
- *        (Actor or Authorizer) and an optional counterparty to match against.
- * @param contextAccount The account passed to account_tx (the queried account).
- * @return True if the transaction passes the filter and should be included,
- *         false if it should be skipped.
- */
-static bool
-passesDelegateFilter(
-    Blob const& rawData,
-    DelegateFilter const& filter,
-    AccountID const& contextAccount)
-{
-    SerialIter sit{makeSlice(rawData)};
-    STTx const tx{sit};
-
-    AccountID const txOwner = tx.getAccountID(sfAccount);
-
-    if (!tx.isFieldPresent(sfDelegate))
-        return false;
-
-    AccountID const txSigner = tx.getAccountID(sfDelegate);
-
-    switch (filter.type)
-    {
-        case DelegateType::Actor: {
-            // Keep txns where the queried account (A) is the owner but
-            // another account (C) was the delegatee that signed.
-            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
-            if (!isDelegated)
-                return false;
-            return !filter.counterparty || (txSigner == *filter.counterparty);
-        }
-
-        case DelegateType::Authorizer: {
-            // Keep txns where the queried account (C) is the signer acting
-            // on behalf of another account (A, the delegator/owner).
-            bool const isActingAsDelegate =
-                (txSigner == contextAccount) && (txOwner != contextAccount);
-            if (!isActingAsDelegate)
-                return false;
-            return !filter.counterparty || (txOwner == *filter.counterparty);
-        }
-    }
-
-    return false;  // LCOV_EXCL_LINE
 }
 
 /**
