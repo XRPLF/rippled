@@ -95,9 +95,8 @@ message TMPublicKey {
 // Older peers that do not understand field 1001 will simply ignore it
 // per protobuf wire-format rules, preserving backwards compatibility.
 //
-// trace_state is reserved for future use (secure tracing pipeline,
-// OpenTelemetryPlan/secure-OTel.md). It is currently neither populated
-// on inject nor read on extract; consumers must not rely on it.
+// trace_state is reserved for future use. It is currently neither
+// populated on inject nor read on extract; consumers must not rely on it.
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
