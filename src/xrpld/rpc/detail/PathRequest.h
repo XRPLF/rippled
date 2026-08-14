@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <map>
 #include <memory>
@@ -37,6 +38,22 @@ namespace xrpl {
 
 class AssetCache;
 class PathRequestManager;
+
+/**
+ * Outlives PathRequestManager. Mid-close timer/JtRpc handlers and PathRequest
+ * callbacks (doClose / destructor / reportFast / reportFull) check `manager`
+ * and increment `inFlight` before using the pointer so ~PathRequestManager
+ * can wait them out. io_context threads and WS InfoSub may outlive the manager.
+ */
+struct PathFindLifetime
+{
+    std::mutex mutex;
+    std::condition_variable idle;
+    PathRequestManager* manager{nullptr};
+    int inFlight{0};
+    bool scheduled{false};
+    std::uint64_t epoch{0};
+};
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID (-1)
@@ -138,6 +155,46 @@ public:
     }
 
 private:
+    /**
+     * If the manager is still live, increment PathFindLifetime::inFlight and
+     * return it. Caller must leaveOwner() (use CallOwner). Null if the
+     * manager has already started destruction.
+     */
+    PathRequestManager*
+    enterOwner() noexcept;
+
+    void
+    leaveOwner() noexcept;
+
+    /**
+     * RAII: enterOwner / leaveOwner. False if the manager is gone.
+     */
+    class CallOwner
+    {
+    public:
+        explicit CallOwner(PathRequest& req) noexcept;
+        ~CallOwner() noexcept;
+        CallOwner(CallOwner const&) = delete;
+        CallOwner&
+        operator=(CallOwner const&) = delete;
+
+        explicit
+        operator bool() const noexcept
+        {
+            return owner_ != nullptr;
+        }
+
+        PathRequestManager*
+        operator->() const noexcept
+        {
+            return owner_;
+        }
+
+    private:
+        PathRequest& req_;
+        PathRequestManager* owner_;
+    };
+
     bool
     isValid(std::shared_ptr<AssetCache> const& crCache);
 
@@ -196,8 +253,14 @@ private:
     // Nullable so ~PathRequestManager can detach live sessions before destroy
     // (WS InfoSub may outlive the manager briefly during Application teardown).
     // Atomic: detachFromManager races with ~PathRequest / reportFast / doClose
-    // (manager dtor or force-drop vs WS teardown on another thread).
+    // (manager dtor or force-drop vs WS teardown on another thread). Fast-path
+    // only — actual callbacks also take PathFindLifetime (ownerLifetime_).
     std::atomic<PathRequestManager*> owner_;
+
+    // Independent of PathRequestManager's lifetime. ~PathRequest / doClose
+    // increment inFlight under bag->mutex before calling back; the manager
+    // destructor nulls bag->manager then waits inFlight == 0.
+    std::shared_ptr<PathFindLifetime> ownerLifetime_;
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;

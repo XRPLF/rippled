@@ -883,6 +883,89 @@ class PathFindSub_test : public beast::unit_test::Suite
         (void)wsc->invoke("path_find", closeReq);
     }
 
+    /**
+     * The shared AssetCache is a strong member for the life of any session.
+     * Creates pass authoritative=false; they must still rebuild when the
+     * requested closed ledger is more than 8 sequences ahead (historical
+     * getLineCache). Without that, doCreate reports ledger_index / routes
+     * from an arbitrarily stale view while updatePaths is starved.
+     */
+    void
+    testCreateRebuildsStaleSharedCache()
+    {
+        testcase("create: rebuilds shared cache more than 8 ledgers behind");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // Disable mid-close ticks so they cannot advance the cache during
+        // the gap. The regression is specifically non-authoritative create.
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->forceMultiThread = true;
+            cfg->workers = 4;
+            cfg->pathMidCloseDelay = std::chrono::hours{1};
+            cfg->pathCacheReuseLedgers = 4;
+            return cfg;
+        }));
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        setupUsdCorridor(env, gw, alice, bob);
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const firstClosed = env.closed();
+        auto cache = prm.getAssetCache(firstClosed, /*authoritative=*/true);
+        auto const staleSeq = firstClosed->seq();
+        BEAST_EXPECT(cache->getLedger()->seq() == staleSeq);
+
+        // Within the 8-ledger window: non-authoritative create reuses.
+        for (int i = 0; i < 3; ++i)
+            env.close();
+        auto const midClosed = env.closed();
+        BEAST_EXPECT(midClosed->seq() > staleSeq);
+        BEAST_EXPECT(midClosed->seq() <= staleSeq + 8);
+        auto reused = prm.getAssetCache(midClosed, /*authoritative=*/false);
+        BEAST_EXPECT(reused->getLedger()->seq() == staleSeq);
+
+        // Jump more than 8 ahead of the cached view. Create (authoritative=
+        // false) must rebuild — otherwise a new path_find reports stale
+        // ledger_hash / ledger_index and prices from the old balances.
+        for (int i = 0; i < 8; ++i)
+            env.close();
+        auto const nowClosed = env.closed();
+        BEAST_EXPECT(nowClosed->seq() > staleSeq + 8);
+        auto rebuilt = prm.getAssetCache(nowClosed, /*authoritative=*/false);
+        BEAST_EXPECT(rebuilt->getLedger()->seq() == nowClosed->seq());
+
+        // User-visible: a live session pins the (now current) cache, then
+        // another large gap, then a new path_find create.
+        auto wscA = makeWSClient(env.app().config());
+        auto jrA =
+            wscA->invoke("path_find", pfCreate(alice, bob, bob["USD"](10), "USD"))[jss::result];
+        BEAST_EXPECT(!jrA.isMember(jss::error));
+        BEAST_EXPECT(jrA.isMember(jss::ledger_index));
+        auto const pinnedSeq = jrA[jss::ledger_index].asUInt();
+        BEAST_EXPECT(pinnedSeq == nowClosed->seq());
+
+        for (int i = 0; i < 10; ++i)
+            env.close();
+        auto const laterClosed = env.closed();
+        BEAST_EXPECT(laterClosed->seq() > pinnedSeq + 8);
+
+        auto wscB = makeWSClient(env.app().config());
+        auto jrB =
+            wscB->invoke("path_find", pfCreate(alice, bob, bob["USD"](5), "USD"))[jss::result];
+        BEAST_EXPECT(!jrB.isMember(jss::error));
+        BEAST_EXPECT(jrB.isMember(jss::ledger_index));
+        BEAST_EXPECT(jrB[jss::ledger_index].asUInt() == laterClosed->seq());
+        BEAST_EXPECT(jrB[jss::ledger_index].asUInt() != pinnedSeq);
+
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wscA->invoke("path_find", closeReq);
+        (void)wscB->invoke("path_find", closeReq);
+    }
+
 public:
     void
     run() override
@@ -897,6 +980,7 @@ public:
         testMidCloseRevalidateOnly();
         testMidClosePreservesNewSubscriptionSignal();
         testAutoSourceKeepsXrpUnderSoftCap();
+        testCreateRebuildsStaleSharedCache();
     }
 };
 

@@ -35,10 +35,11 @@ public:
         beast::insight::Collector::ptr const& collector);
 
     /**
-     * Detach mid-close handlers, wait for any in-flight timer/JtRpc work that
-     * already holds a manager pointer, then cancel the timer. io_context
-     * threads may outlive this object; MidCloseBag keeps them from using a
-     * dangling PathRequestManager without holding bag->mutex across refresh.
+     * Stop new callbacks from observing *this (null PathFindLifetime::manager,
+     * cancel the mid-close timer), detach remaining PathRequests, then wait
+     * until inFlight == 0. Covers mid-close timer/JtRpc handlers and
+     * PathRequest doClose / destructor / metrics that already copied the
+     * pointer. io_context threads and WS InfoSub may outlive this object.
      */
     ~PathRequestManager();
 
@@ -57,7 +58,7 @@ public:
     /**
      * Arm the periodic revalidate timer (Config::pathMidCloseDelay). Safe to
      * call repeatedly from any thread; only one timer is in flight. All timer
-     * ops are serialized on MidCloseBag::mutex (asio steady_timer is not
+     * ops are serialized on PathFindLifetime::mutex (asio steady_timer is not
      * thread-safe across expires_after / async_wait / cancel).
      */
     void
@@ -123,6 +124,14 @@ public:
     removePathRequest(PathRequest* request);
 
 private:
+    friend class PathRequest;
+
+    [[nodiscard]] std::shared_ptr<PathFindLifetime>
+    lifetime() const
+    {
+        return midCloseBag_;
+    }
+
     void
     insertPathRequest(PathRequest::pointer const&);
 
@@ -198,8 +207,10 @@ private:
     std::shared_ptr<AssetCache> assetCache_;
 
     /**
-     * Lifetime + timer token for mid-close async_wait / JtRpc jobs. Handlers
-     * capture shared_ptr<MidCloseBag>. bag->mutex is held only for:
+     * Lifetime + timer token for mid-close async_wait / JtRpc jobs and for
+     * PathRequest callbacks (doClose / ~PathRequest / reportFast / reportFull).
+     * Handlers capture shared_ptr<PathFindLifetime>. bag->mutex is held only
+     * for:
      *   - publish/check manager and enter/leave inFlight
      *   - all midCloseTimer_ ops (expires_after / async_wait / cancel) and the
      *     scheduled/epoch single-flight fields (asio timers are not thread-safe)
@@ -208,23 +219,14 @@ private:
      *
      * Protocol: under mutex, if manager is non-null, ++inFlight and copy the
      * pointer, unlock, use the pointer, then --inFlight and notify. Destructor
-     * nulls manager, invalidates the timer epoch, cancels the timer, then waits
-     * until inFlight == 0 so no handler uses a destroyed PathRequestManager
-     * (io threads outlive this object).
+     * nulls manager, invalidates the timer epoch, cancels the timer, detaches
+     * remaining sessions, then waits until inFlight == 0 so no handler uses a
+     * destroyed PathRequestManager (io threads and WS InfoSub outlive this).
      *
      * epoch is bumped on every cancel so a stale operation_aborted handler
      * cannot clear scheduled after a newer arm, or re-enter onMidCloseTimer.
      */
-    struct MidCloseBag
-    {
-        std::mutex mutex;
-        std::condition_variable idle;
-        PathRequestManager* manager{nullptr};
-        int inFlight{0};
-        bool scheduled{false};
-        std::uint64_t epoch{0};
-    };
-    std::shared_ptr<MidCloseBag> midCloseBag_;
+    std::shared_ptr<PathFindLifetime> midCloseBag_;
 
     boost::asio::steady_timer midCloseTimer_;
     // True while a JtRpc periodic revalidate job is queued or running.

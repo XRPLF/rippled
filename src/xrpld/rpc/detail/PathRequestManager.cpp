@@ -45,7 +45,7 @@ PathRequestManager::PathRequestManager(
     beast::insight::Collector::ptr const& collector)
     : app_(app)
     , journal_(journal)
-    , midCloseBag_(std::make_shared<MidCloseBag>())
+    , midCloseBag_(std::make_shared<PathFindLifetime>())
     , midCloseTimer_(app.getIOContext())
     , lastIdentifier_(0)
 {
@@ -60,8 +60,20 @@ PathRequestManager::PathRequestManager(
 
 PathRequestManager::~PathRequestManager()
 {
-    // Detach live PathRequests first so ~PathRequest (WS may still hold
-    // shared_ptrs) never calls removePathRequest on a destroyed manager.
+    // 1. Stop new callbacks from observing *this. A PathRequest whose
+    //    destructor is already running has use_count()==0, so wr.lock()
+    //    below cannot detach it — that thread may already have copied the
+    //    manager pointer. Nulling manager first makes enterOwner() fail for
+    //    any callback that has not yet incremented inFlight.
+    {
+        std::lock_guard const lk(midCloseBag_->mutex);
+        midCloseBag_->manager = nullptr;
+        cancelMidCloseTimerUnlocked();
+    }
+
+    // 2. Detach remaining live PathRequests so later ~PathRequest / doClose
+    //    skip the owner_ fast path. Force-dropped sessions were already
+    //    detached. Do not wait here — in-flight callbacks still need members.
     {
         std::scoped_lock const sl(lock_);
         for (auto const& wr : requests_)
@@ -73,15 +85,9 @@ PathRequestManager::~PathRequestManager()
         assetCache_.reset();
     }
 
-    // Stop new mid-close handlers from observing *this, cancel the timer under
-    // the same mutex that serializes expires_after/async_wait, then wait for
-    // any handler that already took a manager pointer (inFlight).
-    // Do not hold bag->mutex across refresh — that stalled io_context threads.
-    {
-        std::lock_guard const lk(midCloseBag_->mutex);
-        midCloseBag_->manager = nullptr;
-        cancelMidCloseTimerUnlocked();
-    }
+    // 3. Wait for every callback that already entered inFlight (mid-close
+    //    timer / JtRpc, and PathRequest doClose / destructor / metrics).
+    //    Do not hold bag->mutex across refresh — that stalled io_context.
     {
         std::unique_lock lk(midCloseBag_->mutex);
         midCloseBag_->idle.wait(lk, [this] { return midCloseBag_->inFlight == 0; });
@@ -163,21 +169,16 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         return assetCache_;
     }
 
-    // Only authoritative (validated/closed or closed create waves) mutate the
-    // shared cache. Non-authoritative callers (WS create / legacy doCreate) must
-    // not force-clear hubs for every other live session — they share the live
-    // cache view (soft reuse). Pathfinder snapshots cache->getLedger() at
-    // construct; line loads take AssetCache locks so advance is not racy, but
-    // create may observe a slightly older closed view than the open ledger
-    // passed in (intentional reuse window, not a second mutable cache).
-    if (!authoritative)
-        return assetCache_;
-
     // Large jumps force a rebuild so the soft-reuse window cannot straddle a
-    // huge gap. Matches historical getLineCache policy (authoritative only).
+    // huge gap. largeJumpForward is *not* gated on authoritative: the cache is
+    // a strong shared_ptr for the life of any session, and creates
+    // (makePathRequest / makeLegacyPathRequest) pass authoritative=false. If
+    // updatePaths is starved, those creates must not serve routes from a ledger
+    // more than 8 sequences behind. largeJumpBack stays authoritative-only
+    // (historical getLineCache).
     bool const largeJumpForward = lgrSeq > (lineSeq + 8);
     bool const largeJumpBack = (lgrSeq + 8) < lineSeq;
-    if (largeJumpForward || largeJumpBack)
+    if (largeJumpForward || (authoritative && largeJumpBack))
     {
         JLOG(journal_.info()) << "getAssetCache large ledger jump " << lineSeq << " -> " << lgrSeq
                               << "; force rebuild";
@@ -185,7 +186,14 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         return assetCache_;
     }
 
-    // Soft-advance across sequence changes for closed/create waves.
+    // Small sequence changes: only authoritative (validated/closed or closed
+    // create waves) mutate the shared cache. Non-authoritative callers (WS
+    // create / legacy doCreate / mid-close) share the live view — Pathfinder
+    // snapshots cache->getLedger() at construct; a slightly older closed view
+    // than the ledger passed in is the intentional reuse window.
+    if (!authoritative)
+        return assetCache_;
+
     if (lgrSeq > lineSeq)
     {
         assetCache_->advanceLedger(ledger, /*forceClear=*/false);
@@ -429,7 +437,7 @@ PathRequestManager::scheduleMidCloseRefresh()
             }
             struct InFlightGuard
             {
-                MidCloseBag& bag;
+                PathFindLifetime& bag;
                 ~InFlightGuard()
                 {
                     std::lock_guard const lk(bag.mutex);
@@ -445,7 +453,7 @@ PathRequestManager::scheduleMidCloseRefresh()
 void
 PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
 {
-    // Caller has entered MidCloseBag::inFlight so *this stays alive.
+    // Caller has entered PathFindLifetime::inFlight so *this stays alive.
     // bag->scheduled was cleared by the async_wait handler under bag->mutex.
     if (waitEc || app_.isStopping() || !requestsPending())
         return;
@@ -470,7 +478,7 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
             }
             struct InFlightGuard
             {
-                MidCloseBag& bag;
+                PathFindLifetime& bag;
                 PathRequestManager* self;
                 ~InFlightGuard()
                 {

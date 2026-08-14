@@ -58,6 +58,7 @@ PathRequest::PathRequest(
     : app_(app)
     , journal_(journal)
     , owner_(&owner)
+    , ownerLifetime_(owner.lifetime())
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
     , jvStatus_(json::ValueType::Object)
@@ -82,6 +83,7 @@ PathRequest::PathRequest(
     : app_(app)
     , journal_(journal)
     , owner_(&owner)
+    , ownerLifetime_(owner.lifetime())
     , fCompletion_(std::move(completion))
     , consumer_(consumer)
     , jvStatus_(json::ValueType::Object)
@@ -102,13 +104,53 @@ PathRequest::detachFromManager() noexcept
     owner_.store(nullptr, std::memory_order_release);
 }
 
+PathRequestManager*
+PathRequest::enterOwner() noexcept
+{
+    auto bag = ownerLifetime_;
+    if (!bag)
+        return nullptr;
+    std::lock_guard const lk(bag->mutex);
+    if (!bag->manager)
+        return nullptr;
+    ++bag->inFlight;
+    return bag->manager;
+}
+
+void
+PathRequest::leaveOwner() noexcept
+{
+    auto bag = ownerLifetime_;
+    if (!bag)
+        return;
+    std::lock_guard const lk(bag->mutex);
+    --bag->inFlight;
+    bag->idle.notify_all();
+}
+
+PathRequest::CallOwner::CallOwner(PathRequest& req) noexcept : req_(req), owner_(req.enterOwner())
+{
+}
+
+PathRequest::CallOwner::~CallOwner() noexcept
+{
+    if (owner_)
+        req_.leaveOwner();
+}
+
 PathRequest::~PathRequest()
 {
     // WS disconnect or last strong-ref drop: unhook from the manager so the
     // shared AssetCache can be released when no sessions remain. owner_ is
-    // null if ~PathRequestManager already detached this session.
-    if (auto* owner = owner_.exchange(nullptr, std::memory_order_acq_rel))
-        owner->removePathRequest(this);
+    // null if ~PathRequestManager already detached this session. Even if
+    // owner_ is still set, CallOwner fails once the manager has nulled
+    // PathFindLifetime::manager — ~PathRequestManager waits inFlight==0
+    // before destroying members (use_count==0 so wr.lock() cannot detach us).
+    if (owner_.exchange(nullptr, std::memory_order_acq_rel))
+    {
+        if (CallOwner owner{*this})
+            owner->removePathRequest(this);
+    }
 
     using namespace std::chrono;
     auto stream = journal_.info();
@@ -534,9 +576,13 @@ PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
     // Detach immediately so AssetCache can reclaim if this was the last session
-    // (do not wait for ~PathRequest / next updateAll scavenge).
-    if (auto* owner = owner_.load(std::memory_order_acquire))
-        owner->removePathRequest(this);
+    // (do not wait for ~PathRequest / next updateAll scavenge). CallOwner
+    // no-ops if ~PathRequestManager has already nulled the lifetime token.
+    if (owner_.load(std::memory_order_acquire))
+    {
+        if (CallOwner owner{*this})
+            owner->removePathRequest(this);
+    }
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
@@ -1032,6 +1078,10 @@ PathRequest::doUpdate(
     // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
     auto const ledgerForSeq = calcLedger ? calcLedger : cache->getLedger();
     auto const ledgerSeq = ledgerForSeq->seq();
+    // Identify the view used for this reply. Creates (and closed waves) use
+    // the shared cache ledger; mid-close may pass the open view as calcLedger.
+    newStatus[jss::ledger_hash] = to_string(ledgerForSeq->header().hash);
+    newStatus[jss::ledger_index] = ledgerSeq;
 
     // Full Pathfinder when: first/fast update, failed-search backoff elapsed, or
     // staggered rediscovery is due. Timed rediscovery is skipped while the
@@ -1180,13 +1230,13 @@ PathRequest::doUpdate(
     if (fast && quickReply_ == steady_clock::time_point{})
     {
         quickReply_ = steady_clock::now();
-        if (auto* owner = owner_.load(std::memory_order_acquire))
+        if (CallOwner owner{*this})
             owner->reportFast(duration_cast<milliseconds>(quickReply_ - created_));
     }
     else if (!fast && fullReply_ == steady_clock::time_point{})
     {
         fullReply_ = steady_clock::now();
-        if (auto* owner = owner_.load(std::memory_order_acquire))
+        if (CallOwner owner{*this})
             owner->reportFull(duration_cast<milliseconds>(fullReply_ - created_));
     }
 
