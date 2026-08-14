@@ -169,14 +169,12 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
         return assetCache_;
     }
 
-    // Large jumps force a rebuild so the soft-reuse window cannot straddle a
-    // huge gap. largeJumpForward is *not* gated on authoritative: the cache is
-    // a strong shared_ptr for the life of any session, and creates
-    // (makePathRequest / makeLegacyPathRequest) pass authoritative=false. If
-    // updatePaths is starved, those creates must not serve routes from a ledger
-    // more than 8 sequences behind. largeJumpBack stays authoritative-only
-    // (historical getLineCache).
-    bool const largeJumpForward = lgrSeq > (lineSeq + 8);
+    // Large jump forward rebuilds for any *closed* caller, including creates
+    // (authoritative=false). Mid-close passes the open ledger and must not
+    // force-clear hubs onto an OpenView: that wipes every session's pins and
+    // leaves cache->getLedger() open so doUpdate omits ledger identity.
+    // largeJumpBack stays authoritative-only (historical getLineCache).
+    bool const largeJumpForward = lgrSeq > (lineSeq + 8) && !ledger->open();
     bool const largeJumpBack = (lgrSeq + 8) < lineSeq;
     if (largeJumpForward || (authoritative && largeJumpBack))
     {

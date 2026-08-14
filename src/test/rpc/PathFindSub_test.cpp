@@ -985,6 +985,53 @@ class PathFindSub_test : public beast::unit_test::Suite
         (void)wscB->invoke("path_find", closeReq);
     }
 
+    /**
+     * Mid-close is non-authoritative and passes the open ledger. A large
+     * forward jump must not force-clear the shared cache onto that OpenView
+     * (wipes every session's lines; later updates omit ledger identity).
+     * No live subscription here so LedgerMaster::updatePaths does not
+     * advance the cache during the gap.
+     */
+    void
+    testMidCloseDoesNotForceClearOpenCache()
+    {
+        testcase("mid-close: large jump does not rebuild cache onto open ledger");
+        using namespace jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->forceMultiThread = true;
+            cfg->workers = 4;
+            cfg->pathMidCloseDelay = std::chrono::hours{1};
+            return cfg;
+        }));
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        setupUsdCorridor(env, gw, alice, bob);
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const firstClosed = env.closed();
+        auto pinned = prm.getAssetCache(firstClosed, /*authoritative=*/true);
+        auto const pinnedSeq = firstClosed->seq();
+        BEAST_EXPECT(pinned->getLedger()->seq() == pinnedSeq);
+        BEAST_EXPECT(!pinned->getLedger()->open());
+
+        for (int i = 0; i < 10; ++i)
+            env.close();
+        BEAST_EXPECT(env.current()->open());
+        BEAST_EXPECT(env.current()->seq() > pinnedSeq + 8);
+
+        // Same arguments as runPeriodicRevalidate / mid-close updateAll.
+        auto mid = prm.getAssetCache(env.current(), /*authoritative=*/false);
+        BEAST_EXPECT(!mid->getLedger()->open());
+        BEAST_EXPECT(mid->getLedger()->seq() == pinnedSeq);
+
+        // Closed creates still rebuild across the same gap.
+        auto rebuilt = prm.getAssetCache(env.closed(), /*authoritative=*/false);
+        BEAST_EXPECT(!rebuilt->getLedger()->open());
+        BEAST_EXPECT(rebuilt->getLedger()->seq() == env.closed()->seq());
+    }
+
 public:
     void
     run() override
@@ -1000,6 +1047,7 @@ public:
         testMidClosePreservesNewSubscriptionSignal();
         testAutoSourceKeepsXrpUnderSoftCap();
         testCreateRebuildsStaleSharedCache();
+        testMidCloseDoesNotForceClearOpenCache();
     }
 };
 
