@@ -24,6 +24,23 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+// The app and overlay includes below are why
+// .github/scripts/levelization/results/loops.txt records
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
+// ordering.txt previously had telemetry strictly below both. The observable
+// gauges are pull-model: their callbacks sample live state when the reader
+// thread fires, so they need the concrete types to call getJqTransOverflow(),
+// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+//
+// The cycle is confined to this translation unit. No telemetry header includes
+// app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
+// ServiceRegistry&), and all of src/xrpld builds into a single CMake target, so
+// there is no header cycle and no link cycle to break.
+//
+// Inverting it properly means declaring a metrics-source interface below overlay
+// and implementing it there, which is deliberately left as follow-up rather than
+// widening this change. Note loops.txt is generated: it can only change as a
+// consequence of changing these includes, never by editing the baseline.
 #include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>

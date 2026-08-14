@@ -12,6 +12,12 @@
 #   - grafana: dashboards on port 3000, pre-configured with Tempo,
 #     Prometheus, and Loki datasources.
 #
+# Requires Docker Compose >= 2.24.0. The grafana service uses the long-form
+# `env_file` mapping (`path:` / `required:`), which older Compose cannot parse —
+# and it fails for the whole file, not just that service. The long form is
+# needed: `.env.alerting` is gitignored and absent in a fresh clone, and the
+# short form treats a missing env file as an error.
+#
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
 #
